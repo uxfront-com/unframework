@@ -243,15 +243,43 @@ false` is `if (c) this.save();`).
 Handlers run synchronously during dispatch, so `preventDefault()` and `stopPropagation()` work as
 written; listeners keep DOM semantics (`change` on commit, `focus` and `blur` without bubbling).
 
+### Scoped styles (M4)
+
+A component that imports a stylesheet names the sheet `compile()` scoped for it in its metadata,
+`styleUrl: "./Badge.uf.tsx.css"`, with `encapsulation: ViewEncapsulation.None`, since the sheet is
+scoped already (ADR-0063). The shared markup printer writes `data-uf-<id>=""` on each element, the
+parent's attribute on a child's tag, and the child's `-s` on the content filled into a child whose
+sheet uses `:slotted()`, through `<ng-content>` and `ng-template` slots alike. The parent's
+attribute lands on the child's host, which must keep only `display: contents`, and a template
+cannot write an attribute whose name it does not know. So each root node of a component binds an
+inline attribute directive to its host, `[ufScope]="this.host"` (`ScopeAttributes`, with the host
+in a protected `host` member): in `ngOnInit` it takes the host's `data-uf-*` attributes off it,
+keeps their names in a module `WeakMap` for a root that renders later, and sets them on its node.
+Its root nodes are those Vue's fallthrough reaches (`scopeRoots`): the root element, component or
+each candidate of a root `<component is>`, or each branch of a root conditional that renders one
+alone. A root component's own root directive runs after this one has set them on its host, so they
+pass through it. A root Angular binds nothing on (`{{` in an attribute, ADR-0037) takes none. The
+root still renders inside its host, which selectors see: a parent's rule that reaches it through
+a combinator or a structural pseudo-class (`>`, `+`, `:first-child`, …) matches the host's place.
+So `child-root-scope` is unsupported (UF4003, info), reported at the first child a styled
+component renders.
+
+Angular adds a sheet to the page as its component first renders, a parent's before its children's,
+where the other targets load sheets in import order: `sheet-order` is unsupported (UF4002, info),
+reported at a component's first stylesheet import.
+
 ### Capabilities
 
 Native: everything but `event-capture`, `event-once` and `event-passive` (emulated, the directives
 above, helper `uf<Event><Option>`), `use-id` (emulated, `nextId`), `next-tick` (emulated,
-`nextTick`) and composition's cells that ADR-0056 decides: `named-slot`, `scoped-slot` and
+`nextTick`), `class-binding` (emulated, `classNames`, for a class part that may be an array or an
+object), `style-binding` (emulated, `styleObject`, for a style bound to a value that a merge
+spreads; ADR-0065) and composition's cells that ADR-0056 decides: `named-slot`, `scoped-slot` and
 `slot-forwarding` (emulated, the slot directives `uf<Component><Slot>`), `model-array`
 (`toggle`), `model-modifiers` (`modelText`), `fallthrough` (`fallthrough`), `reactive-context`
-(`refObject`) and `dynamic-component` (`@switch`), all emulated, and `default-slot-presence` and
-`contextual-root`, unsupported (UF4001, errors). Where an unsupported cell is reported, the
+(`refObject`) and `dynamic-component` (`@switch`), all emulated, `default-slot-presence` and
+`contextual-root`, unsupported (UF4001, errors), and `child-root-scope` and `sheet-order`,
+unsupported (UF4003 and UF4002, info). Where an unsupported cell is reported, the
 output still compiles: default-slot presence reads `true`, and the forwarded default slot
 re-projects `<ng-content />`.
 
@@ -270,7 +298,9 @@ Tests and tooling build, check and run the Angular output through three subpaths
     Angular linker, over the pre-bundled framework in the browser and over the packages the SSR
     module graph inlines on the server, so no JIT compiler runs.
   - `frameworkCompile(files, context)` (L3) and `typecheck(files, context)` (L4): one ngtsc
-    program over every file, reported per file.
+    program over every file, reported per file. ngtsc type-checks as it compiles, so L3, L4 and
+    the Vite path add `context.declarations` to their programs: the declarations of the modules
+    no package types, such as a styling engine's virtual modules (ADR-0064).
   - `lint(files, context)` (L5, ADR-0042): oxlint's shared baseline over the TypeScript, and
     ESLint with angular-eslint over the file and its inline template.
     `@angular-eslint/no-output-native` is on: an output named like a native event takes the `uf`

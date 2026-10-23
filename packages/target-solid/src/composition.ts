@@ -19,7 +19,7 @@
 //   `useContext(Key) ?? fallback`. A key of a ref holds `refObject`, an object whose `value`
 //   getter reads the signal (`reactive-context`, emulated): written in place, because
 //   `solid/reactivity` (L5) reports a signal handed to a function there.
-import { childImports, keyImports, keyOwner } from "@unframework/codegen";
+import { childImports, keyImports, keyOwner, scopeRoots } from "@unframework/codegen";
 import type { ImportSet } from "@unframework/codegen";
 import type {
   Binding,
@@ -47,6 +47,11 @@ export class SolidComposition {
    * none (a fragment, a conditional, `inheritAttrs: false`).
    */
   readonly fallthrough: Span | undefined;
+  /**
+   * The root nodes that spread the scope attributes of the styled parents that render the
+   * component (the child-root rule, ADR-0063), by `start:end` of their spans (`scopeRoots`).
+   */
+  readonly scopeRoots: ReadonlySet<string>;
   /**
    * The slots resolved once in the component with `children()`, by name, with the name of their
    * content (see {@link resolvable}).
@@ -96,6 +101,7 @@ export class SolidComposition {
       this.types.push(declaration(name, members, slots.span));
     }
     this.fallthrough = fallthroughRoot(component);
+    this.scopeRoots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
     const inline: string[] = [];
     if (this.fallthrough) inline.push(`class?: string`, `style?: ${jsx()}.CSSProperties`);
     if (component.exposes) inline.push(`ref?: (api: ${this.exposedType()}) => void`);
@@ -164,6 +170,7 @@ export class SolidComposition {
   get reads(): boolean {
     return Boolean(
       this.fallthrough ||
+      this.scopeRoots.size ||
       this.component.exposes ||
       this.component.slots ||
       this.component.setup.some((item) => item.kind === "Model"),

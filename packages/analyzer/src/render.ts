@@ -3,6 +3,7 @@ import type { AST } from "@unframework/parser";
 
 import type { AuthoringApi } from "./authoring.ts";
 import type { Reporter } from "./context.ts";
+import type { PassThrough } from "./pass-through.ts";
 import type { Scopes } from "./scope.ts";
 import type { TypeTable } from "./types/from-type.ts";
 import type { Kinds } from "./types/kinds.ts";
@@ -177,6 +178,10 @@ export interface RenderContext {
    * `slots.title`, is read (ADR-0054).
    */
   readonly presence?: true;
+  /** The module's pass-through imports: the names they bind, which a `class` calls (ADR-0064). */
+  readonly passThrough: PassThrough;
+  /** Set while a `class` part is checked: the one place a pass-through name is called. */
+  readonly classPart?: true;
 }
 
 /** The setup binding an identifier reads, where the component's setup declares it. */

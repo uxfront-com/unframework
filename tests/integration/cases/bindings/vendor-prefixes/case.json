@@ -1,0 +1,13 @@
+{
+  "description": "Vendor-prefixed longhands Chromium computes: bound text fill and stroke in a style object, and a static two-line clamp.",
+  "ssr": {
+    "clamped": {
+      "props": {
+        "title": "Release notes",
+        "text": "This release adds scoped stylesheets to every target, passes styling engines through, and lowers the binding forms that waited for them, so long text like this is clamped to two lines.",
+        "fill": "rgb(250, 250, 250)",
+        "stroke": "rgb(40, 60, 120)"
+      }
+    }
+  }
+}

@@ -155,16 +155,14 @@ describe("diagnostics", () => {
     );
   });
 
-  it("reports value imports and stylesheets as not supported yet", () => {
+  // A stylesheet the resolver did not read is UF5005 (`styles.test.ts`).
+  it("reports value imports as not supported yet", () => {
     const source =
       'import "./A.css";\nimport { x } from "./x.ts";\nexport function A() { return <p />; }';
     const { module, diagnostics } = run(source);
     expect(module).toBeUndefined();
-    expect(codes(diagnostics)).toEqual(["UF1002", "UF1002"]);
-    expect(diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
-      "Stylesheets are not supported yet.",
-      "Importing modules is not supported yet.",
-    ]);
+    expect(codes(diagnostics)).toEqual(["UF5005", "UF1002"]);
+    expect(diagnostics[1]!.message).toBe("Importing modules is not supported yet.");
   });
 
   it("reports a file without an exported component as UF1101", () => {

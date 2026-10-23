@@ -1,9 +1,17 @@
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { formatOutput } from "@unframework/codegen";
+import { formatOutput, scopeStylesheet } from "@unframework/codegen";
 import type { EmitContext, OutputFile, ToolchainContext } from "@unframework/codegen";
 import { checkInvariants } from "@unframework/ir";
 import type { UfModule } from "@unframework/ir";
@@ -12,7 +20,8 @@ import type { Plugin, ResolvedConfig } from "vite";
 // The analyser is no dependency of a target (plan §5.2): tests reach it from its source, as the
 // render-parity kit does, to lower source snippets as `compile()` would rather than hand-build
 // IR it would never produce.
-import { analyze } from "../../analyzer/src/index.ts";
+import { analyze, stylesheetImports } from "../../analyzer/src/index.ts";
+import type { StylesheetSource } from "../../analyzer/src/index.ts";
 import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
 import { ngtscVirtual } from "../src/toolchain/ngtsc-virtual.ts";
@@ -26,6 +35,11 @@ export const casesDir: string = join(repoRoot, "tests/integration/cases");
 export const context: ToolchainContext = {
   toolchainDir: join(repoRoot, "tests/toolchains/angular"),
   root: join(repoRoot, "tests/integration"),
+  // The styling engines' modules, which the styled goldens import (ADR-0064).
+  declarations: [
+    join(repoRoot, "tests/integration/styleframe.d.ts"),
+    join(repoRoot, "tests/integration/fixture-engine.d.ts"),
+  ],
 };
 
 function filesUnder(directory: string): string[] {
@@ -54,8 +68,29 @@ export function corpusSources(): { name: string; file: string; source: string }[
       file,
       source: readFileSync(path, "utf8"),
     }))
-    .filter(({ name }) => !name.startsWith("diagnostics/") && !COMPOSITION.test(name));
+    .filter(
+      ({ name }) =>
+        !name.startsWith("diagnostics/") &&
+        !COMPOSITION.test(name) &&
+        !STYLED_COMPOSITION.test(name) &&
+        !BINDING_COMPOSITION.test(name),
+    );
 }
+
+/**
+ * The scoping corpus's composition cases: a parent reads its child's API, scope id included,
+ * through the resolver `compile()` runs, which `lower` has not. The corpus's toolchain project
+ * checks their Angular outputs (ADR-0063).
+ */
+const STYLED_COMPOSITION =
+  /^styles\/(?:child-root|child-root-branches|deep|global|slotted|slotted-order)$/;
+
+/**
+ * The binding cases whose main source renders a child that merges a style bound to a value
+ * (ADR-0065): they resolve the child as `compile()` does, which `lower` has not. The corpus's
+ * toolchain project checks their Angular outputs.
+ */
+const BINDING_COMPOSITION = /^bindings\/(?:style-expression|style-spread)$/;
 
 /**
  * The areas of M3's composition cases, which Angular reports (UF1002) until its M3 lane
@@ -93,7 +128,8 @@ export async function emitFormatted(module: UfModule): Promise<OutputFile[]> {
  * warning unless `warnings` allows them (a corpus case may show one on purpose).
  */
 export function lower(source: string, file = "Card.uf.tsx", warnings = false): UfModule {
-  const { module, diagnostics } = analyze(parseModule(file, source));
+  const parsed = parseModule(file, source);
+  const { module, diagnostics } = analyze(parsed, { stylesheets: caseSheets(parsed, file) });
   const failing = diagnostics.filter(({ severity }) => !warnings || severity === "error");
   if (failing.length || !module) {
     throw new Error(`${file} does not lower cleanly: ${JSON.stringify(diagnostics, null, 2)}`);
@@ -101,6 +137,28 @@ export function lower(source: string, file = "Card.uf.tsx", warnings = false): U
   const broken = checkInvariants(module);
   if (broken.length) throw new Error(`${file} lowers invalid IR: ${JSON.stringify(broken)}`);
   return module;
+}
+
+/**
+ * The stylesheets a corpus source imports, read beside it as the case's resolver reads them
+ * (ADR-0063), with whether they use `:slotted()`, which `compile()` asks the codegen scoper.
+ * A sheet that is not there is `undefined`, as an unread one is (UF5005).
+ */
+function caseSheets(
+  parsed: ReturnType<typeof parseModule>,
+  file: string,
+): Map<string, StylesheetSource | undefined> {
+  return new Map(
+    stylesheetImports(parsed).map((specifier) => {
+      const path = join(casesDir, dirname(file), specifier);
+      if (!existsSync(path)) return [specifier, undefined];
+      const source = readFileSync(path, "utf8");
+      return [
+        specifier,
+        { file: path, source, slotted: scopeStylesheet(path, source, "00000000").slotted },
+      ];
+    }),
+  );
 }
 
 /** The one file a single-component source emits, as `emit` prints it (unformatted). */
@@ -201,6 +259,8 @@ export interface NgtscVite {
   lazy?: boolean;
   /** Fails each load with this reason, as the unframework plugin fails a module it rejects. */
   loadError?: string;
+  /** The scoped sheet the unframework plugin emitted for each `.uf.tsx` file (ADR-0063). */
+  sheets?: Record<string, string>;
 }
 
 /**
@@ -217,7 +277,10 @@ export async function ngtscPlugin(
   const served = new Set<string>(vite.lazy ? [] : Object.keys(sources));
   const unframework = {
     name: "unframework",
-    api: { getCompiled: (id: string) => (served.has(id) ? sources[id] : undefined) },
+    api: {
+      getCompiled: (id: string) => (served.has(id) ? sources[id] : undefined),
+      getSheet: (file: string) => vite.sheets?.[file],
+    },
   };
   (plugin.configResolved as (config: ResolvedConfig) => void)({
     plugins: [unframework as Plugin, plugin],

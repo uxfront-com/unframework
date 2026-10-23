@@ -12,10 +12,30 @@
 
   type Props = ShippingLabelProps & { class?: ClassValue; style?: string };
 
-  let { recipient, street, city, postcode, class: className, style }: Props = $props();
+  let {
+    recipient,
+    street,
+    city,
+    postcode,
+    class: className,
+    style,
+    ...attributes
+  }: Props = $props();
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<article class={["shipping-label", className]} aria-label="Shipping label" {style}>
+<article
+  class={["shipping-label", className]}
+  aria-label="Shipping label"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <p><strong>To:</strong> {recipient}</p
   ><p>
     <span class="shipping-label-city">{city}</span> <span

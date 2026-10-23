@@ -19,7 +19,7 @@ export interface CommandMenuEvents {
 
 export default component$<
   CommandMenuProps & CommandMenuEvents & { class?: ClassList; style?: CSSProperties }
->(({ commands, onRun$, onDismiss$, class: className, style }) => {
+>(({ commands, onRun$, onDismiss$, class: className, style, ...attributes }) => {
   const active = useSignal(0);
   const query = useSignal("");
   const shortcutField = useSignal<HTMLInputElement>();
@@ -43,7 +43,12 @@ export default component$<
   });
 
   return (
-    <section class={["command-menu", className]} aria-label="Command menu" style={style}>
+    <section
+      class={["command-menu", className]}
+      aria-label="Command menu"
+      {...scopeAttributes(attributes)}
+      style={style}
+    >
       <form role="search" aria-label="Commands">
         <label>
           Command
@@ -77,3 +82,12 @@ export default component$<
     </section>
   );
 });
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

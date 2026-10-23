@@ -6,12 +6,24 @@ interface Props {
 
 const { class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const open = true as boolean;
 const enabled = false as boolean;
 const count = 0 as number;
 ---
 
-<section class:list={["shortcut-tip", className]} aria-label="Shortcuts" style={style}>
+<section
+  class:list={["shortcut-tip", className]}
+  aria-label="Shortcuts"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <p>{open ? "Press Escape to hide this tip." : "Tip hidden."}</p>
   <button type="button" aria-pressed={enabled}>Shortcut K</button>
   <p role="status">Used: {count}</p>

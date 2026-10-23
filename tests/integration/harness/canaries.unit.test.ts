@@ -28,6 +28,7 @@ import {
   addRootAttribute,
   CANARIES,
   canaryCase,
+  dropFirstRule,
   canaryFixes,
   canaryFormats,
   canaryPlugins,
@@ -45,6 +46,7 @@ import { listCases } from "./cases.ts";
 import { checkFixes, formattingProblems, nondeterminism } from "./compile-checks.ts";
 import { CASES_DIR, REPO_ROOT } from "./paths.ts";
 import { LIVE_LAYERS } from "./quarantine.ts";
+import { caseResolver } from "./sources.ts";
 import { REFERENCE } from "./targets.ts";
 
 const filename = "fixture/task-list/TaskList.uf.tsx";
@@ -128,6 +130,7 @@ const fixture = (hasFixes: boolean): CanaryCase => ({
   interacts: () => false,
   rerenders: () => false,
   listens: false,
+  styled: false,
   reference: REFERENCE,
 });
 
@@ -513,31 +516,136 @@ describe("canaries", () => {
     }
   });
 
-  // L9-unwired-handler's corruption needs a listener, which the fixture has none of: it has a
-  // test of its own below.
-  it.each(CANARIES.filter((canary) => canary.layer !== "L1" && canary.id !== "L9-unwired-handler"))(
-    "$id changes the output of every target it corrupts, without plugin errors",
-    async (canary) => {
-      const clean = await compileWith(null);
-      for (const target of TARGET_NAMES) {
-        const corrupted = await compileWith(canary.id, target);
-        expect(corrupted.diagnostics.filter((diagnostic) => diagnostic.code === "UF8001")).toEqual(
-          [],
-        );
-        if (!corruptedTargets(canary).includes(target)) {
-          expect(corrupted.outputs[target], target).toEqual(clean.outputs[target]);
-        } else {
-          expect(corrupted.outputs[target], target).not.toEqual(clean.outputs[target]);
-        }
+  // L9-unwired-handler's corruption needs a listener, and L10-stylesheet-rule-dropped's a sheet,
+  // which the fixture has none of: each has a test of its own below.
+  it.each(
+    CANARIES.filter(
+      (canary) =>
+        canary.layer !== "L1" &&
+        canary.id !== "L9-unwired-handler" &&
+        canary.id !== "L10-stylesheet-rule-dropped",
+    ),
+  )("$id changes the output of every target it corrupts, without plugin errors", async (canary) => {
+    const clean = await compileWith(null);
+    for (const target of TARGET_NAMES) {
+      const corrupted = await compileWith(canary.id, target);
+      expect(corrupted.diagnostics.filter((diagnostic) => diagnostic.code === "UF8001")).toEqual(
+        [],
+      );
+      if (!corruptedTargets(canary).includes(target)) {
+        expect(corrupted.outputs[target], target).toEqual(clean.outputs[target]);
+      } else {
+        expect(corrupted.outputs[target], target).not.toEqual(clean.outputs[target]);
       }
-    },
-  );
+    }
+  });
 
   it("L2-output-edited leaves the IR alone, so only the golden comparison can catch it", async () => {
     const clean = await compileWith(null);
     const corrupted = await compileWith("L2-output-edited");
     expect(corrupted.ir).toEqual(clean.ir);
     expect(corrupted.outputs).not.toEqual(clean.outputs);
+  });
+
+  // A styled component's files end with its scoped sheet (ADR-0063), which has no template or
+  // script to corrupt: a hook that threw on it would become a UF8001, and the compiler would
+  // emit the module uncorrupted.
+  it("corrupt a styled component's own files and leave its emitted sheet as it was", async () => {
+    const dir = join(CASES_DIR, "styles", "scoped-basics");
+    const text = readFileSync(join(dir, "Badge.uf.tsx"), "utf8");
+    const compileStyled = (id: string | null, target: TargetName) =>
+      compile(canarySource(id, text), {
+        filename: "styles/scoped-basics/Badge.uf.tsx",
+        targets: [target],
+        resolve: caseResolver({ dir }, CASES_DIR),
+        plugins: canaryPlugins(id, target),
+        format: canaryFormats(id),
+      });
+    const hooked = CANARIES.filter(
+      (canary) => canary.plugin && "output" in canary.plugin() && !canary.sheets,
+    );
+    expect(hooked.length).toBeGreaterThan(0);
+    for (const canary of hooked) {
+      for (const target of TARGET_NAMES.filter(
+        (name) => corrupts(canary, name) && !(canary.followersOnly && name === REFERENCE),
+      )) {
+        const where = `${canary.id} on ${target}`;
+        const clean = await compileStyled(null, target);
+        const corrupted = await compileStyled(canary.id, target);
+        expect(
+          corrupted.diagnostics.map(({ code }) => code),
+          where,
+        ).not.toContain("UF8001");
+        const sheet = (result: CompileResult) =>
+          result.outputs[target]?.find(({ path }) => path === "Badge.uf.tsx.css");
+        expect(sheet(corrupted), where).toEqual(sheet(clean));
+        expect(sheet(clean), where).toBeDefined();
+      }
+    }
+  });
+
+  // ADR-0063: every target's sheet loads from the compile's output, so the hook corrupts each
+  // copy, Angular's `styleUrl` included (the unplugin's `getSheet`).
+  it("L10-stylesheet-rule-dropped drops a rule of each styled case's sheet, on the followers only", async () => {
+    const styled = listCases().filter((info) => canaryCase(info).styled);
+    // The scoping corpus, and the Styleframe cases with a sheet of their own (ADR-0064).
+    for (const { id } of styled) expect(["styles", "styleframe"], id).toContain(id.split("/")[0]);
+    expect(styled.length).toBeGreaterThanOrEqual(15);
+    /** The cases a sheet of which the reference emitted. */
+    const sheets = new Set<string>();
+    for (const info of styled) {
+      for (const { source, filename } of info.sources) {
+        const text = readFileSync(source, "utf8");
+        const compileStyled = (id: string | null, target: TargetName) =>
+          compile(text, {
+            filename,
+            targets: [target],
+            resolve: caseResolver(info, CASES_DIR),
+            plugins: canaryPlugins(id, target),
+          });
+        for (const target of TARGET_NAMES) {
+          const where = `${filename} on ${target}`;
+          const clean = await compileStyled(null, target);
+          const corrupted = await compileStyled("L10-stylesheet-rule-dropped", target);
+          expect(corrupted.diagnostics, where).toEqual(clean.diagnostics);
+          const part = (result: CompileResult, sheet: boolean) =>
+            result.outputs[target]!.filter(({ path }) => path.endsWith(".css") === sheet);
+          expect(part(corrupted, false), where).toEqual(part(clean, false));
+          const [sheet, ...more] = part(clean, true);
+          expect(more, where).toEqual([]);
+          if (!sheet) continue;
+          if (target === REFERENCE) sheets.add(info.id);
+          const [dropped] = part(corrupted, true);
+          if (target === REFERENCE) {
+            expect(dropped, where).toEqual(sheet);
+          } else {
+            expect(dropped?.contents, where).toBe(dropFirstRule(sheet));
+            expect(dropped?.contents, where).not.toBe(sheet.contents);
+          }
+        }
+      }
+    }
+    expect(sheets.size).toBe(styled.length);
+  });
+
+  it("drops the first style rule outside @keyframes, inside an at-rule block too", () => {
+    const drop = (contents: string) => dropFirstRule({ path: "A.uf.tsx.css", contents });
+    expect(drop(".a { color: red; }\n\n.b { margin: 0; }\n")).toBe(".b { margin: 0; }\n");
+    // Its comment stays, as a comment holding a brace or a string does.
+    expect(drop('/* { */\n.a[title="}"] { content: "}"; }\n.b { margin: 0; }\n')).toBe(
+      "/* { */\n.b { margin: 0; }\n",
+    );
+    expect(drop("@layer a, b;\n\n@layer b {\n  .a { color: red; }\n  .b { margin: 0; }\n}\n")).toBe(
+      "@layer a, b;\n\n@layer b {\n  .b { margin: 0; }\n}\n",
+    );
+    expect(
+      drop(
+        "@keyframes spin {\n  from { opacity: 0; }\n  to { opacity: 1; }\n}\n.a { color: red; }\n",
+      ),
+    ).toBe("@keyframes spin {\n  from { opacity: 0; }\n  to { opacity: 1; }\n}\n");
+    expect(() => drop("@keyframes spin {\n  to { opacity: 1; }\n}\n")).toThrow(
+      /no style rule outside @keyframes/,
+    );
   });
 
   it("needs the project's target for a canary that spares the reference", () => {
@@ -564,13 +672,13 @@ describe("canaries", () => {
     const result = await compileWith("L13-console-warn");
     const contents = (target: string) => result.outputs[target]![0]!.contents;
     expect(contents("react")).toMatch(
-      /style,\n\}: TaskListProps & TaskListAttributes\) \{\n {2}console\.warn\("\[uf canary\] L13 in react"\);/,
+      /\.\.\.attributes\n\}: TaskListProps & TaskListAttributes\) \{\n {2}console\.warn\("\[uf canary\] L13 in react"\);/,
     );
     expect(contents("solid")).toMatch(
       /function TaskList\(\n {2}rawProps: TaskListProps & \{ class\?: string; style\?: JSX\.CSSProperties \},\n\) \{\n {2}console\.warn/,
     );
     expect(contents("qwik")).toMatch(
-      /component\$<TaskListProps & \{ class\?: ClassList; style\?: CSSProperties \}>\(\n {2}\(\{ title = "Tasks \(today\)", tasks, done, tone = "info", class: className, style \}\) => \{\n {4}console\.warn/,
+      /component\$<TaskListProps & \{ class\?: ClassList; style\?: CSSProperties \}>\(\n {2}\(\{\n[\s\S]*?\n {4}\.\.\.attributes\n {2}\}\) => \{\n {4}console\.warn/,
     );
     expect(contents("vue")).toMatch(/<script setup lang="ts">\nconsole\.warn/);
     expect(contents("svelte")).toMatch(/<script lang="ts">\n {2}console\.warn/);
@@ -657,9 +765,11 @@ describe("canaries", () => {
     // Qwik's root also takes the fallthrough `class` and `style` (ADR-0054): oxfmt breaks it.
     expect(root("qwik")).toMatch(/^<section\s+className="uf-canary"\s+class=/);
     expect(root("vue")).toMatch(/^<section v-html="'uf-canary'" class=/);
-    expect(root("svelte")).toMatch(/^<section style:uf-canary="1" class=/);
+    // Svelte's and Astro's roots also spread their styled parents' scope attributes (ADR-0063):
+    // the tag breaks.
+    expect(root("svelte")).toMatch(/^<section style:uf-canary="1"\s+class=/);
     expect(root("angular")).toMatch(/^<section \*ngIf="true"\s+class=/);
-    expect(root("astro")).toMatch(/^<section set:html="uf-canary" class:list=/);
+    expect(root("astro")).toMatch(/^<section set:html="uf-canary"\s+class:list=/);
   });
 
   it("L4-consumer types each target's props `any` where its consumers' checker reads them", async () => {
@@ -678,7 +788,9 @@ describe("canaries", () => {
     // The pattern runs over several lines, beside the fallthrough props (ADR-0054).
     expect(lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(lines("astro")).toEqual(["type Props = any;"]);
+    // The scope directive's input too, which no consumer binds (ADR-0063).
     expect(lines("angular")).toEqual([
+      "  readonly ufScope = input.required<any>();",
       '  readonly title = input<any>("Tasks (today)", {',
       "  readonly tasks = input.required<any>();",
       "  readonly done = input.required<any>();",
@@ -718,6 +830,7 @@ describe("canaries", () => {
     expect(await lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(await lines("astro")).toEqual(["type Props = any;"]);
     expect(await lines("angular")).toEqual([
+      "  readonly ufScope = input.required<any>();",
       "  readonly path = input.required<any>();",
       "  readonly size = input.required<any>();",
       "  readonly class = input<any>();",
@@ -1197,6 +1310,19 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
     );
     expect(angular).toBe(
       "export default class A {\n  constructor() {\n    x();\n  }\n\n  readonly label = input.required<string>();\n}\n",
+    );
+    // The component's class, not a directive's declared before it (ADR-0047, ADR-0063).
+    const directive =
+      '@Directive({ selector: "[ufScope]" })\nexport class Scope {\n  constructor() {\n    y();\n  }\n}\n\n';
+    expect(
+      injectScript(
+        { path: "a.ts", contents: `${directive}@Component({})\nexport default class A {}\n` },
+        "angular",
+        "x();",
+        "render",
+      ),
+    ).toBe(
+      `${directive}@Component({})\nexport default class A {\n  constructor() {\n    x();\n  }\n}\n`,
     );
     // A class with a constructor of its own (M2's effects and hooks) gets it first in its body.
     const withConstructor = injectScript(

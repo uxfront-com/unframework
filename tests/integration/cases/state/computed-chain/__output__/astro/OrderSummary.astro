@@ -12,6 +12,13 @@ interface Props extends OrderSummaryProps {
 
 const { price, taxRate, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const quantity = 1 as number;
 const subtotal = quantity * price;
 const tax = Math.round(subtotal * taxRate);
@@ -30,6 +37,7 @@ const tier = getTier();
   aria-label="Order summary"
   data-tier={tier}
   style={style}
+  {...scopeAttributes(Astro.props)}
 >
   <p role="status">Quantity: {quantity}</p>
   <button type="button" disabled={quantity === 1}>Remove one</button>

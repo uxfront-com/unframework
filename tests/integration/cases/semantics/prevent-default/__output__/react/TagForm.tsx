@@ -25,6 +25,7 @@ export default function TagForm({
   onTagsChange,
   className,
   style,
+  ...attributes
 }: TagFormEvents & TagFormAttributes) {
   const [tags, setTags] = useState<string[]>([]);
   const tagsRef = useRef(tags);
@@ -59,7 +60,13 @@ export default function TagForm({
   }
 
   return (
-    <form className={cx("tag-form", className)} aria-label="Tags" onSubmit={addTag} style={style}>
+    <form
+      className={cx("tag-form", className)}
+      aria-label="Tags"
+      onSubmit={addTag}
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <label>
         New tag
         <input name="tag" ref={field} onKeyDown={blockComma} onInput={updateDraft} />
@@ -91,4 +98,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

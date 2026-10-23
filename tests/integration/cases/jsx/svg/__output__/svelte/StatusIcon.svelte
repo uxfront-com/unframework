@@ -11,7 +11,21 @@
 
   type Props = StatusIconProps & { class?: ClassValue; style?: string };
 
-  let { label, size = 24, colour = "#1f6feb", class: className, style }: Props = $props();
+  let {
+    label,
+    size = 24,
+    colour = "#1f6feb",
+    class: className,
+    style,
+    ...attributes
+  }: Props = $props();
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
 <svg
@@ -22,6 +36,7 @@
   height={size}
   fill="none"
   {style}
+  {...scopeAttributes(attributes)}
 >
   <title>{label}</title
   ><defs>

@@ -244,6 +244,7 @@ export function removeSpans(code: Code, spans: readonly Span[]): Code {
       switch (reference.kind) {
         case "Binding":
         case "Global":
+        case "Import":
         case "Api":
         case "Event":
         case "Slot":

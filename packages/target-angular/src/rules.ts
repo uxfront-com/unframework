@@ -266,6 +266,7 @@ export function templateRules(
         ? `this.${binding.name}`
         : templateRead(plan, binding, site, text),
     slot: (reference) => slotPresence(plan, reference.slot),
+    import: (reference) => plan.recipes.get(reference.name) ?? reference.name,
   };
 }
 

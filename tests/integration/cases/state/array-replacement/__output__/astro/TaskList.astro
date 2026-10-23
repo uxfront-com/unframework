@@ -15,11 +15,23 @@ interface Props extends TaskListProps {
 
 const { initial, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const tasks = initial;
 const selected = undefined as string | undefined;
 ---
 
-<section class:list={["task-list", className]} aria-label="Tasks" style={style}>
+<section
+  class:list={["task-list", className]}
+  aria-label="Tasks"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   {tasks.length === 0 ? (
     <p>No tasks yet.</p>
   ) : (

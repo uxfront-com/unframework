@@ -30,7 +30,9 @@ import type {
   SlotFill,
   SlotOutletNode,
   SlotReference,
+  StyleAttribute,
   UfComponent,
+  UfModule,
 } from "@unframework/ir";
 
 import { functionSource, handlerText } from "../functions.ts";
@@ -38,6 +40,7 @@ import { parseExpression } from "../parse.ts";
 import { referencedBindings } from "../references.ts";
 import { bindingOf, needsParentheses, parenthesesNeeded, rewriteExpression } from "../rewrite.ts";
 import type { RewriteRules, RewriteSite } from "../rewrite.ts";
+import { scopeAttribute, slottedAttributes } from "../scope.ts";
 import { codeTokens, isIdentifierName } from "./escape.ts";
 import type { CodeToken } from "./escape.ts";
 
@@ -67,6 +70,12 @@ export interface TextPosition {
 export interface AttributeContext {
   element: ElementNode;
   namespace: Namespace;
+  /**
+   * Whether the target spreads an object of its own on the element (`scopeRootAttributes`), which
+   * changes how a language whose server renders a spread element through its runtime writes the
+   * element's other attributes (Svelte).
+   */
+  spreads?: boolean;
 }
 
 /** A printed attribute, by the name a dialect orders it by (`v-if`, `key`, `class`). */
@@ -82,9 +91,14 @@ export interface PrintedAttribute {
 export type ClassPart =
   | { kind: "Static"; value: string }
   | { kind: "Toggle"; name: string; condition: string }
-  | { kind: "Dynamic"; value: string };
+  /** `collection`: the value may be an array or an object at run time (ADR-0065). */
+  | { kind: "Dynamic"; value: string; collection?: true };
 
-/** A declaration of an element's style, with its value as code when it is bound. */
+/**
+ * A declaration of an element's style, with its value as code when it is bound. A Bound part
+ * whose `property` is empty holds a whole style: a style object or a declaration list, from a
+ * value bound to `style` or a spread's `style` key (ADR-0065), or a consumer's (ADR-0056).
+ */
 export type StylePart =
   | { kind: "Static"; property: string; value: string }
   | { kind: "Bound"; property: string; value: string };
@@ -120,6 +134,8 @@ export interface ComponentContext {
   /** The tag the component is written with. */
   tag: string;
   namespace: Namespace;
+  /** The `-s` attributes the content of its fills carries (ADR-0063). */
+  slotted: readonly string[];
 }
 
 /** A prop passed to a component, as code: `literal` is the string a static prop holds. */
@@ -355,6 +371,11 @@ export interface MarkupDialect {
    * `component` piece's name as the dialect gives them, with the node's attributes.
    */
   dynamic?(dynamic: PrintedDynamic): MarkupPiece[];
+  /**
+   * Writes the scope attributes a component's tag carries (ADR-0063), where the language checks
+   * them against the child's props (Svelte): `name=""` each, as on an element, without it.
+   */
+  componentScopeAttributes?(names: readonly string[]): PrintedAttribute[];
 }
 
 /**
@@ -397,6 +418,12 @@ export interface MarkupOptions {
    */
   component?: UfComponent;
   /**
+   * The component's module, whose imports give a child's scoped styles: without it, the content
+   * filled into a styled child carries no `-s` attribute (ADR-0063). The component's own
+   * `data-uf-<scopeId>` needs only `component`.
+   */
+  module?: UfModule;
+  /**
    * The tag a component element is written with, where the target declares the component under
    * another name than its own (Vue's alias for a child named like one of its built-ins), or
    * `undefined` to leave it to the dialect (`MarkupDialect.componentTag`).
@@ -408,6 +435,25 @@ export interface MarkupOptions {
    * written without it. Needs `component`.
    */
   rewrite?: RewriteRules;
+  /**
+   * What an element, a component's tag or a `<component is>` carries after its scope attributes,
+   * as code: the targets whose child cannot know the scope attributes its styled parents pass
+   * spread them on the component's roots (`scopeRoots`, the child-root rule, ADR-0063). Asked
+   * for each node at the template's top level, where the roots are: the element, or the tag in an
+   * element's shape, with the node's span.
+   */
+  scopeRootAttributes?(element: ElementNode): string[];
+  /**
+   * The components a component element stands for, where the target writes a `<component is>`
+   * as one (Svelte's `$derived`): its fills take each candidate's `-s`, as they do printed
+   * through the dialect's `dynamic` (ADR-0063).
+   */
+  candidates?(node: ComponentNode): readonly string[] | undefined;
+  /**
+   * The `-s` attributes the root's nodes carry: those of the child whose scoped fill the markup
+   * is, where the target prints a fill apart (Astro's render prop, ADR-0063).
+   */
+  slotted?: readonly string[];
 }
 
 /**
@@ -605,6 +651,15 @@ interface Scope {
   element: ElementNode | undefined;
   namespace: Namespace;
   preformatted: boolean;
+  /** The `-s` attributes of the children whose slot the nodes fill (ADR-0063). */
+  slotted: readonly string[];
+  /** The components a `<component is>` whose pieces are printed may render. */
+  candidates: readonly string[] | undefined;
+  /**
+   * Whether the nodes are the template's own top level, outside every element and fill, where
+   * a component's roots are (`scopeRoots`).
+   */
+  top: boolean;
 }
 
 /**
@@ -635,12 +690,38 @@ export function printMarkup(
       : expression.code;
   const indent = options.indent ?? "  ";
   const printWidth = options.printWidth ?? 100;
-  const scope: Scope = { dialect, element: undefined, namespace: "html", preformatted: false };
+  const scope: Scope = {
+    dialect,
+    element: undefined,
+    namespace: "html",
+    preformatted: false,
+    slotted: options.slotted ?? [],
+    candidates: undefined,
+    top: true,
+  };
   const roots =
     root.kind === "Fragment" ? itemsOf(root.children, root, scope) : [elementItem(root, [], scope)];
   const level = indent.repeat(options.level ?? 0);
   const rootRuns = layout(roots, level, false);
   return rootRuns ? joinRuns(rootRuns, roots, level).join("\n") : "";
+
+  /** A class's dynamic part, marked where it may hold an array or an object (ADR-0065). */
+  function dynamicPart(value: Expression, collection: boolean | undefined): ClassPart {
+    return { kind: "Dynamic", value: code(value), ...(collection ? { collection: true } : {}) };
+  }
+
+  /**
+   * A style's parts: its declarations, or the one value it is bound to, as a part without a
+   * property (ADR-0065).
+   */
+  function styleParts(attribute: StyleAttribute): StylePart[] {
+    if (attribute.value) return [{ kind: "Bound", property: "", value: code(attribute.value) }];
+    return attribute.declarations.map((declaration): StylePart =>
+      declaration.kind === "Static"
+        ? { kind: "Static", property: declaration.property, value: declaration.value }
+        : { kind: "Bound", property: declaration.property, value: code(declaration.value) },
+    );
+  }
 
   /** A binding's name: from the component, or from its id (`name@offset`) without one. */
   function bindingName(id: string): string {
@@ -689,7 +770,12 @@ export function printMarkup(
         case "SlotOutlet":
           return piecesItems(hook(at.dialect, "slotOutlet")(slotOutletParts(node)), at);
         case "Dynamic":
-          return piecesItems(hook(at.dialect, "dynamic")({ node, is: code(node.is) }), at);
+          return piecesItems(hook(at.dialect, "dynamic")({ node, is: code(node.is) }), {
+            ...at,
+            candidates: node.candidates.flatMap((each) =>
+              each.kind === "Component" ? [each.component] : [],
+            ),
+          });
         default:
           return unreachable(node);
       }
@@ -792,7 +878,8 @@ export function printMarkup(
   /**
    * A component element (ADR-0053), with directives before its own attributes: its props,
    * listeners, fallthrough `class` and `style` and ref through the dialect's hooks, then its
-   * fills as its content. It closes itself without content.
+   * scope attributes (ADR-0063), then its fills as its content. It closes itself without
+   * content. Inside a `<component is>`, it stands for each of the candidates.
    */
   function componentItem(
     node: ComponentNode,
@@ -803,14 +890,21 @@ export function printMarkup(
       options.componentTag?.(node.component) ??
       at.dialect.componentTag?.(node.component) ??
       node.component;
-    const context: ComponentContext = { component: node, tag, namespace: at.namespace };
+    // A fill's content is the parent's, so it keeps the parent's attribute, and takes the `-s`
+    // of this child alone: a child further out stamps only the content filled into it.
+    const slotted = slottedAttributes(
+      options.module,
+      at.candidates ?? options.candidates?.(node) ?? [node.component],
+    );
+    const context: ComponentContext = { component: node, tag, namespace: at.namespace, slotted };
     const content = hook(at.dialect, "fills")(node.fills.map(fillParts), context);
-    const children = content.flatMap((piece) => pieceItems(piece, at));
+    const fills: Scope = { ...at, slotted, candidates: undefined, top: false };
+    const children = content.flatMap((piece) => pieceItems(piece, fills));
     const empty = content.length === 0;
     return {
       kind: "element",
       tag,
-      attributes: componentAttributesOf(node, directives, at.dialect, context),
+      attributes: componentAttributesOf(node, directives, at, context),
       end: empty ? " />" : ">",
       children,
       close: empty ? "" : `</${tag}>`,
@@ -823,9 +917,10 @@ export function printMarkup(
   function componentAttributesOf(
     node: ComponentNode,
     directives: readonly PrintedAttribute[],
-    of: MarkupDialect,
+    at: Scope,
     context: ComponentContext,
   ): AttributeText[] {
+    const of = at.dialect;
     // The element-shaped context the class, style and ref hooks take: the component's tag.
     const element: ElementNode = {
       kind: "Element",
@@ -834,7 +929,12 @@ export function printMarkup(
       children: [],
       span: node.span,
     };
-    const attributeContext: AttributeContext = { element, namespace: context.namespace };
+    const spread = rootAttributes(element, at);
+    const attributeContext: AttributeContext = {
+      element,
+      namespace: context.namespace,
+      ...(spread.length ? { spreads: true } : {}),
+    };
     const printed: PrintedAttribute[] = [...directives];
     for (const attribute of node.attributes as readonly ComponentAttribute[]) {
       switch (attribute.kind) {
@@ -870,27 +970,14 @@ export function printMarkup(
                   ? { kind: "Static", value: item.value }
                   : item.kind === "Toggle"
                     ? { kind: "Toggle", name: item.name, condition: code(item.condition) }
-                    : { kind: "Dynamic", value: code(item.value) },
+                    : dynamicPart(item.value, item.collection),
               ),
               attributeContext,
             ),
           );
           break;
         case "Style":
-          printed.push(
-            ...of.styleAttribute(
-              attribute.declarations.map((declaration): StylePart =>
-                declaration.kind === "Static"
-                  ? { kind: "Static", property: declaration.property, value: declaration.value }
-                  : {
-                      kind: "Bound",
-                      property: declaration.property,
-                      value: code(declaration.value),
-                    },
-              ),
-              attributeContext,
-            ),
-          );
+          printed.push(...of.styleAttribute(styleParts(attribute), attributeContext));
           break;
         case "Ref":
           printed.push(
@@ -909,10 +996,39 @@ export function printMarkup(
           unreachable(attribute);
       }
     }
+    // The scope attributes are values, unless the dialect writes them as code.
+    const names = scopeNames(at);
+    const written = names.length ? of.componentScopeAttributes?.(names) : undefined;
+    const values = written ? [] : scopeAttributes(at, attributeContext);
+    printed.push(...values, ...(written ?? []), ...spread.map((text) => ({ name: "", text })));
     return (of.orderAttributes?.(printed) ?? printed).map((each) => ({
       text: each.text,
-      code: true,
+      code: !values.includes(each),
     }));
+  }
+
+  /**
+   * The scope attributes an element or a component's tag carries after its own (ADR-0063): the
+   * styled component's `data-uf-<scopeId>`, which a child's root takes too (the child-root
+   * rule), and the `-s` of each child whose slot it fills. Each is `name=""`, as the JSX
+   * builder writes it.
+   */
+  function scopeAttributes(at: Scope, context: AttributeContext): PrintedAttribute[] {
+    return scopeNames(at).map((name) => ({
+      name,
+      text: at.dialect.attribute(name, "", context.element.tag, context),
+    }));
+  }
+
+  /** What the target spreads on a node at the top level (`MarkupOptions.scopeRootAttributes`). */
+  function rootAttributes(element: ElementNode, at: Scope): string[] {
+    return at.top ? (options.scopeRootAttributes?.(element) ?? []) : [];
+  }
+
+  /** The names of the scope attributes a node carries (see {@link scopeAttributes}). */
+  function scopeNames(at: Scope): string[] {
+    const scopeId = component?.scopeId;
+    return [...(scopeId ? [scopeAttribute(scopeId)] : []), ...at.slotted];
   }
 
   /** A fill, with its parameter as written and a forwarded slot's presence. */
@@ -961,6 +1077,9 @@ export function printMarkup(
       element,
       namespace,
       preformatted: at.preformatted || WHITESPACE_PRESERVING_ELEMENTS.has(element.tag),
+      slotted: at.slotted,
+      candidates: undefined,
+      top: false,
     };
     const children = itemsOf(element.children, element, inner);
     const isVoid = namespace === "html" && isVoidElement(element.tag);
@@ -975,7 +1094,7 @@ export function printMarkup(
     return {
       kind: "element",
       tag: name,
-      attributes: attributesOf(element, directives, inner.dialect, namespace),
+      attributes: attributesOf(element, directives, inner, rootAttributes(element, at)),
       end: selfClosing ? " />" : ">",
       children,
       close: isVoid || selfClosing ? "" : `</${name}>`,
@@ -989,15 +1108,20 @@ export function printMarkup(
   /**
    * An element's attributes as its dialect writes them: spreads read key by key, and every
    * source of its class (a static `class`, a `class={…}`, a spread's `class` key) merged into
-   * one part list at the first one's place (ADR-0039).
+   * one part list at the first one's place (ADR-0039), then its scope attributes (ADR-0063).
    */
   function attributesOf(
     element: ElementNode,
     directives: readonly PrintedAttribute[],
-    of: MarkupDialect,
-    namespace: Namespace,
+    at: Scope,
+    spread: readonly string[],
   ): AttributeText[] {
-    const context: AttributeContext = { element, namespace };
+    const of = at.dialect;
+    const context: AttributeContext = {
+      element,
+      namespace: at.namespace,
+      ...(spread.length ? { spreads: true } : {}),
+    };
     const printed: PrintedAttribute[] = [...directives];
     // The attributes whose text is a static value, never code.
     const values = new Set<PrintedAttribute>();
@@ -1054,25 +1178,12 @@ export function printMarkup(
                 ? { kind: "Static", value: item.value }
                 : item.kind === "Toggle"
                   ? { kind: "Toggle", name: item.name, condition: code(item.condition) }
-                  : { kind: "Dynamic", value: code(item.value) },
+                  : dynamicPart(item.value, item.collection),
             );
           }
           break;
         case "Style":
-          printed.push(
-            ...of.styleAttribute(
-              attribute.declarations.map((declaration) =>
-                declaration.kind === "Static"
-                  ? { kind: "Static", property: declaration.property, value: declaration.value }
-                  : {
-                      kind: "Bound",
-                      property: declaration.property,
-                      value: code(declaration.value),
-                    },
-              ),
-              context,
-            ),
-          );
+          printed.push(...of.styleAttribute(styleParts(attribute), context));
           break;
         case "Spread": {
           const object = code(attribute.value);
@@ -1081,6 +1192,9 @@ export function printMarkup(
             if (key.name === "class") {
               claimClass();
               classParts.push({ kind: "Dynamic", value });
+            } else if (key.name === "style") {
+              // The element's one style (ADR-0065): no `style` of its own sits beside it.
+              printed.push(...of.styleAttribute([{ kind: "Bound", property: "", value }], context));
             } else {
               printed.push({ name: key.name, text: of.boundAttribute(key.name, value, context) });
             }
@@ -1115,6 +1229,11 @@ export function printMarkup(
     }
     if (classAt !== undefined)
       printed.splice(classAt, 0, ...of.classAttribute(classParts, context));
+    for (const scoped of scopeAttributes(at, context)) {
+      values.add(scoped);
+      printed.push(scoped);
+    }
+    printed.push(...spread.map((text) => ({ name: "", text })));
     return (of.orderAttributes?.(printed) ?? printed).map((each) => ({
       text: each.text,
       code: !values.has(each),

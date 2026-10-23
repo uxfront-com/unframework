@@ -5,7 +5,12 @@ export default function Panels(props: { class?: string; style?: JSX.CSSPropertie
   const [shipping, setShipping] = createSignal(true);
 
   return (
-    <section aria-label="Panels" class={props.class} style={props.style}>
+    <section
+      aria-label="Panels"
+      class={props.class}
+      style={props.style}
+      {...scopeAttributes(props)}
+    >
       <Disclosure title="Shipping" open={shipping()} onOpenChange={setShipping} />
       <Disclosure title="Returns" />
       <output>Shipping is {shipping() ? "open" : "closed"}</output>
@@ -14,4 +19,11 @@ export default function Panels(props: { class?: string; style?: JSX.CSSPropertie
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

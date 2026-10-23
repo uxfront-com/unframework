@@ -38,10 +38,23 @@
     signature,
     class: className,
     style,
+    ...attributes
   }: Props = $props();
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["shipment-card", className]} aria-label={reference} {style}>
+<section
+  class={["shipment-card", className]}
+  aria-label={reference}
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <p id={carrier?.id} title={carrier?.title}>Carrier</p
   ><p id={eta?.id} title={eta?.title}>Estimated delivery</p
   ><p id={parcel.tag?.id} title={parcel.tag?.title}>{parcel.label}</p

@@ -66,16 +66,17 @@ type JsxChild = ReturnType<typeof jsxChildren>[number];
 /** The class helper's name, before the name scope makes it unique. */
 export const CLASS_HELPER = "cx";
 
+/** The scope helper's name, before the name scope makes it unique. */
+export const SCOPE_HELPER = "scopeAttributes";
+
+/** The style helper's name, before the name scope makes it unique (ADR-0065). */
+export const STYLE_HELPER = "styleProperties";
+
 /** The Solid dialect of one output file, and the helpers its JSX ended up calling. */
 export interface SolidJsx {
   dialect: JsxDialect;
   /** The inline helpers to print after the component, as source code. */
   helpers: () => string[];
-  /**
-   * The fallthrough attributes the root has not printed with its own (`class={props.class}`,
-   * `style={props.style}`), to add once it is printed: none without fallthrough.
-   */
-  fallthrough: (context: JsxContext) => JsxAttribute[];
 }
 
 /** What a file's composition prints with: its code, its composition and its props object. */
@@ -102,13 +103,20 @@ export function solidJsx(
   compose: SolidCompose,
 ): SolidJsx {
   let helper: string | undefined;
+  let collections = false;
+  let scopeHelper: string | undefined;
+  let styleHelper: string | undefined;
   const classHelper = () => (helper ??= imports.claim(CLASS_HELPER));
+  /** `styleProperties(value)`: a style bound to a value, an object or a declaration list. */
+  const styleValue = (value: AstExpression): AstExpression =>
+    js.callExpression(js.identifier((styleHelper ??= imports.claim(STYLE_HELPER))), [value]);
   const flow: Flow = { imports, narrowings, falsy: declaresFalsyLiteral(types) };
   const { code, composition, object, models } = compose;
   // What falls through to the root (ADR-0054), merged into its own `class` and `style`, or
   // added after them where it has none.
   const root = composition.fallthrough;
   const printed = { class: false, style: false };
+  const pending = new Set(composition.scopeRoots);
   const isRoot = (element: ElementNode) => isSpan(root, element.span);
   const passed = (name: "class" | "style", context: JsxContext): AstExpression =>
     context.placeholders.expression(`${object!}.${name}`, "argument");
@@ -166,12 +174,23 @@ export function solidJsx(
           if (key.name === "class" && isRoot(element)) {
             return [classCall(classHelper(), [value, ...rootClass(element, context)])];
           }
+          // A `style` key is the element's style (ADR-0065), which the root merges.
+          if (key.name === "style") {
+            if (!isRoot(element)) {
+              return [js.jsxAttribute("style", js.jsxExpressionContainer(styleValue(value)))];
+            }
+            printed.style = true;
+            return [mergedStyle(styleValue(value), passed("style", context))];
+          }
           return isUntyped(element.tag, key.name)
             ? untypedJsxAttribute(element, key.name, value)
             : [js.jsxAttribute(key.name, js.jsxExpressionContainer(value))];
         });
     },
     classAttribute(attribute, element, context) {
+      if (attribute.items.some((item) => item.kind === "Dynamic" && item.collection)) {
+        collections = true;
+      }
       const names = attribute.items.flatMap((item) => (item.kind === "Static" ? [item.value] : []));
       if (
         isRoot(element) &&
@@ -183,6 +202,12 @@ export function solidJsx(
       return classAttribute(attribute, element, context, classHelper, rootClass(element, context));
     },
     styleAttribute(attribute, element, context) {
+      if (attribute.value) {
+        const value = styleValue(jsxExpression(attribute.value, context));
+        if (!isRoot(element)) return [js.jsxAttribute("style", js.jsxExpressionContainer(value))];
+        printed.style = true;
+        return [mergedStyle(value, passed("style", context))];
+      }
       if (!isRoot(element)) return [styleAttribute(attribute, context)];
       printed.style = true;
       return [styleAttribute(attribute, context, () => passed("style", context))];
@@ -236,17 +261,32 @@ export function solidJsx(
       jsxDynamic(node, imports.add("solid-js/web", "Dynamic"), context, [
         js.jsxAttribute("component", js.jsxExpressionContainer(jsxExpression(node.is, context))),
       ]),
+    // After a root's own attributes: the `class` and `style` it has not merged with its own
+    // (`class={props.class}`), then the `data-uf-*` attributes of the styled parents that render
+    // it, whose names only they know, picked out of the props by name (the child-root rule,
+    // ADR-0063).
+    // Each root takes them once: the first node printed with its span, which is the root
+    // itself, printed before what it holds.
+    scopeRootAttributes(element, context) {
+      if (!pending.delete(`${element.span.start}:${element.span.end}`)) return [];
+      const fallthrough = isRoot(element)
+        ? (["class", "style"] as const)
+            .filter((name) => !printed[name])
+            .map((name) => js.jsxAttribute(name, js.jsxExpressionContainer(passed(name, context))))
+        : [];
+      scopeHelper ??= imports.claim(SCOPE_HELPER);
+      const picked = context.placeholders.expression(`${scopeHelper}(${object!})`, "argument");
+      return [...fallthrough, js.jsxSpreadAttribute(picked)];
+    },
   };
   return {
     dialect,
-    helpers: () => [...(helper ? [classHelperCode(helper)] : []), ...models.helpers()],
-    fallthrough(context) {
-      if (!root) return [];
-      const missing = (["class", "style"] as const).filter((name) => !printed[name]);
-      return missing.map((name) =>
-        js.jsxAttribute(name, js.jsxExpressionContainer(passed(name, context))),
-      );
-    },
+    helpers: () => [
+      ...(helper ? [classHelperCode(helper, collections)] : []),
+      ...(styleHelper ? [styleHelperCode(styleHelper)] : []),
+      ...(scopeHelper ? [scopeHelperCode(scopeHelper)] : []),
+      ...models.helpers(),
+    ],
   };
 }
 
@@ -862,6 +902,15 @@ function styleAttribute(
   return js.jsxAttribute("style", js.jsxExpressionContainer(merged));
 }
 
+/**
+ * `style={{ ...own, ...props.style }}` on the root, for a style bound to one value: what falls
+ * through comes last, so the consumer's declaration wins (ADR-0054, ADR-0065).
+ */
+function mergedStyle(own: AstExpression, passed: AstExpression): JsxAttribute {
+  const merged = js.objectExpression([js.spreadElement(own), js.spreadElement(passed)]);
+  return js.jsxAttribute("style", js.jsxExpressionContainer(merged));
+}
+
 /** A number literal (`1.5`, `-1`) as the string it renders as, or `undefined`. */
 function numberLiteral(expression: Expression): AstExpression | undefined {
   if (expression.refs.length) return undefined;
@@ -886,16 +935,74 @@ function numberLiteral(expression: Expression): AstExpression | undefined {
  * of an object's truthy entries, joined with spaces. Its parameters are `unknown`, so a part of
  * any type the analyser accepts type-checks.
  */
-function classHelperCode(name: string): string {
+function classHelperCode(name: string, collections: boolean): string {
   return `/** Joins class names: strings as they are, and the names of an object's truthy entries. */
 function ${name}(...parts: unknown[]): string {
   const names: string[] = [];
   for (const part of parts) {
     if (typeof part === "string") names.push(part);
-    else if (part && typeof part === "object") {
+    ${
+      collections
+        ? `else if (Array.isArray(part)) {
+      const joined = ${name}(...part);
+      if (joined) names.push(joined);
+    } `
+        : ""
+    }else if (part && typeof part === "object") {
       for (const [name, on] of Object.entries(part)) if (on) names.push(name);
     }
   }
   return names.join(" ");
+}`;
+}
+
+/**
+ * The inline style helper (emulated `style-binding`, ADR-0065), printed after the component: a
+ * style bound to a value as an object with kebab-case keys, which Solid sets one property at a
+ * time. A declaration list splits as Vue's `parseStringStyle` splits it; an object, keyed as an
+ * object literal's are, keeps its present values, its camel-case keys in kebab case. Only a custom
+ * property or a CSS identifier is kept as a property, since Solid's server escapes an object's
+ * values, not its keys.
+ */
+function styleHelperCode(name: string): string {
+  // Raw, so the regular expressions keep their escapes.
+  return String.raw`/** A style bound to a value as an object of CSS properties. */
+function ${name}(style: object | string | null | undefined): Record<string, string> | undefined {
+  if (style === null || style === undefined) return undefined;
+  // A property is a custom property or a CSS identifier: Solid's server writes keys as they are.
+  const PROPERTY = /^(?:--[^\s"'<>&;:]+|-?[A-Za-z_][\w-]*)$/;
+  const properties: Record<string, string> = {};
+  if (typeof style === "string") {
+    for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
+      const [property, value] = declaration.split(/:([^]+)/);
+      const key = property!.trim();
+      // A standard name is case-insensitive, as the browser reads it: COLOR is color.
+      if (value !== undefined && PROPERTY.test(key)) {
+        properties[key.startsWith("--") ? key : key.toLowerCase()] = value.trim();
+      }
+    }
+    return properties;
+  }
+  for (const [key, value] of Object.entries(style)) {
+    if (value === null || value === undefined || !PROPERTY.test(key)) continue;
+    const kebab = key.replace(/[A-Z]/g, (letter) => "-" + letter.toLowerCase());
+    properties[key.startsWith("--") ? key : kebab] = String(value);
+  }
+  return properties;
+}`;
+}
+
+/**
+ * The inline scope helper (emulated `child-root-scope`, ADR-0063), printed after the component:
+ * the props' `data-uf-*` keys, each with the empty value the parent passes. It reads the names
+ * alone, so it never runs a prop's getter (a slot's `children`), and passes on no prop the
+ * component declares.
+ */
+function scopeHelperCode(name: string): string {
+  return `/** The scope attributes of the styled parents that render this component, for its root. */
+function ${name}(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }`;
 }

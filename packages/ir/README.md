@@ -24,6 +24,14 @@ plain, versioned, schema-validated JSON (plan §5.3).
   (`Model`), the setup items `Model`, `Provide` and `Inject`, the binding kinds `model`, `slots`,
   `slotScope`, `context` and `component`, and a slot's presence (`Slot` references). The analyser
   lowers none of it yet: M3's lanes do.
+- **Styles (ADR-0063):** a component's `styles`, the sibling stylesheets it imports, each with its
+  specifier, its text and its span, and its `scopeId`; a child's `ComponentApi.styles`, its scope id
+  and whether its sheets use `:slotted()`; a module's `passThroughImports`, of any module that is neither
+  relative nor absolute (a styling engine's `virtual:` modules, ADR-0064), whose names a template
+  reads through `Import` references; and the
+  forms ADR-0038 and ADR-0039 defer: a `style` bound to one value (`StyleAttribute.value`), a
+  `class` part that may be an array or an object (`DynamicClass.collection`), a spread's `style`
+  key and vendor-prefixed properties, which the analyser lowers since ADR-0065.
 - **Builders:** one per type (`createModule`, `createComponent`, `createElement`, `createFor`,
   `createExpression`, `createCode`, `createWriteReference`, `createFunctionCode`,
   `createStateItem`, `createEventAttribute`, …). They write keys in the order of the types, which
@@ -54,6 +62,8 @@ plain, versioned, schema-validated JSON (plan §5.3).
   analyse (`srcdoc`, `javascript:` URLs, `data:` URLs a frame loads); text where every target
   renders it alike, with only characters HTML keeps; props every target can declare, with static
   defaults, and a local `Props` only as the props type of every component its props reach;
+  stylesheets only in a one-component module, with a scope id exactly when there are any, and
+  pass-through imports whose names no other import binds and only a template reads;
   bindings in scope, and code that fills its span (a prop in the object form as the parameter's
   member, a ref's value as `name.value`); a read's narrowed paths (`narrowed`, ADR-0046), each
   the read or a member path off it, narrowed by the template only in a handler's code and across

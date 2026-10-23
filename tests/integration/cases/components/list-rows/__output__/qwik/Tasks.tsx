@@ -8,7 +8,7 @@ export interface Task {
 }
 
 export default component$<{ initial: Task[] } & { class?: ClassList; style?: CSSProperties }>(
-  ({ initial, class: className, style }) => {
+  ({ initial, class: className, style, ...attributes }) => {
     const tasks = useSignal(initial);
 
     const add = $(() => {
@@ -23,7 +23,7 @@ export default component$<{ initial: Task[] } & { class?: ClassList; style?: CSS
     });
 
     return (
-      <div class={className} style={style}>
+      <div {...scopeAttributes(attributes)} class={className} style={style}>
         <div role="list" aria-label="Tasks">
           {tasks.value.map((task) => (
             <Row key={task.id} name={task.name} done={task.done} />
@@ -39,3 +39,12 @@ export default component$<{ initial: Task[] } & { class?: ClassList; style?: CSS
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

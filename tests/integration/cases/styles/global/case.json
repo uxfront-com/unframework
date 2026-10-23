@@ -1,0 +1,11 @@
+{
+  "description": "A `:global()` rule is written unscoped, so it reaches an element inside an unstyled child.",
+  "main": "Banner.uf.tsx",
+  "ssr": {
+    "tip": {
+      "props": {
+        "tip": "press Tab"
+      }
+    }
+  }
+}

@@ -17,9 +17,15 @@ export default function SaveIndicator({
   savedAt,
   className,
   style,
+  ...attributes
 }: SaveIndicatorProps & SaveIndicatorAttributes) {
   return (
-    <p className={cx("save-indicator", className)} role="status" style={style}>
+    <p
+      className={cx("save-indicator", className)}
+      role="status"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       {saving ? <em>Saving</em> : "Saved"}, {changes === 1 ? "1 change" : `${changes} changes`}
       {savedAt ? <time dateTime={savedAt}>{" at " + savedAt}</time> : " just now"}
     </p>
@@ -39,4 +45,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

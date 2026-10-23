@@ -11,7 +11,7 @@ export interface ProfileCardProps {
 }
 
 export default component$<ProfileCardProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ initial, class: className, style }) => {
+  ({ initial, class: className, style, ...attributes }) => {
     const profile = useSignal(initial);
 
     const rename = $((name: string) => {
@@ -23,7 +23,12 @@ export default component$<ProfileCardProps & { class?: ClassList; style?: CSSPro
     });
 
     return (
-      <article class={["profile-card", className]} aria-label="Profile" style={style}>
+      <article
+        class={["profile-card", className]}
+        aria-label="Profile"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <h2>{profile.value.name}</h2>
         <p>{profile.value.title}</p>
         <p role="status">{profile.value.available ? "Available" : "Away"}</p>
@@ -37,3 +42,12 @@ export default component$<ProfileCardProps & { class?: ClassList; style?: CSSPro
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

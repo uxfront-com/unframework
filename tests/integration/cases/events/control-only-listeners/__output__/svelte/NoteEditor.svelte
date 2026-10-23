@@ -9,7 +9,7 @@
     style?: string;
   };
 
-  let { onsaved, class: className, style }: Props = $props();
+  let { onsaved, class: className, style, ...attributes }: Props = $props();
 
   let title = $state("");
   let bold = $state(false);
@@ -19,6 +19,13 @@
     saves += 1;
     onsaved?.(title, bold);
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
 <form
@@ -26,6 +33,7 @@
   aria-label="Note"
   onsubmit={(event) => event.preventDefault()}
   {style}
+  {...scopeAttributes(attributes)}
 >
   <label>Title<input
     name="title"

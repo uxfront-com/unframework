@@ -32,6 +32,7 @@ export default function Ballot({
   onCounted,
   className,
   style,
+  ...attributes
 }: BallotProps & BallotEvents & BallotAttributes) {
   const [votes, setVotes] = useState(limit);
   const votesRef = useRef(votes);
@@ -87,7 +88,12 @@ export default function Ballot({
   }
 
   return (
-    <section className={cx("ballot", className)} aria-label={label} style={style}>
+    <section
+      className={cx("ballot", className)}
+      aria-label={label}
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p role="status">{votes} votes left</p>
       <p>Picked: {picked}</p>
       <ul aria-label="Choices">
@@ -119,4 +125,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

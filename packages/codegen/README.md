@@ -24,10 +24,37 @@ framework-specific.
   module uses from its IR, with where each capability is first used (each component's props, then
   its setup items through the exhaustive `SETUP_ITEM_CAPABILITIES`, then its render tree): the
   compiler's capability check and the render-parity tests read it. `BEHAVIOURAL_CAPABILITIES`
-  change what code does in the browser, not what renders, so the render-parity tests compare a
-  case that uses one its target leaves unsupported as any other (ADR-0033, as amended by
-  ADR-0047); `CAPABILITY_PREREQUISITES` names what each refines (`interactivity`), which the
-  compiler reports alone where the target lacks it.
+  change what code does in the browser, or the cascade (`sheet-order`), not the markup that
+  renders, so the render-parity tests compare a case that uses one its target leaves unsupported
+  as any other (ADR-0033, as amended by ADR-0047 and ADR-0063); `CAPABILITY_PREREQUISITES` names
+  what each refines (`interactivity`), which the compiler reports alone where the target lacks
+  it.
+- **The scoper** (`scopeStylesheet(file, source, scopeId)`, ADR-0063): a component's sheet,
+  scoped once with Vue's algorithm: Vue's scoped plugin ported onto postcss and
+  postcss-selector-parser, which keep the sheet's own text, so only selectors and keyframe names
+  change and every declaration stays as written. lightningcss checks that the sheet parses (UF5002
+  otherwise, an unknown at-rule included).
+  `data-uf-<scopeId>` goes after the last simple selector that is no pseudo-class or
+  pseudo-element, `:deep()`, `:slotted()` (`data-uf-<scopeId>-s`) and `:global()` read as Vue reads
+  them, the rules of grouping at-rules and nested rules are scoped in place, and `@keyframes`
+  names take the id as a suffix, with `animation` and `animation-name` rewritten to match. Its
+  tests compare each rewrite, byte for byte, with `@vue/compiler-sfc`'s `compileStyle({ scoped:
+true })`, but where Vue's own output doesn't parse. It reports UF5004 where Vue would scope a
+  selector into one that matches nothing, or drop part of it: `:root`, `html` and `body` outside
+  `:global()`, `:host`, a namespace prefix, a misused or empty scoping pseudo-class (`:slotted()`
+  in a rule with nested rules or under `:deep()`, and a selector beside a `:deep()` one in a rule
+  with nested rules, included), an empty `:is()`, and a selector that tells an empty `class` or
+  `style` from none (ADR-0044).
+  The shared builders print the scope attributes (`data-uf-<scopeId>=""`, `scope.ts`): on every
+  element of a styled component, on a child component's tag (the child-root rule), and, with
+  the module (`JsxContextOptions.module`, `MarkupOptions.module`), the `-s` of each child whose
+  sheets use `:slotted()` on the elements and component tags of the content filled into it,
+  read through the resolver's API (`childStyles`) or the module's own sheets; a target owns
+  how its child takes them. `formatOutput` keeps an emitted `.css` sheet as printed.
+  `requiredCapabilities` derives `scoped-styles` and `sheet-order` at a component's first sheet,
+  `child-root-scope` at a child a styled component renders, and `slotted-styles` at a fill of a
+  child whose sheets use `:slotted()` (its API's `styles.slotted`, or the scoper's reading of a
+  component's own sheets).
 - **Event controls** (`handlerControls`, `ownControls`, `eventCalls`, `handedControls`, ADR-0047):
   the `preventDefault()` and `stopPropagation()` calls a target that runs them apart from the
   handler (Qwik) can run as the event is dispatched, read from the body by the IR's event
@@ -170,7 +197,8 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   level in, its closing brace at the attribute), never a line inside a string or template literal.
   Childless SVG elements close themselves. The entry exports what targets build on beside the
   dialects: `operand`, `test`, `negate`, `conjoin`, `member`, `angularCode`, `vueAttributeCode`,
-  `codeTokens` and `mapCode`. The targets' `markup-semantics` tests render the shared cases of
+  `staticClassValue`, `vueClassValue`, `codeTokens` and `mapCode`, and the binding forms ADR-0065
+  lowers: `bindingForms`, `mergesWholeStyle` and `spreadStyleExpression`. The targets' `markup-semantics` tests render the shared cases of
   `test/markup-cases.ts` through each framework and its L5 linters.
 - **Formatting:** `formatOutput` runs oxfmt (pinned) over code files (TS, TSX, JS), with
   embedded-language formatting off and objects laid out by width alone. In a markup file it
@@ -184,7 +212,9 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   exports a component the module does not export by its name, a sibling file its siblings
   import (ADR-0053); `childImports` lists the components a component renders, each with the
   specifier of its output file in the target's naming (`./Field.vue`, `../shared/field`), its
-  export kind and whether it renders itself; `componentTypes`
+  export kind and whether it renders itself; `passThroughImports` lists the imports a
+  component's output keeps as written (a styling engine's, ADR-0064), and `addPassThroughImports`
+  adds them to an `ImportSet`, which prints them after its sorted imports, in the IR's order; `componentTypes`
   and `typeDeclarationCode` copy the type declarations a component's props reach, exported as
   the source does. `ImportSet` sorts imports and renames one that clashes with a name in its
   `NameScope`: a target reserves the source's names (`sourceNames`: the component, its types,

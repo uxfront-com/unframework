@@ -40,9 +40,15 @@ describe("qwik target: components and fallthrough", () => {
     expect(contents).toContain(
       "component$<{ label: string } & { class?: ClassList; style?: CSSProperties }>",
     );
-    expect(contents).toContain("({ label, class: className, style })");
+    expect(contents).toContain("({ label, class: className, style, ...attributes })");
     expect(contents).toContain(
-      `<span class={["tag", className]} style={{ color: "red", ...style }}>`,
+      [
+        "      <span",
+        '        class={["tag", className]}',
+        '        style={{ color: "red", ...style }}',
+        "        {...scopeAttributes(attributes)}",
+        "      >",
+      ].join("\n"),
     );
   });
 
@@ -387,7 +393,16 @@ function Base({ text }: { text: string }) {
 }`,
       { fallthrough: true },
     );
-    expect(contents).toContain('<Base text={text} class={["primary", className]} style={style} />');
+    expect(contents).toContain(
+      [
+        "        <Base",
+        "          text={text}",
+        '          class={["primary", className]}',
+        "          {...scopeAttributes(attributes)}",
+        "          style={style}",
+        "        />",
+      ].join("\n"),
+    );
   });
 });
 

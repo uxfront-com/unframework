@@ -1,0 +1,175 @@
+{
+  "irVersion": 1,
+  "file": "styles/child-root-branches/Heading.uf.tsx",
+  "components": [
+    {
+      "name": "Heading",
+      "span": {
+        "start": 110,
+        "end": 293
+      },
+      "props": [
+        {
+          "name": "big",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 164,
+              "end": 171
+            }
+          },
+          "binding": "big@144",
+          "span": {
+            "start": 159,
+            "end": 172
+          }
+        },
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 179,
+              "end": 185
+            }
+          },
+          "binding": "text@149",
+          "span": {
+            "start": 173,
+            "end": 185
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ big: boolean; text: string }",
+          "span": {
+            "start": 157,
+            "end": 187
+          }
+        },
+        "span": {
+          "start": 142,
+          "end": 187
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "big@144",
+          "name": "big",
+          "kind": "prop",
+          "span": {
+            "start": 144,
+            "end": 147
+          }
+        },
+        {
+          "id": "text@149",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 149,
+            "end": 153
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Dynamic",
+            "is": {
+              "code": "big ? \"h2\" : \"h3\"",
+              "span": {
+                "start": 221,
+                "end": 238
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "big@144",
+                  "span": {
+                    "start": 221,
+                    "end": 224
+                  }
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "kind": "Tag",
+                "tag": "h2"
+              },
+              {
+                "kind": "Tag",
+                "tag": "h3"
+              }
+            ],
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "heading",
+                "span": {
+                  "start": 240,
+                  "end": 255
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "text",
+                  "span": {
+                    "start": 264,
+                    "end": 268
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "text@149",
+                      "span": {
+                        "start": 264,
+                        "end": 268
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 263,
+                  "end": 269
+                }
+              }
+            ],
+            "span": {
+              "start": 206,
+              "end": 286
+            }
+          }
+        ],
+        "span": {
+          "start": 206,
+          "end": 286
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Heading",
+      "span": {
+        "start": 110,
+        "end": 293
+      }
+    }
+  ],
+  "types": []
+}

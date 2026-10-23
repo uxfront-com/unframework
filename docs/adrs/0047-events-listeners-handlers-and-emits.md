@@ -1,6 +1,6 @@
 # ADR-0047: Element listeners keep the DOM's semantics, and a component's events are named tuples
 
-- **Status:** Accepted, amended by ADR-0054 and ADR-0056
+- **Status:** Accepted, amended by ADR-0054, ADR-0056 and ADR-0063
 - **Date:** 2026-10-07
 - **Plan:** §4.2 (Events), §4.3, §4.5 (Emit), §6, §9 M2; G2, G7, P2, P3, P4, P6, P7; R1, R5,
   R6; ADR-0007, ADR-0012, ADR-0015, ADR-0017, ADR-0031, ADR-0045; amends ADR-0033 and ADR-0042

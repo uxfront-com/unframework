@@ -36,6 +36,7 @@ export default function FruitPicker(
       class={props.class ? `fruit-picker ${props.class}` : "fruit-picker"}
       aria-label="Fruit"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <ul aria-label="Fruits">
         <For each={props.fruits}>
@@ -56,4 +57,11 @@ export default function FruitPicker(
       </ol>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

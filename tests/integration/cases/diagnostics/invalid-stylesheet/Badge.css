@@ -1,0 +1,7 @@
+.badge {
+  color: white;
+}
+
+.badge > {
+  background: navy;
+}

@@ -21,7 +21,9 @@ import type {
   ElementNode,
   FragmentNode,
   SlotFill,
+  Span,
   UfComponent,
+  UfModule,
 } from "@unframework/ir";
 
 import { isRenderProp, SPREAD_STYLE } from "./composition.ts";
@@ -77,6 +79,16 @@ export interface ComposedMarkup {
   render: AstroRender;
   /** The tag each child is written with, where it is not its local name (`Astro.self`). */
   tags: ReadonlyMap<string, string>;
+  /** The component's module, whose imports give a child's scoped styles (ADR-0063). */
+  module: UfModule;
+  /**
+   * The `scopeAttributes` helper and the root nodes that spread what it picks out of
+   * `Astro.props`, the scope attributes of the styled parents that render the component
+   * (`scopeRoots`, ADR-0063).
+   */
+  scope?: { helper: string; roots: readonly Span[] };
+  /** The `styleObject` helper, where a style bound to a value is merged (ADR-0065). */
+  styleObject?: string;
 }
 
 /**
@@ -93,19 +105,33 @@ export function printComponentMarkup(
   if (!composed) {
     return printMarkup(component.render, dialect, { component, ...(rewrite ? { rewrite } : {}) });
   }
+  const { scope } = composed;
+  const roots = new Set(scope?.roots.map(({ start, end }) => `${start}:${end}`));
+  // A scoped fill is printed with these (`renderFunction`): it is the parent's content, not its
+  // root.
   const options: MarkupOptions = {
     component,
+    module: composed.module,
     rewrite: composed.spelling.rules,
     componentTag: (name) => composed.tags.get(name),
   };
   const composedDialect = composition(component, composed, options);
-  return printMarkup(composed.render.render, composedDialect, options);
+  return printMarkup(composed.render.render, composedDialect, {
+    ...options,
+    // Each node Vue's fallthrough reaches, a branch per set of forwarded slots included.
+    ...(scope
+      ? {
+          scopeRootAttributes: ({ span }: ElementNode) =>
+            roots.has(`${span.start}:${span.end}`) ? [`{...${scope.helper}(Astro.props)}`] : [],
+        }
+      : {}),
+  });
 }
 
 /** The dialect, with what composition needs of the component and its spelling. */
 function composition(
   component: UfComponent,
-  { spelling, render, tags }: ComposedMarkup,
+  { spelling, render, tags, styleObject }: ComposedMarkup,
   options: MarkupOptions,
 ): MarkupDialect {
   const code = (expression: Parameters<typeof rewriteExpression>[0]) =>
@@ -129,7 +155,9 @@ function composition(
       );
       if (!fill) return dialect.propAttribute!(prop, context);
       const value =
-        fill.forward === undefined ? renderFunction(fill) : spelling.renderProps.get(fill.forward)!;
+        fill.forward === undefined
+          ? renderFunction(fill, context.slotted)
+          : spelling.renderProps.get(fill.forward)!;
       return [{ name: prop.name, text: `${prop.name}={${value}}` }];
     },
     fills: (fills, context) =>
@@ -235,6 +263,14 @@ function composition(
      */
     styleAttribute(parts, context) {
       const consumer = parts.find((part) => part.property === SPREAD_STYLE);
+      // A style bound to a value is an object where it is spread (ADR-0065): on a component,
+      // and on the root, before the consumer's.
+      const whole = parts.find((part) => part.property === "");
+      if (whole && styleObject && (consumer || /^[A-Z]|\./.test(context.element.tag))) {
+        const own = `${styleObject}(${whole.value})`;
+        const text = consumer ? `style={{ ...${own}, ...${consumer.value} }}` : `style={${own}}`;
+        return [{ name: "style", text }];
+      }
       if (!consumer && !/^[A-Z]|\./.test(context.element.tag)) {
         return dialect.styleAttribute(parts, context);
       }
@@ -259,16 +295,17 @@ function composition(
 
   /**
    * A scoped fill as the function the child calls (ADR-0054): its parameter as written, and its
-   * content as Astro markup: one element, a string, or a fragment.
+   * content as Astro markup: one element, a string, or a fragment, which carries the child's
+   * `-s` attributes (`slotted`, ADR-0063).
    */
-  function renderFunction(fill: SlotFill): string {
+  function renderFunction(fill: SlotFill, slotted: readonly string[]): string {
     const parameter = fill.parameter?.name ?? fill.parameter?.pattern?.code ?? "";
     const [only, ...more] = fill.children;
     if (more.length === 0 && only?.kind === "Text")
       return `(${parameter}) => ${JSON.stringify(only.value)}`;
     const root: FragmentNode = { kind: "Fragment", children: fill.children, span: fill.span };
     const single = more.length === 0 && (only?.kind === "Element" || only?.kind === "Component");
-    const body = printMarkup(root, composed, options);
+    const body = printMarkup(root, composed, { ...options, slotted });
     const markup = single ? body : `<>\n${indented(body)}\n</>`;
     const value = markup.includes("\n") ? `(\n${indented(markup)}\n)` : markup;
     return `(${parameter}) => ${value}`;

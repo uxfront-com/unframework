@@ -58,6 +58,7 @@ function harness(overrides: Partial<HarnessContext> = {}): HarnessContext {
     pixels: "baseline",
     canary: null,
     baselineEnvironment: null,
+    browser: "chromium",
     ledgerDir: join(root, ".reports", "ledger", "run-1"),
     liveDir: join(root, ".live", "run-1"),
     diffsDir: join(root, ".reports", "diffs", "run-1"),
@@ -440,6 +441,18 @@ describe("ParityReporter", () => {
     expect(logs.join("\n")).toContain(
       "Removed parity-matrix.older.json: a matrix of an older format.",
     );
+  });
+
+  it("leaves an engine's merged matrix alone: it is no partial matrix", () => {
+    mkdirSync(reportsDir, { recursive: true });
+    const merged = JSON.stringify({ version: 5, run: "merged", projects: [], cases: {}, runs: [] });
+    writeFileSync(join(reportsDir, "parity-matrix.firefox.json"), merged);
+    expect(readPartialMatrices(reportsDir).size).toBe(0);
+    const reporter = new ParityReporter({ reportsDir });
+    reporter.onInit(vitest(["compile"]));
+    reporter.onTestRunEnd([testModule("compile", [test("compile")])], [], "passed");
+    expect(readFileSync(join(reportsDir, "parity-matrix.firefox.json"), "utf8")).toBe(merged);
+    expect(readPartialMatrices(reportsDir).size).toBe(1);
   });
 
   describe("a run of some targets", () => {

@@ -22,15 +22,40 @@ import Hello from "./Hello.uf.tsx"; // a Vue component
 plugins. Only Vite is supported until M6; `unframeworkUnplugin` (the `.` entry) refuses any other
 bundler when the plugin is created.
 
+Any styling engine works through the virtual modules its own Vite plugin registers (plan §4.4,
+ADR-0064). An import whose specifier starts with a `passThrough` prefix (`virtual:` by default)
+reaches every output as written, and this plugin never resolves it: the engine's plugin does. Add
+that plugin beside this one. Both run `enforce: "pre"` and neither claims the other's ids, so their
+order doesn't matter. Styleframe, the engine the corpus tests with, is an example. We list its
+plugin first, as its installation guide does:
+
+```ts
+import styleframe from "styleframe/plugin/vite";
+
+export default {
+  plugins: [styleframe(), unframework({ target: "vue" }), vue()],
+};
+```
+
+```tsx
+import { button } from "virtual:styleframe";
+import "virtual:styleframe.css";
+```
+
+Styleframe's scanner reads utility classes in a `.tsx` file's `className` only. For utilities
+written in a `.uf.tsx` file's `class`, give it an extractor that reads `class` too, as the
+integration harness does (`sourceUtilities` in `tests/integration/harness/styleframe.ts`).
+
 ## Options
 
-| Option      | Meaning                                                                                                                                                                                       |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `target`    | A built-in target's name (`"react"`, `"vue"`, `"svelte"`, `"solid"`, `"angular"`, `"qwik"`, `"astro"`) or a third-party `Target`.                                                             |
-| `extension` | What module ids append to the `.uf.tsx` path. Built-in targets have one; a third-party target must set it.                                                                                    |
-| `onCompile` | Called each time a module loads, with `{ id, file, target, files, diagnostics }`. Returning a string (or a promise of one) fails that module with it: the integration harness's golden guard. |
-| `plugins`   | Compiler plugins, passed to `compile()` (the harness's canaries).                                                                                                                             |
-| `format`    | Formats the output with oxfmt. Defaults to `true`, so a module's code equals the golden file byte for byte.                                                                                   |
+| Option        | Meaning                                                                                                                                                                                                                                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `target`      | A built-in target's name (`"react"`, `"vue"`, `"svelte"`, `"solid"`, `"angular"`, `"qwik"`, `"astro"`) or a third-party `Target`.                                                                                                                                                                            |
+| `extension`   | What module ids append to the `.uf.tsx` path. Built-in targets have one; a third-party target must set it.                                                                                                                                                                                                   |
+| `onCompile`   | Called each time a module loads, with `{ id, file, target, files, diagnostics }`. Returning a string (or a promise of one) fails that module with it: the integration harness's golden guard.                                                                                                                |
+| `plugins`     | Compiler plugins, passed to `compile()` (the harness's canaries).                                                                                                                                                                                                                                            |
+| `format`      | Formats the output with oxfmt. Defaults to `true`, so a module's code equals the golden file byte for byte.                                                                                                                                                                                                  |
+| `passThrough` | The specifier prefixes whose imports pass through to every output as written, passed to `compile()`. Defaults to `["virtual:"]`; a list replaces it, as `["virtual:", "styled-system/"]` adds an engine that generates files. A prefix that is empty, relative or absolute fails when the plugin is created. |
 
 ## Module ids
 
@@ -91,6 +116,13 @@ How `resolveId` answers:
   own loaders, so a module id would fail the whole scan, and the authored file would expose its
   compile-time imports as dependencies; it externalises ids that contain `\0`. Each target's
   toolchain lists the runtime imports of its compiled output in `optimizeDeps.include` instead.
+- **A scoped sheet** (ADR-0063), `./Hello.uf.tsx.css`, which every target's output imports for
+  a component with a stylesheet, resolves to `/abs/Hello.uf.tsx.css` with its query, from one of
+  the plugin's modules or a segment Qwik's optimizer splits off one (`?inline`), and so does its
+  id coming back. It is checked before an output's import of another output, and it is no
+  component's output, so `owners` never names it. The id ends in `.css`, without a `\0`, so
+  Vite's CSS pipeline handles it; from any other importer it is left to Vite, which finds no
+  such file.
 - **The watch edge.** The pre plugin's `transform` calls `this.addWatchFile(<abs>.uf.tsx)` for
   every id but a `.tsx` one. Vite resolves that file with the module as its importer, and the
   plugin answers with the real file, so the module graph holds the file as an import of the
@@ -99,7 +131,14 @@ How `resolveId` answers:
   child the compile resolved too, whose API the output depends on, so an edit to `Field.uf.tsx`
   invalidates `Form`'s module.
 
-How `load` answers a query is decided by the query alone, never by what the process resolved
+`load` answers a scoped sheet's id with the sheet this target's compile emitted, whatever its
+query: plugin-vue's request for `<style src>` (`?vue&type=style&index=0&src=true&lang.css`), which
+the plugin serves before plugin-vue reads the disk, and Qwik's `?inline` give the same text. The
+author's `Hello.css` is never loaded: no output imports it. A file that imports no stylesheet has
+no sheet, and its sheet id fails. No edit of the author's sheet invalidates the sheet module
+until M6.
+
+How `load` answers any other query is decided by the query alone, never by what the process resolved
 before: a parameter named after the id's extension (`?vue&type=style&index=0&lang.css`,
 `?svelte&type=style&lang.css`, `?astro&type=script…`) is the framework plugin's request for a part
 of the module, which `load` leaves to that plugin; Vite's file queries are left to Vite; any other
@@ -138,6 +177,11 @@ sources of child components with it:
 const api = config.plugins.find((plugin) => plugin.name === "unframework")?.api;
 api.getCompiled("/abs/Child.uf.tsx.ts");
 ```
+
+It exposes `api.getSheet(file)` too: the scoped sheet this target's last finished load of the
+`.uf.tsx` file emitted, after the plugins' `output` hooks, or `undefined` when no load finished or
+the file imports no stylesheet (ADR-0063). Vite never loads an Angular component's sheet: ngtsc
+reads its `styleUrl` itself, so `ngtscVirtual` hands it the sheet from here.
 
 Compiles are cached per file and source content, so every id of a file shares one compile until
 the file changes.

@@ -1,11 +1,15 @@
 // A case of two sources (ADR-0057), compiled for real: how the compile project joins their
 // diagnostics and their golden files. The fixture is its own, so the rules hold whatever the
 // corpus has.
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { compile, TARGET_NAMES } from "@unframework/compiler";
 import { describe, expect, it } from "vitest";
 
 import type { CaseSource } from "./cases.ts";
-import { caseDiagnostics, caseOutputs, sourceTexts } from "./sources.ts";
+import { caseDiagnostics, caseOutputs, caseResolver, sourceTexts } from "./sources.ts";
 import type { SourceCompile } from "./sources.ts";
 
 const FORM = [
@@ -128,5 +132,34 @@ describe("a case of two sources", () => {
     expect(problems).toEqual([
       "forms/form/Card.uf.tsx and forms/form/Copy.uf.tsx both produce vue/Card.vue: the components of a case need names of their own on every target.",
     ]);
+  });
+});
+
+describe("a case with a stylesheet", () => {
+  // UF5002 and UF5004 point into the sheet (ADR-0063): its text joins the sources'.
+  it("gives the text of a stylesheet a diagnostic points into", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "uf-sources-"));
+    try {
+      mkdirSync(join(dir, "styles", "card"), { recursive: true });
+      writeFileSync(join(dir, "styles", "card", "Card.css"), ".card > { }\n");
+      const card = {
+        source: join(dir, "styles", "card", "Card.uf.tsx"),
+        filename: "styles/card/Card.uf.tsx",
+        ir: "ir.json",
+      };
+      const text = 'import "./Card.css";\nexport default function Card() {\n  return <p />;\n}\n';
+      const result = await compile(text, {
+        filename: card.filename,
+        targets: TARGET_NAMES,
+        resolve: caseResolver({ dir: join(dir, "styles", "card") }, dir),
+      });
+      const texts = sourceTexts([{ source: card, text, result }]);
+      expect([...texts]).toEqual([
+        ["styles/card/Card.uf.tsx", text],
+        ["styles/card/Card.css", ".card > { }\n"],
+      ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

@@ -1,0 +1,20 @@
+{
+  "description": "A style bound to a value: an object prop with camel-case and custom properties, a declaration list prop, either of them absent, a conditional between two objects that a click switches, a child whose root merges the object passed to it over its own declaration list, a `<component is>` that takes a declaration list, and an object of custom properties only.",
+  "main": "Notice.uf.tsx",
+  "ssr": {
+    "styled": {
+      "props": {
+        "title": "Delete the project",
+        "look": {
+          "color": "rgb(20, 40, 90)",
+          "backgroundColor": "rgb(230, 238, 250)",
+          "borderLeft": "4px solid rgb(20, 40, 90)",
+          "--notice-accent": "rgb(20, 40, 90)"
+        },
+        "declarations": "color: rgb(60, 60, 60); font-style: italic; margin-top: 12px",
+        "vars": { "--notice-gap": "4px" }
+      }
+    },
+    "plain": { "props": { "title": "Archive the project" } }
+  }
+}

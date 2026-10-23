@@ -17,6 +17,16 @@ export type ColorScheme = "light" | "dark";
 /** Every {@link ColorScheme}, the first the default. */
 export const COLOR_SCHEMES: readonly ColorScheme[] = ["light", "dark"];
 
+/**
+ * The engines a browser project can run in (`UF_BROWSER`, ADR-0066). Chromium is the default
+ * and the only engine with committed artefacts: Firefox and WebKit compare live, with the
+ * reference in the same engine, and gate no pull request.
+ */
+export const BROWSER_ENGINES = ["chromium", "firefox", "webkit"] as const;
+
+/** One of {@link BROWSER_ENGINES}. */
+export type BrowserEngine = (typeof BROWSER_ENGINES)[number];
+
 /** A case's optional `case.json` (plan §7.1). */
 export interface CaseConfig {
   description?: string;
@@ -76,6 +86,8 @@ export interface HarnessContext {
    * command writes the committed baselines only when it is `BASELINE_ENVIRONMENT`.
    */
   baselineEnvironment: string | null;
+  /** The engine the browser projects run in (`UF_BROWSER`). */
+  browser: BrowserEngine;
   /** Update mode: where the reference records what it wrote in this run, for its followers. */
   ledgerDir: string;
   /** Live pixels: where the reference publishes its captures for this run. */

@@ -1,0 +1,21 @@
+---
+interface Props {
+  busy: boolean;
+  text: string;
+}
+
+const { busy, text } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+---
+
+{busy ? (
+  <span class="badge" role="status" {...scopeAttributes(Astro.props)}>Saving</span>
+) : (
+  <button type="button" class="badge" {...scopeAttributes(Astro.props)}>{text}</button>
+)}

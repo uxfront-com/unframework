@@ -1,0 +1,414 @@
+# ADR-0063: Scoped stylesheets, from the import to each target's attachment
+
+- **Status:** Accepted
+- **Date:** 2026-10-23
+- **Plan:** §4.4, §5.3, §5.8, §6, §7.2, §7.5, §9 M4, P2, P5, P6, P7, P8; C4 (ADR-0004), D5
+  (ADR-0009); amends ADR-0004, ADR-0009, ADR-0021, ADR-0025, ADR-0047 and ADR-0053; settles the
+  open item of ADR-0020 on CSS
+
+## Context
+
+ADR-0004 makes a sibling `.css` file a component's stylesheet, scoped once by the compiler and
+attached each target's native way. ADR-0009 picks Vue's attribute algorithm for the scoping. Neither
+says what the IR holds, how the scope id is made, which selectors the scoper refuses, what file the
+targets import, or how a sheet reaches each framework's Vite plugin. M4 builds all of it in several
+layers, and each layer needs the same contract before it starts:
+
+- **The IR is the contract (P5).** The analyser fills it, the scoper and the targets read it, and a
+  plugin's `ir` hook may return it, so the invariants must say what a styled module may hold.
+- **Determinism (P8).** The scope attribute is in every golden file, so its id can't depend on a
+  path or a machine.
+- **Two ids per child.** The child-root rule stamps a parent's id on a child's root, and
+  `:slotted()` stamps a child's id on the content a parent fills into it. A parent sees a child
+  only through the resolver's `ComponentApi` (ADR-0053), so that API has to carry the child's id.
+- **L3 can't check a sheet.** The toolchain projects hand every emitted file to each framework's
+  compiler, checker and linter (ADR-0025). Babel and tsgo fail on a `.css` file, and Vue's
+  `<style src>` and Angular's `styleUrl` are skipped by L3: ADR-0025 leaves that open.
+- **The style ids differ.** ADR-0021 gives TSX targets `<source>.css`, and leaves Vue, Svelte and
+  Astro to their plugins' own style sub-requests, which carry each framework's own scoping.
+
+## Decision
+
+**The IR** (`@unframework/ir`):
+
+- `UfComponent.styles` lists the sheets the component imports, in source order. A `StyleSheet`
+  holds the specifier as written (a relative path ending in `.css`), the sheet's text as the
+  resolver read it, and the import's span. `UfComponent.scopeId` is set exactly when `styles` is.
+- **One sheet owner per module.** A module that imports a sheet declares one component, which owns
+  it (UF5001). A sheet that two modules import is scoped by each, under each id: telling them apart
+  needs M5's project graph.
+- `ComponentApi.styles` is `{ scopeId, slotted }`: the child's id, and whether its sheets use
+  `:slotted()`, so a parent stamps `-s` and decides `slotted-styles` from the resolver alone.
+- `UfModule.passThroughImports` holds the imports every output keeps as written (§4.4,
+  ADR-0004): named imports and side-effect imports of a module that is neither relative nor
+  absolute, such as a styling engine's `virtual:` modules, which ADR-0064 makes engine-neutral. A
+  template reads such a name through an `Import` reference, never through a binding. Only a
+  template may read one, and the coverage gate counts the kind.
+- The invariants check each of these: a scope id exactly with sheets, sheets in a one-component
+  module only, a pass-through specifier that is neither relative nor absolute, names a
+  pass-through import binds that are identifiers no other import binds, and an `Import` reference
+  naming one of them, in a template only.
+
+**The scope id and the attribute:**
+
+- The attribute is `data-uf-<id>`, and `:slotted()`'s is `data-uf-<id>-s`.
+- The id is 8 lower-case hex digits: the 32-bit FNV-1a hash of the UTF-8 bytes of the component's
+  name, a NUL, and each sheet's text in import order, each followed by a NUL. No path goes into it,
+  so it's the same on every machine and in every target.
+- Every element the component's template renders carries it, the slot content it fills into a
+  child included. A child component's root carries the parent's attribute too (the child-root rule,
+  as Vue's scope id does).
+
+**The rewrites**, which match `@vue/compiler-sfc`'s `compileStyle({ scoped: true })` but for the
+attribute's name, and for the forms whose rewrite by Vue doesn't parse or names keyframes that no
+longer exist:
+
+| Source                                        | Scoped                                                                                     |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `.a .b`                                       | `.a .b[data-uf-x]`                                                                         |
+| `.a :deep(.b)`                                | `.a[data-uf-x] .b`                                                                         |
+| `:global(.b)`                                 | `.b`                                                                                       |
+| `:slotted(.b)`                                | `.b[data-uf-x-s]`                                                                          |
+| `.a::before`                                  | `.a[data-uf-x]::before`                                                                    |
+| `* + *`, `* > .a`                             | `* + *[data-uf-x]`, `* > .a[data-uf-x]`: Vue drops the `*`, and its selector doesn't parse |
+| `@media`, `@supports`, `@layer`, `@container` | kept, and the rules inside scoped                                                          |
+| `@keyframes spin`                             | `@keyframes spin-x`, with `animation` and `animation-name` in the sheet rewritten to match |
+| `@keyframes "spin"`                           | `@keyframes "spin-x"`, which `animation: spin` names too: Vue writes `"spin"-x`            |
+| `--gap: 4px`                                  | unchanged                                                                                  |
+
+**Rejected selectors (UF5004):** `:root`, `html` and `body` outside `:global()`, `:host`, a
+namespace prefix (`svg|`, `*|`: Vue drops the prefix of `svg|*` and `*|*`, so the compiler scopes
+no prefixed selector rather than some), a misused or empty `:deep()`, `:slotted()` or `:global()`
+(`:slotted()` in a rule with nested rules or under `:deep()`, where Vue drops `-s` or writes `.a*`,
+and a selector beside a `:deep()` one in a rule with nested rules, which Vue leaves unscoped,
+included), an empty `:is()` or `:where()`, and a selector that tells an empty `class` or `style`
+from none (ADR-0044). Vue scopes `:root` and `:host` instead, and the scoped selector then
+matches nothing.
+
+**Where the work lives:**
+
+- **The scoper** is in `@unframework/codegen`: Vue's scoped plugin, ported onto the parsers Vue
+  uses, postcss and postcss-selector-parser, both pinned exactly (P8). They keep the sheet's own
+  text, so only the selectors and the keyframe names change, and every declaration, custom
+  properties included, reaches the targets as written. It returns its UF5004 diagnostics, and
+  UF5002 for a sheet postcss cannot read. lightningcss only checks that the sheet parses:
+  `@unframework/parser` reports its parse errors and the at-rules it does not know (UF5002), whose
+  rules would otherwise reach the page unscoped. This amends plan §4.4's "lightningcss parses and
+  rewrites the selectors": lightningcss's printer drops a declaration a later one overrides and
+  rewrites values, and it gives no spans to splice into the author's text.
+- **The resolver reads the sheets.** `compile()` asks the resolver's `stylesheet` for each sheet
+  before analysis, and the codegen scoper whether it uses `:slotted()`; a sheet it cannot read is
+  UF5005. UF5002 and UF5004 point into the sheet, in its file as the resolver names it.
+- `compile()` runs the scoper once per sheet, after analysis and the plugins' `ir` hooks and before
+  the targets, so it scopes the module the targets emit from, and reports what it returns at the
+  selector's span. A hook may keep or drop the analyser's sheets with their scope id, never change
+  them. A scoper error withholds the module from every target, as an analyser error does. The
+  analyser can't run it: codegen depends on the analyser in its tests.
+- **The output file.** Each styled component gets a second `OutputFile` on every target, named
+  after its source plus `.css` (`Button.uf.tsx.css`, ADR-0021's id for TSX targets). Every output
+  refers to it as `./<source>.css`, so it never collides with the author's `./Button.css`, which is
+  never loaded.
+- **The unplugin serves it** on every target. `resolveId` takes `./<source>.css` relative to any
+  `.uf.tsx` virtual id, before the child-output lookup, and never enters it in `owners`. `load`
+  returns the sheet this target's compile emitted, also for plugin-vue's
+  `?vue&type=style&index=0&src=true&lang.css` request (the unplugin runs `enforce: "pre"`) and for
+  Qwik's `?inline` import from a segment module. The id ends in `.css`, without a `\0` prefix, so
+  Vite's CSS pipeline handles it, `?inline` included.
+- The shared JSX and markup builders print the attributes, so a target owns only its attachment and
+  its `child-root-scope` and `slotted-styles` cells (P6).
+
+**Each target's attachment:**
+
+| Target               | Attachment                                                                                                  |
+| -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Vue                  | `<style src="./<source>.css">`, without `scoped`: plugin-vue resolves it through the unplugin               |
+| React, Solid, Svelte | `import "./<source>.css"`                                                                                   |
+| Astro                | `import "./<source>.css"` in the frontmatter, which the render command collects (ADR-0020's open item)      |
+| Angular              | `styleUrl: "./<source>.css"` with `ViewEncapsulation.None`, read through ngtsc's resource loader (ADR-0027) |
+| Qwik                 | `import styles from "./<source>.css?inline"` and `useStyles$(styles)`                                       |
+
+An output that imports the sheet type-checks only with `declare module "*.css" {}` (ADR-0023), and
+`*.css?inline` for Qwik: each lane adds the declaration to the toolchain's checked files.
+
+**The lightningcss check stands in for L3.** The toolchain projects leave emitted `.css` out of what
+they hand the frameworks' compilers, checkers and linters. The compile project parses every emitted
+sheet with `parseStylesheet` instead, Vue's and Angular's included.
+
+**Emission**, as built:
+
+- **The attributes.** The shared JSX and markup builders print each one as `data-uf-<id>=""`
+  after an element's own attributes: a bare JSX attribute is `true`, which React writes as
+  `"true"`, and an empty value renders the same on every target. A child component's tag takes
+  its styled parent's attribute, whether or not the child is styled; each lane settles how the
+  child's root takes it (`child-root-scope`). The content a parent fills into a child whose
+  sheets use `:slotted()` takes the child's `-s`, read from the resolver's API or, for one of the
+  module's own components, from its sheets: every element and component tag of the fill, but not
+  the content of a fill nested inside it, which takes only its own child's. A `<component is>`'s
+  fills take the `-s` of each candidate that has one, so every target writes the same DOM.
+- **The output file.** `compile()` scopes a component's sheets and joins them in import order,
+  with a line feed between two only where the first lacks one. The file follows the target's
+  own files, so `output` hooks see it, and `formatOutput` returns a `.css` file as it is.
+  `CompileResult.owners` leaves it out: it is no component's module.
+- **The unplugin.** `resolveId` takes `./<source>.css` only from one of its own modules or a Qwik
+  segment, and an absolute or root-relative sheet id coming back, each with its query, and
+  answers `/abs/<source>.css` when the `.uf.tsx` file exists. `load` serves the sheet from the
+  compile cache for any query, and fails a sheet id whose file imports no stylesheet.
+- **The checks.** The toolchain projects drop emitted `.css` paths from their file lists after a
+  canary's compile writes them, since Angular's checks read a `styleUrl` from the disk. The
+  compile project parses every emitted sheet with `parseStylesheet`, as part of L2, and fails one
+  with an error or an unknown at-rule.
+
+**React and Solid**, as built:
+
+- **The attachment.** The output imports its sheet for its side effect, `import "./Card.uf.tsx.css"`,
+  after its other imports, so a child's sheet loads before its parent's, as plugin-vue imports a
+  component's style after its script. The toolchain projects hand the checker a
+  `declare module "*.css" {}` file from the target's toolchain package (`sheets.d.ts`), and every
+  toolchain's lint baseline allows that import, and only an emitted sheet's
+  (`import/no-unassigned-import` on `*.uf.tsx.css`).
+- **`child-root-scope`, emulated (`scopeAttributes`).** The parent passes its attribute on the
+  child's tag, `<Button data-uf-a33d603f="" />`, which a typed JSX consumer may write, since JSX
+  checks no hyphenated name. Each name is a parent's id, which the child can't know, so the child
+  spreads an inline helper's pick of them, `{...scopeAttributes(attributes)}`, on each node Vue's
+  attribute fallthrough reaches (codegen's `scopeRoots`): its root element, component or
+  `<component is>`, or each branch of a root conditional that renders one of those alone. The
+  helper reads the rest of a React props pattern, or the props object (`props` on Solid, and
+  React's object form), and a component without props takes one, typed `object`. It keeps only
+  the props' `data-uf-*` keys, each with the empty value the parent writes, and reads no value,
+  so it runs no Solid getter, and no prop the output leaves unread reaches the root, as a bare
+  rest spread would let it. A root component spreads them on, so they reach its own root. Each
+  component of a module claims the helper from a base of its own, `scopeAttributes` for the
+  first and `scopeAttributes_<index>` for the others, past the helper names any component
+  declares, because the unplugin joins them into one module, where an output's hoisted `const`s
+  are declared too (ADR-0053).
+- **The cost on Solid.** A spread on the root makes Solid's compiler set the root's attributes
+  through `spread` and `mergeProps`, and render it on the server with `ssrElement`, instead of a
+  template and `ssrHydrationKey()`. The hydration key is still written. `ssrElement` writes `class`
+  for a key that holds nothing and a space after a class (`class="card "`), as it writes
+  `style=""`: the server HTML differs from Vue's in an empty `class` and the class's whitespace,
+  which hydration sets right and the normaliser reads as the same (ADR-0044).
+- **`slotted-styles`, native.** The shared JSX builder stamps the child's `-s` on the content a
+  parent fills in, so it holds on `children`, named slot props and render props, whose function
+  returns the stamped content.
+- **What no target scopes.** Vue treats any other root as a fragment, and gives it none: several
+  nodes, a list, a slot, text, a branch that holds a conditional (Vue's `<template v-if>`), and a
+  root with `inheritAttrs: false`, which drops the attribute with the rest. React and Solid leave
+  them unscoped too, so every target renders the same DOM.
+
+**Svelte and Astro**, as built:
+
+- **Svelte's attachment.** The instance script imports the sheet for its side effect,
+  `import "./Card.uf.tsx.css"`, after its other imports, as React and Solid do. Svelte's own
+  `<style>` is never used: it drops the selectors it cannot match (§4.4). svelte-check reads the
+  toolchain's `declare module "*.css" {}`.
+- **Astro's attachment, which settles ADR-0020's open item.** The frontmatter imports the sheet,
+  `import "./Card.uf.tsx.css";`, after the children's imports: an Astro page links what a
+  frontmatter imports, and every target then loads the one emitted sheet. An inline
+  `<style is:global>` would copy the sheet into the output and through Astro's own style
+  pipeline. The Container API's `?container` render leaves an imported sheet out, so the
+  `ufAstroRender` browser command puts each sheet the component and its children import, read
+  from the browser project's pipeline at each render, as a `<style>` before the markup, a
+  child's first; the mount adapter moves it to `<head>`. The `ssr:astro` project compares the
+  markup alone (L6), as every target's server HTML leaves its styles out. Normalisation still
+  strips `data-astro-cid-*` and keeps `data-uf-*`. The choice keeps plan §6's Astro cell, an
+  import, which only an inline `<style is:global>` would have changed.
+- **`child-root-scope`, emulated (`scopeAttributes`) on both.** As on React and Solid, the child
+  spreads an inline helper's pick of its props' `data-uf-*` keys on each node Vue's fallthrough
+  reaches (`scopeRoots`): Svelte's out of `$props()` (the pattern's rest, the props object, or
+  `let attributes: object = $props()` where the component has no props), Astro's out of
+  `Astro.props`. The markup printer takes the spread from `MarkupOptions.scopeRootAttributes`.
+  Svelte's server renders an element with a spread through its runtime. So the dialect writes
+  that element's static values as it writes them on any element with a spread
+  (`AttributeContext.spreads`), and the runtime writes `class=""` for a class that holds
+  nothing, which the normaliser reads as none (ADR-0044). svelte-check rejects a prop the child
+  does not declare, so a Svelte parent passes the scope attributes in an object spread,
+  `<Button {...{ "data-uf-a33d603f": "" }} />`
+  (`MarkupDialect.componentScopeAttributes`); Astro's checker, as TSX's, checks no hyphenated
+  name.
+- **`slotted-styles`, native on both.** The markup printer stamps a child's `-s` on the content
+  filled into it: Svelte's default content and `{#snippet}` blocks, Astro's default and named
+  slots. Astro's scoped fill is a render prop the target prints apart, so the printer hands it
+  the child's `-s` (`ComponentContext.slotted`, `MarkupOptions.slotted`). Svelte writes a
+  `<component is>` over components as a `$derived` variable or an `{#if}` chain, a component
+  element the printer could not match to the candidates, so the target names them
+  (`MarkupOptions.candidates`): its fills take each candidate's `-s`, as the emission section
+  says of every target. `styles/slotted` covers a slot, a scoped slot and a `<component is>`,
+  and `styles/slotted-order` a `<component is>` chosen per list item.
+- **The order of the children's sheets.** Two children's `:slotted()` rules of equal
+  specificity can meet on one fill, and the sheet that loads later wins. A child's sheet loads
+  with its module, so Svelte sorts the imports of sibling outputs by specifier, as every other
+  target's `ImportSet` does, and its children's sheets load in Vue's order whatever the order
+  the markup first uses them in (`styles/slotted-order`).
+
+**Angular and Qwik**, as built:
+
+- **Angular's attachment.** A styled component's metadata names its sheet,
+  `styleUrl: "./Card.uf.tsx.css"`, with `encapsulation: ViewEncapsulation.None`: the sheet is
+  scoped already, and Angular's emulated encapsulation would scope it again. ngtsc reads a
+  `styleUrl` itself, and Vite never loads the sheet, so the unplugin's API gives it to the
+  toolchain: `UnframeworkApi.getSheet(file)` returns the sheet this target's last finished load
+  of the file emitted, after the plugins' `output` hooks, and `ngtscVirtual` puts each
+  `styleUrl`'s sheet into the worker's in-memory sources beside the generated modules (ADR-0027).
+  The toolchain projects read it from the disk, beside the golden output. Angular imports
+  nothing, so it needs no `*.css` declaration.
+- **Qwik's attachment.** The output imports the sheet as a string after its other imports,
+  `import styles from "./Card.uf.tsx.css?inline"`, and attaches it first in the component's
+  body, `useStyles$(styles)`. The import from a segment module reaches the unplugin through its
+  `splitFrom`, as the emission section says. The toolchain's `sheets.d.ts` declares `*.css` and
+  `*.css?inline`. Qwik's server writes a `<style q:style>` where the component renders, and its
+  client writes it in `<head>`, so the normaliser removes that element from Qwik's output only
+  (rule 2c), as it removes `q:template` (ADR-0058). Unlike every other target's server HTML,
+  Qwik's then holds the sheet, before the component's root, where `:first-child`, `:nth-child()`
+  and `+` count it: the `sheet-order` cell names it.
+- **`child-root-scope`, emulated on Qwik, unsupported on Angular.** Qwik's child spreads `{...scopeAttributes(attributes)}`
+  on each node Vue's fallthrough reaches, as React's does, with the rest of its props pattern,
+  or its props object, and a component without props takes one, typed `object`. Each candidate
+  of a root `<component is>` with listeners, which Qwik writes one tag each, takes it too.
+  Angular's parent writes its attribute on the child's tag, the host, which must keep only
+  `display: contents` to be unwrapped (ADR-0056), and an Angular template cannot write an
+  attribute whose name it does not know. So each root node binds an inline attribute directive
+  to the component's host, `<button [ufScope]="this.host">`, through a member that holds it,
+  `protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement`. In
+  `ngOnInit` the directive takes the host's `data-uf-*` attributes off the host, keeps their
+  names in the module's `WeakMap` for a root the component renders later (another branch), and
+  sets them on its node. It reads them in `ngOnInit`, not as it is made: a root component's own
+  root directive then runs after its parent's has set them on its host, so they pass through a
+  root component, as Vue's fallthrough does. The directive and the map take their names from a
+  base of each component's own (`ScopeAttributes_1`), as React's helper does. Two things still
+  differ on Angular, so its cell is `unsupported`, with UF4003 `component-host` at `info`,
+  reported at the first child a styled component renders. The root renders inside its host,
+  which selectors see: a parent's rule that reaches it through a combinator (`.list > .row`,
+  `+`, `~`) or a structural pseudo-class (`:first-child`, `:nth-child()`, …) matches the host's
+  place, not the root's. And a root Angular binds nothing on (`{{` in an attribute, ADR-0037)
+  takes no directive, so it takes no scope attribute. The corpus covers UF4003 through the
+  `info` diagnostics of the styled cases that render a child (`styles/child-root`, `deep`,
+  `global`, …), with no `diagnostics/` case, as UF4002: a `diagnostics/` case is one whose
+  compile fails, and a case with only an `info` diagnostic has output, which a browser spec and
+  its baselines would have to render.
+- **`slotted-styles`, native on both.** The shared builders stamp a child's `-s` on the content a
+  parent fills in, which Angular projects through `<ng-content>` and `ng-template` slots, and
+  Qwik through `<Slot />` and QRL render props: the content is the parent's markup in both.
+
+**Sheet order** (`sheet-order`, unsupported on Angular and Qwik):
+
+- **The difference.** Vue, React, Solid, Svelte and Astro load a sheet as its module evaluates,
+  in import order: a child's before its parent's, and siblings by their imports. Angular's
+  `SharedStylesHost` and Qwik's `useStyles$` add a sheet to `<head>` as the component first
+  renders: a parent's before its children's, and siblings in the order they render. Where two
+  sheets' rules of equal specificity match one element, the later sheet wins, so the winner can
+  differ: on a child's root, which carries its styled parent's attribute too, on content filled
+  into a child's slot, and under `:deep()` and `:global()`. `styles/slotted-order` shows it: its
+  fill takes Blue's colour on Vue and Amber's on Angular and Qwik.
+- **Why it is declared, not matched.** A parent sees only its direct children's APIs (ADR-0053),
+  so no output can attach its subtree's sheets in Vue's order through a grandchild. A side-effect
+  import would match it, but is neither framework's idiom, and Qwik's server would no longer
+  write the sheet.
+- **The cells.** `native` on five targets, and `unsupported` on Angular and Qwik with UF4002
+  `sheet-order`, at severity `info`, so the output is still emitted. It is required wherever
+  `scoped-styles` is, at every module's first stylesheet import: any meeting of two sheets' rules
+  involves a styled module, so the rule is complete by construction, at the cost of an `info`
+  diagnostic on every styled module there. The corpus covers UF4002 through those diagnostics,
+  with no `diagnostics/` case: this departs from the "Add a diagnostic" recipe, a case or an
+  exemption.
+- **Tests opt out only where the order shows.** A test whose captures depend on which sheet wins
+  declares `requires: ["sheet-order"]`, so it skips on Angular and Qwik, visibly in the parity
+  matrix: `styles/slotted-order` does. Every other styled case runs L10 on all seven targets.
+- **It changes no markup**, so it is behavioural (`BEHAVIOURAL_CAPABILITIES`): the render-parity
+  tests compare a static render's markup, which is the same.
+
+**The capabilities:** `scoped-styles` (a component with a sheet), `child-root-scope` (a child a
+styled component renders), `slotted-styles` (content filled into a child whose sheet uses
+`:slotted()`) and `sheet-order` (the order sheets cascade in, above). Each target first declared
+the first three `native`, the cell its lane was expected to reach. A lane that can't reach it
+declares the cell `emulated` or `unsupported`, with the next free UF4 code, and adds a section
+here: React, Solid, Svelte, Astro and Qwik emulate `child-root-scope`, and Angular declares it
+`unsupported` (UF4003).
+
+**The codes** are UF5001 `shared-stylesheet`, UF5002 `invalid-stylesheet`, UF5003
+`unsupported-stylesheet-language` (`.scss`, `.sass`, `.less`, `.styl` and `.pcss`), UF5004
+`unscopable-selector`, UF5005 `stylesheet-not-found` and UF5006 `unsupported-virtual-import`. All are errors.
+UF4002 `sheet-order` and UF4003 `component-host`, portability codes, are `info`.
+
+A `Button` whose `Button.css` holds `.label { color: red }` and a line feed has the id
+`70af206b`:
+
+```text
+Source   import "./Button.css";
+         <button class="button"><span class="label">{text}</span></button>
+Sheet    .label[data-uf-70af206b] { color: red }          (Button.uf.tsx.css)
+React    import "./Button.uf.tsx.css";
+         <button className="button" data-uf-70af206b=""><span className="label" data-uf-70af206b="">
+Vue      <style src="./Button.uf.tsx.css"></style>
+```
+
+## Consequences
+
+**Positive:**
+
+- Every target receives one sheet, byte for byte, so pixel parity tests the compiler, not seven
+  scoping implementations.
+- The scope id follows the component and its CSS, never the file's place, so goldens are stable on
+  every machine.
+- A parent reads all it needs of a styled child from the resolver, with no runtime (P7).
+- Emitted sheets are checked by a real CSS parser on every target, which closes ADR-0025's open item.
+
+**Negative:**
+
+- A 32-bit id can collide. Two components share one when they have the same name and the same
+  sheets, or by chance, which becomes an even bet only among about 77,000 styled components. Then
+  each component's rules also match the other's elements.
+- Two components can't share a sheet in one module, and two modules that import one sheet ship it
+  twice.
+- Every rendered element carries one more attribute, and each scoped selector gains its
+  specificity, as in Vue.
+- On Angular and Qwik, two components' rules of equal specificity on one element may resolve
+  otherwise than on the other targets (`sheet-order`), and every styled module reports UF4002 there.
+
+**Open:**
+
+- No watch or HMR edge runs from the author's `X.css` to its sheet module until M6.
+- A sheet that two modules import is not yet a diagnostic: detecting it needs M5's project graph,
+  and until then each module scopes its own copy.
+
+## Amendments
+
+- **ADR-0004.** The attachment table names the emitted `./<source>.css`, never the author's
+  `./Button.css`. Vue's `<style src>` has no `scoped`, and Qwik's import is `?inline`. A module that
+  imports a sheet declares one component. "A stylesheet imported by two components is a
+  diagnostic" holds within a module only (UF5001): a sheet that two modules import is scoped by
+  each, until M5's project graph can see both.
+- **ADR-0009.** The id is FNV-1a over the name and the sheets' text. `:slotted()` uses
+  `data-uf-<id>-s`, which the parent stamps at compile time. `@keyframes` names take the id, and
+  the selectors above are UF5004.
+- **ADR-0021.** Every target's style id is `<source>.css`, served by the unplugin: Vue and Svelte
+  no longer use their plugins' own style sub-requests for a component's sheet, and Astro not its
+  own.
+- **ADR-0025.** L3 never sees an emitted sheet: the compile project's lightningcss check covers
+  every target's.
+- **ADR-0047.** Its behavioural capabilities (amending ADR-0033) change nothing the markup of a
+  static render shows, though the cascade may differ: `sheet-order` joins them, and changes the
+  computed styles L10 captures, not the markup the render-parity tests compare.
+- **ADR-0053.** The file resolver reads a child's stylesheets too, for the scope id and the
+  `:slotted()` use its API carries, and caches the child's analysis by their text as well. A
+  child's own `.uf.tsx` imports are still never resolved.
+
+## Alternatives considered
+
+- **lightningcss's `transform` and printer**, as plan §4.4 first said. It prints its own CSS: it
+  drops `height: 100vh` before `height: 100dvh`, rewrites `#ff0000` and custom properties, and its
+  visitor cannot read some values back (`calc(infinity * 1px)`). A splice into the author's text
+  needs a reader of its own, which lightningcss's tree, without spans, cannot give.
+- **A hand-written CSS reader** that splices the rewrites into the text. Each review round found
+  new edge cases of CSS Syntax in it (escapes, `url()`, line continuations), each silent. postcss
+  and postcss-selector-parser have handled them for Vue for years.
+- **A hash of the file's path, as Vue does.** It changes with the checkout's place and the
+  relative path the caller passes, which P8 rules out, and every target would need the same path.
+- **A longer id.** Sixteen hex digits make a collision negligible, but every element carries the
+  attribute, and Vue's eight digits have served its users. The hash can grow with a new ADR.
+- **The scoper in the analyser.** The analyser would then depend on codegen, which already depends
+  on the analyser in its tests. `compile()` runs the scoper between the two instead.
+- **The sheet as a query on the `.tsx` id** (`?uf&type=style&lang.css`). Vite filters on the path
+  without its query, so Solid's babel and Vite's oxc parse it as TSX (ADR-0021).
+- **Each framework's own style blocks** (`<style scoped>`, Svelte's `<style>`, Angular's
+  emulated encapsulation). Each scopes differently, and Svelte drops selectors it can't match
+  statically (§4.4, ADR-0004).

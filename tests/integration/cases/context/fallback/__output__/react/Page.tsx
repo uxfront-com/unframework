@@ -7,13 +7,22 @@ export interface PageAttributes {
   style?: CSSProperties;
 }
 
-export default function Page({ className, style }: PageAttributes) {
+export default function Page({ className, style, ...attributes }: PageAttributes) {
   return (
-    <main className={className} style={style}>
+    <main className={className} style={style} {...scopeAttributes(attributes)}>
       <Greeting name="Ada" />
       <LocaleProvider locale="pt">
         <Greeting name="Inês" />
       </LocaleProvider>
     </main>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

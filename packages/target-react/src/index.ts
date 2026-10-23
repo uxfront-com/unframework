@@ -10,6 +10,7 @@ import {
   jsxNode,
   printComponentModule,
   printExpression,
+  spreadStyleExpression,
 } from "@unframework/codegen";
 import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework/codegen";
 import type {
@@ -34,10 +35,16 @@ import { compilerBailout, declaredNames } from "./bailouts.ts";
 import type { ComponentCode } from "./bailouts.ts";
 import { placeConditionals } from "./branches.ts";
 import { ReactComposer } from "./compose.ts";
-import { exposedType, refValueType, slotProp } from "./composition.ts";
-import { cxHelper, reactDialect } from "./dialect.ts";
+import { exposedType, refValueType, SCOPE_HELPER, slotProp } from "./composition.ts";
+import { cxHelper, reactDialect, styleObjectHelper } from "./dialect.ts";
 import type { ReactNames } from "./dialect.ts";
-import { modelTextHelper, nextTickHelper, refObjectHelper, toggleHelper } from "./helpers.ts";
+import {
+  modelTextHelper,
+  nextTickHelper,
+  refObjectHelper,
+  scopeAttributesHelper,
+  toggleHelper,
+} from "./helpers.ts";
 import type { NextTickHooks } from "./helpers.ts";
 import { listenerHelpers, ReactListeners } from "./listeners.ts";
 import { planComponent } from "./plan.ts";
@@ -96,7 +103,11 @@ export const react: Target = defineTarget({
       helper: "cx",
       note: "React's className takes one string, so an inline helper joins the static names, toggles and dynamic parts.",
     },
-    "style-binding": { support: "native" },
+    "style-binding": {
+      support: "emulated",
+      helper: "styleObject",
+      note: "React's style takes an object, so a style bound to a value goes through an inline helper, `styleObject`, that splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
+    },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
@@ -129,6 +140,17 @@ export const react: Target = defineTarget({
       note: "A provided ref is passed as an object with a `value` getter, `refObject`, made again at each render of the provider: descendants render each change, and their deferred code, after an `await` or in a timer, reads the value of their last render (ADR-0054).",
     },
     "dynamic-component": { support: "native" },
+    "scoped-styles": { support: "native" },
+    // The child's root picks its styled parents' `data-uf-*` attributes out of its props
+    // (ADR-0063): their names are the parents', which the child cannot know.
+    "child-root-scope": {
+      support: "emulated",
+      helper: SCOPE_HELPER,
+      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them.",
+    },
+    "slotted-styles": { support: "native" },
+    // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
+    "sheet-order": { support: "native" },
   },
   // A function component in TSX (plan §6, ADR-0045 to ADR-0047): the copied type
   // declarations and the events' props, the setup's hooks in source order, and the render tree in
@@ -150,6 +172,7 @@ export const react: Target = defineTarget({
     listeners.connect(composer);
     const jsx = jsxContext({
       component,
+      module,
       dialect: reactDialect(names, listeners, composer),
       rules: code.rules,
     });
@@ -201,29 +224,50 @@ export const react: Target = defineTarget({
     const hoisted = [...keyDeclarations(plan), ...setup.module].map((statement) =>
       jsx.placeholders.statements(`${statement}\n`),
     );
+    const types = [
+      ...componentTypes(component, module),
+      ...eventsInterface(plan),
+      ...compositionInterfaces(plan),
+    ];
+    const helpers = [
+      ...(names.cx ? [cxHelper(names.cx, names.cxCollections)] : []),
+      ...(names.styleObject
+        ? [
+            styleObjectHelper(
+              names.styleObject,
+              names.imports.add("react", "CSSProperties", { type: true }),
+            ),
+          ]
+        : []),
+      ...listenerHelpers(plan),
+      ...(plan.helpers.nextTick
+        ? [nextTickHelper(plan.helpers.nextTick, nextTickHooks(plan))]
+        : []),
+      ...compositionHelpers(plan),
+    ];
+    // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
+    // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
+    // component's style after its script. Collected last: the types and the helpers import
+    // what they name.
+    const file = module.file;
+    const imports = [
+      ...names.imports.toDeclarations(),
+      ...(component.styles
+        ? [js.importDeclaration(`./${file.slice(file.lastIndexOf("/") + 1)}.css`, [])]
+        : []),
+    ];
     return [
       {
         path: `${component.name}.tsx`,
         contents: printComponentModule(
           {
-            imports: names.imports,
-            types: [
-              ...componentTypes(component, module),
-              ...eventsInterface(plan),
-              ...compositionInterfaces(plan),
-            ],
+            imports,
+            types,
             body: [
               ...hoisted,
               ...exportDeclaration(component.name, fn, exportsOf(component.name, module.exports)),
             ],
-            helpers: [
-              ...(names.cx ? [cxHelper(names.cx)] : []),
-              ...listenerHelpers(plan),
-              ...(plan.helpers.nextTick
-                ? [nextTickHelper(plan.helpers.nextTick, nextTickHooks(plan))]
-                : []),
-              ...compositionHelpers(plan),
-            ],
+            helpers,
             placeholders: jsx.placeholders,
           },
           { jsx: true },
@@ -320,6 +364,18 @@ function fallthroughAttributes<T extends Attribute | ComponentAttribute>(
       const merged: StyleAttribute = { ...attribute };
       composer.fallthroughStyles.add(merged);
       attributes.push(merged);
+    } else if (attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")) {
+      // A spread's `style` is the root's own (ADR-0065): the consumer's merges over it.
+      styled = true;
+      const keys = attribute.keys.filter((key) => key.name !== "style");
+      const merged: StyleAttribute = {
+        kind: "Style",
+        declarations: [],
+        value: spreadStyleExpression(attribute),
+        span: attribute.span,
+      };
+      composer.fallthroughStyles.add(merged);
+      attributes.push({ ...attribute, keys }, merged);
     } else {
       attributes.push(attribute);
     }
@@ -461,6 +517,7 @@ function parametersOf(fn: FunctionCode): string {
 function compositionHelpers(plan: ReactPlan): string[] {
   const { helpers, names } = plan;
   return [
+    ...(plan.composition.scope ? [scopeAttributesHelper(plan.composition.scope.helper)] : []),
     ...(helpers.refObject ? [refObjectHelper(helpers.refObject)] : []),
     ...(helpers.toggle ? [toggleHelper(helpers.toggle)] : []),
     ...(helpers.modelText
@@ -558,8 +615,11 @@ function propsParameters(
   const typeCode = [parameter?.type.code, plan.eventsInterface, models, slots, attributes]
     .filter((part) => part !== undefined)
     .join(" & ");
-  if (!typeCode) return [];
-  const type = context.placeholders.type(typeCode);
+  const { scope } = composition;
+  // A component without props still takes the scope attributes of the styled parents that
+  // render it, as an object (ADR-0063).
+  if (!typeCode && !scope) return [];
+  const type = context.placeholders.type(typeCode || "object");
   const read = (parameter ? component.props : []).filter(
     (prop) => prop.binding !== undefined && context.referenced.has(prop.binding),
   );
@@ -577,12 +637,14 @@ function propsParameters(
   if (fallthrough)
     composed.push(["className", fallthrough.className], ["style", fallthrough.style]);
   if (expose) composed.push(["ref", expose.ref]);
+  // The rest the roots pick their styled parents' scope attributes out of (ADR-0063).
+  const rest = scope && parameter?.form !== "object" ? scope.props : undefined;
   if (parameter?.form === "object") {
     // A name `_` and more says it is unused already: it stays the source's (oxlint still
     // reports a bare `_`).
     const emitted = [...plan.events.values()].some((event) => event.emitted);
     const name =
-      read.length || emitted || composed.length || /^_./.test(parameter.name!)
+      read.length || emitted || composed.length || scope || /^_./.test(parameter.name!)
         ? parameter.name!
         : names.claim(`_${parameter.name!}`);
     return [js.bindingIdentifier(name, type)];
@@ -604,8 +666,8 @@ function propsParameters(
       renamedProperty(prop, local, initial && context.placeholders.expression(initial.code)),
     );
   }
-  if (!properties.length) return [js.bindingIdentifier(names.claim("_props"), type)];
-  return [js.objectPattern(properties, type)];
+  if (!properties.length) return [js.bindingIdentifier(rest ?? names.claim("_props"), type)];
+  return [js.objectPattern([...properties, ...(rest ? [js.bindingRestElement(rest)] : [])], type)];
 }
 
 /**

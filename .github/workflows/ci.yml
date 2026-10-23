@@ -355,6 +355,10 @@ jobs:
             shard: 1/2
           - canaries: L10-root-inverted
             shard: 2/2
+          - canaries: L10-stylesheet-rule-dropped
+            shard: 1/2
+          - canaries: L10-stylesheet-rule-dropped
+            shard: 2/2
           - canaries: L11
             shard: 1/2
           - canaries: L11

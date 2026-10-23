@@ -7,7 +7,9 @@
 // and which listeners React's synthetic events cannot keep the DOM's semantics for (native). The
 // names the output introduces are claimed here, after the source's own, in a fixed order (P8).
 import {
+  addPassThroughImports,
   codeKind,
+  moduleHelperName,
   ImportSet,
   parseCodeSource,
   pascalCase,
@@ -169,14 +171,20 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
   const listeners = listenerModes(component);
   const eventModes = eventParameterModes(component, listeners);
   const names = new ImportSet(reservedNames(component, module, listeners, eventModes));
-  // A source's components are joined into one module where it is loaded (ADR-0053): each after
-  // the first takes its helpers under names of its own (`cx_1`), so no two declare one name.
+  // A source's components are joined into one module where it is loaded (ADR-0053): each claims
+  // its helpers from bases of its own (`cx_1`), past the names any other component declares.
   const index = module.components.findIndex((each) => each.name === component.name);
+  const reserved = module.components.map((each) => {
+    const modes = listenerModes(each);
+    return reservedNames(each, module, modes, eventParameterModes(each, modes));
+  });
   for (const helper of HELPER_NAMES) {
-    for (let suffix = 0; suffix < index; suffix++) {
-      names.reserve(suffix ? `${helper}_${suffix}` : helper);
-    }
+    const { base, others } = moduleHelperName(helper, reserved, index);
+    names.reserve(...others);
+    names.scope.rebase(helper, base);
   }
+  // The imports that pass through, which the render reads as written (ADR-0064).
+  addPassThroughImports(component, module, names);
   const nativeElements = nativeElementsOf(listeners);
   const narrowedReads = narrowedReadsOf(component);
   const stable = (groups: readonly EventAttribute[][]) =>
@@ -330,6 +338,7 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
             mirroredEvents.add(reference.event);
             break;
           case "Global":
+          case "Import":
           case "Write":
           case "Api":
           case "Event":
@@ -584,6 +593,7 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
 /** The inline helpers' names, as the target claims them. */
 const HELPER_NAMES = [
   "cx",
+  "styleObject",
   "listen",
   "useOnce",
   "useNextTick",
@@ -591,6 +601,7 @@ const HELPER_NAMES = [
   "toggle",
   "useModelText",
   "looseToNumber",
+  "scopeAttributes",
 ];
 
 /** Whether a binding's value changes as the component runs: a prop, state or a derived value. */
@@ -953,6 +964,7 @@ function hoistable(
         piece.refs.every((reference) => {
           switch (reference.kind) {
             case "Global":
+            case "Import":
             case "Event":
               return true;
             case "Binding": {

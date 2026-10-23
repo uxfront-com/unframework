@@ -21,23 +21,53 @@ import type { Span, StyleAttribute, StyleDeclaration } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
 import { parseDeclarations } from "@unframework/parser";
 
-import type { Reporter } from "./context.ts";
+import { Reporter } from "./context.ts";
 import { checkExpression, span } from "./expressions.ts";
 import type { Piece } from "./jsx/text.ts";
 import { isStaticString, reportCharacters, valueOf } from "./literals.ts";
 import type { RenderContext } from "./render.ts";
 import { describe, outside } from "./types/kinds.ts";
+import type { Kinds } from "./types/kinds.ts";
 
-/** The `display` values that make a table-internal box (ADR-0031): the parser repairs them. */
-const TABLE_DISPLAYS: ReadonlySet<string> = new Set([
-  "table-caption",
-  "table-cell",
-  "table-column",
-  "table-column-group",
-  "table-footer-group",
-  "table-header-group",
-  "table-row",
-  "table-row-group",
+/**
+ * The vendor-prefixed properties the analyser accepts (ADR-0065): those Chromium 153 (the browser
+ * the tests run) computes as longhands of their own and that have no standard name. A browser
+ * drops a prefixed name it does not know from the CSSOM, where a server keeps it in the markup,
+ * and an alias (`-webkit-transform`) or a shorthand (`-webkit-text-stroke`) sets what the
+ * overlap check cannot see, so neither is accepted. `-webkit-border-*-spacing` and
+ * `-webkit-mask-position-*` are longhands of `border-spacing` and `mask-position`
+ * (`CSS_SHORTHANDS`).
+ */
+const VENDOR_PROPERTIES: ReadonlySet<string> = new Set([
+  "-webkit-border-horizontal-spacing",
+  "-webkit-border-vertical-spacing",
+  "-webkit-box-align",
+  "-webkit-box-direction",
+  "-webkit-box-flex",
+  "-webkit-box-ordinal-group",
+  "-webkit-box-orient",
+  "-webkit-box-pack",
+  "-webkit-box-reflect",
+  "-webkit-font-smoothing",
+  "-webkit-line-clamp",
+  "-webkit-locale",
+  "-webkit-mask-box-image-outset",
+  "-webkit-mask-box-image-repeat",
+  "-webkit-mask-box-image-slice",
+  "-webkit-mask-box-image-source",
+  "-webkit-mask-box-image-width",
+  "-webkit-mask-position-x",
+  "-webkit-mask-position-y",
+  "-webkit-rtl-ordering",
+  "-webkit-tap-highlight-color",
+  "-webkit-text-combine",
+  "-webkit-text-decorations-in-effect",
+  "-webkit-text-fill-color",
+  "-webkit-text-security",
+  "-webkit-text-stroke-color",
+  "-webkit-text-stroke-width",
+  "-webkit-user-drag",
+  "-webkit-user-modify",
 ]);
 
 /**
@@ -155,8 +185,8 @@ function mapper(value: string, pieces: readonly Piece[], at: Span): (range: Span
 
 /**
  * A declaration's property as the IR holds it: lower case, or a custom property as written.
- * Reports a vendor prefix (UF1002, deferred to M4 by ADR-0038), a name that is no property, or
- * a custom property with an upper-case letter (UF3022).
+ * Reports a vendor-prefixed name outside `VENDOR_PROPERTIES`, a name that is no property, or a
+ * custom property with an upper-case letter (UF3022).
  */
 function propertyOf(written: string, at: Span, reporter: Reporter): string | undefined {
   if (isCustomProperty(written)) {
@@ -169,15 +199,33 @@ function propertyOf(written: string, at: Span, reporter: Reporter): string | und
     return undefined;
   }
   if (property.startsWith("-")) {
-    reporter.unsupported(
-      at,
-      `Vendor-prefixed properties such as \`${written}\` are not supported yet: the targets prefix them differently. They land in M4.`,
-      { help: "Write the standard property." },
-    );
-  } else {
-    reporter.report("UF3022", at, `\`${written}\` is not a CSS property name.`);
+    return vendorProperty(written, property, at, reporter) ? property : undefined;
   }
+  reporter.report("UF3022", at, `\`${written}\` is not a CSS property name.`);
   return undefined;
+}
+
+/**
+ * Reports a vendor-prefixed property outside `VENDOR_PROPERTIES` (UF3022), and returns whether
+ * it is in it: one with a standard name takes that name, and one Chromium does not know renders
+ * on the server and not in a client.
+ */
+function vendorProperty(written: string, property: string, at: Span, reporter: Reporter): boolean {
+  if (VENDOR_PROPERTIES.has(property)) return true;
+  const standard = property.replace(/^-[a-z]+-/, "");
+  reporter.report(
+    "UF3022",
+    at,
+    CSS_PROPERTIES.has(standard)
+      ? `\`${written}\` has a standard name, \`${standard}\`, which every browser applies alike.`
+      : `\`${written}\` is not a vendor-prefixed property Chromium computes on its own: a browser drops one it does not know, which a server still writes.`,
+    {
+      help: CSS_PROPERTIES.has(standard)
+        ? `Write \`${standard}\`.`
+        : "Write the standard property, or the longhands of a prefixed shorthand.",
+    },
+  );
+  return false;
 }
 
 /**
@@ -288,20 +336,6 @@ function staticValueProblem(
     );
     return true;
   }
-  if (
-    property === "display" &&
-    value
-      .toLowerCase()
-      .split(/\s+/)
-      .some((keyword) => TABLE_DISPLAYS.has(keyword))
-  ) {
-    reporter.unsupported(
-      at,
-      "A `display` that makes a table part is not supported yet: the HTML parser and the targets lay table parts out differently outside a table. It lands in M4.",
-      { help: "Use a table's own elements." },
-    );
-    return true;
-  }
   return false;
 }
 
@@ -371,18 +405,11 @@ export function lowerStyleObject(node: AST.ObjectExpression, context: RenderCont
   for (const { property, key, name, read } of properties) {
     const at = span(key);
     if (read.vendor) {
-      reporter.unsupported(
-        at,
-        `Vendor-prefixed properties such as \`${name}\` are not supported yet: the targets prefix them differently. They land in M4.`,
-        { help: "Write the standard property." },
-      );
-      continue;
-    }
-    if (!isCssPropertyName(read.property)) {
+      if (!vendorProperty(name, read.property, at, reporter)) continue;
+    } else if (!isCssPropertyName(read.property)) {
       reporter.report("UF3022", at, `\`${name}\` is not a CSS property name.`);
       continue;
-    }
-    if (!isCustomProperty(read.property) && !CSS_PROPERTIES.has(read.property)) {
+    } else if (!isCustomProperty(read.property) && !CSS_PROPERTIES.has(read.property)) {
       reportUnknownProperty(name, read.property, at, reporter);
       continue;
     }
@@ -496,4 +523,175 @@ export function lowerStyleObject(node: AST.ObjectExpression, context: RenderCont
     empty: false,
     binds,
   };
+}
+
+/**
+ * Lowers `style={value}` bound to anything but an object literal (ADR-0065): a style object
+ * keyed as an object literal's are, a style string, or nothing. Its properties are known only
+ * at run time, so a declared object type's members are checked as an object literal's keys
+ * and values are.
+ */
+export function lowerStyleValue(node: AST.Expression, context: RenderContext): LoweredStyle {
+  const { reporter } = context;
+  const mark = reporter.diagnostics.length;
+  const checked = checkExpression(node, context);
+  const leaves = objectLeaves(node);
+  for (const leaf of leaves) checkObjectLeaf(leaf, context, mark);
+  const problem = styleValueProblem(checked.kinds, leaves.map(span));
+  if (problem) {
+    reporter.report("UF3018", problem.at ?? node, problem.message, {
+      help: problem.help,
+      ...(problem.at
+        ? { related: [{ span: span(node), message: "The style is bound here" }] }
+        : {}),
+    });
+  }
+  if (reporter.hasErrorsSince(mark)) return { attribute: undefined, empty: false, binds: true };
+  return {
+    attribute: createStyleAttribute([], span(node), checked.expression),
+    empty: false,
+    binds: true,
+  };
+}
+
+/**
+ * Why an object typed by an `interface` cannot be bound to a whole `style` or a `class`: Vue's
+ * and Qwik's style types and Qwik's class type have an index signature, which an interface
+ * lacks, so the outputs would not type-check (TS2322).
+ */
+export function interfaceProblem(attribute: "class" | "style"): { message: string; help: string } {
+  const rejects =
+    attribute === "class"
+      ? "Qwik's type for `class` rejects: it has an index signature"
+      : "Vue's and Qwik's types for `style` reject: they have an index signature";
+  return {
+    message: `This ${attribute} object is typed by an \`interface\`, which ${rejects}, which an interface lacks.`,
+    help: "Declare the type with `type` instead: `type Look = { color?: string }`.",
+  };
+}
+
+/**
+ * The object literals a value may be at run time: itself, a conditional's branches, either side
+ * of `??` and `||`, the right of `&&`, inside parentheses. Each is checked where it is written.
+ */
+function objectLeaves(node: AST.Expression): AST.ObjectExpression[] {
+  switch (node.type) {
+    case "ObjectExpression":
+      return [node];
+    case "ParenthesizedExpression":
+      return objectLeaves(node.expression);
+    case "ConditionalExpression":
+      return [...objectLeaves(node.consequent), ...objectLeaves(node.alternate)];
+    case "LogicalExpression":
+      return node.operator === "&&"
+        ? objectLeaves(node.right)
+        : [...objectLeaves(node.left), ...objectLeaves(node.right)];
+    default:
+      return [];
+  }
+}
+
+/**
+ * Checks an object literal inside a value bound to `style` as `lowerStyleObject` checks one
+ * written in place, reporting what the value's own check has not (its values are checked
+ * twice). A vendor-prefixed key is UF3018 there: every target copies the object as written,
+ * and Vue's server writes `WebkitLineClamp` as `webkit-line-clamp`, which no browser applies.
+ */
+function checkObjectLeaf(leaf: AST.ObjectExpression, context: RenderContext, mark: number): void {
+  const { reporter } = context;
+  const scratch = new Reporter(reporter.file);
+  lowerStyleObject(leaf, { ...context, reporter: scratch });
+  const reported = new Set(
+    reporter.diagnostics
+      .slice(mark)
+      .map(({ code, span: at, message }) => `${code} ${at.start}:${at.end} ${message}`),
+  );
+  for (const diagnostic of scratch.diagnostics) {
+    const key = `${diagnostic.code} ${diagnostic.span.start}:${diagnostic.span.end} ${diagnostic.message}`;
+    if (!reported.has(key)) reporter.diagnostics.push(diagnostic);
+  }
+  for (const property of leaf.properties) {
+    if (property.type === "SpreadElement" || property.computed) continue;
+    const { key } = property;
+    const name =
+      key.type === "Identifier"
+        ? key.name
+        : key.type === "Literal" && typeof key.value === "string"
+          ? key.value
+          : undefined;
+    if (name === undefined || !keyProperty(name).vendor) continue;
+    reporter.report(
+      "UF3018",
+      key,
+      `\`${name}\` is copied as written where the style is not an object literal, and Vue's server writes a prefixed key without its leading dash, which no browser applies.`,
+      { help: "Write the style object in place, `style={{ … }}`, or bind a declaration list." },
+    );
+  }
+}
+
+/**
+ * Why a value bound to a whole `style` is not one every target renders alike, if it is not.
+ * `inPlace` are the object literals the value is checked as, whose shapes it skips.
+ */
+export function styleValueProblem(
+  kinds: Kinds,
+  inPlace: readonly Span[] = [],
+): { message: string; help: string; at?: Span } | undefined {
+  const others = outside(kinds, ["string", "object", "null", "undefined"]);
+  if (others.length) {
+    return {
+      message: `A \`style\` renders a style object or a declaration list, and this one can be ${describe(others)}, which the targets render differently.`,
+      help: 'Bind an object, `{ color: tone, "--gap": gap }`, a string of declarations, or `undefined` for no style.',
+    };
+  }
+  for (const shape of kinds.objects ?? []) {
+    if (shape.interface) return interfaceProblem("style");
+    // An object literal the value is checked as in place: its own checks cover its members.
+    const members = [...shape.members().values()];
+    const literal = members.some(({ key }) =>
+      inPlace.some((at) => key.start >= at.start && key.end <= at.end),
+    );
+    if (literal) continue;
+    // A declared type's members, or an object literal's anywhere in the value (a conditional's
+    // branch, a `computed`), each checked as a key and a value written in place.
+    for (const [name, member] of shape.members()) {
+      const read = keyProperty(name);
+      const property = read.property;
+      if (
+        read.kebab ||
+        read.vendor ||
+        !isCssPropertyName(property) ||
+        (!isCustomProperty(property) && !CSS_PROPERTIES.has(property)) ||
+        angularLowercases(property)
+      ) {
+        return {
+          at: member.key,
+          message: `A style object's keys are standard properties in camel case or custom properties in lower case, and \`${name}\` is not one.`,
+          help: 'Name each member as an object literal\'s key: `marginTop`, or `"--gap"`.',
+        };
+      }
+      const value = member.kinds();
+      // A literal 0 renders as `0` everywhere, as `margin: 0` does written in place.
+      const zero = value.numbers?.size === 1 && value.numbers.has(0);
+      const values = outside(
+        zero
+          ? {
+              ...value,
+              primitives: new Set([...value.primitives].filter((kind) => kind !== "number")),
+            }
+          : value,
+        isCustomProperty(property) || UNITLESS_PROPERTIES.has(property)
+          ? ["string", "number", "null", "undefined"]
+          : ["string", "null", "undefined"],
+      );
+      if (values.length) {
+        return {
+          at: member.key,
+          message: `A style value renders as a CSS value, and \`${name}\` can be ${describe(values)}, which the targets render differently.`,
+          help: "Type it as a string, or `undefined` to leave the declaration out.",
+        };
+      }
+    }
+  }
+  return undefined;
 }

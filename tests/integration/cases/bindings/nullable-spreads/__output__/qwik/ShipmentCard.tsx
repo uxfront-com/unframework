@@ -34,9 +34,15 @@ export default component$<ShipmentCardProps & { class?: ClassList; style?: CSSPr
     signature,
     class: className,
     style,
+    ...attributes
   }) => {
     return (
-      <section class={["shipment-card", className]} aria-label={reference} style={style}>
+      <section
+        class={["shipment-card", className]}
+        aria-label={reference}
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <p id={carrier?.id} title={carrier?.title}>
           Carrier
         </p>
@@ -77,3 +83,12 @@ export default component$<ShipmentCardProps & { class?: ClassList; style?: CSSPr
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

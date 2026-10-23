@@ -43,7 +43,9 @@ The browser projects run every case in the light colour scheme. A dark-theme cas
 `"colorScheme": "dark"`: the setup file emulates `prefers-color-scheme: dark` before the spec
 mounts anything, and the startup check asserts it (ADR-0061). A case may also hold `.css` files
 beside its inputs; the loader reads them as neither inputs nor specs, and a stylesheet a target
-emits is a golden file under `__output__/<target>/` like any other.
+emits is a golden file under `__output__/<target>/` like any other. The toolchain projects leave
+emitted `.css` files out of what L3, L4 and L5 check; the compile project parses each with
+lightningcss instead (ADR-0063).
 
 ### A case of several sources
 
@@ -95,8 +97,9 @@ per line, JSON-quoted text and attribute values, and form-control state as `uf:*
 pseudo-attributes. The normaliser removes framework noise, and only the target's own (ADR-0031):
 every comment, which frameworks use as anchors; the attributes its framework adds, such as
 `_ngcontent-*`, `q:*`, `data-hk` and `data-astro-cid-*`; Angular's `uf-*` host elements with
-`display: contents`; and Qwik's `q:template` elements, where its server render keeps a slot's
-unclaimed fallback (ADR-0058). For every target, the reference included, it also writes one form of what
+`display: contents`; Qwik's `q:template` elements, where its server render keeps a slot's
+unclaimed fallback (ADR-0058); and Qwik's `<style q:style>` elements, where its server render
+writes a component's `useStyles$` sheet, which its client writes in `<head>` (ADR-0063). For every target, the reference included, it also writes one form of what
 renders alike however it is written:
 
 - attributes sorted by name, and a `class`'s tokens sorted, one space apart;
@@ -229,7 +232,7 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
 | Layer | Project               | What it checks                                                                                                                                                                                                                                           |
 | ----- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | L1    | `compile`             | The diagnostics equal `diagnostics.json`: no internal error (UF9xxx), and in a case with a spec no error but one a target declares for a capability it lacks. Every fix applies and recompiles clean, but for what the target's capability cells report. |
-| L2    | `compile`             | The IR and the outputs equal `__output__`, byte for byte, with no stale files; compiling twice gives the same bytes; formatting is idempotent.                                                                                                           |
+| L2    | `compile`             | The IR and the outputs equal `__output__`, byte for byte, with no stale files; compiling twice gives the same bytes; formatting is idempotent; every emitted sheet parses.                                                                               |
 | L3    | `toolchain:<target>`  | Each output passes its framework's own compiler with zero warnings.                                                                                                                                                                                      |
 | L4    | `toolchain:<target>`  | Each output type-checks under one strictness for all seven checkers, one run per target over every case; a tsconfig problem fails every case. The case's consumer fixtures fail exactly where their directives say (below).                              |
 | L5    | `toolchain:<target>`  | Each output passes oxlint's shared baseline rules and its framework's lint rules with zero warnings; rules that judge the author's code are off.                                                                                                         |
@@ -260,7 +263,11 @@ with every failed layer. A test skipped by capability records the skip on every 
 before it is skipped; the matrix (version 5) also keeps each test's scenarios and capability
 skip by the test's name, which the summary compares and lists. The parity reporter writes
 `.reports/parity-matrix.<run>.json`; `pnpm --filter @unframework/integration summary` merges them
-into `parity-matrix.json` and `parity-matrix.md` (CI's job summary). A cell is `pass`, `fail`,
+into `parity-matrix.json` and `parity-matrix.md` (CI's job summary). `UF_BROWSER=firefox` or
+`webkit` runs the browser projects in that engine (ADR-0066): L10 compares each target with the
+reference's capture from the same run, nothing is written, and the matrices go to `.reports/<engine>/`, merged
+into `parity-matrix.<engine>.json` and `.md`. The nightly workflow runs both engines; a
+difference there is an issue, never a quarantine entry. A cell is `pass`, `fail`,
 `skip(reason)` or `quarantined(issue)`; a skip on a live layer names a capability the target
 lacks (`requires interactivity: …`) or a mechanical cause (no output, the live reference, a
 component that did not render, no scripted interaction). A project that collects no tests fails, and when every
@@ -368,9 +375,20 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
 - `harness/cases.ts`: the corpus, each case's inputs, its main one and its `case.json`;
   `sources.ts`: how a case's inputs join their diagnostics and golden files.
 - `harness/compile.test.ts`, `toolchain.test.ts`, `ssr.test.ts`: the node-side layers;
-  `compile-checks.ts`: L1's fix check and L2's determinism and formatting checks;
-  `toolchain-results.ts`: what L3, L4 and L5 make of each tool's report; `consumers.ts`: L4's
+  `compile-checks.ts`: L1's fix check, L2's determinism and formatting checks, and the scoped
+  sheets' parse; `toolchain-results.ts`: what L3, L4 and L5 make of each tool's report, and the
+  files they check; `consumers.ts`: L4's
   consumer check and `CONSUMER_GAPS`.
+- `harness/engines.ts`: the styling engines every ssr and browser project loads, and Astro's
+  render server too (ADR-0064): Styleframe, and `harness/fixture-engine.ts`, an engine of a few
+  lines with no dependency, whose `virtual:fixture-engine` modules the `engines/fixture-engine`
+  case imports, typed by `fixture-engine.d.ts`.
+- `styleframe.config.ts`: the Styleframe configuration of the `styleframe/` and `theming/`
+  cases, Community only (ADR-0064). `harness/styleframe.ts` loads Styleframe's plugin with it in
+  every ssr and browser project, and gives the checkers `styleframe.d.ts`, the declarations
+  Styleframe writes for it (`pnpm test:update` rewrites them). `harness/styleframe.unit.test.ts`
+  builds it for production with no licence key (`scripts/styleframe-build.ts`), and a
+  configuration flagged as Pro fails the same build.
 - `harness/no-output.ts`: the browser projects' stand-ins for the components a target has no
   output for.
 - `harness/canaries.ts`, `canary-verdict.ts`, `load-failures.ts`: the canaries, how

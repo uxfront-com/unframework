@@ -35,6 +35,11 @@ export interface ObjectShape {
   readonly members: () => ReadonlyMap<string, Member>;
   /** Whether a type declares it (a prop's or an item's type), so its keys are known. */
   readonly declared: boolean;
+  /**
+   * Whether an `interface` declares it: such a type has no implicit index signature, so it is
+   * not assignable to a framework's style or class type, which has one (ADR-0065).
+   */
+  readonly interface?: true;
 }
 
 /**

@@ -20,8 +20,11 @@ import {
   createFragment,
   createGlobalReference,
   createIf,
+  createImportReference,
   createInterpolation,
   createModule,
+  createPassThroughImport,
+  createPassThroughName,
   createProp,
   createPropsParameter,
   createSpreadAttribute,
@@ -30,6 +33,7 @@ import {
   createStaticClass,
   createStaticStyle,
   createStyleAttribute,
+  createStyleSheet,
   createText,
   createToggleClass,
   createTypeDeclaration,
@@ -957,5 +961,56 @@ function render() {
       createElement("ul", [], [list], between("<ul>", "</ul>")),
     ],
     between("<div onWheelPassive", "    </div>"),
+  );
+}
+
+/**
+ * A styled module (ADR-0063): one component that imports a sheet, reads a pass-through import in
+ * its `class`, binds its `style` to one value, and keeps the invariants.
+ */
+export function styled(): UfModule {
+  const type = createTypeText("string", span(150, 156));
+  const tone = bindingId("tone", 140);
+  const recipe = createExpression("button()", span(170, 178), [
+    createImportReference("button", span(170, 176)),
+  ]);
+  const paragraph = createElement(
+    "p",
+    [
+      createClassAttribute([createDynamicClass(recipe, span(170, 178), true)], span(160, 179)),
+      createStyleAttribute([], span(180, 192), expression("tone", 187, [["tone", tone]])),
+    ],
+    [],
+    span(158, 200),
+  );
+  const sheet = createStyleSheet("./Button.css", ".a { color: red; }", span(0, 22));
+  return createModule(
+    "Button.uf.tsx",
+    [
+      createComponent(
+        "Button",
+        paragraph,
+        span(100, 210),
+        [createProp("tone", false, type, span(140, 144), tone)],
+        createPropsParameter("destructured", type, span(138, 157)),
+        [],
+        [createBinding("tone", "prop", span(140, 144))],
+        [],
+        undefined,
+        { styles: { sheets: [sheet], scopeId: "0a1b2c3d" } },
+      ),
+    ],
+    [createExport("default", "Button", span(100, 210))],
+    [],
+    [],
+    [],
+    [
+      createPassThroughImport(
+        "virtual:recipes",
+        [createPassThroughName("button", "button", span(32, 38))],
+        span(23, 67),
+      ),
+      createPassThroughImport("virtual:recipes.css", [], span(68, 99)),
+    ],
   );
 }

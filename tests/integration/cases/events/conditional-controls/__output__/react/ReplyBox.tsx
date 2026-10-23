@@ -5,7 +5,7 @@ export interface ReplyBoxAttributes {
   style?: CSSProperties;
 }
 
-export default function ReplyBox({ className, style }: ReplyBoxAttributes) {
+export default function ReplyBox({ className, style, ...attributes }: ReplyBoxAttributes) {
   const [started, setStarted] = useState(false);
   const startedRef = useRef(started);
   const [suggesting, setSuggesting] = useState(false);
@@ -24,7 +24,12 @@ export default function ReplyBox({ className, style }: ReplyBoxAttributes) {
   const keydownOnce = useOnce();
 
   return (
-    <section className={cx("reply-box", className)} aria-label="Reply" style={style}>
+    <section
+      className={cx("reply-box", className)}
+      aria-label="Reply"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <label>
         Message
         <textarea
@@ -86,4 +91,13 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
     fired.current.add(target);
     return true;
   };
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

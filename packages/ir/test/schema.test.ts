@@ -25,7 +25,7 @@ import {
   validateModule,
 } from "../src/index.ts";
 import type { ElementNode, RenderNode } from "../src/index.ts";
-import { everyKind, expression, ids } from "./fixtures.ts";
+import { everyKind, expression, ids, styled } from "./fixtures.ts";
 
 describe("irSchema", () => {
   it("is up to date with the IR's types", () => {
@@ -41,6 +41,7 @@ describe("irSchema", () => {
     ]);
     expect(validate(module), JSON.stringify(validate.errors)).toBe(true);
     expect(validate(everyKind()), JSON.stringify(validate.errors)).toBe(true);
+    expect(validate(styled()), JSON.stringify(validate.errors)).toBe(true);
   });
 
   it("rejects unknown fields, so a field is never added without a schema change", () => {
@@ -156,6 +157,43 @@ describe("validateModule", () => {
       "an export of an unknown kind",
       (module) => (((module.exports as { kind: string }[])[0]!.kind = "both"), module),
     ],
+    // Styles (ADR-0063).
+    ...(
+      [
+        ["a styled component", "./A.css", "0a1b2c3d"],
+        ["a scope id that is not eight hex digits", "./A.css", "0A1B2C3D"],
+        ["a stylesheet in a preprocessor's language", "./A.scss", "0a1b2c3d"],
+        ["a stylesheet that is no relative path", "A.css", "0a1b2c3d"],
+      ] as const
+    ).map(([name, specifier, scopeId]): [string, (module: Record<string, unknown>) => unknown] => [
+      name,
+      (module) => (
+        Object.assign((module.components as Record<string, unknown>[])[0]!, {
+          styles: [{ specifier, source: "", span: { start: 0, end: 1 } }],
+          scopeId,
+        }),
+        module
+      ),
+    ]),
+    // A pass-through import names any module that is neither relative nor absolute (ADR-0064).
+    ...(
+      [
+        "virtual:theme.css",
+        "virtual:other",
+        "styled-system/css",
+        "",
+        "./a.css",
+        "/a",
+        "\\a",
+        "C:\\x",
+      ] as const
+    ).map((specifier): [string, (module: Record<string, unknown>) => unknown] => [
+      `a pass-through import of ${specifier}`,
+      (module) => ({
+        ...module,
+        passThroughImports: [{ specifier, names: [], span: { start: 0, end: 1 } }],
+      }),
+    ]),
     ["null", () => null],
     ["an array", () => []],
     // Keys a prototype has: they must not find a schema there, or a value.

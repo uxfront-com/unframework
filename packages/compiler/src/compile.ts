@@ -1,5 +1,6 @@
-import { analyze, componentImports } from "@unframework/analyzer";
-import { formatOutput } from "@unframework/codegen";
+import { analyze, componentImports, stylesheetImports } from "@unframework/analyzer";
+import type { StylesheetSource } from "@unframework/analyzer";
+import { formatOutput, scopeStylesheet } from "@unframework/codegen";
 import type { OutputFile, Target } from "@unframework/codegen";
 import { createDiagnostic, sortDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
@@ -9,6 +10,7 @@ import { parseModule } from "@unframework/parser";
 
 import { checkCapabilities } from "./capabilities.ts";
 import { isSpanIn, pluginIrProblems } from "./plugin-ir.ts";
+import { stylesheetSource } from "./resolver.ts";
 import type { Resolver } from "./resolver.ts";
 import { resolveTarget } from "./targets.ts";
 import type { TargetName } from "./targets.ts";
@@ -56,9 +58,34 @@ export interface CompileOptions {
    * reads files. `importer` is `filename`. It is pure and deterministic (P8): it analyses the
    * child's declarations, never compiles it, so the output depends only on the source, the
    * options and what it returns. Without it, or when it returns nothing, the import is UF1202;
-   * a resolver that throws is UF9001 as well.
+   * a resolver that throws is UF9001 as well. Its `stylesheet` reads each stylesheet the source
+   * imports (ADR-0063): without it, or when it returns nothing, the import is UF5005.
    */
   resolve?: Resolver;
+  /**
+   * The specifier prefixes whose imports pass through to every output as written (plan §4.4,
+   * ADR-0064): a styling engine's virtual modules, which its own bundler plugin resolves. It
+   * defaults to `["virtual:"]`, Vite's convention for a module a plugin registers, and a list
+   * replaces the default (`["virtual:", "styled-system/"]`). A prefix that is empty, relative or
+   * absolute throws (`checkPassThrough`). An import the analyser classifies itself (the
+   * authoring API, a framework, a `.uf.tsx` or relative module) never passes through.
+   */
+  passThrough?: readonly string[];
+}
+
+/**
+ * Checks the `passThrough` option (ADR-0064): throws when a prefix is empty, or starts with `.`,
+ * `/`, `\\` or a drive letter, since such a specifier names a file of the project, a component's
+ * own sheet or a child, never a module a plugin registers.
+ */
+export function checkPassThrough(prefixes: readonly string[]): void {
+  for (const prefix of prefixes) {
+    if (typeof prefix !== "string" || !prefix || /^(?:[./\\]|[A-Za-z]:)/.test(prefix)) {
+      throw new TypeError(
+        `The passThrough prefix ${JSON.stringify(prefix)} is invalid: a prefix that passes through names a module a bundler plugin registers, such as "virtual:", so it is not empty, relative or absolute.`,
+      );
+    }
+  }
 }
 
 /** The result of {@link compile}. */
@@ -72,7 +99,8 @@ export interface CompileResult {
   outputs: Record<string, OutputFile[]>;
   /**
    * The component each output file is written for, by target name, then by the file's path:
-   * the unplugin loads a file's components under ids of their own (ADR-0053).
+   * the unplugin loads a file's components under ids of their own (ADR-0053). The scoped sheet,
+   * `<source>.css`, is no component's module, and is left out (ADR-0063).
    */
   owners: Record<string, Record<string, string>>;
 }
@@ -80,12 +108,14 @@ export interface CompileResult {
 /**
  * Compiles one `.uf.tsx` source to every selected target. A pure function of the source and
  * the options: the same input and versions give byte-identical output (P8). It throws only
- * for invalid options (an unknown target name, two targets with one name); every other
+ * for invalid options (an unknown target name, two targets with one name, an invalid
+ * `passThrough` prefix); every other
  * problem, a misbehaving plugin or target included, is a diagnostic, and an error in one
  * component or target never stops the others.
  */
 export async function compile(source: string, options: CompileOptions): Promise<CompileResult> {
   const file = options.filename;
+  if (options.passThrough) checkPassThrough(options.passThrough);
   const diagnostics: Diagnostic[] = [];
   const targets = options.targets.map(resolveTarget);
   const outputs: Record<string, OutputFile[]> = {};
@@ -101,6 +131,8 @@ export async function compile(source: string, options: CompileOptions): Promise<
   // The analyser's module, frozen: every plugin's module is compared with it, whatever the
   // plugins before it returned.
   let analysed: UfModule | undefined;
+  /** Each stylesheet's file, by its specifier, as the resolver named it. */
+  let sheetFiles = new Map<string, string>();
   try {
     const parsed = parseModule(file, source);
     const imports = new Map<string, ModuleApi | undefined>();
@@ -112,7 +144,24 @@ export async function compile(source: string, options: CompileOptions): Promise<
         diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
       }
     }
-    const analysis = analyze(parsed, { imports });
+    const stylesheets = new Map<string, StylesheetSource | undefined>();
+    for (const specifier of stylesheetImports(parsed)) {
+      try {
+        const sheet = await options.resolve?.stylesheet?.({ specifier, importer: file });
+        stylesheets.set(specifier, sheet && stylesheetSource(sheet.file, sheet.source));
+      } catch (error) {
+        stylesheets.set(specifier, undefined);
+        diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
+      }
+    }
+    sheetFiles = new Map(
+      [...stylesheets].flatMap(([specifier, sheet]) => (sheet ? [[specifier, sheet.file]] : [])),
+    );
+    const analysis = analyze(parsed, {
+      imports,
+      stylesheets,
+      ...(options.passThrough ? { passThrough: options.passThrough } : {}),
+    });
     diagnostics.push(...analysis.diagnostics);
     // The analyser keeps the IR's invariants by construction; a module that breaks one is a
     // compiler bug, and no target may emit from it.
@@ -148,10 +197,28 @@ export async function compile(source: string, options: CompileOptions): Promise<
     }
   }
 
+  // The scoper runs once per sheet, on the module the targets emit from: after the plugins' `ir`
+  // hooks, which may keep or drop the analyser's sheets, never change them (ADR-0063). A
+  // selector it rejects (UF5004) withholds the module from every target, as an analyser error
+  // does.
+  /** Each styled component's scoped sheets, joined in import order, by its name. */
+  const sheets = new Map<string, string>();
+  for (const component of module?.components ?? []) {
+    let joined = "";
+    for (const sheet of component.styles ?? []) {
+      const sheetFile = sheetFiles.get(sheet.specifier) ?? sheet.specifier;
+      const scoped = scopeStylesheet(sheetFile, sheet.source, component.scopeId!);
+      diagnostics.push(...scoped.diagnostics);
+      if (scoped.diagnostics.length) module = undefined;
+      joined += joined && !joined.endsWith("\n") ? `\n${scoped.code}` : scoped.code;
+    }
+    if (component.styles?.length) sheets.set(component.name, joined);
+  }
+
   if (module) {
     for (const target of targets) {
       try {
-        const emitted = await emitTarget(target, module, source, options, diagnostics);
+        const emitted = await emitTarget(target, module, source, options, diagnostics, sheets);
         outputs[target.name] = emitted.files;
         owners[target.name] = emitted.owners;
       } catch (error) {
@@ -171,8 +238,11 @@ export async function compile(source: string, options: CompileOptions): Promise<
 
 /**
  * Checks a target's capabilities, then emits, transforms and formats each component's files.
- * The files of two components, or two files of one, may not share a path, compared without
- * case: case-insensitive file systems would write one over the other.
+ * A styled component's files end with its scoped sheet, `<source>.css` (ADR-0063), which the
+ * `output` hooks see and formatting keeps as printed, and which `owners` leaves out: the
+ * unplugin serves it on an id of its own. The files of two components, or two files of one,
+ * may not share a path, compared without case: case-insensitive file systems would write one
+ * over the other.
  */
 async function emitTarget(
   target: Target,
@@ -180,8 +250,10 @@ async function emitTarget(
   source: string,
   options: CompileOptions,
   diagnostics: Diagnostic[],
+  sheets: ReadonlyMap<string, string>,
 ): Promise<{ files: OutputFile[]; owners: Record<string, string> }> {
   const file = options.filename;
+  const sheetPath = `${file.slice(file.lastIndexOf("/") + 1)}.css`;
   diagnostics.push(...checkCapabilities(module, target));
   const written: OutputFile[] = [];
   const owners = new Map<string, { path: string; component: string }>();
@@ -196,6 +268,8 @@ async function emitTarget(
         }),
       );
       if ("problem" in emitted) throw new TypeError(`emit returned ${emitted.problem}`);
+      const sheet = sheets.get(component.name);
+      if (sheet !== undefined) emitted.files.push({ path: sheetPath, contents: sheet });
       files = deepFreeze(emitted.files);
     } catch (error) {
       const what = `The ${target.name} target failed on ${component.name}`;
@@ -254,7 +328,9 @@ async function emitTarget(
   return {
     files: written,
     owners: Object.fromEntries(
-      [...owners.values()].map(({ path, component }) => [path, component]),
+      [...owners.values()]
+        .filter(({ path }) => path !== sheetPath)
+        .map(({ path, component }) => [path, component]),
     ),
   };
 }

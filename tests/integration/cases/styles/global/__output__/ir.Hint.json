@@ -1,0 +1,144 @@
+{
+  "irVersion": 1,
+  "file": "styles/global/Hint.uf.tsx",
+  "components": [
+    {
+      "name": "Hint",
+      "span": {
+        "start": 80,
+        "end": 238
+      },
+      "props": [
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 127,
+              "end": 133
+            }
+          },
+          "binding": "text@111",
+          "span": {
+            "start": 121,
+            "end": 133
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ text: string }",
+          "span": {
+            "start": 119,
+            "end": 135
+          }
+        },
+        "span": {
+          "start": 109,
+          "end": 135
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "text@111",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 111,
+            "end": 115
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "hint",
+            "span": {
+              "start": 157,
+              "end": 169
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Tip: ",
+            "span": {
+              "start": 170,
+              "end": 182
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "span",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "uf-highlight",
+                "span": {
+                  "start": 188,
+                  "end": 208
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "text",
+                  "span": {
+                    "start": 210,
+                    "end": 214
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "text@111",
+                      "span": {
+                        "start": 210,
+                        "end": 214
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 209,
+                  "end": 215
+                }
+              }
+            ],
+            "span": {
+              "start": 182,
+              "end": 222
+            }
+          }
+        ],
+        "span": {
+          "start": 154,
+          "end": 231
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Hint",
+      "span": {
+        "start": 80,
+        "end": 238
+      }
+    }
+  ],
+  "types": []
+}

@@ -1,0 +1,136 @@
+{
+  "irVersion": 1,
+  "file": "styles/slotted/Frame.uf.tsx",
+  "components": [
+    {
+      "name": "Frame",
+      "span": {
+        "start": 110,
+        "end": 377
+      },
+      "props": [],
+      "types": [],
+      "slots": {
+        "binding": "slots@152",
+        "type": {
+          "code": "{ default?(): Element; label?(props: { text: string }): Element }",
+          "span": {
+            "start": 172,
+            "end": 237
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 174,
+              "end": 194
+            }
+          },
+          {
+            "name": "label",
+            "optional": true,
+            "props": {
+              "code": "{ text: string }",
+              "span": {
+                "start": 209,
+                "end": 225
+              }
+            },
+            "span": {
+              "start": 195,
+              "end": 235
+            }
+          }
+        ],
+        "span": {
+          "start": 146,
+          "end": 241
+        }
+      },
+      "bindings": [
+        {
+          "id": "slots@152",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 152,
+            "end": 157
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "figure",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "frame",
+            "span": {
+              "start": 265,
+              "end": 278
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "SlotOutlet",
+            "slot": "default",
+            "fallback": [],
+            "span": {
+              "start": 286,
+              "end": 305
+            }
+          },
+          {
+            "kind": "SlotOutlet",
+            "slot": "label",
+            "props": {
+              "code": "{ text: \"Harbour at dusk\" }",
+              "span": {
+                "start": 327,
+                "end": 354
+              },
+              "refs": []
+            },
+            "fallback": [],
+            "span": {
+              "start": 312,
+              "end": 356
+            }
+          }
+        ],
+        "span": {
+          "start": 257,
+          "end": 370
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Frame.css",
+          "source": ".frame {\n  margin: 0;\n  padding: 12px;\n  border: 2px dashed rgb(107, 114, 128);\n}\n\n/* Matches the content a parent fills into the frame's slot, which carries the frame's `-s`. */\n:slotted(.caption) {\n  color: rgb(21, 128, 61);\n  font-weight: 700;\n}\n",
+          "span": {
+            "start": 0,
+            "end": 21
+          }
+        }
+      ],
+      "scopeId": "9dc516fd"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Frame",
+      "span": {
+        "start": 110,
+        "end": 377
+      }
+    }
+  ],
+  "types": []
+}

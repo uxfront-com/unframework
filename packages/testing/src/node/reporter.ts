@@ -8,7 +8,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-import { caseOfFile } from "../harness.ts";
+import { BROWSER_ENGINES, caseOfFile } from "../harness.ts";
 import type { HarnessContext } from "../harness.ts";
 import type { UfLayerMeta } from "../layers.ts";
 import {
@@ -277,12 +277,21 @@ function hash(text: string): string {
   return value.toString(36);
 }
 
+/**
+ * Whether a file name is a partial matrix's, `parity-matrix.<run>.json`. An engine's merged
+ * matrix, `parity-matrix.<engine>.json` (ADR-0066), is not: no run is named after an engine.
+ */
+export function isPartialMatrixFile(name: string): boolean {
+  const run = /^parity-matrix\.(.+)\.json$/.exec(name)?.[1];
+  return run !== undefined && !(BROWSER_ENGINES as readonly string[]).includes(run);
+}
+
 /** The partial matrices in a directory, by file. Throws on one that is not a current matrix. */
 export function readPartialMatrices(reportsDir: string): Map<string, PartialMatrix> {
   const matrices = new Map<string, PartialMatrix>();
   if (!existsSync(reportsDir)) return matrices;
   for (const name of readdirSync(reportsDir).sort()) {
-    if (!/^parity-matrix\..+\.json$/.test(name)) continue;
+    if (!isPartialMatrixFile(name)) continue;
     const file = join(reportsDir, name);
     const matrix = JSON.parse(readFileSync(file, "utf8")) as PartialMatrix;
     if (matrix.version !== MATRIX_VERSION || !matrix.byProject) {
@@ -357,7 +366,7 @@ function supersede(
 ): string[] {
   const done: string[] = [];
   for (const name of readdirSync(reportsDir).sort()) {
-    if (!/^parity-matrix\..+\.json$/.test(name)) continue;
+    if (!isPartialMatrixFile(name)) continue;
     const file = join(reportsDir, name);
     if (file === written) continue;
     const matrix = JSON.parse(readFileSync(file, "utf8")) as PartialMatrix;

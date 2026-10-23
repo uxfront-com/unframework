@@ -16,7 +16,12 @@ export interface PickerAttributes {
   style?: CSSProperties;
 }
 
-export default function Picker({ onDone, className, style }: PickerEvents & PickerAttributes) {
+export default function Picker({
+  onDone,
+  className,
+  style,
+  ...attributes
+}: PickerEvents & PickerAttributes) {
   const onDoneRef = useRef(onDone);
   useLayoutEffect(() => {
     onDoneRef.current = onDone;
@@ -75,7 +80,12 @@ export default function Picker({ onDone, className, style }: PickerEvents & Pick
   }
 
   return (
-    <section className={cx("picker", className)} aria-label="Picker" style={style}>
+    <section
+      className={cx("picker", className)}
+      aria-label="Picker"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <div className="choices" role="presentation" onClick={report}>
         <button type="button" onClick={() => pick("alpha")}>
           Alpha
@@ -161,4 +171,13 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
       pending.current.push({ ticket, resolve });
       render(ticket);
     });
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

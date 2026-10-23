@@ -10,9 +10,9 @@ export interface FieldEvents {
 }
 
 export default component$<FieldProps & FieldEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ label, tone = "info", onClear$, class: className, style }) => {
+  ({ label, tone = "info", onClear$, class: className, style, ...attributes }) => {
     return (
-      <div class={["field", tone, className]} style={style}>
+      <div class={["field", tone, className]} {...scopeAttributes(attributes)} style={style}>
         <span>{label}</span>
         <button type="button" onClick$={() => onClear$?.(label)}>
           Clear {label}
@@ -21,3 +21,12 @@ export default component$<FieldProps & FieldEvents & { class?: ClassList; style?
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

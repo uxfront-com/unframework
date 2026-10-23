@@ -2,10 +2,13 @@ import { isPlatformBrowser } from "@angular/common";
 import {
   ApplicationRef,
   Component,
+  Directive,
+  ElementRef,
   Injector,
   type OnDestroy,
   type OnInit,
   PLATFORM_ID,
+  Renderer2,
   afterNextRender,
   afterRenderEffect,
   computed,
@@ -21,15 +24,47 @@ export interface MailboxProps {
   folder: string;
 }
 
+/** The scope attributes taken off each host, for the roots its component renders later. */
+const scopes = new WeakMap<Element, string[]>();
+
+/**
+ * Gives a root node of its component the scope attributes the component's styled parents put on
+ * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.
+ */
+@Directive({ selector: "[ufScope]" })
+export class ScopeAttributes implements OnInit {
+  readonly ufScope = input.required<HTMLElement>();
+  private readonly element = inject<ElementRef<Element>>(ElementRef);
+  private readonly renderer = inject(Renderer2);
+
+  ngOnInit(): void {
+    const host = this.ufScope();
+    let names = scopes.get(host);
+    if (!names) {
+      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));
+      for (const name of names) this.renderer.removeAttribute(host, name);
+      scopes.set(host, names);
+    }
+    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");
+  }
+}
+
 @Component({
   selector: "uf-mailbox",
+  imports: [ScopeAttributes],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let name = this.name();
     @let status = this.status();
     @let summary = this.summary();
-    <section class="mailbox" aria-label="Mailbox" [class]="this.class()" [style]="this.style()">
+    <section
+      class="mailbox"
+      aria-label="Mailbox"
+      [class]="this.class()"
+      [style]="this.style()"
+      [ufScope]="this.host"
+    >
       <h2>{{ name }}</h2>
       <p role="status">{{ summary }}</p>
       <p>Status: {{ status }}</p>
@@ -166,4 +201,5 @@ export default class Mailbox implements OnInit, OnDestroy {
     await Promise.resolve();
     this.appRef.tick();
   }
+  protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

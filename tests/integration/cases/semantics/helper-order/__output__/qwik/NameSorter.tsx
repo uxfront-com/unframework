@@ -22,7 +22,15 @@ function compare(a: string, b: string): number {
 }
 
 export default component$<NameSorterEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onStarted$, onFirstSeen$, onSecondSeen$, onTotal$, class: className, style }) => {
+  ({
+    onStarted$,
+    onFirstSeen$,
+    onSecondSeen$,
+    onTotal$,
+    class: className,
+    style,
+    ...attributes
+  }) => {
     const names = useSignal(["Cy", "Al"].toSorted((a, b) => compare(a, b)));
     const count = useSignal(0);
     const doubled = useComputed$(() => count.value * 2);
@@ -83,7 +91,12 @@ export default component$<NameSorterEvents & { class?: ClassList; style?: CSSPro
     });
 
     return (
-      <section class={["name-sorter", className]} aria-label="Names" style={style}>
+      <section
+        class={["name-sorter", className]}
+        aria-label="Names"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <p>Names: {names.value.join(", ")}</p>
         <p>Added: {count.value}</p>
         <button type="button" onClick$={() => add("Bo")}>
@@ -96,3 +109,12 @@ export default component$<NameSorterEvents & { class?: ClassList; style?: CSSPro
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

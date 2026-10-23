@@ -1,0 +1,10 @@
+{
+  "description": "Rules inside `@layer` blocks are scoped and the layers kept, so the later layer wins whatever the order of the rules.",
+  "ssr": {
+    "layered": {
+      "props": {
+        "title": "Layered card"
+      }
+    }
+  }
+}

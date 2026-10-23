@@ -1,0 +1,9 @@
+.mat[data-uf-09929c4a] {
+  padding: 8px;
+  background: rgb(254, 243, 199);
+}
+
+/* Matches the content a parent fills into the mat's slot, which carries the mat's `-s`. */
+.caption[data-uf-09929c4a-s] {
+  text-decoration: underline;
+}

@@ -15,7 +15,7 @@ export interface CommentComposerEvents {
 }
 
 export default component$<CommentComposerEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onSent$, onSaved$, onFirstSave$, class: className, style }) => {
+  ({ onSent$, onSaved$, onFirstSave$, class: className, style, ...attributes }) => {
     const tags = useSignal<string[]>([]);
     const query = useSignal("");
     const panelOpen = useSignal(true);
@@ -42,7 +42,12 @@ export default component$<CommentComposerEvents & { class?: ClassList; style?: C
     });
 
     return (
-      <section class={["comment-composer", className]} aria-label="Composer" style={style}>
+      <section
+        class={["comment-composer", className]}
+        aria-label="Composer"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <label>
           Comment
           <textarea
@@ -243,3 +248,12 @@ export default component$<CommentComposerEvents & { class?: ClassList; style?: C
 // The elements each `once` listener ran for: Qwik's listeners have no `once` option.
 const onceClick = new WeakSet<Element>();
 const onceClick_1 = new WeakSet<Element>();
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

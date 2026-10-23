@@ -28,7 +28,9 @@ component, written as a React developer would write it (plan §6):
   printed after the component (`className={cx("badge", tone, { active })}`): the
   `class-binding` capability is emulated.
 - `style={{ color: "red", marginTop: gap }}`, typed `as CSSProperties` (a type import from
-  `react`) when it sets a custom property.
+  `react`) when it sets a custom property. A style bound to a value goes through `styleObject`, an
+  inline helper that splits a declaration list into an object as Vue does (`style={styleObject(look)}`),
+  and `cx` reads an array's entries where a class part may be an array or an object (ADR-0065).
 - a spread written out key by key (`title={attrs.title}`, through `?.` when the source may be
   absent), its `class` merged into the element's `cx`.
 
@@ -107,9 +109,10 @@ the component opts out of it: its body starts with a comment naming the shape an
 The capabilities: `interactivity`, `event-capture`, `event-passive`, `conditional-event-control`
 and `use-id` are native;
 `event-once` (`useOnce`), `event-semantics` (`listen`) and `next-tick` (`useNextTick`) are
-emulated with inline helpers, and `class-binding` with `cx`. Of composition's cells,
+emulated with inline helpers, `class-binding` with `cx` and `style-binding` with `styleObject`. Of composition's cells,
 `model-array` (`toggle`), `model-modifiers` (`modelText`) and `reactive-context` (`refObject`)
-are emulated, and the others native.
+are emulated, and the others native. Of the styles' cells, `child-root-scope` is emulated
+(`scopeAttributes`), and the others native.
 
 Every name the output introduces (`cx`, `setCount`, `countRef`, `CounterEvents`, `listen`,
 `CSSProperties`, `_props`) is claimed around the source's own names, so none captures another.
@@ -160,6 +163,20 @@ text again, as Vue's `vModelText` does: the caret ends after the text, and no `s
 template ref or native listeners on the element share the callback. Where the native listeners'
 callback is written in place (it reads a list's row or a narrowed value), it would run at every
 render, so the caret stays at the start.
+
+## Scoped styles (M4)
+
+A component that imports a stylesheet imports the sheet `compile()` scoped for it, after its
+other imports: `import "./Badge.uf.tsx.css";` (ADR-0063). The shared JSX builder prints
+`data-uf-<id>=""` on each element it renders, the parent's attribute on a child's tag, and the
+child's `-s` on the content filled into a child whose sheet uses `:slotted()`, children and render
+props alike. A component also takes the scope attributes of its styled parents, which each of its root
+nodes spreads: its root element, component or `<component is>`, or each branch of a root
+conditional that renders one alone (`scopeRoots`, where Vue's fallthrough reaches). They come from
+the rest of its props pattern, picked by the inline `scopeAttributes` helper
+(`{...scopeAttributes(attributes)}`), or from the props object in the object form, and a component
+without props takes one, typed `object`. The helper keeps only the `data-uf-*` keys, so no prop
+the output leaves unread reaches the root.
 
 ## Toolchain
 

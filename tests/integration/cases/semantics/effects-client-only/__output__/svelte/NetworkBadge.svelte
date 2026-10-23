@@ -6,7 +6,7 @@
 
   type Props = { class?: ClassValue; style?: string };
 
-  let { class: className, style }: Props = $props();
+  let { class: className, style, ...attributes }: Props = $props();
 
   let online = $state<boolean>();
   let label = $state("Checking the connection");
@@ -24,6 +24,13 @@
   onMount(() => {
     online = navigator.onLine;
   });
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
 <p
@@ -31,4 +38,5 @@
   role="status"
   data-checked={online === undefined ? "no" : "yes"}
   {style}
+  {...scopeAttributes(attributes)}
 >{label}</p>

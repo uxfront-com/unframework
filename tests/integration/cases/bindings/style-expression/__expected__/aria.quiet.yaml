@@ -1,0 +1,6 @@
+- paragraph: Delete the project
+- text: Permanent
+- paragraph: Read the details before you continue.
+- emphasis: Optional
+- paragraph: This cannot be undone.
+- button "Emphasise"

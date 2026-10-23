@@ -40,9 +40,15 @@ export default function AccountSummary({
   seats,
   className,
   style,
+  ...attributes
 }: AccountSummaryProps & AccountSummaryAttributes) {
   return (
-    <section className={cx("account-summary", className)} aria-label="Account" style={style}>
+    <section
+      className={cx("account-summary", className)}
+      aria-label="Account"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       {loading ? <p>Loading the account</p> : !member ? <p>Signed out</p> : <h2>{member.name}</h2>}
       {member ? <p>Signed in as {member.email}</p> : null}
       {member ? <p>Role: {member.admin ? "administrator" : "member"}</p> : <p>Role: guest</p>}
@@ -81,4 +87,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

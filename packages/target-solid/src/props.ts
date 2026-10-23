@@ -65,11 +65,13 @@ export function solidProps(
   const parameter = component.propsParameter;
   const events = eventsInterface(component, imports);
   const emitted = component.emits !== undefined && emitsAny(component);
-  const typeCode = [parameter?.type.code, events?.name, ...composition.types]
-    .filter(Boolean)
-    .join(" & ");
+  // A component without props still takes the scope attributes of the styled parents that
+  // render it, as an object (ADR-0063).
+  const typeCode =
+    [parameter?.type.code, events?.name, ...composition.types].filter(Boolean).join(" & ") ||
+    "object";
   const type = () => placeholders.type(typeCode);
-  if (!parameter && !events && !composition.types.length) {
+  if (!parameter && !events && !composition.types.length && !composition.reads) {
     return { parameters: [], statements: [], read: asWritten };
   }
   const referenced = referencedBindings(component, { includeKeys: false });

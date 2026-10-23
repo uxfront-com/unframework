@@ -18,7 +18,7 @@ function formatCents(cents: number): string {
 }
 
 export default component$<PriceTagProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ price, class: className, style }) => {
+  ({ price, class: className, style, ...attributes }) => {
     const quantity = useSignal(1);
     const unit = useSignal(formatCents(price));
 
@@ -55,7 +55,12 @@ export default component$<PriceTagProps & { class?: ClassList; style?: CSSProper
     });
 
     return (
-      <section class={["price-tag", className]} aria-label="Price" style={style}>
+      <section
+        class={["price-tag", className]}
+        aria-label="Price"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <p>Unit: {unit.value}</p>
         <p role="status">{summary.value}</p>
         <p>Total: {total.value}</p>
@@ -70,3 +75,12 @@ export default component$<PriceTagProps & { class?: ClassList; style?: CSSProper
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

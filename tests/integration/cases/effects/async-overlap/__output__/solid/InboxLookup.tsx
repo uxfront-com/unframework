@@ -120,6 +120,7 @@ export default function InboxLookup(
       class={props.class ? `inbox-lookup ${props.class}` : "inbox-lookup"}
       aria-label="Inbox"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <button type="button" onClick={() => setSender("Ann")}>
         Find Ann
@@ -162,6 +163,13 @@ export default function InboxLookup(
       <p>Unread: {unread()}</p>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /**

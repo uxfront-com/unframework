@@ -13,7 +13,7 @@
     style?: string;
   };
 
-  let { pricePerSeat, onquote, class: className, style }: Props = $props();
+  let { pricePerSeat, onquote, class: className, style, ...attributes }: Props = $props();
 
   let seats = $state(1);
   const total = $derived(seats * pricePerSeat);
@@ -30,9 +30,21 @@
     seats += 1;
     onquote?.(seats, total, `${summary}, ${groupTotal} without the guide`);
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["seat-picker", className]} aria-label="Seats" {style}>
+<section
+  class={["seat-picker", className]}
+  aria-label="Seats"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <p role="status">{summary}</p
   ><button type="button" onclick={addSeat}>Add a seat</button
   ><button type="button" onclick={addGroupWithGuide}>Add a group and a guide</button>

@@ -1,0 +1,147 @@
+{
+  "irVersion": 1,
+  "file": "styles/layers/Card.uf.tsx",
+  "components": [
+    {
+      "name": "Card",
+      "span": {
+        "start": 22,
+        "end": 179
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 71,
+              "end": 77
+            }
+          },
+          "binding": "title@53",
+          "span": {
+            "start": 64,
+            "end": 77
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ title: string }",
+          "span": {
+            "start": 62,
+            "end": 79
+          }
+        },
+        "span": {
+          "start": 51,
+          "end": 79
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "title@53",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 53,
+            "end": 58
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "card",
+            "span": {
+              "start": 107,
+              "end": 119
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "title",
+                "span": {
+                  "start": 131,
+                  "end": 144
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "title",
+                  "span": {
+                    "start": 146,
+                    "end": 151
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "title@53",
+                      "span": {
+                        "start": 146,
+                        "end": 151
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 145,
+                  "end": 152
+                }
+              }
+            ],
+            "span": {
+              "start": 127,
+              "end": 157
+            }
+          }
+        ],
+        "span": {
+          "start": 98,
+          "end": 172
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Card.css",
+          "source": "/* The order of the layers, not of the rules, decides: `theme` wins over `base`. */\n@layer base, theme;\n\n@layer theme {\n  .card {\n    border-color: rgb(22, 101, 52);\n    color: rgb(22, 101, 52);\n  }\n}\n\n@layer base {\n  .card {\n    padding: 12px;\n    border: 3px solid rgb(185, 28, 28);\n    color: rgb(185, 28, 28);\n  }\n\n  .title {\n    margin: 0;\n    font-size: 18px;\n  }\n}\n",
+          "span": {
+            "start": 0,
+            "end": 20
+          }
+        }
+      ],
+      "scopeId": "bb60e985"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Card",
+      "span": {
+        "start": 22,
+        "end": 179
+      }
+    }
+  ],
+  "types": []
+}

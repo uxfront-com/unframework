@@ -37,7 +37,10 @@ function sourceOf(name: string): { file: string; source: string } {
   return { file, source: readFileSync(join(casesDir, name, file), "utf8") };
 }
 
-/** The plugin, named `unframework` because the toolchain reads `api.getCompiled` from it. */
+/**
+ * The plugin, named `unframework` because the toolchain reads `api.getCompiled` from it, and
+ * `api.getSheet`, which finds no sheet: the browser tests serve no styled case.
+ */
 export function corpusOutputs(): Plugin {
   const compiled = new Map<string, string>();
   let root = "";
@@ -46,7 +49,7 @@ export function corpusOutputs(): Plugin {
   return {
     name: "unframework",
     enforce: "pre",
-    api: { getCompiled: (id: string) => compiled.get(id) },
+    api: { getCompiled: (id: string) => compiled.get(id), getSheet: () => undefined },
     configResolved(config) {
       root = config.root;
     },

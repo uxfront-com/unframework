@@ -24,7 +24,9 @@ function refsOf(expression: string, props = PROPS) {
       ? `global ${ref.name}`
       : ref.kind === "Slot"
         ? `slot ${ref.slot}`
-        : `${ref.binding.split("@")[0]} ${source.slice(ref.span.start, ref.span.end)}${ref.shorthand ? " shorthand" : ""}`,
+        : ref.kind === "Import"
+          ? `import ${ref.name}`
+          : `${ref.binding.split("@")[0]} ${source.slice(ref.span.start, ref.span.end)}${ref.shorthand ? " shorthand" : ""}`,
   );
 }
 

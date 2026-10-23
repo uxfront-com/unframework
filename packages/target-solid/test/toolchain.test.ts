@@ -14,6 +14,11 @@ import { renderToString } from "../src/toolchain/server.ts";
 import { goldens, packageDir, toolchainDir } from "./fixtures.ts";
 
 const context: ToolchainContext = { toolchainDir, root: packageDir };
+/** The declaration a styled golden's sheet import needs, as the toolchain project passes it. */
+const SHEETS = join(toolchainDir, "sheets.d.ts");
+/** The declarations of the styling engines' modules, which the styled goldens import (ADR-0064). */
+const STYLEFRAME = join(toolchainDir, "../../integration/styleframe.d.ts");
+const FIXTURE_ENGINE = join(toolchainDir, "../../integration/fixture-engine.d.ts");
 const require = createRequire(import.meta.url);
 const scratch = join(packageDir, ".uf-tmp", `toolchain-${randomUUID()}`);
 beforeAll(() => mkdirSync(scratch, { recursive: true }));
@@ -80,7 +85,9 @@ describe("solid toolchain", () => {
 
   it("compiles hydratable server code for SSR", async () => {
     const code = await transformed("ssr", "server");
-    expect(code).toContain("ssrHydrationKey");
+    // The root takes a spread, so Solid writes it with `ssrElement`, whose last argument
+    // (`needsId`) prints the hydration key.
+    expect(code).toMatch(/_\$ssrElement\("p", [\s\S]*, true\);/);
     expect(code).not.toContain("template(");
   });
 });
@@ -107,7 +114,7 @@ describe("solid frameworkCompile (L3)", () => {
       errors: [
         {
           message: "Expected corresponding JSX closing tag for <p>.",
-          line: 7,
+          line: 11,
           column: 5,
           code: "MissingClosingTagElement",
         },
@@ -163,7 +170,7 @@ describe("solid frameworkCompile (L3)", () => {
 describe("solid typecheck (L4)", () => {
   // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output in one run", async () => {
-    const files = solidGoldens().map((file) => file.path);
+    const files = [...solidGoldens().map((file) => file.path), SHEETS, STYLEFRAME, FIXTURE_ENGINE];
     const results = await toolchain.typecheck(files, context);
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(files.map((file) => [file, []])),
@@ -171,7 +178,12 @@ describe("solid typecheck (L4)", () => {
   }, 60_000);
 
   it("reports each injected type error against its own file", async () => {
-    const goldenFiles = solidGoldens().map((file) => file.path);
+    const goldenFiles = [
+      ...solidGoldens().map((file) => file.path),
+      SHEETS,
+      STYLEFRAME,
+      FIXTURE_ENGINE,
+    ];
     const script = scratchFile(
       "Script.tsx",
       'const count: number = "one";\n\nexport default function Script() {\n  return <p>{count}</p>;\n}\n',
@@ -225,9 +237,11 @@ describe("solid renderToString (SSR)", () => {
   it("returns the component's HTML, with Solid's hydration keys", async () => {
     const ProfileCard = await compiled(golden("ProfileCard.tsx"), "ssr");
     const html = await renderToString(ProfileCard, {});
+    // A root that spreads its scope attributes renders through Solid's \`ssrElement\` (ADR-0063),
+    // which writes \`class\` where the key holds nothing, and a space after a class.
     expect(html.replace(/ data-hk="[^"]*"/g, "")).toBe(
       [
-        '<article class="profile" aria-labelledby="profile-name" style="">',
+        '<article class="profile " aria-labelledby="profile-name" style="">',
         '<header class="profile-header">',
         `<img src="${golden("ProfileCard.tsx").contents.match(/src="([^"]+)"/)![1]}" alt="Ada's avatar" width="48" height="48">`,
         '<h2 id="profile-name">Ada Lovelace</h2>',

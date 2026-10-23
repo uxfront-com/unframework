@@ -16,6 +16,7 @@ export default function FilterSummary(
       class={props.class ? `filter-summary ${props.class}` : "filter-summary"}
       aria-label="Filters"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <p>Tags: {Array.isArray(props.tags) ? props.tags.join(", ") : props.tags}</p>
       <p>
@@ -32,4 +33,11 @@ export default function FilterSummary(
       </Switch>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

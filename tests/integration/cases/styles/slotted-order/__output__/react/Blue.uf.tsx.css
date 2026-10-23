@@ -1,0 +1,9 @@
+.blue[data-uf-721c504a] {
+  padding: 4px;
+  border: 2px dashed rgb(29, 78, 216);
+}
+
+/* As specific as Amber's rule: on content that carries both `-s`, the sheet that loads later wins. */
+.caption[data-uf-721c504a-s] {
+  color: rgb(29, 78, 216);
+}

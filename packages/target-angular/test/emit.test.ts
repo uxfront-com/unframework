@@ -74,6 +74,39 @@ function templateOf(contents: string): string {
   return /template: `([\s\S]*)`\n/.exec(contents)![1]!;
 }
 
+/**
+ * The scope directive a component file declares before its class, whose root nodes bind it
+ * (the child-root rule, ADR-0063), and the host member they bind it to: ./styles.test.ts tests
+ * them, and the shape tests here expect them as written.
+ */
+const SCOPE_DIRECTIVE = [
+  "/** The scope attributes taken off each host, for the roots its component renders later. */",
+  "const scopes = new WeakMap<Element, string[]>();",
+  "",
+  "/**",
+  " * Gives a root node of its component the scope attributes the component's styled parents put on",
+  " * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.",
+  " */",
+  '@Directive({ selector: "[ufScope]" })',
+  "export class ScopeAttributes implements OnInit {",
+  "  readonly ufScope = input.required<HTMLElement>();",
+  "  private readonly element = inject<ElementRef<Element>>(ElementRef);",
+  "  private readonly renderer = inject(Renderer2);",
+  "",
+  "  ngOnInit(): void {",
+  "    const host = this.ufScope();",
+  "    let names = scopes.get(host);",
+  "    if (!names) {",
+  '      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));',
+  "      for (const name of names) this.renderer.removeAttribute(host, name);",
+  "      scopes.set(host, names);",
+  "    }",
+  '    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");',
+  "  }",
+  "}",
+];
+const HOST = "protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;";
+
 const greeting = createElement(
   "p",
   [createStaticAttribute("class", "greeting", at)],
@@ -86,7 +119,7 @@ describe("angular target", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual(CAPABILITY_NAMES.toSorted());
   });
 
-  it("emulates the listener options, ids, nextTick and composition's cells, and supports the rest natively", () => {
+  it("emulates the listener options, ids, nextTick, class and style bindings and composition's cells, declares the child root and the sheet order, and supports the rest natively", () => {
     const emulated = Object.entries(target.capabilities)
       .filter(([, cell]) => cell.support !== "native")
       .map(([name, cell]) => [name, cell.support, "helper" in cell ? cell.helper : undefined]);
@@ -96,6 +129,8 @@ describe("angular target", () => {
       ["event-passive", "emulated", "uf<Event>Passive"],
       ["use-id", "emulated", "nextId"],
       ["next-tick", "emulated", "nextTick"],
+      ["class-binding", "emulated", "classNames"],
+      ["style-binding", "emulated", "styleObject"],
       ["named-slot", "emulated", "uf<Component><Slot>"],
       ["scoped-slot", "emulated", "uf<Component><Slot>"],
       ["default-slot-presence", "unsupported", undefined],
@@ -106,6 +141,8 @@ describe("angular target", () => {
       ["contextual-root", "unsupported", undefined],
       ["reactive-context", "emulated", "refObject"],
       ["dynamic-component", "emulated", "@switch"],
+      ["child-root-scope", "unsupported", undefined],
+      ["sheet-order", "unsupported", undefined],
     ]);
   });
 
@@ -114,22 +151,31 @@ describe("angular target", () => {
       {
         path: "hello.ts",
         contents: [
-          'import { Component, input } from "@angular/core";',
+          'import { Component, Directive, ElementRef, type OnInit, Renderer2, inject, input } from "@angular/core";',
+          "",
+          ...SCOPE_DIRECTIVE,
           "",
           "@Component({",
           '  selector: "uf-hello",',
+          "  imports: [ScopeAttributes],",
           "  host: {",
           '    "[attr.class]": "null",',
           '    "[attr.style]": "\'display: contents;\'"',
           "  },",
           "  preserveWhitespaces: false,",
           "  template: `",
-          '    <p class="greeting" [class]="this.class()" [style]="this.style()">Hello, world!</p>',
+          "    <p",
+          '      class="greeting"',
+          '      [class]="this.class()"',
+          '      [style]="this.style()"',
+          '      [ufScope]="this.host"',
+          "    >Hello, world!</p>",
           "  `",
           "})",
           "export default class Hello {",
           "  readonly class = input<string>();",
           "  readonly style = input<Record<string, string | null | undefined>>();",
+          `  ${HOST}`,
           "}",
           "",
         ].join("\n"),
@@ -162,6 +208,7 @@ describe("angular target", () => {
         "    <p",
         '      [class]="this.class()"',
         '      [style]="this.style()"',
+        '      [ufScope]="this.host"',
         "    >&#64;if (b) &#123;&#125; &lt;c> &amp; \\`$&#123;d&#125;\\` \\\\e</p>",
         "  ",
       ].join("\n"),
@@ -203,7 +250,7 @@ describe("angular target", () => {
     const render = createElement("p", [createStaticAttribute("title", "a\rb", at)], [], at);
     const [file] = emitModule(moduleOf(render));
     expect(templateOf(file!.contents)).toContain(
-      '<p title="a&#13;b" [class]="this.class()" [style]="this.style()"></p>',
+      '<p title="a&#13;b" [class]="this.class()" [style]="this.style()" [ufScope]="this.host"></p>',
     );
   });
 
@@ -212,8 +259,9 @@ describe("angular target", () => {
   it("names the class apart when the component is named after Angular's decorator", () => {
     const [file] = emitModule(moduleOf(greeting, "Component"));
     expect(file!.contents).toMatch(
-      /^import \{ Component, input \} from "@angular\/core";\n\n@Component\(\{/,
+      /^import \{ Component, [^}]*\binput \} from "@angular\/core";\n/,
     );
+    expect(file!.contents).toContain("\n@Component({\n");
     expect(file!.contents).toMatch(/\nexport default class Component_1 \{\n[\s\S]*\n\}\n$/);
     const [named] = emitModule(moduleOf(greeting, "Component", "named"));
     expect(named!.contents).toMatch(
@@ -253,14 +301,18 @@ describe("angular target", () => {
     const render = element("p", [text("a "), element("b", [text("b")]), text(" c")]);
     const [file] = emitModule(moduleOf(render));
     expect(templateOf(file!.contents)).toContain(
-      '<p [class]="this.class()" [style]="this.style()">a <b>b</b> c</p>',
+      '<p [class]="this.class()" [style]="this.style()" [ufScope]="this.host">a <b>b</b> c</p>',
     );
   });
 });
 
-/** The class's body of an emitted file, one member per line, as the compiler formats it. */
+/**
+ * The component class's body of an emitted file, one member per line, as the compiler formats
+ * it: the class after `@Component(`, past a directive the file declares before it.
+ */
 function classBody(contents: string): string[] {
-  const body = /\n(?:export (?:default )?)?class \w+ \{\n([\s\S]*?)\n\}\n/.exec(contents);
+  const component = contents.slice(Math.max(contents.indexOf("@Component("), 0));
+  const body = /\n(?:export (?:default )?)?class \w+ \{\n([\s\S]*?)\n\}\n/.exec(component);
   return body ? body[1]!.split("\n").map((line) => line.trim()) : [];
 }
 
@@ -289,7 +341,15 @@ export default function Badge({ label, tone = "info", count }: BadgeProps) {
     expect(file).toEqual({
       path: "badge.ts",
       contents: [
-        'import { Component, input } from "@angular/core";',
+        "import {",
+        "  Component,",
+        "  Directive,",
+        "  ElementRef,",
+        "  type OnInit,",
+        "  Renderer2,",
+        "  inject,",
+        "  input,",
+        '} from "@angular/core";',
         "",
         "export interface BadgeProps {",
         "  label: string;",
@@ -297,8 +357,11 @@ export default function Badge({ label, tone = "info", count }: BadgeProps) {
         "  count?: number;",
         "}",
         "",
+        ...SCOPE_DIRECTIVE,
+        "",
         "@Component({",
         '  selector: "uf-badge",',
+        "  imports: [ScopeAttributes],",
         '  host: { "[attr.class]": "null", "[attr.style]": "\'display: contents;\'" },',
         "  preserveWhitespaces: false,",
         "  template: `",
@@ -309,6 +372,7 @@ export default function Badge({ label, tone = "info", count }: BadgeProps) {
         '      [attr.data-tone]="tone"',
         '      [class]="this.class()"',
         '      [style]="this.style()"',
+        '      [ufScope]="this.host"',
         "    >{{ label }}&ngsp;{{ count ?? 0 }}</p>",
         "  `,",
         "})",
@@ -320,6 +384,7 @@ export default function Badge({ label, tone = "info", count }: BadgeProps) {
         "  readonly count = input<number>();",
         "  readonly class = input<string>();",
         "  readonly style = input<Record<string, string | null | undefined>>();",
+        `  ${HOST}`,
         "}",
         "",
       ].join("\n"),
@@ -357,6 +422,7 @@ export default function Defaults({ label = null, size = 1000, tags = [], author 
       ");",
       "readonly class = input<string>();",
       "readonly style = input<Record<string, string | null | undefined>>();",
+      HOST,
     ]);
   });
 
@@ -384,6 +450,7 @@ export default function ToneLabel({ tone = "info", size = 1 }: ToneProps) {
       "});",
       "readonly class = input<string>();",
       "readonly style = input<Record<string, string | null | undefined>>();",
+      HOST,
     ]);
   });
 
@@ -396,16 +463,21 @@ export default function Byline(props: { author: string; minutes?: number }) {
     expect(templateLines(file.contents)).toEqual([
       "@let author = this.author();",
       "@let minutes = this.minutes();",
-      '<p [class]="this.class()" [style]="this.style()">By {{ author }}, {{ minutes ?? 1 }} min</p>',
+      "<p",
+      '[class]="this.class()"',
+      '[style]="this.style()"',
+      '[ufScope]="this.host"',
+      ">By {{ author }}, {{ minutes ?? 1 }} min</p>",
     ]);
     expect(classBody(file.contents)).toEqual([
       "readonly author = input.required<string>();",
       "readonly minutes = input<number>();",
       "readonly class = input<string>();",
       "readonly style = input<Record<string, string | null | undefined>>();",
+      HOST,
     ]);
     // An inline props type declares nothing.
-    expect(file.contents).not.toMatch(/interface|type /);
+    expect(file.contents).not.toMatch(/\binterface\b|^(?:export )?type /m);
   });
 
   // A prop is the component's API: a consumer may pass one the template does not read, which
@@ -424,7 +496,7 @@ export default function Quiet({ label, note }: QuietProps) {
 `);
     expect(templateLines(file.contents)).toEqual([
       "@let label = this.label();",
-      '<p [class]="this.class()" [style]="this.style()">{{ label }}</p>',
+      '<p [class]="this.class()" [style]="this.style()" [ufScope]="this.host">{{ label }}</p>',
     ]);
     expect(classBody(file.contents)).toEqual([
       "readonly label = input.required<string>();",
@@ -432,6 +504,7 @@ export default function Quiet({ label, note }: QuietProps) {
       "readonly note = input<string>();",
       "readonly class = input<string>();",
       "readonly style = input<Record<string, string | null | undefined>>();",
+      HOST,
     ]);
   });
 
@@ -487,12 +560,13 @@ export default function Field({ value }: input) {
 }
 `);
     expect(taken.contents).toMatch(
-      /^import \{ Component, input as input_1 \} from "@angular\/core";/,
+      /^import \{\n {2}Component,\n[^}]*\n {2}input as input_1,\n\} from "@angular\/core";/,
     );
     expect(classBody(taken.contents)).toEqual([
       "readonly value = input_1.required<string>();",
       "readonly class = input_1<string>();",
       "readonly style = input_1<Record<string, string | null | undefined>>();",
+      HOST,
     ]);
   });
 });
@@ -516,7 +590,7 @@ export default function Card({ owner }: CardProps) {
 `);
     expect(templateLines(file.contents)).toEqual([
       "@let owner = this.owner();",
-      '<div [class]="this.class()" [style]="this.style()">',
+      '<div [class]="this.class()" [style]="this.style()" [ufScope]="this.host">',
       "@if (owner) {",
       "<p>{{ owner.name.toUpperCase() }}</p>",
       "}",
@@ -544,7 +618,7 @@ export default function Rows({ prefix, rows }: RowsProps) {
 `);
     expect(templateLines(file.contents)).toEqual([
       "@let rows = this.rows();",
-      '<ul [class]="this.class()" [style]="this.style()">',
+      '<ul [class]="this.class()" [style]="this.style()" [ufScope]="this.host">',
       "@for (row of rows; track this.prefix() + row.id) {",
       "<li>{{ row.label }}</li>",
       "}",
@@ -576,6 +650,7 @@ export default function Stats({ values }: StatsProps) {
       "protected readonly Math = Math;",
       "protected readonly NaN = NaN;",
       "protected readonly String = String;",
+      HOST,
     ]);
   });
 
@@ -600,7 +675,7 @@ export default function Gap({ on, names }: GapProps) {
     expect(templateLines(file.contents)).toEqual([
       "@let on = this.on();",
       "@let names = this.names();",
-      '<p [class]="this.class()" [style]="this.style()">',
+      '<p [class]="this.class()" [style]="this.style()" [ufScope]="this.host">',
       '@if (on) {<i>a</i>}{{ " " }}<b>b</b>',
       '@for (name of names; track name) {<i>{{ name }}</i>}{{ "\\\\u00a0" }}<b>c</b>&ngsp;<i>d</i>',
       "</p>",
@@ -635,6 +710,7 @@ export default function Match({ label, on }: MatchProps) {
       "[attr.title]=\"/\\\\x27/.test(label) ? 'quoted' : 'plain'\"",
       '[class]="this.class()"',
       '[style]="this.style()"',
+      '[ufScope]="this.host"',
       ">",
       "@if (/^\\\\x2f/.test(label)) {",
       "<b>slash</b>",
@@ -678,7 +754,7 @@ export default function Empty({ attrs }: EmptyProps) {
     } as UfModule;
     const [file] = emitModule(keyless);
     expect(templateLines(file!.contents)).toEqual([
-      '<p [class]="this.class()" [style]="this.style()">x</p>',
+      '<p [class]="this.class()" [style]="this.style()" [ufScope]="this.host">x</p>',
     ]);
   });
 
@@ -696,6 +772,7 @@ export default function Badge({ tone = "info" }: BadgeProps) {
       'readonly tone = input<"info" | "warn", "info" | "warn" | undefined>("info", { transform: (value) => value === undefined ? "info" : value });',
       "readonly class = input<string>();",
       "readonly style = input<Record<string, string | null | undefined>>();",
+      HOST,
     ]);
   });
 });

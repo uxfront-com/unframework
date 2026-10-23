@@ -13,6 +13,7 @@ export default function ListenerOrder(props: { class?: string; style?: JSX.CSSPr
       class={props.class ? `listener-order ${props.class}` : "listener-order"}
       aria-label="Listener order"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <div class="toolbar" role="presentation" on:click={() => record("toolbar")}>
         <button
@@ -100,4 +101,11 @@ export default function ListenerOrder(props: { class?: string; style?: JSX.CSSPr
       </ol>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

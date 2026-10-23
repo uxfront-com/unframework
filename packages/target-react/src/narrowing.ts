@@ -114,6 +114,7 @@ function spansOf(reference: CodeReference): Span[] {
     case "Emit":
       return [reference.span, ...reference.arguments];
     case "Global":
+    case "Import":
     case "Event":
     case "Api":
     case "Slot":
@@ -148,6 +149,7 @@ function movedReference(reference: CodeReference, moved: (span: Span) => Span): 
         arguments: reference.arguments.map(moved),
       };
     case "Global":
+    case "Import":
     case "Event":
     case "Api":
     case "Slot":

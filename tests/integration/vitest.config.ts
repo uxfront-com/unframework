@@ -5,6 +5,8 @@
 //   UF_PIXELS=…          `baseline` (Linux default) or `live` (elsewhere)
 //   UF_CANARY=<id>       install a canary compiler plugin (`pnpm test:canaries`)
 //   UF_TARGETS=vue,react restrict the targets
+//   UF_BROWSER=…         `chromium` (default), `firefox` or `webkit`: the browser projects' engine;
+//                        outside Chromium, pixels are live and nothing is written (ADR-0066)
 import { join } from "node:path";
 
 import { createHarnessRun, ParityReporter, resolveHarnessMode } from "@unframework/testing/node";
@@ -14,7 +16,7 @@ import type { ViteUserConfig } from "vitest/config";
 import { findCanary } from "./harness/canaries.ts";
 import { caseConfigs, listCases } from "./harness/cases.ts";
 import { LOAD_FAILURES, LoadFailureReporter } from "./harness/load-failures.ts";
-import { CANARY_DIR, CASES_DIR, REPORTS_DIR, ROOT } from "./harness/paths.ts";
+import { CANARY_DIR, CASES_DIR, reportsDirOf, ROOT } from "./harness/paths.ts";
 import {
   harnessProjects,
   projectNames,
@@ -58,7 +60,7 @@ const config: ViteUserConfig = defineConfig({
     reporters: [
       "default",
       new ParityReporter({
-        reportsDir: REPORTS_DIR,
+        reportsDir: reportsDirOf(mode.browser ?? "chromium"),
         // A run restricted with UF_TARGETS is partial: it is not named `all`.
         allProjects: projectNames(selectTargets(undefined)),
         ...(mode.canary ? { canaryDir: join(CANARY_DIR, mode.canary) } : {}),

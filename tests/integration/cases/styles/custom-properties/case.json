@@ -1,0 +1,11 @@
+{
+  "description": "The sheet reads custom properties that the component sets from its props, through its `style`.",
+  "ssr": {
+    "wide": {
+      "props": {
+        "gap": "16px",
+        "accent": "rgb(147, 51, 234)"
+      }
+    }
+  }
+}

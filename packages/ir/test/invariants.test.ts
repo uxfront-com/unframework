@@ -41,6 +41,12 @@ import {
   createFunctionCode,
   createGlobalReference,
   createIdItem,
+  createImportReference,
+  createImportedName,
+  createModuleImport,
+  createPassThroughImport,
+  createPassThroughName,
+  createStyleSheet,
   createNarrowedPath,
   createParameter,
   createParameterPattern,
@@ -552,6 +558,20 @@ describe("checkInvariants on M1's IR", () => {
       svg(node("text", [], [text(" "), node("tspan", [], [text(" "), interpolation()])])),
     ],
     ["text in an SVG group", svg(node("g", [], [text("a")]))],
+    // The forms ADR-0038 and ADR-0039 defer, which the IR admits before the analyser lowers them.
+    [
+      "a spread's style",
+      node("p", [createSpreadAttribute(label(), [createSpreadKey("style", at)], false, at)]),
+    ],
+    [
+      "a vendor-prefixed property",
+      node("p", [style(createStaticStyle("-webkit-line-clamp", "2", at))]),
+    ],
+    ["a style bound to one value", node("p", [createStyleAttribute([], at, label())])],
+    [
+      "a class part that may be an array or an object",
+      node("p", [createClassAttribute([createDynamicClass(label(), at, true)], at)]),
+    ],
   ])("accepts %s", (_, render) => {
     const module = moduleOf(render);
     if (JSON.stringify(render).includes(ids.item)) {
@@ -622,10 +642,13 @@ describe("checkInvariants on M1's IR", () => {
       "with children",
     ],
     [
-      "a spread's style",
-      node("p", [createSpreadAttribute(label(), [createSpreadKey("style", at)], false, at)]),
-      "/attributes/0/keys/0/name",
-      "must not be bound: a `style`",
+      "a spread's style beside a style",
+      node("p", [
+        style(createStaticStyle("color", "red", at)),
+        createSpreadAttribute(label(), [createSpreadKey("style", at)], false, at),
+      ]),
+      "/attributes/1/keys/0/name",
+      'must set "style" once',
     ],
     [
       "a spread's handler",
@@ -708,10 +731,24 @@ describe("checkInvariants on M1's IR", () => {
       "must be a CSS property",
     ],
     [
-      "a vendor-prefixed property",
-      node("p", [style(createStaticStyle("-webkit-line-clamp", "2", at))]),
+      "a vendor prefix in upper case",
+      node("p", [style(createStaticStyle("-Webkit-line-clamp", "2", at))]),
       "/declarations/0/property",
-      "without a vendor prefix",
+      "must be a CSS property in lower case",
+    ],
+    [
+      "a style bound to one value that reads no binding of the component",
+      node("p", [
+        createStyleAttribute([], at, expression("styles", 0, [["styles", "styles@900"]])),
+      ]),
+      "/attributes/0/value/refs/0/binding",
+      "must name a binding of the component",
+    ],
+    [
+      "a style bound to one value that has declarations",
+      node("p", [createStyleAttribute([createStaticStyle("color", "red", at)], at, label())]),
+      "/attributes/0/declarations",
+      "must be empty",
     ],
     [
       "a property set twice",
@@ -3414,3 +3451,285 @@ function pushParameter(fn: FunctionCode): void {
   const before = fn.body.span.start - 1;
   fn.parameters.push(createParameter("extra", span(before, before)));
 }
+
+/** A `<p>` whose class part calls `button`, a pass-through import's name. */
+function recipe(): ElementNode {
+  return node("p", [
+    createClassAttribute(
+      [
+        createDynamicClass(
+          createExpression("button()", span(0, 8), [createImportReference("button", span(0, 6))]),
+          at,
+        ),
+      ],
+      at,
+    ),
+  ]);
+}
+
+/** A named import of an engine's `button`. */
+function recipes() {
+  return createPassThroughImport(
+    "virtual:recipes",
+    [createPassThroughName("button", "button", span(20, 26))],
+    span(0, 40),
+  );
+}
+
+/** A sibling stylesheet. */
+function sheet() {
+  return createStyleSheet("./A.css", ".a { color: red; }", span(0, 16));
+}
+
+/** {@link moduleOf}'s module of `render`, with `change` applied. */
+function changedModule(render: ElementNode, change: (module: UfModule) => void): () => UfModule {
+  return () => {
+    const module = moduleOf(render);
+    change(module);
+    return module;
+  };
+}
+
+/** Gives a module's component its sheets and scope id. */
+function styled(module: UfModule): void {
+  Object.assign(module.components[0]!, { styles: [sheet()], scopeId: "0a1b2c3d" });
+}
+
+describe("checkInvariants on styles (ADR-0063)", () => {
+  it.each<[string, () => UfModule]>([
+    ["a component with a stylesheet and its scope id", changedModule(node("p"), styled)],
+    [
+      "a template that reads a pass-through import",
+      changedModule(recipe(), (module) => {
+        module.passThroughImports = [recipes()];
+      }),
+    ],
+    [
+      "a side-effect import of any module neither relative nor absolute",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [
+          createPassThroughImport("virtual:engine.css", [], span(0, 30)),
+          createPassThroughImport("styled-system/setup", [], span(31, 60)),
+          createPassThroughImport("virtual:engine", [], span(61, 90)),
+        ];
+      }),
+    ],
+  ])("accepts %s", (_, build) => {
+    expect(checkInvariants(build())).toEqual([]);
+  });
+
+  it.each<[string, () => UfModule, string, string]>([
+    [
+      "a stylesheet without a scope id",
+      changedModule(node("p"), (module) => {
+        module.components[0]!.styles = [sheet()];
+      }),
+      "/components/0/scopeId",
+      "must be set",
+    ],
+    [
+      "a scope id without a stylesheet",
+      changedModule(node("p"), (module) => {
+        module.components[0]!.scopeId = "0a1b2c3d";
+      }),
+      "/components/0/scopeId",
+      "must be absent",
+    ],
+    [
+      "an empty list of stylesheets",
+      changedModule(node("p"), (module) => {
+        module.components[0]!.styles = [];
+      }),
+      "/components/0/styles",
+      "must hold a sheet",
+    ],
+    [
+      "a stylesheet in a module of two components",
+      changedModule(node("p"), (module) => {
+        styled(module);
+        module.components.push(createComponent("B", node("p"), span(500, 501)));
+      }),
+      "/components/0/styles",
+      "declares one component",
+    ],
+    [
+      "a pass-through import of a relative module",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [createPassThroughImport("./theme.css", [], at)];
+      }),
+      "/passThroughImports/0/specifier",
+      "neither relative nor absolute",
+    ],
+    [
+      "a pass-through import of an absolute module",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [createPassThroughImport("/theme.css", [], at)];
+      }),
+      "/passThroughImports/0/specifier",
+      "neither relative nor absolute",
+    ],
+    [
+      "a pass-through import of a module on a drive",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [createPassThroughImport("C:\\theme.css", [], at)];
+      }),
+      "/passThroughImports/0/specifier",
+      "neither relative nor absolute",
+    ],
+    [
+      "a pass-through import of no module",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [createPassThroughImport("", [], at)];
+      }),
+      "/passThroughImports/0/specifier",
+      "neither relative nor absolute",
+    ],
+
+    [
+      "a name that is no identifier",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [
+          createPassThroughImport(
+            "virtual:recipes",
+            [createPassThroughName("button", "my-button", at)],
+            at,
+          ),
+        ];
+      }),
+      "/passThroughImports/0/names/0/local",
+      "must be an identifier",
+    ],
+    [
+      "an imported name that is no identifier",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [
+          createPassThroughImport(
+            "virtual:recipes",
+            [createPassThroughName("my-button", "button", at)],
+            at,
+          ),
+        ];
+      }),
+      "/passThroughImports/0/names/0/imported",
+      "must be an identifier",
+    ],
+    [
+      "two names that bind one local",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [
+          createPassThroughImport(
+            "virtual:recipes",
+            [
+              createPassThroughName("button", "button", at),
+              createPassThroughName("badge", "button", at),
+            ],
+            at,
+          ),
+        ];
+      }),
+      "/passThroughImports/0/names/1/local",
+      "must differ from every other name",
+    ],
+    [
+      "a name a module import binds",
+      changedModule(node("p"), (module) => {
+        const api = {
+          file: "./Theme.uf.tsx",
+          components: [],
+          keys: [{ name: "ThemeKey", description: "theme", type: "Theme" }],
+        };
+        module.imports = [
+          createModuleImport(
+            "./Theme.uf.tsx",
+            "./Theme.uf.tsx",
+            api,
+            [createImportedName("Key", "ThemeKey", "ThemeKey", at)],
+            at,
+          ),
+        ];
+        module.passThroughImports = [
+          createPassThroughImport(
+            "virtual:recipes",
+            [createPassThroughName("button", "ThemeKey", at)],
+            at,
+          ),
+        ];
+      }),
+      "/passThroughImports/0/names/0/local",
+      "must differ from every other name",
+    ],
+    [
+      "a name a component takes",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [
+          createPassThroughImport(
+            "virtual:recipes",
+            [createPassThroughName("button", "A", at)],
+            at,
+          ),
+        ];
+      }),
+      "/passThroughImports/0/names/0/local",
+      "must differ from every other name",
+    ],
+    [
+      "a name Qwik's optimizer reads as a QRL",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [
+          createPassThroughImport(
+            "virtual:recipes",
+            [createPassThroughName("button", "button$", at)],
+            at,
+          ),
+        ];
+      }),
+      "/passThroughImports/0/names/0/local",
+      'must not be "button$": Qwik\'s optimizer',
+    ],
+    [
+      "a read of a name no pass-through import binds",
+      changedModule(recipe(), () => {}),
+      "/refs/0/name",
+      "must be a name a pass-through import of the module binds",
+    ],
+    [
+      "a read of a pass-through import that does not span its name",
+      changedModule(recipe(), (module) => {
+        module.passThroughImports = [
+          createPassThroughImport(
+            "virtual:recipes",
+            [createPassThroughName("button", "btn", at)],
+            at,
+          ),
+        ];
+        const { render } = module.components[0]!;
+        const [attribute] = render.kind === "Element" ? render.attributes : [];
+        if (attribute?.kind !== "Class" || attribute.items[0]?.kind !== "Dynamic") {
+          throw new Error("Expected the class part.");
+        }
+        attribute.items[0].value.refs = [createImportReference("btn", span(0, 6))];
+      }),
+      "/refs/0/span",
+      'must span "btn"',
+    ],
+  ])("reports %s", (_, build, path, message) => {
+    const errors = checkInvariants(build());
+    expect(errors, JSON.stringify(errors)).toHaveLength(1);
+    expect(errors[0]!.path.endsWith(path), errors[0]!.path).toBe(true);
+    expect(errors[0]!.message).toContain(message);
+  });
+
+  it("reports a pass-through import read in setup code", () => {
+    const module = extraConst("styled");
+    module.passThroughImports = [recipes()];
+    const extra = module.components[1]!.setup.at(-1);
+    if (extra?.kind !== "Const") throw new Error("Expected the extra const.");
+    const { start } = extra.value.span;
+    extra.value = createCode("button", span(start, start + 6), [
+      createImportReference("button", span(start, start + 6)),
+    ]);
+    const errors = checkInvariants(module);
+    expect(errors, JSON.stringify(errors)).toHaveLength(1);
+    expect(errors[0]!.message).toContain("must not read a pass-through import in an initial value");
+  });
+});

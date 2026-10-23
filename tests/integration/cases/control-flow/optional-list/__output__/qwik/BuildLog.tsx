@@ -13,9 +13,14 @@ export interface BuildLogProps {
 }
 
 export default component$<BuildLogProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ target, failed, lines, warnings, class: className, style }) => {
+  ({ target, failed, lines, warnings, class: className, style, ...attributes }) => {
     return (
-      <section class={["build-log", className]} aria-label="Build log" style={style}>
+      <section
+        class={["build-log", className]}
+        aria-label="Build log"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <pre>
           $ make {target}
           <>{failed ? <strong> (failed)</strong> : null}</>
@@ -36,3 +41,12 @@ export default component$<BuildLogProps & { class?: ClassList; style?: CSSProper
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

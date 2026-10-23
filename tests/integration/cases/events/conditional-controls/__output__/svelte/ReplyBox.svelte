@@ -6,7 +6,7 @@
 
   type Props = { class?: ClassValue; style?: string };
 
-  let { class: className, style }: Props = $props();
+  let { class: className, style, ...attributes }: Props = $props();
 
   let started = $state(false);
   let suggesting = $state(false);
@@ -26,9 +26,21 @@
       handler(event);
     };
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["reply-box", className]} aria-label="Reply" {style}>
+<section
+  class={["reply-box", className]}
+  aria-label="Reply"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <label>Message<textarea
     name="message"
     {@attach (node) => on(node, "keydown", once((event) => {

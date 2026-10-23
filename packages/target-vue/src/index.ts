@@ -70,6 +70,11 @@ export const vue: Target = defineTarget({
     context: { support: "native" },
     "reactive-context": { support: "native" },
     "dynamic-component": { support: "native" },
+    "scoped-styles": { support: "native" },
+    "child-root-scope": { support: "native" },
+    "slotted-styles": { support: "native" },
+    // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
+    "sheet-order": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { block, rewrite, listeners, components, keys } = scriptSetup(component, context.module);
@@ -77,15 +82,23 @@ export const vue: Target = defineTarget({
     const template = printMarkup(component.render, vueDialect, {
       level: 1,
       component,
+      module: context.module,
       rewrite,
       attribute: (attribute) =>
         attribute.kind === "Event" ? listeners.attributes.get(attribute) : undefined,
       componentTag: (name) => components.get(name),
     });
+    // The sheet `compile()` emits beside the source, already scoped, so the block is not
+    // `scoped`; plugin-vue resolves its `src` through the unplugin (ADR-0063).
+    const file = context.module.file;
+    const sheet = component.styles
+      ? [`<style src="./${file.slice(file.lastIndexOf("/") + 1)}.css"></style>`]
+      : [];
     const parts = [
       ...(keys === undefined ? [] : [keys]),
       ...(block === undefined ? [] : [block]),
       `<template>\n${template}\n</template>`,
+      ...sheet,
     ];
     return [{ path: `${component.name}.vue`, contents: `${parts.join("\n\n")}\n` }];
   },

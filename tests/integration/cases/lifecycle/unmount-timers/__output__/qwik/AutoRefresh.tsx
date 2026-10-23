@@ -19,7 +19,7 @@ export interface AutoRefreshEvents {
 
 export default component$<
   AutoRefreshProps & AutoRefreshEvents & { class?: ClassList; style?: CSSProperties }
->(({ interval, onRefresh$, class: className, style }) => {
+>(({ interval, onRefresh$, class: className, style, ...attributes }) => {
   const enabled = useSignal(false);
   const timer = useSignal<ReturnType<typeof setInterval> | undefined>();
   const refreshes = useSignal(0);
@@ -49,7 +49,12 @@ export default component$<
   );
 
   return (
-    <section class={["auto-refresh", className]} aria-label="Auto-refresh" style={style}>
+    <section
+      class={["auto-refresh", className]}
+      aria-label="Auto-refresh"
+      {...scopeAttributes(attributes)}
+      style={style}
+    >
       <button type="button" aria-pressed={enabled.value} onClick$={toggle}>
         Auto-refresh
       </button>
@@ -57,3 +62,12 @@ export default component$<
     </section>
   );
 });
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

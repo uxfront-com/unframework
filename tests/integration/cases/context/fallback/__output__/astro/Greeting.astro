@@ -9,7 +9,18 @@ interface Props {
 
 const { name, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const locale = "en" as LocaleKey;
 ---
 
-<p class:list={[className]} style={style}>{locale === "pt" ? "Olá" : "Hello"}, {name} ({locale})</p>
+<p
+  class:list={[className]}
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>{locale === "pt" ? "Olá" : "Hello"}, {name} ({locale})</p>

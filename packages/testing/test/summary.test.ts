@@ -554,6 +554,23 @@ describe("writeSummary", () => {
     expect(readFileSync(stepSummary, "utf8")).toBe(`# Earlier step\n${result.markdown}\n`);
   });
 
+  it("names an engine's matrix after it, and says how L10 and the font audit ran there", () => {
+    const { reportsDir } = reports();
+    writeFileSync(join(reportsDir, "parity-matrix.compile.json"), stringifyMatrix(compile));
+    writeFileSync(join(reportsDir, "parity-matrix.browser-vue.json"), stringifyMatrix(browser));
+    const result = writeSummary({ reportsDir, expected, browser: "webkit" });
+    expect(JSON.parse(readFileSync(join(reportsDir, "parity-matrix.webkit.json"), "utf8"))).toEqual(
+      result.matrix,
+    );
+    expect(readFileSync(join(reportsDir, "parity-matrix.webkit.md"), "utf8")).toBe(result.markdown);
+    expect(result.markdown).toContain("## Unframework parity matrix in webkit");
+    expect(result.markdown).toContain(
+      "The browser projects ran in webkit: L10 compared each target with the reference's capture in this run, and the font audit was skipped (CDP reports the font each glyph used, and only Chromium has CDP).",
+    );
+    // An engine's merged matrix is not read back as a partial one.
+    expect(writeSummary({ reportsDir, expected, browser: "webkit" }).matrix.runs).toHaveLength(2);
+  });
+
   it("summarises only the runs that ended since a time, and fails when there is none", () => {
     const { reportsDir } = reports();
     writeFileSync(join(reportsDir, "parity-matrix.compile.json"), stringifyMatrix(compile));

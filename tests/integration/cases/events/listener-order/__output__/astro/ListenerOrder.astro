@@ -6,11 +6,23 @@ interface Props {
 
 const { class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const log = [] as string[];
 const resets = 0 as number;
 ---
 
-<section class:list={["listener-order", className]} aria-label="Listener order" style={style}>
+<section
+  class:list={["listener-order", className]}
+  aria-label="Listener order"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <div class="toolbar" role="presentation">
     <button type="button">Save</button>
     <button type="button">Send</button>

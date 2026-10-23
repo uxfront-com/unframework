@@ -1,0 +1,8 @@
+error[UF5001]: "./Toolbar.css" has no single owner: this module declares 2 components, and a stylesheet scopes the elements of one.
+ --> diagnostics/shared-stylesheet/Toolbar.uf.tsx:3:8
+  |
+3 | import "./Toolbar.css";
+  |        ^^^^^^^^^^^^^^^
+  |
+  = help: Move each component that needs styles into a module of its own, with its own stylesheet.
+  = see: https://unframework.dev/diagnostics/UF5001

@@ -6,12 +6,17 @@ export interface PanelsAttributes {
   style?: CSSProperties;
 }
 
-export default function Panels({ className, style }: PanelsAttributes) {
+export default function Panels({ className, style, ...attributes }: PanelsAttributes) {
   const [shipping, setShipping] = useState(true);
   const shippingRef = useRef(shipping);
 
   return (
-    <section aria-label="Panels" className={className} style={style}>
+    <section
+      aria-label="Panels"
+      className={className}
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <Disclosure
         title="Shipping"
         open={shipping}
@@ -33,4 +38,13 @@ export default function Panels({ className, style }: PanelsAttributes) {
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

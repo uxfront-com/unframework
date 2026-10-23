@@ -1,0 +1,6 @@
+{
+  "description": "Static table-internal displays: a table of rows and cells built from divs and spans with a caption, and a table cell inside an inline box, which Chromium wraps in an anonymous inline table.",
+  "ssr": {
+    "team": { "props": { "name": "Ada Lovelace", "plan": "Team", "seats": 5 } }
+  }
+}

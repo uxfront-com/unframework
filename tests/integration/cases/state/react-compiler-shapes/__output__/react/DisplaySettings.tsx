@@ -25,6 +25,7 @@ export default function DisplaySettings({
   onSaved,
   className,
   style,
+  ...attributes
 }: DisplaySettingsEvents & DisplaySettingsAttributes) {
   // React Compiler 1.0 cannot compile a default value it cannot reorder yet: the component opts out of it.
   "use no memo";
@@ -82,7 +83,12 @@ export default function DisplaySettings({
   }
 
   return (
-    <section className={cx("display-settings", className)} aria-label="Display" style={style}>
+    <section
+      className={cx("display-settings", className)}
+      aria-label="Display"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p role="status">
         Theme {settings.theme}, size {settings.size}
       </p>
@@ -133,4 +139,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

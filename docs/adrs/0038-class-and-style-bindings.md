@@ -1,6 +1,6 @@
 # ADR-0038: `class` binds a set of tokens, and `style` binds declarations that never overlap
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0065
 - **Date:** 2026-10-05
 - **Plan:** §4.3, §4.4, §6 (`class={[…]}`), §9 M1, M4; G2, P2, P4, P7; ADR-0015, ADR-0037;
   amends ADR-0032

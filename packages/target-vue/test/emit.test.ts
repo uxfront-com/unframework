@@ -9,6 +9,7 @@ import {
   createExport,
   createModule,
   createStaticAttribute,
+  createStyleSheet,
   createText,
 } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
@@ -66,6 +67,28 @@ describe("vue target", () => {
 
   it("emits the same file for a named export", () => {
     expect(emit("named").files).toEqual(emit("default").files);
+  });
+
+  // The compiler has scoped the sheet already, so the block has no `scoped` (ADR-0063), and
+  // it names the sheet `compile()` emits beside the source, never the author's `./Card.css`.
+  it("attaches a styled component's scoped sheet with an unscoped `<style src>`", () => {
+    const render = createElement("p", [], [createText("Hi", at)], at);
+    const component = createComponent("Card", render, at, [], undefined, [], [], [], undefined, {
+      styles: { sheets: [createStyleSheet("./Card.css", ".card {}", at)], scopeId: "0a1b2c3d" },
+    });
+    const module = createModule(
+      "src/Card.uf.tsx",
+      [component],
+      [createExport("default", "Card", at)],
+    );
+    const files = target.emit(component, { module, options: undefined, report: () => {} });
+    expect(files).toEqual([
+      {
+        path: "Card.vue",
+        contents:
+          '<template>\n  <p data-uf-0a1b2c3d="">Hi</p>\n</template>\n\n<style src="./Card.uf.tsx.css"></style>\n',
+      },
+    ]);
   });
 
   const cases = corpus();

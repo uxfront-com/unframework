@@ -28,11 +28,22 @@ function component(output: string): string {
   return output.slice(start, output.indexOf("\n}\n", start) + 3);
 }
 
+/** The inline helper that forwards the styled parents' scope attributes to the root. */
+const SCOPE_ATTRIBUTES = [
+  "/** The scope attributes of the styled parents that render this component, for its root. */",
+  'function scopeAttributes(props: object): Record<string, ""> {',
+  '  const scope: Record<string, ""> = {};',
+  '  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";',
+  "  return scope;",
+  "}",
+];
+
 describe("solid target", () => {
   it("declares every capability", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([
       "attribute-spread",
       "bound-attribute",
+      "child-root-scope",
       "class-binding",
       "component",
       "component-event",
@@ -64,8 +75,11 @@ describe("solid target", () => {
       "props",
       "reactive-context",
       "scoped-slot",
+      "scoped-styles",
+      "sheet-order",
       "slot-fallback",
       "slot-forwarding",
+      "slotted-styles",
       "static-attribute",
       "style-binding",
       "svg",
@@ -75,7 +89,7 @@ describe("solid target", () => {
     ]);
   });
 
-  it("emulates watchers, nextTick and class bindings with the helpers it prints, the rest natively", () => {
+  it("emulates watchers, nextTick, class and style bindings and the child-root rule with the helpers it prints, the rest natively", () => {
     // Nothing is unsupported: the watchers' scheduler coalesces every shape of a synchronous run
     // of client code (src/helpers.ts).
     const cells = Object.entries(target.capabilities).filter(
@@ -85,9 +99,11 @@ describe("solid target", () => {
       ["interactivity", expect.objectContaining({ helper: "createWatcher" })],
       ["next-tick", expect.objectContaining({ helper: "nextTick" })],
       ["class-binding", expect.objectContaining({ helper: "cx" })],
+      ["style-binding", expect.objectContaining({ helper: "styleProperties" })],
       ["model-array", expect.objectContaining({ helper: "toggle" })],
       ["model-modifiers", expect.objectContaining({ helper: "modelText" })],
       ["reactive-context", expect.objectContaining({ helper: "refObject" })],
+      ["child-root-scope", expect.objectContaining({ helper: "scopeAttributes" })],
     ]);
   });
 
@@ -99,11 +115,17 @@ describe("solid target", () => {
         "",
         "export default function Hello(props: { class?: string; style?: JSX.CSSProperties }) {",
         "  return (",
-        '    <p class={props.class ? `greeting ${props.class}` : "greeting"} style={props.style}>',
+        "    <p",
+        '      class={props.class ? `greeting ${props.class}` : "greeting"}',
+        "      style={props.style}",
+        "      {...scopeAttributes(props)}",
+        "    >",
         "      Hello, world!",
         "    </p>",
         "  );",
         "}",
+        "",
+        ...SCOPE_ATTRIBUTES,
         "",
       ].join("\n"),
     });
@@ -121,6 +143,7 @@ describe("solid target", () => {
         '      class={props.class ? `profile ${props.class}` : "profile"}',
         '      aria-labelledby="profile-name"',
         "      style={props.style}",
+        "      {...scopeAttributes(props)}",
         "    >",
         '      <header class="profile-header">',
         "        <img",
@@ -142,6 +165,8 @@ describe("solid target", () => {
         "    </article>",
         "  );",
         "}",
+        "",
+        ...SCOPE_ATTRIBUTES,
         "",
       ].join("\n"),
     });
@@ -193,11 +218,14 @@ describe("solid props", () => {
         "      aria-pressed={props.pill}",
         "      class={props.class}",
         "      style={props.style}",
+        "      {...scopeAttributes(props)}",
         "    >",
         "      {props.label}",
         "    </span>",
         "  );",
         "}",
+        "",
+        ...SCOPE_ATTRIBUTES,
         "",
       ].join("\n"),
     );
@@ -253,7 +281,7 @@ describe("solid props", () => {
       [
         "export default function Probe(props: ProbeProps & { class?: string; style?: JSX.CSSProperties }) {",
         "  return (",
-        "    <p class={props.class} style={props.style}>",
+        "    <p class={props.class} style={props.style} {...scopeAttributes(props)}>",
         "      {props.label}",
         "    </p>",
         "  );",
@@ -276,11 +304,13 @@ describe("solid props", () => {
         "  card: { title: string; note?: string } & { class?: string; style?: JSX.CSSProperties },",
         ") {",
         "  return (",
-        "    <p title={card.note} class={card.class} style={card.style}>",
+        "    <p title={card.note} class={card.class} style={card.style} {...scopeAttributes(card)}>",
         "      {card.title}",
         "    </p>",
         "  );",
         "}",
+        "",
+        ...SCOPE_ATTRIBUTES,
         "",
       ].join("\n"),
     );
@@ -297,7 +327,7 @@ describe("solid props", () => {
         ") {",
         "  const props = mergeProps({ size: 2 } satisfies Partial<{ size?: number }>, rawProps);",
         "  return (",
-        "    <p class={props.class} style={props.style}>",
+        "    <p class={props.class} style={props.style} {...scopeAttributes(props)}>",
         "      {props.size}",
         "    </p>",
         "  );",
@@ -313,7 +343,7 @@ describe("solid props", () => {
       [
         "export default function Probe(props: ProbeProps & { class?: string; style?: JSX.CSSProperties }) {",
         "  return (",
-        "    <p class={props.class} style={props.style}>",
+        "    <p class={props.class} style={props.style} {...scopeAttributes(props)}>",
         "      Static",
         "    </p>",
         "  );",
@@ -363,7 +393,7 @@ describe("solid props", () => {
           "  props: { tone?: string } & { class?: string; style?: JSX.CSSProperties },",
           ") {",
           "  return (",
-          "    <p class={props.class} style={props.style}>",
+          "    <p class={props.class} style={props.style} {...scopeAttributes(props)}>",
           "      Static",
           "    </p>",
           "  );",
@@ -384,11 +414,13 @@ describe("solid props", () => {
         "",
         "export default function Probe(props: { class?: string; style?: JSX.CSSProperties }) {",
         "  return (",
-        "    <p class={props.class} style={props.style}>",
+        "    <p class={props.class} style={props.style} {...scopeAttributes(props)}>",
         "      Static",
         "    </p>",
         "  );",
         "}",
+        "",
+        ...SCOPE_ATTRIBUTES,
         "",
       ].join("\n"),
     );
@@ -399,7 +431,7 @@ describe("solid props", () => {
       probe("label: string;", "{ label }", "<p>{JSON.stringify({ label })}</p>"),
     );
     expect(output).toContain(
-      "<p class={props.class} style={props.style}>\n      {JSON.stringify({ label: props.label })}\n    </p>",
+      "<p class={props.class} style={props.style} {...scopeAttributes(props)}>\n      {JSON.stringify({ label: props.label })}\n    </p>",
     );
   });
 
@@ -426,7 +458,7 @@ describe("solid control flow", () => {
     );
     expect(output).toContain('import { type JSX, Show } from "solid-js";');
     expect(component(output)).toContain(
-      "<p class={props.class} style={props.style}>\n      <Show when={props.count}>\n        <b>New</b>\n      </Show>\n    </p>",
+      "<p class={props.class} style={props.style} {...scopeAttributes(props)}>\n      <Show when={props.count}>\n        <b>New</b>\n      </Show>\n    </p>",
     );
   });
 
@@ -496,7 +528,7 @@ describe("solid control flow", () => {
       probe("on: boolean;\n  label: string;", "{ on, label }", '<p>{on ? label : "none"}</p>'),
     );
     expect(component(output)).toContain(
-      '<p class={props.class} style={props.style}>\n      {props.on ? props.label : "none"}\n    </p>',
+      '<p class={props.class} style={props.style} {...scopeAttributes(props)}>\n      {props.on ? props.label : "none"}\n    </p>',
     );
   });
 
@@ -954,6 +986,7 @@ describe("solid output for its server compiler", () => {
         '      data-a={props.label + String(" & more")}',
         "      class={props.class}",
         "      style={props.style}",
+        "      {...scopeAttributes(props)}",
         "    >",
         '      {props.on ? String("<b>") : props.label}',
         "      {String(`<${props.label}>`)}",
@@ -998,7 +1031,15 @@ describe("solid attributes", () => {
       ),
     );
     expect(component(output)).toContain(
-      '<p class={cx("item", props.tone, { active: props.active }, props.class)} style={props.style}>\n      x\n    </p>',
+      [
+        "    <p",
+        '      class={cx("item", props.tone, { active: props.active }, props.class)}',
+        "      style={props.style}",
+        "      {...scopeAttributes(props)}",
+        "    >",
+        "      x",
+        "    </p>",
+      ].join("\n"),
     );
     expect(output.slice(output.indexOf("\n}\n", output.indexOf("function Probe")))).toBe(
       [
@@ -1016,6 +1057,8 @@ describe("solid attributes", () => {
         "  }",
         '  return names.join(" ");',
         "}",
+        "",
+        ...SCOPE_ATTRIBUTES,
         "",
       ].join("\n"),
     );
@@ -1041,7 +1084,7 @@ describe("solid attributes", () => {
       probe("tone?: string | null;", "{ tone }", "<p class={tone}>x</p>"),
     );
     expect(component(output)).toContain(
-      "<p class={cx(props.tone, props.class)} style={props.style}>\n      x\n    </p>",
+      "<p class={cx(props.tone, props.class)} style={props.style} {...scopeAttributes(props)}>\n      x\n    </p>",
     );
   });
 
@@ -1054,7 +1097,7 @@ describe("solid attributes", () => {
       ),
     );
     expect(component(output)).toContain(
-      "<ul class={cx_1(props.tone, props.class)} style={props.style}>",
+      "<ul class={cx_1(props.tone, props.class)} style={props.style} {...scopeAttributes(props)}>",
     );
     expect(output).toContain("function cx_1(...parts: unknown[]): string {");
   });
@@ -1108,7 +1151,13 @@ describe("solid attributes", () => {
       probe("label: string;", "{ label }", '<p style="color: red; margin-top: 4px">{label}</p>'),
     );
     expect(component(output)).toContain(
-      '<p style={{ ...{ color: "red", "margin-top": "4px" }, ...props.style }} class={props.class}>',
+      [
+        "    <p",
+        '      style={{ ...{ color: "red", "margin-top": "4px" }, ...props.style }}',
+        "      class={props.class}",
+        "      {...scopeAttributes(props)}",
+        "    >",
+      ].join("\n"),
     );
   });
 
@@ -1142,7 +1191,7 @@ describe("solid attributes", () => {
       "<textarea readonly={props.locked} maxlength={props.limit} aria-disabled={props.locked} />",
     );
     expect(component(output)).toContain(
-      "<label for={props.label} class={props.class} style={props.style}>",
+      "<label for={props.label} class={props.class} style={props.style} {...scopeAttributes(props)}>",
     );
   });
 
@@ -1178,7 +1227,15 @@ describe("solid attributes", () => {
       ),
     );
     expect(component(output)).toContain(
-      '<svg viewBox="0 0 8 8" role="img" class={props.class} style={props.style}>',
+      [
+        "    <svg",
+        '      viewBox="0 0 8 8"',
+        '      role="img"',
+        "      class={props.class}",
+        "      style={props.style}",
+        "      {...scopeAttributes(props)}",
+        "    >",
+      ].join("\n"),
     );
     expect(component(output)).toContain('<linearGradient id="g" />');
     expect(component(output)).toContain(

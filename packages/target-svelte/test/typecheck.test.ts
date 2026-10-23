@@ -21,6 +21,12 @@ const checker = { timeout: 60_000 };
 
 afterAll(removeScratch);
 
+/** The declaration a styled golden's sheet import needs, as the toolchain project passes it. */
+const SHEETS = join(toolchainDir, "sheets.d.ts");
+/** The declarations of the styling engines' modules, which the styled goldens import (ADR-0064). */
+const STYLEFRAME = join(toolchainDir, "../../integration/styleframe.d.ts");
+const FIXTURE_ENGINE = join(toolchainDir, "../../integration/fixture-engine.d.ts");
+
 /**
  * Type-checks a golden output with a toolchain tsconfig that extends the real one with
  * `compilerOptions`. The toolchain sits inside the real toolchain directory, so svelte-check
@@ -72,7 +78,7 @@ describe("svelte typecheck", () => {
       ].join("\n"),
     });
 
-    const clean = [...golden, ...fresh];
+    const clean = [...golden, ...fresh, SHEETS, STYLEFRAME, FIXTURE_ENGINE];
     const results = await toolchain.typecheck([...clean, broken!], context);
 
     expect([...results.keys()].toSorted()).toEqual([...clean, broken!].toSorted());

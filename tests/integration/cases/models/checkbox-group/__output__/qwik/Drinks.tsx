@@ -1,13 +1,13 @@
 import { type CSSProperties, type ClassList, component$, useSignal } from "@qwik.dev/core";
 
 export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style }) => {
+  ({ class: className, style, ...attributes }) => {
     const drinks = useSignal<string[]>(["tea"]);
 
     const currentDrinks = drinks.value;
 
     return (
-      <fieldset class={className} style={style}>
+      <fieldset {...scopeAttributes(attributes)} class={className} style={style}>
         <legend>Drinks</legend>
         <label>
           <input
@@ -55,4 +55,13 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
 function toggle<T>(values: readonly T[], value: T, checked: boolean): T[] {
   if (!checked) return values.filter((each) => each !== value);
   return values.includes(value) ? [...values] : [...values, value];
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

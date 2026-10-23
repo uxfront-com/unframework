@@ -27,6 +27,7 @@ export default function CheckoutTotal({
   onShippingChange,
   className,
   style,
+  ...attributes
 }: CheckoutTotalProps & CheckoutTotalEvents & CheckoutTotalAttributes) {
   const [method, setMethod] = useState<ShippingMethod>("standard");
   const methodRef = useRef(method);
@@ -48,7 +49,12 @@ export default function CheckoutTotal({
   }
 
   return (
-    <section className={cx("checkout-total", className)} aria-label="Order total" style={style}>
+    <section
+      className={cx("checkout-total", className)}
+      aria-label="Order total"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p>Subtotal: {formatCents(subtotal)}</p>
       <p>Shipping: {formatCents(shipping)}</p>
       <p role="status">Total: {total}</p>
@@ -75,4 +81,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

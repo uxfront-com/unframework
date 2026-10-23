@@ -69,3 +69,52 @@ export function directiveCode(
     ]),
   };
 }
+
+/** The names the scope directive's code declares, each claimed beside the file's other names. */
+export interface ScopeDirectiveNames {
+  /** The directive's class, `ScopeAttributes`. */
+  className: string;
+  /** The module's map from each host to the scope attributes taken off it, `scopes`. */
+  scopes: string;
+}
+
+/**
+ * `child-root-scope` (ADR-0063): the directive each of a component's root nodes binds to the
+ * component's host, `<button [ufScope]="this.host">`. A styled parent writes its scope attribute
+ * on the child's tag, which is the host here; the attribute's name is the parent's id, which the
+ * child cannot know, so the directive reads the host's `data-uf-*` attributes as its root renders,
+ * after the parent's own root directive has set them, and takes them off the host, which then
+ * keeps only `display: contents` and is unwrapped (ADR-0056). A root that renders later (another
+ * branch) reads them from the module's map.
+ */
+export function scopeDirectiveCode(names: ScopeDirectiveNames, imports: ImportSet): string {
+  const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
+  const { className, scopes } = names;
+  return [
+    "/** The scope attributes taken off each host, for the roots its component renders later. */",
+    `const ${scopes} = new WeakMap<Element, string[]>();`,
+    "",
+    "/**",
+    " * Gives a root node of its component the scope attributes the component's styled parents put on",
+    " * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.",
+    " */",
+    `@${core("Directive")}({ selector: "[ufScope]" })`,
+    `export class ${className} implements ${core("OnInit", true)} {`,
+    `  readonly ufScope = ${core("input")}.required<HTMLElement>();`,
+    `  private readonly element = ${core("inject")}<${core("ElementRef")}<Element>>(${core("ElementRef")});`,
+    `  private readonly renderer = ${core("inject")}(${core("Renderer2")});`,
+    "",
+    "  ngOnInit(): void {",
+    "    const host = this.ufScope();",
+    `    let names = ${scopes}.get(host);`,
+    "    if (!names) {",
+    '      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));',
+    "      for (const name of names) this.renderer.removeAttribute(host, name);",
+    `      ${scopes}.set(host, names);`,
+    "    }",
+    '    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");',
+    "  }",
+    "}",
+    "",
+  ].join("\n");
+}

@@ -8,15 +8,24 @@ import {
   componentTypes,
   js,
   kebabCase,
+  moduleHelperName,
   Placeholders,
   printExpression,
   printProgram,
   rewriteCode,
+  scopeRoots,
+  sourceNames,
   typeDeclarationCode,
   typeNames,
 } from "@unframework/codegen";
-import type { EmitContext, OutputFile, RewriteRules, Target } from "@unframework/codegen";
-import { codeOf, functionsOf } from "@unframework/ir";
+import type {
+  EmitContext,
+  ImportSet,
+  OutputFile,
+  RewriteRules,
+  Target,
+} from "@unframework/codegen";
+import { codeOf, functionsOf, walk } from "@unframework/ir";
 import type { Span, UfComponent, UfModule } from "@unframework/ir";
 
 import {
@@ -28,7 +37,8 @@ import {
   tokenType,
 } from "./composition.ts";
 import type { Composition } from "./composition.ts";
-import { directiveCode } from "./directives.ts";
+import { directiveCode, scopeDirectiveCode } from "./directives.ts";
+import type { ScopeDirectiveNames } from "./directives.ts";
 import { planListeners } from "./listeners.ts";
 import { classMembers } from "./members.ts";
 import { planModels } from "./models.ts";
@@ -94,8 +104,16 @@ export const angular: Target = defineTarget({
     list: { support: "native" },
     fragment: { support: "native" },
     "bound-attribute": { support: "native" },
-    "class-binding": { support: "native" },
-    "style-binding": { support: "native" },
+    "class-binding": {
+      support: "emulated",
+      helper: "classNames",
+      note: "Angular's `[class]` reads no nested array, and drops an entry that holds a space, so a class part that may be an array or an object goes through an inline helper, `classNames`, that reads it as Vue's `normalizeClass` does (ADR-0065).",
+    },
+    "style-binding": {
+      support: "emulated",
+      helper: "styleObject",
+      note: "A style bound to a value is Angular's own `[style]`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
+    },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
@@ -159,6 +177,26 @@ export const angular: Target = defineTarget({
       support: "emulated",
       helper: "@switch",
       note: "Angular has no `<component is>` over a known set in a strict template: an `@switch` renders each candidate (ADR-0054).",
+    },
+    "scoped-styles": { support: "native" },
+    // The child's root takes the `data-uf-*` attributes its styled parents put on its host
+    // through `[ufScope]` (ADR-0063), but it renders inside the host, which selectors see.
+    "child-root-scope": {
+      support: "unsupported",
+      code: "UF4003",
+      severity: "info",
+      reason:
+        "Each root node of a child binds an inline attribute directive, `[ufScope]`, that moves the scope attributes its styled parents put on its host onto the node, so their rules reach it. But the root renders inside its host element, which selectors see: a parent's rule that reaches the root through a combinator (`>`, `+`, `~`) or a structural pseudo-class (`:first-child`, `:nth-child()`, …) matches the host's place, not the root's, and may match differently. A root Angular binds nothing on (`{{` in an attribute, ADR-0037) takes no scope attribute.",
+    },
+    "slotted-styles": { support: "native" },
+    // Sheets cascade in render order, not Vue's import order (ADR-0063): declared, since a
+    // parent sees too little of its subtree to attach its sheets in Vue's order.
+    "sheet-order": {
+      support: "unsupported",
+      code: "UF4002",
+      severity: "info",
+      reason:
+        "Angular adds a component's sheet to the page when the component first renders (`styleUrl`, through `SharedStylesHost`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ.",
     },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
@@ -238,6 +276,12 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ? imports.claim("nextId")
     : undefined;
   const directives = listeners.directives.map((spec) => directiveCode(spec, imports, placeholders));
+  // The child-root rule (ADR-0063): each root node binds the directive that gives it the scope
+  // attributes the component's styled parents put on its host.
+  const roots = scopedRoots(component);
+  const scope = roots.size
+    ? { ...scopeNames(component, module, imports), host: plan.members.claim("host") }
+    : undefined;
   const { members, implements: interfaces } = classMembers({
     plan,
     placeholders,
@@ -262,7 +306,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   type Entry = Parameters<typeof js.objectExpression>[0][number];
   const metadata = js.objectExpression([
     ["selector", js.stringLiteral(`uf-${kebabCase(component.name)}`)],
-    ...(composition.imports.length || directives.length
+    ...(composition.imports.length || directives.length || scope
       ? [
           [
             "imports",
@@ -270,6 +314,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
               [
                 ...composition.imports,
                 ...listeners.directives.map(({ className: name }) => name),
+                ...(scope ? [scope.className] : []),
               ].map((name) => js.identifier(name)),
             ),
           ] satisfies Entry,
@@ -296,17 +341,46 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     [
       "template",
       js.templateLiteral(
-        `\n${template(plan, listeners, reads, composition, models, fallthrough)}\n  `,
+        `\n${template(plan, listeners, reads, composition, models, fallthrough, scope && { roots, host: scope.host })}\n  `,
       ),
     ],
+    // The sheet `compile()` emits beside the source, already scoped (ADR-0063): Angular's own
+    // encapsulation would scope it again.
+    ...(component.styles
+      ? [
+          [
+            "styleUrl",
+            js.stringLiteral(`./${module.file.slice(module.file.lastIndexOf("/") + 1)}.css`),
+          ] satisfies Entry,
+          [
+            "encapsulation",
+            js.memberExpression(
+              js.identifier(imports.add("@angular/core", "ViewEncapsulation")),
+              "None",
+            ),
+          ] satisfies Entry,
+        ]
+      : []),
   ]);
   // Printed apart from the class: oxc-codegen puts a class's decorators after `export`, and
   // Angular code puts them first.
   const decorator = () =>
     `@${printExpression(js.callExpression(js.identifier(decoratorName), [metadata]))}`;
+  // The host the root nodes' scope directive reads (`<button [ufScope]="this.host">`).
+  const hostMember = scope && [
+    js.propertyDefinition(
+      scope.host,
+      placeholders.expression(
+        `${imports.add("@angular/core", "inject")}<${imports.add("@angular/core", "ElementRef")}<HTMLElement>>(${imports.add("@angular/core", "ElementRef")}).nativeElement`,
+      ),
+      { accessibility: "protected", readonly: true },
+    ),
+  ];
   const statements = exportDeclaration(
     className,
-    js.classDeclaration(className, [], members, { implements: interfaces }),
+    js.classDeclaration(className, [], [...members, ...(hostMember ?? [])], {
+      implements: interfaces,
+    }),
     exportsOf(component.name, module.exports),
   );
   const types = declaredTypes(closure, typeRoots(component, module));
@@ -340,6 +414,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ...composition.slots.map((slot) =>
       slotDirectiveCode(component.name, slot, imports.add("@angular/core", "Directive")),
     ),
+    ...(scope ? [scopeDirectiveCode(scope, imports)] : []),
   ];
   if (models.helpers.some(({ code }) => code.includes("WritableSignal"))) {
     imports.add("@angular/core", "WritableSignal", { type: true });
@@ -359,6 +434,49 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ].join("\n"),
   );
   return { path: `${kebabCase(component.name)}.ts`, contents };
+}
+
+/** A span's key in a set of root nodes. */
+function spanKey({ start, end }: Span): string {
+  return `${start}:${end}`;
+}
+
+/**
+ * The component's root nodes that take its styled parents' scope attributes (`scopeRoots`, the
+ * child-root rule, ADR-0063), by {@link spanKey}: all but an element Angular binds nothing on
+ * (`{{` in an attribute, ADR-0037), which takes no fallthrough either.
+ */
+function scopedRoots(component: UfComponent): Set<string> {
+  const roots = new Set(scopeRoots(component).map(spanKey));
+  walk(component.render, {
+    enter(node) {
+      if (node.kind === "Element" && angularDialect.literalRegion?.(node) !== undefined) {
+        roots.delete(spanKey(node.span));
+      }
+    },
+  });
+  return roots;
+}
+
+/**
+ * The names of the scope directive's code. A source's components are joined into one module
+ * where it is loaded (ADR-0053): each claims them from bases of its own (`ScopeAttributes_1`),
+ * past the names any other component declares.
+ */
+function scopeNames(
+  component: UfComponent,
+  module: UfModule,
+  imports: ImportSet,
+): ScopeDirectiveNames {
+  const index = module.components.findIndex((each) => each.name === component.name);
+  const reserved = module.components.map((each) => sourceNames(each, module));
+  const claim = (helper: string) => {
+    const { base, others } = moduleHelperName(helper, reserved, index);
+    imports.reserve(...others);
+    imports.scope.rebase(helper, base);
+    return imports.claim(helper);
+  };
+  return { className: claim("ScopeAttributes"), scopes: claim("scopes") };
 }
 
 /** A name of the component's API on Angular, and what the source names with it. */

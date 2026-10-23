@@ -10,9 +10,16 @@ interface Props extends CommentQuoteProps {
 }
 
 const { author, comment, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
 ---
 
-<figure class:list={["comment-quote", className]} style={style}>
+<figure class:list={["comment-quote", className]} style={style} {...scopeAttributes(Astro.props)}>
   <blockquote style="margin: 0; padding: 0">
     <p dir="auto">{comment}</p>
   </blockquote>

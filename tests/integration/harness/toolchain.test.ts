@@ -23,6 +23,7 @@ import { errorState, listCases } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
 import { consumerFixtures, consumerProblems, copyFixtures } from "./consumers.ts";
 import type { Fixture } from "./consumers.ts";
+import { ENGINE_DECLARATIONS } from "./engines.ts";
 import { CANARY_DIR, ROOT, toolchainDir } from "./paths.ts";
 import { caseResolver } from "./sources.ts";
 import { loadToolchain } from "./targets.ts";
@@ -30,6 +31,7 @@ import {
   display,
   frameworkCompileProblems,
   lintProblems,
+  toolchainFiles,
   typecheckProblems,
 } from "./toolchain-results.ts";
 
@@ -52,6 +54,19 @@ interface Checked {
   L5: PromiseSettledResult<Map<string, ToolchainMessage[]>>;
 }
 
+/**
+ * The declarations the checker reads beside the outputs, from the target's toolchain package: a
+ * styled output imports its sheet (`import "./Card.uf.tsx.css"`), which type-checks only through
+ * `declare module "*.css"` (ADR-0023, ADR-0063). Each target's M4 lane lists its own.
+ */
+const DECLARATIONS: Readonly<Record<string, readonly string[]>> = {
+  react: ["sheets.d.ts"],
+  solid: ["sheets.d.ts"],
+  svelte: ["sheets.d.ts"],
+  astro: ["sheets.d.ts"],
+  qwik: ["sheets.d.ts"],
+};
+
 /** The tool that decides each layer, as its failure names it. */
 const TOOLS = { L3: "framework compiler", L4: "checker", L5: "linter" } as const;
 
@@ -68,8 +83,15 @@ beforeAll(async () => {
     const typechecked = new Set([
       ...all,
       ...[...fixtures.values()].flat().map(({ checked }) => checked),
+      ...(DECLARATIONS[target] ?? []).map((file) => join(toolchainDir(target), file)),
+      // The styling engines' virtual modules, which a styled output imports as written (ADR-0064).
+      ...ENGINE_DECLARATIONS,
     ]);
-    const context = { toolchainDir: toolchainDir(target), root: ROOT };
+    const context = {
+      toolchainDir: toolchainDir(target),
+      root: ROOT,
+      declarations: ENGINE_DECLARATIONS,
+    };
     const contents: ToolchainFile[] = all.map((path) => ({
       path,
       contents: readFileSync(path, "utf8"),
@@ -153,7 +175,9 @@ function casesFiles(files: Map<string, string[]>, info: CaseInfo): string[] {
 
 /**
  * Each case's output files: the committed `__output__/<target>/` tree, or, with a canary, a
- * fresh compile written to `.canary/<id>/<target>/cases/<case>/__output__/<target>/`.
+ * fresh compile written to `.canary/<id>/<target>/cases/<case>/__output__/<target>/`. Scoped
+ * sheets are left out (`toolchainFiles`), after a canary's are written: an output may read its
+ * sheet from the disk (Angular's `styleUrl`).
  */
 async function outputFiles(): Promise<Map<string, string[]>> {
   const files = new Map<string, string[]>();
@@ -163,7 +187,7 @@ async function outputFiles(): Promise<Map<string, string[]>> {
   if (!canary) {
     for (const info of checked) {
       const directory = join(info.dir, "__output__", target);
-      files.set(info.id, existsSync(directory) ? listFiles(directory) : []);
+      files.set(info.id, toolchainFiles(existsSync(directory) ? listFiles(directory) : []));
     }
     return files;
   }
@@ -188,7 +212,7 @@ async function outputFiles(): Promise<Map<string, string[]>> {
         paths.push(path);
       }
     }
-    files.set(info.id, paths.sort());
+    files.set(info.id, toolchainFiles(paths).sort());
   }
   return files;
 }

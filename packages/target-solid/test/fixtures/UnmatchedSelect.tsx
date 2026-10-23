@@ -4,7 +4,7 @@ export default function UnmatchedSelect(props: { class?: string; style?: JSX.CSS
   const [size, setSize] = createSignal("xl");
 
   return (
-    <form class={props.class} style={props.style}>
+    <form class={props.class} style={props.style} {...scopeAttributes(props)}>
       <select
         aria-label="Size"
         onChange={(event) => setSize(event.currentTarget.value)}
@@ -25,6 +25,13 @@ export default function UnmatchedSelect(props: { class?: string; style?: JSX.CSS
       </button>
     </form>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /**

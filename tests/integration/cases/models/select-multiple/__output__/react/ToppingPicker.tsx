@@ -5,12 +5,21 @@ export interface ToppingPickerAttributes {
   style?: CSSProperties;
 }
 
-export default function ToppingPicker({ className, style }: ToppingPickerAttributes) {
+export default function ToppingPicker({
+  className,
+  style,
+  ...attributes
+}: ToppingPickerAttributes) {
   const [toppings, setToppings] = useState<string[]>(["cheese"]);
   const toppingsRef = useRef(toppings);
 
   return (
-    <section aria-label="Pizza" className={className} style={style}>
+    <section
+      aria-label="Pizza"
+      className={className}
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <label>
         Toppings{" "}
         <select
@@ -41,4 +50,13 @@ export default function ToppingPicker({ className, style }: ToppingPickerAttribu
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

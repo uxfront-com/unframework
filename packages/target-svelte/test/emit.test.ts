@@ -57,11 +57,23 @@ const svelteFile = (...blocks: string[]) => `${[OPTIONS, ...blocks].join("\n\n")
 /** A `<script lang="ts">` block holding these lines. */
 const script = (...lines: string[]) => `<script lang="ts">\n${lines.join("\n")}\n</script>`;
 
+/** The lines that end the script of a component whose root takes its styled parents' scope. */
+const SCOPE_HELPER = [
+  "",
+  "  /** The scope attributes of the styled parents that render this component, for its root. */",
+  '  function scopeAttributes(props: object): Record<string, ""> {',
+  '    const scope: Record<string, ""> = {};',
+  '    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";',
+  "    return scope;",
+  "  }",
+];
+
 describe("svelte target", () => {
-  it("declares every capability, natively but for once listeners, fallthrough, model modifiers and reactive context", () => {
+  it("declares every capability, natively but for once listeners, fallthrough, model modifiers, reactive context, the child root and a style bound to a value", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([
       "attribute-spread",
       "bound-attribute",
+      "child-root-scope",
       "class-binding",
       "component",
       "component-event",
@@ -93,8 +105,11 @@ describe("svelte target", () => {
       "props",
       "reactive-context",
       "scoped-slot",
+      "scoped-styles",
+      "sheet-order",
       "slot-fallback",
       "slot-forwarding",
+      "slotted-styles",
       "static-attribute",
       "style-binding",
       "svg",
@@ -103,10 +118,12 @@ describe("svelte target", () => {
       "use-id",
     ]);
     const helpers: Readonly<Record<string, string>> = {
+      "child-root-scope": "scopeAttributes",
       "event-once": "once",
       fallthrough: "mergeStyle",
       "model-modifiers": "modelText",
       "reactive-context": "refObject",
+      "style-binding": "styleText",
     };
     for (const [name, cell] of Object.entries(target.capabilities)) {
       const helper = helpers[name];
@@ -132,10 +149,11 @@ describe("svelte target", () => {
           "    style?: string;",
           "  };",
           "",
-          "  let { class: className, style }: Props = $props();",
+          "  let { class: className, style, ...attributes }: Props = $props();",
+          ...SCOPE_HELPER,
           "</script>",
           "",
-          '<p class={["greeting", className]} {style}>Hello, world!</p>',
+          '<p class={["greeting", className]} {style} {...scopeAttributes(attributes)}>Hello, world!</p>',
           "",
         ].join("\n"),
       },
@@ -193,9 +211,10 @@ describe("svelte props", () => {
           "    style?: string;",
           "  };",
           "",
-          '  let { tone = "info", label, class: className, style }: Props = $props();',
+          '  let { tone = "info", label, class: className, style, ...attributes }: Props = $props();',
+          ...SCOPE_HELPER,
         ),
-        "<p class={[tone, className]} {style}>{label}</p>",
+        "<p class={[tone, className]} {style} {...scopeAttributes(attributes)}>{label}</p>",
       ),
     );
   });
@@ -217,8 +236,9 @@ describe("svelte props", () => {
           "  };",
           "",
           "  let { class: className, style, ...p }: Props = $props();",
+          ...SCOPE_HELPER,
         ),
-        "<h2 title={p.subtitle} class={className} {style}>{p.title}</h2>",
+        "<h2 title={p.subtitle} class={className} {style} {...scopeAttributes(p)}>{p.title}</h2>",
       ),
     );
   });
@@ -237,8 +257,9 @@ describe("svelte props", () => {
           "  };",
           "",
           "  let { class: className, style, ...props }: Props = $props();",
+          ...SCOPE_HELPER,
         ),
-        "<h2 class={className} {style}>{props.title}</h2>",
+        "<h2 class={className} {style} {...scopeAttributes(props)}>{props.title}</h2>",
       ),
     );
   });
@@ -246,7 +267,7 @@ describe("svelte props", () => {
   // An empty pattern (`let {}: P`) is `no-empty-pattern` (L5).
   it("declares props it never reads under the object form, keeping the props type", async () => {
     expect((await emitSource(SHAPES.unread)).contents).toBe(
-      svelteFile(script("  let _props: { label?: string } = $props();"), "<p>Hi</p>"),
+      svelteFile(script("  let _props: { label?: string } = $props();"), "<p>Hi</p\n><p>Bye</p>"),
     );
   });
 
@@ -258,10 +279,14 @@ describe("svelte props", () => {
     ["_props", "_props"],
     ["_", "__"],
   ])("names an object form %s that nothing reads %s", async (name, declared) => {
-    // A fragment root takes no fallthrough (ADR-0054), so nothing else is bound.
-    const source = `export default function Hi(${name}: { label?: string }) {\n  return <><p>Hi</p></>;\n}`;
+    // A root of several nodes takes no fallthrough (ADR-0054) and no scope attributes
+    // (ADR-0063), so nothing else is bound.
+    const source = `export default function Hi(${name}: { label?: string }) {\n  return <><p>Hi</p><p>Bye</p></>;\n}`;
     expect((await emitSource(source)).contents).toBe(
-      svelteFile(script(`  let ${declared}: { label?: string } = $props();`), "<p>Hi</p>"),
+      svelteFile(
+        script(`  let ${declared}: { label?: string } = $props();`),
+        "<p>Hi</p\n><p>Bye</p>",
+      ),
     );
   });
 
@@ -279,9 +304,10 @@ describe("svelte props", () => {
           "",
           "  let { text = `roses",
           '  are red`, note = "a\\',
-          '  b", class: className, style }: Props = $props();',
+          '  b", class: className, style, ...attributes }: Props = $props();',
+          ...SCOPE_HELPER,
         ),
-        "<pre class={className} {style}>{text}{note}</pre>",
+        "<pre class={className} {style} {...scopeAttributes(attributes)}>{text}{note}</pre>",
       ),
     );
   });
@@ -311,7 +337,7 @@ describe("svelte markup", () => {
   it("prints a keyed each block, without the index no expression reads, and an if block", async () => {
     expect(await markupOf(SHAPES.lists)).toBe(
       [
-        "<ul class={className} {style}>",
+        "<ul class={className} {style} {...scopeAttributes(attributes)}>",
         "  {#each items as item (item.id)}",
         "    <li>{item.name}</li>",
         "  {/each}{#if items.length === 0}",
@@ -328,7 +354,7 @@ describe("svelte markup", () => {
   it("prints bindings, one class, style directives and spreads key by key", async () => {
     expect(await markupOf(SHAPES.bindings)).toBe(
       [
-        "<p class={className} {style}>",
+        "<p class={className} {style} {...scopeAttributes(attributes)}>",
         "  <a",
         "    {href}",
         '    class={["link", { active }, tone, attrs.class]}',
@@ -356,7 +382,7 @@ describe("svelte markup", () => {
   it("writes an attribute Svelte's types lack on its element as an object spread", async () => {
     expect(await markupOf(SHAPES.untyped)).toBe(
       [
-        '<form aria-label="Note" class={className} {style}>',
+        '<form aria-label="Note" class={className} {style} {...scopeAttributes(attributes)}>',
         '  <p {...{ autocorrect: "off" }}>a</p',
         "  ><input autocorrect={mode}",
         "  /><div {...{ autocorrect: hints.autocorrect }}>b</div>",
@@ -373,7 +399,7 @@ describe("svelte markup", () => {
   it("writes static text Svelte's server would escape twice or fold as expressions", async () => {
     expect(await markupOf(SHAPES.runtimeText)).toBe(
       [
-        "<div class={className} {style}>",
+        "<div class={className} {style} {...scopeAttributes(attributes)}>",
         "  <blockquote",
         '    style:font-family={"\\"Segoe UI\\", serif"}',
         `    style:content={"'a  b'"}`,
@@ -401,7 +427,7 @@ describe("svelte markup", () => {
     const module = await importScratch<{ default: Component }>("Quote.js", js.code);
     expect(await renderToString(module.default, { props: { tone: "red" } })).toBe(
       [
-        "<!--[--><div>",
+        '<!--[--><div class="">',
         `<blockquote style="font-family: &quot;Segoe UI&quot;, serif; content: 'a  b'; color: red;">q</blockquote>`,
         '<p autocorrect="off" title="Name &amp; &quot;title&quot; &lt;x>" class="q&amp;r" style="content: &quot;&amp;&quot;">c</p>',
         '<select aria-label="Pick"><option value="a &amp; &quot;b&quot;">a</option></select>',
@@ -420,7 +446,7 @@ describe("svelte markup", () => {
     expect(contents).toBe(readFileSync(join(packageDir, "test/fixtures/Steps.svelte"), "utf8"));
     expect(await markupOf(SHAPES.assignedValues)).toBe(
       [
-        "<form class={className} {style}>",
+        "<form class={className} {style} {...scopeAttributes(attributes)}>",
         "  <ol>",
         "    {#each steps as step, index (step)}",
         "      <li {...{ value: steps.length - 1 - index }}>{step}</li>",
@@ -443,7 +469,7 @@ describe("svelte markup", () => {
     const render = (props: Record<string, unknown>) => renderToString(module.default, { props });
     expect(await render({ steps: ["a", "b", "c"], score: 0, label: "", mode: "on" })).toBe(
       [
-        "<!--[--><form><ol><!--[-->",
+        '<!--[--><form class=""><ol><!--[-->',
         '<li value="2">a</li><li value="1">b</li><li value="0">c</li>',
         '<!--]--></ol><meter min="0" max="10" value="0" title="Score &amp; &quot;rank&quot;">m</meter>',
         '<progress max="10" value="0">p</progress><data value="">d</data>',
@@ -453,7 +479,7 @@ describe("svelte markup", () => {
     );
     expect(await render({ steps: ["a"], score: 7, label: "x", mode: "m" })).toBe(
       [
-        '<!--[--><form><ol><!--[--><li value="0">a</li><!--]--></ol>',
+        '<!--[--><form class=""><ol><!--[--><li value="0">a</li><!--]--></ol>',
         '<meter min="0" max="10" value="7" title="Score &amp; &quot;rank&quot;">m</meter>',
         '<progress max="10" value="7">p</progress><data value="x">d</data>',
         '<button type="button" value="x">b</button><input type="checkbox" name="c" value="m"/>',
@@ -607,7 +633,7 @@ describe("svelte setup", () => {
     const code = await scriptOf(SHAPES.watchers);
     expect(code).toContain("onresize?: (value: number, previous?: number) => void;");
     expect(code).toContain(
-      "let { size, onturn, onleft, onspan, onrange, onresize, class: className, style }: Props = $props();",
+      "let { size, onturn, onleft, onspan, onrange, onresize, class: className, style, ...attributes }: Props = $props();",
     );
   });
 
@@ -619,6 +645,7 @@ describe("svelte setup", () => {
         "  onclick={() => props.onremove?.(props.label)}",
         "  class={className}",
         "  {style}",
+        "  {...scopeAttributes(props)}",
         ">{props.label}</button>",
         "",
       ].join("\n"),

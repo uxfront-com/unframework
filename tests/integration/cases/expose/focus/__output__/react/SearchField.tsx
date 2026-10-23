@@ -15,6 +15,7 @@ export default function SearchField({
   className,
   style,
   ref,
+  ...attributes
 }: { label: string } & SearchFieldAttributes) {
   const input = useRef<HTMLInputElement>(null);
 
@@ -25,7 +26,7 @@ export default function SearchField({
   useImperativeHandle(ref, () => ({ focus }));
 
   return (
-    <label className={cx("search", className)} style={style}>
+    <label className={cx("search", className)} style={style} {...scopeAttributes(attributes)}>
       {label}
       <input ref={input} type="search" />
     </label>
@@ -45,4 +46,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

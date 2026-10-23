@@ -11,7 +11,7 @@
     style?: string;
   };
 
-  let { onjoin, onleave, class: className, style }: Props = $props();
+  let { onjoin, onleave, class: className, style, ...attributes }: Props = $props();
 
   let channel = $state("general");
 
@@ -40,9 +40,21 @@
     });
   });
   onMount(() => () => cleanupName?.());
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["channel-picker", className]} aria-label="Channels" {style}>
+<section
+  class={["channel-picker", className]}
+  aria-label="Channels"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <p role="status">Channel: #{channel}</p
   ><button type="button" onclick={() => (channel = "random")}>Join #random</button
   ><button type="button" onclick={() => (channel = "General")}>Join #General</button>

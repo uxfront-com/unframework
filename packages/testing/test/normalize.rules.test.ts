@@ -15,6 +15,7 @@ import {
 } from "../src/normalize/rules/framework-attributes.ts";
 import { canonicalizeGeneratedIds } from "../src/normalize/rules/generated-ids.ts";
 import { canonicalizeClasses, sortAttributes } from "../src/normalize/rules/ordering.ts";
+import { removeQwikStyles } from "../src/normalize/rules/qwik-styles.ts";
 import { removeQwikTemplates } from "../src/normalize/rules/qwik-templates.ts";
 import {
   canonicalizeBooleanAttributes,
@@ -216,6 +217,34 @@ describe("rule 2b: removeQwikTemplates", () => {
   it("keeps a template of any other name on Qwik", () => {
     const template = "<section><template><p>t</p></template><q:slot>s</q:slot></section>";
     expect(apply(template, (root) => removeQwikTemplates(root, "qwik"))).toBe(apply(template));
+  });
+});
+
+describe("rule 2c: removeQwikStyles", () => {
+  // Qwik 2's server render of a component that attaches its sheet with `useStyles$` (ADR-0063).
+  const html =
+    '<section><style q:style="a1b2c3-0">.label[data-uf-x]{color:red}</style><p>Ada</p></section>';
+
+  it("removes Qwik's style elements and their content", () => {
+    expect(apply(html, (root) => removeQwikStyles(root, "qwik"))).toBe(
+      '<section>\n  <p>\n    "Ada"\n  </p>\n</section>\n',
+    );
+    expect(normalizeHtml(html, { target: "qwik" })).toBe(
+      normalizeHtml("<section><p>Ada</p></section>", { target: "qwik" }),
+    );
+  });
+
+  it("keeps the element on every other target, and without a target", () => {
+    for (const target of NORMALIZE_TARGETS.filter((each) => each !== "qwik")) {
+      expect(normalizeHtml(html, { target })).toContain("<style");
+    }
+    expect(apply(html, (root) => removeQwikStyles(root))).toBe(apply(html));
+  });
+
+  it("keeps a style without q:style on Qwik", () => {
+    const style = "<section><style>p{color:red}</style><p>Ada</p></section>";
+    expect(apply(style, (root) => removeQwikStyles(root, "qwik"))).toBe(apply(style));
+    expect(normalizeHtml(style, { target: "qwik" })).toContain("<style");
   });
 });
 

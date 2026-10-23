@@ -6,11 +6,17 @@ export interface QuantityStepperProps {
 }
 
 export default component$<QuantityStepperProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ initial, label, class: className, style }) => {
+  ({ initial, label, class: className, style, ...attributes }) => {
     const quantity = useSignal(initial);
 
     return (
-      <div class={["quantity-stepper", className]} role="group" aria-label={label} style={style}>
+      <div
+        class={["quantity-stepper", className]}
+        role="group"
+        aria-label={label}
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <output>{quantity.value}</output>
         <button type="button" aria-label={`Increase ${label}`} onClick$={() => quantity.value++}>
           +
@@ -19,3 +25,12 @@ export default component$<QuantityStepperProps & { class?: ClassList; style?: CS
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

@@ -20,7 +20,7 @@ export interface UnreadBadgeEvents {
 
 export default component$<
   UnreadBadgeProps & UnreadBadgeEvents & { class?: ClassList; style?: CSSProperties }
->(({ appName, onTitleChange$, onTitleRelease$, class: className, style }) => {
+>(({ appName, onTitleChange$, onTitleRelease$, class: className, style, ...attributes }) => {
   const unread = useSignal(0);
 
   const previousEffect = useSignal<[typeof unread.value, typeof appName]>();
@@ -51,7 +51,12 @@ export default component$<
   );
 
   return (
-    <section class={["unread-badge", className]} aria-label="Inbox" style={style}>
+    <section
+      class={["unread-badge", className]}
+      aria-label="Inbox"
+      {...scopeAttributes(attributes)}
+      style={style}
+    >
       <p role="status">{unread.value} unread</p>
       <button type="button" onClick$={() => unread.value++}>
         Receive a message
@@ -62,3 +67,12 @@ export default component$<
     </section>
   );
 });
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

@@ -23,7 +23,7 @@ export interface DisplaySettingsEvents {
 }
 
 export default component$<DisplaySettingsEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onApplied$, onSaved$, class: className, style }) => {
+  ({ onApplied$, onSaved$, class: className, style, ...attributes }) => {
     const settings = useSignal<Settings>({ theme: "light", size: 14 });
     const maxSize = useSignal(20);
     const saving = useSignal(false);
@@ -61,7 +61,12 @@ export default component$<DisplaySettingsEvents & { class?: ClassList; style?: C
     });
 
     return (
-      <section class={["display-settings", className]} aria-label="Display" style={style}>
+      <section
+        class={["display-settings", className]}
+        aria-label="Display"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <p role="status">
           Theme {settings.value.theme}, size {settings.value.size}
         </p>
@@ -99,3 +104,12 @@ export default component$<DisplaySettingsEvents & { class?: ClassList; style?: C
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

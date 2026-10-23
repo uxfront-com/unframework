@@ -1,0 +1,28 @@
+import { type CSSProperties, type ClassList, Slot, component$, useStyles$ } from "@qwik.dev/core";
+import styles from "./Blue.uf.tsx.css?inline";
+
+export default component$<{ class?: ClassList; style?: CSSProperties }>(
+  ({ class: className, style, ...attributes }) => {
+    useStyles$(styles);
+
+    return (
+      <div
+        class={["blue", className]}
+        data-uf-721c504a=""
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
+        <Slot />
+      </div>
+    );
+  },
+);
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

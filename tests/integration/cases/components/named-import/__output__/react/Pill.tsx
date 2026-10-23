@@ -5,9 +5,9 @@ export interface PillAttributes {
   style?: CSSProperties;
 }
 
-export function Pill({ text, className, style }: { text: string } & PillAttributes) {
+export function Pill({ text, className, style, ...attributes }: { text: string } & PillAttributes) {
   return (
-    <span className={cx_1("pill", className)} style={style}>
+    <span className={cx_1("pill", className)} style={style} {...scopeAttributes_1(attributes)}>
       {text}
     </span>
   );
@@ -26,4 +26,13 @@ function cx_1(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes_1(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

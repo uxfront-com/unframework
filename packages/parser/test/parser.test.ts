@@ -230,6 +230,15 @@ describe("parseStylesheet", () => {
     });
   });
 
+  // An unknown at-rule's content is never read: its rules would reach the page unscoped (ADR-0063).
+  it("reports an at-rule lightningcss does not know, and accepts unknown pseudo-classes", () => {
+    const source = ".a :deep(.b) { color: red }\n@unknown-rule foo { .a { color: red } }";
+    const { errors } = parseStylesheet("Card.css", source);
+    expect(errors.map(({ message }) => message)).toEqual(["Unknown at rule: @unknown-rule"]);
+    expect(errors[0]!.span.start).toBeGreaterThan(source.indexOf("@unknown-rule"));
+    expect(errors[0]!.span.start).toBeLessThan(source.indexOf("{", source.indexOf("@unknown")) + 1);
+  });
+
   // lightningcss's columns are 1-based UTF-16 units, and CRLF, CR and form feed end lines.
   it.each([
     ["%{}", "%"],

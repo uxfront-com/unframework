@@ -2,7 +2,7 @@
 // fixes that leave their diagnostic or bring another, and outputs that differ between compiles
 // or are not formatted. On the corpus, the fix check applies the fixes of the diagnostics cases
 // (and jsx/escaping's), and the L1-fix-no-op canary proves it catches a fix that fixes nothing.
-import { builtinTargets, compile, TARGET_NAMES } from "@unframework/compiler";
+import { builtinTargets, compile, createFileResolver, TARGET_NAMES } from "@unframework/compiler";
 import type { CompileResult, CompilerPlugin } from "@unframework/compiler";
 import { applyFixes } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
@@ -14,6 +14,7 @@ import {
   formattingProblems,
   nondeterminism,
   referenceProblems,
+  stylesheetProblems,
 } from "./compile-checks.ts";
 
 const filename = "fixture/badge/Badge.uf.tsx";
@@ -268,6 +269,49 @@ describe("referenceProblems (L1, ADR-0057)", () => {
     const listbox = await compileWith(LISTBOX);
     expect(referenceProblems(listbox.diagnostics, true, "react", "vue")).toEqual([
       expect.stringMatching(/^The case names vue as its reference, yet react renders it/),
+    ]);
+  });
+});
+
+describe("stylesheetProblems (ADR-0063)", () => {
+  const CARD =
+    'import "./Card.css";\n\nexport default function Card() {\n  return <p class="card">Hi</p>;\n}\n';
+  const files: Record<string, string> = { "/fixture/badge/Card.css": ".card { color: red }\n" };
+  const resolve = createFileResolver({
+    root: "/",
+    readFile: (path) => Promise.resolve(files[path]),
+  });
+
+  it("passes every target's scoped sheet the compiler emits", async () => {
+    const result = await compile(CARD, {
+      filename: "fixture/badge/Card.uf.tsx",
+      targets: TARGET_NAMES,
+      resolve,
+    });
+    // Only the sheet order Angular and Qwik declare, for information (ADR-0063).
+    expect(
+      result.diagnostics.map(({ code, severity, target }) => [code, severity, target]),
+    ).toEqual([
+      ["UF4002", "info", "angular"],
+      ["UF4002", "info", "qwik"],
+    ]);
+    for (const target of TARGET_NAMES) {
+      const outputs = result.outputs[target] ?? [];
+      expect(outputs.map((file) => file.path)).toContain("Card.uf.tsx.css");
+      expect(stylesheetProblems(target, outputs)).toEqual([]);
+    }
+  });
+
+  it("reports a sheet lightningcss cannot read, or whose at-rule it does not know", () => {
+    expect(
+      stylesheetProblems("vue", [
+        { path: "Card.vue", contents: "<template><p>{</p></template>\n" },
+        { path: "Card.uf.tsx.css", contents: ".card[data-uf-0a1b2c3d] > { color: red }" },
+        { path: "Other.uf.tsx.css", contents: "@unknown { .a { color: red } }" },
+      ]),
+    ).toEqual([
+      "vue/Card.uf.tsx.css is not valid CSS at offset 26: Invalid dangling combinator in selector",
+      "vue/Other.uf.tsx.css is not valid CSS at offset 8: Unknown at rule: @unknown",
     ]);
   });
 });

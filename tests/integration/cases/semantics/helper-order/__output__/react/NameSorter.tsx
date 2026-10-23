@@ -23,6 +23,7 @@ export default function NameSorter({
   onTotal,
   className,
   style,
+  ...attributes
 }: NameSorterEvents & NameSorterAttributes) {
   const [names, setNames] = useState(() => ["Cy", "Al"].toSorted((a, b) => compare(a, b)));
   const namesRef = useRef(names);
@@ -89,7 +90,12 @@ export default function NameSorter({
   }
 
   return (
-    <section className={cx("name-sorter", className)} aria-label="Names" style={style}>
+    <section
+      className={cx("name-sorter", className)}
+      aria-label="Names"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p>Names: {names.join(", ")}</p>
       <p>Added: {count}</p>
       <button type="button" onClick={() => add("Bo")}>
@@ -115,4 +121,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

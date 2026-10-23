@@ -12,7 +12,7 @@
     style?: string;
   };
 
-  let { onsent, onsaved, onfirstsave, class: className, style }: Props = $props();
+  let { onsent, onsaved, onfirstsave, class: className, style, ...attributes }: Props = $props();
 
   let tags = $state.raw<string[]>([]);
   let query = $state("");
@@ -61,9 +61,21 @@
       handler(event);
     };
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["comment-composer", className]} aria-label="Composer" {style}>
+<section
+  class={["comment-composer", className]}
+  aria-label="Composer"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <label>Comment<textarea name="comment" onkeydown={send}></textarea></label
   ><form
     aria-label="Tags"

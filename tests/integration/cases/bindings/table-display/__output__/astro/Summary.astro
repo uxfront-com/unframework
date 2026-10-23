@@ -1,0 +1,38 @@
+---
+export interface SummaryProps {
+  name: string;
+  plan: string;
+  seats: number;
+}
+
+interface Props extends SummaryProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { name, plan, seats, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+---
+
+<div
+  class:list={["summary", className]}
+  style={{ display: "table", borderSpacing: "8px 4px", ...style }}
+  {...scopeAttributes(Astro.props)}
+>
+  <div style="display: table-caption; font-weight: 700">Account</div>
+  <div style="display: table-row">
+    <span style="display: table-cell">Name</span>
+    <span style="display: table-cell">{name}</span>
+  </div>
+  <div style="display: table-row">
+    <span style="display: table-cell">Plan</span>
+    <span style="display: table-cell">{plan} for {seats} seats</span>
+  </div>
+  <p>Billed to <span style="display: table-cell; padding: 0 4px">{name}</span> monthly.</p>
+</div>

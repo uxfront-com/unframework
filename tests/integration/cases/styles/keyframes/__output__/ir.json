@@ -1,0 +1,157 @@
+{
+  "irVersion": 1,
+  "file": "styles/keyframes/Progress.uf.tsx",
+  "components": [
+    {
+      "name": "Progress",
+      "span": {
+        "start": 26,
+        "end": 200
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 79,
+              "end": 85
+            }
+          },
+          "binding": "label@61",
+          "span": {
+            "start": 72,
+            "end": 85
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 70,
+            "end": 87
+          }
+        },
+        "span": {
+          "start": 59,
+          "end": 87
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "label@61",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 61,
+            "end": 66
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "progress",
+            "span": {
+              "start": 111,
+              "end": 127
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "span",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "dot",
+                "span": {
+                  "start": 141,
+                  "end": 152
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 135,
+              "end": 155
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "span",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "label",
+                  "span": {
+                    "start": 169,
+                    "end": 174
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@61",
+                      "span": {
+                        "start": 169,
+                        "end": 174
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 168,
+                  "end": 175
+                }
+              }
+            ],
+            "span": {
+              "start": 162,
+              "end": 182
+            }
+          }
+        ],
+        "span": {
+          "start": 106,
+          "end": 193
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Progress.css",
+          "source": "/* Renamed with the scope id, as the `animation` that names it is. */\n@keyframes arrive {\n  from {\n    background-color: rgb(229, 231, 235);\n  }\n\n  to {\n    background-color: rgb(37, 99, 235);\n  }\n}\n\n.progress {\n  display: flex;\n  align-items: center;\n  column-gap: 8px;\n}\n\n/* The browser projects run every animation in no time, so `forwards` keeps the last frame. */\n.dot {\n  display: block;\n  width: 16px;\n  height: 16px;\n  border-radius: 8px;\n  animation: arrive 1s ease-out forwards;\n}\n",
+          "span": {
+            "start": 0,
+            "end": 24
+          }
+        }
+      ],
+      "scopeId": "0738d8af"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Progress",
+      "span": {
+        "start": 26,
+        "end": 200
+      }
+    }
+  ],
+  "types": []
+}

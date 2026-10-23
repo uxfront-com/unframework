@@ -19,6 +19,7 @@ export default function StarRating({
   onCleared,
   className,
   style,
+  ...attributes
 }: StarRatingEvents & StarRatingAttributes) {
   const [stars, setStars] = useState(0);
   const starsRef = useRef(stars);
@@ -41,7 +42,13 @@ export default function StarRating({
   }
 
   return (
-    <div className={cx("star-rating", className)} role="group" aria-label="Rating" style={style}>
+    <div
+      className={cx("star-rating", className)}
+      role="group"
+      aria-label="Rating"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <ul>
         {choices.map((choice) => (
           <li key={choice}>
@@ -72,4 +79,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

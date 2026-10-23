@@ -13,9 +13,21 @@ interface Props extends FilterSummaryProps {
 }
 
 const { tags, limit, result, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
 ---
 
-<section class:list={["filter-summary", className]} aria-label="Filters" style={style}>
+<section
+  class:list={["filter-summary", className]}
+  aria-label="Filters"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <p>Tags: {Array.isArray(tags) ? tags.join(", ") : tags}</p>
   <p>Limit: {typeof limit === "number" ? limit.toFixed(0) : limit.toLowerCase()}</p>
   {result.ok ? (

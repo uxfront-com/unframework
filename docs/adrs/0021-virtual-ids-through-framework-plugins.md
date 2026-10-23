@@ -1,6 +1,6 @@
 # ADR-0021: Virtual ids reach each framework's own Vite plugin
 
-- **Status:** Accepted (M0 spike), amended by ADR-0027 and ADR-0053
+- **Status:** Accepted (M0 spike), amended by ADR-0027, ADR-0053 and ADR-0063
 - **Date:** 2026-10-01
 - **Plan:** §9 (M0 spike 4, M6); §11 D1; §5.5, §7.3, §8.2, R5, R6, R12, Appendix C
 

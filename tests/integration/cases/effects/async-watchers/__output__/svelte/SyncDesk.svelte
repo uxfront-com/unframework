@@ -44,6 +44,7 @@
     onclamped,
     class: className,
     style,
+    ...attributes
   }: Props = $props();
 
   let waiting: Waiting[] = [];
@@ -266,9 +267,21 @@
       apply(next * 2);
     });
   });
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["sync-desk", className]} aria-label="Sync desk" {style}>
+<section
+  class={["sync-desk", className]}
+  aria-label="Sync desk"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <button type="button" onclick={suggest}>Suggest</button
   ><button type="button" bind:this={confirm}>Use this email</button
   ><p>{email}: {checking ? "checking" : valid ? "valid" : "invalid"}</p

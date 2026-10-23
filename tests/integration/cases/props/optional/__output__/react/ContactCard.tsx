@@ -21,6 +21,7 @@ export default function ContactCard({
   phone,
   className,
   style,
+  ...attributes
 }: ContactCardProps & ContactCardAttributes) {
   return (
     <article
@@ -28,6 +29,7 @@ export default function ContactCard({
       aria-label={name}
       data-team={team}
       style={style}
+      {...scopeAttributes(attributes)}
     >
       <h2 title={pronouns}>{name}</h2>
       <p>{jobTitle}</p>
@@ -49,4 +51,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

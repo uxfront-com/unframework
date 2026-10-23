@@ -35,6 +35,7 @@ export default function ContactList(
       class={props.class ? `contact-list ${props.class}` : "contact-list"}
       aria-label="Contacts"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <ul>
         <For each={contacts()}>
@@ -61,4 +62,11 @@ export default function ContactList(
       <p role="status">Chosen: {chosen() ?? "nobody"}</p>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

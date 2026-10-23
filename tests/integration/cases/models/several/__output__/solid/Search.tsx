@@ -6,7 +6,12 @@ export default function Search(props: { class?: string; style?: JSX.CSSPropertie
   const [high, setHigh] = createSignal(50);
 
   return (
-    <section aria-label="Search" class={props.class} style={props.style}>
+    <section
+      aria-label="Search"
+      class={props.class}
+      style={props.style}
+      {...scopeAttributes(props)}
+    >
       <PriceRange
         label="Price"
         min={low()}
@@ -22,4 +27,11 @@ export default function Search(props: { class?: string; style?: JSX.CSSPropertie
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

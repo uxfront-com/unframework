@@ -1,8 +1,15 @@
 // An Angular component's template (plan §6, ADR-0035): the markup printed by the Angular dialect,
 // read through one `@let` per signal it uses (an input, a state, a derived value, a setup-once
 // constant), with its listeners written as template statements (./listeners.ts).
-import { angularCode, angularDialect, printMarkup } from "@unframework/codegen";
-import type { MarkupDialect } from "@unframework/codegen";
+import {
+  angularCode,
+  angularDialect,
+  printMarkup,
+  spreadStyleExpression,
+  staticClassValue,
+  vueClassValue,
+} from "@unframework/codegen";
+import type { ClassPart, MarkupDialect } from "@unframework/codegen";
 import { expressionsOf, walk } from "@unframework/ir";
 import type {
   Attribute,
@@ -24,6 +31,9 @@ import { outputName } from "./outputs.ts";
 import { bindingById, unreachable } from "./plan.ts";
 import type { Plan } from "./plan.ts";
 import { readThroughLet, templateRules } from "./rules.ts";
+
+/** The consumer's `style`, which the root merges over its own (ADR-0056). */
+const CONSUMER_STYLE = "this.style()";
 
 /** The template's indentation: two levels, inside the decorator's object. */
 const INDENT = "  ";
@@ -67,6 +77,7 @@ export function template(
   composition: Composition,
   models: Models,
   fallthrough: boolean,
+  scope?: { roots: ReadonlySet<string>; host: string },
 ): string {
   const { component } = plan;
   const pad = INDENT.repeat(LEVEL);
@@ -92,18 +103,57 @@ export function template(
       return [{ name, text: `${name}="${angularCode(statement, "event")}"` }];
     },
     modelAttribute: ({ attribute }) => models.attributes.get(attribute)!,
+    // A class part that may be an array or an object goes through `classNames` (ADR-0065).
+    classAttribute: (written, context) => {
+      const { classNames } = models;
+      if (!classNames || !written.some((part) => part.kind === "Dynamic" && part.collection)) {
+        return angularDialect.classAttribute(written, context);
+      }
+      // A component takes one string; a static name holding `{{` has no static spelling.
+      const whole =
+        context.element.tag.startsWith("uf-") ||
+        written.some((part) => part.kind === "Static" && part.value.includes("{{"));
+      const value = whole ? "" : staticClassValue(written);
+      const parts = whole
+        ? written.map((part): ClassPart =>
+            part.kind === "Static" ? { kind: "Dynamic", value: JSON.stringify(part.value) } : part,
+          )
+        : written;
+      const call = `${classNames}(${vueClassValue(parts)})`;
+      return [
+        ...(value ? [{ name: "class", text: angularDialect.attribute("class", value, "") }] : []),
+        { name: "class", text: `[class]="${angularCode(call, "attribute")}"` },
+      ];
+    },
+    // A style bound to one value that a merge spreads is an object first (ADR-0065): the root's
+    // own beside the consumer's, and the one a component takes, whose root spreads it.
+    styleAttribute: (written, context) => {
+      const { styleObject } = models;
+      const merged = context.element.tag.startsWith("uf-") || written.length > 1;
+      const parts = written.map((part) =>
+        styleObject && merged && part.property === "" && part.value !== CONSUMER_STYLE
+          ? { ...part, value: `${styleObject}(${part.value})` }
+          : part,
+      );
+      return angularDialect.styleAttribute(parts, context);
+    },
   };
   const render = fallthrough ? withFallthrough(models.render) : models.render;
   const markup = printMarkup(render, dialect, {
     indent: INDENT,
     level: LEVEL,
     component,
+    module: plan.module,
     rewrite: templateRules(plan, reads.signals),
     handler: (attribute) => listeners.statements.get(attribute),
     attribute: (attribute) =>
       attribute.kind === "Event"
         ? listeners.attributes.get(attribute)
         : models.options.get(attribute),
+    // The child-root rule (ADR-0063): every root node, each candidate of a `<component is>`
+    // included, binds the directive that gives it the scope attributes on the host.
+    scopeRootAttributes: ({ span }) =>
+      scope?.roots.has(`${span.start}:${span.end}`) ? [`[ufScope]="this.${scope.host}"`] : [],
   });
   // A slot's templates are projected here, so none counts as the default slot's content
   // (ADR-0056); an `<ng-template>` renders nothing where it is projected.
@@ -145,12 +195,31 @@ function withFallthrough(render: ElementNode | FragmentNode): ElementNode | Frag
   const declaration: StyleDeclaration = {
     kind: "Bound",
     property: "",
-    value: expression("this.style()"),
+    value: expression(CONSUMER_STYLE),
     span,
   };
   const styleAt = attributes.findIndex((attribute) => attribute.kind === "Style");
   const style = attributes[styleAt];
-  if (style?.kind === "Style") {
+  // A style bound to one value, or a spread's `style` key, is the root's own, which the
+  // consumer's merges over (ADR-0065).
+  const spreadAt = attributes.findIndex(
+    (attribute) =>
+      attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style"),
+  );
+  const spread = attributes[spreadAt];
+  if (spread?.kind === "Spread") {
+    const own: StyleDeclaration = {
+      kind: "Bound",
+      property: "",
+      value: spreadStyleExpression(spread),
+      span: spread.span,
+    };
+    attributes[spreadAt] = { ...spread, keys: spread.keys.filter((key) => key.name !== "style") };
+    attributes.push({ kind: "Style", declarations: [own, declaration], span });
+  } else if (style?.kind === "Style" && style.value) {
+    const own: StyleDeclaration = { kind: "Bound", property: "", value: style.value, span };
+    attributes[styleAt] = { kind: "Style", declarations: [own, declaration], span: style.span };
+  } else if (style?.kind === "Style") {
     attributes[styleAt] = { ...style, declarations: [...style.declarations, declaration] };
   } else attributes.push({ kind: "Style", declarations: [declaration], span });
   const merged = { ...root, attributes } as ElementNode | ComponentNode;
@@ -206,6 +275,9 @@ export function templateReads(plan: Plan, listeners: Listeners): TemplateReads {
         case "Global":
           // `undefined` is a keyword of Angular's expression language and needs no member.
           if (reference.name !== "undefined") globals.add(reference.name);
+          break;
+        // A template reads a recipe through the member the plan gives it (`recipes`).
+        case "Import":
           break;
         case "Slot":
           slots.add(reference.slot);

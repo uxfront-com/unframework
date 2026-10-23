@@ -32,6 +32,7 @@
     onsummed,
     class: className,
     style,
+    ...attributes
   }: Props = $props();
 
   let focused = $state.raw<Book | null>(null);
@@ -126,9 +127,21 @@
     label = "Loading";
     loading = true;
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["book-shelf", className]} aria-label="Books" {style}>
+<section
+  class={["book-shelf", className]}
+  aria-label="Books"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <ul aria-label="Shelf">
     {#each books as book (book.id)}
       <li>

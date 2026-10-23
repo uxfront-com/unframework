@@ -10,9 +10,15 @@ export default function Notice({
   tone,
   className,
   style,
+  ...attributes
 }: { text: string; tone: "info" | "quiet" } & NoticeAttributes) {
   return (
-    <p role="status" className={cx("notice", tone, className)} style={style}>
+    <p
+      role="status"
+      className={cx("notice", tone, className)}
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       {text}
     </p>
   );
@@ -31,4 +37,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

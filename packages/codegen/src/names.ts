@@ -28,6 +28,8 @@ export function pascalCase(name: string): string {
  */
 export class NameScope {
   readonly #taken: Set<string>;
+  /** The base each name is claimed from where it isn't the name itself (see {@link rebase}). */
+  readonly #bases = new Map<string, string>();
 
   constructor(reserved: Iterable<string> = []) {
     this.#taken = new Set(reserved);
@@ -43,13 +45,45 @@ export class NameScope {
     return this.#taken.has(name);
   }
 
+  /**
+   * Claims `name` from `base` from now on, `base` or `base_1`…: an inline helper takes a base of
+   * its own in each component of a module (see {@link moduleHelperName}).
+   */
+  rebase(name: string, base: string): void {
+    this.#bases.set(name, base);
+  }
+
   /** Takes `name`, or `name_1`, `name_2`… when it is taken. Returns the name taken. */
   claim(name: string): string {
-    let local = name;
-    for (let suffix = 1; this.#taken.has(local); suffix++) local = `${name}_${suffix}`;
+    const base = this.#bases.get(name) ?? name;
+    let local = base;
+    for (let suffix = 1; this.#taken.has(local); suffix++) local = `${base}_${suffix}`;
     this.#taken.add(local);
     return local;
   }
+}
+
+/**
+ * How component `index` of a module names an inline helper, given the names each component of
+ * the module reserves (`reserved`, in component order). A source's outputs are joined into one
+ * module where it is loaded (ADR-0053), where every component's helpers and hoisted `const`s are
+ * declared, so the names can't depend on what another component claims first. Each component
+ * claims the helper from a base of its own, `cx` for the first and `cx_<index>` for the others,
+ * and leaves the others' bases and every helper name a component declares (`others`). The first
+ * one's fallbacks are then `cx_<n>`… past the bases, and the others' `cx_<index>_1`…, so no two
+ * components declare one name.
+ */
+export function moduleHelperName(
+  helper: string,
+  reserved: readonly Iterable<string>[],
+  index: number,
+): { base: string; others: string[] } {
+  const own = new RegExp(`^${helper}(?:_\\d+)*$`);
+  const others = new Set<string>();
+  for (const names of reserved) for (const name of names) if (own.test(name)) others.add(name);
+  const base = (each: number) => (each ? `${helper}_${each}` : helper);
+  for (let each = 0; each < reserved.length; each++) if (each !== index) others.add(base(each));
+  return { base: base(index), others: [...others] };
 }
 
 /**

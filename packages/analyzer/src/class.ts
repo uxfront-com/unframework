@@ -17,7 +17,9 @@ import { checkExpression, span } from "./expressions.ts";
 import type { CheckedExpression } from "./expressions.ts";
 import { isStaticString, reportCharacters, valueOf } from "./literals.ts";
 import type { RenderContext } from "./render.ts";
+import { interfaceProblem } from "./style.ts";
 import { describe, outside } from "./types/kinds.ts";
+import type { Kinds, ObjectShape, Primitive } from "./types/kinds.ts";
 
 /** HTML's ASCII whitespace, which separates class names. */
 const ASCII_WHITESPACE = /[\t\n\f\r ]+/;
@@ -36,7 +38,7 @@ export interface LoweredClass {
 type Part =
   | { kind: "static"; names: string[]; at: Span }
   | { kind: "toggle"; names: string[]; condition: CheckedExpression; static: boolean; at: Span }
-  | { kind: "dynamic"; value: CheckedExpression; at: Span };
+  | { kind: "dynamic"; value: CheckedExpression; collection: boolean; at: Span };
 
 /**
  * Lowers `class={value}`: string literals are static names, `cond && "a"` and object keys toggle
@@ -85,7 +87,7 @@ export function lowerClass(value: AST.Expression, context: RenderContext): Lower
           createToggleClass(name, part.condition.expression, part.at),
         );
       default:
-        return [createDynamicClass(part.value.expression, part.at)];
+        return [createDynamicClass(part.value.expression, part.at, part.collection)];
     }
   });
   return { attribute: createClassAttribute(items, span(value)), names: undefined, reported };
@@ -147,9 +149,10 @@ function collect(node: AST.Expression, parts: Part[], context: RenderContext): v
       }
       break;
   }
-  const value = checkExpression(node, context);
-  checkDynamic(value, node, context);
-  parts.push({ kind: "dynamic", value, at: span(node) });
+  // A dynamic part, where a pass-through name (an engine's class function) may be called.
+  const value = checkExpression(node, { ...context, classPart: true });
+  const collection = checkDynamic(value, node, context);
+  parts.push({ kind: "dynamic", value, collection, at: span(node) });
 }
 
 /** `false`, `null` and `undefined` render no class, in an array as anywhere. */
@@ -172,7 +175,7 @@ function collectToggle(node: AST.LogicalExpression, parts: Part[], context: Rend
     }
     return;
   }
-  const value = checkExpression(node.right, context);
+  const value = checkExpression(node.right, { ...context, classPart: true });
   const kinds = outside(value.kinds, ["string", "null", "undefined"]);
   const fixable = condition.clean && value.clean && !kinds.length;
   const left = source.slice(node.left.start, node.left.end);
@@ -191,7 +194,7 @@ function collectToggle(node: AST.LogicalExpression, parts: Part[], context: Rend
         },
       ]
     : [];
-  parts.push({ kind: "dynamic", value, at: span(node) });
+  parts.push({ kind: "dynamic", value, collection: false, at: span(node) });
   reporter.report(
     "UF3018",
     node,
@@ -273,23 +276,58 @@ function collectObject(node: AST.ObjectExpression, parts: Part[], context: Rende
   }
 }
 
-/** A dynamic part's value must be a string, or nothing (UF3018, and arrays and objects M4). */
+/**
+ * A dynamic part's value must be a string, an array or an object, or nothing (UF3018). Returns
+ * whether it can be an array or an object at run time: its names then render as Vue's
+ * `normalizeClass` reads them (ADR-0065).
+ */
 function checkDynamic(
   value: CheckedExpression,
   node: AST.Expression,
   context: RenderContext,
-): void {
+): boolean {
   const kinds = outside(value.kinds, ["string", "null", "undefined"]);
-  if (!kinds.length) return;
+  if (!kinds.length) return false;
   if (kinds.every((kind) => kind === "array" || kind === "object")) {
-    context.reporter.unsupported(
+    const { shapes, entries } = collectionKinds(value.kinds);
+    if (shapes.some((shape) => shape.interface)) {
+      const problem = interfaceProblem("class");
+      context.reporter.report("UF3018", node, problem.message, { help: problem.help });
+      return false;
+    }
+    // An object's values are conditions: Qwik's `ClassList` takes primitives there alone.
+    for (const shape of shapes) {
+      for (const [name, member] of shape.members()) {
+        const others = outside(member.kinds(), [
+          "string",
+          "number",
+          "boolean",
+          "null",
+          "undefined",
+        ]);
+        if (!others.length) continue;
+        context.reporter.report(
+          "UF3018",
+          member.key,
+          `A \`class\` object's values are conditions, and \`${name}\` can be ${describe(others)}, which Qwik's type for \`class\` rejects there.`,
+          {
+            help: "Hold a boolean in each key, or put a nested collection in an array beside the object.",
+            related: [{ span: span(node), message: "The class part is bound here" }],
+          },
+        );
+        return false;
+      }
+    }
+    if (!entries.length) return true;
+    context.reporter.report(
+      "UF3018",
       node,
-      "A `class` part that holds an array or an object at run time is not supported yet: it lands in M4. Here it can be one.",
+      `A \`class\` array's entries are class names, and this one's can be ${describe(entries)}, which the targets render differently.`,
       {
-        help: "Write the array or the object in the `class` itself, or join the names into a string.",
+        help: "Hold strings, objects or `false` in the array, or `String(value)` to render a number's digits.",
       },
     );
-    return;
+    return false;
   }
   context.reporter.report(
     "UF3018",
@@ -299,4 +337,40 @@ function checkDynamic(
       help: 'Write `cond && "name"` to toggle a name, or `String(value)` to render a number\'s digits.',
     },
   );
+  return false;
+}
+
+/**
+ * The object shapes a class collection holds at any depth, and the kinds of its entries that no
+ * target reads alike: numbers, which Vue's `normalizeClass` and Qwik skip and clsx renders as
+ * digits, and `true`, which Qwik's `ClassList` rejects. Arrays are walked once each.
+ */
+function collectionKinds(kinds: Kinds): { shapes: ObjectShape[]; entries: Primitive[] } {
+  const shapes: ObjectShape[] = [];
+  const entries = new Set<Primitive>();
+  const seen = new Set<() => Kinds>();
+  const visit = (value: Kinds, entry: boolean): void => {
+    shapes.push(...(value.objects ?? []));
+    if (entry) {
+      for (const kind of outside(value, [
+        "string",
+        "null",
+        "undefined",
+        "array",
+        "object",
+        "boolean",
+      ])) {
+        entries.add(kind);
+      }
+      const onlyFalse = value.booleans?.size === 1 && value.booleans.has(false);
+      if (value.primitives.has("boolean") && !onlyFalse) entries.add("boolean");
+    }
+    for (const element of value.elements ?? []) {
+      if (seen.has(element)) continue;
+      seen.add(element);
+      visit(element(), true);
+    }
+  };
+  visit(kinds, false);
+  return { shapes, entries: [...entries] };
 }

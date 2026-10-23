@@ -299,6 +299,8 @@ function templateReads(reference: CodeReference, component: UfComponent): boolea
     case "Emit":
     case "Event":
     case "Slot":
+    // `<script setup>` hands its imports to the template.
+    case "Import":
       return true;
     case "Api":
       return false;

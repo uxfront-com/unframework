@@ -1,0 +1,238 @@
+{
+  "irVersion": 1,
+  "file": "styles/child-root-branches/Status.uf.tsx",
+  "components": [
+    {
+      "name": "Status",
+      "span": {
+        "start": 163,
+        "end": 470
+      },
+      "props": [
+        {
+          "name": "busy",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 218,
+              "end": 225
+            }
+          },
+          "binding": "busy@196",
+          "span": {
+            "start": 212,
+            "end": 226
+          }
+        },
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 233,
+              "end": 239
+            }
+          },
+          "binding": "text@202",
+          "span": {
+            "start": 227,
+            "end": 239
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ busy: boolean; text: string }",
+          "span": {
+            "start": 210,
+            "end": 241
+          }
+        },
+        "span": {
+          "start": 194,
+          "end": 241
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "busy@196",
+          "name": "busy",
+          "kind": "prop",
+          "span": {
+            "start": 196,
+            "end": 200
+          }
+        },
+        {
+          "id": "text@202",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 202,
+            "end": 206
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "busy",
+                  "span": {
+                    "start": 270,
+                    "end": 274
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "busy@196",
+                      "span": {
+                        "start": 270,
+                        "end": 274
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "span",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "badge",
+                        "span": {
+                          "start": 293,
+                          "end": 306
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "name": "role",
+                        "value": "status",
+                        "span": {
+                          "start": 307,
+                          "end": 320
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Saving",
+                        "span": {
+                          "start": 321,
+                          "end": 347
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 287,
+                      "end": 354
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 270,
+                  "end": 354
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "button",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "type",
+                        "value": "button",
+                        "span": {
+                          "start": 383,
+                          "end": 396
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "badge",
+                        "span": {
+                          "start": 397,
+                          "end": 410
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "text",
+                          "span": {
+                            "start": 423,
+                            "end": 427
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "text@202",
+                              "span": {
+                                "start": 423,
+                                "end": 427
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 422,
+                          "end": 428
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 375,
+                      "end": 446
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 375,
+                  "end": 446
+                }
+              }
+            ],
+            "span": {
+              "start": 270,
+              "end": 454
+            }
+          }
+        ],
+        "span": {
+          "start": 260,
+          "end": 463
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Status",
+      "span": {
+        "start": 163,
+        "end": 470
+      }
+    }
+  ],
+  "types": []
+}

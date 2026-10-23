@@ -1,6 +1,14 @@
 // What the Angular class declares for each of a component's bindings (plan §6, ADR-0046), and the
 // names the output file claims beside the source's own.
-import { codeKind, codeNames, ImportSet, NameScope, sourceNames } from "@unframework/codegen";
+import {
+  addPassThroughImports,
+  codeKind,
+  codeNames,
+  ImportSet,
+  NameScope,
+  passThroughImports,
+  sourceNames,
+} from "@unframework/codegen";
 import { summarizeCode, walk } from "@unframework/ir";
 import type {
   Binding,
@@ -93,6 +101,11 @@ export interface Plan {
   events: ReadonlyMap<string, EventDeclaration>;
   /** The names of the list items and indexes: a template statement shadowed by one says `this.`. */
   loopNames: ReadonlySet<string>;
+  /**
+   * The member the template reads each pass-through name through (an engine's class function),
+   * by its local name (ADR-0064): its own name, unless a member of the class takes it.
+   */
+  recipes: ReadonlyMap<string, string>;
 }
 
 /** The names Angular gives a component class's own members: no binding may take them. */
@@ -151,6 +164,8 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
   const imports = new ImportSet(
     new NameScope([...source].filter((name) => name !== component.name)),
   );
+  // The imports that pass through, which the template reads through members (ADR-0064).
+  addPassThroughImports(component, module, imports);
   const events = new Map(component.emits?.events.map((event) => [event.name, event]) ?? []);
   const memberNames = [
     ...ANGULAR_MEMBERS,
@@ -159,6 +174,28 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
     ...[...events.keys()].map(outputName),
   ];
   const members = new NameScope(memberNames);
+  // A recipe's member takes no name a member has, those composition declares (the `class` and
+  // `style` inputs, a slot's query) included; the members the emitter claims later (`host`)
+  // then take others. Nor a list's variable's name, which would shadow it in the list, as
+  // `templateMember` keeps the other members the template reads.
+  const loopNames = new Set(
+    component.bindings.filter(({ kind }) => isLoopVariable(kind)).map(({ name }) => name),
+  );
+  const composition = new NameScope([
+    ...memberNames,
+    "class",
+    "style",
+    ...(component.slots?.slots.map(({ name }) => slotQuery(name)) ?? []),
+  ]);
+  const recipes = new Map<string, string>();
+  for (const { names } of passThroughImports(component, module)) {
+    for (const { local } of names) {
+      let member = composition.claim(local);
+      while (loopNames.has(member)) member = composition.claim(local);
+      members.reserve(member);
+      recipes.set(local, member);
+    }
+  }
   const bindingNames = new Set(component.bindings.map(({ name }) => name));
   const locals = new NameScope([
     ...[...source].filter((name) => !bindingNames.has(name)),
@@ -181,9 +218,8 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
     ],
     ...formsOf(component),
     events,
-    loopNames: new Set(
-      component.bindings.filter(({ kind }) => isLoopVariable(kind)).map(({ name }) => name),
-    ),
+    loopNames,
+    recipes,
   };
 }
 

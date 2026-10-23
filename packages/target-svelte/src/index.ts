@@ -1,4 +1,5 @@
 import { defineTarget, printMarkup, svelteDialect } from "@unframework/codegen";
+import type { MarkupDialect } from "@unframework/codegen";
 import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
@@ -34,7 +35,11 @@ export const svelte: Target = defineTarget({
     fragment: { support: "native" },
     "bound-attribute": { support: "native" },
     "class-binding": { support: "native" },
-    "style-binding": { support: "native" },
+    "style-binding": {
+      support: "emulated",
+      helper: "styleText",
+      note: "Svelte's `style` takes a declaration list, so a style bound to an object goes through an inline helper, `styleText`, that writes its declarations (ADR-0065); declarations print as `style:` directives.",
+    },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
@@ -67,6 +72,17 @@ export const svelte: Target = defineTarget({
       note: "A provided ref is passed as an object with a `value` getter, `refObject`, which descendants read as it changes (ADR-0054).",
     },
     "dynamic-component": { support: "native" },
+    "scoped-styles": { support: "native" },
+    // The child's root picks its styled parents' `data-uf-*` props out of `$props()` (ADR-0063):
+    // their names are the parents', which the child cannot know.
+    "child-root-scope": {
+      support: "emulated",
+      helper: "scopeAttributes",
+      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them.",
+    },
+    "slotted-styles": { support: "native" },
+    // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
+    "sheet-order": { support: "native" },
     // A capture listener is an attribute, `onclickcapture` (ADR-0047).
     "event-capture": { support: "native" },
     // `once` and `passive` listen through `on` from `svelte/events`, in an attachment (`events.ts`):
@@ -93,7 +109,22 @@ export const svelte: Target = defineTarget({
     const script = instanceScript(component, context.module);
     const { module, block, markup: options, render } = script;
     // The component resolves the names of loop variables and setup bindings.
-    const markup = printMarkup(render, svelteDialect, { component: script.component, ...options });
+    const { styleText } = script;
+    // A style bound to one value is the declaration list `styleText` writes (ADR-0065).
+    const dialect: MarkupDialect = styleText
+      ? {
+          ...svelteDialect,
+          styleAttribute: (parts, attributeContext) =>
+            parts[0]?.property === ""
+              ? [{ name: "style", text: `style={${styleText}(${parts[0].value})}` }]
+              : svelteDialect.styleAttribute(parts, attributeContext),
+        }
+      : svelteDialect;
+    const markup = printMarkup(render, dialect, {
+      component: script.component,
+      module: context.module,
+      ...options,
+    });
     const parts = [OPTIONS, ...(module ? [module] : []), ...(block ? [block] : []), markup];
     return [{ path: `${component.name}.svelte`, contents: `${parts.join("\n\n")}\n` }];
   },

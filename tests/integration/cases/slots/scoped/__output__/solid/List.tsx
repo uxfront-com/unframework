@@ -11,10 +11,22 @@ export default function List(
     },
 ) {
   return (
-    <ul aria-label={props.label} class={props.class} style={props.style}>
+    <ul
+      aria-label={props.label}
+      class={props.class}
+      style={props.style}
+      {...scopeAttributes(props)}
+    >
       <For each={props.items}>
         {(item, index) => <li>{props.item?.({ item, index: index() })}</li>}
       </For>
     </ul>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

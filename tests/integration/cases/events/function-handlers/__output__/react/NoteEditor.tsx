@@ -15,6 +15,7 @@ export default function NoteEditor({
   onTagged,
   className,
   style,
+  ...attributes
 }: NoteEditorEvents & NoteEditorAttributes) {
   const [saves, setSaves] = useState(0);
   const savesRef = useRef(saves);
@@ -52,7 +53,12 @@ export default function NoteEditor({
   }
 
   return (
-    <section className={cx("note-editor", className)} aria-label="Note" style={style}>
+    <section
+      className={cx("note-editor", className)}
+      aria-label="Note"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <button type="button" onClick={save}>
         Save
       </button>
@@ -103,4 +109,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

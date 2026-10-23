@@ -18,7 +18,7 @@ export interface DraftPanelEvents {
 }
 
 export default component$<DraftPanelEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onSave$, onStatus$, onClosed$, onKey$, class: className, style }) => {
+  ({ onSave$, onStatus$, onClosed$, onKey$, class: className, style, ...attributes }) => {
     // Functions that reference each other: a QRL captures what it reads when it is created, so each
     // reads the other from here once both exist.
     const functions = useConstant(() => ({}) as { onEscape: typeof onEscape });
@@ -103,7 +103,12 @@ export default component$<DraftPanelEvents & { class?: ClassList; style?: CSSPro
     );
 
     return (
-      <section class={["draft-panel", className]} aria-label="Draft" style={style}>
+      <section
+        class={["draft-panel", className]}
+        aria-label="Draft"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <button type="button" aria-expanded={open.value} onClick$={show}>
           Options
         </button>
@@ -140,3 +145,12 @@ export default component$<DraftPanelEvents & { class?: ClassList; style?: CSSPro
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

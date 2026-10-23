@@ -15,7 +15,7 @@ export interface DisclosureModels {
 
 export default component$<
   { title: string } & DisclosureModels & { class?: ClassList; style?: CSSProperties }
->(({ title, open: openProp, onOpenChange$, class: className, style }) => {
+>(({ title, open: openProp, onOpenChange$, class: className, style, ...attributes }) => {
   const openLocal = useSignal<boolean>(false);
   const open = useComputed$(() => (openProp === undefined ? openLocal.value : openProp));
 
@@ -25,7 +25,7 @@ export default component$<
   });
 
   return (
-    <div class={["disclosure", className]} style={style}>
+    <div class={["disclosure", className]} {...scopeAttributes(attributes)} style={style}>
       <button type="button" aria-expanded={open.value} onClick$={() => setOpen(!open.value)}>
         {title}
       </button>
@@ -33,3 +33,12 @@ export default component$<
     </div>
   );
 });
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

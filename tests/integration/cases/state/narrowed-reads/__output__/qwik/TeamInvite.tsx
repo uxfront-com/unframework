@@ -49,6 +49,7 @@ export default component$<
     onMoved$,
     class: className,
     style,
+    ...attributes
   }) => {
     const greeting = useComputed$(() =>
       inviter ? `Invite as ${inviter.name}` : "Invite as a guest",
@@ -113,7 +114,12 @@ export default component$<
     );
 
     return (
-      <section class={["team-invite", className]} aria-label="Invite" style={style}>
+      <section
+        class={["team-invite", className]}
+        aria-label="Invite"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <h2>{greeting.value}</h2>
         <ul aria-label="Members">
           {visible.value.map((member) => (
@@ -206,3 +212,12 @@ export default component$<
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

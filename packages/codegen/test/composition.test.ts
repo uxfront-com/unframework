@@ -23,12 +23,15 @@ import {
 import type { ComponentApi, UfComponent } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
+import { styled } from "../../ir/test/fixtures.ts";
 import {
+  addPassThroughImports,
   childImports,
   exportsOf,
   ImportSet,
   js,
   keyOwner,
+  passThroughImports,
   printProgram,
   referencedBindings,
 } from "../src/index.ts";
@@ -206,6 +209,38 @@ describe("ImportSet aliases (ADR-0054)", () => {
     expect(imports.add("./K.vue", "AKey", { local: "B", exact: true })).toBe("B");
     expect(printProgram(js.program(imports.toDeclarations())).trim()).toBe(
       'import { AKey as A, AKey as B } from "./K.vue";',
+    );
+  });
+});
+
+describe("passThroughImports", () => {
+  it("gives each side-effect import, and each name the template reads, in the IR's order", () => {
+    const module = styled();
+    expect(passThroughImports(module.components[0]!, module)).toEqual([
+      { specifier: "virtual:recipes", names: [{ imported: "button", local: "button" }] },
+      { specifier: "virtual:recipes.css", names: [] },
+    ]);
+  });
+
+  it("leaves out a named import the component does not read", () => {
+    const module = styled();
+    const [component] = module.components;
+    const unread = { ...component!, render: createElement("p", [], [], at) };
+    expect(passThroughImports(unread, module)).toEqual([
+      { specifier: "virtual:recipes.css", names: [] },
+    ]);
+  });
+
+  it("prints them as written, by the source's names, after the sorted imports, each module once", () => {
+    const module = styled();
+    const imports = new ImportSet(["button"]);
+    imports.add("vue", "ref");
+    addPassThroughImports(module.components[0]!, module, imports);
+    // A module added twice is imported once, where it was first added.
+    imports.addPassThrough("virtual:recipes");
+    expect(imports.claim("button")).toBe("button_1");
+    expect(printProgram(js.program(imports.toDeclarations())).trim()).toBe(
+      'import { ref } from "vue";\nimport { button } from "virtual:recipes";\nimport "virtual:recipes.css";',
     );
   });
 });

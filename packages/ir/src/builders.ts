@@ -44,6 +44,7 @@ import type {
   IfBranch,
   IfNode,
   ImportedName,
+  ImportReference,
   InjectionKeyDeclaration,
   InjectItem,
   InlineHandler,
@@ -58,6 +59,8 @@ import type {
   NarrowedPath,
   Parameter,
   ParameterPattern,
+  PassThroughImport,
+  PassThroughName,
   Prop,
   PropAttribute,
   PropsParameter,
@@ -82,6 +85,7 @@ import type {
   StaticStyle,
   StyleAttribute,
   StyleDeclaration,
+  StyleSheet,
   TemplateRefItem,
   TextNode,
   ToggleClass,
@@ -103,7 +107,7 @@ export function span(start: number, end: number): Span {
   return { start, end };
 }
 
-/** Builds a module: without imports or injection keys unless given. */
+/** Builds a module: without imports, injection keys or pass-through imports unless given. */
 export function createModule(
   file: string,
   components: UfComponent[] = [],
@@ -111,6 +115,7 @@ export function createModule(
   types: TypeDeclaration[] = [],
   imports: ModuleImport[] = [],
   keys: InjectionKeyDeclaration[] = [],
+  passThroughImports: PassThroughImport[] = [],
 ): UfModule {
   return {
     irVersion: IR_VERSION,
@@ -120,7 +125,22 @@ export function createModule(
     types,
     ...(imports.length ? { imports } : {}),
     ...(keys.length ? { keys } : {}),
+    ...(passThroughImports.length ? { passThroughImports } : {}),
   };
+}
+
+/** Builds an import every output keeps as written: no names for the side-effect import. */
+export function createPassThroughImport(
+  specifier: PassThroughImport["specifier"],
+  names: PassThroughName[],
+  at: Span,
+): PassThroughImport {
+  return { specifier, names, span: at };
+}
+
+/** Builds a name a pass-through import binds. */
+export function createPassThroughName(imported: string, local: string, at: Span): PassThroughName {
+  return { imported, local, span: at };
 }
 
 /** Builds an import of another `.uf.tsx` module, with the API the resolver gave for it. */
@@ -165,11 +185,15 @@ export function createTypeDeclaration(
   return { name, exported, code, span: at };
 }
 
-/** What a component declares for composition (ADR-0054): each set only when given. */
+/**
+ * What a component declares for composition (ADR-0054), and the stylesheets it imports with
+ * their scope id (ADR-0063): each set only when given.
+ */
 export interface ComponentOptions {
   slots?: Slots;
   exposes?: Exposes;
   inheritAttrs?: false;
+  styles?: { sheets: StyleSheet[]; scopeId: string };
 }
 
 /** Builds a component: without props, types, bindings, setup, events or slots unless given. */
@@ -185,7 +209,7 @@ export function createComponent(
   emits?: Emits,
   options: ComponentOptions = {},
 ): UfComponent {
-  const { slots, exposes } = options;
+  const { slots, exposes, styles } = options;
   return {
     name,
     span: at,
@@ -199,7 +223,13 @@ export function createComponent(
     bindings,
     setup,
     render,
+    ...(styles ? { styles: styles.sheets, scopeId: styles.scopeId } : {}),
   };
+}
+
+/** Builds a stylesheet a component imports. */
+export function createStyleSheet(specifier: string, source: string, at: Span): StyleSheet {
+  return { specifier, source, span: at };
 }
 
 /** Builds the slots a component declares with `defineSlots`. */
@@ -305,6 +335,11 @@ export function createNarrowedPath(at: Span, scope: NarrowedPath["scope"]): Narr
 /** Builds a test of a slot's presence, `slots.title`. */
 export function createSlotReference(slot: string, at: Span): SlotReference {
   return { kind: "Slot", slot, span: at };
+}
+
+/** Builds a read of a name a pass-through import binds. */
+export function createImportReference(name: string, at: Span): ImportReference {
+  return { kind: "Import", name, span: at };
 }
 
 /** Builds a reference to an allowed global. */
@@ -824,14 +859,18 @@ export function createToggleClass(name: string, condition: Expression, at: Span)
   return { kind: "Toggle", name, condition, span: at };
 }
 
-/** Builds a dynamic part of a `class`. */
-export function createDynamicClass(value: Expression, at: Span): DynamicClass {
-  return { kind: "Dynamic", value, span: at };
+/** Builds a dynamic part of a `class`: `collection` where it may be an array or an object. */
+export function createDynamicClass(value: Expression, at: Span, collection = false): DynamicClass {
+  return { kind: "Dynamic", value, ...(collection ? { collection: true as const } : {}), span: at };
 }
 
-/** Builds a `style` from its declarations. */
-export function createStyleAttribute(declarations: StyleDeclaration[], at: Span): StyleAttribute {
-  return { kind: "Style", declarations, span: at };
+/** Builds a `style` from its declarations, or bound to one value with none. */
+export function createStyleAttribute(
+  declarations: StyleDeclaration[],
+  at: Span,
+  value?: Expression,
+): StyleAttribute {
+  return { kind: "Style", declarations, ...(value ? { value } : {}), span: at };
 }
 
 /** Builds a static style declaration. */

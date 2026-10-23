@@ -156,11 +156,13 @@ errors>` on every layer, and the summary excuses it on that target alone.
   starts mid-pixel takes in the anti-aliased corner of the box beside it, which then rasterises
   one level apart: the same DOM captured differently after a hover, a press or a keystroke
   repainted one control. The parity projects launch Chromium with `--disable-partial-raster`,
-  which rasterises every repainted tile whole, so a capture is a function of the DOM.
-- **L10 follows the environment.** In CI and in the baseline environment (the Playwright image
+  which rasterises every repainted tile whole, so a capture is a function of the DOM. Firefox and
+  WebKit have no such switch, and compare live within their engine (ADR-0066).
+- **L10 follows the environment.** In Chromium, in CI and in the baseline environment (the Playwright image
   `pnpm test:baselines` runs, `BASELINE_ENVIRONMENT`) it compares with the committed
   `__expected__/geometry.<name>.json` and `__screenshots__/<name>-chromium-linux.png`, and only
-  that environment writes them. Elsewhere, any Linux host included, it compares each target with
+  that environment writes them. Elsewhere, any Linux host and any run in Firefox or WebKit
+  included (CI too, `UF_BROWSER`), it compares each target with
   the reference's capture from the same run, and records the reference's own L10 as a skip:
   nothing was compared. Pixels differ between hosts, and so does geometry once a case has form
   controls (a text input is 160px wide on macOS and 200px on Linux). The font audit walks the
@@ -264,8 +266,10 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
 case)`); its projects run after the run's reference and before every other target
   (`groupOrder`'s `caseReferences`).
 - **The run:** `resolveHarnessMode` (`UF_UPDATE`, `UF_PIXELS`, `UF_CANARY`,
-  `UF_BASELINE_ENVIRONMENT`; it refuses writing in CI, and writing the visual baselines outside
-  `BASELINE_ENVIRONMENT`), `createHarnessRun` (the context provided to every project as
+  `UF_BASELINE_ENVIRONMENT`, `UF_BROWSER`; it refuses writing in CI, and writing the visual
+  baselines outside `BASELINE_ENVIRONMENT`; with `UF_BROWSER=firefox` or `webkit` it compares
+  pixels live, in CI too, and refuses writing anything, because every committed artefact is
+  Chromium's, ADR-0066), `createHarnessRun` (the context provided to every project as
   `ufHarness`; each run's scratch output is its own directory, so concurrent runs never clear
   each other's; an L10 quarantine entry that names `pixels` applies only in runs of that pixel
   mode) and `groupOrder`.
@@ -277,10 +281,12 @@ case)`); its projects run after the run's reference and before every other targe
   `ufComponentEvents`, which answers from the
   compiles a project's unplugin reported to `recordCompiledModule`, for the case's only source or
   the one its `case.json` names as `main`, ADR-0057), and
-  `parityBrowser({ name, commands })`, the deterministic Chromium every parity project runs
-  (800×600 at DPR 1, `--font-render-hinting=none`, `--disable-partial-raster`, light scheme
-  until a case opts into dark, reduced motion, a 5 s action timeout). A target's command may
-  not take one of the testing API's names.
+  `parityBrowser({ name, commands, browser })`, the deterministic Chromium every parity project
+  runs (800×600 at DPR 1, `--font-render-hinting=none`, `--disable-partial-raster`, light scheme
+  until a case opts into dark, reduced motion, a 5 s action timeout). `browser: "firefox"` or
+  `"webkit"` runs that engine in the same context, without Chromium's switches, and L10 skips
+  its font audit there (`FONT_AUDIT_SKIP`: the audit reads CDP). A target's command may not
+  take one of the testing API's names.
 - **Layers:** `checkLayers(task, subject, { L1: () => …, L2: … })` runs checks, records each
   outcome and throws one error with every failure (`expectParity` records the same way without
   throwing). A check skips only by returning
@@ -298,7 +304,9 @@ case)`); its projects run after the run's reference and before every other targe
   shard replaces nothing. A shard covers its projects in full only together with shards 1 to n
   of the same selection and count, with no other filter; the summary then also fails a project
   no shard collected a test of. `writeSummary` merges the partial
-  matrices into `parity-matrix.json` and `parity-matrix.md` (each project's cells from its last
+  matrices into `parity-matrix.json` and `parity-matrix.md`, or `parity-matrix.<engine>.*` for
+  `browser: "firefox"` or `"webkit"` (`summaryName`), which `isPartialMatrixFile` never reads
+  back (each project's cells from its last
   run, the runs listed, every record judged by the newest run's quarantine) and appends the
   Markdown to `$GITHUB_STEP_SUMMARY`; in CI (or with `requireComplete`) a project that did not
   run, or that only filtered runs or an incomplete set of shards ran, is a problem, not a partial
@@ -324,9 +332,11 @@ broken merge. A boolean attribute's `="true"` is written empty on Qwik only, who
 an attribute that is on that way.
 Only the named target's framework noise is removed (Angular's hosts only from Angular's
 output, Qwik's `preventdefault:`, `stoppropagation:` and `capture:` dispatch attributes and its
-`q:template` elements, where its server render keeps a slot's unclaimed fallback, only from
-Qwik's, React's stale `checked` and `selected` attributes only from React's, and the space
-Playwright's ARIA snapshot puts at an Angular host only from Angular's snapshot); without a
+`q:template` elements, where its server render keeps a slot's unclaimed fallback, and its
+`<style q:style>` elements, where its server render writes a `useStyles$` sheet that its client
+writes in `<head>`, only from Qwik's, React's stale `checked` and `selected` attributes only from
+React's, and the space Playwright's ARIA snapshot puts at an Angular host only from Angular's
+snapshot); without a
 target nothing is noise. On every target, the markup of a control's initial state is left out
 where its live state, a `uf:*` pseudo-attribute, says the same (rule 4d): an `<input>`'s `value`
 that equals its `uf:value`, an `<input>`'s `checked` where `uf:checked` is `"true"`, an

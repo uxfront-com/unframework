@@ -2,4 +2,5 @@
 // entries whose target is "svelte" belong here, so each target lane edits its own file.
 import type { QuarantineEntry } from "@unframework/testing/node";
 
+/** Empty: every live layer is green on Svelte (ADR-0063). */
 export const QUARANTINE: readonly QuarantineEntry[] = [];

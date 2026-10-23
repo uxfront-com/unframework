@@ -17,11 +17,18 @@ function uniqueId(): string {
   return `uf-id-${locals.ufIdCount}`;
 }
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const inputId = uniqueId();
 const hintId = uniqueId();
 ---
 
-<div class:list={["email-field", className]} style={style}>
+<div class:list={["email-field", className]} style={style} {...scopeAttributes(Astro.props)}>
   <label for={inputId}>{label}</label>
   <input id={inputId} name="email" type="email" aria-describedby={hintId} />
   <p id={hintId}>{hint}</p>

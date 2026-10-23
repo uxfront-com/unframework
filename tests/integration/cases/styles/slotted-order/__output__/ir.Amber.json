@@ -1,0 +1,104 @@
+{
+  "irVersion": 1,
+  "file": "styles/slotted-order/Amber.uf.tsx",
+  "components": [
+    {
+      "name": "Amber",
+      "span": {
+        "start": 110,
+        "end": 256
+      },
+      "props": [],
+      "types": [],
+      "slots": {
+        "binding": "slots@152",
+        "type": {
+          "code": "{ default?(): Element }",
+          "span": {
+            "start": 172,
+            "end": 195
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 174,
+              "end": 193
+            }
+          }
+        ],
+        "span": {
+          "start": 146,
+          "end": 199
+        }
+      },
+      "bindings": [
+        {
+          "id": "slots@152",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 152,
+            "end": 157
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "amber",
+            "span": {
+              "start": 214,
+              "end": 227
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "SlotOutlet",
+            "slot": "default",
+            "fallback": [],
+            "span": {
+              "start": 228,
+              "end": 247
+            }
+          }
+        ],
+        "span": {
+          "start": 209,
+          "end": 253
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Amber.css",
+          "source": ".amber {\n  padding: 4px;\n  border: 2px solid rgb(180, 83, 9);\n}\n\n/* As specific as Blue's rule: on content that carries both `-s`, the sheet that loads later wins. */\n:slotted(.caption) {\n  color: rgb(180, 83, 9);\n}\n",
+          "span": {
+            "start": 0,
+            "end": 21
+          }
+        }
+      ],
+      "scopeId": "c97301b3"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Amber",
+      "span": {
+        "start": 110,
+        "end": 256
+      }
+    }
+  ],
+  "types": []
+}

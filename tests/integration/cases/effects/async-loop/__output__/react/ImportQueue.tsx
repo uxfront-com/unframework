@@ -26,6 +26,7 @@ export default function ImportQueue({
   onProgress,
   className,
   style,
+  ...attributes
 }: ImportQueueProps & ImportQueueEvents & ImportQueueAttributes) {
   const filesRef = useRef(files);
   useLayoutEffect(() => {
@@ -66,7 +67,12 @@ export default function ImportQueue({
   }
 
   return (
-    <section className={cx("import-queue", className)} aria-label="Import" style={style}>
+    <section
+      className={cx("import-queue", className)}
+      aria-label="Import"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <button type="button" onClick={importAll}>
         Import all
       </button>
@@ -141,4 +147,13 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
       pending.current.push({ ticket, resolve });
       render(ticket);
     });
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

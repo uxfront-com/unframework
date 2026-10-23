@@ -1,0 +1,11 @@
+{
+  "description": "A component's sheet, scoped by the compiler: a class rule, a descendant rule and a second class rule, each matching only the component's own elements.",
+  "ssr": {
+    "inbox": {
+      "props": {
+        "label": "Inbox",
+        "count": 3
+      }
+    }
+  }
+}

@@ -11,10 +11,17 @@
 
   type Props = SaveIndicatorProps & { class?: ClassValue; style?: string };
 
-  let { saving, changes, savedAt, class: className, style }: Props = $props();
+  let { saving, changes, savedAt, class: className, style, ...attributes }: Props = $props();
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<p class={["save-indicator", className]} role="status" {style}>
+<p class={["save-indicator", className]} role="status" {style} {...scopeAttributes(attributes)}>
   {#if saving}<em>Saving</em>{:else}Saved{/if}, {changes === 1 ? "1 change" : `${changes} changes`}{#if savedAt}<time
     datetime={savedAt}
   >{" at " + savedAt}</time>{:else}{" just now"}{/if}

@@ -4,7 +4,12 @@ export {
   CAPABILITY_PREREQUISITES,
   defineTarget,
 } from "./target.ts";
+export { bindingForms, mergesWholeStyle, spreadStyleExpression } from "./binding-forms.ts";
+export type { BindingForms } from "./binding-forms.ts";
 export { compositionUse, requiredCapabilities } from "./capabilities.ts";
+export { scopeStylesheet } from "./scoper.ts";
+export type { ScopedStylesheet } from "./scoper.ts";
+export { childStyles, scopeAttribute, scopeRoots, slottedAttribute } from "./scope.ts";
 export { eventCalls, handedControls, handlerControls, ownControls } from "./controls.ts";
 export type { ControlTest, EventCall, HandlerControls, LiftedControl } from "./controls.ts";
 export type {
@@ -110,9 +115,11 @@ export {
   negate,
   operand,
   printMarkup,
+  staticClassValue,
   svelteDialect,
   test,
   vueAttributeCode,
+  vueClassValue,
   vueDialect,
 } from "./markup.ts";
 export type {
@@ -166,9 +173,23 @@ export {
 export type { Namespace } from "./html.ts";
 export { formatOutput, isFormatted, OUTPUT_FORMAT } from "./format.ts";
 export type { FormatOutcome } from "./format.ts";
-export { childImports, ImportSet, keyImports, keyOwner } from "./imports.ts";
-export type { ChildImport, KeyImport } from "./imports.ts";
+export {
+  addPassThroughImports,
+  childImports,
+  ImportSet,
+  keyImports,
+  keyOwner,
+  passThroughImports,
+} from "./imports.ts";
+export type { ChildImport, KeyImport, PassThroughUse } from "./imports.ts";
 export { isPrimitiveState } from "./kinds.ts";
-export { kebabCase, NameScope, pascalCase, sourceNames, typeNames } from "./names.ts";
+export {
+  kebabCase,
+  moduleHelperName,
+  NameScope,
+  pascalCase,
+  sourceNames,
+  typeNames,
+} from "./names.ts";
 export type { Diagnostic, DiagnosticCode } from "@unframework/diagnostics";
 export type * from "./toolchain.ts";

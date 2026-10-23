@@ -1,0 +1,20 @@
+.badge[data-uf-d9cef2e7] {
+  display: inline-flex;
+  align-items: center;
+  column-gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background-color: rgb(30, 64, 175);
+  color: rgb(255, 255, 255);
+}
+
+.badge .label[data-uf-d9cef2e7] {
+  font-weight: 700;
+}
+
+.count[data-uf-d9cef2e7] {
+  padding: 0 6px;
+  border-radius: 8px;
+  background-color: rgb(255, 255, 255);
+  color: rgb(30, 64, 175);
+}

@@ -1,0 +1,177 @@
+{
+  "irVersion": 1,
+  "file": "bindings/style-expression/Badge.uf.tsx",
+  "components": [
+    {
+      "name": "Badge",
+      "span": {
+        "start": 159,
+        "end": 301
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 39,
+              "end": 45
+            }
+          },
+          "binding": "label@191",
+          "span": {
+            "start": 32,
+            "end": 46
+          }
+        },
+        {
+          "name": "tone",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 56,
+              "end": 62
+            }
+          },
+          "binding": "tone@198",
+          "span": {
+            "start": 49,
+            "end": 63
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "BadgeProps",
+          "span": {
+            "start": 206,
+            "end": 216
+          }
+        },
+        "span": {
+          "start": 189,
+          "end": 216
+        }
+      },
+      "types": [
+        "BadgeProps"
+      ],
+      "bindings": [
+        {
+          "id": "label@191",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 191,
+            "end": 196
+          }
+        },
+        {
+          "id": "tone@198",
+          "name": "tone",
+          "kind": "prop",
+          "span": {
+            "start": 198,
+            "end": 202
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "badge",
+            "span": {
+              "start": 241,
+              "end": 254
+            }
+          },
+          {
+            "kind": "Style",
+            "declarations": [],
+            "value": {
+              "code": "tone",
+              "span": {
+                "start": 262,
+                "end": 266
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tone@198",
+                  "span": {
+                    "start": 262,
+                    "end": 266
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 255,
+              "end": 267
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 276,
+                "end": 281
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@191",
+                  "span": {
+                    "start": 276,
+                    "end": 281
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 275,
+              "end": 282
+            }
+          }
+        ],
+        "span": {
+          "start": 235,
+          "end": 294
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Badge",
+      "span": {
+        "start": 159,
+        "end": 301
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "BadgeProps",
+      "exported": true,
+      "code": "interface BadgeProps {\n  label: string;\n  tone?: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 65
+      }
+    }
+  ]
+}

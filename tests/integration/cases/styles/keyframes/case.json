@@ -1,0 +1,10 @@
+{
+  "description": "A `@keyframes` name takes the scope id, and so does the `animation` that names it: with animations run in no time, the dot keeps the last frame's colour.",
+  "ssr": {
+    "loaded": {
+      "props": {
+        "label": "Loaded"
+      }
+    }
+  }
+}

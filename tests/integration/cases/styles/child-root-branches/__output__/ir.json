@@ -1,0 +1,329 @@
+{
+  "irVersion": 1,
+  "file": "styles/child-root-branches/Panel.uf.tsx",
+  "components": [
+    {
+      "name": "Panel",
+      "span": {
+        "start": 101,
+        "end": 365
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "panel",
+            "span": {
+              "start": 159,
+              "end": 172
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Heading",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "big",
+                "value": {
+                  "code": "true",
+                  "span": {
+                    "start": 194,
+                    "end": 198
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 189,
+                  "end": 199
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "\"Release\"",
+                  "span": {
+                    "start": 205,
+                    "end": 214
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 200,
+                  "end": 214
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 180,
+              "end": 217
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Heading",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "big",
+                "value": {
+                  "code": "false",
+                  "span": {
+                    "start": 238,
+                    "end": 243
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 233,
+                  "end": 244
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "\"Notes\"",
+                  "span": {
+                    "start": 250,
+                    "end": 257
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 245,
+                  "end": 257
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 224,
+              "end": 260
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Status",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "busy",
+                "value": {
+                  "code": "false",
+                  "span": {
+                    "start": 281,
+                    "end": 286
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 275,
+                  "end": 287
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "\"Save\"",
+                  "span": {
+                    "start": 293,
+                    "end": 299
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 288,
+                  "end": 299
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 267,
+              "end": 302
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Status",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "busy",
+                "value": {
+                  "code": "true",
+                  "span": {
+                    "start": 323,
+                    "end": 327
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 317,
+                  "end": 328
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "\"Save\"",
+                  "span": {
+                    "start": 334,
+                    "end": 340
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 329,
+                  "end": 340
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 309,
+              "end": 343
+            }
+          }
+        ],
+        "span": {
+          "start": 150,
+          "end": 358
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Panel.css",
+          "source": ".panel {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  row-gap: 8px;\n  padding: 8px;\n}\n\n/* Each child's root carries the panel's attribute, whichever branch or tag it renders. */\n.heading {\n  margin: 0;\n  color: rgb(29, 78, 216);\n}\n\n.badge {\n  padding: 4px 8px;\n  border: 4px solid rgb(220, 38, 38);\n  background-color: rgb(253, 224, 71);\n}\n",
+          "span": {
+            "start": 0,
+            "end": 21
+          }
+        }
+      ],
+      "scopeId": "34db6205"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Panel",
+      "span": {
+        "start": 101,
+        "end": 365
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Heading.uf.tsx",
+      "file": "Heading.uf.tsx",
+      "api": {
+        "file": "Heading.uf.tsx",
+        "components": [
+          {
+            "name": "Heading",
+            "export": "default",
+            "props": [
+              {
+                "name": "big",
+                "optional": false,
+                "type": "boolean"
+              },
+              {
+                "name": "text",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "other"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Heading",
+          "span": {
+            "start": 29,
+            "end": 36
+          }
+        }
+      ],
+      "span": {
+        "start": 22,
+        "end": 61
+      }
+    },
+    {
+      "specifier": "./Status.uf.tsx",
+      "file": "Status.uf.tsx",
+      "api": {
+        "file": "Status.uf.tsx",
+        "components": [
+          {
+            "name": "Status",
+            "export": "default",
+            "props": [
+              {
+                "name": "busy",
+                "optional": false,
+                "type": "boolean"
+              },
+              {
+                "name": "text",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "other"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Status",
+          "span": {
+            "start": 69,
+            "end": 75
+          }
+        }
+      ],
+      "span": {
+        "start": 62,
+        "end": 99
+      }
+    }
+  ]
+}

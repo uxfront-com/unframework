@@ -15,6 +15,7 @@ export default function ShippingLabel(
       class={props.class ? `shipping-label ${props.class}` : "shipping-label"}
       aria-label="Shipping label"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <p>
         <strong>To:</strong> {props.recipient}
@@ -39,4 +40,11 @@ export default function ShippingLabel(
       </p>
     </article>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

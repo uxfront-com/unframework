@@ -4,7 +4,8 @@
 import { existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
-import type { CaseConfig, HarnessContext, PixelMode } from "../harness.ts";
+import { BROWSER_ENGINES } from "../harness.ts";
+import type { BrowserEngine, CaseConfig, HarnessContext, PixelMode } from "../harness.ts";
 import type { QuarantineEntry } from "../layers.ts";
 
 /**
@@ -34,6 +35,8 @@ export interface HarnessMode {
    * {@link BASELINE_ENVIRONMENT} may write the committed visual baselines.
    */
   baselineEnvironment?: string | null;
+  /** `UF_BROWSER`: the engine the browser projects run in; Chromium when absent. */
+  browser?: BrowserEngine;
 }
 
 /** What {@link resolveHarnessMode} reads. */
@@ -46,6 +49,7 @@ export interface ModeInput {
   /**
    * The run has no committed visual baselines (the testing package's own fixture, whose one
    * target is its own reference): pixels are always live, in CI too, and `UF_PIXELS` is refused.
+   * It runs in Chromium alone, so another `UF_BROWSER` is refused too.
    */
   liveOnly?: boolean;
 }
@@ -80,13 +84,36 @@ export function resolveHarnessMode(input: ModeInput): HarnessMode {
   if (forced && forced !== "baseline" && forced !== "live") {
     throw new Error(`[uf] UF_PIXELS must be "baseline" or "live", not "${forced}".`);
   }
+  const browser = resolveBrowser(env);
   if (input.liveOnly) {
     if (forced) {
       throw new Error(
         `[uf] This run has no committed baselines: UF_PIXELS=${forced} cannot apply.`,
       );
     }
-    return { update, pixels: "live", canary, ci, baselineEnvironment };
+    // The testing package's own fixture launches Chromium alone: its stubs test the font audit
+    // and Chromium's switches, so a harness that believed another engine would skip them.
+    if (browser !== "chromium") {
+      throw new Error(
+        `[uf] This run has no committed baselines and runs in Chromium alone: UF_BROWSER=${browser} cannot apply.`,
+      );
+    }
+    return { update, pixels: "live", canary, ci, baselineEnvironment, browser };
+  }
+  if (browser !== "chromium") {
+    // Every expectation, screenshot and geometry file was written by Chromium: another engine
+    // neither writes them nor compares pixels with them, in CI too (the nightly ADR).
+    if (update) {
+      throw new Error(
+        `[uf] Every committed artefact is Chromium's: refusing UF_UPDATE with UF_BROWSER=${browser}.`,
+      );
+    }
+    if (forced === "baseline") {
+      throw new Error(
+        `[uf] The committed baselines are Chromium's: ${browser} compares live, with the reference's capture in the same run. Unset UF_PIXELS.`,
+      );
+    }
+    return { update, pixels: "live", canary, ci, baselineEnvironment, browser };
   }
   const pixels: PixelMode =
     (forced as PixelMode | undefined) ?? (ci || baselineEnvironment ? "baseline" : "live");
@@ -103,7 +130,17 @@ export function resolveHarnessMode(input: ModeInput): HarnessMode {
       `[uf] UF_UPDATE with baseline pixels would write the committed Linux baselines, which only ${BASELINE_ENVIRONMENT} writes (\`pnpm test:baselines\`); this run is ${baselineEnvironment ?? `on ${here}, outside it`}. Unset UF_PIXELS (or set it to live) to update everything else.`,
     );
   }
-  return { update, pixels, canary, ci, baselineEnvironment };
+  return { update, pixels, canary, ci, baselineEnvironment, browser };
+}
+
+/** The engine `UF_BROWSER` names, Chromium when it is unset. */
+export function resolveBrowser(env: Readonly<Record<string, string | undefined>>): BrowserEngine {
+  const value = env.UF_BROWSER?.trim() || "chromium";
+  const browser = BROWSER_ENGINES.find((engine) => engine === value);
+  if (!browser) {
+    throw new Error(`[uf] UF_BROWSER must be chromium, firefox or webkit, not "${value}".`);
+  }
+  return browser;
 }
 
 /** Whether `CI` is set to anything but `0` or `false`, as CI providers set it. */
@@ -204,6 +241,7 @@ export function createHarnessRun(options: HarnessRunOptions): HarnessContext {
     pixels: options.mode.pixels,
     canary: options.mode.canary,
     baselineEnvironment: options.mode.baselineEnvironment ?? null,
+    browser: options.mode.browser ?? "chromium",
     ledgerDir: join(scratch.ledger, runId),
     liveDir: join(scratch.live, runId),
     diffsDir: join(scratch.diffs, runId),

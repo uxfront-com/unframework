@@ -1,0 +1,194 @@
+{
+  "irVersion": 1,
+  "file": "bindings/style-spread/Hint.uf.tsx",
+  "components": [
+    {
+      "name": "Hint",
+      "span": {
+        "start": 222,
+        "end": 325
+      },
+      "props": [
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 99,
+              "end": 105
+            }
+          },
+          "binding": "text@253",
+          "span": {
+            "start": 93,
+            "end": 106
+          }
+        },
+        {
+          "name": "attrs",
+          "optional": false,
+          "type": {
+            "code": "HintAttributes",
+            "span": {
+              "start": 116,
+              "end": 130
+            }
+          },
+          "binding": "attrs@259",
+          "span": {
+            "start": 109,
+            "end": 131
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "HintProps",
+          "span": {
+            "start": 268,
+            "end": 277
+          }
+        },
+        "span": {
+          "start": 251,
+          "end": 277
+        }
+      },
+      "types": [
+        "HintAttributes",
+        "HintProps"
+      ],
+      "bindings": [
+        {
+          "id": "text@253",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 253,
+            "end": 257
+          }
+        },
+        {
+          "id": "attrs@259",
+          "name": "attrs",
+          "kind": "prop",
+          "span": {
+            "start": 259,
+            "end": 264
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "small",
+        "attributes": [
+          {
+            "kind": "Spread",
+            "value": {
+              "code": "attrs",
+              "span": {
+                "start": 301,
+                "end": 306
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "attrs@259",
+                  "span": {
+                    "start": 301,
+                    "end": 306
+                  }
+                }
+              ]
+            },
+            "keys": [
+              {
+                "name": "id",
+                "span": {
+                  "start": 29,
+                  "end": 31
+                }
+              },
+              {
+                "name": "style",
+                "span": {
+                  "start": 43,
+                  "end": 48
+                }
+              }
+            ],
+            "nullish": false,
+            "span": {
+              "start": 297,
+              "end": 307
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "text",
+              "span": {
+                "start": 309,
+                "end": 313
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "text@253",
+                  "span": {
+                    "start": 309,
+                    "end": 313
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 308,
+              "end": 314
+            }
+          }
+        ],
+        "span": {
+          "start": 290,
+          "end": 322
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Hint",
+      "span": {
+        "start": 222,
+        "end": 325
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "HintAttributes",
+      "exported": false,
+      "code": "interface HintAttributes {\n  id: string;\n  style?: string;\n}",
+      "span": {
+        "start": 0,
+        "end": 60
+      }
+    },
+    {
+      "name": "HintProps",
+      "exported": true,
+      "code": "interface HintProps {\n  text: string;\n  attrs: HintAttributes;\n}",
+      "span": {
+        "start": 69,
+        "end": 133
+      }
+    }
+  ]
+}

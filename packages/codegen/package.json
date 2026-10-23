@@ -54,7 +54,9 @@
     "@unframework/parser": "workspace:*",
     "magic-string": "catalog:",
     "oxc-codegen": "catalog:",
-    "oxfmt": "catalog:"
+    "oxfmt": "catalog:",
+    "postcss": "catalog:",
+    "postcss-selector-parser": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
@@ -64,7 +66,8 @@
     "playwright": "catalog:",
     "tsdown": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "vue": "catalog:"
   },
   "peerDependencies": {
     "vite": "catalog:"

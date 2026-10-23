@@ -4,7 +4,7 @@ export default function Billing(props: { class?: string; style?: JSX.CSSProperti
   const [plan, setPlan] = createSignal("monthly");
 
   return (
-    <fieldset class={props.class} style={props.style}>
+    <fieldset class={props.class} style={props.style} {...scopeAttributes(props)}>
       <legend>Billing</legend>
       <label>
         <input
@@ -32,4 +32,11 @@ export default function Billing(props: { class?: string; style?: JSX.CSSProperti
       </button>
     </fieldset>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

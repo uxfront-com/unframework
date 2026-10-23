@@ -9,10 +9,22 @@ interface Props {
 
 const { title, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const depth = 0 as DepthKey;
 ---
 
-<section aria-label={title} class:list={[className]} style={style}>
+<section
+  aria-label={title}
+  class:list={[className]}
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <h2>{title} at depth {depth}</h2>
   <slot />
 </section>

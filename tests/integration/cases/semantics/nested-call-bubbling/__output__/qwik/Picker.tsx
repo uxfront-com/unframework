@@ -12,7 +12,7 @@ export interface PickerEvents {
 }
 
 export default component$<PickerEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onDone$, class: className, style }) => {
+  ({ onDone$, class: className, style, ...attributes }) => {
     const selected = useSignal("none");
     const hits = useSignal(0);
     const log = useSignal<string[]>([]);
@@ -47,7 +47,12 @@ export default component$<PickerEvents & { class?: ClassList; style?: CSSPropert
     });
 
     return (
-      <section class={["picker", className]} aria-label="Picker" style={style}>
+      <section
+        class={["picker", className]}
+        aria-label="Picker"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <div class="choices" role="presentation" onClick$={report}>
           <button
             type="button"
@@ -88,4 +93,13 @@ export default component$<PickerEvents & { class?: ClassList; style?: CSSPropert
  */
 function nextTick(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve));
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

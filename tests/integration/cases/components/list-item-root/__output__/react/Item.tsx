@@ -5,9 +5,14 @@ export interface ItemAttributes {
   style?: CSSProperties;
 }
 
-export default function Item({ label, className, style }: { label: string } & ItemAttributes) {
+export default function Item({
+  label,
+  className,
+  style,
+  ...attributes
+}: { label: string } & ItemAttributes) {
   return (
-    <li className={cx("item", className)} style={style}>
+    <li className={cx("item", className)} style={style} {...scopeAttributes(attributes)}>
       {label}
     </li>
   );
@@ -26,4 +31,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

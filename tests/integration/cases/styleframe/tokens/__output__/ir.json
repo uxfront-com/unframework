@@ -1,0 +1,157 @@
+{
+  "irVersion": 1,
+  "file": "styleframe/tokens/Panel.uf.tsx",
+  "components": [
+    {
+      "name": "Panel",
+      "span": {
+        "start": 56,
+        "end": 209
+      },
+      "props": [
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 104,
+              "end": 110
+            }
+          },
+          "binding": "text@88",
+          "span": {
+            "start": 98,
+            "end": 110
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ text: string }",
+          "span": {
+            "start": 96,
+            "end": 112
+          }
+        },
+        "span": {
+          "start": 86,
+          "end": 112
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "text@88",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 88,
+            "end": 92
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "panel",
+            "span": {
+              "start": 140,
+              "end": 153
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "body",
+                "span": {
+                  "start": 164,
+                  "end": 176
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "text",
+                  "span": {
+                    "start": 178,
+                    "end": 182
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "text@88",
+                      "span": {
+                        "start": 178,
+                        "end": 182
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 177,
+                  "end": 183
+                }
+              }
+            ],
+            "span": {
+              "start": 161,
+              "end": 187
+            }
+          }
+        ],
+        "span": {
+          "start": 131,
+          "end": 202
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Panel.css",
+          "source": ".panel {\n  width: 240px;\n  padding: var(--spacing--lg);\n  border-radius: var(--radius--md);\n  background-color: var(--color--primary);\n}\n\n.body {\n  margin: 0;\n  color: var(--color--on-primary);\n}\n",
+          "span": {
+            "start": 33,
+            "end": 54
+          }
+        }
+      ],
+      "scopeId": "b6be1fd3"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Panel",
+      "span": {
+        "start": 56,
+        "end": 209
+      }
+    }
+  ],
+  "types": [],
+  "passThroughImports": [
+    {
+      "specifier": "virtual:styleframe.css",
+      "names": [],
+      "span": {
+        "start": 0,
+        "end": 32
+      }
+    }
+  ]
+}

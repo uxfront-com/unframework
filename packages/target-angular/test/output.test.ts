@@ -18,6 +18,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { format as formatMessage } from "node:util";
 
+import { scopeStylesheet } from "@unframework/codegen";
 import type { OutputFile } from "@unframework/codegen";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -250,12 +251,15 @@ beforeAll(async () => {
 
 /**
  * What L3, L4 and L5 report about each file, by its path: the files are written to a scratch
- * directory of their own, under `prefix` when two share a name.
+ * directory of their own, under `prefix` when two share a name, beside the scoped `sheets` their
+ * `styleUrl`s name, which ngtsc reads and which no tool checks (ADR-0063).
  */
 async function toolchainMessages(
   files: readonly (OutputFile & { prefix?: string })[],
+  sheets: readonly OutputFile[] = [],
 ): Promise<Record<string, string[]>> {
   const directory = scratchDir();
+  for (const sheet of sheets) writeFileSync(join(directory, sheet.path), sheet.contents);
   const written = files.map((file) => ({
     path: join(directory, `${file.prefix ?? ""}${file.path}`),
     contents: file.contents,
@@ -299,6 +303,51 @@ describe("angular output", () => {
     expect(Object.entries(messages).filter(([, found]) => found.length)).toEqual([]);
   });
 
+  // A recipe named like a member the class declares itself: the `host` it binds `ufScope` to, the
+  // `style` input and an output (ADR-0064). The template reads each through a member of its own.
+  it(
+    "passes them for recipes named like the class's own members",
+    { timeout: 120_000 },
+    async () => {
+      const source = [
+        'import { badge as style, button as host, button as save } from "virtual:styleframe";',
+        'import { defineEmits } from "unframework";',
+        "export default function Probe() {",
+        "  const emit = defineEmits<{ save: [] }>();",
+        '  return <button type="button" class={[host(), style(), save()]} onClick={() => emit("save")}>Hi</button>;',
+        "}",
+      ].join("\n");
+      const files = await emitFormatted(lower(source, "Probe.uf.tsx"));
+      const code = files.map((file) => file.contents).join("\n");
+      expect(code).toContain("[class]=\"[host(), style_1(), save_1(), this.class()].join(' ')\"");
+      expect(code).toContain("protected readonly style_1 = style;");
+      expect(code).toContain("protected readonly save_1 = save;");
+      expect(code).toContain('[ufScope]="this.host_1"');
+      const messages = await toolchainMessages(files);
+      expect(Object.entries(messages).filter(([, found]) => found.length)).toEqual([]);
+    },
+  );
+
+  // A recipe's renamed member skips a list's variable's name, which would shadow it in the list.
+  it(
+    "passes them for a recipe read inside a list with a variable of its member's name",
+    { timeout: 120_000 },
+    async () => {
+      const source = [
+        'import { badge as style } from "virtual:styleframe";',
+        "export default function Probe(props: { items: string[] }) {",
+        "  return <ul>{props.items.map((style_1) => <li key={style_1} class={style()}>{style_1}</li>)}</ul>;",
+        "}",
+      ].join("\n");
+      const files = await emitFormatted(lower(source, "Probe.uf.tsx"));
+      const code = files.map((file) => file.contents).join("\n");
+      expect(code).toContain('[class]="style_2()"');
+      expect(code).toContain("protected readonly style_2 = style;");
+      const messages = await toolchainMessages(files);
+      expect(Object.entries(messages).filter(([, found]) => found.length)).toEqual([]);
+    },
+  );
+
   it(
     "passes them for composition's forms the corpus does not reach",
     { timeout: 120_000 },
@@ -339,7 +388,23 @@ describe("angular output", () => {
         })),
       ),
     );
-    const messages = await toolchainMessages(files.flat());
+    // The sheet `compile()` scopes and emits beside a styled case's output.
+    const sheets = cases.flatMap(({ file, source }) =>
+      lower(source, file, true).components.flatMap(({ styles, scopeId }) =>
+        styles?.length
+          ? [
+              {
+                path: `${file.slice(file.lastIndexOf("/") + 1)}.css`,
+                contents: styles
+                  .map((sheet) => scopeStylesheet(sheet.specifier, sheet.source, scopeId!).code)
+                  .join("\n"),
+              },
+            ]
+          : [],
+      ),
+    );
+    expect(sheets.length).toBeGreaterThan(0);
+    const messages = await toolchainMessages(files.flat(), sheets);
     expect(Object.keys(messages).length).toBe(files.flat().length);
     expect(Object.entries(messages).filter(([, found]) => found.length)).toEqual([]);
   });

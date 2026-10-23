@@ -1,0 +1,7 @@
+:root {
+  --page-gap: 16px;
+}
+
+.page {
+  padding: var(--page-gap);
+}

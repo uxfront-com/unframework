@@ -20,6 +20,7 @@ export default function CommentCard({
   onLiked,
   className,
   style,
+  ...attributes
 }: CommentCardEvents & CommentCardAttributes) {
   const [text, setText] = useState("");
   const textRef = useRef(text);
@@ -45,7 +46,12 @@ export default function CommentCard({
   }
 
   return (
-    <section className={cx("comment-card", className)} aria-label="Comment" style={style}>
+    <section
+      className={cx("comment-card", className)}
+      aria-label="Comment"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <label>
         Comment
         <textarea name="comment" rows={2} onInput={autosize} />
@@ -81,4 +87,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

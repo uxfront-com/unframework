@@ -27,6 +27,7 @@ export default function TextLink(
       id={props.row.id}
       class={cx("link-row", { "link-row-strong": props.strong }, props.row.class, props.class)}
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <a
         href={props.href}
@@ -50,4 +51,11 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

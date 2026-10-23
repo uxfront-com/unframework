@@ -1,0 +1,10 @@
+{
+  "description": "Styleframe's utility classes, written in a `class`: its scanner reads the case's source, and registers the arbitrary value `_border-radius:[4px]`.",
+  "ssr": {
+    "default": {
+      "props": {
+        "label": "Utility"
+      }
+    }
+  }
+}

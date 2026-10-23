@@ -1,6 +1,6 @@
 # ADR-0053: A child's API reaches `compile()` through a resolver
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0063
 - **Date:** 2026-10-18
 - **Plan:** §4.1, §4.3 (Composition), §5.1, §5.3, §5.6 (layer 2), §5.10, §8.2, §8.4, §9 M3, M5;
   P2, P4, P5, P6, P7, P8; R5, R12; ADR-0021, ADR-0027, ADR-0034, ADR-0036, ADR-0047; amends

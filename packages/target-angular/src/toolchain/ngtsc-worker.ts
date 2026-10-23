@@ -51,7 +51,7 @@ parentPort!.on("message", (message: WorkerRequest) => {
 async function compile(
   compiler: AngularCompiler,
   options: CompilerOptions,
-  { plugin, id, sources, children }: CompileRequest,
+  { plugin, id, sources, children, declarations }: CompileRequest,
 ): Promise<Compiled> {
   const { ts } = compiler;
   const inMemory = new Map(sources);
@@ -84,7 +84,12 @@ async function compile(
     literals.map(({ text }) => resolveOne(text, containingFile, settings, redirect));
   host.resolveModuleNames = (names, containingFile, _reused, redirect, settings) =>
     names.map((name) => resolveOne(name, containingFile, settings, redirect).resolvedModule);
-  const program = new compiler.cli.NgtscProgram([id], options, host, previous.get(plugin));
+  const program = new compiler.cli.NgtscProgram(
+    [id, ...declarations],
+    options,
+    host,
+    previous.get(plugin),
+  );
   previous.set(plugin, program);
   const tsProgram = program.getTsProgram();
   const sourceFile = tsProgram.getSourceFile(id);

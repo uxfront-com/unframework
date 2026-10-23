@@ -23,6 +23,7 @@ export default function FilterPanel(
       data-category={props.category}
       data-layout="stacked"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <button type="button" aria-expanded={props.expanded} aria-describedby="filter-panel-hint">
         Price filters
@@ -54,4 +55,11 @@ export default function FilterPanel(
       </p>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

@@ -90,6 +90,7 @@ export default function ReadingList(
       class={props.class ? `reading-list ${props.class}` : "reading-list"}
       aria-label="Reading list"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <label>
         Search
@@ -137,6 +138,13 @@ export default function ReadingList(
       <p>{refreshing() ? "Refreshing" : "Up to date"}</p>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /**

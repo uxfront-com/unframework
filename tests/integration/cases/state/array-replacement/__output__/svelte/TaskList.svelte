@@ -15,7 +15,7 @@
 
   type Props = TaskListProps & { class?: ClassValue; style?: string };
 
-  let { initial, class: className, style }: Props = $props();
+  let { initial, class: className, style, ...attributes }: Props = $props();
 
   let tasks = $state.raw(untrack(() => initial));
   let selected = $state<string>();
@@ -42,9 +42,21 @@
       tasks = tasks.toSpliced(index - 1, 2, current, above);
     }
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["task-list", className]} aria-label="Tasks" {style}>
+<section
+  class={["task-list", className]}
+  aria-label="Tasks"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   {#if tasks.length === 0}
     <p>No tasks yet.</p>
   {:else}

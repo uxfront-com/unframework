@@ -12,7 +12,7 @@ export interface ProfileFieldsEvents {
 }
 
 export default component$<ProfileFieldsEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onFirstNickname$, class: className, style }) => {
+  ({ onFirstNickname$, class: className, style, ...attributes }) => {
     const log = useSignal<string[]>([]);
     const nickname = useSignal("");
     const cardFocuses = useSignal(0);
@@ -27,7 +27,12 @@ export default component$<ProfileFieldsEvents & { class?: ClassList; style?: CSS
     });
 
     return (
-      <section class={["profile-fields", className]} aria-label="Profile" style={style}>
+      <section
+        class={["profile-fields", className]}
+        aria-label="Profile"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <div
           class="name-group"
           role="group"
@@ -104,3 +109,12 @@ export default component$<ProfileFieldsEvents & { class?: ClassList; style?: CSS
 
 // The elements each `once` listener ran for: Qwik's listeners have no `once` option.
 const onceChange = new WeakSet<Element>();
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

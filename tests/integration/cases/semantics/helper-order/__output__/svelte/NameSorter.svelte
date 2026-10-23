@@ -13,7 +13,15 @@
     style?: string;
   };
 
-  let { onstarted, onfirstseen, onsecondseen, ontotal, class: className, style }: Props = $props();
+  let {
+    onstarted,
+    onfirstseen,
+    onsecondseen,
+    ontotal,
+    class: className,
+    style,
+    ...attributes
+  }: Props = $props();
 
   let names = $state.raw(["Cy", "Al"].toSorted((a, b) => compare(a, b)));
   let count = $state(0);
@@ -64,9 +72,21 @@
   function report() {
     ontotal?.(letters);
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["name-sorter", className]} aria-label="Names" {style}>
+<section
+  class={["name-sorter", className]}
+  aria-label="Names"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <p>Names: {names.join(", ")}</p
   ><p>Added: {count}</p
   ><button type="button" onclick={() => add("Bo")}>Add Bo</button

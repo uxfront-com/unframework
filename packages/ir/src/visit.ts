@@ -89,6 +89,7 @@ const codeReferenceKinds = {
   Api: true,
   Event: true,
   Slot: true,
+  Import: true,
 } satisfies Record<CodeReference["kind"], true>;
 
 /**
@@ -268,10 +269,10 @@ export interface LocatedExpression {
 /**
  * Every render expression of a component, in document order: the props' defaults and the
  * models', then the render tree's interpolations, conditions, list sources and keys, attribute
- * values (bound attributes, class parts, style declarations, spreads, props and models), slot
- * outlets' props, `Dynamic` nodes' choices and scoped fills' parameter defaults. `base` prefixes
- * each path, such as `/components/0`. Setup code and handlers are {@link codeOf}'s: a template
- * reads only these (ADR-0045).
+ * values (bound attributes, class parts, style declarations and values, spreads, props and
+ * models), slot outlets' props, `Dynamic` nodes' choices and scoped fills' parameter defaults.
+ * `base` prefixes each path, such as `/components/0`. Setup code and handlers are
+ * {@link codeOf}'s: a template reads only these (ADR-0045).
  */
 export function expressionsOf(component: UfComponent, base = ""): LocatedExpression[] {
   const found: LocatedExpression[] = [];
@@ -382,6 +383,7 @@ function attributeExpressions(
           add(declaration.value, `${path}/declarations/${index}/value`);
         }
       }
+      if (attribute.value) add(attribute.value, `${path}/value`);
       return;
     case "Event":
     case "Ref":
@@ -610,10 +612,11 @@ export interface LocatedSpan {
 type AddSpan = (span: Span, path: string) => void;
 
 /**
- * Every span of a module, each with a JSON Pointer to it: components, exports, type
- * declarations, imports and their names, injection keys, props, events, slots and their types,
- * what a component exposes, bindings, setup items, functions, parameters, every node, branch,
- * attribute, handler, fill, class part, style declaration and spread key, and every expression,
+ * Every span of a module, each with a JSON Pointer to it: components and their stylesheets,
+ * exports, type declarations, imports and their names, pass-through imports and their names,
+ * injection keys, props, events, slots and their types, what a component exposes, bindings,
+ * setup items, functions, parameters, every node, branch, attribute, handler, fill, class part,
+ * style declaration and spread key, and every expression,
  * piece of code and reference, with a write's target and value and an emit's arguments. A child's
  * API points into another file, so it has none. What points into the source (diagnostics, a
  * plugin's module) is checked span by span with it.
@@ -678,6 +681,9 @@ export function spansOf(module: UfModule): LocatedSpan[] {
       functionSpans(located.function, located.path, add);
     }
     for (const located of codeOf(component, base)) codeSpans(located.code, located.path, at);
+    for (const [sheet, { span }] of (component.styles ?? []).entries()) {
+      add(span, `${base}/styles/${sheet}`);
+    }
   }
   for (const [index, entry] of module.exports.entries()) add(entry.span, `/exports/${index}`);
   for (const [index, declaration] of module.types.entries()) {
@@ -692,6 +698,12 @@ export function spansOf(module: UfModule): LocatedSpan[] {
   for (const [index, key] of (module.keys ?? []).entries()) {
     add(key.type.span, `/keys/${index}/type`);
     add(key.span, `/keys/${index}`);
+  }
+  for (const [index, entry] of (module.passThroughImports ?? []).entries()) {
+    for (const [name, { span }] of entry.names.entries()) {
+      add(span, `/passThroughImports/${index}/names/${name}`);
+    }
+    add(entry.span, `/passThroughImports/${index}`);
   }
   return found;
 }

@@ -61,7 +61,7 @@ export default function Narrowing(
   const defaults: Required<Pick<NarrowingProps, "attrs">> = { attrs: { title: "t" } };
   const props = mergeProps(defaults, rawProps);
   return (
-    <div class={props.class} style={props.style}>
+    <div class={props.class} style={props.style} {...scopeAttributes(props)}>
       <Show when={props.user || undefined}>{(user) => <p>{user().name}</p>}</Show>
       <Show when={props.user || undefined} fallback={<i>anon</i>}>
         {(user) => <b title={user().name}>{user().name}</b>}
@@ -259,4 +259,11 @@ export default function Narrowing(
       </p>
     </div>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

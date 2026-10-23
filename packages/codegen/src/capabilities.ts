@@ -9,6 +9,7 @@ import type {
   Attribute,
   BindingId,
   Code,
+  CodeReference,
   ComponentAttribute,
   ElementNode,
   EventAttribute,
@@ -23,6 +24,7 @@ import type {
 } from "@unframework/ir";
 
 import { handedControls, handlerControls } from "./controls.ts";
+import { childStyles } from "./scope.ts";
 import type { CapabilityName } from "./target.ts";
 
 // Records, so that a node, attribute or setup item kind added to the IR cannot be left without
@@ -99,6 +101,22 @@ const SETUP_ITEM_CAPABILITIES: Readonly<Record<SetupItem["kind"], readonly Capab
   Provide: ["context"],
   Inject: ["context"],
 };
+/**
+ * What each kind of reference in code needs: `nextTick` its own capability, and the others
+ * nothing of their own. A pass-through import needs none: every target keeps it as written, and
+ * the plugin that registers its module resolves it (ADR-0064).
+ */
+const REFERENCE_CAPABILITIES: Readonly<Record<CodeReference["kind"], CapabilityName | undefined>> =
+  {
+    Binding: undefined,
+    Global: undefined,
+    Write: undefined,
+    Emit: undefined,
+    Api: "next-tick",
+    Event: undefined,
+    Slot: undefined,
+    Import: undefined,
+  };
 /** A listener's options, each a capability of its own (ADR-0047). */
 const OPTION_CAPABILITIES = {
   capture: "event-capture",
@@ -123,15 +141,18 @@ const OPTION_CAPABILITIES = {
  * provides a `state`, `derived` or `model` binding, `contextual-root` at a root element HTML
  * ties to its parent (`CONTEXTUAL_ROOT_ELEMENTS`), and a slot's presence (`named-slot`, or
  * `default-slot-presence` for the default slot's) where an expression tests it;
+ * then its styles (ADR-0063): `scoped-styles` and `sheet-order` at its first stylesheet import,
+ * since any meeting of two sheets' rules of equal specificity involves a styled module;
  * then its render tree: the node and attribute kinds (a listener, a template ref, an element's
  * `v-model`, a component's model, listener and `ref` need `interactivity`; on a component a
  * prop needs `component`, a listener `component-event`, a model `model`, a `class` or a `style`
  * `fallthrough` and a `ref` `expose`, `componentAttribute`), a slot outlet's and a fill's slot form
  * (`default-slot`, `named-slot`, `scoped-slot`, with `slot-fallback` for fallback content and
  * `slot-forwarding` for a forwarded slot, the default one's needing `default-slot-presence`
- * too), `model-array` and `model-modifiers` at an element's `v-model` that
- * needs them, `svg` at an `<svg>`, `listbox` at what may make a `<select>` a
- * single-selection list box (`listBoxSize`), and at a listener `event-semantics`, its option's
+ * too), `child-root-scope` at a child a styled component renders and `slotted-styles` at a fill
+ * of a child whose sheets use `:slotted()` (ADR-0063), `model-array` and `model-modifiers` at an
+ * element's `v-model` that needs them, `svg` at an `<svg>`, `listbox` at what may make a
+ * `<select>` a single-selection list box (`listBoxSize`), and at a listener `event-semantics`, its option's
  * capability (`event-capture`, `event-once`, `event-passive`), `next-tick` in an inline handler,
  * and `conditional-event-control` at a control, or a call that reaches one, that is not at the
  * top of the listener, at a `once` listener whose control depends on more than the event
@@ -145,7 +166,8 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
   };
   const scan = (code: Code) => {
     for (const reference of code.refs) {
-      if (reference.kind === "Api") use("next-tick", reference.span);
+      const capability = REFERENCE_CAPABILITIES[reference.kind];
+      if (capability) use(capability, reference.span);
     }
   };
   for (const component of module.components) {
@@ -195,9 +217,15 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
         use(ref.slot === "default" ? "default-slot-presence" : "named-slot", ref.span);
       }
     }
+    const [sheet] = component.styles ?? [];
+    if (sheet) {
+      use("scoped-styles", sheet.span);
+      use("sheet-order", sheet.span);
+    }
     const mixed = bothPhaseEvents(component);
-    const fills = (list: readonly SlotFill[]) => {
+    const fills = (list: readonly SlotFill[], slotted: boolean) => {
       for (const fill of list) {
+        if (slotted) use("slotted-styles", fill.span);
         use(slotCapability(fill.slot, fill.parameter !== undefined), fill.span);
         if (fill.forward === undefined) continue;
         use("slot-forwarding", fill.span);
@@ -213,11 +241,20 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
         }
         use(NODE_CAPABILITIES[node.kind], node.span);
         if (node.kind === "Component" || node.kind === "Dynamic") {
+          const children =
+            node.kind === "Component"
+              ? [node.component]
+              : node.candidates.flatMap((each) =>
+                  each.kind === "Component" ? [each.component] : [],
+                );
           const onComponent =
-            node.kind === "Component" ||
-            node.candidates.every((candidate) => candidate.kind === "Component");
+            node.kind === "Component" || children.length === node.candidates.length;
+          if (sheet && children.length) use("child-root-scope", node.span);
           for (const attribute of node.attributes) componentAttribute(attribute, onComponent, use);
-          fills(node.kind === "Component" ? node.fills : (node.fills ?? []));
+          fills(
+            node.kind === "Component" ? node.fills : (node.fills ?? []),
+            children.some((child) => usesSlotted(module, child)),
+          );
           return;
         }
         if (node.kind !== "Element") return;
@@ -263,6 +300,14 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
     });
   }
   return required;
+}
+
+/**
+ * Whether a child's sheets use `:slotted()` (ADR-0063): an imported child's API says, and the
+ * module's own component, which renders itself, says through its sheets.
+ */
+function usesSlotted(module: UfModule, local: string): boolean {
+  return childStyles(module, local)?.slotted === true;
 }
 
 /**

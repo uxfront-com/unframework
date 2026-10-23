@@ -22,141 +22,163 @@ export interface MailboxEvents {
 
 export default component$<
   MailboxProps & MailboxEvents & { class?: ClassList; style?: CSSProperties }
->(({ folder, onLoaded$, onProgress$, onSeen$, onNoted$, class: className, style }) => {
-  const name = useSignal("Loading");
-  const unread = useSignal(0);
-  const status = useSignal("idle");
-  const attempts = useSignal(0);
-  const summary = useSignal("No messages");
-  const timer = useSignal<ReturnType<typeof setInterval> | undefined>();
+>(
+  ({
+    folder,
+    onLoaded$,
+    onProgress$,
+    onSeen$,
+    onNoted$,
+    class: className,
+    style,
+    ...attributes
+  }) => {
+    const name = useSignal("Loading");
+    const unread = useSignal(0);
+    const status = useSignal("idle");
+    const attempts = useSignal(0);
+    const summary = useSignal("No messages");
+    const timer = useSignal<ReturnType<typeof setInterval> | undefined>();
 
-  const previousValues = useSignal<[typeof name.value, typeof unread.value]>(() => [
-    name.value,
-    unread.value,
-  ]);
-  useTask$(
-    ({ track }) => {
-      const values: [typeof name.value, typeof unread.value] = [track(name), track(unread)];
-      if (values.every((item, index) => Object.is(item, previousValues.value[index]))) return;
-      previousValues.value = values;
-      const [nextName, nextUnread] = values;
-      onLoaded$?.(nextName, nextUnread);
-    },
-    { deferUpdates: false },
-  );
+    const previousValues = useSignal<[typeof name.value, typeof unread.value]>(() => [
+      name.value,
+      unread.value,
+    ]);
+    useTask$(
+      ({ track }) => {
+        const values: [typeof name.value, typeof unread.value] = [track(name), track(unread)];
+        if (values.every((item, index) => Object.is(item, previousValues.value[index]))) return;
+        previousValues.value = values;
+        const [nextName, nextUnread] = values;
+        onLoaded$?.(nextName, nextUnread);
+      },
+      { deferUpdates: false },
+    );
 
-  const previousValues_1 = useSignal<[typeof status.value, typeof attempts.value]>(() => [
-    status.value,
-    attempts.value,
-  ]);
-  useTask$(
-    ({ track }) => {
-      const values: [typeof status.value, typeof attempts.value] = [track(status), track(attempts)];
-      if (values.every((item, index) => Object.is(item, previousValues_1.value[index]))) return;
-      previousValues_1.value = values;
-      const [nextStatus, nextAttempts] = values;
-      onProgress$?.(nextStatus, nextAttempts);
-    },
-    { deferUpdates: false },
-  );
+    const previousValues_1 = useSignal<[typeof status.value, typeof attempts.value]>(() => [
+      status.value,
+      attempts.value,
+    ]);
+    useTask$(
+      ({ track }) => {
+        const values: [typeof status.value, typeof attempts.value] = [
+          track(status),
+          track(attempts),
+        ];
+        if (values.every((item, index) => Object.is(item, previousValues_1.value[index]))) return;
+        previousValues_1.value = values;
+        const [nextStatus, nextAttempts] = values;
+        onProgress$?.(nextStatus, nextAttempts);
+      },
+      { deferUpdates: false },
+    );
 
-  const previousUnread = useSignal(() => unread.value);
-  useTask$(
-    ({ track }) => {
-      const value = track(unread);
-      if (Object.is(value, previousUnread.value)) return;
-      previousUnread.value = value;
-      void (async () => {
-        const text = await Promise.resolve(`${value} unread`);
-        summary.value = text;
-      })();
-    },
-    { deferUpdates: false },
-  );
+    const previousUnread = useSignal(() => unread.value);
+    useTask$(
+      ({ track }) => {
+        const value = track(unread);
+        if (Object.is(value, previousUnread.value)) return;
+        previousUnread.value = value;
+        void (async () => {
+          const text = await Promise.resolve(`${value} unread`);
+          summary.value = text;
+        })();
+      },
+      { deferUpdates: false },
+    );
 
-  const previousEffect = useSignal<[typeof status.value, typeof attempts.value]>();
-  useVisibleTask$(
-    ({ track }) => {
-      const values: [typeof status.value, typeof attempts.value] = [track(status), track(attempts)];
-      const last = previousEffect.value;
-      if (last && values.every((item, index) => Object.is(item, last[index]))) return;
-      previousEffect.value = values;
-      void (async () => {
-        const text = `${status.value} after ${attempts.value}`;
+    const previousEffect = useSignal<[typeof status.value, typeof attempts.value]>();
+    useVisibleTask$(
+      ({ track }) => {
+        const values: [typeof status.value, typeof attempts.value] = [
+          track(status),
+          track(attempts),
+        ];
+        const last = previousEffect.value;
+        if (last && values.every((item, index) => Object.is(item, last[index]))) return;
+        previousEffect.value = values;
+        void (async () => {
+          const text = `${status.value} after ${attempts.value}`;
+          await Promise.resolve();
+          onSeen$?.(text);
+        })();
+      },
+      { strategy: "document-ready" },
+    );
+
+    useVisibleTask$(
+      async () => {
         await Promise.resolve();
-        onSeen$?.(text);
-      })();
-    },
-    { strategy: "document-ready" },
-  );
+        name.value = folder;
+        unread.value = 3;
+      },
+      { strategy: "document-ready" },
+    );
 
-  useVisibleTask$(
-    async () => {
-      await Promise.resolve();
-      name.value = folder;
-      unread.value = 3;
-    },
-    { strategy: "document-ready" },
-  );
-
-  const save = $(async () => {
-    const label = name.value.trim();
-    status.value = `saving ${label}`;
-    attempts.value += 1;
-    await nextTick();
-    status.value = "saved";
-  });
-
-  const refreshEverySecond = $(() => {
-    clearInterval(timer.value);
-    timer.value = setInterval(() => {
-      name.value = `${folder} (refreshed)`;
-      unread.value += 1;
-    }, 1000);
-  });
-
-  const markAllRead = $(() => {
-    queueMicrotask(() => {
-      unread.value = 0;
-      name.value = `${folder}, all read`;
+    const save = $(async () => {
+      const label = name.value.trim();
+      status.value = `saving ${label}`;
+      attempts.value += 1;
+      await nextTick();
+      status.value = "saved";
     });
-  });
 
-  const note = $(() => {
-    void Promise.resolve().then(() => {
-      onNoted$?.(`${name.value}: ${unread.value}`);
+    const refreshEverySecond = $(() => {
+      clearInterval(timer.value);
+      timer.value = setInterval(() => {
+        name.value = `${folder} (refreshed)`;
+        unread.value += 1;
+      }, 1000);
     });
-  });
 
-  useVisibleTask$(
-    ({ cleanup }) => {
-      cleanup(() => {
-        clearInterval(timer.value);
+    const markAllRead = $(() => {
+      queueMicrotask(() => {
+        unread.value = 0;
+        name.value = `${folder}, all read`;
       });
-    },
-    { strategy: "document-ready" },
-  );
+    });
 
-  return (
-    <section class={["mailbox", className]} aria-label="Mailbox" style={style}>
-      <h2>{name.value}</h2>
-      <p role="status">{summary.value}</p>
-      <p>Status: {status.value}</p>
-      <button type="button" onClick$={save}>
-        Save
-      </button>
-      <button type="button" onClick$={refreshEverySecond}>
-        Refresh every second
-      </button>
-      <button type="button" onClick$={markAllRead}>
-        Mark all read
-      </button>
-      <button type="button" onClick$={note}>
-        Note
-      </button>
-    </section>
-  );
-});
+    const note = $(() => {
+      void Promise.resolve().then(() => {
+        onNoted$?.(`${name.value}: ${unread.value}`);
+      });
+    });
+
+    useVisibleTask$(
+      ({ cleanup }) => {
+        cleanup(() => {
+          clearInterval(timer.value);
+        });
+      },
+      { strategy: "document-ready" },
+    );
+
+    return (
+      <section
+        class={["mailbox", className]}
+        aria-label="Mailbox"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
+        <h2>{name.value}</h2>
+        <p role="status">{summary.value}</p>
+        <p>Status: {status.value}</p>
+        <button type="button" onClick$={save}>
+          Save
+        </button>
+        <button type="button" onClick$={refreshEverySecond}>
+          Refresh every second
+        </button>
+        <button type="button" onClick$={markAllRead}>
+          Mark all read
+        </button>
+        <button type="button" onClick$={note}>
+          Note
+        </button>
+      </section>
+    );
+  },
+);
 
 /**
  * Resolves once Qwik has rendered the writes made before it: Qwik renders them in a microtask,
@@ -164,4 +186,13 @@ export default component$<
  */
 function nextTick(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve));
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

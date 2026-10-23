@@ -1,0 +1,25 @@
+/* Renamed with the scope id, as the `animation` that names it is. */
+@keyframes arrive {
+  from {
+    background-color: rgb(229, 231, 235);
+  }
+
+  to {
+    background-color: rgb(37, 99, 235);
+  }
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  column-gap: 8px;
+}
+
+/* The browser projects run every animation in no time, so `forwards` keeps the last frame. */
+.dot {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  animation: arrive 1s ease-out forwards;
+}

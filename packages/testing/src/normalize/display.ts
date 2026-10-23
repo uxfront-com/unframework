@@ -298,8 +298,7 @@ export function boxFromDisplay(value: string, mathml = false): Box | undefined {
         return box("atomic", { blockifiesChildren: true });
       case "table":
         return box("block", { dropsWhitespaceChildren: true });
-      // Table-internal: the analyzer rejects a static one (UF1002), but a bound `display` gets
-      // here with any value (see `Box.tableInternal`).
+      // Table-internal, static or bound (ADR-0065, see `Box.tableInternal`).
       case "table-row-group":
       case "table-header-group":
       case "table-footer-group":

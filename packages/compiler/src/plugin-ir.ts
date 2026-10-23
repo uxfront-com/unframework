@@ -12,6 +12,7 @@ import type {
   IrValidationError,
   LocatedFunction,
   Parameter,
+  PassThroughImport,
   Span,
   TypeDeclaration,
   TypeText,
@@ -33,7 +34,9 @@ import type {
  * - a function or a piece of code moved to a slot of another context or role: the analyser
  *   judges client code by looser rules than a getter or an initial value (time, chance and
  *   in-place changes), so a function is keyed by its context and role, and code by its context
- *   and whether it is statements or an expression (ADR-0045).
+ *   and whether it is statements or an expression (ADR-0045);
+ * - pass-through imports that are not a subsequence of the analyser's (ADR-0064): every output
+ *   keeps them as written, so a plugin may drop one, never add, duplicate, reorder or change one.
  */
 export function pluginIrProblems(
   result: UfModule,
@@ -84,14 +87,39 @@ export function pluginIrProblems(
       check(key, path, NOT_ANALYSED.code);
     }
     if (component.emits) check(emitsKey(component.emits), `${base}/emits`, NOT_ANALYSED.emits);
+    if (component.styles) check(stylesKey(component), `${base}/styles`, NOT_ANALYSED.styles);
   }
   for (const [index, declaration] of result.types.entries()) {
     check(declarationKey(declaration), `/types/${index}`, NOT_ANALYSED.declaration);
   }
+  // The pass-through imports reach every output unanalysed (ADR-0064), so a plugin may drop
+  // some, never add, duplicate, reorder or change one: they stay a subsequence of the analyser's.
+  const imports = (analysed.passThroughImports ?? []).map(passThroughKey);
+  let next = 0;
+  for (const [index, entry] of (result.passThroughImports ?? []).entries()) {
+    const key = passThroughKey(entry);
+    while (next < imports.length && imports[next] !== key) next++;
+    if (next === imports.length) {
+      problems.push({ path: `/passThroughImports/${index}`, message: NOT_ANALYSED.passThrough });
+    } else {
+      next++;
+    }
+  }
   return problems;
 }
 
+/** A pass-through import, as a key that equals another's when every field does. */
+function passThroughKey({ specifier, names, span }: PassThroughImport): string {
+  return JSON.stringify([
+    specifier,
+    names.map((name) => [name.imported, name.local, spanValue(name.span)]),
+    spanValue(span),
+  ]);
+}
+
 const NOT_ANALYSED = {
+  passThrough:
+    "must be an import the analyser passed through, in its order: a plugin may drop one, never add, duplicate, reorder or change one",
   expression:
     "must be an expression the analyser produced, with its span, code and references: a plugin may move, copy or drop analysed code, never write its own",
   code: "must be code the analyser produced, with its span, code and references, where code of its context runs: a plugin may move, copy or drop analysed code, never write its own",
@@ -100,6 +128,8 @@ const NOT_ANALYSED = {
   type: "must be a type annotation the analyser produced, with its span and code",
   emits: "must be the events the analyser produced, as it produced them",
   declaration: "must be a type declaration the analyser produced, as it produced it",
+  styles:
+    "must be the stylesheets the analyser produced, with their scope id, as it produced them: the compiler scopes them (ADR-0063)",
 } as const;
 
 /**
@@ -120,6 +150,7 @@ function analysedCode(module: UfModule): ReadonlySet<string> {
     for (const located of functions) keys.add(functionKey(located));
     for (const { key } of codeKeys(component, functions)) keys.add(key);
     if (component.emits) keys.add(emitsKey(component.emits));
+    if (component.styles) keys.add(stylesKey(component));
   }
   return keys;
 }
@@ -176,6 +207,15 @@ function emitsKey({ binding, type, events, span }: Emits): string {
   ]);
 }
 
+/** A component's sheets and their scope id, which a plugin may drop together, or keep. */
+function stylesKey({ styles, scopeId }: UfComponent): string {
+  return JSON.stringify([
+    "Styles",
+    scopeId ?? null,
+    (styles ?? []).map(({ specifier, source, span }) => [specifier, source, spanValue(span)]),
+  ]);
+}
+
 function declarationKey({ name, exported, code, span }: TypeDeclaration): string {
   return JSON.stringify(["TypeDeclaration", name, exported, code, span.start, span.end]);
 }
@@ -225,6 +265,8 @@ function referenceValue(reference: CodeReference): unknown[] {
       return [reference.kind, reference.member, spanValue(reference.span), reference.call === true];
     case "Slot":
       return [reference.kind, reference.slot, spanValue(reference.span)];
+    case "Import":
+      return [reference.kind, reference.name, spanValue(reference.span)];
     default:
       return unreachable(reference);
   }

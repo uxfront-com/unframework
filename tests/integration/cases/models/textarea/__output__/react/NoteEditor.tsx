@@ -5,7 +5,7 @@ export interface NoteEditorAttributes {
   style?: CSSProperties;
 }
 
-export default function NoteEditor({ className, style }: NoteEditorAttributes) {
+export default function NoteEditor({ className, style, ...attributes }: NoteEditorAttributes) {
   const [note, setNote] = useState("Buy milk");
   const noteRef = useRef(note);
 
@@ -18,7 +18,7 @@ export default function NoteEditor({ className, style }: NoteEditorAttributes) {
   });
 
   return (
-    <section aria-label="Note" className={className} style={style}>
+    <section aria-label="Note" className={className} style={style} {...scopeAttributes(attributes)}>
       <textarea
         aria-label="Text"
         value={note}
@@ -40,4 +40,13 @@ export default function NoteEditor({ className, style }: NoteEditorAttributes) {
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

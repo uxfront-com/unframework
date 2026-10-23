@@ -1,4 +1,11 @@
-import { childImports, defineTarget, ImportSet } from "@unframework/codegen";
+import {
+  addPassThroughImports,
+  childImports,
+  defineTarget,
+  ImportSet,
+  scopeRoots,
+  mergesWholeStyle,
+} from "@unframework/codegen";
 import type { CapabilityCell, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
@@ -56,7 +63,11 @@ export const astro: Target = defineTarget({
     fragment: { support: "native" },
     "bound-attribute": { support: "native" },
     "class-binding": { support: "native" },
-    "style-binding": { support: "native" },
+    "style-binding": {
+      support: "emulated",
+      helper: "styleObject",
+      note: "A style bound to a value is Astro's own `style`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
+    },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
@@ -94,6 +105,17 @@ export const astro: Target = defineTarget({
         "Astro renders each component on its own, so a provided ref reaches no descendant (ADR-0054).",
     },
     "dynamic-component": { support: "native" },
+    "scoped-styles": { support: "native" },
+    // The child's root picks its styled parents' `data-uf-*` props out of `Astro.props`
+    // (ADR-0063): their names are the parents', which the child cannot know.
+    "child-root-scope": {
+      support: "emulated",
+      helper: "scopeAttributes",
+      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them.",
+    },
+    "slotted-styles": { support: "native" },
+    // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
+    "sheet-order": { support: "native" },
   },
   /**
    * One `.astro` file: the frontmatter at the very top (where Astro reads it, and where the
@@ -107,6 +129,8 @@ export const astro: Target = defineTarget({
     const { module } = context;
     const spelling = spellingOf(component, module);
     const imports = new ImportSet(spelling.scope);
+    // The imports that pass through, which the markup reads as written (ADR-0064).
+    addPassThroughImports(component, module, imports);
     const tags = childTags(
       childImports(component, module, (name) => `${name}.astro`),
       imports,
@@ -115,12 +139,34 @@ export const astro: Target = defineTarget({
       ? { className: spelling.scope.claim("className"), style: spelling.scope.claim("style") }
       : undefined;
     const render = astroRender(component, module, spelling, fallthrough);
-    const markup = printComponentMarkup(component, spelling.rules, { spelling, render, tags });
+    // A root that takes its styled parents' scope attributes picks them out of `Astro.props`
+    // (ADR-0063).
+    const roots = scopeRoots(component);
+    const scope = roots.length ? spelling.scope.claim("scopeAttributes") : undefined;
+    // A style bound to a value that an object spread merges is an object first (ADR-0065).
+    const styleObject = mergesWholeStyle(component)
+      ? spelling.scope.claim("styleObject")
+      : undefined;
+    const markup = printComponentMarkup(component, spelling.rules, {
+      spelling,
+      render,
+      tags,
+      module,
+      ...(scope ? { scope: { helper: scope, roots } } : {}),
+      ...(styleObject ? { styleObject } : {}),
+    });
+    // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
+    // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
+    // component's style after its script.
+    const file = module.file;
     const code = frontmatterOf(component, module, {
       spelling,
       imports,
       render,
       markupNamesAstro: /\bAstro\./.test(markup),
+      ...(scope ? { scope } : {}),
+      ...(styleObject ? { styleObject } : {}),
+      ...(component.styles ? { sheet: `./${file.slice(file.lastIndexOf("/") + 1)}.css` } : {}),
     });
     return [
       {

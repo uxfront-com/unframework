@@ -5,7 +5,7 @@ export default function Quantity(props: { class?: string; style?: JSX.CSSPropert
   const [volume, setVolume] = createSignal(5);
 
   return (
-    <section aria-label="Order" class={props.class} style={props.style}>
+    <section aria-label="Order" class={props.class} style={props.style} {...scopeAttributes(props)}>
       <input
         type="number"
         aria-label="Count"
@@ -29,6 +29,13 @@ export default function Quantity(props: { class?: string; style?: JSX.CSSPropert
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /** Binds a text field to a signal as Vue's `vModelText` does: see its modifiers. */

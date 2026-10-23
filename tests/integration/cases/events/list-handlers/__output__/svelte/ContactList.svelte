@@ -20,7 +20,7 @@
     style?: string;
   };
 
-  let { initial, onchoose, onremoved, class: className, style }: Props = $props();
+  let { initial, onchoose, onremoved, class: className, style, ...attributes }: Props = $props();
 
   let contacts = $state.raw(untrack(() => initial));
   let chosen = $state<string>();
@@ -34,9 +34,21 @@
     contacts = contacts.filter((other) => other.id !== entry.id);
     onremoved?.(entry.name);
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["contact-list", className]} aria-label="Contacts" {style}>
+<section
+  class={["contact-list", className]}
+  aria-label="Contacts"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <ul>
     {#each contacts as contact, index (contact.id)}
       <li>

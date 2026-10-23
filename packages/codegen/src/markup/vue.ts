@@ -206,6 +206,9 @@ export const vueDialect: MarkupDialect = {
     return printed;
   },
   styleAttribute: (written) => {
+    // A whole style, an object or a declaration list, is Vue's own `:style` (ADR-0065).
+    const whole = written.find((part) => part.property === "");
+    if (whole) return [{ name: "style", text: `:style="${vueAttributeCode(whole.value)}"` }];
     // A static declaration Vue would misread joins the bound ones, whose values it takes whole.
     const parts = written.map((part): StylePart =>
       part.kind === "Static" && !vueReadsStatic(part.value)
