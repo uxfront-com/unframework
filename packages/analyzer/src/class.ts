@@ -18,7 +18,8 @@ import type { CheckedExpression } from "./expressions.ts";
 import { isStaticString, reportCharacters, valueOf } from "./literals.ts";
 import type { RenderContext } from "./render.ts";
 import { interfaceProblem } from "./style.ts";
-import { describe, elementsOf, outside } from "./types/kinds.ts";
+import { describe, outside } from "./types/kinds.ts";
+import type { Kinds, ObjectShape, Primitive } from "./types/kinds.ts";
 
 /** HTML's ASCII whitespace, which separates class names. */
 const ASCII_WHITESPACE = /[\t\n\f\r ]+/;
@@ -288,32 +289,20 @@ function checkDynamic(
   const kinds = outside(value.kinds, ["string", "null", "undefined"]);
   if (!kinds.length) return false;
   if (kinds.every((kind) => kind === "array" || kind === "object")) {
-    const objects = [
-      ...(value.kinds.objects ?? []),
-      ...(kinds.includes("array") ? (elementsOf(value.kinds).objects ?? []) : []),
-    ];
-    if (objects.some((shape) => shape.interface)) {
-      const problem = interfaceProblem("class object", "class");
+    const { shapes, entries } = collectionKinds(value.kinds);
+    if (shapes.some((shape) => shape.interface)) {
+      const problem = interfaceProblem("class");
       context.reporter.report("UF3018", node, problem.message, { help: problem.help });
       return false;
     }
-    // Vue's `normalizeClass` skips a number entry that clsx renders as its digits.
-    const entries = kinds.includes("array")
-      ? outside(elementsOf(value.kinds), [
-          "string",
-          "boolean",
-          "null",
-          "undefined",
-          "array",
-          "object",
-        ])
-      : [];
     if (!entries.length) return true;
     context.reporter.report(
       "UF3018",
       node,
       `A \`class\` array's entries are class names, and this one's can be ${describe(entries)}, which the targets render differently.`,
-      { help: "Hold strings in the array, or `String(value)` to render a number's digits." },
+      {
+        help: "Hold strings, objects or `false` in the array, or `String(value)` to render a number's digits.",
+      },
     );
     return false;
   }
@@ -326,4 +315,39 @@ function checkDynamic(
     },
   );
   return false;
+}
+
+/**
+ * The object shapes a class collection holds at any depth, and the kinds of its entries that no
+ * target reads alike: numbers, which Vue's `normalizeClass` and Qwik skip and clsx renders as
+ * digits, and `true`, which Qwik's `ClassList` rejects. Arrays are walked once each.
+ */
+function collectionKinds(kinds: Kinds): { shapes: ObjectShape[]; entries: Primitive[] } {
+  const shapes: ObjectShape[] = [];
+  const entries = new Set<Primitive>();
+  const seen = new Set<() => Kinds>();
+  const visit = (value: Kinds, entry: boolean): void => {
+    shapes.push(...(value.objects ?? []));
+    if (entry) {
+      for (const kind of outside(value, [
+        "string",
+        "null",
+        "undefined",
+        "array",
+        "object",
+        "boolean",
+      ])) {
+        entries.add(kind);
+      }
+      const onlyFalse = value.booleans?.size === 1 && value.booleans.has(false);
+      if (value.primitives.has("boolean") && !onlyFalse) entries.add("boolean");
+    }
+    for (const element of value.elements ?? []) {
+      if (seen.has(element)) continue;
+      seen.add(element);
+      visit(element(), true);
+    }
+  };
+  visit(kinds, false);
+  return { shapes, entries: [...entries] };
 }

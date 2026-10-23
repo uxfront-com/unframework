@@ -554,15 +554,16 @@ export function lowerStyleValue(node: AST.Expression, context: RenderContext): L
 
 /**
  * Why an object typed by an `interface` cannot be bound to a whole `style` or a `class`: Vue's
- * style type and Qwik's style and class types have an index signature, which an interface lacks,
- * so the outputs would not type-check (TS2322).
+ * and Qwik's style types and Qwik's class type have an index signature, which an interface
+ * lacks, so the outputs would not type-check (TS2322).
  */
-export function interfaceProblem(
-  what: string,
-  attribute: string,
-): { message: string; help: string } {
+export function interfaceProblem(attribute: "class" | "style"): { message: string; help: string } {
+  const rejects =
+    attribute === "class"
+      ? "Qwik's type for `class` rejects: it has an index signature"
+      : "Vue's and Qwik's types for `style` reject: they have an index signature";
   return {
-    message: `This ${what} is typed by an \`interface\`, which Vue's or Qwik's type for \`${attribute}\` rejects: it has an index signature, which an interface lacks.`,
+    message: `This ${attribute} object is typed by an \`interface\`, which ${rejects}, which an interface lacks.`,
     help: "Declare the type with `type` instead: `type Look = { color?: string }`.",
   };
 }
@@ -579,8 +580,9 @@ export function styleValueProblem(
     };
   }
   for (const shape of kinds.objects ?? []) {
-    if (shape.interface) return interfaceProblem("style object", "style");
-    if (!shape.declared) continue;
+    if (shape.interface) return interfaceProblem("style");
+    // A declared type's members, or an object literal's anywhere in the value (a conditional's
+    // branch, a `computed`), each checked as a key and a value written in place.
     for (const [name, member] of shape.members()) {
       const read = keyProperty(name);
       const property = read.property;
@@ -597,8 +599,16 @@ export function styleValueProblem(
           help: 'Name each member as an object literal\'s key: `marginTop`, or `"--gap"`.',
         };
       }
+      const value = member.kinds();
+      // A literal 0 renders as `0` everywhere, as `margin: 0` does written in place.
+      const zero = value.numbers?.size === 1 && value.numbers.has(0);
       const values = outside(
-        member.kinds(),
+        zero
+          ? {
+              ...value,
+              primitives: new Set([...value.primitives].filter((kind) => kind !== "number")),
+            }
+          : value,
         isCustomProperty(property) || UNITLESS_PROPERTIES.has(property)
           ? ["string", "number", "null", "undefined"]
           : ["string", "null", "undefined"],

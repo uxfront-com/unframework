@@ -705,7 +705,6 @@ export function printMarkup(
   const rootRuns = layout(roots, level, false);
   return rootRuns ? joinRuns(rootRuns, roots, level).join("\n") : "";
 
-  /** A binding's name: from the component, or from its id (`name@offset`) without one. */
   /** A class's dynamic part, marked where it may hold an array or an object (ADR-0065). */
   function dynamicPart(value: Expression, collection: boolean | undefined): ClassPart {
     return { kind: "Dynamic", value: code(value), ...(collection ? { collection: true } : {}) };
@@ -724,6 +723,7 @@ export function printMarkup(
     );
   }
 
+  /** A binding's name: from the component, or from its id (`name@offset`) without one. */
   function bindingName(id: string): string {
     return component ? bindingOf(component, id).name : id.slice(0, id.lastIndexOf("@"));
   }

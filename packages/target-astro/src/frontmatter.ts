@@ -151,8 +151,9 @@ function ${name}(style: object | string | null | undefined): Record<string, stri
   const object: Record<string, string> = {};
   for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
     const [property, value] = declaration.split(/:([^]+)/);
-    if (value === undefined) continue;
     const key = property!.trim();
+    // Only a CSS identifier is a property: anything else would reach the markup as written.
+    if (value === undefined || !/^-?-?[A-Za-z_][\w-]*$/.test(key)) continue;
     const camel = key.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
     object[key.startsWith("--") ? key : camel] = value.trim();
   }

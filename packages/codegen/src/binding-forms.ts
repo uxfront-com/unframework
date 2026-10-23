@@ -67,8 +67,8 @@ function whole(attributes: readonly (Attribute | ComponentAttribute)[]): boolean
 
 /**
  * Whether a component's template merges a style bound to one value into an object: on its
- * root, an element or a component, which takes a consumer's `style`, or on a component, whose
- * root spreads it (ADR-0054). The value may be a declaration list, so the targets that merge
+ * root, an element, a component or a `<component is>`, which takes a consumer's `style`, or on
+ * a component or a `<component is>`, whose root spreads it (ADR-0054). The value may be a declaration list, so the targets that merge
  * by an object spread turn it into an object first (ADR-0065).
  */
 export function mergesWholeStyle(component: UfComponent): boolean {
@@ -80,7 +80,7 @@ export function mergesWholeStyle(component: UfComponent): boolean {
       : undefined;
   if (
     component.inheritAttrs !== false &&
-    (root?.kind === "Element" || root?.kind === "Component") &&
+    (root?.kind === "Element" || root?.kind === "Component" || root?.kind === "Dynamic") &&
     whole(root.attributes)
   ) {
     return true;
@@ -88,7 +88,9 @@ export function mergesWholeStyle(component: UfComponent): boolean {
   let found = false;
   walk(render, {
     enter(node) {
-      if (node.kind === "Component" && whole(node.attributes)) found = true;
+      if ((node.kind === "Component" || node.kind === "Dynamic") && whole(node.attributes)) {
+        found = true;
+      }
     },
   });
   return found;

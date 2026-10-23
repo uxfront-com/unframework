@@ -318,4 +318,20 @@ export default function Save() {
       '<button type="button" class="button " style="" data-uf-0a1b2c3d="">Save</button>',
     );
   });
+
+  // ADR-0065: Solid's server escapes an object's values but not its keys, so `styleProperties`
+  // keeps only a CSS identifier as a property, from a declaration list and an object alike.
+  it("keeps markup out of a style bound to a value", async () => {
+    const Note = await load([
+      "Note.uf.tsx",
+      `export default function Note({ declarations }: { declarations?: string }) {
+  return <div><p style={declarations}>c</p></div>;
+}`,
+    ]);
+    const html = await render(Note, {
+      declarations: 'x"><img src=x onerror=alert(1)>: 1; color: red',
+    });
+    expect(html).not.toContain("<img");
+    expect(html).toContain('<p style="color:red">c</p>');
+  });
 });

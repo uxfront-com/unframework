@@ -1,7 +1,7 @@
 // The binding forms ADR-0065 lowers, as the targets ask about them: which a template uses, a
 // spread's `style` key read on its own, and whether a style bound to a value is merged.
 import { analyze } from "@unframework/analyzer";
-import type { SpreadAttribute, UfComponent } from "@unframework/ir";
+import type { UfComponent } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
 import { describe, expect, it } from "vitest";
 
@@ -20,10 +20,12 @@ interface Attrs { id: string; style?: string }
 const PROPS =
   "{ look, tags, attrs, on }: { look?: Look; tags: string[]; attrs?: Attrs; on: boolean }";
 
+/** A component that renders `jsx` in a `<div>`. */
+const component = (jsx: string) =>
+  lowered(`${TYPES}export default function A(${PROPS}) { return <div>${jsx}</div>; }`);
+
 describe("bindingForms", () => {
   it("finds a style bound to a value, a spread's style key and a class collection", () => {
-    const component = (jsx: string) =>
-      lowered(`${TYPES}export default function A(${PROPS}) { return <div>${jsx}</div>; }`);
     expect(bindingForms(component('<p style={look}>a</p><i class={["a", on && "b"]} />'))).toEqual({
       wholeStyle: true,
       classCollection: false,
@@ -40,10 +42,11 @@ describe("bindingForms", () => {
 
 describe("spreadStyleExpression", () => {
   it("reads the key through the spread's own `?.`, with the source's references", () => {
-    const component = lowered(
+    const { render } = lowered(
       `${TYPES}export default function A(${PROPS}) { return <p {...(on ? attrs : undefined)}>a</p>; }`,
     );
-    const spread = (component.render as { attributes: SpreadAttribute[] }).attributes[0]!;
+    const spread = render.kind === "Element" ? render.attributes[0] : undefined;
+    if (spread?.kind !== "Spread") throw new Error("The element has no spread first.");
     const read = spreadStyleExpression(spread);
     expect(read.code).toBe("(on ? attrs : undefined)?.style");
     // Each reference still spans its name in the code.
@@ -65,5 +68,8 @@ describe("mergesWholeStyle", () => {
     expect(mergesWholeStyle(source("<div><p style={look}>a</p></div>"))).toBe(false);
     expect(mergesWholeStyle(source("<div><B style={look} /></div>"))).toBe(true);
     expect(mergesWholeStyle(source("<p {...attrs}>a</p>"))).toBe(true);
+    expect(mergesWholeStyle(source("<div><component is={on ? B : B} style={look} /></div>"))).toBe(
+      true,
+    );
   });
 });

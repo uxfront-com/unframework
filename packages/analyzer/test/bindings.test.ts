@@ -523,6 +523,24 @@ describe("class", () => {
     expect(diagnostics[0]!.message).toContain("A `class` array's entries are class names");
   });
 
+  // clsx renders a number at any depth, which Vue skips, and Qwik's `ClassList` takes no `true`.
+  it.each([
+    ["counts: number[][]", 'class={["a", counts]}'],
+    ["flags: boolean[]", 'class={["a", flags]}'],
+    ["ons: On[][]", 'class={["a", ons]}'],
+  ])("reports a class collection holding %s at any depth (UF3018)", (props, attribute) => {
+    const before = props.includes("On") ? "interface On { active?: boolean }\n" : "";
+    const { diagnostics } = component(`<p ${attribute}>x</p>`, { props, before });
+    expect(codes(diagnostics)).toEqual(["UF3018"]);
+  });
+
+  it("accepts nested arrays of names and `false`", () => {
+    const { diagnostics } = component('<p class={["a", nested, off]}>x</p>', {
+      props: "nested: string[][]; off: false[]",
+    });
+    expect(diagnostics).toEqual([]);
+  });
+
   it("writes `cond && expr` as a conditional, which renders the same names", () => {
     const { source, diagnostics } = attributes('<p class={["a", on && label]}>x</p>');
     expect(codes(diagnostics)).toEqual(["UF3018"]);
@@ -697,6 +715,9 @@ describe("style", () => {
       const { diagnostics } = component(jsx, { props: "look: Look; on: On", before });
       expect(codes(diagnostics)).toEqual(["UF3018"]);
       expect(diagnostics[0]!.message).toContain("is typed by an `interface`");
+      expect(diagnostics[0]!.message).toContain(
+        jsx.includes("class") ? "Qwik's type for `class`" : "Vue's and Qwik's types for `style`",
+      );
       expect(diagnostics[0]!.help).toContain("Declare the type with `type`");
     }
     const aliased = "type Look = { color?: string };\ntype On = { active?: boolean };\n";
@@ -705,6 +726,22 @@ describe("style", () => {
       before: aliased,
     });
     expect(diagnostics).toEqual([]);
+  });
+
+  // An object literal anywhere in the value is checked as one written in place.
+  it.each([
+    ["on ? { width: 4 } : undefined", "width"],
+    ['on ? { "margin-top": "4px" } : undefined', '"margin-top"'],
+    ['on ? undefined : { WebkitTransform: "none" }', "WebkitTransform"],
+  ])("checks the object literals in style={%s} (UF3018)", (value, at) => {
+    const { found } = attributes(`<p style={${value}}>a</p>`);
+    expect(found).toEqual([`UF3018 ${at}`]);
+  });
+
+  it("accepts a literal 0 in an object literal of the value", () => {
+    expect(lowered('<p style={on ? { margin: 0, color: "red" } : undefined}>a</p>')).toEqual([
+      'style={on ? { margin: 0, color: "red" } : undefined}',
+    ]);
   });
 
   it.each([
@@ -907,6 +944,16 @@ describe("spreads", () => {
     expect(lowered("<p {...extra}>x</p>", "extra: { title: string; style?: string }")).toEqual([
       "...{extra}[title style]",
     ]);
+    const typed = component("<p {...extra}>x</p>", {
+      props: "extra: { style?: Look }",
+      before: "type Look = { color?: string };\n",
+    });
+    expect(typed.diagnostics).toEqual([]);
+    const shaped = component("<p {...extra}>x</p>", {
+      props: "extra: { style?: Look }",
+      before: "interface Look { color?: string }\n",
+    });
+    expect(codes(shaped.diagnostics)).toEqual(["UF3018"]);
     const twice = attributes('<p style="color: red" {...extra}>x</p>', "extra: { style: string }");
     expect(codes(twice.diagnostics)).toEqual(["UF3007"]);
   });

@@ -140,7 +140,7 @@ export const qwik: Target = defineTarget({
     "style-binding": {
       support: "emulated",
       helper: "styleObject",
-      note: "A style bound to a value is Qwik's own `style`, but where an object spread merges it, on the root that takes a consumer's style and on a component, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
+      note: "A style bound to a value is Qwik's own `style`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
     },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
@@ -746,8 +746,9 @@ function ${names.once("styleObject")}(style: object | string | null | undefined)
   const object: Record<string, string> = {};
   for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
     const [property, value] = declaration.split(/:([^]+)/);
-    if (value === undefined) continue;
     const key = property!.trim();
+    // Only a CSS identifier is a property: anything else would reach the markup as written.
+    if (value === undefined || !/^-?-?[A-Za-z_][\w-]*$/.test(key)) continue;
     const camel = key.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
     object[key.startsWith("--") ? key : camel] = value.trim();
   }
@@ -888,7 +889,8 @@ function qwikDialect(
   const fallthroughRoot = render.kind === "Element" ? render : render.children[0];
   /**
    * `style={value}`, or `style={styleObject(value)}` where an object spread merges it: on the
-   * root that takes a consumer's style, and on a component, whose root spreads it (ADR-0054).
+   * root that takes a consumer's style, and on a component or a `<component is>`, whose root
+   * spreads it (ADR-0054).
    */
   const wholeStyle = (value: AstExpression, element: ElementNode) => {
     const merged =
