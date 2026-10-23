@@ -22,11 +22,12 @@ import Hello from "./Hello.uf.tsx"; // a Vue component
 plugins. Only Vite is supported until M6; `unframeworkUnplugin` (the `.` entry) refuses any other
 bundler when the plugin is created.
 
-A component that uses Styleframe (plan §4.4, ADR-0064) keeps its `virtual:styleframe` and
-`virtual:styleframe.css` imports as written, and the plugin never resolves them: add Styleframe's
-own plugin, `styleframe/plugin/vite`, beside it. Both run `enforce: "pre"` and neither claims the
-other's ids, so their order doesn't matter. We list Styleframe's first, as its installation guide
-does:
+Any styling engine works through the virtual modules its own Vite plugin registers (plan §4.4,
+ADR-0064). An import whose specifier starts with a `passThrough` prefix (`virtual:` by default)
+reaches every output as written, and this plugin never resolves it: the engine's plugin does. Add
+that plugin beside this one. Both run `enforce: "pre"` and neither claims the other's ids, so their
+order doesn't matter. Styleframe, the engine the corpus tests with, is an example. We list its
+plugin first, as its installation guide does:
 
 ```ts
 import styleframe from "styleframe/plugin/vite";
@@ -36,19 +37,25 @@ export default {
 };
 ```
 
+```tsx
+import { button } from "virtual:styleframe";
+import "virtual:styleframe.css";
+```
+
 Styleframe's scanner reads utility classes in a `.tsx` file's `className` only. For utilities
 written in a `.uf.tsx` file's `class`, give it an extractor that reads `class` too, as the
 integration harness does (`sourceUtilities` in `tests/integration/harness/styleframe.ts`).
 
 ## Options
 
-| Option      | Meaning                                                                                                                                                                                       |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `target`    | A built-in target's name (`"react"`, `"vue"`, `"svelte"`, `"solid"`, `"angular"`, `"qwik"`, `"astro"`) or a third-party `Target`.                                                             |
-| `extension` | What module ids append to the `.uf.tsx` path. Built-in targets have one; a third-party target must set it.                                                                                    |
-| `onCompile` | Called each time a module loads, with `{ id, file, target, files, diagnostics }`. Returning a string (or a promise of one) fails that module with it: the integration harness's golden guard. |
-| `plugins`   | Compiler plugins, passed to `compile()` (the harness's canaries).                                                                                                                             |
-| `format`    | Formats the output with oxfmt. Defaults to `true`, so a module's code equals the golden file byte for byte.                                                                                   |
+| Option        | Meaning                                                                                                                                                                                                                                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `target`      | A built-in target's name (`"react"`, `"vue"`, `"svelte"`, `"solid"`, `"angular"`, `"qwik"`, `"astro"`) or a third-party `Target`.                                                                                                                                                                            |
+| `extension`   | What module ids append to the `.uf.tsx` path. Built-in targets have one; a third-party target must set it.                                                                                                                                                                                                   |
+| `onCompile`   | Called each time a module loads, with `{ id, file, target, files, diagnostics }`. Returning a string (or a promise of one) fails that module with it: the integration harness's golden guard.                                                                                                                |
+| `plugins`     | Compiler plugins, passed to `compile()` (the harness's canaries).                                                                                                                                                                                                                                            |
+| `format`      | Formats the output with oxfmt. Defaults to `true`, so a module's code equals the golden file byte for byte.                                                                                                                                                                                                  |
+| `passThrough` | The specifier prefixes whose imports pass through to every output as written, passed to `compile()`. Defaults to `["virtual:"]`; a list replaces it, as `["virtual:", "styled-system/"]` adds an engine that generates files. A prefix that is empty, relative or absolute fails when the plugin is created. |
 
 ## Module ids
 

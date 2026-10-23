@@ -1,6 +1,6 @@
 # ADR-0004: Styles are a sibling CSS file, scoped by the compiler
 
-- **Status:** Accepted, amended by ADR-0063
+- **Status:** Accepted, amended by ADR-0063, ADR-0064
 - **Date:** 2026-10-01
 - **Plan:** §11 C4; §3, §4.4, §6, §7.5, §7.6, M4, R11, Appendix A, Appendix B
 

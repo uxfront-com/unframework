@@ -298,7 +298,7 @@ Tests and tooling build, check and run the Angular output through three subpaths
   - `frameworkCompile(files, context)` (L3) and `typecheck(files, context)` (L4): one ngtsc
     program over every file, reported per file. ngtsc type-checks as it compiles, so L3, L4 and
     the Vite path add `context.declarations` to their programs: the declarations of the modules
-    no package types, such as Styleframe's virtual modules (ADR-0064).
+    no package types, such as a styling engine's virtual modules (ADR-0064).
   - `lint(files, context)` (L5, ADR-0042): oxlint's shared baseline over the TypeScript, and
     ESLint with angular-eslint over the file and its inline template.
     `@angular-eslint/no-output-native` is on: an output named like a native event takes the `uf`

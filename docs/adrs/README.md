@@ -56,7 +56,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0001](./0001-component-shape.md)                                  | Components are setup-once functions in JSX                           | Accepted                                                              | §11 C1                  |
 | [0002](./0002-control-flow-is-plain-js.md)                         | Control flow is plain JS, and `v-model` is the only directive        | Accepted, amended by ADR-0036                                         | §11 C2                  |
 | [0003](./0003-public-api-vue-macros.md)                            | The public API is declared with Vue macros                           | Accepted                                                              | §11 C3                  |
-| [0004](./0004-sibling-css-scoped-by-the-compiler.md)               | Styles are a sibling CSS file, scoped by the compiler                | Accepted, amended by ADR-0063                                         | §11 C4                  |
+| [0004](./0004-sibling-css-scoped-by-the-compiler.md)               | Styles are a sibling CSS file, scoped by the compiler                | Accepted, amended by ADR-0063, ADR-0064                               | §11 C4                  |
 | [0005](./0005-source-extension.md)                                 | Components are `.uf.tsx`, composables are `.uf.ts`                   | Proposed                                                              | §11 D1                  |
 | [0006](./0006-authoring-import-and-jsx-runtime.md)                 | The authoring API and JSX runtime come from `unframework`            | Proposed                                                              | §11 D2                  |
 | [0007](./0007-canonical-forms.md)                                  | One canonical form per concept                                       | Proposed                                                              | §11 D3                  |
@@ -116,7 +116,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0061](./0061-visual-context-and-geometry.md)                      | Visual context and geometry for styled components                    | Proposed                                                              | §7.5, §7.6, §9 M4       |
 | [0062](./0062-baselines-generated-in-ci.md)                        | CI generates the Linux baselines, and a script applies them          | Proposed                                                              | §7.4, §7.9, §9 M4       |
 | [0063](./0063-scoped-stylesheets.md)                               | Scoped stylesheets, from the import to each target's attachment      | Proposed                                                              | §4.4, §6, §9 M4         |
-| [0064](./0064-styleframe-and-ci-without-a-licence.md)              | Styleframe passes through, and CI needs no licence                   | Proposed                                                              | §4.4, R11, §9 M4        |
+| [0064](./0064-styling-engines-and-ci-without-a-licence.md)         | Styling engines through virtual modules, and CI without a licence    | Proposed                                                              | §4.4, R11, §9 M4        |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 
