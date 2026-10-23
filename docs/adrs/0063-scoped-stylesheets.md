@@ -1,7 +1,7 @@
 # ADR-0063: Scoped stylesheets, from the import to each target's attachment
 
-- **Status:** Proposed
-- **Date:** 2026-10-21
+- **Status:** Accepted
+- **Date:** 2026-10-23
 - **Plan:** §4.4, §5.3, §5.8, §6, §7.2, §7.5, §9 M4, P2, P5, P6, P7, P8; C4 (ADR-0004), D5
   (ADR-0009); amends ADR-0004, ADR-0009, ADR-0021, ADR-0025, ADR-0047 and ADR-0053; settles the
   open item of ADR-0020 on CSS
@@ -39,14 +39,15 @@ layers, and each layer needs the same contract before it starts:
   needs M5's project graph.
 - `ComponentApi.styles` is `{ scopeId, slotted }`: the child's id, and whether its sheets use
   `:slotted()`, so a parent stamps `-s` and decides `slotted-styles` from the resolver alone.
-- `UfModule.passThroughImports` holds named imports from `virtual:styleframe` and the side-effect
-  import `virtual:styleframe.css`, which every output keeps as written (§4.4, ADR-0004). A template
-  reads such a name through an `Import` reference, never through a binding. Only a template may
-  read one, and the coverage gate counts the kind.
+- `UfModule.passThroughImports` holds the imports every output keeps as written (§4.4,
+  ADR-0004): named imports and side-effect imports of a module that is neither relative nor
+  absolute, such as a styling engine's `virtual:` modules, which ADR-0064 makes engine-neutral. A
+  template reads such a name through an `Import` reference, never through a binding. Only a
+  template may read one, and the coverage gate counts the kind.
 - The invariants check each of these: a scope id exactly with sheets, sheets in a one-component
-  module only, names a pass-through import binds that are identifiers no other import binds,
-  `virtual:styleframe.css` binding nothing, and an `Import` reference naming one of them, in a
-  template only.
+  module only, a pass-through specifier that is neither relative nor absolute, names a
+  pass-through import binds that are identifiers no other import binds, and an `Import` reference
+  naming one of them, in a template only.
 
 **The scope id and the attribute:**
 

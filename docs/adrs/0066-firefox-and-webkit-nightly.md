@@ -1,6 +1,6 @@
 # ADR-0066: Firefox and WebKit run nightly, live against the reference in the same engine
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-23
 - **Plan:** §7.2 (L10), §7.4, §7.6, §9 M4, R10; D9 (ADR-0013); ADR-0062; amends ADR-0019 (the
   font audit) and ADR-0029 (the pixel mode)

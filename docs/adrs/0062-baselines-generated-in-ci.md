@@ -1,7 +1,7 @@
 # ADR-0062: CI generates the Linux baselines, and a script applies them
 
-- **Status:** Proposed
-- **Date:** 2026-10-20
+- **Status:** Accepted
+- **Date:** 2026-10-23
 - **Plan:** §7.4, §7.6, §7.9, §9 M4, R10; D9 (ADR-0013); amends ADR-0029; closes the open items of
   ADR-0013 and ADR-0019 on baselines in CI
 

@@ -1,7 +1,7 @@
 # ADR-0013: Visual baselines live in Linux CI, plus a live mode
 
-- **Status:** Proposed — the plan proceeds on the recommendation
-- **Date:** 2026-10-01
+- **Status:** Accepted
+- **Date:** 2026-10-23
 - **Plan:** §11 D9; §2, §7.1, §7.2 (L10), §7.4, §7.6, §7.9, §9 (M0 spike 2, M4), R10
 
 ## Context

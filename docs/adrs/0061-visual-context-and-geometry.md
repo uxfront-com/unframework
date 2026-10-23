@@ -1,7 +1,7 @@
 # ADR-0061: Visual context and geometry for styled components
 
-- **Status:** Proposed
-- **Date:** 2026-10-21
+- **Status:** Accepted
+- **Date:** 2026-10-23
 - **Plan:** §7.5, §7.6, §9 M4; amends ADR-0019 on what L10 captures, and ADR-0031 on how the live
   DOM path reads layout
 
