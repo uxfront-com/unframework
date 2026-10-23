@@ -61,7 +61,8 @@ The frameworks take these forms differently:
     declaration list. A helper that splits a declaration list splits it as Vue's
     `parseStringStyle` does where Vue merges one, and keeps a property only where its name is a custom
     property without a quote, `<`, `>`, `&`, `;`, `:` or whitespace, or a CSS identifier, so no
-    text of the list reaches the markup but as a value the framework escapes.
+    text of the list reaches the markup but as a value the framework escapes. A standard name is
+    lower-cased first, as CSS reads it, so `COLOR` applies and `marginTop` doesn't, as in the browser.
   - **Merged, it is an object first.** Where a root merges a consumer's `style` into the value,
     and where a component or a `<component is>` takes the value, whose root spreads it, React, Solid, Qwik, Astro and
     Angular turn it into an object (`styleObject`) before the spread, the consumer's spread last,
@@ -156,6 +157,8 @@ Svelte   <span class={["tag", tags, states]}>        (Vue, Qwik and Astro alike)
   numbers (UF3018)", "reports a class collection holding %s at any depth (UF3018)", "checks the
   object literals in style={%s} (UF3018)", "checks a class object's values (UF3018)" and
   "lowers a spread's style key".
+- `packages/target-react/test/style-object.test.ts`: React's `styleObject` reads a declaration
+  list's names case-insensitively, and keeps a custom property's case.
 - `packages/target-solid/test/styles.test.ts`: "keeps markup out of a style bound to a value",
   through Solid's own server render.
 - `packages/codegen/test/binding-forms.test.ts`: which forms a template uses, a spread's `style`
