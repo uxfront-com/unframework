@@ -1,10 +1,12 @@
 // The browser every parity project runs (plan §7.6, the screenshot ADR): headless Chromium with
 // a fixed viewport at DPR 1, in the light scheme, with reduced motion, with font hinting off,
 // which makes geometry identical on macOS and Linux, and with whole-tile raster, which makes a
-// capture's pixels a function of the DOM alone. The setup file asserts the context.
+// capture's pixels a function of the DOM alone. The setup file asserts the context. The nightly
+// runs Firefox and WebKit in the same context, without Chromium's switches (ADR-0066).
 import { playwright } from "@vitest/browser-playwright";
 import type { BrowserConfigOptions } from "vitest/node";
 
+import type { BrowserEngine } from "../harness.ts";
 import { browserCommands } from "./commands.ts";
 import { VIEWPORT } from "./viewport.ts";
 
@@ -47,6 +49,8 @@ export interface ParityBrowserOptions {
   name: string;
   /** Commands besides the testing API's own, such as a target's server-side render. */
   commands?: Readonly<Record<string, AnyBrowserCommand>>;
+  /** The engine (`UF_BROWSER`, through the harness's mode); Chromium by default. */
+  browser?: BrowserEngine;
 }
 
 /**
@@ -63,6 +67,7 @@ export function parityBrowser(options: ParityBrowserOptions): BrowserConfigOptio
       `[uf] parityBrowser(${options.name}): ${taken.join(", ")} would replace the testing API's own command(s). Give the target's command another name.`,
     );
   }
+  const browser = options.browser ?? "chromium";
   return {
     enabled: true,
     // Headed runs inherit the host's device pixel ratio; the captures need DPR 1.
@@ -73,7 +78,8 @@ export function parityBrowser(options: ParityBrowserOptions): BrowserConfigOptio
       // the actions, and the ARIA snapshot and focus commands. The visual command names its
       // own timeouts.
       actionTimeout: ACTION_TIMEOUT,
-      launchOptions: { args: [...CHROMIUM_ARGS] },
+      // Firefox and WebKit have no such switches; their captures compare live within the engine.
+      launchOptions: { args: browser === "chromium" ? [...CHROMIUM_ARGS] : [] },
       contextOptions: {
         deviceScaleFactor: 1,
         colorScheme: "light",
@@ -83,7 +89,7 @@ export function parityBrowser(options: ParityBrowserOptions): BrowserConfigOptio
         timezoneId: "UTC",
       },
     }),
-    instances: [{ browser: "chromium", name: options.name }],
+    instances: [{ browser, name: options.name }],
     // Vitest types each command against its own context; these take the parts they read.
     commands: { ...browserCommands, ...options.commands } as BrowserConfigOptions["commands"],
   };

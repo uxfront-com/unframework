@@ -118,6 +118,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0063](./0063-scoped-stylesheets.md)                               | Scoped stylesheets, from the import to each target's attachment      | Proposed                                                              | §4.4, §6, §9 M4         |
 | [0064](./0064-styling-engines-and-ci-without-a-licence.md)         | Styling engines through virtual modules, and CI without a licence    | Proposed                                                              | §4.4, R11, §9 M4        |
 | [0065](./0065-the-deferred-binding-forms.md)                       | The binding forms ADR-0038 and ADR-0039 deferred to M4               | Proposed                                                              | §4.3, §6, §9 M4         |
+| [0066](./0066-firefox-and-webkit-nightly.md)                       | Firefox and WebKit run nightly, live against Vue in the same engine  | Proposed                                                              | §7.2, §7.6, §9 M4       |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 

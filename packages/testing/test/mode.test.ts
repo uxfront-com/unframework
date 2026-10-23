@@ -31,6 +31,7 @@ describe("resolveHarnessMode", () => {
       canary: null,
       ci: false,
       baselineEnvironment: null,
+      browser: "chromium",
     });
     expect(resolve({}, "linux").pixels).toBe("live");
   });
@@ -58,6 +59,7 @@ describe("resolveHarnessMode", () => {
       canary: null,
       ci: true,
       baselineEnvironment: null,
+      browser: "chromium",
     });
   });
 
@@ -104,6 +106,39 @@ describe("resolveHarnessMode", () => {
     expect(live({ UF_UPDATE: "1" })).toMatchObject({ update: true, pixels: "live" });
     expect(() => live({ CI: "1", UF_UPDATE: "1" })).toThrow(/CI never writes/);
     expect(() => live({ UF_PIXELS: "baseline" })).toThrow(/no committed baselines/);
+  });
+
+  it("runs Chromium unless UF_BROWSER names Firefox or WebKit", () => {
+    expect(resolve({ UF_BROWSER: "chromium" }).browser).toBe("chromium");
+    expect(resolve({ UF_BROWSER: "firefox" }).browser).toBe("firefox");
+    expect(resolve({ UF_BROWSER: " webkit " }).browser).toBe("webkit");
+    expect(() => resolve({ UF_BROWSER: "edge" })).toThrow(
+      /UF_BROWSER must be chromium, firefox or webkit, not "edge"/,
+    );
+  });
+
+  it("compares live outside Chromium, in CI and in the baseline environment too", () => {
+    // The committed baselines are Chromium's: another engine compares with Vue in the same run.
+    for (const browser of ["firefox", "webkit"]) {
+      expect(resolve({ CI: "true", UF_BROWSER: browser }, "linux")).toEqual({
+        update: false,
+        pixels: "live",
+        canary: null,
+        ci: true,
+        baselineEnvironment: null,
+        browser,
+      });
+      expect(resolve({ ...container, UF_BROWSER: browser }, "linux").pixels).toBe("live");
+      expect(() => resolve({ UF_BROWSER: browser, UF_PIXELS: "baseline" })).toThrow(
+        new RegExp(`The committed baselines are Chromium's: ${browser} compares live`),
+      );
+    }
+  });
+
+  it("never writes artefacts outside Chromium", () => {
+    expect(() => resolve({ UF_BROWSER: "webkit", UF_UPDATE: "1" })).toThrow(
+      /Every committed artefact is Chromium's: refusing UF_UPDATE with UF_BROWSER=webkit/,
+    );
   });
 
   it("refuses a canary that would write", () => {

@@ -264,8 +264,10 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
 case)`); its projects run after the run's reference and before every other target
   (`groupOrder`'s `caseReferences`).
 - **The run:** `resolveHarnessMode` (`UF_UPDATE`, `UF_PIXELS`, `UF_CANARY`,
-  `UF_BASELINE_ENVIRONMENT`; it refuses writing in CI, and writing the visual baselines outside
-  `BASELINE_ENVIRONMENT`), `createHarnessRun` (the context provided to every project as
+  `UF_BASELINE_ENVIRONMENT`, `UF_BROWSER`; it refuses writing in CI, and writing the visual
+  baselines outside `BASELINE_ENVIRONMENT`; with `UF_BROWSER=firefox` or `webkit` it compares
+  pixels live, in CI too, and refuses writing anything, because every committed artefact is
+  Chromium's, ADR-0066), `createHarnessRun` (the context provided to every project as
   `ufHarness`; each run's scratch output is its own directory, so concurrent runs never clear
   each other's; an L10 quarantine entry that names `pixels` applies only in runs of that pixel
   mode) and `groupOrder`.
@@ -277,10 +279,12 @@ case)`); its projects run after the run's reference and before every other targe
   `ufComponentEvents`, which answers from the
   compiles a project's unplugin reported to `recordCompiledModule`, for the case's only source or
   the one its `case.json` names as `main`, ADR-0057), and
-  `parityBrowser({ name, commands })`, the deterministic Chromium every parity project runs
-  (800×600 at DPR 1, `--font-render-hinting=none`, `--disable-partial-raster`, light scheme
-  until a case opts into dark, reduced motion, a 5 s action timeout). A target's command may
-  not take one of the testing API's names.
+  `parityBrowser({ name, commands, browser })`, the deterministic Chromium every parity project
+  runs (800×600 at DPR 1, `--font-render-hinting=none`, `--disable-partial-raster`, light scheme
+  until a case opts into dark, reduced motion, a 5 s action timeout). `browser: "firefox"` or
+  `"webkit"` runs that engine in the same context, without Chromium's switches, and L10 skips
+  its font audit there (`FONT_AUDIT_SKIP`: the audit reads CDP). A target's command may not
+  take one of the testing API's names.
 - **Layers:** `checkLayers(task, subject, { L1: () => …, L2: … })` runs checks, records each
   outcome and throws one error with every failure (`expectParity` records the same way without
   throwing). A check skips only by returning
@@ -298,7 +302,9 @@ case)`); its projects run after the run's reference and before every other targe
   shard replaces nothing. A shard covers its projects in full only together with shards 1 to n
   of the same selection and count, with no other filter; the summary then also fails a project
   no shard collected a test of. `writeSummary` merges the partial
-  matrices into `parity-matrix.json` and `parity-matrix.md` (each project's cells from its last
+  matrices into `parity-matrix.json` and `parity-matrix.md`, or `parity-matrix.<engine>.*` for
+  `browser: "firefox"` or `"webkit"` (`summaryName`), which `isPartialMatrixFile` never reads
+  back (each project's cells from its last
   run, the runs listed, every record judged by the newest run's quarantine) and appends the
   Markdown to `$GITHUB_STEP_SUMMARY`; in CI (or with `requireComplete`) a project that did not
   run, or that only filtered runs or an incomplete set of shards ran, is a problem, not a partial

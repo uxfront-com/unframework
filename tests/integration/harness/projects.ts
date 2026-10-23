@@ -6,6 +6,7 @@
 //                                          of each per target
 //   ssr:<target>        node     L6 L13    the target's server renderer, through the unplugin
 //   browser:<target>    chromium L7 L8 L9 L10 L11 L13  the shared specs, through the unplugin
+//                       (or UF_BROWSER's engine)
 //
 // Every project sets `extends: false`: inheriting the root config merges its plugins into each
 // project (the browser-projects ADR), and a project must hold its own toolchain only. Toolchains
@@ -344,7 +345,11 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
           ),
         },
         browser: {
-          ...parityBrowser({ name, commands: toolchain.browserCommands?.(context) ?? {} }),
+          ...parityBrowser({
+            name,
+            commands: toolchain.browserCommands?.(context) ?? {},
+            browser: setup.mode.browser ?? "chromium",
+          }),
           // Vitest's failure screenshots go next to the spec by default, among the committed
           // baselines, where the compile project would report them as stale artefacts.
           screenshotDirectory: FAILURE_SCREENSHOTS_DIR,

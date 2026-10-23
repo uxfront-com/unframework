@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { parityJob, runSummary } from "../scripts/summary.ts";
 import { listCases } from "./cases.ts";
-import { REPO_ROOT } from "./paths.ts";
+import { REPO_ROOT, REPORTS_DIR, reportsDirOf } from "./paths.ts";
 import { isSelected, projectNames } from "./projects.ts";
 import { selectTargets } from "./targets.ts";
 
@@ -239,6 +239,25 @@ describe("a run of scripts/run.ts", () => {
     expect(readFileSync(join(reportsDir, "parity-matrix.md"), "utf8")).toContain(
       "Partial run: 16 project(s) did not run",
     );
+  });
+
+  it("summarises a run in Firefox or WebKit as that engine's matrix, in a directory of its own", () => {
+    expect(reportsDirOf("chromium")).toBe(REPORTS_DIR);
+    expect(reportsDirOf("firefox")).toBe(join(REPORTS_DIR, "firefox"));
+    const started = new Date();
+    const browser = ALL.filter((project) => project.startsWith("browser:"));
+    writeFileSync(
+      join(reportsDir, `parity-matrix.${runName(browser, ALL)}.json`),
+      partial(browser, new Date(started.getTime() + 1).toISOString()),
+    );
+    const run = { since: started, requireComplete: false, reportsDir };
+    expect(runSummary({ UF_BROWSER: "firefox" }, run)).toBe(0);
+    expect(readFileSync(join(reportsDir, "parity-matrix.firefox.md"), "utf8")).toContain(
+      "## Unframework parity matrix in firefox",
+    );
+    expect(
+      JSON.parse(readFileSync(join(reportsDir, "parity-matrix.firefox.json"), "utf8")),
+    ).toMatchObject({ run: "merged", projects: browser.toSorted() });
   });
 
   it("still fails a missing cell of a run of every project", () => {

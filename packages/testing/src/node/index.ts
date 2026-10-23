@@ -50,14 +50,26 @@ export type {
   RunMode,
   Shard,
 } from "./matrix.ts";
-export { BASELINE_ENVIRONMENT, createHarnessRun, groupOrder, resolveHarnessMode } from "./mode.ts";
+export {
+  BASELINE_ENVIRONMENT,
+  createHarnessRun,
+  groupOrder,
+  resolveBrowser,
+  resolveHarnessMode,
+} from "./mode.ts";
 export type { HarnessMode, HarnessRunOptions, ModeInput, ProjectKind } from "./mode.ts";
 export { KEBAB_CASE } from "./names.ts";
 export { settleArtefact, settleArtefactDirectory, writeIfChanged } from "./policy.ts";
 export type { ArtefactContext, ArtefactOutcome, ArtefactRole, ArtefactStatus } from "./policy.ts";
-export { ParityReporter, readPartialMatrices, runName, testKey } from "./reporter.ts";
+export {
+  isPartialMatrixFile,
+  ParityReporter,
+  readPartialMatrices,
+  runName,
+  testKey,
+} from "./reporter.ts";
 export type { ParityReporterOptions } from "./reporter.ts";
-export { renderMarkdown, summarise, unacceptedSkip, writeSummary } from "./summary.ts";
+export { renderMarkdown, summarise, summaryName, unacceptedSkip, writeSummary } from "./summary.ts";
 export type {
   SummaryExpectations,
   SummaryJudgement,
@@ -73,12 +85,14 @@ export { formatError } from "../errors.ts";
 export {
   caseOfFile,
   caseReference,
+  BROWSER_ENGINES,
   caseReferences,
   COLOR_SCHEMES,
   isReference,
   ssrScenarios,
 } from "../harness.ts";
 export type {
+  BrowserEngine,
   CaseConfig,
   ColorScheme,
   HarnessContext,
@@ -112,7 +126,7 @@ export type {
   QuarantineEntry,
   UfLayerMeta,
 } from "../layers.ts";
-export { LIVE_REFERENCE_SKIP } from "../visual-types.ts";
+export { FONT_AUDIT_SKIP, LIVE_REFERENCE_SKIP } from "../visual-types.ts";
 export type {
   CaptureAttachment,
   CaptureOutcome,
