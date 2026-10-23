@@ -49,6 +49,7 @@ export interface ModeInput {
   /**
    * The run has no committed visual baselines (the testing package's own fixture, whose one
    * target is its own reference): pixels are always live, in CI too, and `UF_PIXELS` is refused.
+   * It runs in Chromium alone, so another `UF_BROWSER` is refused too.
    */
   liveOnly?: boolean;
 }
@@ -88,6 +89,13 @@ export function resolveHarnessMode(input: ModeInput): HarnessMode {
     if (forced) {
       throw new Error(
         `[uf] This run has no committed baselines: UF_PIXELS=${forced} cannot apply.`,
+      );
+    }
+    // The testing package's own fixture launches Chromium alone: its stubs test the font audit
+    // and Chromium's switches, so a harness that believed another engine would skip them.
+    if (browser !== "chromium") {
+      throw new Error(
+        `[uf] This run has no committed baselines and runs in Chromium alone: UF_BROWSER=${browser} cannot apply.`,
       );
     }
     return { update, pixels: "live", canary, ci, baselineEnvironment, browser };

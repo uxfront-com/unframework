@@ -264,8 +264,8 @@ before it is skipped; the matrix (version 5) also keeps each test's scenarios an
 skip by the test's name, which the summary compares and lists. The parity reporter writes
 `.reports/parity-matrix.<run>.json`; `pnpm --filter @unframework/integration summary` merges them
 into `parity-matrix.json` and `parity-matrix.md` (CI's job summary). `UF_BROWSER=firefox` or
-`webkit` runs the browser projects in that engine (ADR-0066): L10 compares each target with Vue's
-capture from the same run, nothing is written, and the matrices go to `.reports/<engine>/`, merged
+`webkit` runs the browser projects in that engine (ADR-0066): L10 compares each target with the
+reference's capture from the same run, nothing is written, and the matrices go to `.reports/<engine>/`, merged
 into `parity-matrix.<engine>.json` and `.md`. The nightly workflow runs both engines; a
 difference there is an issue, never a quarantine entry. A cell is `pass`, `fail`,
 `skip(reason)` or `quarantined(issue)`; a skip on a live layer names a capability the target

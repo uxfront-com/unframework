@@ -83,9 +83,9 @@ export { diffLines } from "../diff.ts";
 export type { DiffOptions } from "../diff.ts";
 export { formatError } from "../errors.ts";
 export {
+  BROWSER_ENGINES,
   caseOfFile,
   caseReference,
-  BROWSER_ENGINES,
   caseReferences,
   COLOR_SCHEMES,
   isReference,

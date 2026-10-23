@@ -1,10 +1,10 @@
 name: Nightly
 
 # Firefox and WebKit (ADR-0066): every browser project in each engine, every night. L10 compares
-# each target with Vue's capture from the same run, in the same engine: the committed baselines
-# are Chromium's, and Chromium stays the only engine that gates a pull request (ci.yml). Each
-# engine's parity matrix goes to the job summary and to an artefact. A difference fails its
-# engine's job, and becomes an issue, never a quarantine entry.
+# each target with the reference's capture from the same run, in the same engine: the committed
+# baselines are Chromium's, and Chromium stays the only engine that gates a pull request
+# (ci.yml). Each engine's parity matrix goes to the job summary and to an artefact. A difference
+# fails its engine's job, and becomes an issue, never a quarantine entry.
 on:
   schedule:
     - cron: "23 3 * * *"
@@ -20,8 +20,8 @@ jobs:
   browser:
     name: "Nightly: browser (${{ matrix.browser }})"
     runs-on: ubuntu-latest
-    # One job runs all seven browser projects, because live L10 needs Vue's capture in the same
-    # run. Chromium's corpus takes about ten minutes per target here; these engines are slower.
+    # One job runs all seven browser projects, because live L10 needs the reference's capture in
+    # the same run. ci.yml gives Chromium ten minutes per target; these engines are slower.
     timeout-minutes: 45
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
@@ -76,6 +76,7 @@ jobs:
           path: |
             tests/integration/.reports/diffs
             tests/integration/.reports/failures
+            tests/integration/.vitest
           include-hidden-files: true
           if-no-files-found: ignore
           overwrite: true

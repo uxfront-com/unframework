@@ -106,6 +106,18 @@ describe("resolveHarnessMode", () => {
     expect(live({ UF_UPDATE: "1" })).toMatchObject({ update: true, pixels: "live" });
     expect(() => live({ CI: "1", UF_UPDATE: "1" })).toThrow(/CI never writes/);
     expect(() => live({ UF_PIXELS: "baseline" })).toThrow(/no committed baselines/);
+    // The testing package's own fixture launches Chromium alone: its stubs test Chromium's font
+    // audit and switches, so another engine is refused rather than believed (ADR-0066).
+    expect(live({ UF_BROWSER: "chromium" })).toMatchObject({ browser: "chromium" });
+    const others: Record<string, string>[] = [
+      { UF_BROWSER: "firefox" },
+      { UF_BROWSER: "webkit", UF_UPDATE: "1" },
+    ];
+    for (const env of others) {
+      expect(() => live(env)).toThrow(
+        new RegExp(`runs in Chromium alone: UF_BROWSER=${env.UF_BROWSER} cannot apply`),
+      );
+    }
   });
 
   it("runs Chromium unless UF_BROWSER names Firefox or WebKit", () => {
@@ -260,6 +272,27 @@ describe("createHarnessRun", () => {
     });
     expect(second.runId).toBe(first.runId);
     expect(Object.keys(second.cases)).toEqual(["basics/hello", "basics/new"]);
+  });
+
+  it("gives every project the mode's engine, Chromium when the mode names none", () => {
+    const root = mkdtempSync(join(tmpdir(), "uf-run-"));
+    const run = (name: string, browser?: "webkit") =>
+      createHarnessRun({
+        root,
+        casesDir: join(root, name),
+        reference: "vue",
+        mode: {
+          update: false,
+          pixels: "live",
+          canary: null,
+          ci: false,
+          ...(browser && { browser }),
+        },
+        quarantine: [],
+        cases: {},
+      }).browser;
+    expect(run("cases-default")).toBe("chromium");
+    expect(run("cases-webkit", "webkit")).toBe("webkit");
   });
 
   it("applies an L10 entry only in the pixel mode it names", () => {

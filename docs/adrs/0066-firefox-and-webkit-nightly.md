@@ -1,9 +1,9 @@
-# ADR-0066: Firefox and WebKit run nightly, live against Vue in the same engine
+# ADR-0066: Firefox and WebKit run nightly, live against the reference in the same engine
 
 - **Status:** Proposed
 - **Date:** 2026-10-23
-- **Plan:** §7.2 (L10), §7.4, §7.6, §9 M4, R10; D9 (ADR-0013); ADR-0019, ADR-0029, ADR-0052,
-  ADR-0062
+- **Plan:** §7.2 (L10), §7.4, §7.6, §9 M4, R10; D9 (ADR-0013); ADR-0062; amends ADR-0019 (the
+  font audit) and ADR-0029 (the pixel mode)
 
 ## Context
 
@@ -22,29 +22,34 @@ are not M4's work.
 
 ## Decision
 
-- **`UF_BROWSER=chromium|firefox|webkit`** picks the engine of every browser project. Chromium is
-  the default, and nothing changes for it. `resolveHarnessMode` reads the variable and refuses any
-  other value. `parityBrowser` takes the engine and launches it in the same context: 800×600 at
+- **`UF_BROWSER=chromium|firefox|webkit`** picks the engine of the integration harness's browser
+  projects. Chromium is the default, and nothing changes for it. `resolveHarnessMode` reads the
+  variable and refuses any other value. The testing package's own fixture launches Chromium alone,
+  because its stubs test the font audit and Chromium's switches, so it refuses another engine. `parityBrowser` takes the engine and launches it in the same context: 800×600 at
   DPR 1, the light scheme, reduced motion, the same locale and time zone. Only Chromium gets
   Chromium's switches. `ensure-browser.ts` installs the engine the variable names.
-- **Outside Chromium, L10 runs live.** Each target is compared with Vue's capture from the same run,
-  in the same engine, as on a developer's machine (ADR-0013's live mode). This holds in CI too,
-  where Chromium compares with the committed baselines. `UF_PIXELS=baseline` is refused there,
-  and so is `UF_UPDATE`: every committed artefact is Chromium's, so another engine writes none.
+- **Outside Chromium, L10 runs live.** Each target is compared with the reference's capture from
+  the same run, in the same engine, as on a developer's machine (ADR-0013's live mode). This holds
+  in CI too, where Chromium compares with the committed baselines. `UF_PIXELS=baseline` is refused
+  there, and so is `UF_UPDATE`: every committed artefact is Chromium's, so another engine writes
+  none. This amends ADR-0029, whose pixel mode is `baseline` in CI and in the baseline
+  environment, and whose `UF_PIXELS` overrides it: outside Chromium the mode is always `live`.
   L7 and L9 still compare with the committed expectations, so an engine that serialises the DOM
   differently fails there, visibly.
 - **The font audit is skipped outside Chromium, with a declared reason** (`FONT_AUDIT_SKIP`): it
   reads CDP, and `document.fonts` only says that a font loaded, not that the text used it. The
   engine's parity matrix says so in its Markdown. Geometry and pixels still compare every target
-  with Vue in the same engine, so a target whose text falls back alone still fails.
+  with the reference in the same engine, so a target whose text falls back alone still fails. This
+  amends ADR-0019, whose command audits the fonts through CDP before every capture: it does so in
+  Chromium alone.
 - **Each engine's matrices are its own.** A run in Firefox or WebKit writes its partial matrices to
   `.reports/<engine>/`, so it never supersedes or merges Chromium's records of the same projects.
   The summary merges them into `parity-matrix.<engine>.json` and `.md` there. A partial matrix is
   never named after an engine, so `isPartialMatrixFile` never reads a merged one back.
 - **`.github/workflows/nightly.yml`** runs on `schedule` (daily) and `workflow_dispatch`, in the
   Playwright image that ships every engine.
-  - One job per engine runs all seven browser projects in one run, because live L10 needs Vue's
-    capture from the same run. The job runs `scripts/run.ts`, whose summary appends the engine's
+  - One job per engine runs all seven browser projects in one run, because live L10 needs the
+    reference's capture from the same run. The job runs `scripts/run.ts`, whose summary appends the engine's
     matrix to the job summary whatever the result, and uploads it as `parity-<engine>`.
   - A difference fails its engine's job. It becomes an issue, never a quarantine entry, because the
     quarantine judges Chromium's cells, which gate pull requests.
@@ -77,9 +82,9 @@ are not M4's work.
 - **Compare other engines with Chromium's baselines.** Every capture would differ in its
   anti-aliasing and form controls, so the matrix would hide real differences among thousands of
   expected ones (R10).
-- **One job per engine and target, as `ci.yml` runs Chromium.** Live L10 compares with Vue's
-  capture in the same process, so each job would have to run Vue too: seven Vue runs per engine
-  for no gain.
+- **One job per engine and target, as `ci.yml` runs Chromium.** Live L10 compares with the
+  reference's capture in the same process, so each job would have to run the reference too: seven
+  reference runs per engine for no gain.
 - **Replace the font audit with `document.fonts`.** It reports which fonts loaded, not which font
   drew a glyph, so it would pass the fallback the audit exists to catch.
 - **Gate pull requests on the other engines.** Out of scope for M4. It would also block every pull

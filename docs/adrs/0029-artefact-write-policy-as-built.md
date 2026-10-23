@@ -1,6 +1,6 @@
 # ADR-0029: The artefact write policy and visual parity, as built
 
-- **Status:** Accepted, amended by ADR-0062
+- **Status:** Accepted, amended by ADR-0062 and ADR-0066
 - **Date:** 2026-10-01
 - **Plan:** §7.4, §7.6, §7.7, §7.9, D9, D10; amends ADR-0019
 

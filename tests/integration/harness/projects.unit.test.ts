@@ -147,6 +147,16 @@ describe("project factories", () => {
   });
 });
 
+/** The browser instances of Vue's browser project, in the engine a mode names. */
+async function instances(browser?: "firefox" | "webkit") {
+  const [, , , , project] = harnessProjects({
+    harness,
+    mode: browser ? { ...mode, pixels: "live", browser } : mode,
+    targets: ["vue"],
+  });
+  return (await (project as () => Promise<UserWorkspaceConfig>)()).test?.browser?.instances;
+}
+
 describe("browser projects", () => {
   it("serve stand-ins for the cases their target has no output for, before the styling engines' plugins and the unplugin", async () => {
     const [, , , , browser] = harnessProjects({ harness, mode, targets: ["qwik"] });
@@ -164,6 +174,12 @@ describe("browser projects", () => {
       "fixture-engine",
       "unframework",
     ]);
+  });
+
+  it("launch the engine the mode names, Chromium by default (ADR-0066)", async () => {
+    expect(await instances()).toEqual([{ browser: "chromium", name: "browser:vue" }]);
+    expect(await instances("firefox")).toEqual([{ browser: "firefox", name: "browser:vue" }]);
+    expect(await instances("webkit")).toEqual([{ browser: "webkit", name: "browser:vue" }]);
   });
 
   it("send no compile error to the pages, whose overlay would cover every later spec", () => {

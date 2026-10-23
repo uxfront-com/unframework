@@ -156,11 +156,13 @@ errors>` on every layer, and the summary excuses it on that target alone.
   starts mid-pixel takes in the anti-aliased corner of the box beside it, which then rasterises
   one level apart: the same DOM captured differently after a hover, a press or a keystroke
   repainted one control. The parity projects launch Chromium with `--disable-partial-raster`,
-  which rasterises every repainted tile whole, so a capture is a function of the DOM.
-- **L10 follows the environment.** In CI and in the baseline environment (the Playwright image
+  which rasterises every repainted tile whole, so a capture is a function of the DOM. Firefox and
+  WebKit have no such switch, and compare live within their engine (ADR-0066).
+- **L10 follows the environment.** In Chromium, in CI and in the baseline environment (the Playwright image
   `pnpm test:baselines` runs, `BASELINE_ENVIRONMENT`) it compares with the committed
   `__expected__/geometry.<name>.json` and `__screenshots__/<name>-chromium-linux.png`, and only
-  that environment writes them. Elsewhere, any Linux host included, it compares each target with
+  that environment writes them. Elsewhere, any Linux host and any run in Firefox or WebKit
+  included (CI too, `UF_BROWSER`), it compares each target with
   the reference's capture from the same run, and records the reference's own L10 as a skip:
   nothing was compared. Pixels differ between hosts, and so does geometry once a case has form
   controls (a text input is 160px wide on macOS and 200px on Linux). The font audit walks the
