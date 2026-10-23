@@ -12,6 +12,7 @@ import type {
   IrValidationError,
   LocatedFunction,
   Parameter,
+  PassThroughImport,
   Span,
   TypeDeclaration,
   TypeText,
@@ -33,7 +34,9 @@ import type {
  * - a function or a piece of code moved to a slot of another context or role: the analyser
  *   judges client code by looser rules than a getter or an initial value (time, chance and
  *   in-place changes), so a function is keyed by its context and role, and code by its context
- *   and whether it is statements or an expression (ADR-0045).
+ *   and whether it is statements or an expression (ADR-0045);
+ * - pass-through imports that are not a subsequence of the analyser's (ADR-0064): every output
+ *   keeps them as written, so a plugin may drop one, never add, duplicate, reorder or change one.
  */
 export function pluginIrProblems(
   result: UfModule,
@@ -89,10 +92,34 @@ export function pluginIrProblems(
   for (const [index, declaration] of result.types.entries()) {
     check(declarationKey(declaration), `/types/${index}`, NOT_ANALYSED.declaration);
   }
+  // The pass-through imports reach every output unanalysed (ADR-0064), so a plugin may drop
+  // some, never add, duplicate, reorder or change one: they stay a subsequence of the analyser's.
+  const imports = (analysed.passThroughImports ?? []).map(passThroughKey);
+  let next = 0;
+  for (const [index, entry] of (result.passThroughImports ?? []).entries()) {
+    const key = passThroughKey(entry);
+    while (next < imports.length && imports[next] !== key) next++;
+    if (next === imports.length) {
+      problems.push({ path: `/passThroughImports/${index}`, message: NOT_ANALYSED.passThrough });
+    } else {
+      next++;
+    }
+  }
   return problems;
 }
 
+/** A pass-through import, as a key that equals another's when every field does. */
+function passThroughKey({ specifier, names, span }: PassThroughImport): string {
+  return JSON.stringify([
+    specifier,
+    names.map((name) => [name.imported, name.local, spanValue(name.span)]),
+    spanValue(span),
+  ]);
+}
+
 const NOT_ANALYSED = {
+  passThrough:
+    "must be an import the analyser passed through, in its order: a plugin may drop one, never add, duplicate, reorder or change one",
   expression:
     "must be an expression the analyser produced, with its span, code and references: a plugin may move, copy or drop analysed code, never write its own",
   code: "must be code the analyser produced, with its span, code and references, where code of its context runs: a plugin may move, copy or drop analysed code, never write its own",

@@ -1,8 +1,10 @@
-// Styleframe's imports (plan §4.4, ADR-0004, ADR-0064): every output keeps them as written, and
-// Styleframe's own plugin resolves them. Two forms pass through: named imports of recipes from
-// `virtual:styleframe`, which a template only calls in a `class`, and the side-effect import of
-// Styleframe's stylesheet, `virtual:styleframe.css`. Any other import of a `virtual:styleframe`
-// module, or another use of a name it binds, is UF5006: it would reach the targets unanalysed.
+// Imports that pass through (plan §4.4, ADR-0004, ADR-0064): an import whose specifier starts with
+// one of the `passThrough` prefixes (`virtual:` by default, the modules a Vite plugin registers)
+// reaches every output as written, and the plugin that registers the module resolves it. This is
+// how a styling engine works, whatever the engine. Two forms pass through: named imports that a
+// template only calls in a `class` (an engine's class functions), and a side-effect import (an
+// engine's stylesheet or setup module). Any other use is UF5006: it would reach the targets
+// unanalysed.
 import {
   createPassThroughImport,
   createPassThroughName,
@@ -15,14 +17,14 @@ import type { AST } from "@unframework/parser";
 
 import type { Reporter } from "./context.ts";
 
-const RECIPES = "virtual:styleframe";
-const STYLESHEET = "virtual:styleframe.css";
+/** The prefixes whose imports pass through when the options name none: Vite's virtual modules. */
+export const DEFAULT_PASS_THROUGH: readonly string[] = ["virtual:"];
 
-/** The module's Styleframe imports, as its components' walks read them. */
-export interface Styleframe {
+/** The module's pass-through imports, as its components' walks read them. */
+export interface PassThrough {
   /**
-   * The names a recipe import binds, by the identifier that declares each: its local name, or
-   * `undefined` for one its import reported.
+   * The names a named pass-through import binds, by the identifier that declares each: its local
+   * name, or `undefined` for one its import reported.
    */
   readonly names: ReadonlyMap<object, string | undefined>;
   /**
@@ -31,23 +33,23 @@ export interface Styleframe {
    */
   readonly read: Set<object>;
   /**
-   * The recipes reported as named like a prop (UF2003), by the component's start and the name:
+   * The names reported as named like a prop (UF2003), by the component's start and the name:
    * each once per component.
    */
   readonly clashes: Set<string>;
 }
 
-/** Whether a specifier names one of Styleframe's virtual modules. */
-export function isStyleframeSpecifier(specifier: string): boolean {
-  return specifier.startsWith(RECIPES);
+/** Whether a specifier starts with one of the prefixes whose imports pass through. */
+export function isPassThroughSpecifier(specifier: string, prefixes: readonly string[]): boolean {
+  return prefixes.some((prefix) => specifier.startsWith(prefix));
 }
 
 /**
- * Checks an import of a Styleframe module, and lowers it into `imports` when it passes through.
- * The names it binds go into `names`, reported ones as `undefined`, so a read of them is not
- * reported again.
+ * Checks an import that passes through, and lowers it into `imports` when nothing in it is
+ * reported. The names it binds go into `names`, reported ones as `undefined`, so a read of them
+ * is not reported again.
  */
-export function styleframeImport(
+export function passThroughImport(
   statement: AST.ImportDeclaration,
   reporter: Reporter,
   names: Map<object, string | undefined>,
@@ -55,39 +57,14 @@ export function styleframeImport(
 ): void {
   const specifier = statement.source.value;
   const at = { start: statement.start, end: statement.end };
+  const help = `Import its class functions by name and call them in a \`class\`, as in \`import { button } from "${specifier}";\`, or import the module for its effect alone, as in \`import "${specifier}";\`.`;
   for (const item of statement.specifiers) names.set(item.local, undefined);
-  if (specifier === STYLESHEET) {
-    if (statement.importKind === "type" || statement.specifiers.length) {
-      reporter.report(
-        "UF5006",
-        statement,
-        `"${STYLESHEET}" is Styleframe's stylesheet, which a component imports for its effect alone.`,
-        { help: `Import it as \`import "${STYLESHEET}";\`.` },
-      );
-      return;
-    }
-    imports.push(createPassThroughImport(STYLESHEET, [], at));
-    return;
-  }
-  if (specifier !== RECIPES) {
-    reporter.report(
-      "UF5006",
-      statement.source,
-      `"${specifier}" is not a module the compiler passes through: it passes through "${RECIPES}" and "${STYLESHEET}" only.`,
-      {
-        help: `Import recipes by name from "${RECIPES}", or Styleframe's stylesheet as \`import "${STYLESHEET}";\`.`,
-      },
-    );
-    return;
-  }
-  if (statement.importKind === "type" || !statement.specifiers.length) {
+  if (statement.importKind === "type") {
     reporter.report(
       "UF5006",
       statement,
-      statement.importKind === "type"
-        ? `A type-only import of "${RECIPES}" names no recipe a \`class\` calls.`
-        : `\`import "${RECIPES}"\` imports no recipe: a component imports Styleframe's recipes by name.`,
-      { help: `Import each recipe by name, as in \`import { button } from "${RECIPES}";\`.` },
+      `A type-only import of "${specifier}" names nothing a \`class\` calls, and no output keeps it.`,
+      { help },
     );
     return;
   }
@@ -99,24 +76,24 @@ export function styleframeImport(
         "UF5006",
         item,
         item.type === "ImportNamespaceSpecifier"
-          ? `A namespace import of "${RECIPES}" hides which recipe a \`class\` calls.`
+          ? `A namespace import of "${specifier}" hides which name a \`class\` calls.`
           : item.type === "ImportDefaultSpecifier"
-            ? `"${RECIPES}" is imported by its recipes' names: its default export is no recipe.`
-            : `A type-only name of "${RECIPES}" is no recipe a \`class\` calls.`,
-        { help: `Import each recipe by name, as in \`import { button } from "${RECIPES}";\`.` },
+            ? `"${specifier}" is imported by the names a \`class\` calls, never by its default export.`
+            : `A type-only name of "${specifier}" is nothing a \`class\` calls.`,
+        { help },
       );
       continue;
     }
     const imported = exportName(item.imported);
-    // A recipe is exported under an identifier, and Styleframe's module has no default export.
+    // A class function is exported under an identifier, never as the default export.
     if (!isIdentifier(imported) || imported === "default") {
       reporter.report(
         "UF5006",
         item.imported,
         imported === "default"
-          ? `"${RECIPES}" is imported by its recipes' names: its default export is no recipe.`
-          : `"${imported}" names no recipe: Styleframe exports each recipe under an identifier.`,
-        { help: `Import each recipe by name, as in \`import { button } from "${RECIPES}";\`.` },
+          ? `"${specifier}" is imported by the names a \`class\` calls, never by its default export.`
+          : `"${imported}" is no identifier, which every output would have to import it under.`,
+        { help },
       );
       continue;
     }
@@ -126,45 +103,42 @@ export function styleframeImport(
       reporter.report(
         "UF2003",
         item.local,
-        `\`${item.local.name}\` cannot name a recipe: ${reserved}.`,
+        `\`${item.local.name}\` cannot name an import that passes through: ${reserved}.`,
         {
-          help: `Import it under another name, as in \`import { ${imported} as recipe } from "${RECIPES}";\`.`,
+          help: `Import it under another name, as in \`import { ${imported} as name } from "${specifier}";\`.`,
         },
       );
       continue;
     }
     lowered.push(
-      createPassThroughName(imported, item.local.name, {
-        start: item.start,
-        end: item.end,
-      }),
+      createPassThroughName(imported, item.local.name, { start: item.start, end: item.end }),
     );
     local.set(item.local, item.local.name);
   }
   if (lowered.length !== statement.specifiers.length) return;
   for (const [declaration, name] of local) names.set(declaration, name);
-  imports.push(createPassThroughImport(RECIPES, lowered, at));
+  imports.push(createPassThroughImport(specifier, lowered, at));
 }
 
 /**
- * Reports each recipe a module imports and never reads (UF5006): its import would reach every
- * output unused. Returns whether it reported any.
+ * Reports each name a pass-through import binds and the module never reads (UF5006): its import
+ * would reach every output unused. Returns whether it reported any.
  */
-export function reportUncalled(
+export function reportUnread(
   statements: readonly (AST.Directive | AST.Statement)[],
-  styleframe: Styleframe,
+  passThrough: PassThrough,
   reporter: Reporter,
 ): boolean {
   let reported = false;
   for (const statement of statements) {
     if (statement.type !== "ImportDeclaration") continue;
     for (const item of statement.specifiers) {
-      const name = styleframe.names.get(item.local);
-      if (name === undefined || styleframe.read.has(item.local)) continue;
+      const name = passThrough.names.get(item.local);
+      if (name === undefined || passThrough.read.has(item.local)) continue;
       reporter.report(
         "UF5006",
         item,
-        `\`${name}\` is imported from "${RECIPES}", and no \`class\` calls it: every output would import it unused.`,
+        `\`${name}\` is imported from "${statement.source.value}", and no \`class\` calls it: every output would import it unused.`,
         { help: `Call it in a \`class\`, as in \`class={${name}()}\`, or remove the import.` },
       );
       reported = true;

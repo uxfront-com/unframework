@@ -117,11 +117,15 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   preprocessor's language UF5003, and a sheet the resolver could not read UF5005. Another import
   of a stylesheet (for a binding, or not relative) is UF1002. Selectors are checked by the scoper
   in `compile()` (UF5004).
-- **Styleframe's imports** (`styleframe.ts`, ADR-0064): named imports from `virtual:styleframe`
-  and the side-effect import `virtual:styleframe.css` become the module's `passThroughImports`,
-  which every output keeps as written. A recipe is read only as a call in a `class` part (an
-  `Import` reference). Any other import of a `virtual:styleframe` module, a recipe read anywhere
-  else, and a recipe nothing reads are UF5006.
+- **Imports that pass through** (`pass-through.ts`, ADR-0064): an import whose specifier starts
+  with one of `analyze(parsed, { passThrough })`'s prefixes (`["virtual:"]` by default), the
+  modules a bundler plugin registers such as a styling engine's, becomes one of the module's
+  `passThroughImports`, which every output keeps as written: named imports, each read only as a
+  call in a `class` part (an `Import` reference), or a side-effect import, whatever its suffix.
+  What the analyser classifies itself (the authoring API, a framework, a `.uf.tsx` or relative
+  module) never passes through. A default, namespace or type-only import, a name read anywhere
+  else, and a name nothing reads are UF5006; a local name a setup binding couldn't take, or a
+  prop's, is UF2003.
 - **The setup** (`setup.ts`): each statement before the return, in source order, as a setup item
   and a binding (ADR-0045): `ref`, `computed`, `useTemplateRef`, `useId`, `const`, `let`, local
   functions, `watch` (a ref, a getter or an array of them; `immediate` and `flush`),

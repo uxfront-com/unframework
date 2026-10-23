@@ -183,7 +183,7 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
     names.reserve(...others);
     names.scope.rebase(helper, base);
   }
-  // Styleframe's imports, which the render reads as written (ADR-0064).
+  // The imports that pass through, which the render reads as written (ADR-0064).
   addPassThroughImports(component, module, names);
   const nativeElements = nativeElementsOf(listeners);
   const narrowedReads = narrowedReadsOf(component);

@@ -21,6 +21,8 @@ const BAD =
 const MULTI =
   'export default function Card() {\n  return <section class="card">Card</section>;\n}\n\nexport function Badge() {\n  return <span class="badge">New</span>;\n}\n';
 const NAMED = HELLO.replace("export default function", "export function");
+const STYLED =
+  'import { css } from "styled-system/css";\n\nexport default function Styled() {\n  return <p class={css()}>Hi</p>;\n}\n';
 const CARD =
   'import "./Card.css";\n\nexport default function Card() {\n  return <p class="card">Hi</p>;\n}\n';
 const AUTHORED_SHEET = ".card { color: red }\n";
@@ -34,6 +36,7 @@ beforeAll(() => {
     "Named.uf.tsx": NAMED,
     "Card.uf.tsx": CARD,
     "Card.css": AUTHORED_SHEET,
+    "Styled.uf.tsx": STYLED,
     "main.ts": 'import Hello from "./Hello.uf.tsx";\nexport default Hello;\n',
     "sub/Hello.uf.tsx": HELLO.replace("Hello, world!", "Hello, sub!"),
     "sub/main.ts": 'import Hello from "./Hello.uf.tsx";\nexport default Hello;\n',
@@ -114,6 +117,39 @@ describe("unframework()", () => {
     expect(() => unframework({ target: "vue", extension: "vue" })).toThrow(
       "is not a file extension",
     );
+  });
+
+  it("refuses an invalid passThrough prefix when it is created (ADR-0064)", () => {
+    for (const prefix of ["", "./", "/abs", "C:x"]) {
+      expect(() => unframework({ target: "vue", passThrough: [prefix] })).toThrow(
+        `The passThrough prefix ${JSON.stringify(prefix)} is invalid`,
+      );
+    }
+  });
+
+  it("forwards the passThrough prefixes to compile() (ADR-0064)", async () => {
+    const compiles = async (passThrough?: readonly string[]) => {
+      const events: CompileEvent[] = [];
+      const plugins = [
+        ...unframework({
+          target: "vue",
+          onCompile: (event) => void events.push(event),
+          ...(passThrough ? { passThrough } : {}),
+        }),
+        fakeVue,
+      ];
+      await withServer(plugins, async ({ client }) => {
+        await client.transformRequest(`${file("Styled.uf.tsx")}.vue`).catch(() => undefined);
+      });
+      return events[0]!;
+    };
+    const passed = await compiles(["styled-system/"]);
+    expect(passed.diagnostics).toEqual([]);
+    expect(passed.ir?.passThroughImports?.map(({ specifier }) => specifier)).toEqual([
+      "styled-system/css",
+    ]);
+    // By default only `virtual:` passes through.
+    expect((await compiles()).diagnostics.map(({ code }) => code)).toContain("UF1002");
   });
 
   it("refuses bundlers other than Vite until M6", () => {

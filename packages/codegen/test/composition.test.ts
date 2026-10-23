@@ -214,29 +214,33 @@ describe("ImportSet aliases (ADR-0054)", () => {
 });
 
 describe("passThroughImports", () => {
-  it("gives Styleframe's stylesheet, and each recipe the template reads, in source order", () => {
+  it("gives each side-effect import, and each name the template reads, in the IR's order", () => {
     const module = styled();
     expect(passThroughImports(module.components[0]!, module)).toEqual([
-      { specifier: "virtual:styleframe", names: [{ imported: "button", local: "button" }] },
-      { specifier: "virtual:styleframe.css", names: [] },
+      { specifier: "virtual:recipes", names: [{ imported: "button", local: "button" }] },
+      { specifier: "virtual:recipes.css", names: [] },
     ]);
   });
 
-  it("leaves out a recipe import the component does not read", () => {
+  it("leaves out a named import the component does not read", () => {
     const module = styled();
     const [component] = module.components;
     const unread = { ...component!, render: createElement("p", [], [], at) };
     expect(passThroughImports(unread, module)).toEqual([
-      { specifier: "virtual:styleframe.css", names: [] },
+      { specifier: "virtual:recipes.css", names: [] },
     ]);
   });
 
-  it("prints them as written, by the source's names", () => {
+  it("prints them as written, by the source's names, after the sorted imports, each module once", () => {
     const module = styled();
     const imports = new ImportSet(["button"]);
+    imports.add("vue", "ref");
     addPassThroughImports(module.components[0]!, module, imports);
+    // A module added twice is imported once, where it was first added.
+    imports.addPassThrough("virtual:recipes");
+    expect(imports.claim("button")).toBe("button_1");
     expect(printProgram(js.program(imports.toDeclarations())).trim()).toBe(
-      'import { button } from "virtual:styleframe";\nimport "virtual:styleframe.css";',
+      'import { ref } from "vue";\nimport { button } from "virtual:recipes";\nimport "virtual:recipes.css";',
     );
   });
 });

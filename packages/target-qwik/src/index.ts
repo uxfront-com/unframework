@@ -223,7 +223,7 @@ export const qwik: Target = defineTarget({
     );
     imports.reserve(...others);
     imports.scope.rebase(SCOPE_HELPER, base);
-    // Styleframe's imports, which the render reads as written (ADR-0064).
+    // The imports that pass through, which the render reads as written (ADR-0064).
     addPassThroughImports(component, module, imports);
     // Each child's output by the name the template uses (ADR-0053), and each key from the output
     // of its module's main component (ADR-0054). A component that renders itself names its own

@@ -43,13 +43,13 @@ export interface ToolchainContext {
   root: string;
   /**
    * Ambient declarations a checker reads beside the outputs: the modules they import that no
-   * package types, such as Styleframe's virtual modules (ADR-0064). A toolchain whose compiler
+   * package types, such as a styling engine's virtual modules (ADR-0064). A toolchain whose compiler
    * type-checks too (Angular's ngtsc) adds them to its program.
    */
   declarations?: readonly string[];
   /**
    * The Vite plugins the project adds for the modules the outputs import and it resolves itself,
-   * such as Styleframe's (ADR-0064): a toolchain that runs the outputs through a Vite server of
+   * such as a styling engine's (ADR-0064): a toolchain that runs the outputs through a Vite server of
    * its own (Astro's render server) adds a fresh set there too.
    */
   plugins?: () => Promise<Plugin[]>;

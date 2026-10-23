@@ -1,4 +1,4 @@
-export { compile } from "./compile.ts";
+export { checkPassThrough, compile } from "./compile.ts";
 export { createFileResolver } from "./resolver.ts";
 export type {
   FileResolverOptions,

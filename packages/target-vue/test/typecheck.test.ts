@@ -9,8 +9,9 @@ import { goldenFiles, removeScratch, toolchainDir, writeScratch } from "./helper
 import { M2_SHAPES } from "./lint-probes.ts";
 
 const context = { toolchainDir, root: toolchainDir };
-/** The declarations of Styleframe's virtual modules, which the styled goldens import (ADR-0064). */
+/** The declarations of the styling engines' modules, which the styled goldens import (ADR-0064). */
 const STYLEFRAME = join(toolchainDir, "../../integration/styleframe.d.ts");
+const FIXTURE_ENGINE = join(toolchainDir, "../../integration/fixture-engine.d.ts");
 /** vue-tsc takes about a second; give it room on a loaded machine. */
 const checker = { timeout: 60_000 };
 
@@ -37,7 +38,7 @@ describe("vue typecheck", () => {
       ].join("\n"),
     });
 
-    const clean = [...golden, child!, STYLEFRAME];
+    const clean = [...golden, child!, STYLEFRAME, FIXTURE_ENGINE];
     const results = await toolchain.typecheck([...clean, broken!], context);
 
     expect([...results.keys()].toSorted()).toEqual([...clean, broken!].toSorted());

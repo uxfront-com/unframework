@@ -26,6 +26,8 @@ interface ModuleImports {
  */
 export class ImportSet {
   readonly #modules = new Map<string, ModuleImports>();
+  /** The pass-through imports, by module, in the order added (`addPassThrough`). */
+  readonly #passThrough = new Map<string, { imported: string; local: string }[]>();
   /** The output file's names: imports, reserved source names and claimed locals. */
   readonly scope: NameScope;
 
@@ -108,12 +110,36 @@ export class ImportSet {
     this.#module(source).sideEffect = true;
   }
 
-  get size(): number {
-    return this.#modules.size;
+  /**
+   * Imports a module that passes through as written (ADR-0064): by name, under the source's own
+   * local name, which the scope reserves, or for its effect alone. These imports follow the
+   * sorted ones, in the order they are added, each module once: an engine's setup module, or two
+   * engines' stylesheets, depend on their order.
+   */
+  addPassThrough(source: string, name?: { imported: string; local: string }): void {
+    let names = this.#passThrough.get(source);
+    if (!names) this.#passThrough.set(source, (names = []));
+    if (!name || names.some(({ local }) => local === name.local)) return;
+    this.scope.reserve(name.local);
+    names.push(name);
   }
 
-  /** The import declarations, sorted by module and name. */
+  get size(): number {
+    return this.#modules.size + this.#passThrough.size;
+  }
+
+  /** The import declarations, sorted by module and name, then the pass-through ones in order. */
   toDeclarations(): AST.ImportDeclaration[] {
+    const passThrough = [...this.#passThrough].map(([source, names]) =>
+      importDeclaration(
+        source,
+        names.map(({ imported, local }) => importSpecifier(imported, local, "value")),
+      ),
+    );
+    return [...this.#sorted(), ...passThrough];
+  }
+
+  #sorted(): AST.ImportDeclaration[] {
     return [...this.#modules.keys()].toSorted().map((source) => {
       const entry = this.#modules.get(source)!;
       const specifiers: AST.ImportDeclarationSpecifier[] = [];
@@ -145,9 +171,9 @@ export interface PassThroughUse {
 
 /**
  * The imports every output keeps as written that a component's output needs (plan §4.4,
- * ADR-0064), in source order: Styleframe's stylesheet, and each recipe import with the names the
+ * ADR-0064), in the IR's order: each side-effect import, and each named import with the names the
  * component's template calls, by the name the source binds, which the template reads as written.
- * Styleframe's own plugin resolves them.
+ * The plugin that registers each module resolves it.
  */
 export function passThroughImports(component: UfComponent, module: UfModule): PassThroughUse[] {
   const read = new Set<string>();
@@ -171,9 +197,8 @@ export function addPassThroughImports(
   imports: ImportSet,
 ): void {
   for (const { specifier, names } of passThroughImports(component, module)) {
-    if (!names.length) imports.addSideEffect(specifier);
-    for (const { imported, local } of names)
-      imports.add(specifier, imported, { local, exact: true });
+    if (!names.length) imports.addPassThrough(specifier);
+    for (const name of names) imports.addPassThrough(specifier, name);
   }
 }
 

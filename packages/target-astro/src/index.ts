@@ -124,7 +124,7 @@ export const astro: Target = defineTarget({
     const { module } = context;
     const spelling = spellingOf(component, module);
     const imports = new ImportSet(spelling.scope);
-    // Styleframe's imports, which the markup reads as written (ADR-0064).
+    // The imports that pass through, which the markup reads as written (ADR-0064).
     addPassThroughImports(component, module, imports);
     const tags = childTags(
       childImports(component, module, (name) => `${name}.astro`),

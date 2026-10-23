@@ -396,7 +396,7 @@ function spell(node: ReferenceNode, written: string, context: Context): string {
       return spellEmit(reference, node.slots, written, context);
     case "Slot":
       return rules.slot?.(reference, site) ?? written;
-    // A pass-through import is read as written, and Styleframe's plugin resolves it (ADR-0064).
+    // A pass-through import is read as written, and its module's plugin resolves it (ADR-0064).
     case "Import":
       return rules.import?.(reference, site) ?? written;
     default:

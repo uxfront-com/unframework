@@ -572,7 +572,7 @@ export function classMembers(context: MemberContext): {
     );
   }
   // The template reads module functions through members of their names, as it reads globals,
-  // and each Styleframe recipe through the member the plan gives it (ADR-0064).
+  // and each pass-through name through the member the plan gives it (ADR-0064).
   const globals = [
     ...[...context.globals.map((name) => [name, name] as const), ...plan.recipes]
       .map(([value, member]) => ({ value, member }))

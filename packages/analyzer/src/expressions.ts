@@ -1192,8 +1192,8 @@ class Walk {
    */
   #imported(node: AST.IdentifierReference, declaration: object): Kinds {
     const { authoring } = this.#context.setup;
-    if (this.#context.styleframe.names.has(declaration)) {
-      this.#recipeValue(node, declaration);
+    if (this.#context.passThrough.names.has(declaration)) {
+      this.#passThroughValue(node, declaration);
       return UNKNOWN;
     }
     if (!authoring.has(declaration)) {
@@ -1223,21 +1223,21 @@ class Walk {
   }
 
   /**
-   * A Styleframe recipe read other than as a call in a `class` (UF5006): every output keeps its
-   * import as written, and only a `class` part's call of it reaches them (ADR-0064). A name its
-   * import reported is not reported again.
+   * A pass-through name read other than as a call in a `class` part (UF5006): every output keeps
+   * its import as written, and only a `class` part's call of it reaches them (ADR-0064). A name
+   * its import reported is not reported again.
    */
-  #recipeValue(node: AST.IdentifierReference, declaration: object): void {
-    const { styleframe } = this.#context;
-    const name = styleframe.names.get(declaration);
+  #passThroughValue(node: AST.IdentifierReference, declaration: object): void {
+    const { passThrough } = this.#context;
+    const name = passThrough.names.get(declaration);
     if (name === undefined) return;
-    styleframe.read.add(declaration);
+    passThrough.read.add(declaration);
     this.#context.reporter.report(
       "UF5006",
       node,
       this.#mode === "render"
-        ? `\`${node.name}\` is a Styleframe recipe, which a template only calls in a \`class\`: every output keeps its import as written, and no other use of it is analysed.`
-        : `\`${node.name}\` is a Styleframe recipe, which only a template calls, in a \`class\`: setup code would reach every output unanalysed.`,
+        ? `\`${node.name}\` is imported from a module that passes through, and a template only calls such a name in a \`class\`: every output keeps its import as written, and no other use of it is analysed.`
+        : `\`${node.name}\` is imported from a module that passes through, and only a template calls such a name, in a \`class\`: setup code would reach every output unanalysed.`,
       { help: `Call it in a \`class\`, as in \`class={${name}()}\`.` },
     );
   }
@@ -2561,25 +2561,25 @@ class Walk {
     }
     if (callee.type === "Identifier") {
       const resolution = context.scopes.resolve(callee);
-      if (resolution.kind === "import" && context.styleframe.names.has(resolution.declaration)) {
-        // A recipe's call in a `class` gives its class names (ADR-0064); any other is reported.
+      if (resolution.kind === "import" && context.passThrough.names.has(resolution.declaration)) {
+        // A call in a `class` gives class names (ADR-0064); any other use is reported.
         if (!render || !context.classPart || node.optional) {
-          this.#recipeValue(callee, resolution.declaration);
+          this.#passThroughValue(callee, resolution.declaration);
           this.#skip(node.arguments);
           return UNKNOWN;
         }
-        if (context.styleframe.names.get(resolution.declaration) !== undefined) {
-          context.styleframe.read.add(resolution.declaration);
+        if (context.passThrough.names.get(resolution.declaration) !== undefined) {
+          context.passThrough.read.add(resolution.declaration);
           // The outputs that declare the props by name (Vue's and Svelte's destructured props,
           // Angular's inputs) would declare it beside the import: reported once per component.
           const clash = `${context.component.start}:${callee.name}`;
-          if (context.props.has(callee.name) && !context.styleframe.clashes.has(clash)) {
-            context.styleframe.clashes.add(clash);
+          if (context.props.has(callee.name) && !context.passThrough.clashes.has(clash)) {
+            context.passThrough.clashes.add(clash);
             context.reporter.report(
               "UF2003",
               callee,
               `\`${callee.name}\` is also a prop's name: the outputs that declare the props by name, Angular's class among them, would declare both.`,
-              { help: "Import the recipe under another name, or rename the prop." },
+              { help: "Import it under another name, or rename the prop." },
             );
           }
           this.refs.push(createImportReference(callee.name, span(callee)));

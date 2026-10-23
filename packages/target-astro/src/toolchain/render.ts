@@ -183,7 +183,7 @@ async function render(
   // `?container` leaves out (ADR-0020): each as a `<style>` before the markup, a child's
   // before its parent's, as an Astro page links them. Read again each render, so a recompile
   // or a canary is seen. An emitted sheet comes from the browser project; another, such as
-  // Styleframe's (ADR-0064), from the plugin of the render server's own that serves it.
+  // a styling engine's (ADR-0064), from the plugin of the render server's own that serves it.
   const styles: string[] = [];
   for (const sheet of importedSheets(server.ssr, `${id}?container`)) {
     styles.push(

@@ -102,8 +102,8 @@ export interface Plan {
   /** The names of the list items and indexes: a template statement shadowed by one says `this.`. */
   loopNames: ReadonlySet<string>;
   /**
-   * The member the template reads each Styleframe recipe through, by the recipe's local name
-   * (ADR-0064): its own name, unless a member of the class takes it.
+   * The member the template reads each pass-through name through (an engine's class function),
+   * by its local name (ADR-0064): its own name, unless a member of the class takes it.
    */
   recipes: ReadonlyMap<string, string>;
 }
@@ -164,7 +164,7 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
   const imports = new ImportSet(
     new NameScope([...source].filter((name) => name !== component.name)),
   );
-  // Styleframe's imports, which the template reads through members (ADR-0064).
+  // The imports that pass through, which the template reads through members (ADR-0064).
   addPassThroughImports(component, module, imports);
   const events = new Map(component.emits?.events.map((event) => [event.name, event]) ?? []);
   const memberNames = [

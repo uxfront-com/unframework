@@ -147,7 +147,7 @@ function collect(node: AST.Expression, parts: Part[], context: RenderContext): v
       }
       break;
   }
-  // A dynamic part, where a Styleframe recipe may be called (ADR-0064).
+  // A dynamic part, where a pass-through name (an engine's class function) may be called.
   const value = checkExpression(node, { ...context, classPart: true });
   checkDynamic(value, node, context);
   parts.push({ kind: "dynamic", value, at: span(node) });

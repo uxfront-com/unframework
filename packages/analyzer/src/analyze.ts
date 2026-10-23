@@ -43,14 +43,19 @@ import { checkTypeDeclaration, closure, collectTypes, setupTypes } from "./decla
 import type { ModuleTypes } from "./declarations.ts";
 import { frameworkOf, isAuthoringModule } from "./frameworks.ts";
 import { containsJsx, lowerElement, lowerRootChildren, ROOT } from "./lower.ts";
+import {
+  DEFAULT_PASS_THROUGH,
+  isPassThroughSpecifier,
+  passThroughImport,
+  reportUnread,
+} from "./pass-through.ts";
+import type { PassThrough } from "./pass-through.ts";
 import { analyzeProps } from "./props.ts";
 import type { ComponentFunction, ComponentInfo, RenderContext, SetupBinding } from "./render.ts";
 import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
 import { checkDirective, declareSetup, isDirective, refTypeOf } from "./setup.ts";
 import type { InjectionKeyInfo } from "./setup.ts";
-import { isStyleframeSpecifier, reportUncalled, styleframeImport } from "./styleframe.ts";
-import type { Styleframe } from "./styleframe.ts";
 import { scopeIdOf, STYLESHEET_SPECIFIER, stylesheetImport } from "./styles.ts";
 import type { LoweredSheet, StylesheetSource } from "./styles.ts";
 import { syntaxError } from "./syntax.ts";
@@ -83,7 +88,16 @@ export interface AnalyzeOptions {
    * compiler's resolver read it: `undefined` for one it could not read (UF5005, ADR-0063).
    */
   stylesheets?: ReadonlyMap<string, StylesheetSource | undefined>;
+  /**
+   * The specifier prefixes whose imports pass through to every output as written (ADR-0064):
+   * `["virtual:"]` when absent. An import the analyser classifies otherwise (the authoring API, a
+   * framework, a `.uf.tsx` or relative module) never passes through.
+   */
+  passThrough?: readonly string[];
 }
+
+/** A relative or absolute specifier: a file of the project, never a module a plugin registers. */
+const RELATIVE_OR_ABSOLUTE = /^(?:[./\\]|[A-Za-z]:)/;
 
 /** The specifier of an import of a component module ends in `.uf.tsx` (ADR-0053). */
 export const COMPONENT_SPECIFIER: RegExp = /\.uf\.tsx$/;
@@ -216,7 +230,8 @@ export function analyzeModule(
     outputs: new Map(candidates.map((candidate) => [candidate.name.toLowerCase(), candidate.name])),
     stylesheets: options.stylesheets ?? new Map(),
     sheets: [],
-    styleframe: { names: new Map(), read: new Set(), clashes: new Set() },
+    passThrough: { names: new Map(), read: new Set(), clashes: new Set() },
+    passThroughPrefixes: options.passThrough ?? DEFAULT_PASS_THROUGH,
     passThroughImports: [],
   };
   const moduleMark = reporter.diagnostics.length;
@@ -262,7 +277,7 @@ export function analyzeModule(
     reporter,
     components,
     keys,
-    styleframe: context.styleframe,
+    passThrough: context.passThrough,
     ...(observe ? { observe } : {}),
   };
   const lowered: UfComponent[] = [];
@@ -308,11 +323,12 @@ export function analyzeModule(
     };
   }
   const kept = new Set(lowered.map((component) => component.name));
-  // A recipe nothing reads would reach every output unused (UF5006): an error of the module's.
-  // After another error, the walk that would read it may have stopped, so it is left unreported.
+  // A pass-through name nothing reads would reach every output unused (UF5006): an error of
+  // the module's. After another error, the walk that would read it may have stopped, so it is
+  // left unreported.
   const uncalled =
     !reporter.diagnostics.some(({ severity }) => severity === "error") &&
-    reportUncalled(parsed.program.body, context.styleframe, reporter);
+    reportUnread(parsed.program.body, context.passThrough, reporter);
   if (moduleErrors || uncalled)
     return { module: undefined, diagnostics: reporter.diagnostics, api };
   if (!candidates.some((candidate) => candidate.exports.length)) {
@@ -460,8 +476,10 @@ interface ModuleContext {
   stylesheets: ReadonlyMap<string, StylesheetSource | undefined>;
   /** The module's sheets, collected in source order. */
   sheets: LoweredSheet[];
-  /** The names the module's Styleframe imports bind, and those its code reads (ADR-0064). */
-  styleframe: Styleframe & { names: Map<object, string | undefined> };
+  /** The names the module's pass-through imports bind, and those its code reads (ADR-0064). */
+  passThrough: PassThrough & { names: Map<object, string | undefined> };
+  /** The specifier prefixes whose imports pass through (`AnalyzeOptions.passThrough`). */
+  passThroughPrefixes: readonly string[];
   /** The module's imports that every output keeps as written, in source order (ADR-0064). */
   passThroughImports: PassThroughImport[];
 }
@@ -536,9 +554,21 @@ function checkTopLevelStatement(
         componentImport(statement, context);
         return;
       }
-      // Before the stylesheets: `virtual:styleframe.css` is Styleframe's, not a component's sheet.
-      if (isStyleframeSpecifier(statement.source.value)) {
-        styleframeImport(statement, reporter, context.styleframe.names, context.passThroughImports);
+      // Before the stylesheets, which a `virtual:x.css` would otherwise reach, and after what the
+      // analyser classifies itself, which never passes through, whatever the prefixes.
+      if (
+        !COMPONENT_SPECIFIER.test(statement.source.value) &&
+        !RELATIVE_OR_ABSOLUTE.test(statement.source.value) &&
+        !frameworkOf(statement.source.value) &&
+        !isAuthoringModule(statement.source.value) &&
+        isPassThroughSpecifier(statement.source.value, context.passThroughPrefixes)
+      ) {
+        passThroughImport(
+          statement,
+          reporter,
+          context.passThrough.names,
+          context.passThroughImports,
+        );
         return;
       }
       if (STYLESHEET_SPECIFIER.test(statement.source.value)) {
@@ -1071,8 +1101,8 @@ interface ComponentModule {
   components: ReadonlyMap<object, ComponentInfo | undefined>;
   /** The injection keys the module declares or imports, by the identifier that declares each. */
   keys: ReadonlyMap<object, InjectionKeyInfo>;
-  /** The module's Styleframe imports (ADR-0064). */
-  styleframe: Styleframe;
+  /** The module's pass-through imports (ADR-0064). */
+  passThrough: PassThrough;
   observe?: SetupObserver;
 }
 
@@ -1137,7 +1167,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     facts: { nestedCalls: [], getterKinds: new Map(), tickCallbacks: [], passed: new Map() },
     components: module.components,
     slots: setup.slots,
-    styleframe: module.styleframe,
+    passThrough: module.passThrough,
   };
   setup.lower(render);
   if (!returned || (returned.type !== "JSXElement" && returned.type !== "JSXFragment")) {

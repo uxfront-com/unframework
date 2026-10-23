@@ -139,7 +139,7 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   for (const key of keyImports(component, module, (name) => `${name}.vue`)) {
     if (key.specifier) imports.add(key.specifier, key.name, { local: key.local, exact: true });
   }
-  // Styleframe's imports, which the template reads as written (ADR-0064).
+  // The imports that pass through, which the template reads as written (ADR-0064).
   addPassThroughImports(component, module, imports);
   // The output of the module's main component declares the keys, and the types it copies, in a
   // plain `<script lang="ts">` block, which `<script setup>` reads.
