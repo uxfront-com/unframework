@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Quieten' })",
+      "dom": [
+        "<div class=\"notice\">",
+        "  <p style=\"--notice-accent: rgb(20, 40, 90); background-color: rgb(230, 238, 250); border-left: 4px solid rgb(20, 40, 90); color: rgb(20, 40, 90);\">",
+        "    \"Delete the project\"",
+        "  </p>",
+        "  <span class=\"badge\" style=\"--notice-accent: rgb(20, 40, 90); background-color: rgb(230, 238, 250); border-left: 4px solid rgb(20, 40, 90); color: rgb(20, 40, 90); outline: solid 1px; padding: 2px 6px;\">",
+        "    \"Permanent\"",
+        "  </span>",
+        "  <p style=\"color: rgb(60, 60, 60); font-style: italic; margin-top: 12px;\">",
+        "    \"Read the details before you continue.\"",
+        "  </p>",
+        "  <p style=\"color: rgb(90, 90, 90);\">",
+        "    \"This cannot be undone.\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Emphasise\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- paragraph: Delete the project",
+        "- text: Permanent",
+        "- paragraph: Read the details before you continue.",
+        "- paragraph: This cannot be undone.",
+        "- button \"Emphasise\""
+      ],
+      "events": {}
+    }
+  ]
+}

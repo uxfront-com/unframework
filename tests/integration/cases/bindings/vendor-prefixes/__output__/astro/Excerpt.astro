@@ -1,0 +1,31 @@
+---
+export interface ExcerptProps {
+  title: string;
+  text: string;
+  fill: string;
+  stroke: string;
+}
+
+interface Props extends ExcerptProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { title, text, fill, stroke, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+---
+
+<article class:list={["excerpt", className]} style={style} {...scopeAttributes(Astro.props)}>
+  <h2
+    style={{ WebkitTextFillColor: fill, WebkitTextStrokeColor: stroke, WebkitTextStrokeWidth: "1px", color: "rgb(0, 0, 0)" }}
+  >{title}</h2>
+  <p
+    style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; width: 240px"
+  >{text}</p>
+</article>

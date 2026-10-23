@@ -1,0 +1,381 @@
+{
+  "irVersion": 1,
+  "file": "bindings/vendor-prefixes/Excerpt.uf.tsx",
+  "components": [
+    {
+      "name": "Excerpt",
+      "span": {
+        "start": 102,
+        "end": 618
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 41,
+              "end": 47
+            }
+          },
+          "binding": "title@136",
+          "span": {
+            "start": 34,
+            "end": 48
+          }
+        },
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 57,
+              "end": 63
+            }
+          },
+          "binding": "text@143",
+          "span": {
+            "start": 51,
+            "end": 64
+          }
+        },
+        {
+          "name": "fill",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 73,
+              "end": 79
+            }
+          },
+          "binding": "fill@149",
+          "span": {
+            "start": 67,
+            "end": 80
+          }
+        },
+        {
+          "name": "stroke",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 91,
+              "end": 97
+            }
+          },
+          "binding": "stroke@155",
+          "span": {
+            "start": 83,
+            "end": 98
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ExcerptProps",
+          "span": {
+            "start": 165,
+            "end": 177
+          }
+        },
+        "span": {
+          "start": 134,
+          "end": 177
+        }
+      },
+      "types": [
+        "ExcerptProps"
+      ],
+      "bindings": [
+        {
+          "id": "title@136",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 136,
+            "end": 141
+          }
+        },
+        {
+          "id": "text@143",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 143,
+            "end": 147
+          }
+        },
+        {
+          "id": "fill@149",
+          "name": "fill",
+          "kind": "prop",
+          "span": {
+            "start": 149,
+            "end": 153
+          }
+        },
+        {
+          "id": "stroke@155",
+          "name": "stroke",
+          "kind": "prop",
+          "span": {
+            "start": 155,
+            "end": 161
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "article",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "excerpt",
+            "span": {
+              "start": 205,
+              "end": 220
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [
+              {
+                "kind": "Style",
+                "declarations": [
+                  {
+                    "kind": "Bound",
+                    "property": "-webkit-text-fill-color",
+                    "value": {
+                      "code": "fill",
+                      "span": {
+                        "start": 280,
+                        "end": 284
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "fill@149",
+                          "span": {
+                            "start": 280,
+                            "end": 284
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 259,
+                      "end": 284
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "property": "-webkit-text-stroke-color",
+                    "value": {
+                      "code": "stroke",
+                      "span": {
+                        "start": 319,
+                        "end": 325
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "stroke@155",
+                          "span": {
+                            "start": 319,
+                            "end": 325
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 296,
+                      "end": 325
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "property": "-webkit-text-stroke-width",
+                    "value": "1px",
+                    "span": {
+                      "start": 337,
+                      "end": 365
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "property": "color",
+                    "value": "rgb(0, 0, 0)",
+                    "span": {
+                      "start": 377,
+                      "end": 398
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 240,
+                  "end": 410
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "title",
+                  "span": {
+                    "start": 428,
+                    "end": 433
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "title@136",
+                      "span": {
+                        "start": 428,
+                        "end": 433
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 427,
+                  "end": 434
+                }
+              }
+            ],
+            "span": {
+              "start": 228,
+              "end": 446
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Style",
+                "declarations": [
+                  {
+                    "kind": "Static",
+                    "property": "display",
+                    "value": "-webkit-box",
+                    "span": {
+                      "start": 463,
+                      "end": 483
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "property": "-webkit-box-orient",
+                    "value": "vertical",
+                    "span": {
+                      "start": 485,
+                      "end": 513
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "property": "-webkit-line-clamp",
+                    "value": "2",
+                    "span": {
+                      "start": 515,
+                      "end": 536
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "property": "overflow",
+                    "value": "hidden",
+                    "span": {
+                      "start": 538,
+                      "end": 554
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "property": "width",
+                    "value": "240px",
+                    "span": {
+                      "start": 556,
+                      "end": 568
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 456,
+                  "end": 569
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "text",
+                  "span": {
+                    "start": 580,
+                    "end": 584
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "text@143",
+                      "span": {
+                        "start": 580,
+                        "end": 584
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 579,
+                  "end": 585
+                }
+              }
+            ],
+            "span": {
+              "start": 453,
+              "end": 596
+            }
+          }
+        ],
+        "span": {
+          "start": 196,
+          "end": 611
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Excerpt",
+      "span": {
+        "start": 102,
+        "end": 618
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ExcerptProps",
+      "exported": true,
+      "code": "interface ExcerptProps {\n  title: string;\n  text: string;\n  fill: string;\n  stroke: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 100
+      }
+    }
+  ]
+}

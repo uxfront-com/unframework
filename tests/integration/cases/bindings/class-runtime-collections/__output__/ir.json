@@ -1,0 +1,579 @@
+{
+  "irVersion": 1,
+  "file": "bindings/class-runtime-collections/TagList.uf.tsx",
+  "components": [
+    {
+      "name": "TagList",
+      "span": {
+        "start": 211,
+        "end": 736
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 141,
+              "end": 147
+            }
+          },
+          "binding": "label@245",
+          "span": {
+            "start": 134,
+            "end": 148
+          }
+        },
+        {
+          "name": "tags",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 157,
+              "end": 165
+            }
+          },
+          "binding": "tags@252",
+          "span": {
+            "start": 151,
+            "end": 166
+          }
+        },
+        {
+          "name": "states",
+          "optional": false,
+          "type": {
+            "code": "TagStates",
+            "span": {
+              "start": 177,
+              "end": 186
+            }
+          },
+          "binding": "states@258",
+          "span": {
+            "start": 169,
+            "end": 187
+          }
+        },
+        {
+          "name": "extra",
+          "optional": true,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 198,
+              "end": 206
+            }
+          },
+          "binding": "extra@266",
+          "span": {
+            "start": 190,
+            "end": 207
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "TagListProps",
+          "span": {
+            "start": 275,
+            "end": 287
+          }
+        },
+        "span": {
+          "start": 243,
+          "end": 287
+        }
+      },
+      "types": [
+        "TagStates",
+        "TagListProps"
+      ],
+      "bindings": [
+        {
+          "id": "label@245",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 245,
+            "end": 250
+          }
+        },
+        {
+          "id": "tags@252",
+          "name": "tags",
+          "kind": "prop",
+          "span": {
+            "start": 252,
+            "end": 256
+          }
+        },
+        {
+          "id": "states@258",
+          "name": "states",
+          "kind": "prop",
+          "span": {
+            "start": 258,
+            "end": 264
+          }
+        },
+        {
+          "id": "extra@266",
+          "name": "extra",
+          "kind": "prop",
+          "span": {
+            "start": 266,
+            "end": 271
+          }
+        },
+        {
+          "id": "expanded@299",
+          "name": "expanded",
+          "kind": "state",
+          "span": {
+            "start": 299,
+            "end": 307
+          }
+        },
+        {
+          "id": "expand@334",
+          "name": "expand",
+          "kind": "localFn",
+          "span": {
+            "start": 334,
+            "end": 340
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "expanded@299",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 314,
+              "end": 319
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 293,
+            "end": 321
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "expand@334",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    expanded.value = !expanded.value;\n  }",
+              "span": {
+                "start": 343,
+                "end": 386
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "expanded@299",
+                  "operator": "=",
+                  "span": {
+                    "start": 349,
+                    "end": 381
+                  },
+                  "target": {
+                    "start": 349,
+                    "end": 363
+                  },
+                  "value": {
+                    "start": 366,
+                    "end": 381
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "expanded@299",
+                  "span": {
+                    "start": 367,
+                    "end": 381
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 340,
+              "end": 386
+            }
+          },
+          "span": {
+            "start": 325,
+            "end": 386
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "tag-list",
+            "span": {
+              "start": 408,
+              "end": 424
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "span",
+            "attributes": [
+              {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Static",
+                    "value": "tag",
+                    "span": {
+                      "start": 446,
+                      "end": 451
+                    }
+                  },
+                  {
+                    "kind": "Dynamic",
+                    "value": {
+                      "code": "tags",
+                      "span": {
+                        "start": 453,
+                        "end": 457
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "tags@252",
+                          "span": {
+                            "start": 453,
+                            "end": 457
+                          }
+                        }
+                      ]
+                    },
+                    "collection": true,
+                    "span": {
+                      "start": 453,
+                      "end": 457
+                    }
+                  },
+                  {
+                    "kind": "Dynamic",
+                    "value": {
+                      "code": "states",
+                      "span": {
+                        "start": 459,
+                        "end": 465
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "states@258",
+                          "span": {
+                            "start": 459,
+                            "end": 465
+                          }
+                        }
+                      ]
+                    },
+                    "collection": true,
+                    "span": {
+                      "start": 459,
+                      "end": 465
+                    }
+                  },
+                  {
+                    "kind": "Toggle",
+                    "name": "tag-open",
+                    "condition": {
+                      "code": "expanded.value",
+                      "span": {
+                        "start": 481,
+                        "end": 495
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "expanded@299",
+                          "span": {
+                            "start": 481,
+                            "end": 495
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 469,
+                      "end": 495
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 438,
+                  "end": 499
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "label",
+                  "span": {
+                    "start": 501,
+                    "end": 506
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@245",
+                      "span": {
+                        "start": 501,
+                        "end": 506
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 500,
+                  "end": 507
+                }
+              }
+            ],
+            "span": {
+              "start": 432,
+              "end": 514
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "span",
+            "attributes": [
+              {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Dynamic",
+                    "value": {
+                      "code": "tags",
+                      "span": {
+                        "start": 534,
+                        "end": 538
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "tags@252",
+                          "span": {
+                            "start": 534,
+                            "end": 538
+                          }
+                        }
+                      ]
+                    },
+                    "collection": true,
+                    "span": {
+                      "start": 534,
+                      "end": 538
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 527,
+                  "end": 539
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Plain",
+                "span": {
+                  "start": 540,
+                  "end": 545
+                }
+              }
+            ],
+            "span": {
+              "start": 521,
+              "end": 552
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "span",
+            "attributes": [
+              {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Dynamic",
+                    "value": {
+                      "code": "extra",
+                      "span": {
+                        "start": 573,
+                        "end": 578
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "extra@266",
+                          "span": {
+                            "start": 573,
+                            "end": 578
+                          }
+                        }
+                      ]
+                    },
+                    "collection": true,
+                    "span": {
+                      "start": 573,
+                      "end": 578
+                    }
+                  },
+                  {
+                    "kind": "Dynamic",
+                    "value": {
+                      "code": "expanded.value ? [\"tag-wide\", \"tag-tall\"] : []",
+                      "span": {
+                        "start": 580,
+                        "end": 626
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "expanded@299",
+                          "span": {
+                            "start": 580,
+                            "end": 594
+                          }
+                        }
+                      ]
+                    },
+                    "collection": true,
+                    "span": {
+                      "start": 580,
+                      "end": 626
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 565,
+                  "end": 628
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Extra",
+                "span": {
+                  "start": 629,
+                  "end": 634
+                }
+              }
+            ],
+            "span": {
+              "start": 559,
+              "end": 641
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 656,
+                  "end": 669
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "expand@334",
+                  "span": {
+                    "start": 679,
+                    "end": 685
+                  }
+                },
+                "span": {
+                  "start": 670,
+                  "end": 686
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Expand",
+                "span": {
+                  "start": 687,
+                  "end": 709
+                }
+              }
+            ],
+            "span": {
+              "start": 648,
+              "end": 718
+            }
+          }
+        ],
+        "span": {
+          "start": 403,
+          "end": 729
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "TagList",
+      "span": {
+        "start": 211,
+        "end": 736
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "TagStates",
+      "exported": false,
+      "code": "type TagStates = {\n  selected?: boolean;\n  muted?: boolean;\n};",
+      "span": {
+        "start": 36,
+        "end": 98
+      }
+    },
+    {
+      "name": "TagListProps",
+      "exported": true,
+      "code": "interface TagListProps {\n  label: string;\n  tags: string[];\n  states: TagStates;\n  extra?: string[];\n}",
+      "span": {
+        "start": 107,
+        "end": 209
+      }
+    }
+  ]
+}

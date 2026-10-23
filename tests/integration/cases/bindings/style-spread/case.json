@@ -1,0 +1,23 @@
+{
+  "description": "A spread's style key: an object with camel-case and custom properties on a spread that merges a class, a declaration list on a spread whose source may be absent, and a child whose root's spread takes a consumer's style over its own.",
+  "main": "Panel.uf.tsx",
+  "ssr": {
+    "framed": {
+      "props": {
+        "heading": "Settings",
+        "panel": {
+          "id": "settings",
+          "title": "Your settings",
+          "style": {
+            "borderColor": "rgb(30, 90, 60)",
+            "borderStyle": "solid",
+            "borderWidth": "3px",
+            "--panel-gap": "16px"
+          }
+        },
+        "note": { "title": "Saving", "style": "color: rgb(30, 90, 60); padding-left: 8px" }
+      }
+    },
+    "bare": { "props": { "heading": "Profile", "panel": { "id": "profile" } } }
+  }
+}

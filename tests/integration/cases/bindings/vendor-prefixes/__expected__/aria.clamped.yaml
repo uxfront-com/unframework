@@ -1,0 +1,3 @@
+- article:
+  - heading "Release notes" [level=2]
+  - paragraph: This release adds scoped stylesheets to every target, passes styling engines through, and lowers the binding forms that waited for them, so long text like this is clamped to two lines.

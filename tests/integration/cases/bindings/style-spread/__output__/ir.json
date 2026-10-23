@@ -1,0 +1,478 @@
+{
+  "irVersion": 1,
+  "file": "bindings/style-spread/Panel.uf.tsx",
+  "components": [
+    {
+      "name": "Panel",
+      "span": {
+        "start": 408,
+        "end": 917
+      },
+      "props": [
+        {
+          "name": "heading",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 346,
+              "end": 352
+            }
+          },
+          "binding": "heading@440",
+          "span": {
+            "start": 337,
+            "end": 353
+          }
+        },
+        {
+          "name": "panel",
+          "optional": false,
+          "type": {
+            "code": "PanelAttributes",
+            "span": {
+              "start": 363,
+              "end": 378
+            }
+          },
+          "binding": "panel@449",
+          "span": {
+            "start": 356,
+            "end": 379
+          }
+        },
+        {
+          "name": "note",
+          "optional": true,
+          "type": {
+            "code": "NoteAttributes",
+            "span": {
+              "start": 389,
+              "end": 403
+            }
+          },
+          "binding": "note@456",
+          "span": {
+            "start": 382,
+            "end": 404
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "PanelProps",
+          "span": {
+            "start": 464,
+            "end": 474
+          }
+        },
+        "span": {
+          "start": 438,
+          "end": 474
+        }
+      },
+      "types": [
+        "PanelLook",
+        "PanelAttributes",
+        "NoteAttributes",
+        "PanelProps"
+      ],
+      "bindings": [
+        {
+          "id": "heading@440",
+          "name": "heading",
+          "kind": "prop",
+          "span": {
+            "start": 440,
+            "end": 447
+          }
+        },
+        {
+          "id": "panel@449",
+          "name": "panel",
+          "kind": "prop",
+          "span": {
+            "start": 449,
+            "end": 454
+          }
+        },
+        {
+          "id": "note@456",
+          "name": "note",
+          "kind": "prop",
+          "span": {
+            "start": 456,
+            "end": 460
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "panels",
+            "span": {
+              "start": 498,
+              "end": 512
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "section",
+            "attributes": [
+              {
+                "kind": "Spread",
+                "value": {
+                  "code": "panel",
+                  "span": {
+                    "start": 533,
+                    "end": 538
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "panel@449",
+                      "span": {
+                        "start": 533,
+                        "end": 538
+                      }
+                    }
+                  ]
+                },
+                "keys": [
+                  {
+                    "name": "id",
+                    "span": {
+                      "start": 186,
+                      "end": 188
+                    }
+                  },
+                  {
+                    "name": "title",
+                    "span": {
+                      "start": 200,
+                      "end": 205
+                    }
+                  },
+                  {
+                    "name": "style",
+                    "span": {
+                      "start": 218,
+                      "end": 223
+                    }
+                  }
+                ],
+                "nullish": false,
+                "span": {
+                  "start": 529,
+                  "end": 539
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "panel",
+                "span": {
+                  "start": 540,
+                  "end": 553
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "h2",
+                "attributes": [
+                  {
+                    "kind": "Style",
+                    "declarations": [
+                      {
+                        "kind": "Static",
+                        "property": "margin-bottom",
+                        "value": "var(--panel-gap, 4px)",
+                        "span": {
+                          "start": 576,
+                          "end": 613
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 567,
+                      "end": 616
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "heading",
+                      "span": {
+                        "start": 618,
+                        "end": 625
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "heading@440",
+                          "span": {
+                            "start": 618,
+                            "end": 625
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 617,
+                      "end": 626
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 563,
+                  "end": 631
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "p",
+                "attributes": [
+                  {
+                    "kind": "Spread",
+                    "value": {
+                      "code": "note",
+                      "span": {
+                        "start": 647,
+                        "end": 651
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "note@456",
+                          "span": {
+                            "start": 647,
+                            "end": 651
+                          }
+                        }
+                      ]
+                    },
+                    "keys": [
+                      {
+                        "name": "title",
+                        "span": {
+                          "start": 269,
+                          "end": 274
+                        }
+                      },
+                      {
+                        "name": "style",
+                        "span": {
+                          "start": 286,
+                          "end": 291
+                        }
+                      }
+                    ],
+                    "nullish": true,
+                    "span": {
+                      "start": 643,
+                      "end": 652
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Changes save as you type.",
+                    "span": {
+                      "start": 653,
+                      "end": 678
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 640,
+                  "end": 682
+                }
+              },
+              {
+                "kind": "Component",
+                "component": "Hint",
+                "attributes": [
+                  {
+                    "kind": "Prop",
+                    "name": "text",
+                    "value": {
+                      "code": "\"Saved a moment ago\"",
+                      "span": {
+                        "start": 712,
+                        "end": 732
+                      },
+                      "refs": []
+                    },
+                    "span": {
+                      "start": 707,
+                      "end": 732
+                    }
+                  },
+                  {
+                    "kind": "Prop",
+                    "name": "attrs",
+                    "value": {
+                      "code": "{ id: \"saved-hint\", style: \"font-style: italic; color: rgb(90, 90, 90)\" }",
+                      "span": {
+                        "start": 750,
+                        "end": 823
+                      },
+                      "refs": []
+                    },
+                    "span": {
+                      "start": 743,
+                      "end": 824
+                    }
+                  },
+                  {
+                    "kind": "Style",
+                    "declarations": [
+                      {
+                        "kind": "Static",
+                        "property": "color",
+                        "value": "rgb(30, 90, 60)",
+                        "span": {
+                          "start": 844,
+                          "end": 868
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 835,
+                      "end": 871
+                    }
+                  }
+                ],
+                "fills": [],
+                "span": {
+                  "start": 691,
+                  "end": 882
+                }
+              }
+            ],
+            "span": {
+              "start": 520,
+              "end": 899
+            }
+          }
+        ],
+        "span": {
+          "start": 493,
+          "end": 910
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Panel",
+      "span": {
+        "start": 408,
+        "end": 917
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "PanelLook",
+      "exported": false,
+      "code": "type PanelLook = {\n  borderColor?: string;\n  borderStyle?: string;\n  borderWidth?: string;\n  \"--panel-gap\"?: string;\n};",
+      "span": {
+        "start": 35,
+        "end": 154
+      }
+    },
+    {
+      "name": "PanelAttributes",
+      "exported": false,
+      "code": "interface PanelAttributes {\n  id: string;\n  title?: string;\n  style?: PanelLook;\n}",
+      "span": {
+        "start": 156,
+        "end": 238
+      }
+    },
+    {
+      "name": "NoteAttributes",
+      "exported": false,
+      "code": "interface NoteAttributes {\n  title: string;\n  style?: string;\n}",
+      "span": {
+        "start": 240,
+        "end": 303
+      }
+    },
+    {
+      "name": "PanelProps",
+      "exported": true,
+      "code": "interface PanelProps {\n  heading: string;\n  panel: PanelAttributes;\n  note?: NoteAttributes;\n}",
+      "span": {
+        "start": 312,
+        "end": 406
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./Hint.uf.tsx",
+      "file": "Hint.uf.tsx",
+      "api": {
+        "file": "Hint.uf.tsx",
+        "components": [
+          {
+            "name": "Hint",
+            "export": "default",
+            "props": [
+              {
+                "name": "text",
+                "optional": false,
+                "type": "string"
+              },
+              {
+                "name": "attrs",
+                "optional": false,
+                "type": "HintAttributes"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "small"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Hint",
+          "span": {
+            "start": 7,
+            "end": 11
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 33
+      }
+    }
+  ]
+}

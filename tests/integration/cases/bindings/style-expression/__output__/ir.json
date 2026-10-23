@@ -1,0 +1,578 @@
+{
+  "irVersion": 1,
+  "file": "bindings/style-expression/Notice.uf.tsx",
+  "components": [
+    {
+      "name": "Notice",
+      "span": {
+        "start": 293,
+        "end": 1108
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 236,
+              "end": 242
+            }
+          },
+          "binding": "title@326",
+          "span": {
+            "start": 229,
+            "end": 243
+          }
+        },
+        {
+          "name": "look",
+          "optional": true,
+          "type": {
+            "code": "NoticeLook",
+            "span": {
+              "start": 253,
+              "end": 263
+            }
+          },
+          "binding": "look@333",
+          "span": {
+            "start": 246,
+            "end": 264
+          }
+        },
+        {
+          "name": "declarations",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 282,
+              "end": 288
+            }
+          },
+          "binding": "declarations@339",
+          "span": {
+            "start": 267,
+            "end": 289
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "NoticeProps",
+          "span": {
+            "start": 355,
+            "end": 366
+          }
+        },
+        "span": {
+          "start": 324,
+          "end": 366
+        }
+      },
+      "types": [
+        "NoticeLook",
+        "NoticeProps"
+      ],
+      "bindings": [
+        {
+          "id": "title@326",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 326,
+            "end": 331
+          }
+        },
+        {
+          "id": "look@333",
+          "name": "look",
+          "kind": "prop",
+          "span": {
+            "start": 333,
+            "end": 337
+          }
+        },
+        {
+          "id": "declarations@339",
+          "name": "declarations",
+          "kind": "prop",
+          "span": {
+            "start": 339,
+            "end": 351
+          }
+        },
+        {
+          "id": "quiet@378",
+          "name": "quiet",
+          "kind": "state",
+          "span": {
+            "start": 378,
+            "end": 383
+          }
+        },
+        {
+          "id": "toggle@410",
+          "name": "toggle",
+          "kind": "localFn",
+          "span": {
+            "start": 410,
+            "end": 416
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "quiet@378",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 390,
+              "end": 395
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 372,
+            "end": 397
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "toggle@410",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    quiet.value = !quiet.value;\n  }",
+              "span": {
+                "start": 419,
+                "end": 456
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "quiet@378",
+                  "operator": "=",
+                  "span": {
+                    "start": 425,
+                    "end": 451
+                  },
+                  "target": {
+                    "start": 425,
+                    "end": 436
+                  },
+                  "value": {
+                    "start": 439,
+                    "end": 451
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "quiet@378",
+                  "span": {
+                    "start": 440,
+                    "end": 451
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 416,
+              "end": 456
+            }
+          },
+          "span": {
+            "start": 401,
+            "end": 456
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "notice",
+            "span": {
+              "start": 478,
+              "end": 492
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Style",
+                "declarations": [],
+                "value": {
+                  "code": "look",
+                  "span": {
+                    "start": 510,
+                    "end": 514
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "look@333",
+                      "span": {
+                        "start": 510,
+                        "end": 514
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 503,
+                  "end": 515
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "title",
+                  "span": {
+                    "start": 517,
+                    "end": 522
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "title@326",
+                      "span": {
+                        "start": 517,
+                        "end": 522
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 516,
+                  "end": 523
+                }
+              }
+            ],
+            "span": {
+              "start": 500,
+              "end": 527
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Badge",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Permanent\"",
+                  "span": {
+                    "start": 555,
+                    "end": 566
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 549,
+                  "end": 566
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "tone",
+                "value": {
+                  "code": "\"padding: 2px 6px; color: rgb(120, 30, 30); outline: 1px solid\"",
+                  "span": {
+                    "start": 580,
+                    "end": 643
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 575,
+                  "end": 643
+                }
+              },
+              {
+                "kind": "Style",
+                "declarations": [],
+                "value": {
+                  "code": "look",
+                  "span": {
+                    "start": 659,
+                    "end": 663
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "look@333",
+                      "span": {
+                        "start": 659,
+                        "end": 663
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 652,
+                  "end": 664
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 534,
+              "end": 673
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Style",
+                "declarations": [],
+                "value": {
+                  "code": "declarations",
+                  "span": {
+                    "start": 690,
+                    "end": 702
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "declarations@339",
+                      "span": {
+                        "start": 690,
+                        "end": 702
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 683,
+                  "end": 703
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Read the details before you continue.",
+                "span": {
+                  "start": 704,
+                  "end": 741
+                }
+              }
+            ],
+            "span": {
+              "start": 680,
+              "end": 745
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Style",
+                "declarations": [],
+                "value": {
+                  "code": "quiet.value\n            ? { color: \"rgb(90, 90, 90)\" }\n            : { color: \"var(--notice-accent, rgb(160, 40, 40))\", fontWeight: \"700\" }",
+                  "span": {
+                    "start": 781,
+                    "end": 920
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "quiet@378",
+                      "span": {
+                        "start": 781,
+                        "end": 792
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 763,
+                  "end": 930
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "This cannot be undone.",
+                "span": {
+                  "start": 938,
+                  "end": 976
+                }
+              }
+            ],
+            "span": {
+              "start": 752,
+              "end": 980
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 995,
+                  "end": 1008
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "toggle@410",
+                  "span": {
+                    "start": 1018,
+                    "end": 1024
+                  }
+                },
+                "span": {
+                  "start": 1009,
+                  "end": 1025
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "quiet.value ? \"Emphasise\" : \"Quieten\"",
+                  "span": {
+                    "start": 1036,
+                    "end": 1073
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "quiet@378",
+                      "span": {
+                        "start": 1036,
+                        "end": 1047
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1035,
+                  "end": 1074
+                }
+              }
+            ],
+            "span": {
+              "start": 987,
+              "end": 1090
+            }
+          }
+        ],
+        "span": {
+          "start": 473,
+          "end": 1101
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Notice",
+      "span": {
+        "start": 293,
+        "end": 1108
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "NoticeLook",
+      "exported": false,
+      "code": "type NoticeLook = {\n  color?: string;\n  backgroundColor?: string;\n  borderLeft?: string;\n  \"--notice-accent\"?: string;\n};",
+      "span": {
+        "start": 73,
+        "end": 194
+      }
+    },
+    {
+      "name": "NoticeProps",
+      "exported": true,
+      "code": "interface NoticeProps {\n  title: string;\n  look?: NoticeLook;\n  declarations?: string;\n}",
+      "span": {
+        "start": 203,
+        "end": 291
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./Badge.uf.tsx",
+      "file": "Badge.uf.tsx",
+      "api": {
+        "file": "Badge.uf.tsx",
+        "components": [
+          {
+            "name": "Badge",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              },
+              {
+                "name": "tone",
+                "optional": true,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "span"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Badge",
+          "span": {
+            "start": 43,
+            "end": 48
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 71
+      }
+    }
+  ]
+}
