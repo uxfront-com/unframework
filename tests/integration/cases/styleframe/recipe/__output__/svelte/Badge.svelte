@@ -1,9 +1,9 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
   import { badge } from "virtual:styleframe";
   import "virtual:styleframe.css";
-  import type { ClassValue } from "svelte/elements";
 
   type Props = { label: string; class?: ClassValue; style?: string };
 

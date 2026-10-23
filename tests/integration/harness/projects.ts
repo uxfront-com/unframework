@@ -38,10 +38,10 @@ import type { TestProjectConfiguration, UserWorkspaceConfig, ViteUserConfig } fr
 import { canaryPlugins, guardsGoldens } from "./canaries.ts";
 import "./context.ts";
 import { listCases } from "./cases.ts";
+import { ENGINE_DECLARATIONS, enginePlugins } from "./engines.ts";
 import { goldenGuard } from "./guard.ts";
 import { noOutputCases, noOutputPlugin } from "./no-output.ts";
 import { FAILURE_SCREENSHOTS_DIR, ROOT, toolchainDir } from "./paths.ts";
-import { STYLEFRAME_DECLARATIONS, styleframePlugin } from "./styleframe.ts";
 import { loadToolchain, REFERENCE } from "./targets.ts";
 
 /** What every project factory needs. */
@@ -221,16 +221,16 @@ function unpluginOptions(setup: HarnessSetup, target: string): UnframeworkOption
 }
 
 /**
- * Where a target's toolchain runs the ssr and browser projects: its checkers read Styleframe's
- * virtual modules beside the outputs (ADR-0064), Angular's ngtsc compiles with them, and a
- * server of the toolchain's own (Astro's render server) loads Styleframe's plugin too.
+ * Where a target's toolchain runs the ssr and browser projects: its checkers read the styling
+ * engines' virtual modules beside the outputs (ADR-0064), Angular's ngtsc compiles with them,
+ * and a server of the toolchain's own (Astro's render server) loads the engines' plugins too.
  */
 function toolchainContext(target: string): ToolchainContext {
   return {
     toolchainDir: toolchainDir(target),
     root: ROOT,
-    declarations: [STYLEFRAME_DECLARATIONS],
-    plugins: styleframePlugin,
+    declarations: ENGINE_DECLARATIONS,
+    plugins: enginePlugins,
   };
 }
 
@@ -240,8 +240,8 @@ const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework)
   const config = mergeConfig(
     {
       root: ROOT,
-      // Styleframe's plugin resolves the imports every output keeps as written (ADR-0064).
-      plugins: [...(await styleframePlugin()), ...unframework(unpluginOptions(setup, target))],
+      // The engines' plugins resolve the imports every output keeps as written (ADR-0064).
+      plugins: [...(await enginePlugins()), ...unframework(unpluginOptions(setup, target))],
     },
     fragment,
   );
@@ -279,8 +279,8 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
       plugins: [
         noOutputPlugin(cases, noOutput),
         noErrorBroadcast(),
-        // Styleframe's plugin resolves the imports every output keeps as written (ADR-0064).
-        ...(await styleframePlugin()),
+        // The engines' plugins resolve the imports every output keeps as written (ADR-0064).
+        ...(await enginePlugins()),
         ...unframework(unpluginOptions(setup, target)),
       ],
       // The testing API's own browser dependencies (CommonJS axe-core, parse5), and the runtime

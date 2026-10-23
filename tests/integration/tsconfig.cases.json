@@ -12,8 +12,9 @@
     "declaration": false,
     "isolatedDeclarations": false
   },
-  // Styleframe's virtual modules, which the styleframe/ and theming/ cases import (ADR-0064).
-  "include": ["cases/**/*.uf.tsx", "styleframe.d.ts"],
+  // The styling engines' virtual modules, which the styleframe/, theming/ and engines/ cases
+  // import (ADR-0064).
+  "include": ["cases/**/*.uf.tsx", "styleframe.d.ts", "fixture-engine.d.ts"],
   // Diagnostic cases are deliberately wrong: a misspelt prop or a React attribute name is a type
   // error too, and a syntax error does not parse.
   "exclude": ["cases/**/__output__/**", "cases/diagnostics/**"]

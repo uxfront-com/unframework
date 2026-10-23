@@ -1,8 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import "virtual:styleframe.css";
   import type { ClassValue } from "svelte/elements";
+  import "virtual:styleframe.css";
 
   type Props = { text: string; class?: ClassValue; style?: string };
 

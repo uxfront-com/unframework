@@ -325,7 +325,7 @@ here: React, Solid, Svelte, Astro and Qwik emulate `child-root-scope`, and Angul
 
 **The codes** are UF5001 `shared-stylesheet`, UF5002 `invalid-stylesheet`, UF5003
 `unsupported-stylesheet-language` (`.scss`, `.sass`, `.less`, `.styl` and `.pcss`), UF5004
-`unscopable-selector`, UF5005 `stylesheet-not-found` and UF5006 `unsupported-styleframe-import`. All are errors.
+`unscopable-selector`, UF5005 `stylesheet-not-found` and UF5006 `unsupported-virtual-import`. All are errors.
 UF4002 `sheet-order` and UF4003 `component-host`, portability codes, are `info`.
 
 A `Button` whose `Button.css` holds `.label { color: red }` and a line feed has the id

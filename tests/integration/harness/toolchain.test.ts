@@ -23,9 +23,9 @@ import { errorState, listCases } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
 import { consumerFixtures, consumerProblems, copyFixtures } from "./consumers.ts";
 import type { Fixture } from "./consumers.ts";
+import { ENGINE_DECLARATIONS } from "./engines.ts";
 import { CANARY_DIR, ROOT, toolchainDir } from "./paths.ts";
 import { caseResolver } from "./sources.ts";
-import { STYLEFRAME_DECLARATIONS } from "./styleframe.ts";
 import { loadToolchain } from "./targets.ts";
 import {
   display,
@@ -84,13 +84,13 @@ beforeAll(async () => {
       ...all,
       ...[...fixtures.values()].flat().map(({ checked }) => checked),
       ...(DECLARATIONS[target] ?? []).map((file) => join(toolchainDir(target), file)),
-      // Styleframe's virtual modules, which a styled output imports as written (ADR-0064).
-      STYLEFRAME_DECLARATIONS,
+      // The styling engines' virtual modules, which a styled output imports as written (ADR-0064).
+      ...ENGINE_DECLARATIONS,
     ]);
     const context = {
       toolchainDir: toolchainDir(target),
       root: ROOT,
-      declarations: [STYLEFRAME_DECLARATIONS],
+      declarations: ENGINE_DECLARATIONS,
     };
     const contents: ToolchainFile[] = all.map((path) => ({
       path,

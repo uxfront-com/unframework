@@ -1,0 +1,16 @@
+{
+  "description": "A styling engine nobody wrote the compiler for: its class function and its stylesheet pass through as written, and its own Vite plugin resolves them.",
+  "ssr": {
+    "plain": {
+      "props": {
+        "label": "Draft"
+      }
+    },
+    "accent": {
+      "props": {
+        "label": "Live",
+        "tone": "accent"
+      }
+    }
+  }
+}

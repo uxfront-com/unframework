@@ -32,8 +32,8 @@ const ALLOWED_IMPORTS: Record<string, readonly string[]> = {
   astro: ["astro", "astro/*"],
 };
 
-/** What every output may import as written: Styleframe's virtual modules (plan §4.4, ADR-0064). */
-const PASS_THROUGH_IMPORTS: readonly string[] = ["virtual:styleframe", "virtual:styleframe.css"];
+/** What every output may import as written: the `virtual:` modules (plan §4.4, ADR-0064). */
+const PASS_THROUGH_IMPORTS: readonly string[] = ["virtual:*"];
 
 /**
  * The baseline rules a target turns off, each because its framework's own idiom needs it: Svelte
@@ -257,7 +257,7 @@ function importGroups(config: EffectiveConfig): unknown {
 describe("every toolchain's oxlint configuration", () => {
   const configs = new Map(TARGETS.map((target) => [target, effectiveConfig(target)]));
 
-  it.each(TARGETS)("%s allows imports of its framework and Styleframe's modules only", (target) => {
+  it.each(TARGETS)("%s allows imports of its framework and `virtual:` modules only", (target) => {
     expect(importGroups(configs.get(target)!)).toEqual([
       [
         "*",

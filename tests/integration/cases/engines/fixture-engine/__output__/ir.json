@@ -1,0 +1,199 @@
+{
+  "irVersion": 1,
+  "file": "engines/fixture-engine/Chip.uf.tsx",
+  "components": [
+    {
+      "name": "Chip",
+      "span": {
+        "start": 86,
+        "end": 231
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 141,
+              "end": 147
+            }
+          },
+          "binding": "label@117",
+          "span": {
+            "start": 134,
+            "end": 148
+          }
+        },
+        {
+          "name": "tone",
+          "optional": true,
+          "type": {
+            "code": "\"plain\" | \"accent\"",
+            "span": {
+              "start": 156,
+              "end": 174
+            }
+          },
+          "binding": "tone@124",
+          "span": {
+            "start": 149,
+            "end": 174
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string; tone?: \"plain\" | \"accent\" }",
+          "span": {
+            "start": 132,
+            "end": 176
+          }
+        },
+        "span": {
+          "start": 115,
+          "end": 176
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "label@117",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 117,
+            "end": 122
+          }
+        },
+        {
+          "id": "tone@124",
+          "name": "tone",
+          "kind": "prop",
+          "span": {
+            "start": 124,
+            "end": 128
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "chip(tone)",
+                  "span": {
+                    "start": 202,
+                    "end": 212
+                  },
+                  "refs": [
+                    {
+                      "kind": "Import",
+                      "name": "chip",
+                      "span": {
+                        "start": 202,
+                        "end": 206
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "tone@124",
+                      "span": {
+                        "start": 207,
+                        "end": 211
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 202,
+                  "end": 212
+                }
+              }
+            ],
+            "span": {
+              "start": 195,
+              "end": 213
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 215,
+                "end": 220
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@117",
+                  "span": {
+                    "start": 215,
+                    "end": 220
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 214,
+              "end": 221
+            }
+          }
+        ],
+        "span": {
+          "start": 189,
+          "end": 228
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Chip",
+      "span": {
+        "start": 86,
+        "end": 231
+      }
+    }
+  ],
+  "types": [],
+  "passThroughImports": [
+    {
+      "specifier": "virtual:fixture-engine",
+      "names": [
+        {
+          "imported": "chip",
+          "local": "chip",
+          "span": {
+            "start": 9,
+            "end": 13
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 46
+      }
+    },
+    {
+      "specifier": "virtual:fixture-engine.css",
+      "names": [],
+      "span": {
+        "start": 48,
+        "end": 84
+      }
+    }
+  ]
+}

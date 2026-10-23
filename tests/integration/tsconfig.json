@@ -17,6 +17,7 @@
     "vitest.config.ts",
     "styleframe.config.ts",
     "styleframe.d.ts",
+    "fixture-engine.d.ts",
     "cases/**/*.test.ts"
   ],
   "exclude": ["cases/**/__output__/**"]

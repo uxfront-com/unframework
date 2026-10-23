@@ -1,5 +1,5 @@
-error[UF5006]: `badge` is a Styleframe recipe, which a template only calls in a `class`: every output keeps its import as written, and no other use of it is analysed.
- --> diagnostics/unsupported-styleframe-import/Badge.uf.tsx:5:23
+error[UF5006]: `badge` is imported from a module that passes through, and a template only calls such a name in a `class`: every output keeps its import as written, and no other use of it is analysed.
+ --> diagnostics/unsupported-virtual-import/Badge.uf.tsx:5:23
   |
 5 |   return <span title={badge()}>{label}</span>;
   |                       ^^^^^
