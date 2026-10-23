@@ -33,12 +33,12 @@ in a real browser.
 - **M4, styling and visual parity, is done:** a sibling stylesheet (`import "./Button.css"`),
   scoped by the compiler with Vue's attribute algorithm (`data-uf-<id>`), with `:deep()`,
   `:slotted()`, `:global()`, the child-root rule, layers, media queries, keyframes and custom
-  properties, emitted as `<source>.css` and attached each target's own way; any styling engine
-  through the virtual modules its Vite plugin registers (the `passThrough` option, `virtual:` by
-  default), tested with Styleframe Community, which needs no licence key, and a fixture engine;
-  tokens and theming, with a per-case colour scheme; and the binding forms M1 deferred (a `style`
-  bound to a value, run-time class collections, a spread's `style`, vendor prefixes and a static
-  table-internal `display`). Angular and Qwik cascade sheets in render order (`sheet-order`,
+  properties, emitted as `<source>.css` and attached each target's own way. Any styling engine
+  works through the virtual modules its Vite plugin registers (the `passThrough` option,
+  `virtual:` by default), tested with Styleframe Community, which needs no licence key, and with a
+  fixture engine. Tokens and theming, with a per-case colour scheme, and the binding forms M1
+  deferred are in too: a `style` bound to a value, run-time class collections, a spread's
+  `style`, vendor prefixes and a static table-internal `display`. Angular and Qwik cascade sheets in render order (`sheet-order`,
   UF4002, info), and Angular renders a host between a parent and a child's root (UF4003, info).
   L10 also compares the `::before` and `::after` styles, and CI's `Baselines` job generates the
   Linux screenshots and geometry. Firefox and WebKit run nightly (`nightly.yml`), live against
