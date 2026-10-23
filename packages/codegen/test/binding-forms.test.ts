@@ -71,5 +71,6 @@ describe("mergesWholeStyle", () => {
     expect(mergesWholeStyle(source("<div><component is={on ? B : B} style={look} /></div>"))).toBe(
       true,
     );
+    expect(mergesWholeStyle(source("<component is={on ? B : B} style={look} />"))).toBe(true);
   });
 });

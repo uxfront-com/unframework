@@ -534,6 +534,22 @@ describe("class", () => {
     expect(codes(diagnostics)).toEqual(["UF3018"]);
   });
 
+  // Qwik's `ClassList` takes primitives as an object's values.
+  it.each([
+    ["class={a}", "a: Holder"],
+    ['class={["x", a]}', "a: Holder"],
+    ["class={b}", "b: Holder[]"],
+    ["class={c}", "c: Many"],
+  ])("checks a class object's values (UF3018): %s with %s", (attribute, props) => {
+    const before =
+      "type Inner = { t?: boolean };\ntype Holder = { o?: Inner };\ntype Many = { list?: string[] };\n";
+    // The types a case leaves unused are UF1002 on their own.
+    const { diagnostics } = component(`<p ${attribute}>x</p>`, { props, before });
+    const found = diagnostics.filter(({ code }) => code !== "UF1002");
+    expect(codes(found)).toEqual(["UF3018"]);
+    expect(found[0]!.message).toContain("A `class` object's values are conditions");
+  });
+
   it("accepts nested arrays of names and `false`", () => {
     const { diagnostics } = component('<p class={["a", nested, off]}>x</p>', {
       props: "nested: string[][]; off: false[]",
@@ -728,14 +744,37 @@ describe("style", () => {
     expect(diagnostics).toEqual([]);
   });
 
-  // An object literal anywhere in the value is checked as one written in place.
+  // An object literal in the value gets every check it gets written in place.
   it.each([
-    ["on ? { width: 4 } : undefined", "width"],
-    ['on ? { "margin-top": "4px" } : undefined', '"margin-top"'],
-    ['on ? undefined : { WebkitTransform: "none" }', "WebkitTransform"],
-  ])("checks the object literals in style={%s} (UF3018)", (value, at) => {
-    const { found } = attributes(`<p style={${value}}>a</p>`);
-    expect(found).toEqual([`UF3018 ${at}`]);
+    ["{ ...look, width: 4 }", ["UF3022", "UF3018"]],
+    ['{ color: "red !important" }', ["UF3022"]],
+    ['{ background: "red", backgroundColor: "blue" }', ["UF3022"]],
+    ['{ "margin-top": "4px" }', ["UF3004"]],
+    ["{ width: 4 }", ["UF3018"]],
+  ])("checks %s in a conditional as written in place", (object, expected) => {
+    const props = `${PROPS}; look: { color?: string }`;
+    const placed = codes(attributes(`<p style={${object}}>a</p>`, props).diagnostics);
+    const bound = codes(
+      attributes(`<p style={on ? ${object} : undefined}>a</p>`, props).diagnostics,
+    );
+    expect(placed).toEqual(expected);
+    expect(bound).toEqual(expected);
+    expect(codes(attributes(`<p style={on && ${object}}>a</p>`, props).diagnostics)).toEqual(
+      expect.arrayContaining(expected),
+    );
+  });
+
+  // Every target copies the object as written there, and Vue's server writes `WebkitLineClamp` as
+  // `webkit-line-clamp`, which no browser applies.
+  it("reports a vendor-prefixed key in an object literal of the value (UF3018)", () => {
+    expect(lowered('<p style={{ WebkitLineClamp: "2" }}>a</p>')).toEqual([
+      "style[-webkit-line-clamp: 2]",
+    ]);
+    const { found, diagnostics } = attributes(
+      '<p style={on ? { WebkitLineClamp: "2" } : undefined}>a</p>',
+    );
+    expect(found).toEqual(["UF3018 WebkitLineClamp"]);
+    expect(diagnostics[0]!.message).toContain("Vue's server writes a prefixed key");
   });
 
   it("accepts a literal 0 in an object literal of the value", () => {

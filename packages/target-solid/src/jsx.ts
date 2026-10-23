@@ -960,16 +960,17 @@ function ${name}(...parts: unknown[]): string {
  * The inline style helper (emulated `style-binding`, ADR-0065), printed after the component: a
  * style bound to a value as an object with kebab-case keys, which Solid sets one property at a
  * time. A declaration list splits as Vue's `parseStringStyle` splits it; an object, keyed as an
- * object literal's are, keeps its present values, its camel-case keys in kebab case. Only a CSS
- * identifier is kept as a property, since Solid's server escapes an object's values, not its keys.
+ * object literal's are, keeps its present values, its camel-case keys in kebab case. Only a custom
+ * property or a CSS identifier is kept as a property, since Solid's server escapes an object's
+ * values, not its keys.
  */
 function styleHelperCode(name: string): string {
   // Raw, so the regular expressions keep their escapes.
   return String.raw`/** A style bound to a value as an object of CSS properties. */
 function ${name}(style: object | string | null | undefined): Record<string, string> | undefined {
   if (style === null || style === undefined) return undefined;
-  // Only a CSS identifier is a property: Solid's server writes an object's keys as they are.
-  const PROPERTY = /^-?-?[A-Za-z_][\w-]*$/;
+  // A property is a custom property or a CSS identifier: Solid's server writes keys as they are.
+  const PROPERTY = /^(?:--[^\s"'<>&;:]+|-?[A-Za-z_][\w-]*)$/;
   const properties: Record<string, string> = {};
   if (typeof style === "string") {
     for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {

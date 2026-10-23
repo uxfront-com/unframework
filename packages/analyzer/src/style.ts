@@ -21,7 +21,7 @@ import type { Span, StyleAttribute, StyleDeclaration } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
 import { parseDeclarations } from "@unframework/parser";
 
-import type { Reporter } from "./context.ts";
+import { Reporter } from "./context.ts";
 import { checkExpression, span } from "./expressions.ts";
 import type { Piece } from "./jsx/text.ts";
 import { isStaticString, reportCharacters, valueOf } from "./literals.ts";
@@ -535,7 +535,9 @@ export function lowerStyleValue(node: AST.Expression, context: RenderContext): L
   const { reporter } = context;
   const mark = reporter.diagnostics.length;
   const checked = checkExpression(node, context);
-  const problem = styleValueProblem(checked.kinds);
+  const leaves = objectLeaves(node);
+  for (const leaf of leaves) checkObjectLeaf(leaf, context, mark);
+  const problem = styleValueProblem(checked.kinds, leaves.map(span));
   if (problem) {
     reporter.report("UF3018", problem.at ?? node, problem.message, {
       help: problem.help,
@@ -568,9 +570,72 @@ export function interfaceProblem(attribute: "class" | "style"): { message: strin
   };
 }
 
-/** Why a value bound to a whole `style` is not one every target renders alike, if it is not. */
+/**
+ * The object literals a value may be at run time: itself, a conditional's branches, either side
+ * of `??` and `||`, the right of `&&`, inside parentheses. Each is checked where it is written.
+ */
+function objectLeaves(node: AST.Expression): AST.ObjectExpression[] {
+  switch (node.type) {
+    case "ObjectExpression":
+      return [node];
+    case "ParenthesizedExpression":
+      return objectLeaves(node.expression);
+    case "ConditionalExpression":
+      return [...objectLeaves(node.consequent), ...objectLeaves(node.alternate)];
+    case "LogicalExpression":
+      return node.operator === "&&"
+        ? objectLeaves(node.right)
+        : [...objectLeaves(node.left), ...objectLeaves(node.right)];
+    default:
+      return [];
+  }
+}
+
+/**
+ * Checks an object literal inside a value bound to `style` as `lowerStyleObject` checks one
+ * written in place, reporting what the value's own check has not (its values are checked
+ * twice). A vendor-prefixed key is UF3018 there: every target copies the object as written,
+ * and Vue's server writes `WebkitLineClamp` as `webkit-line-clamp`, which no browser applies.
+ */
+function checkObjectLeaf(leaf: AST.ObjectExpression, context: RenderContext, mark: number): void {
+  const { reporter } = context;
+  const scratch = new Reporter(reporter.file);
+  lowerStyleObject(leaf, { ...context, reporter: scratch });
+  const reported = new Set(
+    reporter.diagnostics
+      .slice(mark)
+      .map(({ code, span: at, message }) => `${code} ${at.start}:${at.end} ${message}`),
+  );
+  for (const diagnostic of scratch.diagnostics) {
+    const key = `${diagnostic.code} ${diagnostic.span.start}:${diagnostic.span.end} ${diagnostic.message}`;
+    if (!reported.has(key)) reporter.diagnostics.push(diagnostic);
+  }
+  for (const property of leaf.properties) {
+    if (property.type === "SpreadElement" || property.computed) continue;
+    const { key } = property;
+    const name =
+      key.type === "Identifier"
+        ? key.name
+        : key.type === "Literal" && typeof key.value === "string"
+          ? key.value
+          : undefined;
+    if (name === undefined || !keyProperty(name).vendor) continue;
+    reporter.report(
+      "UF3018",
+      key,
+      `\`${name}\` is copied as written where the style is not an object literal, and Vue's server writes a prefixed key without its leading dash, which no browser applies.`,
+      { help: "Write the style object in place, `style={{ … }}`, or bind a declaration list." },
+    );
+  }
+}
+
+/**
+ * Why a value bound to a whole `style` is not one every target renders alike, if it is not.
+ * `inPlace` are the object literals the value is checked as, whose shapes it skips.
+ */
 export function styleValueProblem(
   kinds: Kinds,
+  inPlace: readonly Span[] = [],
 ): { message: string; help: string; at?: Span } | undefined {
   const others = outside(kinds, ["string", "object", "null", "undefined"]);
   if (others.length) {
@@ -581,6 +646,12 @@ export function styleValueProblem(
   }
   for (const shape of kinds.objects ?? []) {
     if (shape.interface) return interfaceProblem("style");
+    // An object literal the value is checked as in place: its own checks cover its members.
+    const members = [...shape.members().values()];
+    const literal = members.some(({ key }) =>
+      inPlace.some((at) => key.start >= at.start && key.end <= at.end),
+    );
+    if (literal) continue;
     // A declared type's members, or an object literal's anywhere in the value (a conditional's
     // branch, a `computed`), each checked as a key and a value written in place.
     for (const [name, member] of shape.members()) {

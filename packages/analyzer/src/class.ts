@@ -295,6 +295,29 @@ function checkDynamic(
       context.reporter.report("UF3018", node, problem.message, { help: problem.help });
       return false;
     }
+    // An object's values are conditions: Qwik's `ClassList` takes primitives there alone.
+    for (const shape of shapes) {
+      for (const [name, member] of shape.members()) {
+        const others = outside(member.kinds(), [
+          "string",
+          "number",
+          "boolean",
+          "null",
+          "undefined",
+        ]);
+        if (!others.length) continue;
+        context.reporter.report(
+          "UF3018",
+          member.key,
+          `A \`class\` object's values are conditions, and \`${name}\` can be ${describe(others)}, which Qwik's type for \`class\` rejects there.`,
+          {
+            help: "Hold a boolean in each key, or put a nested collection in an array beside the object.",
+            related: [{ span: span(node), message: "The class part is bound here" }],
+          },
+        );
+        return false;
+      }
+    }
     if (!entries.length) return true;
     context.reporter.report(
       "UF3018",
