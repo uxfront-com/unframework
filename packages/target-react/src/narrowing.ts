@@ -51,6 +51,14 @@ export function assertedPaths(
     case "slotScope":
     case "context":
     case "component":
+    // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+    case "moduleConst":
+    case "import":
+    case "argument":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       return [];
     default:
       return binding.kind satisfies never;

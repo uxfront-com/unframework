@@ -225,6 +225,9 @@ function captured(plan: SetupPlan, item: SetupItem): Set<BindingId> {
     case "Id":
     case "Model":
       break;
+    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+    case "Use":
+      break;
     default:
       unreachable(item);
   }
@@ -324,6 +327,9 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
         ),
       ];
     }
+    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+    case "Use":
+      return [];
     default:
       return unreachable(item);
   }
@@ -695,6 +701,14 @@ function tracked(plan: SetupPlan, id: BindingId, track: string): { tracked: stri
     case "slotScope":
     case "context":
     case "component":
+    // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+    case "moduleConst":
+    case "import":
+    case "argument":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       throw new Error(`A ${binding.kind} is not tracked yet.`);
     default:
       return unreachable(binding.kind);

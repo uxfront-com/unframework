@@ -99,6 +99,14 @@ export function spellingOf(component: UfComponent, module: UfModule): Spelling {
           case "model":
           case "slots":
           case "context":
+          // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+          case "moduleConst":
+          case "import":
+          case "argument":
+          case "usedState":
+          case "usedDerived":
+          case "usedFn":
+          case "usedConst":
             return name(binding.id);
           default:
             return unreachable(binding.kind);
@@ -130,6 +138,14 @@ function declaredBySetup(binding: Binding): boolean {
     case "model":
     case "slots":
     case "context":
+    // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+    case "moduleConst":
+    case "import":
+    case "argument":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       return true;
     default:
       return unreachable(binding.kind);

@@ -4,6 +4,25 @@
 
 import type {
   ApiReference,
+  CallbackArgument,
+  ComposableParameter,
+  DeclaredBy,
+  DeclaredTypeExport,
+  GetterArgument,
+  ModuleConstant,
+  NamedImport,
+  ReturnedMember,
+  SharedModuleImport,
+  TypeExport,
+  TypeExportName,
+  TypeImport,
+  TypeParameter,
+  TypeReExport,
+  UfComposable,
+  UsedMember,
+  UseArgument,
+  UseItem,
+  ValueArgument,
   Attribute,
   Binding,
   BindingId,
@@ -107,6 +126,18 @@ export function span(start: number, end: number): Span {
   return { start, end };
 }
 
+/**
+ * What a module holds across files (ADR-0067 to ADR-0070): its type imports and exports, its
+ * value imports and constants, and a `.uf.ts` module's composables, each set only when not empty.
+ */
+export interface ModuleOptions {
+  typeImports?: TypeImport[];
+  typeExports?: TypeExport[];
+  moduleImports?: SharedModuleImport[];
+  constants?: ModuleConstant[];
+  composables?: UfComposable[];
+}
+
 /** Builds a module: without imports, injection keys or pass-through imports unless given. */
 export function createModule(
   file: string,
@@ -116,7 +147,9 @@ export function createModule(
   imports: ModuleImport[] = [],
   keys: InjectionKeyDeclaration[] = [],
   passThroughImports: PassThroughImport[] = [],
+  options: ModuleOptions = {},
 ): UfModule {
+  const { typeImports, typeExports, moduleImports, constants, composables } = options;
   return {
     irVersion: IR_VERSION,
     file,
@@ -126,7 +159,128 @@ export function createModule(
     ...(imports.length ? { imports } : {}),
     ...(keys.length ? { keys } : {}),
     ...(passThroughImports.length ? { passThroughImports } : {}),
+    ...(typeImports?.length ? { typeImports } : {}),
+    ...(typeExports?.length ? { typeExports } : {}),
+    ...(moduleImports?.length ? { moduleImports } : {}),
+    ...(constants?.length ? { constants } : {}),
+    ...(composables?.length ? { composables } : {}),
   };
+}
+
+/** Builds `import type { … } from "…"` (ADR-0067). */
+export function createTypeImport(specifier: string, names: NamedImport[], at: Span): TypeImport {
+  return { specifier, names, span: at };
+}
+
+/** Builds a name a type or value import binds. */
+export function createNamedImport(imported: string, local: string, at: Span): NamedImport {
+  return { imported, local, span: at };
+}
+
+/** Builds `export type { … } from "…"` (ADR-0068). */
+export function createTypeReExport(
+  specifier: string,
+  names: TypeExportName[],
+  at: Span,
+): TypeReExport {
+  return { kind: "ReExport", specifier, names, span: at };
+}
+
+/** Builds a name a type re-export exports. */
+export function createTypeExportName(imported: string, exported: string, at: Span): TypeExportName {
+  return { imported, exported, span: at };
+}
+
+/** Builds an exported type declaration no component reaches (ADR-0068). */
+export function createDeclaredTypeExport(name: string, code: string, at: Span): DeclaredTypeExport {
+  return { kind: "Declaration", name, code, span: at };
+}
+
+/** Builds an import of values from a relative `.ts` module (ADR-0070). */
+export function createSharedModuleImport(
+  specifier: string,
+  file: string,
+  names: NamedImport[],
+  at: Span,
+): SharedModuleImport {
+  return { specifier, file, names, span: at };
+}
+
+/** Builds a module's top-level `const` (ADR-0070): `binding` is its name's id. */
+export function createModuleConstant(
+  name: string,
+  binding: BindingId,
+  value: Code,
+  at: Span,
+  type?: TypeText,
+): ModuleConstant {
+  return { name, binding, ...(type ? { type } : {}), value, span: at };
+}
+
+/** What a composable declares besides its name and parameters: each set only when given. */
+export interface ComposableOptions {
+  typeParameters?: TypeParameter[];
+  types?: string[];
+  bindings?: Binding[];
+  setup?: SetupItem[];
+  returns?: ReturnedMember[];
+}
+
+/** Builds a composable (ADR-0069): without type parameters, bindings, setup or members unless given. */
+export function createComposable(
+  name: string,
+  at: Span,
+  parameters: ComposableParameter[] = [],
+  options: ComposableOptions = {},
+): UfComposable {
+  const { typeParameters } = options;
+  return {
+    name,
+    span: at,
+    ...(typeParameters?.length ? { typeParameters } : {}),
+    parameters,
+    types: options.types ?? [],
+    bindings: options.bindings ?? [],
+    setup: options.setup ?? [],
+    returns: options.returns ?? [],
+  };
+}
+
+/** Builds a composable's parameter, read as its kind says through its `argument` binding. */
+export function createComposableParameter(
+  name: string,
+  kind: ComposableParameter["kind"],
+  type: TypeText,
+  binding: BindingId,
+  at: Span,
+  optional = false,
+): ComposableParameter {
+  return { name, kind, type, ...(optional ? { optional: true as const } : {}), binding, span: at };
+}
+
+/** Builds a member of a composable's returned object. */
+export function createReturnedMember(name: string, binding: BindingId, at: Span): ReturnedMember {
+  return { name, binding, span: at };
+}
+
+/** Builds a type parameter (ADR-0068): its constraint and default only when written. */
+export function createTypeParameter(
+  name: string,
+  at: Span,
+  constraint?: TypeText,
+  defaultType?: TypeText,
+): TypeParameter {
+  return {
+    name,
+    ...(constraint ? { constraint } : {}),
+    ...(defaultType ? { default: defaultType } : {}),
+    span: at,
+  };
+}
+
+/** Builds where a prop's member is declared, when another declaration declares it (ADR-0067). */
+export function createDeclaredBy(file: string, declaration: string, at: Span): DeclaredBy {
+  return { file, declaration, span: at };
 }
 
 /** Builds an import every output keeps as written: no names for the side-effect import. */
@@ -190,6 +344,7 @@ export function createTypeDeclaration(
  * their scope id (ADR-0063): each set only when given.
  */
 export interface ComponentOptions {
+  typeParameters?: TypeParameter[];
   slots?: Slots;
   exposes?: Exposes;
   inheritAttrs?: false;
@@ -209,10 +364,11 @@ export function createComponent(
   emits?: Emits,
   options: ComponentOptions = {},
 ): UfComponent {
-  const { slots, exposes, styles } = options;
+  const { slots, exposes, styles, typeParameters } = options;
   return {
     name,
     span: at,
+    ...(typeParameters?.length ? { typeParameters } : {}),
     props,
     ...(propsParameter ? { propsParameter } : {}),
     types,
@@ -242,14 +398,24 @@ export function createSlots(
   return { binding, type, slots, span: at };
 }
 
-/** Builds a slot a component declares: `props` for a scoped slot. */
+/**
+ * Builds a slot a component declares: `props` for a scoped slot, with the names its type
+ * references.
+ */
 export function createSlotDeclaration(
   name: string,
   optional: boolean,
   at: Span,
   props?: TypeText,
+  references: string[] = [],
 ): SlotDeclaration {
-  return { name, optional, ...(props ? { props } : {}), span: at };
+  return {
+    name,
+    optional,
+    ...(props ? { props } : {}),
+    ...(references.length ? { references } : {}),
+    span: at,
+  };
 }
 
 /** Builds what a component exposes with `defineExpose`. */
@@ -275,6 +441,7 @@ export function createProp(
   at: Span,
   binding?: BindingId,
   defaultValue?: Expression,
+  declaredBy?: DeclaredBy,
 ): Prop {
   return {
     name,
@@ -282,6 +449,7 @@ export function createProp(
     type,
     ...(defaultValue ? { default: defaultValue } : {}),
     ...(binding === undefined ? {} : { binding }),
+    ...(declaredBy ? { declaredBy } : {}),
     span: at,
   };
 }
@@ -637,6 +805,44 @@ export function createInjectItem(
   fallback?: Code,
 ): InjectItem {
   return { kind: "Inject", binding, key, ...(fallback ? { fallback } : {}), span: at };
+}
+
+/** Builds `const { on, toggle } = useToggle(…)` (ADR-0069). */
+export function createUseItem(
+  composable: string,
+  args: UseArgument[],
+  members: UsedMember[],
+  at: Span,
+  hasEffects = false,
+): UseItem {
+  return {
+    kind: "Use",
+    composable,
+    arguments: args,
+    members,
+    ...(hasEffects ? { hasEffects: true as const } : {}),
+    span: at,
+  };
+}
+
+/** Builds a composable's argument for a `value` parameter. */
+export function createValueArgument(value: Code, at: Span): ValueArgument {
+  return { kind: "Value", value, span: at };
+}
+
+/** Builds a composable's argument for a `getter` parameter. */
+export function createGetterArgument(getter: FunctionCode, at: Span): GetterArgument {
+  return { kind: "Getter", getter, span: at };
+}
+
+/** Builds a composable's argument for a `callback` parameter. */
+export function createCallbackArgument(callback: FunctionCode, at: Span): CallbackArgument {
+  return { kind: "Callback", callback, span: at };
+}
+
+/** Builds a member a `Use` item destructures, bound to a `used*` binding. */
+export function createUsedMember(member: string, binding: BindingId, at: Span): UsedMember {
+  return { member, binding, span: at };
 }
 
 /** Builds the events a component declares with `defineEmits`. */

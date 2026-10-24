@@ -1123,6 +1123,14 @@ class Walk {
       // Composition's bindings (ADR-0055) the setup never declares.
       case "slotScope":
       case "component":
+      // What a module or a composable gives (ADR-0069, ADR-0070), which the analyser does not declare yet.
+      case "moduleConst":
+      case "import":
+      case "argument":
+      case "usedState":
+      case "usedDerived":
+      case "usedFn":
+      case "usedConst":
         return UNKNOWN;
       default:
         return unreachable(binding.kind);
@@ -5408,6 +5416,13 @@ const WHAT: Readonly<Record<SetupBinding["kind"], string>> = {
   slotScope: "a slot's props",
   context: "an injected value",
   component: "a component",
+  moduleConst: "a constant the module declares",
+  import: "a value imported from a `.ts` module",
+  argument: "a composable's argument",
+  usedState: "a ref a composable returns",
+  usedDerived: "a computed value a composable returns",
+  usedFn: "a function a composable returns",
+  usedConst: "a constant a composable returns",
 };
 
 /**

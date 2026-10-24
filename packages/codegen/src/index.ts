@@ -6,7 +6,7 @@ export {
 } from "./target.ts";
 export { bindingForms, mergesWholeStyle, spreadStyleExpression } from "./binding-forms.ts";
 export type { BindingForms } from "./binding-forms.ts";
-export { compositionUse, requiredCapabilities } from "./capabilities.ts";
+export { composableUse, compositionUse, requiredCapabilities } from "./capabilities.ts";
 export { scopeStylesheet } from "./scoper.ts";
 export type { ScopedStylesheet } from "./scoper.ts";
 export { childStyles, scopeAttribute, scopeRoots, slottedAttribute } from "./scope.ts";

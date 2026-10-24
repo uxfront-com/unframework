@@ -86,6 +86,9 @@ import type {
   Code,
   ComponentAttribute,
   ComponentNode,
+  ComposableApi,
+  ComposableMemberApi,
+  ComposableParameterKind,
   DynamicNode,
   ElementNode,
   Emits,
@@ -106,8 +109,11 @@ import type {
   SlotReference,
   Span,
   StyleAttribute,
+  TypeParameter,
   UfComponent,
+  UfComposable,
   UfModule,
+  UseItem,
   WriteReference,
 } from "./types.ts";
 import type { IrValidationError } from "./validate.ts";
@@ -227,6 +233,12 @@ export function checkInvariants(module: UfModule): IrValidationError[] {
   ]);
   const passThrough = checkPassThroughImports(module, errors);
   checkStyleSheets(module, errors);
+  const composables = composableApis(module, errors);
+  const shared = checkSharedNames(module, errors);
+  checkTypeExports(module, errors);
+  for (const [index, composable] of (module.composables ?? []).entries()) {
+    checkComposable(composable, `/composables/${index}`, module, types, shared, errors);
+  }
   const components = new Set<string>();
   // Each name names a file, and case-insensitive file systems merge two that differ in case.
   const byFile = new Map<string, string>();
@@ -252,7 +264,7 @@ export function checkInvariants(module: UfModule): IrValidationError[] {
       byFile.set(name.toLowerCase(), name);
     }
     components.add(name);
-    checkComponent(component, path, types, apis, keys, passThrough, errors);
+    checkComponent(component, path, types, apis, keys, passThrough, composables, shared, errors);
   }
   const exported = new Set<string>();
   for (const [index, entry] of module.exports.entries()) {
@@ -402,6 +414,7 @@ function componentApis(
   for (const [index, entry] of (module.imports ?? []).entries()) {
     for (const [position, imported] of entry.names.entries()) {
       const at = `/imports/${index}/names/${position}`;
+      if (imported.kind === "Composable") continue;
       if (imported.kind === "Key") {
         if (!entry.api.keys.some(({ name }) => name === imported.imported)) {
           errors.push({
@@ -441,6 +454,369 @@ function componentApis(
   }
   for (const name of ambiguous) apis.delete(name);
   return apis;
+}
+
+/**
+ * The composables a `Use` item may call, by local name: the imported ones, from their modules'
+ * resolved APIs (ADR-0069).
+ */
+function composableApis(
+  module: UfModule,
+  errors: IrValidationError[],
+): ReadonlyMap<string, ComposableApi> {
+  const apis = new Map<string, ComposableApi>();
+  for (const [index, entry] of (module.imports ?? []).entries()) {
+    for (const [position, imported] of entry.names.entries()) {
+      if (imported.kind !== "Composable") continue;
+      const api = entry.api.composables?.find(({ name }) => name === imported.imported);
+      if (!api) {
+        errors.push({
+          path: `/imports/${index}/names/${position}/imported`,
+          message: `must name a composable "${entry.specifier}" exports, and "${imported.imported}" is not one`,
+        });
+        continue;
+      }
+      apis.set(imported.local, api);
+    }
+  }
+  return apis;
+}
+
+/** What a module declares at its top level for its components to read (ADR-0070). */
+interface Shared {
+  /** Each value import's name, by its local name: an `import` binding lies in its span. */
+  readonly imports: ReadonlyMap<string, Span>;
+  /** The binding id of each top-level `const`: a `moduleConst` binding's id. */
+  readonly constants: ReadonlySet<BindingId>;
+}
+
+/**
+ * Checks the names the module's type imports, value imports and top-level `const`s bind
+ * (ADR-0067, ADR-0070): identifiers, each local name once among them, and a constant's binding
+ * id its name and offset. Its value reads only the globals every context may read, the other
+ * constants and the value imports, and writes, emits and calls nothing of a component's.
+ */
+function checkSharedNames(module: UfModule, errors: IrValidationError[]): Shared {
+  const imports = new Map<string, Span>();
+  const locals = new Set<string>();
+  const local = (name: string, path: string) => {
+    if (!isIdentifier(name)) {
+      errors.push({ path, message: `must be an identifier, and "${name}" is not` });
+    } else if (locals.has(name)) {
+      errors.push({ path, message: `must bind "${name}" once in the module` });
+    }
+    locals.add(name);
+  };
+  for (const field of ["typeImports", "moduleImports"] as const) {
+    for (const [index, entry] of (module[field] ?? []).entries()) {
+      for (const [position, name] of entry.names.entries()) {
+        const at = `/${field}/${index}/names/${position}`;
+        if (name.imported !== "default" && !isIdentifier(name.imported)) {
+          errors.push({
+            path: `${at}/imported`,
+            message: `must be "default" or an identifier, and "${name.imported}" is not`,
+          });
+        }
+        local(name.local, `${at}/local`);
+        if (field === "moduleImports") imports.set(name.local, name.span);
+      }
+    }
+  }
+  const constants = new Set<BindingId>();
+  for (const [index, constant] of (module.constants ?? []).entries()) {
+    const path = `/constants/${index}`;
+    local(constant.name, `${path}/name`);
+    if (!constant.binding.startsWith(`${constant.name}@`)) {
+      errors.push({
+        path: `${path}/binding`,
+        message: `must be "${constant.name}" and its offset, and "${constant.binding}" is not`,
+      });
+    }
+    constants.add(constant.binding);
+    if (constant.type) checkSourceText(constant.type, `${path}/type`, errors);
+    checkSourceText(constant.value, `${path}/value`, errors);
+  }
+  for (const [index, constant] of (module.constants ?? []).entries()) {
+    for (const [position, ref] of constant.value.refs.entries()) {
+      const at = `/constants/${index}/value/refs/${position}`;
+      if (ref.kind === "Global") {
+        if (!PURE_GLOBALS.has(ref.name)) {
+          errors.push({
+            path: `${at}/name`,
+            message: `must be a global an initial value may read, and "${ref.name}" is not one`,
+          });
+        }
+      } else if (ref.kind !== "Binding") {
+        errors.push({
+          path: `${at}/kind`,
+          message: `must be a read: a module's constant is a plain value (ADR-0070), and holds no ${ref.kind} reference`,
+        });
+      } else if (
+        ref.binding === constant.binding ||
+        (!constants.has(ref.binding) && !importsBinding(ref.binding, imports))
+      ) {
+        errors.push({
+          path: `${at}/binding`,
+          message: `must name another constant or a value import of the module, and "${ref.binding}" is not one`,
+        });
+      }
+    }
+  }
+  return { imports, constants };
+}
+
+/** Whether a binding id is a value import's: its name a local the import binds, in its span. */
+function importsBinding(id: BindingId, imports: ReadonlyMap<string, Span>): boolean {
+  const at = id.lastIndexOf("@");
+  const name = id.slice(0, at);
+  const span = imports.get(name);
+  const start = Number(id.slice(at + 1));
+  return span !== undefined && inside({ start, end: start + name.length }, span);
+}
+
+/**
+ * Checks the types a module exports beside its declarations (ADR-0068): each name exported once,
+ * a declaration as written under an identifier that no `TypeDeclaration` takes, which exports it
+ * already, and a re-export's names identifiers.
+ */
+function checkTypeExports(module: UfModule, errors: IrValidationError[]): void {
+  const names = new Set(module.types.flatMap((type) => (type.exported ? [type.name] : [])));
+  const declared = new Set(module.types.map(({ name }) => name));
+  const add = (name: string, path: string) => {
+    if (!isIdentifier(name)) {
+      errors.push({ path, message: `must be an identifier, and "${name}" is not` });
+    } else if (names.has(name)) {
+      errors.push({ path, message: `must export "${name}" once` });
+    }
+    names.add(name);
+  };
+  for (const [index, entry] of (module.typeExports ?? []).entries()) {
+    const path = `/typeExports/${index}`;
+    if (entry.kind === "Declaration") {
+      if (declared.has(entry.name)) {
+        errors.push({
+          path: `${path}/name`,
+          message: `must name no type of the module's \`types\`, which exports "${entry.name}" itself`,
+        });
+      }
+      add(entry.name, `${path}/name`);
+      checkSourceText(entry, path, errors);
+      continue;
+    }
+    for (const [position, name] of entry.names.entries()) {
+      const at = `${path}/names/${position}`;
+      if (!isIdentifier(name.imported)) {
+        errors.push({
+          path: `${at}/imported`,
+          message: `must be an identifier, and "${name.imported}" is not`,
+        });
+      }
+      add(name.exported, `${at}/exported`);
+    }
+  }
+}
+
+/**
+ * Checks a component's or a composable's type parameters (ADR-0068): identifiers, each once,
+ * their constraints and defaults as written, in source order.
+ */
+function checkTypeParameters(
+  parameters: readonly TypeParameter[] | undefined,
+  path: string,
+  errors: IrValidationError[],
+): void {
+  const names = new Set<string>();
+  let end = -1;
+  for (const [index, parameter] of (parameters ?? []).entries()) {
+    const at = `${path}/typeParameters/${index}`;
+    if (!isIdentifier(parameter.name)) {
+      errors.push({
+        path: `${at}/name`,
+        message: `must be an identifier, and "${parameter.name}" is not`,
+      });
+    } else if (names.has(parameter.name)) {
+      errors.push({ path: `${at}/name`, message: `must declare "${parameter.name}" once` });
+    }
+    names.add(parameter.name);
+    if (parameter.span.start < end) {
+      errors.push({ path: `${at}/span`, message: "must follow the type parameter before it" });
+    }
+    end = parameter.span.end;
+    for (const part of ["constraint", "default"] as const) {
+      const text = parameter[part];
+      if (!text) continue;
+      checkSourceText(text, `${at}/${part}`, errors);
+      if (!inside(text.span, parameter.span)) {
+        errors.push({ path: `${at}/${part}/span`, message: "must lie in the type parameter" });
+      }
+    }
+  }
+}
+
+/** Checks a list of referenced type names (ADR-0067): identifiers, each once. */
+function checkReferences(
+  references: readonly string[] | undefined,
+  path: string,
+  errors: IrValidationError[],
+): void {
+  const seen = new Set<string>();
+  for (const [index, name] of (references ?? []).entries()) {
+    if (!isIdentifier(name)) {
+      errors.push({
+        path: `${path}/references/${index}`,
+        message: `must be an identifier, and "${name}" is not`,
+      });
+    } else if (seen.has(name)) {
+      errors.push({ path: `${path}/references/${index}`, message: `must name "${name}" once` });
+    }
+    seen.add(name);
+  }
+}
+
+/** The binding kinds a composable may declare (ADR-0069): its arguments, setup and the module's. */
+const COMPOSABLE_BINDINGS: ReadonlySet<BindingKind> = new Set<BindingKind>([
+  "argument",
+  "state",
+  "derived",
+  "localConst",
+  "localFn",
+  "localVar",
+  "moduleConst",
+  "import",
+]);
+
+/**
+ * The setup items a composable may hold (ADR-0069): `useId`, `useTemplateRef`, the macros,
+ * `provide`, `inject` and a call of another composable are UF2035.
+ */
+const COMPOSABLE_ITEMS: ReadonlySet<SetupItem["kind"]> = new Set<SetupItem["kind"]>([
+  "State",
+  "Derived",
+  "Const",
+  "Variable",
+  "Function",
+  "Watch",
+  "WatchEffect",
+  "Lifecycle",
+]);
+
+/** The binding kinds a composable returns, each with the member kind its API gives it. */
+const RETURNED_KINDS: Readonly<Partial<Record<BindingKind, ComposableMemberApi["kind"]>>> = {
+  state: "state",
+  derived: "derived",
+  localFn: "function",
+  localConst: "constant",
+};
+
+/**
+ * Checks a composable (ADR-0069). Its setup keeps a component's rules (ADR-0045): it is checked
+ * as the setup of a component without props whose render follows its body, with the bindings and
+ * items a composable may hold. Its name is used once in the module; each parameter declares one
+ * `argument` binding of its name, its type as written; and each returned member names a `state`,
+ * `derived`, `localFn` or `localConst` binding by its name, once, after the setup.
+ */
+function checkComposable(
+  composable: UfComposable,
+  path: string,
+  module: UfModule,
+  types: ReadonlyMap<string, number>,
+  shared: Shared,
+  errors: IrValidationError[],
+): void {
+  const others = (module.composables ?? []).filter(({ name }) => name === composable.name);
+  if (others.length > 1 && others[0] !== composable) {
+    errors.push({ path: `${path}/name`, message: `must declare "${composable.name}" once` });
+  }
+  checkTypeParameters(composable.typeParameters, path, errors);
+  const owner: UfComponent = {
+    name: "Composable",
+    span: composable.span,
+    props: [],
+    types: composable.types,
+    bindings: composable.bindings,
+    setup: composable.setup,
+    render: {
+      kind: "Fragment",
+      children: [],
+      span: { start: composable.span.end, end: composable.span.end },
+    },
+  };
+  for (const [index, binding] of composable.bindings.entries()) {
+    if (!COMPOSABLE_BINDINGS.has(binding.kind)) {
+      errors.push({
+        path: `${path}/bindings/${index}/kind`,
+        message: `must be a kind a composable declares, and "${binding.kind}" is not (ADR-0069)`,
+      });
+    }
+  }
+  for (const [index, item] of composable.setup.entries()) {
+    if (!COMPOSABLE_ITEMS.has(item.kind)) {
+      errors.push({
+        path: `${path}/setup/${index}/kind`,
+        message: `must be an item a composable holds, and "${item.kind}" is not (ADR-0069, UF2035)`,
+      });
+    }
+  }
+  const argumentKinds = new Map<BindingId, ComposableParameterKind>();
+  const walk = setupWalk(owner, path, new Map(), new Map(), new Set(), new Map(), shared, errors);
+  const owners = new Map<BindingId, number>();
+  let end = composable.span.start;
+  for (const [index, parameter] of composable.parameters.entries()) {
+    const at = `${path}/parameters/${index}`;
+    const binding = walk.bindings.get(parameter.binding);
+    if (binding?.kind !== "argument" || binding.name !== parameter.name) {
+      errors.push({
+        path: `${at}/binding`,
+        message: `must name an argument binding named "${parameter.name}", and "${parameter.binding}" is not one`,
+      });
+    } else if (!inside(binding.span, parameter.span)) {
+      errors.push({ path: `${at}/binding`, message: "must name a binding the parameter declares" });
+    }
+    argumentKinds.set(parameter.binding, parameter.kind);
+    owners.set(parameter.binding, (owners.get(parameter.binding) ?? 0) + 1);
+    checkSourceText(parameter.type, `${at}/type`, errors);
+    if (parameter.span.start < end || !inside(parameter.span, composable.span)) {
+      errors.push({
+        path: `${at}/span`,
+        message: "must lie in the composable, after the parameter before it",
+      });
+    }
+    end = Math.max(end, parameter.span.end);
+  }
+  for (const [index, binding] of composable.bindings.entries()) {
+    if (binding.kind === "argument" && owners.get(binding.id) !== 1) {
+      errors.push({
+        path: `${path}/bindings/${index}`,
+        message: `must be the binding of one parameter, and "${binding.id}" is of ${owners.get(binding.id) ?? 0}`,
+      });
+    }
+  }
+  checkComponentTypes(owner, path, types, errors);
+  const scope = new Set(composable.bindings.map(({ id }) => id));
+  checkSetup(owner, path, scope, { ...walk, argumentKinds });
+  const names = new Set<string>();
+  end = Math.max(end, ...composable.setup.map(({ span }) => span.end));
+  for (const [index, member] of composable.returns.entries()) {
+    const at = `${path}/returns/${index}`;
+    const binding = walk.bindings.get(member.binding);
+    if (!binding || RETURNED_KINDS[binding.kind] === undefined || binding.name !== member.name) {
+      errors.push({
+        path: `${at}/binding`,
+        message: `must name a state, derived, local function or local constant binding named "${member.name}", and "${member.binding}" is not one`,
+      });
+    }
+    if (names.has(member.name)) {
+      errors.push({ path: `${at}/name`, message: `must return "${member.name}" once` });
+    }
+    names.add(member.name);
+    if (member.span.start < end || !inside(member.span, composable.span)) {
+      errors.push({
+        path: `${at}/span`,
+        message: "must lie in the composable, after its setup and the member before it",
+      });
+    }
+    end = Math.max(end, member.span.end);
+  }
 }
 
 /**
@@ -528,6 +904,14 @@ interface Walk {
   readonly keys: ReadonlyMap<string, boolean>;
   /** The names the module's pass-through imports bind, which a template may read (ADR-0063). */
   readonly passThrough: ReadonlySet<string>;
+  /** The composables a `Use` item may call, by local name, with their APIs (ADR-0069). */
+  readonly composables: ReadonlyMap<string, ComposableApi>;
+  /** Each `usedFn` binding's member, whose flags say where it may be called (ADR-0069). */
+  readonly usedFunctions: ReadonlyMap<BindingId, ComposableMemberApi>;
+  /** The kind of each of a composable's `argument` bindings (ADR-0069). */
+  readonly argumentKinds: ReadonlyMap<BindingId, ComposableParameterKind>;
+  /** What the module declares at its top level for its components to read (ADR-0070). */
+  readonly shared: Shared;
 }
 
 /** Where a node sits: what the walk carries down the tree. */
@@ -568,24 +952,63 @@ const ITEM_BINDINGS: Readonly<Record<SetupItem["kind"], BindingKind | undefined>
   Model: "model",
   Provide: undefined,
   Inject: "context",
+  // Its members each declare a binding of their own kind (`USED_BINDINGS`).
+  Use: undefined,
+};
+
+/** The binding kind of each kind of a composable's member that a `Use` item destructures. */
+const USED_BINDINGS: Readonly<Record<ComposableMemberApi["kind"], BindingKind>> = {
+  state: "usedState",
+  derived: "usedDerived",
+  function: "usedFn",
+  constant: "usedConst",
 };
 
 /** The binding kinds a setup item declares. */
-const SETUP_KINDS: ReadonlySet<BindingKind> = new Set(
-  Object.values(ITEM_BINDINGS).filter((kind) => kind !== undefined),
-);
+const SETUP_KINDS: ReadonlySet<BindingKind> = new Set([
+  ...Object.values(ITEM_BINDINGS).filter((kind) => kind !== undefined),
+  ...Object.values(USED_BINDINGS),
+]);
 
-function checkComponent(
+/**
+ * The walk of a component's setup and render, or of a composable's setup: its bindings, checked,
+ * with what the module gives it.
+ */
+function setupWalk(
   component: UfComponent,
   path: string,
-  types: ReadonlyMap<string, number>,
   apis: ReadonlyMap<string, Declared>,
   keys: ReadonlyMap<string, boolean>,
   passThrough: ReadonlySet<string>,
+  composables: ReadonlyMap<string, ComposableApi>,
+  shared: Shared,
   errors: IrValidationError[],
-): void {
+): Walk {
   const bindings = checkBindings(component, path, errors);
-  const walk: Walk = {
+  for (const [index, binding] of component.bindings.entries()) {
+    const at = `${path}/bindings/${index}`;
+    if (binding.kind === "import" && !importsBinding(binding.id, shared.imports)) {
+      errors.push({
+        path: at,
+        message: `must be a name a value import of the module binds, and "${binding.id}" is not one (ADR-0070)`,
+      });
+    } else if (binding.kind === "moduleConst" && !shared.constants.has(binding.id)) {
+      errors.push({
+        path: at,
+        message: `must be a top-level \`const\` of the module, and "${binding.id}" is not one (ADR-0070)`,
+      });
+    }
+  }
+  const usedFunctions = new Map<BindingId, ComposableMemberApi>();
+  for (const item of component.setup) {
+    if (item.kind !== "Use") continue;
+    const api = composables.get(item.composable);
+    for (const { member, binding } of item.members) {
+      const found = api?.members.find(({ name }) => name === member);
+      if (found?.kind === "function") usedFunctions.set(binding, found);
+    }
+  }
+  return {
     errors,
     component,
     bindings,
@@ -610,7 +1033,34 @@ function checkComponent(
     apis,
     keys,
     passThrough,
+    composables,
+    usedFunctions,
+    argumentKinds: new Map(),
+    shared,
   };
+}
+
+function checkComponent(
+  component: UfComponent,
+  path: string,
+  types: ReadonlyMap<string, number>,
+  apis: ReadonlyMap<string, Declared>,
+  keys: ReadonlyMap<string, boolean>,
+  passThrough: ReadonlySet<string>,
+  composables: ReadonlyMap<string, ComposableApi>,
+  shared: Shared,
+  errors: IrValidationError[],
+): void {
+  const walk = setupWalk(component, path, apis, keys, passThrough, composables, shared, errors);
+  for (const [index, binding] of component.bindings.entries()) {
+    if (binding.kind === "argument") {
+      errors.push({
+        path: `${path}/bindings/${index}/kind`,
+        message: 'must not be "argument": only a composable declares one (ADR-0069)',
+      });
+    }
+  }
+  checkTypeParameters(component.typeParameters, path, errors);
   checkComponentTypes(component, path, types, errors);
   checkProps(component, path, walk);
   // Setup bindings are in scope everywhere in the component; loop variables only in their list,
@@ -817,7 +1267,17 @@ function checkProps(component: UfComponent, path: string, walk: Walk): void {
       errors.push({ path: `${at}/name`, message: `must declare "${prop.name}" once` });
     }
     names.add(prop.name);
-    checkSourceText(prop.type, `${at}/type`, errors);
+    // A member another file declares holds that file's text, at the annotation's span (ADR-0067).
+    if (prop.declaredBy) {
+      if (!isIdentifier(prop.declaredBy.declaration)) {
+        errors.push({
+          path: `${at}/declaredBy/declaration`,
+          message: `must be an identifier, and "${prop.declaredBy.declaration}" is not`,
+        });
+      }
+    } else {
+      checkSourceText(prop.type, `${at}/type`, errors);
+    }
     if (prop.default) {
       if (!prop.optional) {
         errors.push({ path: `${at}/default`, message: "must be absent on a required prop" });
@@ -1101,6 +1561,13 @@ function checkSlots(component: UfComponent, path: string, walk: Walk): void {
     }
     names.add(slot.name);
     if (slot.props) checkSourceText(slot.props, `${at}/slots/${index}/props`, errors);
+    if (slot.references && !slot.props) {
+      errors.push({
+        path: `${at}/slots/${index}/references`,
+        message: "must be absent on a slot without props",
+      });
+    }
+    checkReferences(slot.references, `${at}/slots/${index}`, errors);
   }
   checkSourceText(slots.type, `${at}/type`, errors);
 }
@@ -2350,6 +2817,8 @@ function referenceText(
     binding.kind === "derived" ||
     binding.kind === "templateRef" ||
     binding.kind === "model" ||
+    binding.kind === "usedState" ||
+    binding.kind === "usedDerived" ||
     (binding.kind === "context" && injectsRef(binding, walk))
   ) {
     return { text: `${binding.name}.value`, object: binding.name, member: "value" };
@@ -2389,6 +2858,18 @@ function checkProvidedRef(code: Code, path: string, walk: Walk): void {
 }
 
 /**
+ * The binding kinds code may call: a local function, a composable's returned one or callback, and
+ * a module's plain function, its own or imported (ADR-0069, ADR-0070).
+ */
+const CALLED_KINDS: ReadonlySet<BindingKind> = new Set<BindingKind>([
+  "localFn",
+  "usedFn",
+  "argument",
+  "moduleConst",
+  "import",
+]);
+
+/**
  * Why code in a context may not use a binding so, or `undefined` (ADR-0045): only a local
  * function is called; `emit` only emits; and outside client code no template ref, setup `let`
  * or function value is read, and only pure local functions are called, a getter's reading
@@ -2401,10 +2882,10 @@ function useProblem(
   walk: Walk,
 ): { field: string; message: string } | undefined {
   const { id, kind } = binding;
-  if (call && kind !== "localFn") {
+  if (call && !CALLED_KINDS.has(kind)) {
     return {
       field: "call",
-      message: `must be absent: only a local function is called, and "${id}" is a ${kind} binding`,
+      message: `must be absent: only a local function is called, or a function a composable or the module gives, and "${id}" is a ${kind} binding`,
     };
   }
   const where = CONTEXT_NAMES[context];
@@ -2467,6 +2948,29 @@ function useProblem(
             field: "binding",
             message: `must not read the component "${id}" in ${where}: only \`<component is>\` chooses one (ADR-0054)`,
           };
+    case "usedFn": {
+      // Its flags say what it does: the caller never reads the composable's body (ADR-0069).
+      if (context === "client") return undefined;
+      if (!call) {
+        return {
+          field: "binding",
+          message: `must call the composable's function "${id}": only client code passes one as a value (ADR-0069)`,
+        };
+      }
+      return walk.usedFunctions.get(id)?.pure
+        ? undefined
+        : {
+            field: "binding",
+            message: `must call only a pure function in ${where}, and the composable's "${id}" is not one (ADR-0069)`,
+          };
+    }
+    case "argument":
+      return walk.argumentKinds.get(id) !== "callback" || context === "client"
+        ? undefined
+        : {
+            field: "binding",
+            message: `must not read the callback "${id}" in ${where}: only client code calls one (ADR-0069)`,
+          };
     case "prop":
     case "loopVar":
     case "state":
@@ -2475,6 +2979,13 @@ function useProblem(
     case "model":
     case "slotScope":
     case "context":
+    // Module-level values are read-only plain values, functions included (ADR-0070), and what
+    // a composable returns is read as its member's kind says (ADR-0069).
+    case "moduleConst":
+    case "import":
+    case "usedState":
+    case "usedDerived":
+    case "usedConst":
       return undefined;
     default:
       return unreachable(kind);
@@ -2985,6 +3496,26 @@ function checkSetup(
       }
       owners.set(item.binding, (owners.get(item.binding) ?? 0) + 1);
     }
+    if (item.kind === "Use") {
+      const api = walk.composables.get(item.composable);
+      for (const [position, used] of item.members.entries()) {
+        const member = api?.members.find(({ name }) => name === used.member);
+        const expected = member && USED_BINDINGS[member.kind];
+        const binding = bindings.get(used.binding);
+        if (expected && binding?.kind !== expected) {
+          errors.push({
+            path: `${at}/members/${position}/binding`,
+            message: `must name a ${expected} binding, and "${used.binding}" is not one`,
+          });
+        } else if (binding && !inside(binding.span, used.span)) {
+          errors.push({
+            path: `${at}/members/${position}/binding`,
+            message: "must name a binding the member declares",
+          });
+        }
+        owners.set(used.binding, (owners.get(used.binding) ?? 0) + 1);
+      }
+    }
     if ("type" in item && item.type) checkSourceText(item.type, `${at}/type`, errors);
     checkItem(item, at, scope, walk);
   }
@@ -3107,8 +3638,94 @@ function checkItem(item: SetupItem, path: string, scope: ReadonlySet<BindingId>,
         declaredBefore(summarizeCode(item.fallback, component), item, `${path}/fallback`, walk);
       }
       return;
+    case "Use":
+      checkUse(item, path, scope, walk);
+      return;
     default:
       unreachable(item);
+  }
+}
+
+/** The parameter kind each kind of a composable's argument is for (ADR-0069). */
+const ARGUMENT_KINDS: Readonly<
+  Record<UseItem["arguments"][number]["kind"], ComposableParameterKind>
+> = { Value: "value", Getter: "getter", Callback: "callback" };
+
+/**
+ * Checks a composable's call (ADR-0069): it calls an imported composable with an argument of its
+ * kind for each parameter, the optional ones aside, and no more; a value is evaluated once, a
+ * getter is pure, and a callback is client code; each destructured member is one the API
+ * returns, once; and `hasEffects` is copied from the API.
+ */
+function checkUse(item: UseItem, path: string, scope: ReadonlySet<BindingId>, walk: Walk): void {
+  const { errors, component } = walk;
+  const api = walk.composables.get(item.composable);
+  if (!api) {
+    errors.push({
+      path: `${path}/composable`,
+      message: `must name a composable the module imports, and "${item.composable}" is not one`,
+    });
+  }
+  for (const [index, argument] of item.arguments.entries()) {
+    const at = `${path}/arguments/${index}`;
+    const parameter = api?.parameters[index];
+    if (api && !parameter) {
+      errors.push({
+        path: at,
+        message: `must be absent: "${api.name}" takes ${api.parameters.length} arguments`,
+      });
+    } else if (parameter && parameter.kind !== ARGUMENT_KINDS[argument.kind]) {
+      errors.push({
+        path: `${at}/kind`,
+        message: `must be the kind of the parameter "${parameter.name}", a ${parameter.kind}`,
+      });
+    }
+    if (!inside(argument.span, item.span)) {
+      errors.push({ path: `${at}/span`, message: "must lie in the call" });
+    }
+    switch (argument.kind) {
+      case "Value":
+        checkCode(argument.value, `${at}/value`, scope, "initial", walk);
+        declaredBefore(summarizeCode(argument.value, component), item, `${at}/value`, walk);
+        break;
+      case "Getter":
+        checkFunction(argument.getter, `${at}/getter`, scope, "getter", walk);
+        declaredBefore(summarizeCode(argument.getter.body, component), item, `${at}/getter`, walk);
+        break;
+      case "Callback":
+        checkFunction(argument.callback, `${at}/callback`, scope, "function", walk);
+        break;
+      default:
+        unreachable(argument);
+    }
+  }
+  const required = api?.parameters.filter(({ optional }) => !optional).length ?? 0;
+  if (item.arguments.length < required) {
+    errors.push({
+      path: `${path}/arguments`,
+      message: `must pass the ${required} required arguments of "${item.composable}"`,
+    });
+  }
+  const members = new Set<string>();
+  for (const [index, used] of item.members.entries()) {
+    const at = `${path}/members/${index}`;
+    if (api && !api.members.some(({ name }) => name === used.member)) {
+      errors.push({
+        path: `${at}/member`,
+        message: `must name a member "${api.name}" returns, and "${used.member}" is not one`,
+      });
+    } else if (members.has(used.member)) {
+      errors.push({ path: `${at}/member`, message: `must destructure "${used.member}" once` });
+    }
+    members.add(used.member);
+  }
+  if (api && (item.hasEffects === true) !== (api.hasEffects === true)) {
+    errors.push({
+      path: `${path}/hasEffects`,
+      message: api.hasEffects
+        ? `must be set: "${api.name}" runs code in the browser`
+        : `must be absent: "${api.name}" runs no code in the browser`,
+    });
   }
 }
 
@@ -3250,7 +3867,14 @@ function declaredBefore(summary: CodeSummary, item: SetupItem, path: string, wal
   if (summary.emits.size && emits) used.push(emits.binding);
   for (const id of used) {
     const binding = walk.bindings.get(id);
-    if (binding && binding.kind !== "prop" && binding.span.start >= item.span.start) {
+    // A module-level value is in scope wherever the setup runs (ADR-0070).
+    if (
+      binding &&
+      binding.kind !== "prop" &&
+      binding.kind !== "moduleConst" &&
+      binding.kind !== "import" &&
+      binding.span.start >= item.span.start
+    ) {
       walk.errors.push({
         path,
         message: `must read only what is declared before it, and "${id}" is not: the setup runs it where it is (ADR-0045)`,

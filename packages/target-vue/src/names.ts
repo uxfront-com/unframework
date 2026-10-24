@@ -119,6 +119,14 @@ export class VueNames {
       case "slotScope":
       case "context":
       case "component":
+      // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+      case "moduleConst":
+      case "import":
+      case "argument":
+      case "usedState":
+      case "usedDerived":
+      case "usedFn":
+      case "usedConst":
         break;
       default:
         return unreachable(binding.kind);
@@ -154,6 +162,14 @@ export class VueNames {
       case "slots":
       case "slotScope":
       case "component":
+      // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+      case "moduleConst":
+      case "import":
+      case "argument":
+      case "usedState":
+      case "usedDerived":
+      case "usedFn":
+      case "usedConst":
         return this.script(binding, written);
       default:
         return unreachable(binding.kind);
@@ -208,6 +224,14 @@ function declaredBySetup(kind: BindingKind): boolean {
     case "model":
     case "slots":
     case "context":
+    // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+    case "moduleConst":
+    case "import":
+    case "argument":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       return true;
     default:
       return unreachable(kind);

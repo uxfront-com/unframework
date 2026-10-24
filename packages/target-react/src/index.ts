@@ -1,6 +1,7 @@
 import {
   bindingOf,
   componentTypes,
+  composableUse,
   defineTarget,
   exportDeclaration,
   exportsOf,
@@ -151,11 +152,35 @@ export const react: Target = defineTarget({
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
     "sheet-order": { support: "native" },
+    "generic-components": { support: "native" },
+    "generic-slot-props": { support: "native" },
+    composables: { support: "native" },
+    // A custom hook's effects keep React's order, not the caller's (ADR-0048, ADR-0069).
+    "composable-effect-order": {
+      support: "unsupported",
+      code: "UF4005",
+      severity: "info",
+      reason:
+        "A composable is a custom hook, and React runs a component's effects in its own order (ADR-0048): a hook's watchers, effects and hooks cannot take their place among the caller's own, so code that relies on that order may see another (ADR-0069).",
+    },
   },
   // A function component in TSX (plan §6, ADR-0045 to ADR-0047): the copied type
   // declarations and the events' props, the setup's hooks in source order, and the render tree in
   // React's JSX.
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    // A composable's call and what a module or a composable gives are declared before this
+    // target emits them (ADR-0069, ADR-0070): until its composables lane lands, a component that
+    // uses one is reported, never emitted without it (P2).
+    const composable = composableUse(component);
+    if (composable) {
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message: `The react target does not emit ${composable.what} yet: it lands with this target's composables lane.`,
+        span: composable.span,
+      });
+      return [];
+    }
     const { module } = context;
     // Every name the source declares or reads is taken before the output claims its own
     // (`cx`, `setCount`, `CSSProperties`, `_props`), so none captures another (ADR-0035).

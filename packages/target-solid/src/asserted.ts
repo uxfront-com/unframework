@@ -45,6 +45,14 @@ export function assertsIn(kind: Binding["kind"], scope: NarrowedPath["scope"]): 
     case "slotScope":
     case "context":
     case "component":
+    // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+    case "moduleConst":
+    case "import":
+    case "argument":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       return false;
     default:
       return unreachable(kind);

@@ -326,6 +326,9 @@ function declares(item: SetupItem): boolean {
     case "Lifecycle":
     case "Provide":
       return false;
+    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+    case "Use":
+      return true;
     default:
       return unreachable(item);
   }
@@ -439,6 +442,9 @@ function itemCode(
       const fallback = item.fallback ? `, ${code(item.fallback, "pure")}` : ", undefined";
       return `const ${local(item.binding)} = ${inject}(${item.key}${fallback});`;
     }
+    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+    case "Use":
+      return "";
     default:
       return unreachable(item);
   }

@@ -570,6 +570,14 @@ class ScriptWriter {
       case "slotScope":
       case "context":
       case "component":
+      // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+      case "moduleConst":
+      case "import":
+      case "argument":
+      case "usedState":
+      case "usedDerived":
+      case "usedFn":
+      case "usedConst":
         return written;
       default:
         return unreachable(binding.kind);
@@ -828,6 +836,9 @@ class ScriptWriter {
         return this.#inject(item);
       // A prop (`#props`).
       case "Model":
+        return "";
+      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+      case "Use":
         return "";
       default:
         return unreachable(item);
@@ -1288,6 +1299,9 @@ function isDeclaration(item: SetupItem): boolean {
     case "Lifecycle":
     case "Provide":
       return false;
+    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+    case "Use":
+      return true;
     default:
       return unreachable(item);
   }
@@ -1717,6 +1731,14 @@ function isReactive(kind: BindingKind): boolean {
     case "slotScope":
     case "context":
     case "component":
+    // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+    case "moduleConst":
+    case "import":
+    case "argument":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       return false;
     default:
       return unreachable(kind);

@@ -1,10 +1,11 @@
 import {
   addPassThroughImports,
   childImports,
+  composableUse,
   defineTarget,
   ImportSet,
-  scopeRoots,
   mergesWholeStyle,
+  scopeRoots,
 } from "@unframework/codegen";
 import type { CapabilityCell, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
@@ -116,6 +117,10 @@ export const astro: Target = defineTarget({
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
     "sheet-order": { support: "native" },
+    "generic-components": { support: "native" },
+    "generic-slot-props": { support: "native" },
+    composables: { support: "native" },
+    "composable-effect-order": inert("A composable's watchers, effects and hooks never run"),
   },
   /**
    * One `.astro` file: the frontmatter at the very top (where Astro reads it, and where the
@@ -126,6 +131,19 @@ export const astro: Target = defineTarget({
    * decides how the frontmatter declares `Props`.
    */
   emit(component: UfComponent, context): OutputFile[] {
+    // A composable's call and what a module or a composable gives are declared before this
+    // target emits them (ADR-0069, ADR-0070): until its composables lane lands, a component that
+    // uses one is reported, never emitted without it (P2).
+    const composable = composableUse(component);
+    if (composable) {
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message: `The astro target does not emit ${composable.what} yet: it lands with this target's composables lane.`,
+        span: composable.span,
+      });
+      return [];
+    }
     const { module } = context;
     const spelling = spellingOf(component, module);
     const imports = new ImportSet(spelling.scope);

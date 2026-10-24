@@ -2,7 +2,7 @@
 // declarations (ADR-0034), and the type of each signal input (ADR-0034). Type text is copied as
 // the author wrote it; it is parsed only to find the names it refers to and the `undefined` an
 // input with a default leaves out of its value type.
-import { parseExpressionSource } from "@unframework/codegen";
+import { parseExpressionSource, parseStatementsSource } from "@unframework/codegen";
 import type { TypeDeclaration } from "@unframework/ir";
 
 interface TypeNode {
@@ -34,8 +34,11 @@ function parseType(code: string): TypeNode {
   return type;
 }
 
-/** The names of the types a type refers to (`Item` in `Item[]`, `Array<Finish>`). */
-function referencedNames(code: string): Set<string> {
+/**
+ * The names of the types a parsed type or declaration refers to (`Item` in `Item[]`,
+ * `Array<Finish>`, `interface Props extends Base`).
+ */
+function referencedNames(node: TypeNode): Set<string> {
   const names = new Set<string>();
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
@@ -48,22 +51,61 @@ function referencedNames(code: string): Set<string> {
       while (name.type === "TSQualifiedName") name = name.left as typeof name;
       if (typeof name.name === "string") names.add(name.name);
     }
+    // An interface's heritage names its base as an expression (`extends Base`, `extends ns.Base`).
+    if (value.type === "TSInterfaceHeritage") {
+      let base = value.expression as { type: string; name?: string; object?: unknown };
+      while (base.type === "MemberExpression") base = base.object as typeof base;
+      if (typeof base.name === "string") names.add(base.name);
+    }
     for (const [key, child] of Object.entries(value)) {
       if (key !== "type" && typeof child === "object") visit(child);
     }
   };
-  visit(parseType(code));
+  visit(node);
   return names;
 }
 
+/** A type declaration as written, parsed: offsets in its nodes are relative to its code. */
+function parseDeclaration(code: string): TypeNode {
+  const [statement] = parseStatementsSource(code).statements as unknown[];
+  if (
+    !isTypeNode(statement) ||
+    (statement.type !== "TSInterfaceDeclaration" && statement.type !== "TSTypeAliasDeclaration")
+  ) {
+    throw new Error(`Cannot read \`${code}\` as a type declaration.`);
+  }
+  return statement;
+}
+
 /**
- * The type a declaration declares, as a type on its own: an interface's body (an object type:
- * the analyser accepts no `extends` and no type parameters) or an alias's right-hand side.
+ * The type a declaration declares, as a type on its own: an interface's body (an object type) or
+ * an alias's right-hand side, read from the parsed declaration, since a header's type
+ * parameters may hold a `{` or an `=` of their own (`interface List<T extends { id: string }>`,
+ * `type P<T = string>`, ADR-0068).
  */
 function declaredType(declaration: TypeDeclaration): string {
-  const { code } = declaration;
-  if (code.startsWith("interface")) return code.slice(code.indexOf("{"));
-  return code.slice(code.indexOf("=") + 1).replace(/;\s*$/, "");
+  const node = parseDeclaration(declaration.code);
+  const type = (
+    node.type === "TSInterfaceDeclaration" ? node.body : node.typeAnnotation
+  ) as TypeNode;
+  return declaration.code.slice(type.start, type.end);
+}
+
+/**
+ * The names a whole declaration refers to: its body's or right-hand side's, an interface's bases'
+ * and its type parameters' constraints and defaults (`Item` in `<T extends Item>`), but its own
+ * type parameters.
+ */
+function declarationReferences(declaration: TypeDeclaration): Set<string> {
+  const node = parseDeclaration(declaration.code);
+  const names = referencedNames(node);
+  const parameters = (node.typeParameters as { params?: { name?: { name?: unknown } }[] } | null)
+    ?.params;
+  for (const parameter of parameters ?? []) {
+    const name = parameter.name?.name;
+    if (typeof name === "string") names.delete(name);
+  }
+  return names;
 }
 
 /**
@@ -88,7 +130,7 @@ export function declaredTypes(
     const declaration = byName.get(name);
     if (!declaration || kept.has(name)) continue;
     kept.add(name);
-    pending.push(...referencedNames(declaredType(declaration)));
+    pending.push(...declarationReferences(declaration));
   }
   return closure.filter((declaration) => kept.has(declaration.name));
 }

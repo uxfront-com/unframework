@@ -55,6 +55,41 @@
             "$ref": "#/definitions/PassThroughImport"
           },
           "description": "The module's pass-through imports, in source order (plan §4.4, ADR-0004, ADR-0064): every output keeps them as written, in this order, and the plugin that registers each module resolves it. Absent when it has none."
+        },
+        "typeImports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TypeImport"
+          },
+          "description": "The module's `import type` declarations, in source order (ADR-0067): the types its props, events and setup name from a relative `.ts`, a `.uf.tsx`, a `.uf.ts` or a package, which every output re-imports by name. Absent when it has none."
+        },
+        "typeExports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TypeExport"
+          },
+          "description": "What the module exports of types that `TypeDeclaration.exported` cannot hold, in source order (ADR-0068): type re-exports, and exported types no component reaches. Every output exports them under the same names. Absent when it has none."
+        },
+        "moduleImports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SharedModuleImport"
+          },
+          "description": "The module's imports of values from relative `.ts` modules, in source order (ADR-0070): copied into each output tree unchanged, and read through `import` bindings. Absent when it imports none."
+        },
+        "constants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ModuleConstant"
+          },
+          "description": "The module's top-level `const` declarations its components read, in source order (ADR-0070), through `moduleConst` bindings. Absent when it has none."
+        },
+        "composables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UfComposable"
+          },
+          "description": "The composables a `.uf.ts` module declares, in source order (ADR-0069): named exports `use[A-Z]…`, each compiled to one module per target. Absent in a `.uf.tsx` module."
         }
       },
       "required": [
@@ -76,6 +111,13 @@
         },
         "span": {
           "$ref": "#/definitions/Span"
+        },
+        "typeParameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TypeParameter"
+          },
+          "description": "The function's type parameters, `function List<T>(props: ListProps<T>)`, in order (ADR-0068). Absent when it has none."
         },
         "props": {
           "type": "array",
@@ -179,28 +221,20 @@
       "additionalProperties": false,
       "description": "A half-open range `[start, end)` of UTF-16 offsets into the source file."
     },
-    "Prop": {
+    "TypeParameter": {
       "type": "object",
       "properties": {
         "name": {
           "type": "string",
-          "description": "The name a consumer passes: ASCII letters and digits that every target can declare and read as an identifier, and none a target reserves (`RESERVED_PROP_NAMES`)."
+          "description": "The parameter's name."
         },
-        "optional": {
-          "type": "boolean",
-          "description": "Whether the member is optional (`label?: string`)."
-        },
-        "type": {
+        "constraint": {
           "$ref": "#/definitions/TypeText",
-          "description": "The member's type annotation as written: the targets that declare inputs print it."
+          "description": "The constraint after `extends`, as written."
         },
         "default": {
-          "$ref": "#/definitions/Expression",
-          "description": "The default, in the destructured form only: a static value, which references nothing, since Vue hoists defaults out of the component and Angular evaluates them before any input is set. Absent, or explicitly `undefined`, the prop takes it."
-        },
-        "binding": {
-          "$ref": "#/definitions/BindingId",
-          "description": "The binding expressions read the prop through. Absent when the destructured form leaves the prop out; the object form has one for every prop."
+          "$ref": "#/definitions/TypeText",
+          "description": "The default after `=`, as written."
         },
         "span": {
           "$ref": "#/definitions/Span"
@@ -208,12 +242,10 @@
       },
       "required": [
         "name",
-        "optional",
-        "type",
         "span"
       ],
       "additionalProperties": false,
-      "description": "A member of a component's props type."
+      "description": "A type parameter of a component or a composable, `T extends Item = Item` (ADR-0068): the outputs write each target's generic form from it."
     },
     "TypeText": {
       "type": "object",
@@ -230,7 +262,47 @@
         "span"
       ],
       "additionalProperties": false,
-      "description": "A type annotation, as written: exactly `source.slice(span.start, span.end)`."
+      "description": "A type annotation, as written: exactly `source.slice(span.start, span.end)`, but a prop's type whose member another file declares (`Prop.declaredBy`), which is that file's text."
+    },
+    "Prop": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name a consumer passes: ASCII letters and digits that every target can declare and read as an identifier, and none a target reserves (`RESERVED_PROP_NAMES`)."
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Whether the member is optional (`label?: string`)."
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The member's type annotation as written: the targets that declare inputs print it. For a member from another file, its text as written in the declaring file, at the props annotation's span (ADR-0067)."
+        },
+        "default": {
+          "$ref": "#/definitions/Expression",
+          "description": "The default, in the destructured form only: a static value, which references nothing, since Vue hoists defaults out of the component and Angular evaluates them before any input is set. Absent, or explicitly `undefined`, the prop takes it."
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId",
+          "description": "The binding expressions read the prop through. Absent when the destructured form leaves the prop out; the object form has one for every prop."
+        },
+        "declaredBy": {
+          "$ref": "#/definitions/DeclaredBy",
+          "description": "Where the member is declared, when another declaration than the props type declares it: an interface it extends, a type it intersects or picks from, or an imported one (ADR-0067). The prop's span is then the props annotation's, and its type's text is the declaring file's. Absent for a member the props type itself declares."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "name",
+        "optional",
+        "type",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A member of a component's props type."
     },
     "Expression": {
       "type": "object",
@@ -421,6 +493,31 @@
       "additionalProperties": false,
       "description": "A read of a name a pass-through import binds, `button` in `class={button({ size })}` (ADR-0063): every target prints it as written. Only a render expression holds one, never setup code."
     },
+    "DeclaredBy": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "The declaring file, as the type oracle names it (ADR-0067): root-relative, with forward slashes, or `pkg:<name>` for a package's. Never absolute (P8).",
+          "pattern": "^(?![/\\\\]|[A-Za-z]:).+"
+        },
+        "declaration": {
+          "type": "string",
+          "description": "The name of the interface or type alias that declares the member."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The member's span in the declaring file."
+        }
+      },
+      "required": [
+        "file",
+        "declaration",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "The declaration a prop's member comes from (ADR-0067)."
+    },
     "PropsParameter": {
       "type": "object",
       "properties": {
@@ -587,6 +684,13 @@
           "$ref": "#/definitions/TypeText",
           "description": "The props a scoped slot passes, as written: the type of the member's parameter."
         },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The names its props' type references, in order of their first use (ADR-0067), so a type parameter a slot passes is seen (`generic-slot-props`). Absent when it references none."
+        },
         "span": {
           "$ref": "#/definitions/Span"
         }
@@ -665,9 +769,16 @@
         "slots",
         "slotScope",
         "context",
-        "component"
+        "component",
+        "moduleConst",
+        "import",
+        "argument",
+        "usedState",
+        "usedDerived",
+        "usedFn",
+        "usedConst"
       ],
-      "description": "What declares a binding. Only the kinds the analyser lowers: the coverage gate requires a corpus case for each.\n- `prop`: a prop, destructured or read through the props object;\n- `loopVar`: the item or index parameter of a list's callback;\n- `state`: `const count = ref(…)`, read and written through `count.value`;\n- `derived`: `const total = computed(() => …)`, read through `total.value`;\n- `templateRef`: `const input = useTemplateRef<HTMLInputElement>()`, read through   `input.value` in client code, and attached with `ref={input}`;\n- `localConst`: a setup `const` holding a value, `useId()`'s included;\n- `localFn`: a setup function, `function save() {…}` or `const save = () => …`;\n- `localVar`: a setup `let`, which holds what no template reads (a timer's id);\n- `emit`: the function `defineEmits` returns;\n- `model`: `const open = defineModel<boolean>(\"open\")`, read and written as `open.value`, as   state is (ADR-0054);\n- `slots`: the object `defineSlots` returns;\n- `slotScope`: a scoped fill's parameter, or a name its pattern binds;\n- `context`: `const theme = inject(ThemeKey)`, an injected value, read-only;\n- `component`: a component named in `<component is>`'s set."
+      "description": "What declares a binding. Only the kinds the analyser lowers: the coverage gate requires a corpus case for each.\n- `prop`: a prop, destructured or read through the props object;\n- `loopVar`: the item or index parameter of a list's callback;\n- `state`: `const count = ref(…)`, read and written through `count.value`;\n- `derived`: `const total = computed(() => …)`, read through `total.value`;\n- `templateRef`: `const input = useTemplateRef<HTMLInputElement>()`, read through   `input.value` in client code, and attached with `ref={input}`;\n- `localConst`: a setup `const` holding a value, `useId()`'s included;\n- `localFn`: a setup function, `function save() {…}` or `const save = () => …`;\n- `localVar`: a setup `let`, which holds what no template reads (a timer's id);\n- `emit`: the function `defineEmits` returns;\n- `model`: `const open = defineModel<boolean>(\"open\")`, read and written as `open.value`, as   state is (ADR-0054);\n- `slots`: the object `defineSlots` returns;\n- `slotScope`: a scoped fill's parameter, or a name its pattern binds;\n- `context`: `const theme = inject(ThemeKey)`, an injected value, read-only;\n- `component`: a component named in `<component is>`'s set;\n- `moduleConst`: a top-level `const` of the module (`ModuleConstant`), read-only (ADR-0070);\n- `import`: a value imported from a relative `.ts` module (`SharedModuleImport`), read-only;\n- `argument`: a composable's parameter, read by its kind (`ComposableParameter`, ADR-0069);\n- `usedState`, `usedDerived`, `usedFn`, `usedConst`: what a `Use` item destructures from a   composable's result, by the member's kind: a ref of state, read through `.value` and never   written (UF2036), a derived value, a function and a constant (ADR-0069)."
     },
     "SetupItem": {
       "anyOf": [
@@ -709,6 +820,9 @@
         },
         {
           "$ref": "#/definitions/InjectItem"
+        },
+        {
+          "$ref": "#/definitions/UseItem"
         }
       ],
       "description": "What a component's setup declares or runs, in source order (ADR-0045)."
@@ -1509,6 +1623,154 @@
       ],
       "additionalProperties": false,
       "description": "`const theme = inject(ThemeKey, fallback)`: a `context` binding (ADR-0054)."
+    },
+    "UseItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Use"
+        },
+        "composable": {
+          "type": "string",
+          "description": "The local name of the imported composable."
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UseArgument"
+          },
+          "description": "The arguments, in order, each as its parameter's kind reads it."
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UsedMember"
+          },
+          "description": "The destructured members, in source order."
+        },
+        "hasEffects": {
+          "type": "boolean",
+          "const": true,
+          "description": "Copied from the composable's API: a call requires `composable-effect-order`."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The declaration, from `const` to its end."
+        }
+      },
+      "required": [
+        "kind",
+        "composable",
+        "arguments",
+        "members",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`const { on, toggle } = useToggle(false)` (ADR-0069): a call of an imported composable at the top level of the setup, whose result is destructured into `used*` bindings."
+    },
+    "UseArgument": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ValueArgument"
+        },
+        {
+          "$ref": "#/definitions/GetterArgument"
+        },
+        {
+          "$ref": "#/definitions/CallbackArgument"
+        }
+      ],
+      "description": "An argument of a composable's call, by its parameter's kind (ADR-0069): a value the setup evaluates once, a getter read reactively, or a callback client code calls."
+    },
+    "ValueArgument": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Value"
+        },
+        "value": {
+          "$ref": "#/definitions/Code"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "An argument of a `value` parameter: code the setup evaluates once."
+    },
+    "GetterArgument": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Getter"
+        },
+        "getter": {
+          "$ref": "#/definitions/FunctionCode"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "getter",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "An argument of a `getter` parameter: a function without parameters, pure as a getter is."
+    },
+    "CallbackArgument": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Callback"
+        },
+        "callback": {
+          "$ref": "#/definitions/FunctionCode"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "callback",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "An argument of a `callback` parameter: a function client code calls."
+    },
+    "UsedMember": {
+      "type": "object",
+      "properties": {
+        "member": {
+          "type": "string",
+          "description": "The member's name in the composable's API."
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId",
+          "description": "The `used*` binding of the member's kind."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "member",
+        "binding",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A member a `Use` item destructures: `on`, or `on: open` under another name."
     },
     "ElementNode": {
       "type": "object",
@@ -2698,11 +2960,11 @@
       "properties": {
         "specifier": {
           "type": "string",
-          "description": "The specifier as written, which ends in `.uf.tsx`."
+          "description": "The specifier as written, which ends in `.uf.tsx` or `.uf.ts`."
         },
         "file": {
           "type": "string",
-          "description": "The resolved `.uf.tsx`, relative to the importer, with forward slashes."
+          "description": "The resolved `.uf.tsx` or `.uf.ts`, relative to the importer, with forward slashes."
         },
         "api": {
           "$ref": "#/definitions/ModuleApi",
@@ -2728,7 +2990,7 @@
         "span"
       ],
       "additionalProperties": false,
-      "description": "An import of another `.uf.tsx` module: `import Field from \"./Field.uf.tsx\"` (ADR-0053). The analyser records the API it resolved, so every target emits from the IR alone (P5, P6)."
+      "description": "An import of another `.uf.tsx` module, `import Field from \"./Field.uf.tsx\"` (ADR-0053), or of a `.uf.ts` module's composables, `import { useToggle } from \"./useToggle.uf.ts\"` (ADR-0069). The analyser records the API it resolved, so every target emits from the IR alone (P5, P6)."
     },
     "ModuleApi": {
       "type": "object",
@@ -2750,6 +3012,13 @@
             "$ref": "#/definitions/KeyApi"
           },
           "description": "The injection keys the module exports, in source order."
+        },
+        "composables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ComposableApi"
+          },
+          "description": "The composables a `.uf.ts` module exports, in source order (ADR-0069). Absent when it has none."
         }
       },
       "required": [
@@ -2830,6 +3099,13 @@
         "styles": {
           "$ref": "#/definitions/ComponentStylesApi",
           "description": "The component's scoped styles, when it imports a stylesheet (ADR-0063)."
+        },
+        "typeParameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The names of the component's type parameters, in order (ADR-0068), so a parent knows the child is generic. Absent when it has none."
         }
       },
       "required": [
@@ -2857,6 +3133,13 @@
         },
         "type": {
           "type": "string"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The names its type references, in order of their first use (ADR-0067), so a parent imports what it prints. Absent when it references none."
         }
       },
       "required": [
@@ -2921,6 +3204,13 @@
         "props": {
           "type": "string",
           "description": "The slot's props' type, for a scoped slot."
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The names its props' type references, as `ApiMember.references`."
         }
       },
       "required": [
@@ -2963,6 +3253,13 @@
         "ref": {
           "$ref": "#/definitions/RefType",
           "description": "The authoring type of the ref the key holds, as `InjectionKeyDeclaration.ref`."
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The names its type references, as `ApiMember.references`."
         }
       },
       "required": [
@@ -2982,6 +3279,122 @@
       ],
       "description": "An authoring type of a ref a key may hold."
     },
+    "ComposableApi": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "typeParameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The names of its type parameters, in order. Absent when it has none."
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ComposableParameterApi"
+          },
+          "description": "The parameters, in order."
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ComposableMemberApi"
+          },
+          "description": "The returned members, in order."
+        },
+        "hasEffects": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set where its setup runs code in the browser (a watcher, an effect or a lifecycle hook): a call then requires `composable-effect-order`, and its `Use` item copies the flag."
+        }
+      },
+      "required": [
+        "name",
+        "parameters",
+        "members"
+      ],
+      "additionalProperties": false,
+      "description": "What a caller reads of a composable (ADR-0069): its parameters and its returned members, so a caller's output never depends on the composable's body."
+    },
+    "ComposableParameterApi": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/definitions/ComposableParameterKind"
+        },
+        "optional": {
+          "type": "boolean",
+          "const": true
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "kind",
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "A parameter of a composable's API: its name, its kind and its type as written."
+    },
+    "ComposableParameterKind": {
+      "type": "string",
+      "enum": [
+        "value",
+        "getter",
+        "callback"
+      ],
+      "description": "How a composable reads a parameter (ADR-0069)."
+    },
+    "ComposableMemberApi": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "state",
+            "derived",
+            "function",
+            "constant"
+          ]
+        },
+        "type": {
+          "type": "string"
+        },
+        "async": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set for an `async` function."
+        },
+        "client": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set for a function that only client code may call: it writes, emits or awaits."
+        },
+        "pure": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set for a function a template or a getter may call: it reads, and changes nothing."
+        }
+      },
+      "required": [
+        "name",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "description": "A returned member of a composable's API: a ref of state, a derived value, a function or a constant, with its type as written where the source writes one."
+    },
     "ImportedName": {
       "type": "object",
       "properties": {
@@ -2989,7 +3402,8 @@
           "type": "string",
           "enum": [
             "Component",
-            "Key"
+            "Key",
+            "Composable"
           ]
         },
         "imported": {
@@ -3011,7 +3425,7 @@
         "span"
       ],
       "additionalProperties": false,
-      "description": "A name an import binds: a component, or an injection key."
+      "description": "A name an import binds: a component, an injection key, or a composable (ADR-0069)."
     },
     "InjectionKeyDeclaration": {
       "type": "object",
@@ -3094,6 +3508,341 @@
       ],
       "additionalProperties": false,
       "description": "A name a pass-through import binds, which an  {@link  ImportReference }  reads."
+    },
+    "TypeImport": {
+      "type": "object",
+      "properties": {
+        "specifier": {
+          "type": "string",
+          "description": "The specifier as written: a relative module, a `.uf.tsx`, a `.uf.ts` or a package."
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NamedImport"
+          },
+          "description": "The names it binds, in source order."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The import declaration."
+        }
+      },
+      "required": [
+        "specifier",
+        "names",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`import type { ButtonProps } from \"./types\"` (ADR-0067): types an output re-imports by name."
+    },
+    "NamedImport": {
+      "type": "object",
+      "properties": {
+        "imported": {
+          "type": "string",
+          "description": "The imported name."
+        },
+        "local": {
+          "type": "string",
+          "description": "The local name the module uses."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "imported",
+        "local",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A name a type or value import binds."
+    },
+    "TypeExport": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TypeReExport"
+        },
+        {
+          "$ref": "#/definitions/DeclaredTypeExport"
+        }
+      ],
+      "description": "A type the module exports that no `TypeDeclaration` holds (ADR-0068)."
+    },
+    "TypeReExport": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "ReExport"
+        },
+        "specifier": {
+          "type": "string",
+          "description": "The specifier as written."
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TypeExportName"
+          },
+          "description": "The names it re-exports, in source order."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The export declaration."
+        }
+      },
+      "required": [
+        "kind",
+        "specifier",
+        "names",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`export type { Tone } from \"./types\"`: types re-exported from another module."
+    },
+    "TypeExportName": {
+      "type": "object",
+      "properties": {
+        "imported": {
+          "type": "string",
+          "description": "The name in the module it comes from."
+        },
+        "exported": {
+          "type": "string",
+          "description": "The name it is exported under."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "imported",
+        "exported",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A name a type re-export exports."
+    },
+    "DeclaredTypeExport": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Declaration"
+        },
+        "name": {
+          "type": "string",
+          "description": "The declared name."
+        },
+        "code": {
+          "type": "string",
+          "description": "The declaration from `interface` or `type` to its end, without `export`, as written."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "code",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`export type Tone = \"info\" | \"danger\"`, a type the module exports and no component reaches."
+    },
+    "SharedModuleImport": {
+      "type": "object",
+      "properties": {
+        "specifier": {
+          "type": "string",
+          "description": "The specifier as written: a relative path.",
+          "pattern": "^\\.\\.?/"
+        },
+        "file": {
+          "type": "string",
+          "description": "The resolved `.ts`, relative to the importer, with forward slashes."
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NamedImport"
+          },
+          "description": "The names it binds, in source order: each an `import` binding of the components that read it."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The import declaration."
+        }
+      },
+      "required": [
+        "specifier",
+        "file",
+        "names",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`import { sizes } from \"./tokens\"` (ADR-0070): values imported from a relative `.ts` module, which each output imports from its copy of the module, as the source does."
+    },
+    "ModuleConstant": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The declared name."
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId",
+          "description": "`name@offset` of the declared name: the id of every `moduleConst` binding of it."
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The type annotation as written."
+        },
+        "value": {
+          "$ref": "#/definitions/Code",
+          "description": "The value: code that reads only globals every context may read, the module's other constants and its value imports, by their binding ids."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The declaration, from `const` to its end."
+        }
+      },
+      "required": [
+        "name",
+        "binding",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`const SIZES = { sm: 8, md: 12 } as const`, a top-level `const` of the module (ADR-0070): a plain function, a literal or a frozen object, read-only, which the components read through `moduleConst` bindings."
+    },
+    "UfComposable": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The exported function's name: `use` and an upper-case letter, in ASCII letters and digits.",
+          "pattern": "^use[A-Z][A-Za-z0-9]*$"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        },
+        "typeParameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TypeParameter"
+          },
+          "description": "The function's type parameters, in order. Absent when it has none."
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ComposableParameter"
+          },
+          "description": "The parameters, in order, each with its kind."
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The names of the module's `types` its output declares, in source order."
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Binding"
+          },
+          "description": "Every binding the composable declares, by the start of its span: its arguments and setup."
+        },
+        "setup": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SetupItem"
+          },
+          "description": "The body before its return, in source order."
+        },
+        "returns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ReturnedMember"
+          },
+          "description": "The members of the returned shorthand object, `return { on, toggle }`, in order."
+        }
+      },
+      "required": [
+        "name",
+        "span",
+        "parameters",
+        "types",
+        "bindings",
+        "setup",
+        "returns"
+      ],
+      "additionalProperties": false,
+      "description": "A composable (ADR-0069): `export function useToggle(initial: boolean) { …; return { on, toggle } }` in a `.uf.ts` module. Its body is a setup under ADR-0045's rules, with parameters in place of props and a returned object in place of JSX."
+    },
+    "ComposableParameter": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/definitions/ComposableParameterKind"
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The annotation as written."
+        },
+        "optional": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set for an optional parameter."
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId",
+          "description": "The `argument` binding the body reads it through."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "name",
+        "kind",
+        "type",
+        "binding",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A parameter of a composable, annotated (ADR-0069): a `value` is read once, a `getter` (`() => T`) is read reactively, and a `callback`, any other function type, is called from client code. An `argument` binding."
+    },
+    "ReturnedMember": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The member's name: the binding's."
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId",
+          "description": "A `state`, `derived`, `localFn` or `localConst` binding of the composable."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "name",
+        "binding",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A member of a composable's returned object: a shorthand property naming a binding."
     }
   },
   "$id": "https://unframework.dev/schemas/ir-v1.json"
