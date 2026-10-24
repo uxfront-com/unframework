@@ -58,7 +58,16 @@ export function createSyntacticOracle(options: SyntacticOracleOptions): TypeOrac
   };
   return {
     resolveShape,
-    printType: async (query) => printShape(await resolveShape(query)),
+    printType: async (query) => {
+      // A type with unresolved parts has no text every target accepts, so none is printed.
+      const shape = await resolveShape(query);
+      if (shape.unresolved.length) {
+        throw new Error(
+          `Cannot print ${query.file}:${query.span.start}-${query.span.end}: it has unresolved parts.`,
+        );
+      }
+      return printShape(shape);
+    },
     update: async (changes) => {
       for (const file of changes.files) {
         loaded.delete(file);

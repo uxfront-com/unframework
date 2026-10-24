@@ -7,6 +7,7 @@ import type * as AST from "oxc-parser";
 
 import { candidates, isRelative, packageName } from "./modules.ts";
 import type { Declaration, SourceModule } from "./modules.ts";
+import { printShape } from "./print.ts";
 import type {
   DeclarationRef,
   FunctionParameter,
@@ -159,10 +160,13 @@ class Resolution {
         // An interface's own member wins over its base's, and the first base over a later one.
         if (!first) members.push(member);
         else if (merge.kind === "extends") continue;
-        else if (first.type !== member.type) {
+        else if (!this.#same(first.type, member.type)) {
+          // TypeScript intersects the two types; the member's type is kept as written.
           this.#unresolved.push({ file: member.file, span: member.span, reason: "conflict" });
+          members[index] = { ...first, type: this.#asWritten(first) };
         } else {
-          // An intersection's member is optional, or readonly, only when it is in every part.
+          // An intersection's member is optional, or readonly, only when every part that
+          // declares it makes it so.
           members[index] = {
             ...first,
             optional: first.optional && member.optional,
@@ -173,6 +177,29 @@ class Resolution {
     }
     node.members = members;
     this.#merged.set(id, "done");
+  }
+
+  /** Whether two nodes are the same type: one node, or the same canonical print. */
+  #same(a: number, b: number): boolean {
+    if (a === b) return true;
+    const print = (root: number) =>
+      printShape({ ...this.shape(root), nodes: this.#nodes }, { canonical: true });
+    return print(a) === print(b);
+  }
+
+  /** An opaque node for a member's type as written, or its signature where it has no type. */
+  #asWritten(member: ShapeMember): number {
+    if (member.typeText) {
+      const { code, span } = member.typeText;
+      return this.#intern({ kind: "opaque", text: code, file: member.file, span });
+    }
+    const source = this.modules.get(member.file)?.source ?? "";
+    return this.#intern({
+      kind: "opaque",
+      text: source.slice(member.span.start, member.span.end),
+      file: member.file,
+      span: member.span,
+    });
   }
 
   declarationRef(module: SourceModule, declaration: Declaration): DeclarationRef {
@@ -284,7 +311,8 @@ class Resolution {
     return types.length === 1 ? types[0]! : this.#intern({ kind: "union", types });
   }
 
-  #intersection(type: AST.TSIntersectionType, scope: Scope): number {
+  /** An intersection, into `id` when an alias allocated its object before reading the parts. */
+  #intersection(type: AST.TSIntersectionType, scope: Scope, target?: number): number {
     this.#construction.add("intersection");
     const parts: Merge["parts"] = [];
     for (const part of type.types) {
@@ -297,7 +325,7 @@ class Resolution {
         this.#report("unsupported", scope.module, part);
       }
     }
-    const id = this.#object(undefined);
+    const id = target ?? this.#object(undefined);
     this.#merges.set(id, { kind: "intersection", parts });
     return id;
   }
@@ -321,6 +349,17 @@ class Resolution {
         };
       }
       if (inner.type === "TSRestType") {
+        // A named rest element, `...rest: T[]`, is a rest type around a named member.
+        const rest = inner.typeAnnotation as AST.TSType | AST.TSNamedTupleMember;
+        if (rest.type === "TSNamedTupleMember") {
+          const element = rest.elementType as AST.TSType;
+          return {
+            name: rest.label.name,
+            type: this.convert(element, scope),
+            optional,
+            rest: true,
+          };
+        }
         return { name, type: this.convert(inner.typeAnnotation, scope), optional, rest: true };
       }
       return { name, type: this.convert(inner, scope), optional, rest: false };
@@ -389,7 +428,7 @@ class Resolution {
 
   /** Whether a module declares or imports a type name. */
   #bound(module: SourceModule, name: string): boolean {
-    return module.declarations.has(name) || module.imports.has(name);
+    return module.declarations.has(name) || module.imports.has(name) || module.values.has(name);
   }
 
   #parameter(parameter: AST.TSTypeParameter, scope: Scope): number {
@@ -406,6 +445,8 @@ class Resolution {
 
   /** A type name used in `module` at `at`: declared there, imported, or a global. */
   #name(module: SourceModule, name: string, at: AST.TSType): number {
+    // A class or an enum, alone or merged with an interface, is not a type this adapter reads.
+    if (module.values.has(name)) return this.#unsupported("class-or-enum", module, at);
     const declarations = module.declarations.get(name);
     if (declarations) return this.#declaration(module, declarations, { module, node: at });
     const imported = module.imports.get(name);
@@ -448,6 +489,9 @@ class Resolution {
       return this.#import(module, entry.specifier, entry.imported, use, seen);
     }
     if (entry) {
+      if (module.values.has(entry.local)) {
+        return this.#unsupported("class-or-enum", use.module, use.node);
+      }
       const declarations = module.declarations.get(entry.local);
       if (declarations) return this.#declaration(module, declarations, use);
       const imported = module.imports.get(entry.local);
@@ -517,6 +561,12 @@ class Resolution {
         this.#fill(id, declaration.typeAnnotation.members, scope);
         return id;
       }
+      // An intersection is an object too, so a cycle back to it finds it whichever type is queried.
+      if (declaration.typeAnnotation.type === "TSIntersectionType") {
+        const id = this.#object(ref);
+        this.#declarations.set(declaration, id);
+        return this.#intersection(declaration.typeAnnotation, scope, id);
+      }
       // An alias that reaches itself other than through an object is not a type (TS2456).
       if (this.#resolving.has(declaration)) {
         return this.#unsupported("unsupported", use.module, use.node);
@@ -580,22 +630,35 @@ class Resolution {
   /**
    * Writes an object's members from its signatures, in source order. A name written twice is
    * one member: the same type again is kept once, another type is a `conflict`, and an
-   * overloaded method, which a member cannot hold, is unresolved.
+   * overloaded method, which a member cannot hold, is unresolved. A member the adapter cannot
+   * read keeps its name, with an opaque type, so no base or other part fills it in.
    */
   #fill(id: number, signatures: readonly AST.TSSignature[], scope: Scope): void {
     const members: ShapeMember[] = [];
-    const methods = new Set<string>();
-    const overloaded = new Set<string>();
-    const add = (member: ShapeMember, method: boolean, at: AST.TSType) => {
-      const first = members.find((other) => other.name === member.name);
+    // Each method's first signature, by name, and the names whose type is kept as written.
+    const methods = new Map<string, AST.TSType>();
+    const written = new Set<string>();
+    const add = (member: ShapeMember, at: AST.TSType, method: boolean) => {
+      const index = members.findIndex((other) => other.name === member.name);
+      const first = members[index];
       if (!first) {
         members.push(member);
-        if (method) methods.add(member.name);
-      } else if (method && methods.has(member.name)) {
-        if (!overloaded.has(member.name)) this.#unsupported("overload", scope.module, at);
-        overloaded.add(member.name);
-      } else if (method || methods.has(member.name) || first.type !== member.type) {
+        if (method) methods.set(member.name, at);
+        return;
+      }
+      if (written.has(member.name)) return;
+      written.add(member.name);
+      const overloaded = methods.get(member.name);
+      if (method && overloaded) {
+        members[index] = {
+          ...first,
+          type: this.#unsupported("overload", scope.module, overloaded),
+        };
+      } else if (method || overloaded || !this.#same(first.type, member.type)) {
         this.#unresolved.push({ file: member.file, span: member.span, reason: "conflict" });
+        members[index] = { ...first, type: this.#asWritten(first) };
+      } else {
+        written.delete(member.name);
       }
     };
     for (const signature of signatures) {
@@ -608,39 +671,42 @@ class Resolution {
         );
         continue;
       }
-      const name = signature.computed ? undefined : memberName(signature.key);
+      // A computed key is a name only when it is a literal, `["aria-label"]: string`.
+      const name =
+        signature.computed && signature.key.type !== "Literal"
+          ? undefined
+          : memberName(signature.key);
       if (name === undefined) {
         this.#unsupported("computed-key", scope.module, at);
         continue;
       }
-      const span = { start: signature.start, end: signature.end };
+      const common = {
+        name,
+        optional: signature.optional,
+        file: scope.module.file,
+        ...(scope.declaration && { declaration: scope.declaration }),
+        span: { start: signature.start, end: signature.end },
+      };
       if (signature.type === "TSMethodSignature") {
         if (signature.kind !== "method" || signature.typeParameters) {
-          this.#unsupported(signature.kind === "method" ? "generic" : "accessor", scope.module, at);
+          const construct = signature.kind === "method" ? "generic" : "accessor";
+          const type = this.#unsupported(construct, scope.module, at);
+          if (!members.some((member) => member.name === name)) {
+            members.push({ ...common, readonly: false, type, references: [] });
+            written.add(name);
+          }
           continue;
         }
-        const member: ShapeMember = {
-          name,
-          optional: signature.optional,
-          readonly: false,
-          type: this.#function(signature.params, signature.returnType, scope),
-          file: scope.module.file,
-          ...(scope.declaration && { declaration: scope.declaration }),
-          span,
-          references: references([...signature.params, signature.returnType]),
-        };
-        add(member, true, at);
+        const type = this.#function(signature.params, signature.returnType, scope);
+        const refs = references([...signature.params, signature.returnType]);
+        add({ ...common, readonly: false, type, references: refs }, at, true);
         continue;
       }
       const type = signature.typeAnnotation?.typeAnnotation;
       const member: ShapeMember = {
-        name,
-        optional: signature.optional,
+        ...common,
         readonly: signature.readonly,
         type: type ? this.convert(type, scope) : this.#intern({ kind: "primitive", name: "any" }),
-        file: scope.module.file,
-        ...(scope.declaration && { declaration: scope.declaration }),
-        span,
         ...(type && {
           typeText: {
             code: scope.module.source.slice(type.start, type.end),
@@ -649,11 +715,9 @@ class Resolution {
         }),
         references: references([type]),
       };
-      add(member, false, at);
+      add(member, at, false);
     }
-    (this.#nodes[id] as ObjectNode).members = members.filter(
-      (member) => !overloaded.has(member.name),
-    );
+    (this.#nodes[id] as ObjectNode).members = members;
   }
 
   #object(declaration: DeclarationRef | undefined): number {

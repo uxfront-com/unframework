@@ -34,6 +34,8 @@ export interface SourceModule {
   starExports: string[];
   /** The local names it exports. */
   exported: Set<string>;
+  /** Its top-level classes and enums, which the syntactic adapter does not read as types. */
+  values: Set<string>;
 }
 
 /** Parses a module with oxc. `.tsx` files (`.uf.tsx` included) are TSX, others TypeScript. */
@@ -58,6 +60,7 @@ export function indexModule(file: string, source: string, program: Program): Sou
     exports: new Map(),
     starExports: [],
     exported: new Set(),
+    values: new Set(),
   };
   for (const statement of program.body) {
     const declaration = declarationOf(statement);
@@ -68,6 +71,17 @@ export function indexModule(file: string, source: string, program: Program): Sou
       else module.declarations.set(name, [declaration]);
       if (statement.type === "ExportNamedDeclaration") {
         module.exports.set(name, { kind: "local", local: name });
+      }
+      continue;
+    }
+    const value =
+      statement.type === "ExportNamedDeclaration" && !statement.source
+        ? statement.declaration
+        : statement;
+    if ((value?.type === "ClassDeclaration" || value?.type === "TSEnumDeclaration") && value.id) {
+      module.values.add(value.id.name);
+      if (statement.type === "ExportNamedDeclaration") {
+        module.exports.set(value.id.name, { kind: "local", local: value.id.name });
       }
       continue;
     }

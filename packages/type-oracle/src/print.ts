@@ -2,8 +2,10 @@ import type { TypeShape } from "./types.ts";
 
 export interface PrintOptions {
   /**
-   * Sorts union members by their text and object members by name, so two adapters that order them differently print
-   * the same text. The contract suite compares shapes this way.
+   * Sorts union members by their text and object members by name, so two adapters that order
+   * them differently print the same text. A recursive object with no name prints as
+   * `(cycle ^n)`, `n` levels up, and an opaque node with an `unresolved` entry as `(unresolved)`,
+   * whose text is the adapter's. The contract suite compares shapes this way.
    */
   canonical?: boolean;
 }
@@ -11,6 +13,7 @@ export interface PrintOptions {
 /**
  * Prints a shape as a TypeScript type every target's type system accepts. An opaque node keeps
  * its text as written. An object reached again inside itself prints as its declaration's name.
+ * Throws for one with no declaration: TypeScript cannot write that type without a name.
  */
 export function printShape(shape: TypeShape, options: PrintOptions = {}): string {
   const order = (items: string[]) => (options.canonical ? items.toSorted() : items);
@@ -48,7 +51,11 @@ export function printShape(shape: TypeShape, options: PrintOptions = {}): string
         return `${node.readonly ? "readonly " : ""}[${elements.join(", ")}]`;
       }
       case "object": {
-        if (stack.includes(id)) return node.declaration?.name ?? "unknown";
+        if (stack.includes(id)) {
+          if (node.declaration) return node.declaration.name;
+          if (options.canonical) return `(cycle ^${stack.length - stack.indexOf(id)})`;
+          throw new Error("Cannot print a recursive type that has no name.");
+        }
         if (!node.members.length) return "{}";
         const members = options.canonical
           ? node.members.toSorted((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
@@ -69,7 +76,15 @@ export function printShape(shape: TypeShape, options: PrintOptions = {}): string
       case "typeParameter":
         return node.name;
       case "opaque":
-        return node.text;
+        return options.canonical &&
+          shape.unresolved.some(
+            (entry) =>
+              entry.file === node.file &&
+              entry.span.start === node.span.start &&
+              entry.span.end === node.span.end,
+          )
+          ? "(unresolved)"
+          : node.text;
     }
   };
   return print(shape.root, []);

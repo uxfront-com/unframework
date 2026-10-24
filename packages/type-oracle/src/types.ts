@@ -49,7 +49,9 @@ export interface TypeShape {
    * How the type is built, each construct once, in the order resolution met it: `import`,
    * `extends`, `intersection` and `union`, and for what it could not evaluate `package`,
    * `generic`, `utility:<Name>` (`utility:Pick`), `conditional`, `mapped`, `indexed-access`,
-   * `keyof`, `typeof`, `template-literal`, `import-type`, `qualified-name` or `unsupported`.
+   * `keyof`, `typeof`, `template-literal`, `import-type`, `infer`, `qualified-name`,
+   * `class-or-enum`, `index-signature`, `call-signature`, `computed-key`, `accessor`, `overload`,
+   * `circular`, `duplicate-declaration` or `unsupported`.
    */
   construction: string[];
   /**
@@ -196,7 +198,8 @@ export interface UnresolvedType {
    * Why: `missing-module` (the file cannot be read), `missing-export` (the module declares or
    * exports no such type), `external` (an import that the in-module path does not follow),
    * `unsupported` (a construct this adapter cannot evaluate, named in `construction`) or
-   * `conflict` (an intersection whose parts declare one member with different types).
+   * `conflict` (two parts of an intersection, or two declarations of an interface, write one
+   * member with different types; the member's type is kept as written).
    */
   reason: "missing-module" | "missing-export" | "external" | "unsupported" | "conflict";
 }

@@ -20,19 +20,25 @@ The TypeOracle interface and the syntactic resolver (plan §5.5).
   (`export { X } from`, `export type { X as Y } from`, `export * from`), `extends` chains,
   intersections, unions and literal unions. Interfaces of one name merge, as in TypeScript, and a
   member that an interface and its base both declare is the interface's own. An intersection's
-  member is optional, or readonly, only when it is in every part. A name that a module neither declares nor imports
-  is a global of TypeScript's lib (`Date`, `Element`): it stays opaque, and is not unresolved.
-  Everything else comes back opaque and `unresolved`, never wrong: utility and generic types,
-  package types, conditional, mapped and indexed-access types, `keyof`, `typeof`, template
-  literals with holes, index and call signatures, overloaded methods, and an interface that
-  extends itself. A member that two parts of an intersection declare with different types is a
-  `conflict`. `update` drops the files it names, which the
-  next query reads again.
+  member is optional, or readonly, only when every part that declares it makes it so. A name
+  that a module neither declares nor imports is a global of TypeScript's lib (`Date`,
+  `Element`): it stays opaque, and is not unresolved. Everything else comes back opaque and
+  `unresolved`, never wrong: utility and generic types, package types, classes and enums,
+  conditional, mapped and indexed-access types, `keyof`, `typeof`, template literals with holes,
+  index and call signatures, computed keys that are not literals, generic and overloaded methods,
+  accessors, and an interface that extends itself. A member the adapter cannot read keeps its
+  name, so no base or other part fills it in. A member that two parts of an intersection, or two
+  declarations of an interface, write with different types is a `conflict`, with its type kept
+  as written. `update` drops the files it names, which the next query reads again.
+- **`printType`** rejects a type with unresolved parts, and a recursive object with no name,
+  which TypeScript cannot write without one.
 - **`localShapes(parsed, filename)`** is the same resolution over one parsed module, synchronous,
-  and it reads no file. An imported name is `unresolved` as `external`. It is the path for
-  `analyze()` when it is given no shapes, which the analyser does not take yet.
-- **`printShape(shape)`** prints a shape as a TypeScript type. With `{ canonical: true }` it
-  sorts unions and members, which is how the contract compares two adapters.
+  and it reads no file. An imported name is `unresolved` as `external`. It is meant for
+  `analyze()` when it is given no shapes; the analyser does not call it yet.
+- **`printShape(shape)`** prints a shape as a TypeScript type, and throws for a recursive object
+  with no name. With `{ canonical: true }` it sorts unions and members, prints that recursion as
+  `(cycle ^n)` and an unresolved opaque node as `(unresolved)`, which is how the contract
+  compares two adapters.
 - **The contract** (`@unframework/type-oracle/contract`): `typeOracleContract(name, factory)`
   registers one Vitest test per case, over the fixture projects in `test/fixtures/`. The factory
   gets each project's `root` and returns the adapter under test. Every adapter runs it from its

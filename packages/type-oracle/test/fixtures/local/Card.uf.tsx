@@ -95,3 +95,32 @@ export function Optional(props: { a?: string } & { a: string }) {
 export function Writable(props: { readonly a: string } & { a: string }) {
   return props;
 }
+
+interface Zed {
+  z: boolean;
+}
+
+interface Late {
+  a: string;
+}
+
+interface Late extends Zed {
+  b: number;
+}
+
+interface Callable {
+  f(a: string | number): void;
+}
+
+interface Overloaded extends Callable {
+  f(a: string): void;
+  f(a: number): void;
+}
+
+export function LateBase(props: Late) {
+  return props;
+}
+
+export function Overloads(props: Overloaded) {
+  return props;
+}
