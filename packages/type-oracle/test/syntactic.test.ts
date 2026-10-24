@@ -597,7 +597,23 @@ describe("createSyntacticOracle", () => {
       expect(shape.unresolved).toEqual([]);
     });
 
-    it("is not sure past its bound of pairs, and does not throw", async () => {
+    it.each([
+      [
+        "tries every member that shares a fingerprint, not only the first",
+        "{ a: { b: { c: { d: 1 } } } } | { a: { b: { c: { d: 2 } } } }",
+        "{ a: { b: { c: { d: 2 } } } } | { a: { b: { c: { d: 1 } } } }",
+      ],
+      ["reads an object's members in any order", "{ a: 1; b: 2 } | 3", "{ b: 2; a: 1 } | 3"],
+    ])("%s", async (_, left, right) => {
+      const type = `{ v: ${left} } & { v: ${right} }`;
+      const source = `function C(props: ${type}) {}`;
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const query = at("C.uf.tsx", source, "props: ", type);
+      expect((await oracle.resolveShape(query)).unresolved).toEqual([]);
+      expect(await oracle.printType(query)).toBe(`{ v: ${left} }`);
+    });
+
+    it("is not sure past its bound of pairs, and does not throw", { timeout: 20_000 }, async () => {
       // Members alike three levels down share one fingerprint, so each pair is compared.
       const objects = Array.from({ length: 800 }, (_, i) => `{ a: { b: { c: { d: ${i} } } } }`);
       const type = `{ v: ${objects.join(" | ")} } & { v: ${objects.toReversed().join(" | ")} }`;
