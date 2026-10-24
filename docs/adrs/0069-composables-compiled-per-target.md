@@ -133,8 +133,24 @@ The rendering cases are `composables/use-toggle`, `use-controllable-state`, `use
 The diagnostics cases are `invalid-composable`, `composable-result-write` and
 `composable-effect-order`.
 
-**Tooling.** `.uf.ts` modules get virtual ids in the unplugin, such as `X.uf.ts.<ext>`, and
-Svelte's `.svelte.ts`. M5's module-id spike settles the scheme through each framework's Vite plugin.
+**Module ids.** A `.uf.ts` file loads in the unplugin under its absolute path plus a suffix that
+the framework's own Vite plugin claims, as a `.uf.tsx` file does (ADR-0021). M5's module-id spike
+settled the suffixes (Evidence):
+
+| Target                   | Module id of `useToggle.uf.ts`   | Claimed by                                                                                           |
+| ------------------------ | -------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| React, Vue, Solid, Astro | `/abs/useToggle.uf.ts`           | Vite's own TypeScript transform: the output is a plain `.ts` module                                  |
+| Qwik                     | `/abs/useToggle.uf.ts`           | Qwik's optimizer, whose segments (`useToggle.uf.ts_useToggle_toggle_<hash>.js`) resolve their parent |
+| Svelte                   | `/abs/useToggle.uf.ts.svelte.ts` | vite-plugin-svelte, which compiles runes only in a `.svelte.ts` or `.svelte.js` module               |
+| Angular                  | `/abs/useToggle.uf.ts.ts`        | `ngtscVirtual`, whose id filters widen from `.uf.tsx` to `.uf.tsx?`                                  |
+
+- An output's relative import of a composable's output (`./useToggle`, `./useToggle.svelte.ts`,
+  `./use-toggle`) is looked up in the importer's compile and resolves to the composable's module
+  id, from a Qwik segment too, as a child's output does (ADR-0053).
+- Angular's composable is compiled by `ngtscVirtual`, not passed through: a component's program
+  must read the composable's source to resolve `./use-toggle` and check its template against the
+  composable's types. The `.ts` suffix keeps it in the `<file>.ts` family of `.uf.tsx.ts` ids, so
+  the module id is never the authored file.
 
 **What it amends.** ADR-0045 allows the destructuring of a composable's result, the `Use` item, and
 imports of `.uf.ts` modules. This record builds the `.uf.ts` half of D1 (ADR-0005).
@@ -159,8 +175,6 @@ imports of `.uf.ts` modules. This record builds the `.uf.ts` half of D1 (ADR-000
 
 **Open:**
 
-- The virtual id scheme for `.uf.ts` modules, through Svelte's runes, the Qwik optimizer and
-  Angular's `ngtscVirtual`. The module-id spike adds its section here.
 - The semantics contract's entries for composables. Vue's composables lane adds them to this
   record, and the change that accepts these records adds them to `3.reference/3.semantics.md`.
 
@@ -174,3 +188,46 @@ imports of `.uf.ts` modules. This record builds the `.uf.ts` half of D1 (ADR-000
 - **Lanes against quarantined corpus cases**, as M3 did. Each lane would rewrite the same shared
   diagnostics expectations. Running the six lanes one after another instead would hold
   each lane for the one before it.
+
+## Evidence
+
+M5's module-id spike ran each framework's Vite plugin as the test toolchains configure it
+(`toolchain.vite("ssr", …)` for Svelte and Qwik, `viteConfig("ssr", …)` for Angular), in a
+Vite 8.3.1 dev server in middleware mode. A stand-in for the unframework plugin, named `unframework`, served
+hand-written outputs of `useToggle.uf.ts` and a `Toggle.uf.tsx` that calls it from `load`, mapped
+the component's relative import to the composable's id, and exposed `api.getCompiled`, as
+ADR-0021's spike did with `ufFake`. The spike was scratch work and is not committed. React, Vue,
+Solid and Astro, whose composables are plain TypeScript modules, were not exercised, and neither
+were the watch edge and the dependency scan.
+
+- **Svelte** (vite-plugin-svelte 7.3.1, Svelte 5.57.1). The composable is
+  `let on = $state(initial)` with a `toggle` and a getter, and the component calls `t.toggle()`
+  once in its setup:
+  - `useToggle.uf.ts.svelte.ts`: the client transform compiled the runes
+    (`let on = $.tag($.state($.proxy(initial)), 'on')`, `$.set(on, !$.get(on))`), the component
+    imported `"/useToggle.uf.ts.svelte.ts"`, and `render(Toggle)` from `svelte/server` gave
+    `<button type="button">On</button>`.
+  - `useToggle.uf.ts`: the runes stayed as written (`let on = $state(initial);`), and the server
+    render failed with `$state is not defined`.
+- **Qwik** (`@qwik.dev/core` 2.0.0-beta.47). The composable is a hook with
+  `const on = useSignal(initial)` and `const toggle = $(() => { on.value = !on.value; })`, and the
+  component awaits `toggle()` in a `useTask$`:
+  - `useToggle.uf.ts`: the optimizer split off `/useToggle.uf.ts_useToggle_toggle_17cG60y3AEE.js`,
+    which resolved and held the toggle's body. The component's import of `./useToggle` sits in its
+    own segment, and resolved there. `renderToString` gave
+    `<button q-e:click="/@qwik-handlers#_run#0" :="bY_0" type="button">On</button>`.
+- **Angular** (22.2.1, Analog 2.7.5). The composable is a function that returns
+  `{ on: on.asReadonly(), toggle }` over a `signal`, and the component's field is
+  `protected readonly t = useToggle(false)`, read as `t.on()` in its template:
+  - `useToggle.uf.ts`, and `useToggle.uf.ts.ts` with `ngtscVirtual` as it is: ngtsc rejected the
+    component, `error TS2307: Cannot find module './use-toggle' or its corresponding type declarations.`,
+    because `ngtscVirtual` collects only ids that match `.uf.tsx(…).ts` as a program's sources.
+  - `useToggle.uf.ts.ts`, with `ngtscVirtual`'s two id patterns widened to `\.uf\.tsx?(?:\.[^/?]+)?\.ts`:
+    ngtsc compiled both modules, the component's code imported `"/useToggle.uf.ts.ts"`, and
+    Angular's server platform rendered
+    `<uf-toggle style="display: contents;"><button type="button">On</button></uf-toggle>`.
+  - The same, with the template reading `t.of()`: ngtsc rejected the component with
+    `error TS2339: Property 'of' does not exist on type '{ on: Signal<boolean>; toggle: () => void; }'.`,
+    so the composable's types reached the component's program.
+  - `useToggle.uf.ts` with the widened patterns: TS2307 again, since the pattern needs the `.ts`
+    suffix.

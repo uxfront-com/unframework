@@ -99,7 +99,20 @@ framework's compiler must see the member keys.
 
 - An output that must name a type its module doesn't export is UF6003, with a `likely` fix that
   adds `export`.
-- Vue's L3 passes an `fs` over the output tree to `compileScript`, as `@vitejs/plugin-vue` does.
+- **Vue's printed fallback** (M5's Vue spike, in Evidence). Vue keeps `defineProps<X>()` when
+  every construct the props type reaches is one compiler-sfc resolves through an `fs`: relative
+  `.ts` and `.vue` imports, with or without an extension, `extends` chains across files,
+  intersections, the five utilities, re-exports and `export *`, and the instantiation of a generic
+  declaration. A props type that reaches a package, a namespace-qualified name (`T.ButtonProps`) or
+  a conditional type takes the printed fallback, with its references imported.
+- **Package types always take the fallback on Vue.** compiler-sfc resolves a package specifier
+  only through TypeScript's classic API (`findConfigFile`, `resolveModuleName`, `sys`). TypeScript
+  7.0's `typescript` module exports only `version` and `versionMajorMinor`, so with 7.0 installed
+  every package import fails, and an output that works only on the consumer's TypeScript version
+  would break the rule that outputs pass their framework's compiler.
+- Vue's L3 passes an `fs` over the output tree to `compileScript`, and Vue's Vite projects pass
+  one to `@vitejs/plugin-vue` as `script.fs`. plugin-vue passes none of its own, so with
+  TypeScript 7.0 installed, `compileScript` has no file system and rejects every imported type.
 - The script targets write their `import type` lines and re-exports through one codegen helper
   (`codegen/src/exports.ts`).
 
@@ -126,12 +139,12 @@ child APIs through the oracle.
   tsgo resolves, so a props type can compile under one oracle and fail under the other (UF6002).
 - Vue's printed fallback and Angular's indexed-access inputs keep two shapes of output.
 - `TypeTable` and shapes live side by side until a later issue retires `TypeTable`.
+- A Vue project whose `typescript` is 7.0 needs `script.fs` in plugin-vue's options before any
+  `defineProps<X>()` with an imported type compiles, Unframework's output or not. The docs page
+  says so.
 
 **Open:**
 
-- Which constructs Vue's `compileScript` resolves through an `fs`, and whether package types
-  resolve without TypeScript's classic API, absent from 7.0. M5's Vue spike settles both and adds
-  its section here.
 - The port of the tsgo adapter to TypeScript 7.1 stable is a separate issue, once 7.1 ships.
 
 ## Alternatives considered
@@ -144,3 +157,45 @@ child APIs through the oracle.
 - **tsgo as the default.** It resolves everything, but it needs a checker process on every compile
   and an API that is unstable until 7.1 (§5.5). The syntactic adapter covers almost every
   design-system props type with no process.
+
+## Evidence
+
+M5's Vue spike ran `@vue/compiler-sfc` 3.5.43 and `@vitejs/plugin-vue` 6.0.9 from the repository's
+install, with TypeScript 7.0.2 as the `typescript` that `vue` resolves and 6.0.2 from
+`tests/toolchains/vue`. The scripts were scratch work and are not committed.
+
+- **`compileScript` over an output tree.** A script parsed `Button.vue`,
+  `<script setup lang="ts">` with one import and `defineProps<X>()`, and called
+  `compileScript(descriptor, { id, fs })`. The `fs` served `base.ts`, `types.ts`, `index.ts` and
+  `Field.vue` from memory and every other path from the disk. These resolved, each printing its
+  runtime props and the files it read (`deps`):
+  - `ButtonProps extends BaseProps, Labelled` from `./types.ts`, `./types` and `./types.js`, with
+    `BaseProps` and `Labelled` in `./base.ts`:
+    `{ size: { type: String, required: false }, id: { type: String, required: true }, disabled: { type: Boolean, required: false }, tone: { type: String, required: false }, label: { type: String, required: true } }`,
+    deps `types.ts, base.ts`.
+  - An `extends` chain two files deep, `Pick`, `Omit`, `Pick<…> & Omit<…>`, `Partial`,
+    `Required<Pick<…>>`, `Readonly`, an intersection, and `Omit<ButtonProps, "size">` written in
+    the component. `Omit<ButtonProps, "tone" | "disabled">` gave `size`, `id` and `label`.
+  - `export type { ButtonProps } from "./types.ts"` and `export * from "./base.ts"` in an
+    `index.ts`: deps `index.ts, base.ts, types.ts`.
+  - `FieldProps` exported from `<script setup>` in `./Field.vue`: deps `Field.vue`.
+  - `ListProps<T>` under `generic="T"`: `{ items: { type: Array, required: true }, selected: { type: null, required: false } }`.
+  - A mapped type over a literal union, a `keyof` member, an indexed-access member and
+    template-literal keys. The syntactic oracle refuses these (UF6002), so they reach Vue only
+    through the tsgo adapter.
+- **What failed:**
+  - `import type * as T from "./types.ts"` with `defineProps<T.ButtonProps>()`:
+    `Unresolvable type reference or unsupported built-in utility type`.
+  - A conditional type, and one with `infer`: `Unresolvable type: TSConditionalType`.
+  - `import type { SubscriptionLike } from "rxjs"`, without `registerTS`:
+    `Failed to resolve import source "rxjs". TypeScript is required as a peer dep for vue in order to support resolving types from module imports.`
+    With `registerTS` loading 7.0.2: `ts2.findConfigFile is not a function`. With 6.0.2 it
+    resolved: `{ unsubscribe: { type: Function, required: true }, closed: { type: Boolean, required: true } }`.
+    `require("typescript")` from `vue` gives `7.0.2`, and its only keys are `version` and
+    `versionMajorMinor`.
+- **plugin-vue in a Vite build.** `vue/compiler-sfc` calls `registerTS(() => require("typescript"))`
+  when it loads, and plugin-vue passes `compileScript` only its own `script` options. A
+  `vite build` of a `Button.vue` on disk that imports `ButtonProps` from `./types.ts` failed with
+  `[@vue/compiler-sfc] No fs option provided to compileScript in non-Node environment. File system access is required for resolving imported types.`
+  With `vue({ script: { fs } })` over Node's `fs`, it built (`props: { label: {}, id: {} }`). An
+  import from `rxjs` failed both ways, with the same two messages as above.
