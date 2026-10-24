@@ -7,7 +7,6 @@ import type * as AST from "oxc-parser";
 
 import { candidates, isRelative, packageName } from "./modules.ts";
 import type { Declaration, SourceModule } from "./modules.ts";
-import { printShape } from "./print.ts";
 import type {
   DeclarationRef,
   FunctionParameter,
@@ -111,6 +110,14 @@ class Resolution {
   readonly #construction = new Set<string>();
   readonly #dependencies = new Set<string>();
   readonly #unresolved: UnresolvedType[] = [];
+  /**
+   * The node each `unresolved` entry belongs to: its opaque node, or the object that lost the
+   * construct. The shape keeps an entry only when its node is reachable from the root, so an
+   * override that discards a base's member discards what was unresolved in it.
+   */
+  readonly #owners: number[] = [];
+  /** Objects with a computed key whose name the adapter cannot know. */
+  readonly #open = new Set<number>();
   readonly #declarations = new Map<object, number>();
   readonly #resolving = new Set<object>();
   readonly #merges = new Map<number, Merge>();
@@ -127,12 +134,28 @@ class Resolution {
   }
 
   shape(root: number): TypeShape {
+    const reachable = new Set<number>();
+    const visit = (id: number | undefined): void => {
+      if (id === undefined || reachable.has(id)) return;
+      reachable.add(id);
+      const node = this.#nodes[id]!;
+      if (node.kind === "union") node.types.forEach(visit);
+      else if (node.kind === "array") visit(node.element);
+      else if (node.kind === "tuple") for (const element of node.elements) visit(element.type);
+      else if (node.kind === "object") for (const member of node.members) visit(member.type);
+      else if (node.kind === "typeParameter") visit(node.constraint);
+      else if (node.kind === "function") {
+        for (const parameter of node.parameters) visit(parameter.type);
+        visit(node.returns);
+      }
+    };
+    visit(root);
     return {
       root,
       nodes: this.#nodes,
       construction: [...this.#construction],
       dependencies: [...this.#dependencies].toSorted(),
-      unresolved: this.#unresolved,
+      unresolved: this.#unresolved.filter((_, index) => reachable.has(this.#owners[index]!)),
     };
   }
 
@@ -150,20 +173,26 @@ class Resolution {
     for (const part of merge.parts) {
       if (this.#merged.get(part.id) === "merging") {
         // An interface that extends itself, or an intersection that contains itself (TS2310).
-        this.#unsupported("circular", part.use.module, part.use.node);
+        this.#unsupported("circular", part.use.module, part.use.node, id);
         continue;
       }
       this.#merge(part.id);
+      if (this.#open.has(part.id)) this.#open.add(id);
+    }
+    // A computed key of unknown name may override any member another object brings in.
+    const open = this.#open.has(id);
+    for (const part of merge.parts) {
+      if (this.#merged.get(part.id) !== "done" && this.#merges.has(part.id)) continue;
       for (const member of (this.#nodes[part.id] as ObjectNode).members) {
         const index = members.findIndex((other) => other.name === member.name);
         const first = members[index];
         // An interface's own member wins over its base's, and the first base over a later one.
-        if (!first) members.push(member);
-        else if (merge.kind === "extends") continue;
+        if (!first) {
+          members.push(open ? { ...member, type: this.#kept(member, "unsupported") } : member);
+        } else if (merge.kind === "extends" || open) continue;
         else if (!this.#same(first.type, member.type)) {
           // TypeScript intersects the two types; the member's type is kept as written.
-          this.#unresolved.push({ file: member.file, span: member.span, reason: "conflict" });
-          members[index] = { ...first, type: this.#asWritten(first) };
+          members[index] = { ...first, type: this.#kept(first, "conflict") };
         } else {
           // An intersection's member is optional, or readonly, only when every part that
           // declares it makes it so.
@@ -179,27 +208,110 @@ class Resolution {
     this.#merged.set(id, "done");
   }
 
-  /** Whether two nodes are the same type: one node, or the same canonical print. */
+  /**
+   * Whether two nodes are surely the same type. Pairs under comparison are assumed equal, so a
+   * recursive type compares in one pass, and a shared one once; a comparison that fails takes
+   * back what it assumed. Two declared objects are the same only as one declaration, and two
+   * opaque nodes only as one node: anything uncertain is not the same.
+   */
   #same(a: number, b: number): boolean {
-    if (a === b) return true;
-    const print = (root: number) =>
-      printShape({ ...this.shape(root), nodes: this.#nodes }, { canonical: true });
-    return print(a) === print(b);
+    const assumed = new Set<string>();
+    const trail: string[] = [];
+    const same = (x: number, y: number): boolean => {
+      if (x === y) return true;
+      const key = `${x}:${y}`;
+      if (assumed.has(key)) return true;
+      const mark = trail.length;
+      assumed.add(key);
+      trail.push(key);
+      const result = compare(x, y);
+      if (!result) for (const undone of trail.splice(mark)) assumed.delete(undone);
+      return result;
+    };
+    const compare = (x: number, y: number): boolean => {
+      const p = this.#nodes[x]!;
+      const q = this.#nodes[y]!;
+      switch (p.kind) {
+        case "primitive":
+          return q.kind === "primitive" && p.name === q.name;
+        case "literal":
+          return q.kind === "literal" && p.value === q.value;
+        case "union":
+          return (
+            q.kind === "union" &&
+            p.types.every((t) => q.types.some((u) => same(t, u))) &&
+            q.types.every((u) => p.types.some((t) => same(t, u)))
+          );
+        case "array":
+          return q.kind === "array" && p.readonly === q.readonly && same(p.element, q.element);
+        case "tuple":
+          return (
+            q.kind === "tuple" &&
+            p.readonly === q.readonly &&
+            p.elements.length === q.elements.length &&
+            p.elements.every((e, i) => {
+              const f = q.elements[i]!;
+              return e.optional === f.optional && e.rest === f.rest && same(e.type, f.type);
+            })
+          );
+        case "function":
+          return (
+            q.kind === "function" &&
+            p.parameters.length === q.parameters.length &&
+            p.parameters.every((e, i) => {
+              const f = q.parameters[i]!;
+              return e.optional === f.optional && e.rest === f.rest && same(e.type, f.type);
+            }) &&
+            same(p.returns, q.returns)
+          );
+        case "object": {
+          if (q.kind !== "object" || p.declaration || q.declaration) return false;
+          if (!this.#settled(x) || !this.#settled(y)) return false;
+          return (
+            p.members.length === q.members.length &&
+            p.members.every((m) => {
+              const n = q.members.find((other) => other.name === m.name);
+              return (
+                !!n &&
+                m.optional === n.optional &&
+                m.readonly === n.readonly &&
+                same(m.type, n.type)
+              );
+            })
+          );
+        }
+        default:
+          return false;
+      }
+    };
+    return same(a, b);
   }
 
-  /** An opaque node for a member's type as written, or its signature where it has no type. */
-  #asWritten(member: ShapeMember): number {
-    if (member.typeText) {
-      const { code, span } = member.typeText;
-      return this.#intern({ kind: "opaque", text: code, file: member.file, span });
-    }
+  /** Whether an object holds all its members, merging it first if it can be. */
+  #settled(id: number): boolean {
+    if (!this.#merges.has(id)) return !this.#open.has(id);
+    if (this.#merged.get(id) !== "merging") this.#merge(id);
+    return this.#merged.get(id) === "done" && !this.#open.has(id);
+  }
+
+  /** A member's type kept as written, opaque, with an entry at that text's span. */
+  #kept(member: ShapeMember, reason: UnresolvedType["reason"]): number {
+    const span = member.typeText?.span ?? member.span;
     const source = this.modules.get(member.file)?.source ?? "";
-    return this.#intern({
+    const id = this.#intern({
       kind: "opaque",
-      text: source.slice(member.span.start, member.span.end),
+      text: member.typeText?.code ?? source.slice(span.start, span.end),
       file: member.file,
-      span: member.span,
+      span,
     });
+    const known = this.#unresolved.some(
+      (entry, index) => this.#owners[index] === id && entry.reason === reason,
+    );
+    if (!known) {
+      this.#unresolved.push({ file: member.file, span, reason });
+      this.#owners.push(id);
+    }
+    return id;
   }
 
   declarationRef(module: SourceModule, declaration: Declaration): DeclarationRef {
@@ -314,18 +426,21 @@ class Resolution {
   /** An intersection, into `id` when an alias allocated its object before reading the parts. */
   #intersection(type: AST.TSIntersectionType, scope: Scope, target?: number): number {
     this.#construction.add("intersection");
+    const id = target ?? this.#object(undefined);
     const parts: Merge["parts"] = [];
     for (const part of type.types) {
       const before = this.#unresolved.length;
-      const id = this.convert(part, scope);
-      if (this.#nodes[id]!.kind === "object") {
-        parts.push({ id, use: { module: scope.module, node: part } });
+      const partId = this.convert(part, scope);
+      if (this.#nodes[partId]!.kind === "object") {
+        parts.push({ id: partId, use: { module: scope.module, node: part } });
       } else if (this.#unresolved.length === before && !this.missing.size) {
         // An unresolved part is reported once, where it failed.
-        this.#report("unsupported", scope.module, part);
+        this.#report("unsupported", scope.module, part, id);
+      } else {
+        // Its entry belongs to the object that lost it.
+        for (let index = before; index < this.#owners.length; index++) this.#owners[index] = id;
       }
     }
-    const id = target ?? this.#object(undefined);
     this.#merges.set(id, { kind: "intersection", parts });
     return id;
   }
@@ -592,7 +707,7 @@ class Resolution {
     const parts: Merge["parts"] = [];
     for (const heritage of interfaces.flatMap((each) => each.extends)) {
       this.#construction.add("extends");
-      const base = this.#heritage(heritage, scope);
+      const base = this.#heritage(heritage, scope, id);
       if (base !== undefined) {
         parts.push({ id: base, use: { module, node: heritage as unknown as AST.TSType } });
       }
@@ -601,12 +716,15 @@ class Resolution {
     return id;
   }
 
-  /** The object an interface extends, or `undefined`, reported, when it is not one. */
-  #heritage(heritage: AST.TSInterfaceHeritage, scope: Scope): number | undefined {
+  /**
+   * The object an interface extends, or `undefined`, reported, when it is not one. What is
+   * reported belongs to the interface, `owner`, which lost the base's members.
+   */
+  #heritage(heritage: AST.TSInterfaceHeritage, scope: Scope, owner: number): number | undefined {
     const { expression } = heritage;
     const at = heritage as unknown as AST.TSType;
     if (expression.type !== "Identifier") {
-      this.#unsupported("qualified-name", scope.module, at);
+      this.#unsupported("qualified-name", scope.module, at, owner);
       return undefined;
     }
     if (heritage.typeArguments) {
@@ -615,6 +733,7 @@ class Resolution {
         !this.#bound(scope.module, name) && UTILITIES.has(name) ? `utility:${name}` : "generic",
         scope.module,
         at,
+        owner,
       );
       return undefined;
     }
@@ -622,8 +741,9 @@ class Resolution {
     const id = this.#name(scope.module, expression.name, at);
     if (this.#nodes[id]!.kind === "object") return id;
     if (this.#unresolved.length === before && !this.missing.size) {
-      this.#report("unsupported", scope.module, at);
+      this.#report("unsupported", scope.module, at, owner);
     }
+    for (let index = before; index < this.#owners.length; index++) this.#owners[index] = owner;
     return undefined;
   }
 
@@ -655,8 +775,7 @@ class Resolution {
           type: this.#unsupported("overload", scope.module, overloaded),
         };
       } else if (method || overloaded || !this.#same(first.type, member.type)) {
-        this.#unresolved.push({ file: member.file, span: member.span, reason: "conflict" });
-        members[index] = { ...first, type: this.#asWritten(first) };
+        members[index] = { ...first, type: this.#kept(first, "conflict") };
       } else {
         written.delete(member.name);
       }
@@ -668,6 +787,7 @@ class Resolution {
           signature.type === "TSIndexSignature" ? "index-signature" : "call-signature",
           scope.module,
           at,
+          id,
         );
         continue;
       }
@@ -677,7 +797,9 @@ class Resolution {
           ? undefined
           : memberName(signature.key);
       if (name === undefined) {
-        this.#unsupported("computed-key", scope.module, at);
+        // Its name may be any member's, so what other objects bring in is kept opaque (#merge).
+        this.#unsupported("computed-key", scope.module, at, id);
+        this.#open.add(id);
         continue;
       }
       const common = {
@@ -690,11 +812,12 @@ class Resolution {
       if (signature.type === "TSMethodSignature") {
         if (signature.kind !== "method" || signature.typeParameters) {
           const construct = signature.kind === "method" ? "generic" : "accessor";
+          // Opaque whichever signature of the name comes first, an overload's included.
           const type = this.#unsupported(construct, scope.module, at);
-          if (!members.some((member) => member.name === name)) {
-            members.push({ ...common, readonly: false, type, references: [] });
-            written.add(name);
-          }
+          const index = members.findIndex((member) => member.name === name);
+          if (index === -1) members.push({ ...common, readonly: false, type, references: [] });
+          else if (!written.has(name)) members[index] = { ...members[index]!, type };
+          written.add(name);
           continue;
         }
         const type = this.#function(signature.params, signature.returnType, scope);
@@ -744,14 +867,22 @@ class Resolution {
     });
   }
 
-  #report(reason: UnresolvedType["reason"], module: SourceModule, at: AST.TSType): number {
+  /** Reports `at` unresolved, owned by `owner` or else by the opaque node it returns. */
+  #report(
+    reason: UnresolvedType["reason"],
+    module: SourceModule,
+    at: AST.TSType,
+    owner?: number,
+  ): number {
+    const id = this.#opaque(module, at);
     this.#unresolved.push({ file: module.file, span: { start: at.start, end: at.end }, reason });
-    return this.#opaque(module, at);
+    this.#owners.push(owner ?? id);
+    return id;
   }
 
-  #unsupported(construct: string, module: SourceModule, at: AST.TSType): number {
+  #unsupported(construct: string, module: SourceModule, at: AST.TSType, owner?: number): number {
     this.#construction.add(construct);
-    return this.#report("unsupported", module, at);
+    return this.#report("unsupported", module, at, owner);
   }
 }
 

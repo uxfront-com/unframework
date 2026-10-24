@@ -75,13 +75,17 @@ export function indexModule(file: string, source: string, program: Program): Sou
       continue;
     }
     const value =
-      statement.type === "ExportNamedDeclaration" && !statement.source
+      (statement.type === "ExportNamedDeclaration" && !statement.source) ||
+      statement.type === "ExportDefaultDeclaration"
         ? statement.declaration
         : statement;
     if ((value?.type === "ClassDeclaration" || value?.type === "TSEnumDeclaration") && value.id) {
-      module.values.add(value.id.name);
+      const name = value.id.name;
+      module.values.add(name);
       if (statement.type === "ExportNamedDeclaration") {
-        module.exports.set(value.id.name, { kind: "local", local: value.id.name });
+        module.exports.set(name, { kind: "local", local: name });
+      } else if (statement.type === "ExportDefaultDeclaration") {
+        module.exports.set("default", { kind: "local", local: name });
       }
       continue;
     }
