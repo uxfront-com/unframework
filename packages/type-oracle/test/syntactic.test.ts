@@ -470,6 +470,39 @@ describe("createSyntacticOracle", () => {
     await expect(oracle.printType(query)).rejects.toThrow("it has unresolved parts.");
   });
 
+  it.each([
+    ["an index signature", "{ [k: string]: number; a: 1 }"],
+    ["a call signature", "{ (): void; a: 1 }"],
+    ["an unresolved part", "{ a: 1 } & Partial<Q>"],
+    ["a construct two levels down", "{ w: { [k: string]: number }; a: 1 }"],
+  ])("is not sure of an object that lost %s, in either part", async (_, lossy) => {
+    for (const type of [`{ v: { a: 1 } } & { v: ${lossy} }`, `{ v: ${lossy} } & { v: { a: 1 } }`]) {
+      const source = `interface Q { q: 1 }\nfunction C(props: ${type}) {}`;
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const query = at("C.uf.tsx", source, "props: ", type);
+      expect((await oracle.resolveShape(query)).unresolved).not.toEqual([]);
+      await expect(oracle.printType(query)).rejects.toThrow("it has unresolved parts.");
+    }
+  });
+
+  it("keeps an entry a failed base carries while its opaque node is reachable by another path", async () => {
+    const source = [
+      "interface X { x: 1 }",
+      "type S = Partial<X>;",
+      "interface B extends S { a: 1 }",
+      "interface Q { m: B }",
+      "interface D extends Q { m: never }",
+      "interface P { d: D; g: S }",
+      "function C(props: P) {}",
+    ].join("\n");
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const query = at("C.uf.tsx", source, "props: ", "P");
+    expect((await oracle.resolveShape(query)).unresolved.map((entry) => entry.reason)).toEqual([
+      "unsupported",
+    ]);
+    await expect(oracle.printType(query)).rejects.toThrow("it has unresolved parts.");
+  });
+
   it("keeps an entry while the opaque node it describes is reachable by another path", async () => {
     const source = [
       "interface X { x: 1 }",
@@ -524,32 +557,54 @@ describe("createSyntacticOracle", () => {
   });
 
   describe("compares deep shared types once per pair", () => {
-    // Without a cache of the pairs compared, each of these takes 2^30 steps.
-    const chain = (name: string, leaf: string, form: (inner: string) => string) =>
+    // Without a cache of the pairs compared, each of these takes seconds: 2^depth steps.
+    const chain = (name: string, depth: number, leaf: string, form: (inner: string) => string) =>
       [`type ${name}0 = ${leaf};`]
-        .concat(Array.from({ length: 30 }, (_, i) => `type ${name}${i + 1} = ${form(name + i)};`))
+        .concat(
+          Array.from({ length: depth }, (_, i) => `type ${name}${i + 1} = ${form(name + i)};`),
+        )
         .join("\n");
     const objects = (inner: string) => `{ a: ${inner} }[] | { a: ${inner} }[]`;
+    const pairs = (inner: string) => `[{ a: ${inner} }, 1] | [{ a: ${inner} }, 2]`;
+    const reversed = (inner: string) => `[{ a: ${inner} }, 2] | [{ a: ${inner} }, 1]`;
     it.each([
-      ["arrays of objects, equal", chain("T", "1", objects), chain("U", "1", objects), []],
-      [
-        "arrays of objects, different at the leaves",
-        chain("T", "1", objects),
-        chain("U", "2", objects),
-        ["conflict"],
-      ],
-      [
-        "tuples in another order",
-        chain("T", "1", (inner) => `[{ a: ${inner} }, 1] | [{ a: ${inner} }, 2]`),
-        chain("U", "1", (inner) => `[{ a: ${inner} }, 2] | [{ a: ${inner} }, 1]`),
-        [],
-      ],
-    ])("%s", { timeout: 2000 }, async (_, left, right, reasons) => {
-      const type = "{ v: T30 } & { v: U30 }";
-      const source = `${left}\n${right}\nfunction C(props: ${type}) {}`;
+      ["arrays of objects, different at the leaves", 22, "2", objects, objects, ["conflict"]],
+      ["arrays of objects, equal", 12, "1", objects, objects, []],
+      ["tuples in another order", 12, "1", pairs, reversed, []],
+    ])("%s", async (_, depth, leaf, left, right, reasons) => {
+      const type = `{ v: T${depth} } & { v: U${depth} }`;
+      const source = [
+        chain("T", depth, "1", left),
+        chain("U", depth, leaf, right),
+        `function C(props: ${type}) {}`,
+      ].join("\n");
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const query = at("C.uf.tsx", source, "props: ", type);
+      const start = performance.now();
+      const shape = await oracle.resolveShape(query);
+      expect(performance.now() - start).toBeLessThan(500);
+      expect(shape.unresolved.map((entry) => entry.reason)).toEqual(reasons);
+    });
+
+    it("matches a wide union's members without comparing every pair", async () => {
+      const objects = Array.from({ length: 2900 }, (_, i) => `{ k: ${i} }`);
+      const type = `{ v: ${objects.join(" | ")} } & { v: ${objects.toReversed().join(" | ")} }`;
+      const source = `function C(props: ${type}) {}`;
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const start = performance.now();
+      const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+      expect(performance.now() - start).toBeLessThan(1000);
+      expect(shape.unresolved).toEqual([]);
+    });
+
+    it("is not sure past its bound of pairs, and does not throw", async () => {
+      // Members alike three levels down share one fingerprint, so each pair is compared.
+      const objects = Array.from({ length: 800 }, (_, i) => `{ a: { b: { c: { d: ${i} } } } }`);
+      const type = `{ v: ${objects.join(" | ")} } & { v: ${objects.toReversed().join(" | ")} }`;
+      const source = `function C(props: ${type}) {}`;
       const { oracle } = memory({ "C.uf.tsx": source });
       const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
-      expect(shape.unresolved.map((entry) => entry.reason)).toEqual(reasons);
+      expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
     });
   });
 
@@ -595,8 +650,11 @@ describe("createSyntacticOracle", () => {
     ["tuples", "{ a: [{ x: 1 }, ...{ y: 1 }[]]; b: readonly [{ x: 1 }?] }"],
     ["functions", "{ a: (p: { x: 1 }, q?: 1, ...r: { y: 1 }[]) => { z: 1 } }"],
     ["unions in another order", '{ a: { x: 1 } | "y" | { z: 1 } }'],
+    ["unions inside a union, one with a repeated member", '{ a: { u: { x: 1 } | "y" } | "z" }'],
   ])("keeps a member two parts write with the same %s", async (_, written) => {
-    const reordered = written.replace('{ x: 1 } | "y" | { z: 1 }', '{ z: 1 } | { x: 1 } | "y"');
+    const reordered = written
+      .replace('{ x: 1 } | "y" | { z: 1 }', '{ z: 1 } | { x: 1 } | "y"')
+      .replace('{ u: { x: 1 } | "y" }', '{ u: "y" | { x: 1 } | { x: 1 } }');
     const type = `{ v: ${written} } & { v: ${reordered} }`;
     const source = `function C(props: ${type}) {}`;
     const { oracle } = memory({ "C.uf.tsx": source });

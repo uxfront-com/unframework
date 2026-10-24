@@ -32,6 +32,9 @@ export interface Resolved {
   missing: string[];
 }
 
+/** How many pairs one comparison may cache; past it, two types are not surely the same. */
+const PAIRS = 1 << 20;
+
 /** The utility types plan §5.5 names, which this adapter leaves unresolved for now. */
 const UTILITIES = new Set(["Partial", "Required", "Pick", "Omit", "Readonly"]);
 
@@ -219,15 +222,18 @@ class Resolution {
    * Whether two nodes are surely the same type. Each pair is compared once, so a shared type
    * costs one comparison. A pair met again while it is being compared, in a recursive type, is
    * not surely the same, and neither are two declared objects but one declaration, two opaque
-   * nodes but one node, or an object whose members are not all known yet.
+   * nodes but one node, an object whose members are not all known yet, or one that lost a
+   * construct (it carries an `unresolved` entry). Past `PAIRS` pairs, nothing more is sure.
    */
   #same(a: number, b: number): boolean {
     const known = new Map<string, boolean>();
+    const lossy = new Set(this.#carriers.flat());
     const same = (x: number, y: number): boolean => {
       if (x === y) return true;
       const key = `${x}:${y}`;
       const cached = known.get(key);
       if (cached !== undefined) return cached;
+      if (known.size >= PAIRS) return false;
       known.set(key, false);
       const result = compare(x, y);
       known.set(key, result);
@@ -241,10 +247,53 @@ class Resolution {
         kind === "primitive" || kind === "literal" || kind === "opaque" || kind === "typeParameter"
       );
     };
+    // An object that only its own node can equal: declared, not settled, or lossy.
+    const alone = (id: number) => {
+      const node = this.#nodes[id]!;
+      return node.kind === "object" && (!!node.declaration || !this.#settled(id) || lossy.has(id));
+    };
+    // Text two nodes share whenever they may be the same type, read `depth` levels down: a
+    // necessary condition that is cheap to compare, so a union's members are searched only
+    // among the members with the same text.
+    const prints = new Map<number, string>();
+    const fingerprint = (id: number, depth = 3): string => {
+      const cached = depth === 3 ? prints.get(id) : undefined;
+      if (cached !== undefined) return cached;
+      const node = this.#nodes[id]!;
+      const inner = (child: number) => fingerprint(child, depth - 1);
+      let text: string;
+      if (scalar(id)) text = `#${id}`;
+      else if (depth === 0) text = node.kind;
+      else if (node.kind === "union") {
+        text = `|${[...new Set(node.types.map(inner))].toSorted().join(",")}`;
+      } else if (node.kind === "array") text = `[${node.readonly}]${inner(node.element)}`;
+      else if (node.kind === "tuple") {
+        const elements = node.elements.map((e) => `${e.optional}${e.rest}${inner(e.type)}`);
+        text = `(${node.readonly}${elements.join(",")})`;
+      } else if (node.kind === "function") {
+        const parameters = node.parameters.map((e) => `${e.optional}${e.rest}${inner(e.type)}`);
+        text = `(${parameters.join(",")})=>${inner(node.returns)}`;
+      } else {
+        const members = (node as ObjectNode).members
+          .map((m) => `${m.name}${m.optional}${m.readonly}:${inner(m.type)}`)
+          .toSorted();
+        text = `{${members.join(";")}}`;
+      }
+      if (depth === 3) prints.set(id, text);
+      return text;
+    };
     const covered = (from: readonly number[], to: readonly number[]) => {
       const ids = new Set(to);
+      const byPrint = new Map<string, number[]>();
+      for (const u of to) {
+        if (scalar(u)) continue;
+        const list = byPrint.get(fingerprint(u));
+        if (list) list.push(u);
+        else byPrint.set(fingerprint(u), [u]);
+      }
       return from.every(
-        (t) => ids.has(t) || (!scalar(t) && to.some((u) => !scalar(u) && same(t, u))),
+        (t) =>
+          ids.has(t) || (!scalar(t) && (byPrint.get(fingerprint(t)) ?? []).some((u) => same(t, u))),
       );
     };
     const compare = (x: number, y: number): boolean => {
@@ -278,10 +327,8 @@ class Resolution {
         case "object":
           return (
             q.kind === "object" &&
-            !p.declaration &&
-            !q.declaration &&
-            this.#settled(x) &&
-            this.#settled(y) &&
+            !alone(x) &&
+            !alone(y) &&
             p.members.length === q.members.length &&
             p.members.every((m) => {
               const n = q.members.find((other) => other.name === m.name);
@@ -881,7 +928,7 @@ class Resolution {
     });
   }
 
-  /** Reports `at` unresolved, owned by `owner` or else by the opaque node it returns. */
+  /** Reports `at` unresolved, carried by the opaque node it returns and by `owner`, if any. */
   #report(
     reason: UnresolvedType["reason"],
     module: SourceModule,

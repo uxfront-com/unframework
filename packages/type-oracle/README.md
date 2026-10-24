@@ -27,13 +27,12 @@ The TypeOracle interface and the syntactic resolver (plan §5.5).
   conditional, mapped and indexed-access types, `keyof`, `typeof`, template literals with holes,
   index and call signatures, computed keys that are not literals, generic and overloaded methods,
   accessors, and an interface that extends itself. A member the adapter cannot read keeps its
-  name, so no base or other part fills it in. A member that two parts of an intersection, or two
-  declarations of an interface, write with different types, or as a method and a property, is a
-  `conflict`, with its type kept as written (a method's signature, for a method). Two types are
-  the same only when the adapter is sure: two declared objects only as one declaration, two
-  opaque types only as one, and an object only once its members are all known. What a base or a
-  part loses, the object built from it loses too. `update` drops the files it names, which the
-  next query reads again.
+  name, so no base or other part fills it in. A member that two intersection parts or two
+  interface declarations write with different types is a `conflict`, with its type kept as
+  written; so is a method and a property of one name in two interface declarations. Two types are
+  the same only when the adapter is sure: one declaration, one opaque node, or objects whose
+  members are all known and nothing lost. What a base or a part loses, the object built from it
+  loses too. `update` drops the files it names, which the next query reads again.
 - **`printType`** rejects a type with unresolved parts, and a recursive object with no name,
   which TypeScript cannot write without one.
 - **`localShapes(parsed, filename)`** is the same resolution over one parsed module, synchronous,
