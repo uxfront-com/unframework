@@ -22,8 +22,11 @@ export interface SourceModule {
   file: string;
   source: string;
   program: Program;
-  /** Its top-level type declarations: the first of a name wins, as in the analyser. */
-  declarations: Map<string, Declaration>;
+  /**
+   * Its top-level type declarations, by name, in source order. Interfaces of one name merge, as
+   * in TypeScript; any other repeated name is an error the resolver reports.
+   */
+  declarations: Map<string, Declaration[]>;
   /** Its imported bindings, by local name. `imported` is `default` or `*` for those forms. */
   imports: Map<string, { specifier: string; imported: string }>;
   exports: Map<string, ExportEntry>;
@@ -60,7 +63,9 @@ export function indexModule(file: string, source: string, program: Program): Sou
     const declaration = declarationOf(statement);
     if (declaration) {
       const name = declaration.id.name;
-      if (!module.declarations.has(name)) module.declarations.set(name, declaration);
+      const declarations = module.declarations.get(name);
+      if (declarations) declarations.push(declaration);
+      else module.declarations.set(name, [declaration]);
       if (statement.type === "ExportNamedDeclaration") {
         module.exports.set(name, { kind: "local", local: name });
       }
@@ -113,7 +118,12 @@ function exportName(name: ModuleExportName): string {
 
 /** Whether a specifier names a file relative to its importer. */
 export function isRelative(specifier: string): boolean {
-  return specifier.startsWith("./") || specifier.startsWith("../");
+  return (
+    specifier === "." ||
+    specifier === ".." ||
+    specifier.startsWith("./") ||
+    specifier.startsWith("../")
+  );
 }
 
 /** The package a bare specifier names: `@scope/name` or `name`. */

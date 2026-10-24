@@ -78,7 +78,8 @@ export type LocalShapes = (span: Span) => TypeShape | undefined;
 /**
  * The syntactic adapter's in-module path: synchronous, and it reads no file. A type is followed
  * through the module's own declarations only; an imported name is `unresolved` as `external`.
- * `analyze()` uses it when it is given no shapes. Gives `undefined` for a span with no type.
+ * It is meant for `analyze()` when it is given no shapes; the analyser does not call it yet.
+ * Gives `undefined` for a span with no type.
  */
 export function localShapes(
   parsed: { program: Program; source: string },

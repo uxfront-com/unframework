@@ -33,3 +33,65 @@ export function List<T>(props: { items: T[]; selected?: T }) {
 export function Recursive(props: Tree) {
   return props;
 }
+
+interface Merged {
+  a: string;
+}
+
+interface Merged {
+  b: number;
+}
+
+interface Sized {
+  size: string;
+  label: string;
+}
+
+interface Narrow extends Sized {
+  size: "sm" | "md";
+}
+
+interface Parent {
+  child: Child;
+}
+
+interface Child extends Parent {
+  name: string;
+}
+
+type Head = { next: Tail };
+type Tail = Head & { value: number };
+
+type AB = "a" | "b";
+
+export function Merging(props: Merged) {
+  return props;
+}
+
+export function Narrowed(props: Narrow) {
+  return props;
+}
+
+export function CycleParent(props: Parent) {
+  return props;
+}
+
+export function CycleChild(props: Child) {
+  return props;
+}
+
+export function AliasCycle(props: Head) {
+  return props;
+}
+
+export function Flattened(props: { value: AB | "b" | "c" }) {
+  return props;
+}
+
+export function Optional(props: { a?: string } & { a: string }) {
+  return props;
+}
+
+export function Writable(props: { readonly a: string } & { a: string }) {
+  return props;
+}

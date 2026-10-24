@@ -17,10 +17,15 @@ export function printShape(shape: TypeShape, options: PrintOptions = {}): string
   const print = (id: number, stack: readonly number[]): string => {
     const node = shape.nodes[id]!;
     const inner = (child: number) => print(child, [...stack, id]);
+    // A union, a function or a readonly array or tuple binds looser than `[]` and `?`.
     const operand = (child: number) => {
-      const kind = shape.nodes[child]!.kind;
+      const node = shape.nodes[child]!;
       const text = inner(child);
-      return kind === "union" || kind === "function" ? `(${text})` : text;
+      const loose =
+        node.kind === "union" ||
+        node.kind === "function" ||
+        ((node.kind === "array" || node.kind === "tuple") && node.readonly);
+      return loose ? `(${text})` : text;
     };
     switch (node.kind) {
       case "primitive":
@@ -33,10 +38,12 @@ export function printShape(shape: TypeShape, options: PrintOptions = {}): string
         return `${node.readonly ? "readonly " : ""}${operand(node.element)}[]`;
       case "tuple": {
         const elements = node.elements.map((element) => {
-          const type = element.rest ? `...${inner(element.type)}` : inner(element.type);
-          if (element.name === undefined) return element.optional ? `${type}?` : type;
+          if (element.name === undefined) {
+            if (element.rest) return `...${inner(element.type)}`;
+            return element.optional ? `${operand(element.type)}?` : inner(element.type);
+          }
           const label = `${element.rest ? "..." : ""}${element.name}${element.optional ? "?" : ""}`;
-          return `${label}: ${element.rest ? inner(element.type) : type}`;
+          return `${label}: ${inner(element.type)}`;
         });
         return `${node.readonly ? "readonly " : ""}[${elements.join(", ")}]`;
       }

@@ -32,7 +32,7 @@ export interface Resolved {
   missing: string[];
 }
 
-/** The utility types plan §5.5 names, which the syntactic adapter evaluates from L4 on. */
+/** The utility types plan §5.5 names, which this adapter leaves unresolved for now. */
 const UTILITIES = new Set(["Partial", "Required", "Pick", "Omit", "Readonly"]);
 
 /** The construct each type the syntactic adapter cannot evaluate is reported as. */
@@ -75,6 +75,7 @@ export function resolveQuery(modules: ModuleSource, query: ShapeQuery, follow: b
     parameters: found.parameters,
     declaration: found.declaration && resolution.declarationRef(module, found.declaration),
   });
+  resolution.finish();
   return { shape: resolution.shape(root), missing: [...resolution.missing].toSorted() };
 }
 
@@ -82,6 +83,16 @@ export function resolveQuery(modules: ModuleSource, query: ShapeQuery, follow: b
 interface Use {
   module: SourceModule;
   node: AST.TSType;
+}
+
+/**
+ * An object whose members come from other objects: an interface that extends bases, or an
+ * intersection of parts. Merges run once every object is filled, so a part reached while it is
+ * still being read (`interface B extends A`, inside `A`) contributes all its members.
+ */
+interface Merge {
+  kind: "extends" | "intersection";
+  parts: { id: number; use: Use }[];
 }
 
 interface Scope {
@@ -101,6 +112,8 @@ class Resolution {
   readonly #unresolved: UnresolvedType[] = [];
   readonly #declarations = new Map<object, number>();
   readonly #resolving = new Set<object>();
+  readonly #merges = new Map<number, Merge>();
+  readonly #merged = new Map<number, "merging" | "done">();
 
   readonly modules: ModuleSource;
   readonly query: SourceModule;
@@ -120,6 +133,46 @@ class Resolution {
       dependencies: [...this.#dependencies].toSorted(),
       unresolved: this.#unresolved,
     };
+  }
+
+  /** Runs the merges, so every object holds its members. */
+  finish(): void {
+    for (const id of this.#merges.keys()) this.#merge(id);
+  }
+
+  #merge(id: number): void {
+    const merge = this.#merges.get(id);
+    if (!merge || this.#merged.has(id)) return;
+    this.#merged.set(id, "merging");
+    const node = this.#nodes[id] as ObjectNode;
+    const members = [...node.members];
+    for (const part of merge.parts) {
+      if (this.#merged.get(part.id) === "merging") {
+        // An interface that extends itself, or an intersection that contains itself (TS2310).
+        this.#unsupported("circular", part.use.module, part.use.node);
+        continue;
+      }
+      this.#merge(part.id);
+      for (const member of (this.#nodes[part.id] as ObjectNode).members) {
+        const index = members.findIndex((other) => other.name === member.name);
+        const first = members[index];
+        // An interface's own member wins over its base's, and the first base over a later one.
+        if (!first) members.push(member);
+        else if (merge.kind === "extends") continue;
+        else if (first.type !== member.type) {
+          this.#unresolved.push({ file: member.file, span: member.span, reason: "conflict" });
+        } else {
+          // An intersection's member is optional, or readonly, only when it is in every part.
+          members[index] = {
+            ...first,
+            optional: first.optional && member.optional,
+            readonly: first.readonly && member.readonly,
+          };
+        }
+      }
+    }
+    node.members = members;
+    this.#merged.set(id, "done");
   }
 
   declarationRef(module: SourceModule, declaration: Declaration): DeclarationRef {
@@ -191,7 +244,12 @@ class Resolution {
     const { literal } = type;
     if (literal.type === "Literal") {
       const { value } = literal;
-      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      // A number JSON cannot hold (`1e400`) is not kept (P5).
+      if (
+        typeof value === "string" ||
+        (typeof value === "number" && Number.isFinite(value)) ||
+        typeof value === "boolean"
+      ) {
         return this.#intern({ kind: "literal", value });
       }
     }
@@ -199,7 +257,8 @@ class Resolution {
       literal.type === "UnaryExpression" &&
       literal.operator === "-" &&
       literal.argument.type === "Literal" &&
-      typeof literal.argument.value === "number"
+      typeof literal.argument.value === "number" &&
+      Number.isFinite(literal.argument.value)
     ) {
       return this.#intern({ kind: "literal", value: -literal.argument.value });
     }
@@ -227,27 +286,19 @@ class Resolution {
 
   #intersection(type: AST.TSIntersectionType, scope: Scope): number {
     this.#construction.add("intersection");
-    const members: ShapeMember[] = [];
+    const parts: Merge["parts"] = [];
     for (const part of type.types) {
       const before = this.#unresolved.length;
-      const node = this.#nodes[this.convert(part, scope)]!;
-      if (node.kind !== "object") {
+      const id = this.convert(part, scope);
+      if (this.#nodes[id]!.kind === "object") {
+        parts.push({ id, use: { module: scope.module, node: part } });
+      } else if (this.#unresolved.length === before && !this.missing.size) {
         // An unresolved part is reported once, where it failed.
-        if (this.#unresolved.length === before && !this.missing.size) {
-          this.#report("unsupported", scope.module, part);
-        }
-        continue;
-      }
-      for (const member of node.members) {
-        const first = members.find((other) => other.name === member.name);
-        if (!first) members.push(member);
-        else if (first.type !== member.type) {
-          this.#unresolved.push({ file: member.file, span: member.span, reason: "conflict" });
-        }
+        this.#report("unsupported", scope.module, part);
       }
     }
     const id = this.#object(undefined);
-    (this.#nodes[id] as ObjectNode).members = members;
+    this.#merges.set(id, { kind: "intersection", parts });
     return id;
   }
 
@@ -355,8 +406,8 @@ class Resolution {
 
   /** A type name used in `module` at `at`: declared there, imported, or a global. */
   #name(module: SourceModule, name: string, at: AST.TSType): number {
-    const declaration = module.declarations.get(name);
-    if (declaration) return this.#declaration(module, declaration, { module, node: at });
+    const declarations = module.declarations.get(name);
+    if (declarations) return this.#declaration(module, declarations, { module, node: at });
     const imported = module.imports.get(name);
     if (imported) {
       const use = { module, node: at };
@@ -397,8 +448,8 @@ class Resolution {
       return this.#import(module, entry.specifier, entry.imported, use, seen);
     }
     if (entry) {
-      const declaration = module.declarations.get(entry.local);
-      if (declaration) return this.#declaration(module, declaration, use);
+      const declarations = module.declarations.get(entry.local);
+      if (declarations) return this.#declaration(module, declarations, use);
       const imported = module.imports.get(entry.local);
       if (imported) return this.#import(module, imported.specifier, imported.imported, use, seen);
       return this.#report("missing-export", use.module, use.node);
@@ -442,10 +493,21 @@ class Resolution {
     return null;
   }
 
-  #declaration(module: SourceModule, declaration: Declaration, use: Use): number {
+  /** A declared name's type: an alias, or an interface with every declaration of it merged. */
+  #declaration(module: SourceModule, declarations: Declaration[], use: Use): number {
+    const declaration = declarations[0]!;
     const cached = this.#declarations.get(declaration);
     if (cached !== undefined) return cached;
-    if (declaration.typeParameters) return this.#unsupported("generic", use.module, use.node);
+    if (declarations.some((each) => each.typeParameters)) {
+      return this.#unsupported("generic", use.module, use.node);
+    }
+    if (
+      declarations.length > 1 &&
+      declarations.some((each) => each.type === "TSTypeAliasDeclaration")
+    ) {
+      // Only interfaces merge; a repeated alias is an error (TS2300).
+      return this.#unsupported("duplicate-declaration", use.module, use.node);
+    }
     const ref = this.declarationRef(module, declaration);
     const scope: Scope = { module, parameters: new Map(), declaration: ref };
     if (declaration.type === "TSTypeAliasDeclaration") {
@@ -460,28 +522,37 @@ class Resolution {
         return this.#unsupported("unsupported", use.module, use.node);
       }
       this.#resolving.add(declaration);
+      const start = this.#nodes.length;
       const id = this.convert(declaration.typeAnnotation, scope);
       this.#resolving.delete(declaration);
+      // An object the alias itself builds (`type B = A & { x: string }`) is declared by it.
+      const node = this.#nodes[id]!;
+      if (id >= start && node.kind === "object" && !node.declaration) node.declaration = ref;
       this.#declarations.set(declaration, id);
       return id;
     }
+    const interfaces = declarations as AST.TSInterfaceDeclaration[];
     const id = this.#object(ref);
     this.#declarations.set(declaration, id);
-    this.#fill(id, declaration.body.body, scope);
-    const node = this.#nodes[id] as ObjectNode;
-    for (const heritage of declaration.extends) {
+    this.#fill(
+      id,
+      interfaces.flatMap((each) => each.body.body),
+      scope,
+    );
+    const parts: Merge["parts"] = [];
+    for (const heritage of interfaces.flatMap((each) => each.extends)) {
       this.#construction.add("extends");
       const base = this.#heritage(heritage, scope);
-      if (!base) continue;
-      for (const member of base.members) {
-        if (!node.members.some((own) => own.name === member.name)) node.members.push(member);
+      if (base !== undefined) {
+        parts.push({ id: base, use: { module, node: heritage as unknown as AST.TSType } });
       }
     }
+    if (parts.length) this.#merges.set(id, { kind: "extends", parts });
     return id;
   }
 
   /** The object an interface extends, or `undefined`, reported, when it is not one. */
-  #heritage(heritage: AST.TSInterfaceHeritage, scope: Scope): ObjectNode | undefined {
+  #heritage(heritage: AST.TSInterfaceHeritage, scope: Scope): number | undefined {
     const { expression } = heritage;
     const at = heritage as unknown as AST.TSType;
     if (expression.type !== "Identifier") {
@@ -498,17 +569,35 @@ class Resolution {
       return undefined;
     }
     const before = this.#unresolved.length;
-    const node = this.#nodes[this.#name(scope.module, expression.name, at)]!;
-    if (node.kind === "object") return node;
+    const id = this.#name(scope.module, expression.name, at);
+    if (this.#nodes[id]!.kind === "object") return id;
     if (this.#unresolved.length === before && !this.missing.size) {
       this.#report("unsupported", scope.module, at);
     }
     return undefined;
   }
 
-  /** Writes an object's members from its signatures, in source order. */
+  /**
+   * Writes an object's members from its signatures, in source order. A name written twice is
+   * one member: the same type again is kept once, another type is a `conflict`, and an
+   * overloaded method, which a member cannot hold, is unresolved.
+   */
   #fill(id: number, signatures: readonly AST.TSSignature[], scope: Scope): void {
     const members: ShapeMember[] = [];
+    const methods = new Set<string>();
+    const overloaded = new Set<string>();
+    const add = (member: ShapeMember, method: boolean, at: AST.TSType) => {
+      const first = members.find((other) => other.name === member.name);
+      if (!first) {
+        members.push(member);
+        if (method) methods.add(member.name);
+      } else if (method && methods.has(member.name)) {
+        if (!overloaded.has(member.name)) this.#unsupported("overload", scope.module, at);
+        overloaded.add(member.name);
+      } else if (method || methods.has(member.name) || first.type !== member.type) {
+        this.#unresolved.push({ file: member.file, span: member.span, reason: "conflict" });
+      }
+    };
     for (const signature of signatures) {
       const at = signature as unknown as AST.TSType;
       if (signature.type !== "TSPropertySignature" && signature.type !== "TSMethodSignature") {
@@ -530,7 +619,7 @@ class Resolution {
           this.#unsupported(signature.kind === "method" ? "generic" : "accessor", scope.module, at);
           continue;
         }
-        members.push({
+        const member: ShapeMember = {
           name,
           optional: signature.optional,
           readonly: false,
@@ -539,11 +628,12 @@ class Resolution {
           ...(scope.declaration && { declaration: scope.declaration }),
           span,
           references: references([...signature.params, signature.returnType]),
-        });
+        };
+        add(member, true, at);
         continue;
       }
       const type = signature.typeAnnotation?.typeAnnotation;
-      members.push({
+      const member: ShapeMember = {
         name,
         optional: signature.optional,
         readonly: signature.readonly,
@@ -558,9 +648,12 @@ class Resolution {
           },
         }),
         references: references([type]),
-      });
+      };
+      add(member, false, at);
     }
-    (this.#nodes[id] as ObjectNode).members = members;
+    (this.#nodes[id] as ObjectNode).members = members.filter(
+      (member) => !overloaded.has(member.name),
+    );
   }
 
   #object(declaration: DeclarationRef | undefined): number {

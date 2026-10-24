@@ -18,6 +18,8 @@ export interface MemberOrigin {
   file: string;
   /** The named declaration, absent for a type literal written in place. */
   declaration?: string;
+  /** Whether its module exports that declaration. */
+  exported?: boolean;
 }
 
 export interface ContractCase {
@@ -43,7 +45,8 @@ export interface ContractCase {
 const FIXTURES = fileURLToPath(new URL("../test/fixtures/", import.meta.url));
 
 const here = (file: string) => ({ file });
-const declared = (file: string, declaration: string) => ({ file, declaration });
+const exported = (file: string, declaration: string) => ({ file, declaration, exported: true });
+const local = (file: string, declaration: string) => ({ file, declaration, exported: false });
 
 const CONTRACT_CASES: readonly ContractCase[] = [
   {
@@ -68,8 +71,8 @@ const CONTRACT_CASES: readonly ContractCase[] = [
     type: "CardProps",
     expected: "{ count: number; title: string }",
     members: {
-      title: declared("Card.uf.tsx", "CardProps"),
-      count: declared("Card.uf.tsx", "CardProps"),
+      title: local("Card.uf.tsx", "CardProps"),
+      count: local("Card.uf.tsx", "CardProps"),
     },
     dependencies: [],
   },
@@ -112,6 +115,82 @@ const CONTRACT_CASES: readonly ContractCase[] = [
     dependencies: [],
   },
   {
+    name: "interfaces of one name, merged",
+    project: "local",
+    file: "Card.uf.tsx",
+    where: "Merging(props: Merged)",
+    type: "Merged",
+    expected: "{ a: string; b: number }",
+    members: { a: local("Card.uf.tsx", "Merged"), b: local("Card.uf.tsx", "Merged") },
+    dependencies: [],
+  },
+  {
+    name: "an interface's own member over its base's",
+    project: "local",
+    file: "Card.uf.tsx",
+    where: "Narrowed(props: Narrow)",
+    type: "Narrow",
+    expected: '{ label: string; size: "md" | "sm" }',
+    members: { size: local("Card.uf.tsx", "Narrow"), label: local("Card.uf.tsx", "Sized") },
+    dependencies: [],
+    construction: ["extends"],
+  },
+  {
+    name: "a cycle through extends, queried at the base",
+    project: "local",
+    file: "Card.uf.tsx",
+    where: "CycleParent(props: Parent)",
+    type: "Parent",
+    expected: "{ child: { child: Child; name: string } }",
+    dependencies: [],
+  },
+  {
+    name: "a cycle through extends, queried at the derived interface",
+    project: "local",
+    file: "Card.uf.tsx",
+    where: "CycleChild(props: Child)",
+    type: "Child",
+    expected: "{ child: Child; name: string }",
+    members: { name: local("Card.uf.tsx", "Child"), child: local("Card.uf.tsx", "Parent") },
+    dependencies: [],
+  },
+  {
+    name: "a cycle through an intersection",
+    project: "local",
+    file: "Card.uf.tsx",
+    where: "AliasCycle(props: Head)",
+    type: "Head",
+    expected: "{ next: { next: Tail; value: number } }",
+    dependencies: [],
+  },
+  {
+    name: "a union of a union, flattened without repeats",
+    project: "local",
+    file: "Card.uf.tsx",
+    where: 'Flattened(props: { value: AB | "b" | "c" })',
+    type: '{ value: AB | "b" | "c" }',
+    expected: '{ value: "a" | "b" | "c" }',
+    dependencies: [],
+  },
+  {
+    name: "an intersection's member, required when one part requires it",
+    project: "local",
+    file: "Card.uf.tsx",
+    where: "Optional(props: { a?: string } & { a: string })",
+    type: "{ a?: string } & { a: string }",
+    expected: "{ a: string }",
+    dependencies: [],
+  },
+  {
+    name: "an intersection's member, writable when one part writes it",
+    project: "local",
+    file: "Card.uf.tsx",
+    where: "Writable(props: { readonly a: string } & { a: string })",
+    type: "{ readonly a: string } & { a: string }",
+    expected: "{ a: string }",
+    dependencies: [],
+  },
+  {
     name: "an imported interface with an imported extends chain",
     project: "imports",
     file: "Button.uf.tsx",
@@ -120,13 +199,29 @@ const CONTRACT_CASES: readonly ContractCase[] = [
     expected:
       '{ disabled?: boolean; id: string; label: string; readonly size?: "lg" | "md" | "sm" }',
     members: {
-      label: declared("types.ts", "Labelled"),
-      size: declared("types.ts", "Labelled"),
-      id: declared("types.ts", "Base"),
-      disabled: declared("types.ts", "Base"),
+      label: exported("types.ts", "Labelled"),
+      size: exported("types.ts", "Labelled"),
+      id: exported("types.ts", "Base"),
+      disabled: exported("types.ts", "Base"),
     },
     dependencies: ["types.ts"],
     construction: ["import", "extends", "union"],
+  },
+  {
+    name: "an import from a parent directory",
+    project: "imports",
+    file: "nested/Deep.uf.tsx",
+    where: "Deep(props: Labelled)",
+    type: "Labelled",
+    expected:
+      '{ disabled?: boolean; id: string; label: string; readonly size?: "lg" | "md" | "sm" }',
+    members: {
+      label: exported("types.ts", "Labelled"),
+      size: exported("types.ts", "Labelled"),
+      id: exported("types.ts", "Base"),
+      disabled: exported("types.ts", "Base"),
+    },
+    dependencies: ["types.ts"],
   },
   {
     name: "imported literal unions, one through a re-export",
@@ -147,9 +242,9 @@ const CONTRACT_CASES: readonly ContractCase[] = [
     type: "Root & Extra",
     expected: "{ disabled?: boolean; id: string; note: string }",
     members: {
-      id: declared("types.ts", "Base"),
-      disabled: declared("types.ts", "Base"),
-      note: declared("more.ts", "Extra"),
+      id: exported("types.ts", "Base"),
+      disabled: exported("types.ts", "Base"),
+      note: exported("more.ts", "Extra"),
     },
     dependencies: ["more.ts", "reexports.ts", "types.ts"],
     construction: ["intersection", "import"],
@@ -162,8 +257,8 @@ const CONTRACT_CASES: readonly ContractCase[] = [
     type: "FieldProps",
     expected: "{ name: string; value?: string }",
     members: {
-      name: declared("Field.uf.tsx", "FieldProps"),
-      value: declared("Field.uf.tsx", "FieldProps"),
+      name: exported("Field.uf.tsx", "FieldProps"),
+      value: exported("Field.uf.tsx", "FieldProps"),
     },
     dependencies: ["Field.uf.tsx"],
     construction: ["import"],
@@ -226,7 +321,10 @@ function observe(shape: TypeShape, project: string) {
               member.name,
               {
                 file: member.file,
-                ...(member.declaration && { declaration: member.declaration.name }),
+                ...(member.declaration && {
+                  declaration: member.declaration.name,
+                  exported: member.declaration.exported,
+                }),
               },
             ]),
           )
