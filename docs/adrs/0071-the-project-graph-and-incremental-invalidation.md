@@ -80,8 +80,8 @@ option, and its open items on the graph and on cycles are settled here.
 **Open:**
 
 - Hot updates (`handleHotUpdate`) and the other bundlers are M6's.
-- A sheet imported by two modules (ADR-0063's UF5001), which the graph makes possible to tell
-  apart, is a later issue.
+- Extending UF5001 across modules, to a sheet that two modules import, is a later issue: the graph
+  can tell the two modules apart (ADR-0063).
 - §5.10's IR cache as JSON, for the CLI and CI, comes with the CLI.
 
 ## Alternatives considered

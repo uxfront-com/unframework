@@ -16,9 +16,11 @@ its own generic form, and not every one can carry `T` everywhere a consumer need
 - Qwik's `component$` returns a non-generic component, so a generic signature needs a cast.
 - Whether `astro check` types `interface Props<T>` for a consumer is not yet known.
 
-Consumers also need the types a component's module exports. Vue's outputs already export them from
-`<script setup>` (`cases/props/null-and-absent`), but no other target writes them, and ADR-0059's
-consumer fixtures can name only a prop, an event, a model or a slot.
+Consumers also need the types a component's module exports. Every target already exports a type
+that a component uses (`cases/props/null-and-absent`), as `TypeDeclaration.exported` records. Two
+kinds are missing on every target: an exported type that no component uses, which is UF1002 today,
+and a type re-export. ADR-0059's consumer fixtures can also name only a prop, an event, a model or
+a slot.
 
 ## Decision
 
@@ -32,19 +34,20 @@ empty. Shapes keep `T` as a type-parameter node (ADR-0067).
 
 **Per target:**
 
-| Target       | `function List<T>(props: ListProps<T>)`                                    | `generic-components`               | `generic-slot-props`       |
-| ------------ | -------------------------------------------------------------------------- | ---------------------------------- | -------------------------- |
-| React, Solid | a generic function component                                               | native                             | native                     |
-| Vue          | `<script setup lang="ts" generic="T">`                                     | native                             | native                     |
-| Svelte       | `<script lang="ts" generics="T">`, with `Snippet<[T]>`                     | native                             | native                     |
-| Angular      | a generic component class, whose `T` ngtsc infers from the inputs          | native                             | unsupported (UF4004, info) |
-| Qwik         | `component$`, with Qwik's documented type-only cast to a generic signature | native: the cast is no helper      | native                     |
-| Astro        | `interface Props<T>`                                                       | native, if L35's spike confirms it | native                     |
+| Target       | `function List<T>(props: ListProps<T>)`                                    | `generic-components`                    | `generic-slot-props`       |
+| ------------ | -------------------------------------------------------------------------- | --------------------------------------- | -------------------------- |
+| React, Solid | a generic function component                                               | native                                  | native                     |
+| Vue          | `<script setup lang="ts" generic="T">`                                     | native                                  | native                     |
+| Svelte       | `<script lang="ts" generics="T">`, with `Snippet<[T]>`                     | native                                  | native                     |
+| Angular      | a generic component class, whose `T` ngtsc infers from the inputs          | native                                  | unsupported (UF4004, info) |
+| Qwik         | `component$`, with Qwik's documented type-only cast to a generic signature | native: the cast is no helper           | native                     |
+| Astro        | `interface Props<T>`                                                       | native, if M5's Astro spike confirms it | native                     |
 
 - **Angular's gap.** A scoped slot's context takes `T`'s constraint, because slot directives can't
   infer `T`. UF4004 (`generic-slot-props`) says so at the slot.
-- **Astro's fallback.** If the spike fails, L28 sets `generic-components` to unsupported with
-  UF4006 (`generic-props`, info), and `Props` takes `T`'s constraint. Nothing else changes a cell.
+- **Astro's fallback.** If the spike fails, Astro's types lane sets `generic-components` to
+  unsupported with UF4006 (`generic-props`, info), and `Props` takes `T`'s constraint. Nothing else
+  changes a cell.
 - **What requires them** (`requiredCapabilities`): `typeParameters` on a component requires
   `generic-components`, and a slot prop whose type names a type parameter requires
   `generic-slot-props`, read through `references` on the slot's props.
@@ -53,8 +56,9 @@ empty. Shapes keep `T` as a type-parameter node (ADR-0067).
 name and with the same meaning: a `ButtonProps`, a type no component uses such as a `Tone`, and a
 re-export, `export type { X } from "./types"`.
 
-- Vue keeps exporting them from `<script setup>`, as today, so no existing golden moves.
-- Svelte exports them from `<script module>`, Astro from its frontmatter, and React, Solid, Qwik
+- Vue keeps exporting them from `<script setup>`, as today, so none of Vue's goldens move.
+- Svelte exports them from `<script module>`, where today its instance script does, so Svelte's
+  goldens that export a type move. Astro exports them from its frontmatter, and React, Solid, Qwik
   and Angular from the module, through codegen's shared helper (ADR-0067).
 - A consumer reads a component's full props with its framework's own utility, such as
   `ComponentProps<typeof X>`, `PropsOf<typeof X>` or `InstanceType<typeof X>["$props"]`, which
@@ -70,8 +74,8 @@ re-export, `export type { X } from "./types"`.
 - The `L4-consumer` canary widens exported `interface` and `type` declarations too, and is caught
   on a `type` directive, including one whose type lives in a `.ts` module.
 
-**The cases**, added on Vue with its fixtures (L14), each target's column turning green in its own
-lane: `types/imported-interface`, `types/extends-chain`, `types/utility-types`,
+**The cases**, added on Vue with its fixtures in Vue's types lane, each target's column turning
+green in its own lane: `types/imported-interface`, `types/extends-chain`, `types/utility-types`,
 `types/package-types`, `types/child-type-import`, `types/intersection-props`, `types/shared-type`,
 `types/exported-types`, `generics/list`, `generics/select`, `generics/scoped-slot`,
 `generics/constrained`, and `diagnostics/generic-slot-props`.
@@ -90,14 +94,15 @@ gains the `type` kind and the generic-slot-props gap.
 **Negative:**
 
 - Angular consumers of a generic scoped slot see the constraint, not `T`.
-- Qwik's cast is a type-only assertion the checker trusts, so only L4's consumer fixtures catch a wrong
-  one.
-- Two new capabilities and their rows on the targets page, set once in L3.
+- Qwik's cast is a type-only assertion the checker trusts, so only L4's consumer fixtures catch a
+  wrong one.
+- Two new capabilities and their rows on the targets page, set once, in the change that adds M5's
+  IR and capabilities.
 
 **Open:**
 
 - Whether generic `Props<T>` in an Astro component type-checks for a consumer under `astro check`.
-  L35's spike settles it and adds its section here. If it fails, this record names UF4006's
+  M5's Astro spike settles it and adds its section here. If it fails, this record names UF4006's
   fallback as built.
 
 ## Alternatives considered

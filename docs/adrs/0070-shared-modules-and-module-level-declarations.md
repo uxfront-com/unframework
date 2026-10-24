@@ -52,13 +52,14 @@ or `unframework`, directly or through another `.ts`: that is UF1204
   own node (ADR-0071).
 
 **Keys stay where they are.** An injection key lives in the `.uf.tsx` module that provides it
-(ADR-0054). UF2032's description, which names a key in a `.ts` module, is reworded to say so. Keys
-in `.uf.ts` modules are a later issue.
+(ADR-0054). UF2033's description, which names a key imported from a `.ts` module, is reworded to
+say so. Keys in `.uf.ts` modules are a later issue.
 
-**The cases**, landed with the composable cases (ADR-0069): `modules/shared-constants`,
-`modules/shared-helpers`, `modules/module-constants` and `modules/nested-modules`, each green on
-all seven targets with its `.ts` modules byte-identical in every output tree, and
-`diagnostics/framework-in-shared-module`.
+**The cases.** `diagnostics/framework-in-shared-module` comes with UF1204 itself, in the change
+that adds shared modules to the analyser. The rendering cases land with the composable cases
+(ADR-0069): `modules/shared-constants`, `modules/shared-helpers`, `modules/module-constants` and
+`modules/nested-modules`, each green on all seven targets with its `.ts` modules byte-identical in
+every output tree.
 
 **What it amends.** ADR-0045 accepts imports of relative `.ts` modules and the module's top-level
 `const` declarations, which it deferred to M5.

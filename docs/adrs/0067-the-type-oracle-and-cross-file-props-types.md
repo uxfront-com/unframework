@@ -130,8 +130,8 @@ child APIs through the oracle.
 **Open:**
 
 - Which constructs Vue's `compileScript` resolves through an `fs`, and whether package types
-  resolve without TypeScript's classic API, absent from 7.0. L35's spike settles both and adds its
-  section here.
+  resolve without TypeScript's classic API, absent from 7.0. M5's Vue spike settles both and adds
+  its section here.
 - The port of the tsgo adapter to TypeScript 7.1 stable is a separate issue, once 7.1 ships.
 
 ## Alternatives considered

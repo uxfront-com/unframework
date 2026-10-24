@@ -19,8 +19,8 @@ write their own components by hand in each framework. Several forces shape the c
 - **Effect order.** React reorders a component's own effects (ADR-0048), and Solid's watcher queue
   is per file. A hook's effects can't join its caller's order on either.
 - **Shared expectations.** Each case has one `__expected__/diagnostics.json` for every target. In
-  M3, each lane that removed its target's interim error rewrote 45 of them. Six sibling composables
-  lanes would conflict there.
+  M3, each lane that removed its target's interim error rewrote them. Six sibling composables lanes
+  would conflict there.
 
 ## Decision
 
@@ -52,20 +52,46 @@ and the project graph watches (ADR-0071):
   depends on the composable's body;
 - `hasEffects`, which the caller's `Use` item copies.
 
-The IR adds `UfModule.composables`, the `Use` item, and the binding kinds `argument` and `used*`
-beside ADR-0070's `import` and `moduleConst`.
+The IR adds `UfModule.composables`, the `Use` item, and these binding kinds, beside ADR-0070's
+`import` and `moduleConst`:
+
+- `argument`: a composable's parameter, read in its body by its kind (value, getter or callback);
+- `usedState`: a returned ref of state, such as `on`, which the caller reads through `.value` and
+  never writes (UF2036);
+- `usedDerived`: a returned computed value;
+- `usedFn`: a returned function, which carries its async, client-only and pure flags;
+- `usedConst`: a returned constant.
+
+Each `used*` kind follows the member's kind in `ComposableApi`, so a target reads a returned name
+the way it reads its own state, derived value, function or constant.
 
 **Per target**, one module per composable:
 
 | Target  | Output module                                                                                     | What it returns                                                                    | The caller reads                                                                                                   |
 | ------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | Vue     | `useToggle.ts`: the source with Vue's primitives (`shallowRef`, `watchPostEffect`), as components | `{ on, toggle }`                                                                   | as written                                                                                                         |
-| React   | `useToggle.ts`: a custom hook on ADR-0046's machinery (`useState`, mirrors, stable functions)     | each ref's render value, and a live reader for client code                         | the render value in render, the live reader in client code                                                         |
+| React   | `useToggle.ts`: a custom hook on ADR-0046's machinery (`useState`, mirrors, stable functions)     | each ref's render value `x`, and its live reader `currentX`                        | `x` in render, `currentX()` in client code                                                                         |
 | Svelte  | `useToggle.svelte.ts`, with runes                                                                 | an object of getters                                                               | `t.on`, keeping the object, since runes don't survive destructuring                                                |
 | Solid   | `useToggle.ts`, with signals and memos                                                            | accessors                                                                          | `on()`                                                                                                             |
 | Angular | `use-toggle.ts`: a function that needs an injection context                                       | read-only signals                                                                  | from a field initialiser, or `runInInjectionContext` in `ngOnInit` where an argument reads an input: `this.t.on()` |
 | Qwik    | `useToggle.ts`: a `use*` hook (`useSignal`, `useComputed$`, tasks)                                | signals and `$()` QRLs. A getter argument becomes `useComputed$`, a callback a QRL | `on.value`, and `await toggle()`                                                                                   |
 | Astro   | `useToggle.ts`, static                                                                            | initial values, with client code dropped                                           | constants                                                                                                          |
+
+**React's live reader.** A hook re-runs on every render, so a ref's render value is that
+render's. For each returned state or derived value `x`, the hook also returns `currentX`, a stable
+function that reads the hook's mirrors (ADR-0046's live getters, such as `currentTotal`). Client
+code in the caller, a listener or code after an `await`, calls it, so it sees a write the
+composable's own functions just made. Where `currentX` clashes with another member's name, the
+hook takes the next free name, by one rule that the hook and its callers both apply to the API, as
+each target claims the names it adds (ADR-0045). In outline:
+
+```ts
+// useToggle.ts on React
+return { on, currentOn, toggle };
+// the caller
+const { on, currentOn, toggle } = useToggle(false);
+// render reads `on`; a listener reads `currentOn()`
+```
 
 **The cells:**
 
@@ -86,8 +112,9 @@ target's composables lane"). No corpus case reaches either before every lane has
 **The pending cases.** No corpus case uses a composable or a module value binding until every
 target's lane is in:
 
-- L15 writes the 12 rendering cases complete, with their sources, specs and `case.json`, under
-  `tests/integration/pending/<area>/<case>/`, and the sources of three diagnostics cases under
+- Vue's composables lane writes the 12 rendering cases complete, with their sources, specs and
+  `case.json`, under `tests/integration/pending/<area>/<case>/`, and the sources of three
+  diagnostics cases under
   `pending/diagnostics/`. The case loader reads only `cases/`, so pending cases reach no project,
   no shared expectation and no coverage count.
 - Each lane verifies with its target's `composable` test, through a shared helper that takes a
@@ -95,9 +122,10 @@ target's lane is in:
   lane that finishes a target's call site also copies the pending cases into `cases/` in a scratch
   worktree, runs `UF_TARGETS=vue,<target> pnpm test:update`, its target's four projects, the
   analyser's tests and its target's tests, and commits none of it.
-- L38 moves all 15 cases into `cases/` in one `pnpm test:update`, green on all seven targets with no
-  quarantine, and removes the composable exemptions whole. M4 landed Styleframe the same way.
-- A lane bug L38 finds is a new layer on that target, never an edit in L38.
+- One landing change, after every lane, moves all 15 cases into `cases/` in one
+  `pnpm test:update`, green on all seven targets with no quarantine, and removes the composable
+  exemptions whole.
+- A lane bug the landing finds is fixed by a new change on that target, never in the landing.
 
 The rendering cases are `composables/use-toggle`, `use-controllable-state`, `use-media-query`,
 `getter-argument` and `callback-argument`, the four `modules/` cases of ADR-0070, and
@@ -106,7 +134,7 @@ The diagnostics cases are `invalid-composable`, `composable-result-write` and
 `composable-effect-order`.
 
 **Tooling.** `.uf.ts` modules get virtual ids in the unplugin, such as `X.uf.ts.<ext>`, and
-Svelte's `.svelte.ts`. L35's spike settles the scheme through each framework's Vite plugin.
+Svelte's `.svelte.ts`. M5's module-id spike settles the scheme through each framework's Vite plugin.
 
 **What it amends.** ADR-0045 allows the destructuring of a composable's result, the `Use` item, and
 imports of `.uf.ts` modules. This record builds the `.uf.ts` half of D1 (ADR-0005).
@@ -132,17 +160,17 @@ imports of `.uf.ts` modules. This record builds the `.uf.ts` half of D1 (ADR-000
 **Open:**
 
 - The virtual id scheme for `.uf.ts` modules, through Svelte's runes, the Qwik optimizer and
-  Angular's `ngtscVirtual`. L35's spike adds its section here.
-- The semantics contract's entries for composables. L15 adds them to this record, and L34 to
-  `3.reference/3.semantics.md`.
+  Angular's `ngtscVirtual`. The module-id spike adds its section here.
+- The semantics contract's entries for composables. Vue's composables lane adds them to this
+  record, and the change that accepts these records adds them to `3.reference/3.semantics.md`.
 
 ## Alternatives considered
 
 - **Expansion at the call site.** It would reuse each target's setup lowering, so parity would come
   almost free. It erases the abstraction (G2), breaks "compiled for each target", and needs
-  per-file provenance in every span and binding id, about two to three agent-days of infrastructure
-  that would then be thrown away.
+  per-file provenance in every span and binding id, infrastructure that would then be thrown away.
 - **A hybrid: modules where easy, expansion on React and Qwik.** It pays for both mechanisms, and
   puts expansion on React, where a custom hook is the expected idiom.
 - **Lanes against quarantined corpus cases**, as M3 did. Each lane would rewrite the same shared
-  diagnostics expectations. Serialising the six lanes instead would add five stages.
+  diagnostics expectations. Running the six lanes one after another instead would hold
+  each lane for the one before it.

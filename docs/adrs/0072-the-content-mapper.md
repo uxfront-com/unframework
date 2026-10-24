@@ -41,15 +41,15 @@ Without `--runExternalCode`, tsgo falls back to layer 1, and a test pins that fa
 
 **Layers 1 and 2 beside it.** Stock tsgo stays free of false errors: probes cover generic
 components, imported props types and components that call composables, and every probe in
-`probes/allowed/` checks clean. The component-API blind spots in `probes/allowed/blind-spots.uf.tsx`
-are compiled, and a test asserts that each reports the code its comment names: UF3036 for
-`onChnage`, UF3038 for unexpected children, UF3037 for `v-model:opne` and UF3038 for the `footer`
-slot key. An undeclared hyphenated attribute stays the compiler's alone, even under the mapper
-(ADR-0023).
+`probes/allowed/` checks clean. The corpus sources type-check too, now including `.ts` and
+`.uf.ts`. The component-API blind spots in `probes/allowed/blind-spots.uf.tsx` are compiled, and a
+test pins the code each one reports: UF3036 for `onChnage`, UF3038 for unexpected children, UF3037
+for `v-model:opne` and UF3038 for the `footer` slot key. An undeclared hyphenated attribute stays
+the compiler's alone, even under the mapper (ADR-0023).
 
 **The TypeScript it runs on.** Tests run an exactly pinned 7.1 nightly through a catalog alias,
 `typescript-71: npm:typescript@7.1.0-dev.<date>`, a devDependency of `language-tools` only, with
-the version in `minimumReleaseAgeExclude` while it is recent. Before building the package, L30
+the version in `minimumReleaseAgeExclude` while it is recent. Before the package is built, M5
 re-verifies ADR-0023's spike on the newest nightly. The repo itself stays on 7.0.2.
 
 **What it amends.** This record overrides ADR-0023's open item on 7.1 stable: M5 commits to the
@@ -77,13 +77,18 @@ protocol and the SDK there. The owner may hold the port instead, which makes it 
 
 **Open:**
 
+- Whether tsgo with the mapper catches an unknown model. A model is the hyphenated
+  `"v-model:name"?`, and ADR-0023 found that TypeScript never checks an undeclared hyphenated
+  attribute, so `v-model:opne` may stay the compiler's alone (UF3037). The mapper's probes settle
+  it, and this record states the result.
+
 - The port to TypeScript 7.1 stable, with the contract suite (ADR-0067) and the mapper's probes
   re-run on it.
 - The VS Code native-preview extension with `runExternalCode` is still untested (ADR-0023).
 
 ## Alternatives considered
 
-- **Our own protocol client.** It costs about one more agent-day, and has to follow a protocol that
+- **Our own protocol client.** It costs more work, and has to follow a protocol that
   is unstable until 7.1. The SDK's one-module boundary keeps this option open.
 - **Wait for 7.1 stable before building the mapper.** A layer waiting on it would hold M5's one
   integration PR for a month.
