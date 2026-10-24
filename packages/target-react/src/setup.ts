@@ -432,6 +432,9 @@ function printItem(plan: ReactPlan, code: ReactCode, item: SetupItem): Printed {
       return printProvide(plan, code, item);
     case "Inject":
       return printInject(plan, code, item);
+    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+    case "Use":
+      return [];
     default:
       return item satisfies never;
   }
@@ -983,6 +986,14 @@ function renderRead(plan: ReactPlan, id: BindingId): string {
     case "slotScope":
     case "context":
     case "component":
+    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+    case "moduleConst":
+    case "import":
+    case "argument":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       return binding.name;
     default:
       return binding.kind satisfies never;
@@ -1029,6 +1040,14 @@ function dependencies(plan: ReactPlan, body: Code): string[] {
       case "slots":
       case "slotScope":
       case "component":
+      // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+      case "moduleConst":
+      case "import":
+      case "argument":
+      case "usedState":
+      case "usedDerived":
+      case "usedFn":
+      case "usedConst":
         break;
       default:
         binding.kind satisfies never;

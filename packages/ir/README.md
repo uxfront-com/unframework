@@ -32,6 +32,20 @@ plain, versioned, schema-validated JSON (plan §5.3).
   forms ADR-0038 and ADR-0039 defer: a `style` bound to one value (`StyleAttribute.value`), a
   `class` part that may be an array or an object (`DynamicClass.collection`), a spread's `style`
   key and vendor-prefixed properties, which the analyser lowers since ADR-0065.
+- **Cross-file types, generics, composables and shared modules (ADR-0067 to ADR-0070):** a
+  module's `typeImports` and `typeExports` (type re-exports, and exported types no component
+  reaches), its `moduleImports` of values from relative `.ts` modules and its top-level
+  `constants`, which components read through `import` and `moduleConst` bindings, and a `.uf.ts`
+  module's `composables` (`UfComposable`: type parameters, parameters of a `value`, `getter` or
+  `callback` kind read through `argument` bindings, a setup and the members it returns); a
+  component's `typeParameters`, and a child's in `ComponentApi.typeParameters`; a prop's
+  `declaredBy`, where another declaration declares the member, whose type is then that file's
+  text at the props annotation's span; the names a slot's props, an API member and a key
+  reference (`references`); a `.uf.ts` module's `ModuleApi.composables` (`ComposableApi`, with
+  `hasEffects`), imported by `Composable` names; and the `Use` setup item, a composable's call
+  whose members are `usedState`, `usedDerived`, `usedFn` and `usedConst` bindings. Every new
+  field is absent when empty. The analyser lowers none of it yet, and the targets report a
+  `Use` item and the new binding kinds as UF1002 until their composables lanes.
 - **Builders:** one per type (`createModule`, `createComponent`, `createElement`, `createFor`,
   `createExpression`, `createCode`, `createWriteReference`, `createFunctionCode`,
   `createStateItem`, `createEventAttribute`, …). They write keys in the order of the types, which
@@ -89,8 +103,18 @@ plain, versioned, schema-validated JSON (plan §5.3).
   a model named apart from the props; `provide` and `inject` name a key the module declares or
   imports, and a key of a ref (`InjectionKey<Ref<number>>`, ADR-0054) is provided, or injected
   with a fallback, as a `state`, `derived` or `model` binding by its name, and its injected
-  binding read as `x.value`; and a `v-model`'s control is one its element has. The compiler emits from no module
-  that breaks one, a plugin's included, and checks itself that a plugin's code is the analyser's.
+  binding read as `x.value`; and a `v-model`'s control is one its element has. For M5's contract
+  (ADR-0067 to ADR-0070): a prop another file declares is exempt from the source-slice rule;
+  type parameters, a slot's references, and the names the type and value imports, exports and
+  constants bind are identifiers, each once; a constant's code reads only pure globals, the other
+  constants and the value imports; an `import` or `moduleConst` binding is one the module
+  declares, and only a composable declares an `argument`; a `Use` item calls an imported
+  composable with an argument of each parameter's kind, destructures members its API returns
+  into bindings of their kinds and copies `hasEffects`; a composable's ref is read as
+  `x.value`, and its function where the setup evaluates code only when pure; and a composable's
+  setup keeps a component's rules, with its arguments, its items and the members it returns.
+  The compiler emits from no module that breaks one, a plugin's included, and checks itself that
+  a plugin's code is the analyser's.
 - **Portability facts:** what the targets render differently from the same markup
   (`portability.ts`): elements Vue does not know, template syntax, attributes a framework acts on
   or sets as state, `contenteditable` with children, empty URLs React drops, whitespace Svelte

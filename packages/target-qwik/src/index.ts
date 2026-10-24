@@ -4,6 +4,7 @@ import {
   boundJsxAttribute,
   childImports,
   componentTypes,
+  composableUse,
   defineTarget,
   exportDeclaration,
   exportsOf,
@@ -206,8 +207,25 @@ export const qwik: Target = defineTarget({
       reason:
         "Qwik adds a component's sheet to the page when the component first renders (`useStyles$`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ. Qwik's server render also writes the sheet as a `<style>` element where the component renders, before its root, which `:first-child`, `:nth-child()` and `+` count in the server's markup.",
     },
+    "generic-components": { support: "native" },
+    "generic-slot-props": { support: "native" },
+    composables: { support: "native" },
+    "composable-effect-order": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    // A composable's call and what a module or a composable gives are declared before this
+    // target emits them (ADR-0069, ADR-0070): until its composables lane lands, a component that
+    // uses one is reported, never emitted without it (P2).
+    const composable = composableUse(component);
+    if (composable) {
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message: `The qwik target does not emit ${composable.what} yet: it lands with this target's composables lane.`,
+        span: composable.span,
+      });
+      return [];
+    }
     const { module } = context;
     // Every name the source declares or reads is taken before the output names its own, but for
     // the authoring APIs code calls (`nextTick`), which the output replaces with its own.

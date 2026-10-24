@@ -57,6 +57,8 @@ function itemOf(source: string, item: SetupItem): string {
       return `Provide ${item.key} = ${codeOf(source, item.value)}`;
     case "Inject":
       return `Inject ${name} ${item.key}${item.fallback ? ` ?? ${codeOf(source, item.fallback)}` : ""}`;
+    case "Use":
+      return `Use ${item.composable}`;
   }
 }
 

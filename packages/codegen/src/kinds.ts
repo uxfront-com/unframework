@@ -414,6 +414,15 @@ class Kinds {
         case "slotScope":
         case "context":
         case "component":
+        // What a module or a composable gives (ADR-0069, ADR-0070) is taken to hold any value
+        // until the composables lanes read its type.
+        case "moduleConst":
+        case "import":
+        case "argument":
+        case "usedState":
+        case "usedDerived":
+        case "usedFn":
+        case "usedConst":
           return false;
         default:
           return unreachable(binding.kind);

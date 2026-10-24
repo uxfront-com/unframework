@@ -18,6 +18,13 @@ framework-specific.
   may need). `compositionUse` finds where a component first uses composition, in source order:
   until a target's M3 lane lands, its `emit` reports UF1002 there and emits nothing for it (Vue
   emits all of composition).
+  M5's capabilities (ADR-0068, ADR-0069): a generic component (`generic-components`), a scoped
+  slot whose props name a type parameter, or a fill of one (`generic-slot-props`), a composable's
+  call (`composables`), and one whose composable runs code in the browser
+  (`composable-effect-order`, which refines `interactivity`). `composableUse` finds where a
+  component first calls a composable or reads what a module or a composable gives it, in source
+  order: until a target's composables lane lands, its `emit` reports UF1002 there and emits
+  nothing for it.
   Each cell is `native`, `emulated` with the name of the inline helper the target prints (React's
   `cx` for `class-binding`), or `unsupported` with a portability diagnostic: a target declares in
   its matrix what it cannot render exactly (P4, ADR-0033). `requiredCapabilities` derives what a
@@ -26,9 +33,9 @@ framework-specific.
   compiler's capability check and the render-parity tests read it. `BEHAVIOURAL_CAPABILITIES`
   change what code does in the browser, or the cascade (`sheet-order`), not the markup that
   renders, so the render-parity tests compare a case that uses one its target leaves unsupported
-  as any other (ADR-0033, as amended by ADR-0047 and ADR-0063); `CAPABILITY_PREREQUISITES` names
-  what each refines (`interactivity`), which the compiler reports alone where the target lacks
-  it.
+  as any other (ADR-0033, as amended by ADR-0047, ADR-0063 and ADR-0069);
+  `CAPABILITY_PREREQUISITES` names what each refines (`interactivity`), which the compiler reports
+  alone where the target lacks it.
 - **The scoper** (`scopeStylesheet(file, source, scopeId)`, ADR-0063): a component's sheet,
   scoped once with Vue's algorithm: Vue's scoped plugin ported onto postcss and
   postcss-selector-parser, which keep the sheet's own text, so only selectors and keyframe names

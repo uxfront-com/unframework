@@ -47,6 +47,8 @@ describe("solid target", () => {
       "class-binding",
       "component",
       "component-event",
+      "composable-effect-order",
+      "composables",
       "conditional",
       "conditional-event-control",
       "context",
@@ -62,6 +64,8 @@ describe("solid target", () => {
       "expose",
       "fallthrough",
       "fragment",
+      "generic-components",
+      "generic-slot-props",
       "interactivity",
       "interpolation",
       "late-prop",
@@ -89,9 +93,9 @@ describe("solid target", () => {
     ]);
   });
 
-  it("emulates watchers, nextTick, class and style bindings and the child-root rule with the helpers it prints, the rest natively", () => {
-    // Nothing is unsupported: the watchers' scheduler coalesces every shape of a synchronous run
-    // of client code (src/helpers.ts).
+  it("emulates watchers, nextTick, class and style bindings and the child-root rule with the helpers it prints, declares a composable's effect order, the rest natively", () => {
+    // Only a composable's effect order is unsupported: the watchers' scheduler coalesces every
+    // shape of a synchronous run of client code in one module (src/helpers.ts).
     const cells = Object.entries(target.capabilities).filter(
       ([, cell]) => cell.support !== "native",
     );
@@ -104,6 +108,8 @@ describe("solid target", () => {
       ["model-modifiers", expect.objectContaining({ helper: "modelText" })],
       ["reactive-context", expect.objectContaining({ helper: "refObject" })],
       ["child-root-scope", expect.objectContaining({ helper: "scopeAttributes" })],
+      // A composable's watchers keep its own module's queue (ADR-0069).
+      ["composable-effect-order", expect.objectContaining({ code: "UF4005", severity: "info" })],
     ]);
   });
 

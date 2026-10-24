@@ -485,6 +485,9 @@ export function classMembers(context: MemberContext): {
       case "Model":
       case "Provide":
         break;
+      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+      case "Use":
+        break;
       default:
         unreachable(item);
     }

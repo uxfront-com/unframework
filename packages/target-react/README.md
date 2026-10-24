@@ -112,7 +112,11 @@ and `use-id` are native;
 emulated with inline helpers, `class-binding` with `cx` and `style-binding` with `styleObject`. Of composition's cells,
 `model-array` (`toggle`), `model-modifiers` (`modelText`) and `reactive-context` (`refObject`)
 are emulated, and the others native. Of the styles' cells, `child-root-scope` is emulated
-(`scopeAttributes`), and the others native.
+(`scopeAttributes`), and the others native. Of M5's cells, `composable-effect-order` is
+unsupported (UF4005, info): a composable is a custom hook, whose effects keep React's order rather
+than the caller's (ADR-0069); `generic-components`, `generic-slot-props` and `composables` are
+native. Until its composables lane lands, the target reports a composable's call and what a module
+or a composable gives a component as UF1002.
 
 Every name the output introduces (`cx`, `setCount`, `countRef`, `CounterEvents`, `listen`,
 `CSSProperties`, `_props`) is claimed around the source's own names, so none captures another.

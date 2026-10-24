@@ -294,6 +294,14 @@ function outputSafeName(name: string, kind: BindingKind): string {
     case "slotScope":
     case "context":
     case "component":
+    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+    case "moduleConst":
+    case "import":
+    case "argument":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       return `current${pascal}`;
     default:
       return unreachable(kind);
@@ -351,6 +359,14 @@ function formsOf(component: UfComponent): {
       // A model is its setup item's; `slots` is read only as slots (`SlotReference`).
       case "model":
       case "slots":
+      // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+      case "moduleConst":
+      case "import":
+      case "argument":
+      case "usedState":
+      case "usedDerived":
+      case "usedFn":
+      case "usedConst":
         break;
       default:
         unreachable(binding.kind);
@@ -401,6 +417,9 @@ function formsOf(component: UfComponent): {
       case "Lifecycle":
       case "Provide":
       case "Inject":
+        break;
+      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+      case "Use":
         break;
       default:
         unreachable(item);
@@ -471,6 +490,9 @@ function escapingFunctions(component: UfComponent): Set<BindingId> {
       case "Id":
       case "Model":
         break;
+      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+      case "Use":
+        break;
       default:
         unreachable(item);
     }
@@ -496,6 +518,14 @@ export function isLoopVariable(kind: BindingKind): boolean {
     case "slotScope":
     case "context":
     case "component":
+    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+    case "moduleConst":
+    case "import":
+    case "argument":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       return false;
     default:
       return unreachable(kind);
@@ -520,6 +550,14 @@ function isFunction(kind: BindingKind): boolean {
     case "slotScope":
     case "context":
     case "component":
+    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+    case "moduleConst":
+    case "import":
+    case "argument":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       return false;
     default:
       return unreachable(kind);
@@ -548,6 +586,14 @@ function readLazily(kind: BindingKind): boolean {
     case "slots":
     case "slotScope":
     case "component":
+    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+    case "moduleConst":
+    case "import":
+    case "argument":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       return false;
     default:
       return unreachable(kind);

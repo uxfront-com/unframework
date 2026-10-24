@@ -2,6 +2,7 @@ import {
   angularDialect,
   codeNames,
   codeKind,
+  composableUse,
   defineTarget,
   exportDeclaration,
   exportsOf,
@@ -198,8 +199,33 @@ export const angular: Target = defineTarget({
       reason:
         "Angular adds a component's sheet to the page when the component first renders (`styleUrl`, through `SharedStylesHost`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ.",
     },
+    "generic-components": { support: "native" },
+    // Slot directives cannot infer `T` (ADR-0068): ngtsc infers a component's type parameter
+    // from its inputs alone.
+    "generic-slot-props": {
+      support: "unsupported",
+      code: "UF4004",
+      severity: "info",
+      reason:
+        "Angular infers a component's type parameter from its inputs alone, and a slot's directive cannot infer it, so a scoped slot's context takes the parameter's constraint, where the other targets type the consumer's fill by the type argument (ADR-0068).",
+    },
+    composables: { support: "native" },
+    "composable-effect-order": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    // A composable's call and what a module or a composable gives are declared before this
+    // target emits them (ADR-0069, ADR-0070): until its composables lane lands, a component that
+    // uses one is reported, never emitted without it (P2).
+    const composable = composableUse(component);
+    if (composable) {
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message: `The angular target does not emit ${composable.what} yet: it lands with this target's composables lane.`,
+        span: composable.span,
+      });
+      return [];
+    }
     return [emitComponent(component, context)];
   },
 });

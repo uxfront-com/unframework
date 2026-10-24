@@ -123,9 +123,9 @@ The capabilities (`src/index.ts`): `interactivity`, `event-capture`, `event-once
 components render on the server only and each render is a new instance, so handlers, template
 refs, watchers and hooks never run and state keeps its initial value; the compiler reports only
 `interactivity`, once per module. Composition's `component-event`, `two-way-binding`,
-`model-array`, `model-modifiers` and `expose` refine `interactivity` and are unsupported in the
-same way; `context` and `reactive-context` are unsupported (UF4001, warnings: `inject` gives its
-fallback, and a provided ref reaches no descendant). `use-id` is emulated (`uniqueId`), and so are
+`model-array`, `model-modifiers` and `expose`, and a composable's `composable-effect-order`
+(ADR-0069), refine `interactivity` and are unsupported in the same way; `context` and
+`reactive-context` are unsupported (UF4001, warnings: `inject` gives its fallback, and a provided ref reaches no descendant). `use-id` is emulated (`uniqueId`), and so are
 `scoped-slot` (a render prop named as the slot), `child-root-scope` (`scopeAttributes`) and
 `style-binding` (`styleObject`, for a style bound to a value that a merge spreads, ADR-0065).
 Every other capability is native.

@@ -176,6 +176,9 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
         case "Provide":
           read(item.value);
           break;
+        // A composable's call: each target's composables lane decides what it keeps live
+        // (ADR-0069), and `emit` reports UF1002 before this runs.
+        case "Use":
         case "State":
         case "Derived":
         case "TemplateRef":
@@ -211,6 +214,9 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
       case "Inject":
         read(item.fallback);
         break;
+      // A composable's call: each target's composables lane decides what it keeps live (ADR-0069),
+      // and `emit` reports UF1002 before this runs.
+      case "Use":
       case "TemplateRef":
       case "Id":
       case "Watch":
@@ -306,6 +312,9 @@ export function liveTypes(
       case "Inject":
         if (item.fallback) code(item.fallback);
         break;
+      // A composable's call: each target's composables lane decides what it keeps live (ADR-0069),
+      // and `emit` reports UF1002 before this runs.
+      case "Use":
       case "TemplateRef":
       case "Id":
       case "Model":
@@ -384,6 +393,9 @@ function serverCode(item: SetupItem): Code[] {
       return [item.value];
     case "Inject":
       return item.fallback ? [item.fallback] : [];
+    // A composable's call: each target's composables lane decides what runs where it renders
+    // (ADR-0069), and `emit` reports UF1002 before this runs.
+    case "Use":
     case "TemplateRef":
     case "Id":
     case "Function":

@@ -8,6 +8,7 @@ import {
 import type {
   Attribute,
   BindingId,
+  BindingKind,
   Code,
   CodeReference,
   ComponentAttribute,
@@ -100,6 +101,9 @@ const SETUP_ITEM_CAPABILITIES: Readonly<Record<SetupItem["kind"], readonly Capab
   Model: ["model"],
   Provide: ["context"],
   Inject: ["context"],
+  // One whose composable runs code in the browser also needs `composable-effect-order`
+  // (ADR-0069), added at the same span.
+  Use: ["composables"],
 };
 /**
  * What each kind of reference in code needs: `nextTick` its own capability, and the others
@@ -130,17 +134,21 @@ const OPTION_CAPABILITIES = {
  * cannot support, and the render-parity kit leaves out on a target the cases that use one: one
  * derivation, so what the compiler rejects and what the tests skip cannot disagree.
  *
- * For each component, in source order: `props` where a component that takes props declares its
- * parameter; then its setup items (`interactivity` at a watcher, a `watchEffect` or a lifecycle
- * hook, `use-id` at a `useId()`, `next-tick` at a `nextTick` in their code, `late-prop` where a
- * derived value's getter, a watch source or a `watchEffect` reads an optional prop), and
+ * For each component, in source order: `generic-components` at its first type parameter
+ * (ADR-0068); `props` where a component that takes props declares its parameter; then its setup
+ * items (`interactivity` at a watcher, a `watchEffect` or a lifecycle hook, `use-id` at a
+ * `useId()`, `composables` at a composable's call and `composable-effect-order` where its
+ * composable runs code in the browser (ADR-0069), `next-tick` at a `nextTick` in their code,
+ * `late-prop` where a derived value's getter, a watch source or a `watchEffect` reads an optional
+ * prop), and
  * `conditional-event-control` where client code hands a local function that makes an event
  * control to a call that may run it, or calls one outside a template listener's top
  * (`handedControls`);
  * then its composition (ADR-0055): `expose` at `defineExpose`, `reactive-context` where it
  * provides a `state`, `derived` or `model` binding, `contextual-root` at a root element HTML
- * ties to its parent (`CONTEXTUAL_ROOT_ELEMENTS`), and a slot's presence (`named-slot`, or
- * `default-slot-presence` for the default slot's) where an expression tests it;
+ * ties to its parent (`CONTEXTUAL_ROOT_ELEMENTS`), a slot's presence (`named-slot`, or
+ * `default-slot-presence` for the default slot's) where an expression tests it, and
+ * `generic-slot-props` at a slot whose props' type names one of its type parameters (ADR-0068);
  * then its styles (ADR-0063): `scoped-styles` and `sheet-order` at its first stylesheet import,
  * since any meeting of two sheets' rules of equal specificity involves a styled module;
  * then its render tree: the node and attribute kinds (a listener, a template ref, an element's
@@ -149,7 +157,9 @@ const OPTION_CAPABILITIES = {
  * `fallthrough` and a `ref` `expose`, `componentAttribute`), a slot outlet's and a fill's slot form
  * (`default-slot`, `named-slot`, `scoped-slot`, with `slot-fallback` for fallback content and
  * `slot-forwarding` for a forwarded slot, the default one's needing `default-slot-presence`
- * too), `child-root-scope` at a child a styled component renders and `slotted-styles` at a fill
+ * too, and `generic-slot-props` for a scoped fill of a generic child's slot whose props' type
+ * names one of the child's type parameters), `child-root-scope` at a child a styled component
+ * renders and `slotted-styles` at a fill
  * of a child whose sheets use `:slotted()` (ADR-0063), `model-array` and `model-modifiers` at an
  * element's `v-model` that needs them, `svg` at an `<svg>`, `listbox` at what may make a
  * `<select>` a single-selection list box (`listBoxSize`), and at a listener `event-semantics`, its option's
@@ -175,6 +185,8 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
     for (const item of component.setup) {
       if (item.kind === "Function") functions.set(item.binding, item.function);
     }
+    const [parameter] = component.typeParameters ?? [];
+    if (parameter) use("generic-components", parameter.span);
     const [first] = component.props;
     if (first) use("props", component.propsParameter?.span ?? first.span);
     const optional = new Set(
@@ -184,6 +196,7 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
     );
     for (const item of component.setup) {
       for (const capability of SETUP_ITEM_CAPABILITIES[item.kind]) use(capability, item.span);
+      if (item.kind === "Use" && item.hasEffects) use("composable-effect-order", item.span);
       for (const code of itemCode(item)) scan(code);
       for (const code of trackedCode(item)) {
         const read = optionalRead(code, component, optional);
@@ -217,16 +230,23 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
         use(ref.slot === "default" ? "default-slot-presence" : "named-slot", ref.span);
       }
     }
+    const typeParameters = new Set(component.typeParameters?.map(({ name }) => name));
+    for (const slot of component.slots?.slots ?? []) {
+      if (slot.references?.some((name) => typeParameters.has(name))) {
+        use("generic-slot-props", slot.span);
+      }
+    }
     const [sheet] = component.styles ?? [];
     if (sheet) {
       use("scoped-styles", sheet.span);
       use("sheet-order", sheet.span);
     }
     const mixed = bothPhaseEvents(component);
-    const fills = (list: readonly SlotFill[], slotted: boolean) => {
+    const fills = (list: readonly SlotFill[], slotted: boolean, generic: ReadonlySet<string>) => {
       for (const fill of list) {
         if (slotted) use("slotted-styles", fill.span);
         use(slotCapability(fill.slot, fill.parameter !== undefined), fill.span);
+        if (fill.parameter && generic.has(fill.slot)) use("generic-slot-props", fill.span);
         if (fill.forward === undefined) continue;
         use("slot-forwarding", fill.span);
         if (fill.forward === "default") use("default-slot-presence", fill.span);
@@ -254,6 +274,7 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
           fills(
             node.kind === "Component" ? node.fills : (node.fills ?? []),
             children.some((child) => usesSlotted(module, child)),
+            new Set(children.flatMap((child) => genericSlots(module, child))),
           );
           return;
         }
@@ -300,6 +321,27 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
     });
   }
   return required;
+}
+
+/**
+ * The slots of an imported generic child whose props' type names one of its type parameters
+ * (ADR-0068), as its API says.
+ */
+function genericSlots(module: UfModule, local: string): string[] {
+  for (const entry of module.imports ?? []) {
+    const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
+    if (!imported) continue;
+    const api = entry.api.components.find((each) =>
+      imported.imported === "default"
+        ? each.export === "default"
+        : each.export === "named" && each.name === imported.imported,
+    );
+    const parameters = new Set(api?.typeParameters);
+    return (api?.slots ?? []).flatMap((slot) =>
+      slot.references?.some((name) => parameters.has(name)) ? [slot.name] : [],
+    );
+  }
+  return [];
 }
 
 /**
@@ -471,6 +513,8 @@ function trackedCode(item: SetupItem): Code[] {
       );
     case "WatchEffect":
       return [item.effect.body];
+    // A composable's getter argument is the composable's to track (ADR-0069): its lane decides.
+    case "Use":
     case "State":
     case "Variable":
     case "Const":
@@ -532,6 +576,19 @@ function itemCode(item: SetupItem): Code[] {
       return [item.value];
     case "Inject":
       return item.fallback ? [item.fallback] : [];
+    case "Use":
+      return item.arguments.flatMap((argument) => {
+        switch (argument.kind) {
+          case "Value":
+            return [argument.value];
+          case "Getter":
+            return functionCode(argument.getter);
+          case "Callback":
+            return functionCode(argument.callback);
+          default:
+            return unreachable(argument);
+        }
+      });
     case "TemplateRef":
     case "Id":
     case "Model":
@@ -539,6 +596,41 @@ function itemCode(item: SetupItem): Code[] {
     default:
       return unreachable(item);
   }
+}
+
+/**
+ * The binding kinds of what a module or a composable gives a component (ADR-0069, ADR-0070),
+ * each with what it is, for messages.
+ */
+const MODULE_BINDING_KINDS: Readonly<Partial<Record<BindingKind, string>>> = {
+  moduleConst: "a module's constant",
+  import: "a value imported from a `.ts` module",
+  argument: "a composable's argument",
+  usedState: "a composable's result",
+  usedDerived: "a composable's result",
+  usedFn: "a composable's result",
+  usedConst: "a composable's result",
+};
+
+/**
+ * Where a component first calls a composable or reads a value a module or a composable gives it,
+ * in source order (ADR-0069, ADR-0070), with what it uses, or `undefined`. The IR declares these
+ * before the targets emit them, so until a target's composables lane lands, its `emit` reports
+ * UF1002 there and emits nothing (P2).
+ */
+export function composableUse(component: UfComponent): { what: string; span: Span } | undefined {
+  const uses: { what: string; span: Span }[] = [];
+  for (const item of component.setup) {
+    if (item.kind === "Use") uses.push({ what: "a composable's call", span: item.span });
+  }
+  for (const binding of component.bindings) {
+    const what = MODULE_BINDING_KINDS[binding.kind];
+    if (what) uses.push({ what, span: binding.span });
+  }
+  return uses.reduce<{ what: string; span: Span } | undefined>(
+    (first, use) => (first && first.span.start <= use.span.start ? first : use),
+    undefined,
+  );
 }
 
 /** A function's code: its body. Its event controls' conditions repeat a part of it. */

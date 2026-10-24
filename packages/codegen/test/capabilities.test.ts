@@ -50,6 +50,7 @@ import {
   createWatchItem,
 } from "@unframework/ir";
 import type {
+  ComponentApi,
   ComponentNode,
   ElementNode,
   IfNode,
@@ -63,7 +64,13 @@ import { describe, expect, it } from "vitest";
 
 import { composition, find } from "../../ir/test/composition-fixture.ts";
 import { everyKind } from "../../ir/test/fixtures.ts";
-import { CAPABILITY_NAMES, compositionUse, requiredCapabilities } from "../src/index.ts";
+import * as m5 from "../../ir/test/modules-fixture.ts";
+import {
+  CAPABILITY_NAMES,
+  composableUse,
+  compositionUse,
+  requiredCapabilities,
+} from "../src/index.ts";
 
 const at = (start: number) => ({ start, end: start + 1 });
 
@@ -653,5 +660,124 @@ describe("requiredCapabilities over styles (ADR-0063)", () => {
     expect(self(":slotted(.label) { color: red }").get("slotted-styles")).toEqual(at(30));
     expect(self(".label { color: red }").has("slotted-styles")).toBe(false);
     expect(self(".label { color: red }").get("child-root-scope")).toEqual(at(20));
+  });
+});
+
+describe("requiredCapabilities over generics and composables (ADR-0068, ADR-0069)", () => {
+  it("derives each where it is first used, in source order", () => {
+    const module = m5.modules();
+    const list = module.components[0]!;
+    expect([...requiredCapabilities(module)].slice(0, 4)).toEqual([
+      ["generic-components", list.typeParameters![0]!.span],
+      ["props", list.propsParameter!.span],
+      ["composables", list.setup[0]!.span],
+      ["composable-effect-order", list.setup[0]!.span],
+    ]);
+    expect(requiredCapabilities(module).get("generic-slot-props")).toEqual(
+      list.slots!.slots[0]!.span,
+    );
+  });
+
+  it("scans a composable's arguments for what their code needs", () => {
+    const module = m5.modules();
+    const item = module.components[0]!.setup[0]!;
+    if (item.kind !== "Use") throw new Error("the fixture changed");
+    const at = item.arguments[1]!.span;
+    const call = { start: at.start, end: at.start + "nextTick".length };
+    item.arguments[1] = {
+      kind: "Callback",
+      callback: {
+        parameters: [],
+        body: {
+          code: "nextTick()",
+          span: at,
+          refs: [{ kind: "Api", api: "nextTick", span: call }],
+        },
+        span: at,
+      },
+      span: at,
+    };
+    expect(requiredCapabilities(module).get("next-tick")).toEqual(call);
+  });
+
+  it("requires `composable-effect-order` only of a composable that runs code in the browser", () => {
+    const module = m5.modules();
+    delete (module.components[0]!.setup[0] as { hasEffects?: true }).hasEffects;
+    expect(requiredCapabilities(module).has("composables")).toBe(true);
+    expect(requiredCapabilities(module).has("composable-effect-order")).toBe(false);
+  });
+
+  it("requires `generic-slot-props` of a slot that names a type parameter, or a fill of one", () => {
+    const module = m5.modules();
+    const list = module.components[0]!;
+    list.slots!.slots[0]!.references = ["Item"];
+    expect(requiredCapabilities(module).has("generic-slot-props")).toBe(false);
+    const api: ComponentApi = {
+      name: "List",
+      export: "default",
+      props: [],
+      events: [],
+      models: [],
+      slots: [{ name: "item", optional: true, props: "{ item: T }", references: ["T"] }],
+      exposes: [],
+      inheritAttrs: true,
+      root: "element",
+      typeParameters: ["T"],
+    };
+    const fill = createSlotFill("item", [], at(20), {
+      parameter: createParameter("props", at(21)),
+    });
+    const parent = (child: ComponentApi) =>
+      requiredCapabilities(
+        createModule(
+          "Page.uf.tsx",
+          [
+            createComponent(
+              "Page",
+              createElement("div", [], [createComponentNode("List", [], [fill], at(10))], at(5)),
+              at(0),
+            ),
+          ],
+          [],
+          [],
+          [
+            createModuleImport(
+              "./List.uf.tsx",
+              "List.uf.tsx",
+              { file: "List.uf.tsx", components: [child], keys: [] },
+              [createImportedName("Component", "default", "List", at(1))],
+              at(1),
+            ),
+          ],
+        ),
+      );
+    expect(parent(api).get("generic-slot-props")).toEqual(at(20));
+    expect(parent({ ...api, typeParameters: undefined }).has("generic-slot-props")).toBe(false);
+  });
+});
+
+describe("composableUse", () => {
+  it("finds where a component first calls a composable or reads what a module gives", () => {
+    const module = m5.modules();
+    const list = module.components[0]!;
+    expect(composableUse(list)).toEqual({
+      what: "a value imported from a `.ts` module",
+      span: list.bindings[0]!.span,
+    });
+    list.bindings = list.bindings.filter(({ kind }) => kind !== "import");
+    expect(composableUse(list)).toEqual({
+      what: "a module's constant",
+      span: list.bindings[0]!.span,
+    });
+    list.bindings = list.bindings.filter(({ kind }) => kind !== "moduleConst");
+    // The call starts before the names it destructures.
+    expect(composableUse(list)).toEqual({ what: "a composable's call", span: list.setup[0]!.span });
+    list.setup = [];
+    expect(composableUse(list)).toEqual({
+      what: "a composable's result",
+      span: list.bindings.find(({ kind }) => kind === "usedState")!.span,
+    });
+    list.bindings = list.bindings.filter(({ kind }) => !kind.startsWith("used"));
+    expect(composableUse(list)).toBeUndefined();
   });
 });

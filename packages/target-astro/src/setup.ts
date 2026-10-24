@@ -108,6 +108,9 @@ export function setupCode(
         if (live.has(item.binding))
           statements.push(injected(item, component, spelling, injectedType));
         break;
+      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+      case "Use":
+        break;
       default:
         unreachable(item);
     }

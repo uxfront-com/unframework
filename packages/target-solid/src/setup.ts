@@ -157,6 +157,14 @@ export class SolidCode {
           case "slotScope":
           case "context":
           case "component":
+          // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+          case "moduleConst":
+          case "import":
+          case "argument":
+          case "usedState":
+          case "usedDerived":
+          case "usedFn":
+          case "usedConst":
             return text;
           default:
             return unreachable(binding.kind);
@@ -180,6 +188,14 @@ export class SolidCode {
           case "slotScope":
           case "context":
           case "component":
+          // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+          case "moduleConst":
+          case "import":
+          case "argument":
+          case "usedState":
+          case "usedDerived":
+          case "usedFn":
+          case "usedConst":
             throw new Error(`A write of the ${binding.kind} ${binding.name}: invalid IR.`);
           default:
             return unreachable(binding.kind);
@@ -477,6 +493,14 @@ function tracked(kind: Binding["kind"]): boolean {
     case "slotScope":
     case "context":
     case "component":
+    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+    case "moduleConst":
+    case "import":
+    case "argument":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       return false;
     default:
       return unreachable(kind);
@@ -628,6 +652,9 @@ function itemText(item: SetupItem, code: SolidCode, bindingOf: (id: BindingId) =
       return code.inject(item);
     case "Provide":
       throw new Error("A provide prints in the template, never in the setup.");
+    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+    case "Use":
+      return "";
     default:
       return unreachable(item);
   }
@@ -710,6 +737,9 @@ function itemCode(item: SetupItem): Code[] {
       return [item.value];
     case "Inject":
       return item.fallback ? [item.fallback] : [];
+    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+    case "Use":
+      return [];
     default:
       return unreachable(item);
   }

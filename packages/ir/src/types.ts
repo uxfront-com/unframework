@@ -27,7 +27,7 @@ export interface Span {
  */
 export type BindingId = string;
 
-/** One `.uf.tsx` module. */
+/** One `.uf.tsx` module, or a `.uf.ts` module of composables (ADR-0069). */
 export interface UfModule {
   /** The IR format version. Bumped, with a migration, on every breaking change. */
   irVersion: 1;
@@ -56,6 +56,197 @@ export interface UfModule {
    * resolves it. Absent when it has none.
    */
   passThroughImports?: PassThroughImport[];
+  /**
+   * The module's `import type` declarations, in source order (ADR-0067): the types its props,
+   * events and setup name from a relative `.ts`, a `.uf.tsx`, a `.uf.ts` or a package, which
+   * every output re-imports by name. Absent when it has none.
+   */
+  typeImports?: TypeImport[];
+  /**
+   * What the module exports of types that `TypeDeclaration.exported` cannot hold, in source order
+   * (ADR-0068): type re-exports, and exported types no component reaches. Every output exports
+   * them under the same names. Absent when it has none.
+   */
+  typeExports?: TypeExport[];
+  /**
+   * The module's imports of values from relative `.ts` modules, in source order (ADR-0070):
+   * copied into each output tree unchanged, and read through `import` bindings. Absent when it
+   * imports none.
+   */
+  moduleImports?: SharedModuleImport[];
+  /**
+   * The module's top-level `const` declarations its components read, in source order (ADR-0070),
+   * through `moduleConst` bindings. Absent when it has none.
+   */
+  constants?: ModuleConstant[];
+  /**
+   * The composables a `.uf.ts` module declares, in source order (ADR-0069): named exports
+   * `use[A-Z]…`, each compiled to one module per target. Absent in a `.uf.tsx` module.
+   */
+  composables?: UfComposable[];
+}
+
+/** `import type { ButtonProps } from "./types"` (ADR-0067): types an output re-imports by name. */
+export interface TypeImport {
+  /** The specifier as written: a relative module, a `.uf.tsx`, a `.uf.ts` or a package. */
+  specifier: string;
+  /** The names it binds, in source order. */
+  names: NamedImport[];
+  /** The import declaration. */
+  span: Span;
+}
+
+/** A name a type or value import binds. */
+export interface NamedImport {
+  /** The imported name. */
+  imported: string;
+  /** The local name the module uses. */
+  local: string;
+  span: Span;
+}
+
+/** A type the module exports that no `TypeDeclaration` holds (ADR-0068). */
+export type TypeExport = TypeReExport | DeclaredTypeExport;
+
+/** `export type { Tone } from "./types"`: types re-exported from another module. */
+export interface TypeReExport {
+  kind: "ReExport";
+  /** The specifier as written. */
+  specifier: string;
+  /** The names it re-exports, in source order. */
+  names: TypeExportName[];
+  /** The export declaration. */
+  span: Span;
+}
+
+/** A name a type re-export exports. */
+export interface TypeExportName {
+  /** The name in the module it comes from. */
+  imported: string;
+  /** The name it is exported under. */
+  exported: string;
+  span: Span;
+}
+
+/** `export type Tone = "info" | "danger"`, a type the module exports and no component reaches. */
+export interface DeclaredTypeExport {
+  kind: "Declaration";
+  /** The declared name. */
+  name: string;
+  /** The declaration from `interface` or `type` to its end, without `export`, as written. */
+  code: string;
+  span: Span;
+}
+
+/**
+ * `import { sizes } from "./tokens"` (ADR-0070): values imported from a relative `.ts` module,
+ * which each output imports from its copy of the module, as the source does.
+ */
+export interface SharedModuleImport {
+  /**
+   * The specifier as written: a relative path.
+   * @pattern ^\.\.?/
+   */
+  specifier: string;
+  /** The resolved `.ts`, relative to the importer, with forward slashes. */
+  file: string;
+  /**
+   * The names it binds, in source order: each an `import` binding of the components that read
+   * it.
+   */
+  names: NamedImport[];
+  /** The import declaration. */
+  span: Span;
+}
+
+/**
+ * `const SIZES = { sm: 8, md: 12 } as const`, a top-level `const` of the module (ADR-0070): a
+ * plain function, a literal or a frozen object, read-only, which the components read through
+ * `moduleConst` bindings.
+ */
+export interface ModuleConstant {
+  /** The declared name. */
+  name: string;
+  /** `name@offset` of the declared name: the id of every `moduleConst` binding of it. */
+  binding: BindingId;
+  /** The type annotation as written. */
+  type?: TypeText;
+  /**
+   * The value: code that reads only globals every context may read, the module's other
+   * constants and its value imports, by their binding ids.
+   */
+  value: Code;
+  /** The declaration, from `const` to its end. */
+  span: Span;
+}
+
+/**
+ * A composable (ADR-0069): `export function useToggle(initial: boolean) { …; return { on,
+ * toggle } }` in a `.uf.ts` module. Its body is a setup under ADR-0045's rules, with parameters
+ * in place of props and a returned object in place of JSX.
+ */
+export interface UfComposable {
+  /**
+   * The exported function's name: `use` and an upper-case letter, in ASCII letters and digits.
+   * @pattern ^use[A-Z][A-Za-z0-9]*$
+   */
+  name: string;
+  span: Span;
+  /** The function's type parameters, in order. Absent when it has none. */
+  typeParameters?: TypeParameter[];
+  /** The parameters, in order, each with its kind. */
+  parameters: ComposableParameter[];
+  /** The names of the module's `types` its output declares, in source order. */
+  types: string[];
+  /** Every binding the composable declares, by the start of its span: its arguments and setup. */
+  bindings: Binding[];
+  /** The body before its return, in source order. */
+  setup: SetupItem[];
+  /** The members of the returned shorthand object, `return { on, toggle }`, in order. */
+  returns: ReturnedMember[];
+}
+
+/**
+ * A parameter of a composable, annotated (ADR-0069): a `value` is read once, a `getter`
+ * (`() => T`) is read reactively, and a `callback`, any other function type, is called from
+ * client code. An `argument` binding.
+ */
+export interface ComposableParameter {
+  name: string;
+  kind: ComposableParameterKind;
+  /** The annotation as written. */
+  type: TypeText;
+  /** Set for an optional parameter. */
+  optional?: true;
+  /** The `argument` binding the body reads it through. */
+  binding: BindingId;
+  span: Span;
+}
+
+/** How a composable reads a parameter (ADR-0069). */
+export type ComposableParameterKind = "value" | "getter" | "callback";
+
+/** A member of a composable's returned object: a shorthand property naming a binding. */
+export interface ReturnedMember {
+  /** The member's name: the binding's. */
+  name: string;
+  /** A `state`, `derived`, `localFn` or `localConst` binding of the composable. */
+  binding: BindingId;
+  span: Span;
+}
+
+/**
+ * A type parameter of a component or a composable, `T extends Item = Item` (ADR-0068): the
+ * outputs write each target's generic form from it.
+ */
+export interface TypeParameter {
+  /** The parameter's name. */
+  name: string;
+  /** The constraint after `extends`, as written. */
+  constraint?: TypeText;
+  /** The default after `=`, as written. */
+  default?: TypeText;
+  span: Span;
 }
 
 /**
@@ -85,13 +276,14 @@ export interface PassThroughName {
 }
 
 /**
- * An import of another `.uf.tsx` module: `import Field from "./Field.uf.tsx"` (ADR-0053). The
- * analyser records the API it resolved, so every target emits from the IR alone (P5, P6).
+ * An import of another `.uf.tsx` module, `import Field from "./Field.uf.tsx"` (ADR-0053), or of
+ * a `.uf.ts` module's composables, `import { useToggle } from "./useToggle.uf.ts"` (ADR-0069).
+ * The analyser records the API it resolved, so every target emits from the IR alone (P5, P6).
  */
 export interface ModuleImport {
-  /** The specifier as written, which ends in `.uf.tsx`. */
+  /** The specifier as written, which ends in `.uf.tsx` or `.uf.ts`. */
   specifier: string;
-  /** The resolved `.uf.tsx`, relative to the importer, with forward slashes. */
+  /** The resolved `.uf.tsx` or `.uf.ts`, relative to the importer, with forward slashes. */
   file: string;
   /** What the resolver returned for the module. */
   api: ModuleApi;
@@ -101,9 +293,9 @@ export interface ModuleImport {
   span: Span;
 }
 
-/** A name an import binds: a component, or an injection key. */
+/** A name an import binds: a component, an injection key, or a composable (ADR-0069). */
 export interface ImportedName {
-  kind: "Component" | "Key";
+  kind: "Component" | "Key" | "Composable";
   /** The imported name: `default` for a default import. */
   imported: string;
   /** The local name the module uses. */
@@ -144,6 +336,54 @@ export interface ModuleApi {
   components: ComponentApi[];
   /** The injection keys the module exports, in source order. */
   keys: KeyApi[];
+  /**
+   * The composables a `.uf.ts` module exports, in source order (ADR-0069). Absent when it has
+   * none.
+   */
+  composables?: ComposableApi[];
+}
+
+/**
+ * What a caller reads of a composable (ADR-0069): its parameters and its returned members, so a
+ * caller's output never depends on the composable's body.
+ */
+export interface ComposableApi {
+  name: string;
+  /** The names of its type parameters, in order. Absent when it has none. */
+  typeParameters?: string[];
+  /** The parameters, in order. */
+  parameters: ComposableParameterApi[];
+  /** The returned members, in order. */
+  members: ComposableMemberApi[];
+  /**
+   * Set where its setup runs code in the browser (a watcher, an effect or a lifecycle hook):
+   * a call then requires `composable-effect-order`, and its `Use` item copies the flag.
+   */
+  hasEffects?: true;
+}
+
+/** A parameter of a composable's API: its name, its kind and its type as written. */
+export interface ComposableParameterApi {
+  name: string;
+  kind: ComposableParameterKind;
+  optional?: true;
+  type: string;
+}
+
+/**
+ * A returned member of a composable's API: a ref of state, a derived value, a function or a
+ * constant, with its type as written where the source writes one.
+ */
+export interface ComposableMemberApi {
+  name: string;
+  kind: "state" | "derived" | "function" | "constant";
+  type?: string;
+  /** Set for an `async` function. */
+  async?: true;
+  /** Set for a function that only client code may call: it writes, emits or awaits. */
+  client?: true;
+  /** Set for a function a template or a getter may call: it reads, and changes nothing. */
+  pure?: true;
 }
 
 /** What a parent reads of a child component (ADR-0053, ADR-0055). */
@@ -172,6 +412,11 @@ export interface ComponentApi {
   rootTag?: string;
   /** The component's scoped styles, when it imports a stylesheet (ADR-0063). */
   styles?: ComponentStylesApi;
+  /**
+   * The names of the component's type parameters, in order (ADR-0068), so a parent knows the
+   * child is generic. Absent when it has none.
+   */
+  typeParameters?: string[];
 }
 
 /**
@@ -190,6 +435,11 @@ export interface ApiMember {
   name: string;
   optional: boolean;
   type: string;
+  /**
+   * The names its type references, in order of their first use (ADR-0067), so a parent imports
+   * what it prints. Absent when it references none.
+   */
+  references?: string[];
 }
 
 /**
@@ -215,6 +465,8 @@ export interface ApiSlot {
   optional: boolean;
   /** The slot's props' type, for a scoped slot. */
   props?: string;
+  /** The names its props' type references, as `ApiMember.references`. */
+  references?: string[];
 }
 
 /** An injection key of a child module's API. */
@@ -224,6 +476,8 @@ export interface KeyApi {
   type: string;
   /** The authoring type of the ref the key holds, as `InjectionKeyDeclaration.ref`. */
   ref?: RefType;
+  /** The names its type references, as `ApiMember.references`. */
+  references?: string[];
 }
 
 /** An export of a module. */
@@ -259,6 +513,11 @@ export interface UfComponent {
    */
   name: string;
   span: Span;
+  /**
+   * The function's type parameters, `function List<T>(props: ListProps<T>)`, in order
+   * (ADR-0068). Absent when it has none.
+   */
+  typeParameters?: TypeParameter[];
   /** The members of the props type, in member order: none for a component without props. */
   props: Prop[];
   /** The props parameter as written. Absent when the component takes no parameter. */
@@ -343,7 +602,11 @@ export interface Prop {
   name: string;
   /** Whether the member is optional (`label?: string`). */
   optional: boolean;
-  /** The member's type annotation as written: the targets that declare inputs print it. */
+  /**
+   * The member's type annotation as written: the targets that declare inputs print it. For a
+   * member from another file, its text as written in the declaring file, at the props
+   * annotation's span (ADR-0067).
+   */
   type: TypeText;
   /**
    * The default, in the destructured form only: a static value, which references nothing,
@@ -356,10 +619,34 @@ export interface Prop {
    * the prop out; the object form has one for every prop.
    */
   binding?: BindingId;
+  /**
+   * Where the member is declared, when another declaration than the props type declares it: an
+   * interface it extends, a type it intersects or picks from, or an imported one (ADR-0067).
+   * The prop's span is then the props annotation's, and its type's text is the declaring
+   * file's. Absent for a member the props type itself declares.
+   */
+  declaredBy?: DeclaredBy;
   span: Span;
 }
 
-/** A type annotation, as written: exactly `source.slice(span.start, span.end)`. */
+/** The declaration a prop's member comes from (ADR-0067). */
+export interface DeclaredBy {
+  /**
+   * The declaring file, as the type oracle names it (ADR-0067): root-relative, with forward
+   * slashes, or `pkg:<name>` for a package's. Never absolute (P8).
+   * @pattern ^(?![/\\]|[A-Za-z]:).+
+   */
+  file: string;
+  /** The name of the interface or type alias that declares the member. */
+  declaration: string;
+  /** The member's span in the declaring file. */
+  span: Span;
+}
+
+/**
+ * A type annotation, as written: exactly `source.slice(span.start, span.end)`, but a prop's type
+ * whose member another file declares (`Prop.declaredBy`), which is that file's text.
+ */
 export interface TypeText {
   code: string;
   span: Span;
@@ -397,7 +684,13 @@ export interface Binding {
  * - `slots`: the object `defineSlots` returns;
  * - `slotScope`: a scoped fill's parameter, or a name its pattern binds;
  * - `context`: `const theme = inject(ThemeKey)`, an injected value, read-only;
- * - `component`: a component named in `<component is>`'s set.
+ * - `component`: a component named in `<component is>`'s set;
+ * - `moduleConst`: a top-level `const` of the module (`ModuleConstant`), read-only (ADR-0070);
+ * - `import`: a value imported from a relative `.ts` module (`SharedModuleImport`), read-only;
+ * - `argument`: a composable's parameter, read by its kind (`ComposableParameter`, ADR-0069);
+ * - `usedState`, `usedDerived`, `usedFn`, `usedConst`: what a `Use` item destructures from a
+ *   composable's result, by the member's kind: a ref of state, read through `.value` and never
+ *   written (UF2036), a derived value, a function and a constant (ADR-0069).
  */
 export type BindingKind =
   | "prop"
@@ -413,7 +706,14 @@ export type BindingKind =
   | "slots"
   | "slotScope"
   | "context"
-  | "component";
+  | "component"
+  | "moduleConst"
+  | "import"
+  | "argument"
+  | "usedState"
+  | "usedDerived"
+  | "usedFn"
+  | "usedConst";
 
 /**
  * An expression the analyser accepted, with every identifier in it resolved (plan §5.4).
@@ -737,7 +1037,8 @@ export type SetupItem =
   | LifecycleItem
   | ModelItem
   | ProvideItem
-  | InjectItem;
+  | InjectItem
+  | UseItem;
 
 /** `const count = ref(initial)`: a `state` binding (ADR-0046). */
 export interface StateItem {
@@ -908,6 +1209,60 @@ export interface InjectItem {
   span: Span;
 }
 
+/**
+ * `const { on, toggle } = useToggle(false)` (ADR-0069): a call of an imported composable at the
+ * top level of the setup, whose result is destructured into `used*` bindings.
+ */
+export interface UseItem {
+  kind: "Use";
+  /** The local name of the imported composable. */
+  composable: string;
+  /** The arguments, in order, each as its parameter's kind reads it. */
+  arguments: UseArgument[];
+  /** The destructured members, in source order. */
+  members: UsedMember[];
+  /** Copied from the composable's API: a call requires `composable-effect-order`. */
+  hasEffects?: true;
+  /** The declaration, from `const` to its end. */
+  span: Span;
+}
+
+/**
+ * An argument of a composable's call, by its parameter's kind (ADR-0069): a value the setup
+ * evaluates once, a getter read reactively, or a callback client code calls.
+ */
+export type UseArgument = ValueArgument | GetterArgument | CallbackArgument;
+
+/** An argument of a `value` parameter: code the setup evaluates once. */
+export interface ValueArgument {
+  kind: "Value";
+  value: Code;
+  span: Span;
+}
+
+/** An argument of a `getter` parameter: a function without parameters, pure as a getter is. */
+export interface GetterArgument {
+  kind: "Getter";
+  getter: FunctionCode;
+  span: Span;
+}
+
+/** An argument of a `callback` parameter: a function client code calls. */
+export interface CallbackArgument {
+  kind: "Callback";
+  callback: FunctionCode;
+  span: Span;
+}
+
+/** A member a `Use` item destructures: `on`, or `on: open` under another name. */
+export interface UsedMember {
+  /** The member's name in the composable's API. */
+  member: string;
+  /** The `used*` binding of the member's kind. */
+  binding: BindingId;
+  span: Span;
+}
+
 /** The slots a component declares: `const slots = defineSlots<{ title?: () => any }>()`. */
 export interface Slots {
   /** The `slots` binding. */
@@ -928,6 +1283,11 @@ export interface SlotDeclaration {
   optional: boolean;
   /** The props a scoped slot passes, as written: the type of the member's parameter. */
   props?: TypeText;
+  /**
+   * The names its props' type references, in order of their first use (ADR-0067), so a type
+   * parameter a slot passes is seen (`generic-slot-props`). Absent when it references none.
+   */
+  references?: string[];
   span: Span;
 }
 

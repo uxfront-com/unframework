@@ -1,6 +1,7 @@
 import {
   addPassThroughImports,
   componentTypes,
+  composableUse,
   defineTarget,
   moduleHelperName,
   exportDeclaration,
@@ -131,8 +132,32 @@ export const solid: Target = defineTarget({
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
     "sheet-order": { support: "native" },
+    "generic-components": { support: "native" },
+    "generic-slot-props": { support: "native" },
+    composables: { support: "native" },
+    // A composable's module has its own watcher queue (ADR-0069).
+    "composable-effect-order": {
+      support: "unsupported",
+      code: "UF4005",
+      severity: "info",
+      reason:
+        "A composable's watchers coalesce in its own module's queue (`createWatcher`), apart from the caller's, so its watchers, effects and hooks cannot take their place among the caller's own, and code that relies on that order may see another (ADR-0069).",
+    },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    // A composable's call and what a module or a composable gives are declared before this
+    // target emits them (ADR-0069, ADR-0070): until its composables lane lands, a component that
+    // uses one is reported, never emitted without it (P2).
+    const composable = composableUse(component);
+    if (composable) {
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message: `The solid target does not emit ${composable.what} yet: it lands with this target's composables lane.`,
+        span: composable.span,
+      });
+      return [];
+    }
     // Every name the source declares or reads is taken before the output claims its own
     // (`props`, `Show`, `cx`, `setCount`), so none of them captures a reference (ADR-0035).
     const names = sourceNames(component, context.module);
