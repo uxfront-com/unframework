@@ -119,6 +119,12 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0064](./0064-styling-engines-and-ci-without-a-licence.md)         | Styling engines through virtual modules, and CI without a licence             | Accepted                                                               | §4.4, R11, §9 M4        |
 | [0065](./0065-the-deferred-binding-forms.md)                       | The binding forms ADR-0038 and ADR-0039 deferred to M4                        | Accepted                                                               | §4.3, §6, §9 M4         |
 | [0066](./0066-firefox-and-webkit-nightly.md)                       | Firefox and WebKit run nightly, live against the reference in the same engine | Accepted                                                               | §7.2, §7.6, §9 M4       |
+| [0067](./0067-the-type-oracle-and-cross-file-props-types.md)       | The type oracle and cross-file props types                                    | Proposed                                                               | §5.5, §5.6, §9 M5       |
+| [0068](./0068-generic-components-and-exported-public-types.md)     | Generic components and exported public types                                  | Proposed                                                               | §4.2, §5.6, §9 M5       |
+| [0069](./0069-composables-compiled-per-target.md)                  | Composables compiled per target                                               | Proposed                                                               | §4.1, §6, §9 M5, D1     |
+| [0070](./0070-shared-modules-and-module-level-declarations.md)     | Shared modules and module-level declarations                                  | Proposed                                                               | §4.1, §9 M5             |
+| [0071](./0071-the-project-graph-and-incremental-invalidation.md)   | The project graph and incremental invalidation                                | Proposed                                                               | §5.10, §8.2, §9 M5      |
+| [0072](./0072-the-content-mapper.md)                               | The content mapper                                                            | Proposed                                                               | §5.6, §9 M5             |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 
