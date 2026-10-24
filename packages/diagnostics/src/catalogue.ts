@@ -2298,7 +2298,7 @@ const entries: CatalogueEntry[] = [
       "component's type parameter from its inputs alone, and a slot's directive cannot infer it, so the",
       "slot's context takes the parameter's constraint, `unknown` where it has none (ADR-0068). The",
       "component renders the same; only a consumer's type checking differs. The diagnostic points at",
-      "the slot.",
+      "the slot, or at a consumer's fill of it.",
       "",
       "Give the type parameter a constraint that names what consumers read, or accept the looser type",
       "on Angular.",

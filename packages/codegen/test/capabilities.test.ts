@@ -678,6 +678,28 @@ describe("requiredCapabilities over generics and composables (ADR-0068, ADR-0069
     );
   });
 
+  it("scans a composable's arguments for what their code needs", () => {
+    const module = m5.modules();
+    const item = module.components[0]!.setup[0]!;
+    if (item.kind !== "Use") throw new Error("the fixture changed");
+    const at = item.arguments[1]!.span;
+    const call = { start: at.start, end: at.start + "nextTick".length };
+    item.arguments[1] = {
+      kind: "Callback",
+      callback: {
+        parameters: [],
+        body: {
+          code: "nextTick()",
+          span: at,
+          refs: [{ kind: "Api", api: "nextTick", span: call }],
+        },
+        span: at,
+      },
+      span: at,
+    };
+    expect(requiredCapabilities(module).get("next-tick")).toEqual(call);
+  });
+
   it("requires `composable-effect-order` only of a composable that runs code in the browser", () => {
     const module = m5.modules();
     delete (module.components[0]!.setup[0] as { hasEffects?: true }).hasEffects;

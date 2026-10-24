@@ -27,7 +27,7 @@ export interface Span {
  */
 export type BindingId = string;
 
-/** One `.uf.tsx` module. */
+/** One `.uf.tsx` module, or a `.uf.ts` module of composables (ADR-0069). */
 export interface UfModule {
   /** The IR format version. Bumped, with a migration, on every breaking change. */
   irVersion: 1;
@@ -150,7 +150,10 @@ export interface SharedModuleImport {
   specifier: string;
   /** The resolved `.ts`, relative to the importer, with forward slashes. */
   file: string;
-  /** The names it binds, in source order: each an `import` binding of the components that read it. */
+  /**
+   * The names it binds, in source order: each an `import` binding of the components that read
+   * it.
+   */
   names: NamedImport[];
   /** The import declaration. */
   span: Span;

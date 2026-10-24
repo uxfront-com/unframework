@@ -1123,7 +1123,7 @@ class Walk {
       // Composition's bindings (ADR-0055) the setup never declares.
       case "slotScope":
       case "component":
-      // What a module or a composable gives (ADR-0069, ADR-0070), which the analyser does not declare yet.
+      // What a module or a composable gives (ADR-0069, ADR-0070): not declared yet.
       case "moduleConst":
       case "import":
       case "argument":

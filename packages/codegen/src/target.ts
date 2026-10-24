@@ -223,9 +223,9 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
 /**
  * The capabilities that change nothing the markup shows: what code does in the browser, or the
  * cascade (`sheet-order`), so a static render's markup is the same without them (ADR-0033, as
- * amended by ADR-0047, ADR-0063 and ADR-0069). The render-parity tests, which compare static renders, do
- * not require a case that uses one its target leaves unsupported to render differently: Astro
- * renders the same DOM with its handlers inert.
+ * amended by ADR-0047, ADR-0063 and ADR-0069). The render-parity tests, which compare static
+ * renders, do not require a case that uses one its target leaves unsupported to render differently:
+ * Astro renders the same DOM with its handlers inert.
  */
 export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "interactivity",

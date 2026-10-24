@@ -100,7 +100,7 @@
         "types"
       ],
       "additionalProperties": false,
-      "description": "One `.uf.tsx` module."
+      "description": "One `.uf.tsx` module, or a `.uf.ts` module of composables (ADR-0069)."
     },
     "UfComponent": {
       "type": "object",

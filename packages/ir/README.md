@@ -112,8 +112,9 @@ plain, versioned, schema-validated JSON (plan §5.3).
   composable with an argument of each parameter's kind, destructures members its API returns
   into bindings of their kinds and copies `hasEffects`; a composable's ref is read as
   `x.value`, and its function where the setup evaluates code only when pure; and a composable's
-  setup keeps a component's rules, with its arguments, its items and the members it returns. The compiler emits from no module
-  that breaks one, a plugin's included, and checks itself that a plugin's code is the analyser's.
+  setup keeps a component's rules, with its arguments, its items and the members it returns.
+  The compiler emits from no module that breaks one, a plugin's included, and checks itself that
+  a plugin's code is the analyser's.
 - **Portability facts:** what the targets render differently from the same markup
   (`portability.ts`): elements Vue does not know, template syntax, attributes a framework acts on
   or sets as state, `contenteditable` with children, empty URLs React drops, whitespace Svelte

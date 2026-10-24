@@ -4,8 +4,8 @@ import {
   composableUse,
   defineTarget,
   ImportSet,
-  mergesWholeStyle,
   scopeRoots,
+  mergesWholeStyle,
 } from "@unframework/codegen";
 import type { CapabilityCell, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";

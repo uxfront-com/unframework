@@ -11,6 +11,16 @@ import {
   createBinding,
   createCallbackArgument,
   createCode,
+  createComponent,
+  createComposable,
+  createElement,
+  createModule,
+  createPassThroughImport,
+  createPassThroughName,
+  createProp,
+  createSlotDeclaration,
+  createTypeText,
+  createUseItem,
   functionsOf,
   SETUP_ITEM_KINDS,
   span,
@@ -48,12 +58,38 @@ describe("the modules fixture", () => {
     }
   });
 
-  it("leaves every new field out of a module that has none", () => {
-    const module = modules();
-    const { typeImports, typeExports, moduleImports, constants, ...rest } = module;
-    expect([typeImports, typeExports, moduleImports, constants].every(Boolean)).toBe(true);
-    expect(Object.keys(rest)).not.toContain("composables");
-    expect(Object.keys(list(module).props[0]!)).not.toContain("declaredBy");
+  it("leaves every new field out where the builders are given none", () => {
+    const at = span(0, 1);
+    const module = createModule("Empty.uf.tsx", [], [], [], [], [], [], {
+      typeImports: [],
+      typeExports: [],
+      moduleImports: [],
+      constants: [],
+      composables: [],
+    });
+    expect(Object.keys(module)).toEqual(["irVersion", "file", "components", "exports", "types"]);
+    const component = createComponent(
+      "Empty",
+      createElement("p", [], [], at),
+      at,
+      [],
+      undefined,
+      [],
+      [],
+      [],
+      undefined,
+      {
+        typeParameters: [],
+      },
+    );
+    expect(Object.keys(component)).not.toContain("typeParameters");
+    const prop = createProp("label", false, createTypeText("string", at), at);
+    expect(Object.keys(prop)).not.toContain("declaredBy");
+    const slot = createSlotDeclaration("item", true, at, createTypeText("{}", at), []);
+    expect(Object.keys(slot)).not.toContain("references");
+    const own = createComposable("useEmpty", at, [], { typeParameters: [] });
+    expect(Object.keys(own)).not.toContain("typeParameters");
+    expect(Object.keys(createUseItem("useEmpty", [], [], at))).not.toContain("hasEffects");
   });
 });
 
@@ -180,12 +216,14 @@ describe("checkInvariants on M5's contract", () => {
   it("rejects a constant's code that reads more than a plain value", () => {
     const errors = problems((module) => {
       const value = module.constants![0]!.value;
-      value.refs = [{ kind: "Global", name: "window", span: value.refs[0]!.span }];
+      // `sizes.sm * 2` becomes `fetch.sm * 2`, which reads a global only client code may.
+      value.code = `fetch${value.code.slice("sizes".length)}`;
+      value.refs = [{ kind: "Global", name: "fetch", span: value.refs[0]!.span }];
     });
     expect(errors).toEqual([
       {
         path: "/constants/0/value/refs/0/name",
-        message: 'must be a global an initial value may read, and "window" is not one',
+        message: 'must be a global an initial value may read, and "fetch" is not one',
       },
     ]);
   });
@@ -301,5 +339,42 @@ describe("checkInvariants on M5's contract", () => {
     expect(errors.map(({ message }) => message)).toContain(
       `must not read the callback "${composable(composableModule()).parameters[1]!.binding}" in an initial value: only client code calls one (ADR-0069)`,
     );
+  });
+
+  it("checks a constant's references against its code", () => {
+    const renamed = problems((module) => {
+      module.constants![0]!.value.code = 'fetch("x").s';
+    });
+    expect(renamed).toEqual([
+      { path: "/constants/0/value/refs/0/span", message: 'must span "sizes"' },
+    ]);
+    const outside = problems((module) => {
+      module.constants![0]!.value.refs[0]!.span = span(0, 5);
+    });
+    expect(outside).toEqual([
+      {
+        path: "/constants/0/value/refs/0/span",
+        message: "must lie in the code, after the reference before it",
+      },
+    ]);
+  });
+
+  it("keeps every name the module binds apart, across every kind of import", () => {
+    const passThrough = problems((module) => {
+      const at = find("sizes", 0, find("{ sizes }").start);
+      module.passThroughImports = [
+        createPassThroughImport("virtual:x", [createPassThroughName("x", "sizes", at)], at),
+      ];
+    });
+    expect(passThrough.map(({ path }) => path)).toEqual(["/passThroughImports/0/names/0/local"]);
+    const composable = problems((module) => {
+      module.typeImports![0]!.names[0]!.local = "useToggle";
+    });
+    expect(composable.map(({ path }) => path)).toEqual(["/typeImports/0/names/0/local"]);
+    const component = problems((module) => {
+      module.constants![0]!.name = "List";
+      module.constants![0]!.binding = "List@199";
+    });
+    expect(component.map(({ path }) => path)).toContain("/constants/0/name");
   });
 });

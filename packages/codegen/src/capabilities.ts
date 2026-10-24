@@ -158,7 +158,8 @@ const OPTION_CAPABILITIES = {
  * (`default-slot`, `named-slot`, `scoped-slot`, with `slot-fallback` for fallback content and
  * `slot-forwarding` for a forwarded slot, the default one's needing `default-slot-presence`
  * too, and `generic-slot-props` for a scoped fill of a generic child's slot whose props' type
- * names one of the child's type parameters), `child-root-scope` at a child a styled component renders and `slotted-styles` at a fill
+ * names one of the child's type parameters), `child-root-scope` at a child a styled component
+ * renders and `slotted-styles` at a fill
  * of a child whose sheets use `:slotted()` (ADR-0063), `model-array` and `model-modifiers` at an
  * element's `v-model` that needs them, `svg` at an `<svg>`, `listbox` at what may make a
  * `<select>` a single-selection list box (`listBoxSize`), and at a listener `event-semantics`, its option's
@@ -512,11 +513,8 @@ function trackedCode(item: SetupItem): Code[] {
       );
     case "WatchEffect":
       return [item.effect.body];
-    // A getter argument is read reactively (ADR-0069).
+    // A composable's getter argument is the composable's to track (ADR-0069): its lane decides.
     case "Use":
-      return item.arguments.flatMap((argument) =>
-        argument.kind === "Getter" ? [argument.getter.body] : [],
-      );
     case "State":
     case "Variable":
     case "Const":

@@ -310,10 +310,7 @@ function checkPassThroughImports(
   errors: IrValidationError[],
 ): ReadonlySet<string> {
   const locals = new Set<string>();
-  const taken = new Set([
-    ...module.components.map(({ name }) => name),
-    ...(module.imports ?? []).flatMap(({ names }) => names.map(({ local }) => local)),
-  ]);
+  const taken = new Set([...moduleNames(module), ...sharedNames(module)]);
   for (const [index, entry] of (module.passThroughImports ?? []).entries()) {
     const path = `/passThroughImports/${index}`;
     if (!PASS_THROUGH_SPECIFIER.test(entry.specifier)) {
@@ -482,6 +479,24 @@ function composableApis(
   return apis;
 }
 
+/** The names a module's components and its imports of `.uf.tsx` and `.uf.ts` modules bind. */
+function moduleNames(module: UfModule): string[] {
+  return [
+    ...module.components.map(({ name }) => name),
+    ...(module.imports ?? []).flatMap(({ names }) => names.map(({ local }) => local)),
+  ];
+}
+
+/** The names a module's type imports, value imports and constants bind (ADR-0067, ADR-0070). */
+function sharedNames(module: UfModule): string[] {
+  return [
+    ...[...(module.typeImports ?? []), ...(module.moduleImports ?? [])].flatMap(({ names }) =>
+      names.map(({ local }) => local),
+    ),
+    ...(module.constants ?? []).map(({ name }) => name),
+  ];
+}
+
 /** What a module declares at its top level for its components to read (ADR-0070). */
 interface Shared {
   /** Each value import's name, by its local name: an `import` binding lies in its span. */
@@ -492,13 +507,15 @@ interface Shared {
 
 /**
  * Checks the names the module's type imports, value imports and top-level `const`s bind
- * (ADR-0067, ADR-0070): identifiers, each local name once among them, and a constant's binding
- * id its name and offset. Its value reads only the globals every context may read, the other
- * constants and the value imports, and writes, emits and calls nothing of a component's.
+ * (ADR-0067, ADR-0070): identifiers, each local name once in the module, apart from its
+ * components' and its other imports' (a pass-through import's is checked there), and a
+ * constant's binding id its name and offset. Its value reads only the globals every context may
+ * read, the other constants and the value imports, each reference its code's at its span, in
+ * order, and writes, emits and calls nothing of a component's.
  */
 function checkSharedNames(module: UfModule, errors: IrValidationError[]): Shared {
   const imports = new Map<string, Span>();
-  const locals = new Set<string>();
+  const locals = new Set<string>(moduleNames(module));
   const local = (name: string, path: string) => {
     if (!isIdentifier(name)) {
       errors.push({ path, message: `must be an identifier, and "${name}" is not` });
@@ -537,8 +554,30 @@ function checkSharedNames(module: UfModule, errors: IrValidationError[]): Shared
     checkSourceText(constant.value, `${path}/value`, errors);
   }
   for (const [index, constant] of (module.constants ?? []).entries()) {
-    for (const [position, ref] of constant.value.refs.entries()) {
+    const { value } = constant;
+    let end = value.span.start;
+    for (const [position, ref] of value.refs.entries()) {
       const at = `/constants/${index}/value/refs/${position}`;
+      // Every target splices its spelling at the span, so the span names what it refers to.
+      if (ref.span.start < end || !inside(ref.span, value.span)) {
+        errors.push({
+          path: `${at}/span`,
+          message: "must lie in the code, after the reference before it",
+        });
+        continue;
+      }
+      end = ref.span.end;
+      const name =
+        ref.kind === "Binding" ? ref.binding.slice(0, ref.binding.lastIndexOf("@")) : undefined;
+      const expected = ref.kind === "Global" ? ref.name : name;
+      if (
+        expected !== undefined &&
+        value.code.slice(ref.span.start - value.span.start, ref.span.end - value.span.start) !==
+          expected
+      ) {
+        errors.push({ path: `${at}/span`, message: `must span "${expected}"` });
+        continue;
+      }
       if (ref.kind === "Global") {
         if (!PURE_GLOBALS.has(ref.name)) {
           errors.push({

@@ -280,8 +280,10 @@ The setup's items in source order (`src/setup.ts`), after `mergeProps`:
 Every name the output introduces (`props`, `rawProps`, `_props`, `defaults`, `cx`, setters,
 `createWatcher`, `createWatchEffect`, the scheduler's `queuedWatchers`, `queueWatcher` and
 `flushQueued`, `nextTick`, `narrowed`, the events' interface, the `solid-js` imports) is
-claimed around the source's own names, so none captures another. The target reports nothing:
-what Solid cannot render as the other targets do is the analyser's to reject (ADR-0033).
+claimed around the source's own names, so none captures another. The target reports one
+difference, `composable-effect-order` (UF4005, info); what else Solid cannot render as the other
+targets do is the analyser's to reject (ADR-0033). Until its composables lane lands, it reports a
+composable's call and what a module or a composable gives a component as UF1002.
 
 | Capability                                     | Cell                                                                                                         |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
@@ -296,6 +298,7 @@ what Solid cannot render as the other targets do is the analyser's to reject (AD
 | `model-array`                                  | emulated: `toggle`, and `selectedValues` for a multiple select                                               |
 | `model-modifiers`                              | emulated: `modelText`                                                                                        |
 | `reactive-context`                             | emulated: `refObject`, an object whose `value` getter reads the signal                                       |
+| `composable-effect-order`                      | unsupported (UF4005, info): a composable's watchers keep its own module's queue (ADR-0069)                   |
 | everything else                                | native                                                                                                       |
 
 ## Composition (ADR-0053, ADR-0054)

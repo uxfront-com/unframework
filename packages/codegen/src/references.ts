@@ -20,7 +20,6 @@ import type {
   TypeText,
   UfComponent,
   UfModule,
-  UseItem,
 } from "@unframework/ir";
 
 import { typeNames } from "./names.ts";
@@ -127,9 +126,6 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
   const declarations = new Map<BindingId, SetupItem>();
   for (const item of component.setup) {
     if ("binding" in item) declarations.set(item.binding, item);
-    // A composable's call declares a binding per member it destructures (ADR-0069).
-    if (item.kind === "Use")
-      for (const { binding } of item.members) declarations.set(binding, item);
   }
   const live = new Set<BindingId>();
   const pending: BindingId[] = [];
@@ -147,12 +143,6 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
   const readFunction = (fn: FunctionCode) => {
     read(fn.body);
     for (const parameter of fn.parameters) read(parameter.default);
-  };
-  const readArguments = (item: UseItem) => {
-    for (const argument of item.arguments) {
-      if (argument.kind === "Value") read(argument.value);
-      else readFunction(argument.kind === "Getter" ? argument.getter : argument.callback);
-    }
   };
   for (const { expression, path } of expressionsOf(component)) {
     if (options.includeKeys === false && path.endsWith("/key")) continue;
@@ -186,10 +176,9 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
         case "Provide":
           read(item.value);
           break;
-        // A composable that runs code in the browser runs it whether or not its result is read.
+        // A composable's call: each target's composables lane decides what it keeps live
+        // (ADR-0069), and `emit` reports UF1002 before this runs.
         case "Use":
-          if (item.hasEffects) readArguments(item);
-          break;
         case "State":
         case "Derived":
         case "TemplateRef":
@@ -225,9 +214,9 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
       case "Inject":
         read(item.fallback);
         break;
+      // A composable's call: each target's composables lane decides what it keeps live (ADR-0069),
+      // and `emit` reports UF1002 before this runs.
       case "Use":
-        readArguments(item);
-        break;
       case "TemplateRef":
       case "Id":
       case "Watch":
@@ -323,12 +312,9 @@ export function liveTypes(
       case "Inject":
         if (item.fallback) code(item.fallback);
         break;
+      // A composable's call: each target's composables lane decides what it keeps live (ADR-0069),
+      // and `emit` reports UF1002 before this runs.
       case "Use":
-        for (const argument of item.arguments) {
-          if (argument.kind === "Value") code(argument.value);
-          else fn(argument.kind === "Getter" ? argument.getter : argument.callback);
-        }
-        break;
       case "TemplateRef":
       case "Id":
       case "Model":
@@ -407,15 +393,9 @@ function serverCode(item: SetupItem): Code[] {
       return [item.value];
     case "Inject":
       return item.fallback ? [item.fallback] : [];
-    // The call runs where the component renders: its values and getters run there too.
+    // A composable's call: each target's composables lane decides what runs where it renders
+    // (ADR-0069), and `emit` reports UF1002 before this runs.
     case "Use":
-      return item.arguments.flatMap((argument) =>
-        argument.kind === "Value"
-          ? [argument.value]
-          : argument.kind === "Getter"
-            ? [argument.getter.body]
-            : [],
-      );
     case "TemplateRef":
     case "Id":
     case "Function":

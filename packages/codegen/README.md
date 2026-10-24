@@ -33,9 +33,9 @@ framework-specific.
   compiler's capability check and the render-parity tests read it. `BEHAVIOURAL_CAPABILITIES`
   change what code does in the browser, or the cascade (`sheet-order`), not the markup that
   renders, so the render-parity tests compare a case that uses one its target leaves unsupported
-  as any other (ADR-0033, as amended by ADR-0047, ADR-0063 and ADR-0069); `CAPABILITY_PREREQUISITES` names
-  what each refines (`interactivity`), which the compiler reports alone where the target lacks
-  it.
+  as any other (ADR-0033, as amended by ADR-0047, ADR-0063 and ADR-0069);
+  `CAPABILITY_PREREQUISITES` names what each refines (`interactivity`), which the compiler reports
+  alone where the target lacks it.
 - **The scoper** (`scopeStylesheet(file, source, scopeId)`, ADR-0063): a component's sheet,
   scoped once with Vue's algorithm: Vue's scoped plugin ported onto postcss and
   postcss-selector-parser, which keep the sheet's own text, so only selectors and keyframe names

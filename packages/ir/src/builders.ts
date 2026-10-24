@@ -226,7 +226,10 @@ export interface ComposableOptions {
   returns?: ReturnedMember[];
 }
 
-/** Builds a composable (ADR-0069): without type parameters, bindings, setup or members unless given. */
+/**
+ * Builds a composable (ADR-0069): without type parameters, bindings, setup or members unless
+ * given.
+ */
 export function createComposable(
   name: string,
   at: Span,

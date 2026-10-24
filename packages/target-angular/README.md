@@ -278,8 +278,10 @@ spreads; ADR-0065) and composition's cells that ADR-0056 decides: `named-slot`, 
 `slot-forwarding` (emulated, the slot directives `uf<Component><Slot>`), `model-array`
 (`toggle`), `model-modifiers` (`modelText`), `fallthrough` (`fallthrough`), `reactive-context`
 (`refObject`) and `dynamic-component` (`@switch`), all emulated, `default-slot-presence` and
-`contextual-root`, unsupported (UF4001, errors), and `child-root-scope` and `sheet-order`,
-unsupported (UF4003 and UF4002, info). Where an unsupported cell is reported, the
+`contextual-root`, unsupported (UF4001, errors), `child-root-scope` and `sheet-order`,
+unsupported (UF4003 and UF4002, info), and `generic-slot-props`, unsupported (UF4004, info): slot
+directives cannot infer a component's type parameter, so a scoped slot's context takes its
+constraint (ADR-0068). Where an unsupported cell is reported, the
 output still compiles: default-slot presence reads `true`, and the forwarded default slot
 re-projects `<ng-content />`.
 

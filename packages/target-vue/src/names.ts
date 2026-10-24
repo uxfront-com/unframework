@@ -119,7 +119,7 @@ export class VueNames {
       case "slotScope":
       case "context":
       case "component":
-      // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+      // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
       case "moduleConst":
       case "import":
       case "argument":
@@ -162,7 +162,7 @@ export class VueNames {
       case "slots":
       case "slotScope":
       case "component":
-      // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+      // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
       case "moduleConst":
       case "import":
       case "argument":
@@ -224,7 +224,7 @@ function declaredBySetup(kind: BindingKind): boolean {
     case "model":
     case "slots":
     case "context":
-    // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
     case "argument":

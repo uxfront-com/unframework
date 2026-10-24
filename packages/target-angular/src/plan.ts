@@ -294,7 +294,7 @@ function outputSafeName(name: string, kind: BindingKind): string {
     case "slotScope":
     case "context":
     case "component":
-    // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
     case "argument":
@@ -359,7 +359,7 @@ function formsOf(component: UfComponent): {
       // A model is its setup item's; `slots` is read only as slots (`SlotReference`).
       case "model":
       case "slots":
-      // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+      // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
       case "moduleConst":
       case "import":
       case "argument":
@@ -518,7 +518,7 @@ export function isLoopVariable(kind: BindingKind): boolean {
     case "slotScope":
     case "context":
     case "component":
-    // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
     case "argument":
@@ -550,7 +550,7 @@ function isFunction(kind: BindingKind): boolean {
     case "slotScope":
     case "context":
     case "component":
-    // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
     case "argument":
@@ -586,7 +586,7 @@ function readLazily(kind: BindingKind): boolean {
     case "slots":
     case "slotScope":
     case "component":
-    // `emit` reports UF1002 for what a module or a composable gives before this runs (ADR-0069, ADR-0070).
+    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
     case "argument":

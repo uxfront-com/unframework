@@ -16,6 +16,7 @@ import {
   jsxDynamic,
   jsxElement,
   jsxExpression,
+  styleJsxAttribute,
   jsxNode,
   keyImports,
   keyOwner,
@@ -27,7 +28,6 @@ import {
   sourceNames,
   spreadRead,
   staticJsxAttribute,
-  styleJsxAttribute,
   ternaryChain,
 } from "@unframework/codegen";
 import type { EmitContext, JsxContext, JsxDialect, OutputFile, Target } from "@unframework/codegen";
