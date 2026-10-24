@@ -111,11 +111,12 @@ class Resolution {
   readonly #dependencies = new Set<string>();
   readonly #unresolved: UnresolvedType[] = [];
   /**
-   * The node each `unresolved` entry belongs to: its opaque node, or the object that lost the
-   * construct. The shape keeps an entry only when its node is reachable from the root, so an
-   * override that discards a base's member discards what was unresolved in it.
+   * The nodes that carry each `unresolved` entry: the opaque node it describes, the object that
+   * lost the construct, and every object that took that object's members (#merge). The shape
+   * keeps an entry while one of its carriers is reachable from the root, so an override that
+   * discards a base's member discards what was unresolved in it, and nothing else.
    */
-  readonly #owners: number[] = [];
+  readonly #carriers: number[][] = [];
   /** Objects with a computed key whose name the adapter cannot know. */
   readonly #open = new Set<number>();
   readonly #declarations = new Map<object, number>();
@@ -155,7 +156,9 @@ class Resolution {
       nodes: this.#nodes,
       construction: [...this.#construction],
       dependencies: [...this.#dependencies].toSorted(),
-      unresolved: this.#unresolved.filter((_, index) => reachable.has(this.#owners[index]!)),
+      unresolved: this.#unresolved.filter((_, index) =>
+        this.#carriers[index]!.some((carrier) => reachable.has(carrier)),
+      ),
     };
   }
 
@@ -183,6 +186,10 @@ class Resolution {
     const open = this.#open.has(id);
     for (const part of merge.parts) {
       if (this.#merged.get(part.id) !== "done" && this.#merges.has(part.id)) continue;
+      // What the part lost, the object that takes its members loses too.
+      for (const carriers of this.#carriers) {
+        if (carriers.includes(part.id) && !carriers.includes(id)) carriers.push(id);
+      }
       for (const member of (this.#nodes[part.id] as ObjectNode).members) {
         const index = members.findIndex((other) => other.name === member.name);
         const first = members[index];
@@ -209,39 +216,43 @@ class Resolution {
   }
 
   /**
-   * Whether two nodes are surely the same type. Pairs under comparison are assumed equal, so a
-   * recursive type compares in one pass, and a shared one once; a comparison that fails takes
-   * back what it assumed. Two declared objects are the same only as one declaration, and two
-   * opaque nodes only as one node: anything uncertain is not the same.
+   * Whether two nodes are surely the same type. Each pair is compared once, so a shared type
+   * costs one comparison. A pair met again while it is being compared, in a recursive type, is
+   * not surely the same, and neither are two declared objects but one declaration, two opaque
+   * nodes but one node, or an object whose members are not all known yet.
    */
   #same(a: number, b: number): boolean {
-    const assumed = new Set<string>();
-    const trail: string[] = [];
+    const known = new Map<string, boolean>();
     const same = (x: number, y: number): boolean => {
       if (x === y) return true;
       const key = `${x}:${y}`;
-      if (assumed.has(key)) return true;
-      const mark = trail.length;
-      assumed.add(key);
-      trail.push(key);
+      const cached = known.get(key);
+      if (cached !== undefined) return cached;
+      known.set(key, false);
       const result = compare(x, y);
-      if (!result) for (const undone of trail.splice(mark)) assumed.delete(undone);
+      known.set(key, result);
       return result;
+    };
+    // Primitives and literals are interned, and opaque nodes and type parameters compare by
+    // identity, so for them another node is another type.
+    const scalar = (id: number) => {
+      const { kind } = this.#nodes[id]!;
+      return (
+        kind === "primitive" || kind === "literal" || kind === "opaque" || kind === "typeParameter"
+      );
+    };
+    const covered = (from: readonly number[], to: readonly number[]) => {
+      const ids = new Set(to);
+      return from.every(
+        (t) => ids.has(t) || (!scalar(t) && to.some((u) => !scalar(u) && same(t, u))),
+      );
     };
     const compare = (x: number, y: number): boolean => {
       const p = this.#nodes[x]!;
       const q = this.#nodes[y]!;
       switch (p.kind) {
-        case "primitive":
-          return q.kind === "primitive" && p.name === q.name;
-        case "literal":
-          return q.kind === "literal" && p.value === q.value;
         case "union":
-          return (
-            q.kind === "union" &&
-            p.types.every((t) => q.types.some((u) => same(t, u))) &&
-            q.types.every((u) => p.types.some((t) => same(t, u)))
-          );
+          return q.kind === "union" && covered(p.types, q.types) && covered(q.types, p.types);
         case "array":
           return q.kind === "array" && p.readonly === q.readonly && same(p.element, q.element);
         case "tuple":
@@ -264,10 +275,13 @@ class Resolution {
             }) &&
             same(p.returns, q.returns)
           );
-        case "object": {
-          if (q.kind !== "object" || p.declaration || q.declaration) return false;
-          if (!this.#settled(x) || !this.#settled(y)) return false;
+        case "object":
           return (
+            q.kind === "object" &&
+            !p.declaration &&
+            !q.declaration &&
+            this.#settled(x) &&
+            this.#settled(y) &&
             p.members.length === q.members.length &&
             p.members.every((m) => {
               const n = q.members.find((other) => other.name === m.name);
@@ -279,7 +293,6 @@ class Resolution {
               );
             })
           );
-        }
         default:
           return false;
       }
@@ -287,11 +300,9 @@ class Resolution {
     return same(a, b);
   }
 
-  /** Whether an object holds all its members, merging it first if it can be. */
+  /** Whether an object holds all its members: merged, if it merges, and with no unknown key. */
   #settled(id: number): boolean {
-    if (!this.#merges.has(id)) return !this.#open.has(id);
-    if (this.#merged.get(id) !== "merging") this.#merge(id);
-    return this.#merged.get(id) === "done" && !this.#open.has(id);
+    return (!this.#merges.has(id) || this.#merged.get(id) === "done") && !this.#open.has(id);
   }
 
   /** A member's type kept as written, opaque, with an entry at that text's span. */
@@ -305,11 +316,11 @@ class Resolution {
       span,
     });
     const known = this.#unresolved.some(
-      (entry, index) => this.#owners[index] === id && entry.reason === reason,
+      (entry, index) => this.#carriers[index]!.includes(id) && entry.reason === reason,
     );
     if (!known) {
       this.#unresolved.push({ file: member.file, span, reason });
-      this.#owners.push(id);
+      this.#carriers.push([id]);
     }
     return id;
   }
@@ -437,8 +448,10 @@ class Resolution {
         // An unresolved part is reported once, where it failed.
         this.#report("unsupported", scope.module, part, id);
       } else {
-        // Its entry belongs to the object that lost it.
-        for (let index = before; index < this.#owners.length; index++) this.#owners[index] = id;
+        // What was unresolved in it, the object that lost it carries too.
+        for (let index = before; index < this.#carriers.length; index++) {
+          if (!this.#carriers[index]!.includes(id)) this.#carriers[index]!.push(id);
+        }
       }
     }
     this.#merges.set(id, { kind: "intersection", parts });
@@ -497,7 +510,6 @@ class Resolution {
     params.forEach((param, index) => {
       const rest = param.type === "RestElement";
       const pattern = rest ? param.argument : param;
-      if (pattern.type === "Identifier" && pattern.name === "this") return;
       const annotation = param.type === "TSParameterProperty" ? null : param.typeAnnotation;
       parameters.push({
         name: pattern.type === "Identifier" ? pattern.name : `arg${index}`,
@@ -743,7 +755,9 @@ class Resolution {
     if (this.#unresolved.length === before && !this.missing.size) {
       this.#report("unsupported", scope.module, at, owner);
     }
-    for (let index = before; index < this.#owners.length; index++) this.#owners[index] = owner;
+    for (let index = before; index < this.#carriers.length; index++) {
+      if (!this.#carriers[index]!.includes(owner)) this.#carriers[index]!.push(owner);
+    }
     return undefined;
   }
 
@@ -876,7 +890,7 @@ class Resolution {
   ): number {
     const id = this.#opaque(module, at);
     this.#unresolved.push({ file: module.file, span: { start: at.start, end: at.end }, reason });
-    this.#owners.push(owner ?? id);
+    this.#carriers.push(owner === undefined ? [id] : [id, owner]);
     return id;
   }
 

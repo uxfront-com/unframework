@@ -217,6 +217,16 @@ const CONTRACT_CASES: readonly ContractCase[] = [
     unresolved: [{ file: "Card.uf.tsx", text: "f(a: string): void;", reason: "unsupported" }],
   },
   {
+    name: "an index signature in an intersection's part, unresolved",
+    project: "local",
+    file: "Card.uf.tsx",
+    where: "IndexedPart(props: Indexed)",
+    type: "Indexed",
+    expected: "{ a: number }",
+    dependencies: [],
+    unresolved: [{ file: "Card.uf.tsx", text: "[key: string]: number", reason: "unsupported" }],
+  },
+  {
     name: "an imported interface with an imported extends chain",
     project: "imports",
     file: "Button.uf.tsx",

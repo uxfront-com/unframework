@@ -420,6 +420,219 @@ describe("createSyntacticOracle", () => {
     expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
   });
 
+  it.each([
+    ["an index signature in a part", "type P = { [key: string]: number } & { a: number };", "P"],
+    [
+      "an index signature in a base",
+      "interface B { [k: string]: unknown; a: 1 }\ninterface P extends B { b: 1 }",
+      "P",
+    ],
+    [
+      "a call signature in a base",
+      "interface B { (): void; a: 1 }\ninterface P extends B { b: 1 }",
+      "P",
+    ],
+    [
+      "a computed key of unknown name in a base",
+      'const k = "z";\ninterface B { [k]: 1 }\ninterface P extends B { b: 1 }',
+      "P",
+    ],
+    [
+      "a generic base of a base",
+      "interface G<T> { g: T }\ninterface B extends G<string> { a: 1 }\ninterface P extends B { b: 1 }",
+      "P",
+    ],
+    [
+      "an unresolved part of a base",
+      "interface Q { a: 1 }\ntype B = Partial<Q> & { b: 1 };\ninterface P extends B { c: 1 }",
+      "P",
+    ],
+    [
+      "a qualified base of a base",
+      "interface B extends NS.A { a: 1 }\ninterface P extends B { b: 1 }",
+      "P",
+    ],
+    [
+      "a base of a base that is not an object",
+      "type S = string;\ninterface B extends S { a: 1 }\ninterface P extends B { b: 1 }",
+      "P",
+    ],
+    [
+      "a circular chain of three",
+      "interface A extends C { a: 1 }\ninterface B extends A { b: 1 }\ninterface C extends B { c: 1 }",
+      "A",
+    ],
+  ])("keeps what was lost to %s, so printType rejects", async (_, declarations, type) => {
+    const source = `${declarations}\nfunction C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const query = at("C.uf.tsx", source, "props: ", type);
+    expect((await oracle.resolveShape(query)).unresolved).not.toEqual([]);
+    await expect(oracle.printType(query)).rejects.toThrow("it has unresolved parts.");
+  });
+
+  it("keeps an entry while the opaque node it describes is reachable by another path", async () => {
+    const source = [
+      "interface X { x: 1 }",
+      "type Foo = { a: keyof X } | string;",
+      "interface B { m: Foo & { z: 1 } }",
+      "interface D extends B { m: never }",
+      "interface P { f: D; g: Foo }",
+      "function C(props: P) {}",
+    ].join("\n");
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const query = at("C.uf.tsx", source, "props: ", "P");
+    const shape = await oracle.resolveShape(query);
+    expect(shape.unresolved).toEqual([
+      {
+        file: "C.uf.tsx",
+        span: at("C.uf.tsx", source, "a: ", "keyof X").span,
+        reason: "unsupported",
+      },
+    ]);
+    await expect(oracle.printType(query)).rejects.toThrow("it has unresolved parts.");
+  });
+
+  it.each([
+    [
+      "after the member that holds it",
+      "interface P { v: { k: 1 } & P; w: string }\ninterface P { v: { k: 1 } & P }",
+    ],
+    [
+      "before the member that holds it",
+      "interface P { w: string; v: { k: 1 } & P }\ninterface P { v: { k: 1 } & P }",
+    ],
+  ])(
+    "is not sure of a merged interface's member whose intersection is not merged yet, %s",
+    async (_, declarations) => {
+      const source = `${declarations}\nfunction C(props: P) {}`;
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const query = at("C.uf.tsx", source, "props: ", "P");
+      const shape = await oracle.resolveShape(query);
+      expect(printShape(shape, { canonical: true })).toBe("{ v: (unresolved); w: string }");
+      expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+    },
+  );
+
+  it.each([
+    ["first", "interface P { v: {} & {} }\ninterface P { v: {} }"],
+    ["second", "interface P { v: {} }\ninterface P { v: {} & {} }"],
+  ])("is not sure of an intersection not merged yet, written %s", async (_, declarations) => {
+    const source = `${declarations}\nfunction C(props: P) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "P"));
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+  });
+
+  describe("compares deep shared types once per pair", () => {
+    // Without a cache of the pairs compared, each of these takes 2^30 steps.
+    const chain = (name: string, leaf: string, form: (inner: string) => string) =>
+      [`type ${name}0 = ${leaf};`]
+        .concat(Array.from({ length: 30 }, (_, i) => `type ${name}${i + 1} = ${form(name + i)};`))
+        .join("\n");
+    const objects = (inner: string) => `{ a: ${inner} }[] | { a: ${inner} }[]`;
+    it.each([
+      ["arrays of objects, equal", chain("T", "1", objects), chain("U", "1", objects), []],
+      [
+        "arrays of objects, different at the leaves",
+        chain("T", "1", objects),
+        chain("U", "2", objects),
+        ["conflict"],
+      ],
+      [
+        "tuples in another order",
+        chain("T", "1", (inner) => `[{ a: ${inner} }, 1] | [{ a: ${inner} }, 2]`),
+        chain("U", "1", (inner) => `[{ a: ${inner} }, 2] | [{ a: ${inner} }, 1]`),
+        [],
+      ],
+    ])("%s", { timeout: 2000 }, async (_, left, right, reasons) => {
+      const type = "{ v: T30 } & { v: U30 }";
+      const source = `${left}\n${right}\nfunction C(props: ${type}) {}`;
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+      expect(shape.unresolved.map((entry) => entry.reason)).toEqual(reasons);
+    });
+  });
+
+  it("is not sure of two recursive types with no name, and stops", async () => {
+    const source = [
+      "interface R1 { b?: R1 & { x: 1 } }",
+      "interface R2 { b?: R2 & { x: 1 } }",
+      "function C(props: { v: R1 & { x: 1 } } & { v: R2 & { x: 1 } }) {}",
+    ].join("\n");
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const type = "{ v: R1 & { x: 1 } } & { v: R2 & { x: 1 } }";
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+  });
+
+  it.each([
+    ["one more member", "{ a: 1 }", "{ a: 1; b: 1 }"],
+    ["an optional member", "{ a?: 1 }", "{ a: 1 }"],
+    ["a readonly member", "{ readonly a: 1 }", "{ a: 1 }"],
+    ["a member of another name", "{ a: 1 }", "{ b: 1 }"],
+    ["a readonly array", "{ a: { x: 1 }[] }", "{ a: readonly { x: 1 }[] }"],
+    ["a readonly tuple", "{ a: [{ x: 1 }] }", "{ a: readonly [{ x: 1 }] }"],
+    ["one more element", "{ a: [{ x: 1 }] }", "{ a: [{ x: 1 }, { x: 1 }] }"],
+    ["an optional element", "{ a: [{ x: 1 }?] }", "{ a: [{ x: 1 }] }"],
+    ["a rest element", "{ a: [...{ x: 1 }[]] }", "{ a: [{ x: 1 }[]] }"],
+    ["one more parameter", "{ a: (p: { x: 1 }) => void }", "{ a: (p: { x: 1 }, q: 1) => void }"],
+    ["an optional parameter", "{ a: (p?: { x: 1 }) => void }", "{ a: (p: { x: 1 }) => void }"],
+    ["a rest parameter", "{ a: (...p: { x: 1 }[]) => void }", "{ a: (p: { x: 1 }[]) => void }"],
+    ["another return type", "{ a: () => { x: 1 } }", "{ a: () => { x: 2 } }"],
+    ["a `this` parameter", "{ a: (this: { x: 1 }) => void }", "{ a: () => void }"],
+    ["a union with another member", '{ a: { x: 1 } | "y" }', '{ a: { x: 1 } | "z" }'],
+  ])("reports a member whose types differ by %s", async (_, left, right) => {
+    const type = `{ v: ${left} } & { v: ${right} }`;
+    const source = `function C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+  });
+
+  it.each([
+    ["objects", "{ a: { x: 1 } }"],
+    ["arrays and readonly arrays", "{ a: { x: 1 }[]; b: readonly { x: 1 }[] }"],
+    ["tuples", "{ a: [{ x: 1 }, ...{ y: 1 }[]]; b: readonly [{ x: 1 }?] }"],
+    ["functions", "{ a: (p: { x: 1 }, q?: 1, ...r: { y: 1 }[]) => { z: 1 } }"],
+    ["unions in another order", '{ a: { x: 1 } | "y" | { z: 1 } }'],
+  ])("keeps a member two parts write with the same %s", async (_, written) => {
+    const reordered = written.replace('{ x: 1 } | "y" | { z: 1 }', '{ z: 1 } | { x: 1 } | "y"');
+    const type = `{ v: ${written} } & { v: ${reordered} }`;
+    const source = `function C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(shape.unresolved).toEqual([]);
+  });
+
+  it.each([
+    ["a union", "{ a: keyof X | 1 }"],
+    ["an array", "{ a: (keyof X)[] }"],
+    ["a tuple", "{ a: [keyof X] }"],
+    ["a parameter", "{ a: (p: keyof X) => void }"],
+    ["a return type", "{ a: () => keyof X }"],
+    ["a type parameter's constraint", "{ a: T }"],
+  ])("keeps what is unresolved in %s", async (_, type) => {
+    const source = `interface X { x: 1 }\nfunction C<T extends keyof X>(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+  });
+
+  it("checks a later member of a name again after the same type was written twice", async () => {
+    const source = "interface P { a: 1; a: 1; a: string }\nfunction C(props: P) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "P"));
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+  });
+
+  it("keeps an accessor opaque over a later property of its name, reported once", async () => {
+    const source = 'interface P { get a(): "x"; a: string }\nfunction C(props: P) {}';
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "P"));
+    expect(printShape(shape, { canonical: true })).toBe("{ a: (unresolved) }");
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+  });
+
   it("reads a computed key that is a literal as the member's name", async () => {
     const source =
       'interface A { a: string }\ninterface B extends A { ["a"]: "x" }\nfunction C(props: B) {}';

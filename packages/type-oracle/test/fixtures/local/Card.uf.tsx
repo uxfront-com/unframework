@@ -124,3 +124,9 @@ export function LateBase(props: Late) {
 export function Overloads(props: Overloaded) {
   return props;
 }
+
+type Indexed = { [key: string]: number } & { a: number };
+
+export function IndexedPart(props: Indexed) {
+  return props;
+}
