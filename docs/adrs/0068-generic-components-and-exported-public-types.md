@@ -14,7 +14,8 @@ its own generic form, and not every one can carry `T` everywhere a consumer need
 - Angular's slot directives can't infer `T` for a scoped slot's context, since ngtsc infers a
   component's type parameter from its inputs alone.
 - Qwik's `component$` returns a non-generic component, so a generic signature needs a cast.
-- Whether `astro check` types `interface Props<T>` for a consumer is not yet known.
+- Whether `astro check` types `interface Props<T>` for a consumer was not known until M5's Astro
+  spike, which showed that it does (Evidence).
 
 Consumers also need the types a component's module exports. Every target already exports a type
 that a component uses (`cases/props/null-and-absent`), as `TypeDeclaration.exported` records. Two
@@ -34,20 +35,21 @@ empty. Shapes keep `T` as a type-parameter node (ADR-0067).
 
 **Per target:**
 
-| Target       | `function List<T>(props: ListProps<T>)`                                    | `generic-components`                    | `generic-slot-props`       |
-| ------------ | -------------------------------------------------------------------------- | --------------------------------------- | -------------------------- |
-| React, Solid | a generic function component                                               | native                                  | native                     |
-| Vue          | `<script setup lang="ts" generic="T">`                                     | native                                  | native                     |
-| Svelte       | `<script lang="ts" generics="T">`, with `Snippet<[T]>`                     | native                                  | native                     |
-| Angular      | a generic component class, whose `T` ngtsc infers from the inputs          | native                                  | unsupported (UF4004, info) |
-| Qwik         | `component$`, with Qwik's documented type-only cast to a generic signature | native: the cast is no helper           | native                     |
-| Astro        | `interface Props<T>`                                                       | native, if M5's Astro spike confirms it | native                     |
+| Target       | `function List<T>(props: ListProps<T>)`                                    | `generic-components`                  | `generic-slot-props`       |
+| ------------ | -------------------------------------------------------------------------- | ------------------------------------- | -------------------------- |
+| React, Solid | a generic function component                                               | native                                | native                     |
+| Vue          | `<script setup lang="ts" generic="T">`                                     | native                                | native                     |
+| Svelte       | `<script lang="ts" generics="T">`, with `Snippet<[T]>`                     | native                                | native                     |
+| Angular      | a generic component class, whose `T` ngtsc infers from the inputs          | native                                | unsupported (UF4004, info) |
+| Qwik         | `component$`, with Qwik's documented type-only cast to a generic signature | native: the cast is no helper         | native                     |
+| Astro        | `interface Props<T>`                                                       | native, as M5's Astro spike confirmed | native                     |
 
 - **Angular's gap.** A scoped slot's context takes `T`'s constraint, because slot directives can't
   infer `T`. UF4004 (`generic-slot-props`) says so at the slot.
-- **Astro's fallback.** If the spike fails, Astro's types lane sets `generic-components` to
-  unsupported with UF4006 (`generic-props`, info), and `Props` takes `T`'s constraint. Nothing else
-  changes a cell.
+- **Astro needs no fallback.** `astro check` infers `T` from a consumer's props and checks the
+  rest against it, through a scoped slot's render prop and through an `extends` of an imported
+  generic interface (Evidence). So `generic-components` is native on Astro, and UF4006, kept for a
+  fallback that set it to unsupported with `Props` at `T`'s constraint, is never allocated.
 - **What requires them** (`requiredCapabilities`): `typeParameters` on a component requires
   `generic-components`, and a slot prop whose type names a type parameter requires
   `generic-slot-props`, read through `references` on the slot's props.
@@ -99,12 +101,6 @@ gains the `type` kind and the generic-slot-props gap.
 - Two new capabilities and their rows on the targets page, set once, in the change that adds M5's
   IR and capabilities.
 
-**Open:**
-
-- Whether generic `Props<T>` in an Astro component type-checks for a consumer under `astro check`.
-  M5's Astro spike settles it and adds its section here. If it fails, this record names UF4006's
-  fallback as built.
-
 ## Alternatives considered
 
 - **Erase `T` to its constraint on every target.** It would make every target match Angular's gap,
@@ -115,3 +111,27 @@ gains the `type` kind and the generic-slot-props gap.
   code to the output. Qwik's documented cast is type-only and adds none.
 - **Print exported types instead of re-exporting them.** Printed types drift from the author's
   names and docs (ADR-0067).
+
+## Evidence
+
+M5's Astro spike ran `astro check --noSync --minimumFailingSeverity warning` (Astro 7.3.5,
+`@astrojs/check` 0.9.10, TypeScript 6.0.2) from the `node_modules` of `tests/toolchains/astro`,
+over a scratch project whose `tsconfig.json` repeats that toolchain's: Astro's strict preset and
+the shared flags. The project was not committed.
+
+- **The components.** `List.astro` declares
+  `interface Props<T> { items: T[]; selected?: T; default?: (props: { item: T }) => unknown; class?: string; style?: … }`,
+  the shape of a scoped slot on Astro today. `Constrained.astro` declares
+  `interface Props<T extends { id: string }>`. `ImportedList.astro` declares
+  `interface Props<T> extends ListProps<T>`, with `ListProps<T>` imported from `./types.ts`.
+- **Correct consumers check clean:**
+  `<List items={[{ id: "a", count: 1 }]} selected={{ id: "a", count: 1 }} default={({ item }) => <b>{item.count}</b>} />`,
+  the same through `Constrained`, and `<ImportedList items={["a"]} default={({ item }) => <b>{item.toUpperCase()}</b>} />`.
+- **Misuses fail at the consumer's line**, five errors in eight files:
+  - `<List items={[1, 2]} selected="x" />`: `ts(2322): Type 'string' is not assignable to type 'number'.`
+  - `default={({ item }) => <b>{item.cuont}</b>}`:
+    `ts(2551): Property 'cuont' does not exist on type '{ id: string; count: number; }'. Did you mean 'count'?`
+  - `<Constrained items={[1, 2]} />`: `ts(2322): Type 'number' is not assignable to type '{ id: string; }'.`,
+    once for each item.
+  - `<ImportedList items={[1]} default={({ item }) => <b>{item.toUpperCase()}</b>} />`:
+    `ts(2339): Property 'toUpperCase' does not exist on type 'number'.`
