@@ -1,4 +1,4 @@
-import { realpathSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { dirname, relative } from "node:path";
 
 import type { Program } from "oxc-parser";
@@ -20,6 +20,18 @@ export interface SyntacticOracleOptions {
    * that does not exist.
    */
   readFile(path: string): Promise<string | undefined>;
+}
+
+/** The `version` in a package directory's `package.json`, or `""` when it has none. */
+function versionOf(directory: string): string {
+  try {
+    const { version } = JSON.parse(readFileSync(`${directory}/package.json`, "utf8")) as {
+      version?: unknown;
+    };
+    return typeof version === "string" ? version : "";
+  } catch {
+    return "";
+  }
 }
 
 /** A TypeScript file, which a package's types resolve to; anything else has no types. */
@@ -79,12 +91,17 @@ export function createSyntacticOracle(options: SyntacticOracleOptions): TypeOrac
       if (!path.startsWith("..")) file = `${PACKAGE}${name}/${path}`;
     } else if (found) {
       // The copy of a package the root resolves owns its name, whichever query reaches it first;
-      // any other copy (a nested or another version) is not surely the one the name means.
+      // any other copy of it is not surely the one the name means. A package the root resolves
+      // no copy of, such as a dependency's own dependency under pnpm, is named by its version
+      // too, as TypeScript identifies a package, so two versions keep two names in any order.
       const name = packageName(specifier);
       const owner = locate(`${root}/package.json`, specifier);
-      if (owner?.directory === found.directory) {
-        packages.set(name, found.directory);
-        file = `${PACKAGE}${name}/${relative(found.directory, found.path)}`;
+      const token = owner
+        ? owner.directory === found.directory && name
+        : `${name}@${versionOf(found.directory)}`;
+      if (token) {
+        packages.set(token, found.directory);
+        file = `${PACKAGE}${token}/${relative(found.directory, found.path)}`;
       }
     }
     if (file) paths.set(file, found!.path);
@@ -149,11 +166,14 @@ export function createSyntacticOracle(options: SyntacticOracleOptions): TypeOrac
         loaded.delete(file);
         reading.delete(file);
         if (!file.startsWith(PACKAGE)) continue;
-        // A package installed, removed or changed: every file of it is read and resolved again.
+        // A package installed, removed or changed: every file of every copy of it is read and
+        // resolved again.
         const name = file.slice(PACKAGE.length);
-        packages.delete(name);
+        for (const token of packages.keys()) {
+          if (token === name || token.startsWith(`${name}@`)) packages.delete(token);
+        }
         for (const each of [...loaded.keys(), ...reading.keys()]) {
-          if (each.startsWith(`${file}/`)) {
+          if (each.startsWith(`${file}/`) || each.startsWith(`${file}@`)) {
             loaded.delete(each);
             reading.delete(each);
             changed.add(each);

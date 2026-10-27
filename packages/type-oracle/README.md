@@ -42,10 +42,13 @@ The TypeOracle interface and the syntactic resolver (plan §5.5).
     Its files are named `pkg:<name>/<path in the package>`, by the name it is imported under
     (`pkg:x` for types from `@types/x`), never an absolute path, and are read through `readFile` by
     the path oxc-resolver found. The copy of a package that the root resolves owns its name, so
-    every query gives the same answer. These are `missing-module`: a package that is not
-    installed, a subpath it does not export, any other copy of it (nested in a dependency, or
-    another version), a relative import that leaves the package, and a subpath import (`#types`),
-    whose `package.json` `imports` the adapter does not read.
+    every query gives the same answer. A package the root resolves no copy of, such as a
+    dependency's own dependency under pnpm's isolated layout, is named by its `package.json`
+    version too, `pkg:<name>@<version>/<path>`, as TypeScript identifies a package: two versions
+    keep two names, and `dependencies` still lists it as `pkg:<name>`. These are
+    `missing-module`: a package that is not installed, a subpath it does not export, a copy other
+    than the root's when the root resolves one, a relative import that leaves the package, and a
+    subpath import (`#types`), whose `package.json` `imports` the adapter does not read.
     Everything else comes back opaque and `unresolved`, never wrong: classes and enums,
     conditional, mapped and indexed-access types, `keyof`, `typeof`, template literals with holes,
     index and call signatures, computed keys that are not literals, generic and overloaded methods,
@@ -60,7 +63,8 @@ The TypeOracle interface and the syntactic resolver (plan §5.5).
   It keeps each file parsed and each shape until `update` names a file the shape was read from: a
   file it read, a candidate of a relative specifier that did not exist, or a package as
   `pkg:<name>`. So an edit drops the shapes of the file and of every module that reached a type
-  through it, and a package installed, removed or changed is resolved and read again. A
+  through it, and a package installed, removed or changed is resolved and read again, every
+  version of it. A
   workspace package linked under `node_modules` is a package too, so an edit to its sources
   takes its `pkg:<name>`, not their paths.
 

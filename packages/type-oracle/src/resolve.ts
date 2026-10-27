@@ -7,7 +7,7 @@
 
 import type * as AST from "oxc-parser";
 
-import { PACKAGE, candidates, isRelative, packageName } from "./modules.ts";
+import { PACKAGE, candidates, isRelative, packageName, packageOf } from "./modules.ts";
 import type { Declaration, SourceModule } from "./modules.ts";
 import type {
   DeclarationRef,
@@ -894,7 +894,7 @@ class Resolution {
       }
       if (module) {
         if (file.startsWith(PACKAGE)) {
-          this.#dependencies.add(`${PACKAGE}${packageName(file.slice(PACKAGE.length))}`);
+          this.#dependencies.add(packageOf(file));
         } else if (file !== this.query.file) this.#dependencies.add(file);
         return module;
       }

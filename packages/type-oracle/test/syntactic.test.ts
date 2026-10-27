@@ -1,6 +1,6 @@
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseSync } from "oxc-parser";
@@ -28,6 +28,12 @@ function memory(files: Record<string, string>): { oracle: TypeOracle; reads: str
     },
   });
   return { oracle, reads };
+}
+
+/** Links `path` to `target`, as a package manager installs a package. */
+async function link(target: string, path: string): Promise<void> {
+  await mkdir(dirname(path), { recursive: true });
+  await symlink(target, path);
 }
 
 /** The query for the first `type` written after `after` in `source`. */
@@ -880,6 +886,73 @@ describe("createSyntacticOracle", () => {
       expect(installed.unresolved).toEqual([
         expect.objectContaining({ file: "pkg:late/index.d.ts", reason: "missing-module" }),
       ]);
+    } finally {
+      await rm(project, { recursive: true, force: true });
+    }
+  });
+
+  it("names each version of a package the root does not resolve, under pnpm's layout", async () => {
+    const project = await realpath(await mkdtemp(join(tmpdir(), "type-oracle-")));
+    try {
+      // Only the root's direct dependencies are links in its `node_modules`; their own
+      // dependencies are sibling links inside the store, `.pnpm/<package>@<version>/node_modules`.
+      const store = join(project, "node_modules/.pnpm");
+      const write = async (path: string, text: string) => {
+        await mkdir(dirname(join(store, path)), { recursive: true });
+        await writeFile(join(store, path), text);
+      };
+      for (const [user, version] of [
+        ["ui", "2.0.0"],
+        ["kit", "3.0.0"],
+      ] as const) {
+        const directory = `${user}@1.0.0/node_modules/${user}`;
+        await write(
+          `${directory}/package.json`,
+          `{ "name": "${user}", "version": "1.0.0", "types": "./index.d.ts" }`,
+        );
+        await write(
+          `${directory}/index.d.ts`,
+          `import type { Tone } from "tokens";\nexport interface Props { tone: Tone }`,
+        );
+        await write(
+          `tokens@${version}/node_modules/tokens/package.json`,
+          `{ "name": "tokens", "version": "${version}", "types": "./index.d.ts" }`,
+        );
+        await write(
+          `tokens@${version}/node_modules/tokens/index.d.ts`,
+          `export type Tone = "v${version}";`,
+        );
+        await link(join(store, directory), join(project, "node_modules", user));
+        await link(
+          join(store, `tokens@${version}/node_modules/tokens`),
+          join(store, `${user}@1.0.0/node_modules/tokens`),
+        );
+      }
+      const source =
+        'import type { Props as A } from "ui";\nimport type { Props as B } from "kit";\nfunction C(a: A, b: B) {}';
+      await writeFile(join(project, "C.uf.tsx"), source);
+      const queries = [at("C.uf.tsx", source, "a: ", "A"), at("C.uf.tsx", source, "b: ", "B")];
+      const results = [];
+      let oracle: TypeOracle | undefined;
+      for (const order of [queries, queries.toReversed()]) {
+        oracle = createSyntacticOracle({
+          root: project,
+          readFile: (path) => readFile(path, "utf8").catch(() => undefined),
+        });
+        const shapes = new Map();
+        for (const query of order) shapes.set(query, await oracle.resolveShape(query));
+        results.push(queries.map((query) => shapes.get(query)));
+      }
+      expect(results[0]).toEqual(results[1]);
+      const [a, b] = results[0]!;
+      expect(printShape(a)).toBe('{ tone: "v2.0.0" }');
+      expect(printShape(b)).toBe('{ tone: "v3.0.0" }');
+      expect(a.dependencies).toEqual(["pkg:tokens", "pkg:ui"]);
+      expect(JSON.stringify([a, b])).not.toContain(project);
+      // `pkg:<name>` names every version of it.
+      await write("tokens@2.0.0/node_modules/tokens/index.d.ts", 'export type Tone = "edited";');
+      await oracle!.update({ files: ["pkg:tokens"] });
+      expect(printShape(await oracle!.resolveShape(queries[0]!))).toBe('{ tone: "edited" }');
     } finally {
       await rm(project, { recursive: true, force: true });
     }
