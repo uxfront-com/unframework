@@ -404,8 +404,8 @@ describe("the shape path's checks", () => {
   // A `{}` the user writes is reported beside an imported brand, which hides only what its own
   // intersection leaves.
   it.each([
-    ["interface P { s: Size; c: { e: {}; o: Other } }", ["UF6002 P", "UF6002 {}"]],
-    ["interface P { s: Size; c: Other | {} }", ["UF6002 P", "UF6002 {}"]],
+    ["interface P { s: Size; c: { e: {}; o: Other } }", ["UF6002 {}", "UF6002 P"]],
+    ["interface P { s: Size; c: Other | {} }", ["UF6002 {}", "UF6002 P"]],
     ["interface P { s: Size; c: Empty }", ["UF6002 P", "UF6002 Empty"]],
   ])("reports a written `{}` beside an imported brand: %s", async (props, expected) => {
     const source = [
@@ -419,6 +419,24 @@ describe("the shape path's checks", () => {
       "A.uf.tsx": source,
     });
     expect(problems(source, diagnostics)).toEqual(expected);
+  });
+
+  // A `{}` another file writes in a function's parameter, a type argument or an operand is no
+  // prop's type: the function, the utility or the operator is reported, once.
+  it.each([
+    ["f: (x: {}) => void", "UF1002 R"],
+    ["r: Record<string, {}>", "UF6002 R"],
+    ["k: keyof {}", "UF6002 R"],
+  ])("reports another file's member %s once", async (member, problem) => {
+    const source = [
+      'import type { R } from "./types.ts";',
+      "export function A(props: R) { return <p />; }",
+    ].join("\n");
+    const { diagnostics } = await analyzeWith({
+      "types.ts": `export interface R { ${member} }`,
+      "A.uf.tsx": source,
+    });
+    expect(problems(source, diagnostics)).toEqual([problem]);
   });
 
   it("reports a `{}` another file writes beside an imported brand, at the member that reaches it", async () => {

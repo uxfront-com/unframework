@@ -42,20 +42,21 @@ checked as the declaration its likely fix writes (`analyze.ts`).
   writes, through its aliases, keeps its span and its type's text as written; one another
   declaration writes records it in `Prop.declaredBy`; one another file writes takes the props
   annotation's span and its declaring file's text. Member types keep to what every target's props
-  can declare, read from the shape too, each problem reported once where this module writes it, and
-  a problem in one fails the component without stopping the checks of the others. A prop's kinds are
-  read from the shape (`kindsFromShape`). Problems are UF2001 to UF2003, a function type, or a call
-  or construct signature this module writes, UF1002, and UF6001 (a type that cannot be resolved),
-  UF6002 (a construct the default oracle cannot evaluate, a computed key, or a member type props
-  cannot take), UF6003 (a member's type names one its file does not export), UF6004 (a props type
-  that is not one object type) and UF6005 (a member two declarations type differently, or make
-  optional in one and required in the other: an interface's member over its base's, two bases', or
-  two intersection parts', read from the syntax this module writes through aliases and utility
-  types; one member written once and given twice, as in `Partial<L> & L`, is declared once. A type
-  another file builds is checked by TypeScript in that file, and the oracle reports its
-  intersections' conflicts). Each top-level type declaration is reached by some component's props or
-  setup, which the outputs copy as written, or exported on its own (`typeExports`); an export list
-  may export a local type by its own name.
+  can declare: what this module writes is checked as written, each problem once, at its own span, as
+  ADR-0034 reads it, and what another file writes is checked on the shape and reported at the member
+  that reaches it, or at the props annotation. A problem in one member fails the component without
+  stopping the checks of the others. A prop's kinds are read from the shape (`kindsFromShape`).
+  Problems are UF2001 to UF2003, a function type, or a call or construct signature this module
+  writes, UF1002, and UF6001 (a type that cannot be resolved), UF6002 (a construct the default
+  oracle cannot evaluate, a computed key, or a member type props cannot take), UF6003 (a member's
+  type names one its file does not export), UF6004 (a props type that is not one object type) and
+  UF6005 (a member two declarations type differently, or make optional in one and required in the
+  other: an interface's member over its base's, two bases', or two intersection parts', read from
+  the syntax this module writes through aliases and utility types; one member written once and given
+  twice, as in `Partial<L> & L`, is declared once. A type another file builds is checked by
+  TypeScript in that file, and the oracle reports its intersections' conflicts). Each top-level type
+  declaration is reached by some component's props or setup, which the outputs copy as written, or
+  exported on its own (`typeExports`); an export list may export a local type by its own name.
 - **Types from other modules** (`shapes.ts`, ADR-0067): `import type` (or a `type` specifier) from
   any module but the authoring API and a framework is a `typeImports` entry, which every output
   re-imports by name; `export type { … } from` is a `typeExports` re-export. The analyser is

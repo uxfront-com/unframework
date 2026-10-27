@@ -302,7 +302,7 @@ describe("props types", () => {
     [
       "[key: string]: string",
       "UF6002 [key: string]: string",
-      "`[key: string]: string` needs a type checker",
+      "An index signature needs a type checker",
     ],
     ["a: any", "UF6002 any", "`any` is not a type a prop can take"],
     ["a: unknown", "UF6002 unknown", "`unknown`"],
@@ -311,14 +311,14 @@ describe("props types", () => {
     ["a: symbol", "UF6002 symbol", "`symbol`"],
     ["a: bigint", "UF6002 bigint", "`bigint`"],
     ["a: [string, number]", "UF6002 [string, number]", "A tuple type"],
-    ["a: `x-${string}`", "UF6002 `x-${string}`", "`` `x-${string}` `` needs a type checker"],
+    ["a: `x-${string}`", "UF6002 `x-${string}`", "A template literal type needs a type checker"],
     [
       "a: Record<string, string>",
       "UF6002 Record<string, string>",
       "`Record<string, string>` needs a type checker",
     ],
     ["a: Date", "UF6001 Date", "`Date` is neither declared nor imported by this module"],
-    ["a: keyof X", "UF6002 keyof X", "`keyof X` needs a type checker"],
+    ["a: keyof X", "UF6002 keyof X", "`keyof` needs a type checker"],
   ])("reports the member %s", (member, problem, message) => {
     const source = `interface P { ${member} }\nexport function A(props: P) { return <p />; }`;
     const { diagnostics } = run(source);
@@ -387,7 +387,7 @@ describe("props types", () => {
   it.each([
     [
       'import type { Foo } from "./missing.ts";\ninterface P { a: Foo; c: {} }',
-      ["UF6001 Foo", "UF6002 {}"],
+      ["UF6002 {}", "UF6001 Foo"],
     ],
     [
       "interface X { y: string }\ninterface P { b: keyof X; c: {} }",
@@ -406,6 +406,47 @@ describe("props types", () => {
   ])("reports a written `{}` beside another member's problem: %s", (types, expected) => {
     const source = `${types}\nexport function A(props: P) { return <p />; }`;
     expect(problems(source, run(source).diagnostics)).toEqual(expected);
+  });
+
+  // What this module writes is reported where it is written, as the syntax gives it.
+  it.each([
+    // R1: an alias of `{}`, wherever a member reaches it.
+    ["type E = {};\ninterface P { a: E }", ["UF6002 {}"]],
+    ["type E = {};\ninterface P { a: E | string; b: { c: E }; d: E[] }", ["UF6002 {}"]],
+    ["type F = {};\ntype E = F;\ninterface P { a: E }", ["UF6002 {}"]],
+    ["export type E = {};\ninterface P { a: E }", ["UF6002 {}"]],
+    // R2: a problem an alias writes, once, at the alias.
+    ["type K = object;\ninterface P { m: K; n: K }", ["UF6002 object"]],
+    ["type K = () => void;\ninterface P { m: K }", ["UF1002 () => void"]],
+    ["type K = [string, number];\ninterface P { m: K }", ["UF6002 [string, number]"]],
+    ["type K = string | {};\ninterface P { m: K }", ["UF6002 {}"]],
+    // R3: a `{}` that is no prop's own type.
+    ["interface P { f: (x: {}) => void }", ["UF1002 (x: {}) => void"]],
+    ["interface P { r: Record<string, {}> }", ["UF6002 Record<string, {}>"]],
+    ["interface P { k: keyof {} }", ["UF6002 keyof {}"]],
+    // A utility type is the shape's to resolve: one that leaves no member is `{}`.
+    ['interface X { y: string }\ninterface P { m: Omit<X, "y"> }', ['UF6002 Omit<X, "y">']],
+    [
+      'interface X { y: string }\ninterface P { m: { inner: Omit<X, "y"> } }',
+      ['UF6002 Omit<X, "y">'],
+    ],
+    // R4: an object type with signatures and no properties.
+    ["interface P { m: { [k: string]: string } }", ["UF6002 [k: string]: string"]],
+    ["interface P { m: { (): void } }", ["UF1002 (): void"]],
+    // The getter: a function, as on the base.
+    ["interface P { get m(): string }", ["UF1002 get m(): string"]],
+  ])("reports what %s writes where it is written", (types, expected) => {
+    const source = `${types}\nexport function A(props: P) { return <p />; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual(expected);
+  });
+
+  // R5: a conflict in a member's intersection names the member, where it is written.
+  it("reports a conflict in a member's intersection where it is written", () => {
+    const source =
+      "interface P { m: { a: string } & { a: number } }\nexport function A(props: P) { return <p />; }";
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF6005 { a: string } & { a: number }"]);
+    expect(diagnostics[0]!.message).toContain("`a` is declared with different types");
   });
 
   it("reports a problem of a type several members reach once, where it is written", () => {
