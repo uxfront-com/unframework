@@ -134,6 +134,22 @@ function exportName(name: ModuleExportName): string {
   return name.type === "Literal" ? name.value : name.name;
 }
 
+/**
+ * The prefix of a package's file, `pkg:<name>/<path in the package>`, and of a package itself in
+ * `dependencies`, `pkg:<name>`: never an absolute path (P8).
+ */
+export const PACKAGE = "pkg:";
+
+/**
+ * The package a package's file belongs to, `pkg:<name>`, without the version that names a copy
+ * the root does not resolve (`pkg:@scope/name@1.0.0/index.d.ts`).
+ */
+export function packageOf(file: string): string {
+  const token = packageName(file.slice(PACKAGE.length));
+  const at = token.lastIndexOf("@");
+  return `${PACKAGE}${at > 0 ? token.slice(0, at) : token}`;
+}
+
 /** Whether a specifier names a file relative to its importer. */
 export function isRelative(specifier: string): boolean {
   return (
