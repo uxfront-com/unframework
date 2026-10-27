@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { format, stripVTControlCharacters } from "node:util";
 
 import type { FrameworkCompileResult, ToolchainFile, ToolchainMessage } from "@unframework/codegen";
-import { assertFilesToCompile } from "@unframework/codegen/toolchain-node";
+import { assertFilesToCompile, compileScriptModules } from "@unframework/codegen/toolchain-node";
 import type {
   BindingMetadata,
   CompilerError,
@@ -87,7 +87,11 @@ function privateCompilerSfc(require: NodeJS.Require, path: string): CompilerSfc 
   }
 }
 
-/** Compiles each Vue file with Vue's own compiler, each with a compiler of its own. */
+/**
+ * Compiles each Vue file with Vue's own compiler, each with a compiler of its own. A `.ts`
+ * module beside them, a shared module (ADR-0070) or a composable's (ADR-0069), is no SFC: Vite's
+ * TypeScript transform checks it (`compileScriptModules`).
+ */
 export async function frameworkCompile(
   files: readonly ToolchainFile[],
 ): Promise<Map<string, FrameworkCompileResult>> {
@@ -101,10 +105,32 @@ export async function frameworkCompile(
     );
   }
   const loaded = await loadCompilers();
-  return new Map(files.map((file) => [file.path, compileSfc(loaded, file)]));
+  const tree = outputTree(files);
+  const results = await compileScriptModules(files.filter((file) => file.path.endsWith(".ts")));
+  for (const file of files) {
+    if (!file.path.endsWith(".ts")) results.set(file.path, compileSfc(loaded, file, tree));
+  }
+  return results;
 }
 
-function compileSfc(vue: VueCompilers, file: ToolchainFile): FrameworkCompileResult {
+/** The file system compileScript reads. */
+type ScriptFs = NonNullable<CompilerSfcModule.SFCScriptCompileOptions["fs"]>;
+
+/**
+ * The files compileScript may read to resolve a type that `defineProps<X>()` imports, as
+ * @vitejs/plugin-vue gives it the project's (ADR-0067): the output tree it was given, a `.ts`
+ * module or another `.vue` file. Without one it cannot resolve an imported type at all.
+ */
+function outputTree(files: readonly ToolchainFile[]): ScriptFs {
+  const contents = new Map(files.map((file) => [file.path, file.contents]));
+  return {
+    fileExists: (path) => contents.has(path),
+    readFile: (path) => contents.get(path),
+    realpath: (path) => path,
+  };
+}
+
+function compileSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): FrameworkCompileResult {
   const sfc = vue.sfc();
   const source = file.contents;
   const errors: ToolchainMessage[] = [];
@@ -134,6 +160,7 @@ function compileSfc(vue: VueCompilers, file: ToolchainFile): FrameworkCompileRes
           isProd: false,
           inlineTemplate: false,
           sourceMap: false,
+          fs,
         }),
       ).bindings;
     } catch (error) {

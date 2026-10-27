@@ -33,9 +33,17 @@ export const toolchain: Toolchain = {
   frameworkCompile: astroFrameworkCompile,
   typecheck: astroTypecheck,
   // L5 (ADR-0042): oxlint's shared baseline over the frontmatter, ESLint over the whole file.
+  // ESLint reads only the `.astro` files: a `.ts` module beside them, a shared module
+  // (ADR-0070) or a composable (ADR-0069), is oxlint's alone, as on every target.
   lint: async (files, context) =>
     mergeLintResults(
-      await Promise.all([lintWithOxlint(files, context), lintWithEslint(files, context)]),
+      await Promise.all([
+        lintWithOxlint(files, context),
+        lintWithEslint(
+          files.filter((file) => file.endsWith(".astro")),
+          context,
+        ),
+      ]),
     ),
 };
 

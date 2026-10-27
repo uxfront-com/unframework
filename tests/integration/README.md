@@ -47,6 +47,27 @@ emits is a golden file under `__output__/<target>/` like any other. The toolchai
 emitted `.css` files out of what L3, L4 and L5 check; the compile project parses each with
 lightningcss instead (ADR-0063).
 
+### Composables and shared modules
+
+A case may hold `.uf.ts` composables and plain `.ts` modules beside its `.uf.tsx` inputs (ADR-0069,
+ADR-0070). It still needs a `.uf.tsx`: the main input is a component.
+
+- A `.uf.ts` is a source like a `.uf.tsx`: it compiles to every target, its IR snapshot is
+  `__output__/ir.<Stem>.json` (`ir.useToggle.json`), and its outputs join `__output__/<target>/`
+  (`useToggle.ts`, Svelte's `useToggle.svelte.ts`, Angular's `use-toggle.ts`). A `.uf.ts` and a
+  `.uf.tsx` of one stem would share a snapshot, so the loader refuses them.
+- A `.ts` module that is not the spec is no compile's input. The compile of each source that
+  imports it copies it into `__output__/<target>/` at its own file name, and L2 fails a copy that
+  is not the module byte for byte.
+- The toolchain projects hand every emitted file but a sheet to L3, L4 and L5, the `.ts` and
+  `.svelte.ts` modules included. On Vue, Svelte and Astro, L3 runs Vite's TypeScript transform
+  over a `.ts` module, where no framework compiler reads one, and Svelte's `compileModule` after
+  it over a `.svelte.ts`; ESLint reads only the template files and the `.svelte.ts` modules. Vue's
+  L3 gives `compileScript` the output tree, so `defineProps<X>()` resolves an `X` imported from a
+  `.ts` module or another `.vue` file (ADR-0067).
+- `tsconfig.cases.json` type-checks the `.uf.ts` and `.ts` sources with the `.uf.tsx` ones, the
+  specs left to `tsconfig.json`.
+
 ### A case of several sources
 
 A case may hold several `.uf.tsx` inputs (ADR-0057): a component and its children, or a harness
@@ -247,12 +268,16 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
 **L4's consumer check** (ADR-0059). A case may have consumer fixtures per target, hand-written in
 that target's language under `../toolchains/<target>/consumers/<area>/<case>/`: one correct
 consumer, which must check clean, and one fixture per misuse of a prop, an event, a model or a
-slot. A misuse carries a directive on the line before it, `// @uf-expect TS2322 Field.prop:label`
-(an HTML comment in markup), and the same checker run as L4 judges it in the case's L4 cell
-(`harness/consumers.ts`): every directive must be met by a diagnostic with its code on the next
-line, any other diagnostic fails, and a directive's declaration must exist in the case's IR. A
-failure names the declaration's `.uf.tsx` line from its IR span. A kind a target cannot check is
-declared in `CONSUMER_GAPS`, with its reason, and a directive of that kind fails. The
+slot, or of a type the component's module exports (ADR-0068). A misuse carries a directive on the
+line before it, `// @uf-expect TS2322 Field.prop:label` or `// @uf-expect TS2322
+Button.type:ButtonProps` (an HTML comment in markup), and the same checker run as L4 judges it in
+the case's L4 cell (`harness/consumers.ts`): every directive must be met by a diagnostic with its
+code on the next line, any other diagnostic fails, and a directive's declaration must exist in the
+case's IR. A failure names the declaration's line from its IR span: its `.uf.tsx` line, or for a
+type re-exported from a case's `.ts` module, its line there (`types.ts:2`). A kind a target cannot
+check is declared in `CONSUMER_GAPS`, with its reason, and a directive of that kind fails; so is a
+finer part of one, a slot without props (`named-slot`) or a slot whose props name a type parameter
+of its component (`generic-slot-props`), which leaves the target's other slots checked. The
 `L4-consumer` canary types every output's props, events and slots `any`, so every directive must
 go unmet. `../toolchains/README.md` has the layout and the notes per checker.
 
@@ -372,7 +397,8 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
 - `harness/projects.ts`: the Vitest projects (`compile`, `harness`, and `toolchain:`, `ssr:` and
   `browser:` per target). `UF_TARGETS=vue,react` restricts the targets; a target a case names as
   its own reference (`"reference"`, ADR-0057) still runs that case alone (`referencesOnly`).
-- `harness/cases.ts`: the corpus, each case's inputs, its main one and its `case.json`;
+- `harness/cases.ts`: the corpus, each case's inputs (its `.uf.tsx` and `.uf.ts` sources and its
+  `.ts` modules), its main one and its `case.json`;
   `sources.ts`: how a case's inputs join their diagnostics and golden files.
 - `harness/compile.test.ts`, `toolchain.test.ts`, `ssr.test.ts`: the node-side layers;
   `compile-checks.ts`: L1's fix check, L2's determinism and formatting checks, and the scoped

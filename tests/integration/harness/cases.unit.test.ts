@@ -85,6 +85,60 @@ describe("listCases", () => {
     ]);
   });
 
+  it("lists a case's .uf.ts sources and its .ts modules, but not its spec (ADR-0069, ADR-0070)", () => {
+    const dir = makeCorpus({
+      "modules/toggle/Toggle.uf.tsx": input,
+      "modules/toggle/useToggle.uf.ts": "export function useToggle() {}\n",
+      "modules/toggle/tokens.ts": "export const SIZE = 8;\n",
+      "modules/toggle/types.ts": "export type Tone = string;\n",
+      "modules/toggle/toggle.test.ts": spec('"initial"'),
+    });
+    const [toggle] = listCases(dir);
+    expect(toggle).toMatchObject({
+      source: join(dir, "modules/toggle/Toggle.uf.tsx"),
+      sources: [
+        {
+          source: join(dir, "modules/toggle/Toggle.uf.tsx"),
+          filename: "modules/toggle/Toggle.uf.tsx",
+          ir: "ir.json",
+        },
+        {
+          source: join(dir, "modules/toggle/useToggle.uf.ts"),
+          filename: "modules/toggle/useToggle.uf.ts",
+          ir: "ir.useToggle.json",
+        },
+      ],
+      modules: [
+        { source: join(dir, "modules/toggle/tokens.ts"), filename: "modules/toggle/tokens.ts" },
+        { source: join(dir, "modules/toggle/types.ts"), filename: "modules/toggle/types.ts" },
+      ],
+      spec: join(dir, "modules/toggle/toggle.test.ts"),
+    });
+  });
+
+  it("refuses a case whose only sources are .uf.ts and .ts modules, or two sources of one IR name", () => {
+    expect(() =>
+      listCases(
+        makeCorpus({
+          "modules/toggle/useToggle.uf.ts": "export function useToggle() {}\n",
+          "modules/toggle/tokens.ts": "export const SIZE = 8;\n",
+        }),
+      ),
+    ).toThrow("Case modules/toggle must hold a .uf.tsx input, found none.");
+    expect(() =>
+      listCases(
+        makeCorpus({
+          "modules/card/Card.uf.tsx": input,
+          "modules/card/Toggle.uf.tsx": input,
+          "modules/card/Toggle.uf.ts": "export function useToggle() {}\n",
+          "modules/card/case.json": '{ "main": "Card.uf.tsx" }',
+        }),
+      ),
+    ).toThrow(
+      "Case modules/card: Toggle.uf.ts and Toggle.uf.tsx both snapshot their IR as ir.Toggle.json: rename one.",
+    );
+  });
+
   it("refuses a case of several sources that does not name its main one", () => {
     const files = { "forms/form/Form.uf.tsx": input, "forms/form/Field.uf.tsx": input };
     expect(() => listCases(makeCorpus(files))).toThrow(

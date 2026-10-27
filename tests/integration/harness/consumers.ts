@@ -14,8 +14,11 @@ import type { UfModule } from "@unframework/ir";
 import type { CaseInfo } from "./cases.ts";
 import { CASES_DIR, REPO_ROOT, toolchainDir } from "./paths.ts";
 
-/** What a directive says a misuse breaks: a prop, an event, a model or a slot. */
-export type ConsumerKind = "prop" | "event" | "model" | "slot";
+/**
+ * What a directive says a misuse breaks: a prop, an event, a model, a slot, or a type the
+ * component's module exports (ADR-0068).
+ */
+export type ConsumerKind = "prop" | "event" | "model" | "slot" | "type";
 
 /** One `@uf-expect` directive. */
 export interface Expectation {
@@ -36,11 +39,13 @@ export interface Fixture {
 
 /**
  * What a target's checker cannot check: a kind of declaration, or a finer part of one
- * (ADR-0059's feasibility table), a slot without props (`named-slot`). Models' setters join with
- * models: a model's directive names its value, so a gap in its setter alone (`model-setter`)
- * fails no directive, and is declared for the record.
+ * (ADR-0059's feasibility table): a slot without props (`named-slot`), or a slot whose props
+ * name a type parameter of its component (`generic-slot-props`, ADR-0068), so a gap in one part
+ * leaves the target's other slots checked. Models' setters join with models: a model's directive
+ * names its value, so a gap in its setter alone (`model-setter`) fails no directive, and is
+ * declared for the record.
  */
-export type ConsumerGap = ConsumerKind | "named-slot" | "model-setter";
+export type ConsumerGap = ConsumerKind | "named-slot" | "generic-slot-props" | "model-setter";
 
 /**
  * The declarations a target's checker cannot check, with the reason (ADR-0059's feasibility
@@ -59,7 +64,7 @@ export const CONSUMER_GAPS: Readonly<Record<string, Partial<Record<ConsumerGap, 
 
 /** A whole directive line: nothing may follow it but the end of an HTML comment. */
 const DIRECTIVE =
-  /@uf-expect\s+((?:TS|NG)\d+)\s+([A-Z][A-Za-z0-9]*)\.(prop|event|model|slot):([A-Za-z][A-Za-z0-9]*)\s*(?:-->)?\s*$/;
+  /@uf-expect\s+((?:TS|NG)\d+)\s+([A-Z][A-Za-z0-9]*)\.(prop|event|model|slot|type):([A-Za-z][A-Za-z0-9]*)\s*(?:-->)?\s*$/;
 
 /** A target's consumer fixtures: `tests/toolchains/<target>/consumers`. */
 export function consumersDir(target: string): string {
@@ -130,13 +135,14 @@ export function readExpectations(contents: string): {
 /**
  * The consumer check of a case on a target: every directive met by a diagnostic with its code on
  * its line, every diagnostic met by a directive, and every directive naming a declaration of the
- * case's IR that the target can check.
+ * case's IR that the target can check (`gaps`, {@link CONSUMER_GAPS} by default).
  */
 export function consumerProblems(
   target: string,
-  info: CaseInfo,
+  info: Pick<CaseInfo, "id" | "dir">,
   fixtures: readonly Fixture[],
   results: ReadonlyMap<string, readonly ToolchainMessage[]>,
+  gaps: Readonly<Record<string, Partial<Record<ConsumerGap, string>>>> = CONSUMER_GAPS,
 ): string[] {
   if (!fixtures.length) return [];
   const declarations = caseDeclarations(info);
@@ -147,17 +153,18 @@ export function consumerProblems(
     const { expectations, malformed } = readExpectations(readFileSync(path, "utf8"));
     const problems = malformed.map(
       (line) =>
-        `${shown}:${line}: a directive reads \`@uf-expect <code> <Component>.<prop|event|model|slot>:<name>\`.`,
+        `${shown}:${line}: a directive reads \`@uf-expect <code> <Component>.<prop|event|model|slot|type>:<name>\`.`,
     );
     for (const { line, code, declaration, kind } of expectations) {
       const found = declarations.get(declaration);
       const source = found?.at;
-      const gaps = CONSUMER_GAPS[target] ?? {};
+      const own = gaps[target] ?? {};
       const part = found?.part;
-      const gap = gaps[kind] ?? (part === undefined ? undefined : gaps[part]);
+      const gap = own[kind] ?? (part === undefined ? undefined : own[part]);
       if (gap) {
+        const what = own[kind] ? kind : part!;
         problems.push(
-          `${shown}:${line}: ${target} cannot check a component's ${gaps[kind] ? kind : part}s (${gap}).`,
+          `${shown}:${line}: ${target} cannot check a component's ${what.endsWith("s") ? what : `${what}s`} (${gap}).`,
         );
       } else if (!source) {
         problems.push(`${shown}:${line}: ${declaration} is not declared in ${info.id}'s IR.`);
@@ -181,11 +188,13 @@ export function consumerProblems(
 /**
  * Every declaration a directive can name in a case's IR (`ir.json`, and `ir.<Stem>.json` for a
  * case of several sources, ADR-0057), with its `.uf.tsx` line: `FileRow.prop:path` →
- * `FileRow.uf.tsx:9`, and the finer part a gap may name (a slot without props). Models join when
- * the IR has them (ADR-0055).
+ * `FileRow.uf.tsx:9`, and the finer part a gap may name (a slot without props, or one that
+ * passes a type parameter). Models join when the IR has them (ADR-0055). So do the types each
+ * component's module exports (ADR-0068), at their declaration: a re-exported one in the case's
+ * module it comes from, `types.ts:2`.
  */
 function caseDeclarations(
-  info: CaseInfo,
+  info: Pick<CaseInfo, "dir">,
 ): Map<string, { at: string; part?: Exclude<ConsumerGap, ConsumerKind> }> {
   const directory = join(info.dir, "__output__");
   const declarations = new Map<string, { at: string; part?: Exclude<ConsumerGap, ConsumerKind> }>();
@@ -197,7 +206,11 @@ function caseDeclarations(
     const file = basename(module.file);
     const source = readFileSync(join(info.dir, file), "utf8");
     const at = (offset: number) => `${file}:${source.slice(0, offset).split("\n").length}`;
+    const exported = exportedTypes(info, module, at);
     for (const component of module.components) {
+      for (const [name, where] of exported) {
+        declarations.set(`${component.name}.type:${name}`, { at: where });
+      }
       for (const prop of component.props) {
         declarations.set(`${component.name}.prop:${prop.name}`, { at: at(prop.span.start) });
       }
@@ -208,15 +221,61 @@ function caseDeclarations(
         if (item.kind !== "Model") continue;
         declarations.set(`${component.name}.model:${item.name}`, { at: at(item.span.start) });
       }
+      const typeParameters = new Set(component.typeParameters?.map(({ name }) => name));
       for (const slot of component.slots?.slots ?? []) {
+        const generic = slot.references?.some((name) => typeParameters.has(name));
         declarations.set(`${component.name}.slot:${slot.name}`, {
           at: at(slot.span.start),
-          ...(slot.props ? {} : { part: "named-slot" as const }),
+          ...(!slot.props
+            ? { part: "named-slot" as const }
+            : generic
+              ? { part: "generic-slot-props" as const }
+              : {}),
         });
       }
     }
   }
   return declarations;
+}
+
+/**
+ * The types a module exports, by the name each output exports them under (ADR-0068), with where
+ * each is declared: a declaration's line in the module, or for a re-export the line of its
+ * declaration in the case's module it names (`./types` is `types.ts`), or else the re-export's.
+ */
+function exportedTypes(
+  info: Pick<CaseInfo, "dir">,
+  module: UfModule,
+  at: (offset: number) => string,
+): Map<string, string> {
+  const types = new Map<string, string>();
+  for (const declaration of module.types) {
+    if (declaration.exported) types.set(declaration.name, at(declaration.span.start));
+  }
+  for (const typeExport of module.typeExports ?? []) {
+    if (typeExport.kind === "Declaration") {
+      types.set(typeExport.name, at(typeExport.span.start));
+      continue;
+    }
+    const from = [typeExport.specifier, `${typeExport.specifier}.ts`]
+      .map((specifier) => join(info.dir, specifier))
+      .find((path) => existsSync(path) && statSync(path).isFile());
+    const text = from === undefined ? undefined : readFileSync(from, "utf8");
+    for (const name of typeExport.names) {
+      const line = text
+        ?.split("\n")
+        .findIndex((each) =>
+          new RegExp(`^(?:export\\s+)?(?:interface|type)\\s+${name.imported}\\b`).test(each),
+        );
+      types.set(
+        name.exported,
+        from !== undefined && line !== undefined && line !== -1
+          ? `${basename(from)}:${line + 1}`
+          : at(name.span.start),
+      );
+    }
+  }
+  return types;
 }
 
 function directories(path: string): string[] {

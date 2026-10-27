@@ -870,6 +870,19 @@ describe("canaries", () => {
     }
   });
 
+  it("L4-consumer's evidence is an unmet directive, declared in a .uf.tsx or a .ts module", () => {
+    const evidence = findCanary("L4-consumer").evidence.toolchain!["consumer check"] as RegExp;
+    const unmet = (at: string) =>
+      `tests/toolchains/react/consumers/types/shared-type/MisuseType.tsx:4: expected TS2322 for Badge.type:Tone (${at}), got none`;
+    expect(unmet("Badge.uf.tsx:3")).toMatch(evidence);
+    // A type re-exported from the case's shared module is declared there (ADR-0068).
+    expect(unmet("types.ts:2")).toMatch(evidence);
+    expect(unmet("types.d.mts:2")).not.toMatch(evidence);
+    expect(
+      "tests/toolchains/react/consumers/types/shared-type/MisuseType.tsx:4: unexpected TS2322 Type 'number' is not assignable.",
+    ).not.toMatch(evidence);
+  });
+
   it("L10-root-inverted styles the root element in each target's own syntax", async () => {
     for (const target of TARGET_NAMES.filter((name) => name !== REFERENCE)) {
       const { outputs } = await compileWith("L10-root-inverted", target);

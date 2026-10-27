@@ -1,6 +1,6 @@
 // L4's consumer check (ADR-0059): directives read from the fixtures, the inverted judging, the
 // copies a canary checks, and the fixture trees, which must name cases of the corpus.
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -9,6 +9,7 @@ import { TARGET_NAMES } from "@unframework/compiler";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { listCases } from "./cases.ts";
+import type { CaseInfo } from "./cases.ts";
 import {
   consumerCases,
   consumerFixtures,
@@ -172,6 +173,112 @@ describe("the finer gaps (ADR-0059)", () => {
     expect(consumerProblems("astro", list, [scoped], results([[scoped, [mismatch(2)]]]))).toEqual(
       [],
     );
+  });
+});
+
+describe("the type kind and the generic-slot-props part (ADR-0068)", () => {
+  // A case of its own: `List.uf.tsx` declares `ListProps<T>` and exports it, re-exports `Tone`
+  // from `types.ts`, and passes `T` through its `item` slot, beside a `footer` slot.
+  const dir = join(scratch, "generics", "list");
+  const span = (source: string, text: string) => {
+    const start = source.indexOf(text);
+    return { start, end: start + text.length };
+  };
+  const list = [
+    `export type { Tone } from "./types";`,
+    `export interface ListProps<T> {`,
+    `  items: T[];`,
+    `}`,
+    `export default function List<T>(props: ListProps<T>) {`,
+    `  const slots = defineSlots<{ item?: (props: { item: T }) => unknown; footer?: (props: { count: number }) => unknown }>();`,
+    `  return <ul />;`,
+    `}`,
+    ``,
+  ].join("\n");
+  const types = `// The tones.\nexport type Tone = "info" | "danger";\n`;
+  mkdirSync(join(dir, "__output__"), { recursive: true });
+  writeFileSync(join(dir, "List.uf.tsx"), list);
+  writeFileSync(join(dir, "types.ts"), types);
+  writeFileSync(
+    join(dir, "__output__", "ir.json"),
+    JSON.stringify({
+      file: "generics/list/List.uf.tsx",
+      types: [
+        {
+          name: "ListProps",
+          exported: true,
+          code: "interface ListProps<T> {\n  items: T[];\n}",
+          span: span(list, "interface ListProps"),
+        },
+      ],
+      typeExports: [
+        {
+          kind: "ReExport",
+          specifier: "./types",
+          names: [{ imported: "Tone", exported: "Tone", span: span(list, "Tone") }],
+          span: span(list, `export type { Tone } from "./types";`),
+        },
+      ],
+      components: [
+        {
+          name: "List",
+          typeParameters: [{ name: "T", span: span(list, "T>(") }],
+          props: [{ name: "items", span: span(list, "items") }],
+          setup: [],
+          slots: {
+            slots: [
+              { name: "item", props: {}, references: ["T"], span: span(list, "item?") },
+              { name: "footer", props: {}, span: span(list, "footer?") },
+            ],
+          },
+        },
+      ],
+    }),
+  );
+  const info = { id: "generics/list", dir } as CaseInfo;
+  const gaps = { angular: { "generic-slot-props": "slot directives cannot infer T" } };
+
+  it("reads a type directive, and names where an exported type is declared", () => {
+    expect(readExpectations("// @uf-expect TS2322 List.type:ListProps\n").expectations).toEqual([
+      { line: 2, code: "TS2322", declaration: "List.type:ListProps", kind: "type" },
+    ]);
+    const misuse = fixture(
+      "MisuseType.tsx",
+      "// @uf-expect TS2322 List.type:ListProps\nx;\n// @uf-expect TS2322 List.type:Tone\ny;\n",
+    );
+    // `ListProps` is met; `Tone` is declared in the `.ts` module it is re-exported from.
+    expect(consumerProblems("react", info, [misuse], results([[misuse, [mismatch(2)]]]))).toEqual([
+      expect.stringMatching(
+        /MisuseType\.tsx:4: expected TS2322 for List\.type:Tone \(types\.ts:2\), got none$/,
+      ),
+    ]);
+    const missing = consumerProblems("react", info, [misuse], results([[misuse, []]]));
+    expect(missing[0]).toMatch(/:2: expected TS2322 for List\.type:ListProps \(List\.uf\.tsx:2\)/);
+    const unknown = fixture("MisuseUnknown.tsx", "// @uf-expect TS2322 List.type:Item\nx;\n");
+    expect(consumerProblems("react", info, [unknown], results([[unknown, [mismatch(2)]]]))).toEqual(
+      [expect.stringMatching(/List\.type:Item is not declared in generics\/list's IR\.$/)],
+    );
+  });
+
+  it("fails a slot directive for a generic slot where the part is a gap, and checks the others", () => {
+    const misuse = fixture(
+      "misuse-slot.ts",
+      "// @uf-expect TS2339 List.slot:item\nx;\n// @uf-expect TS2339 List.slot:footer\ny;\n",
+    );
+    const checked = results([[misuse, [{ ...mismatch(2), code: "TS2339" }]]]);
+    const problems = consumerProblems("angular", info, [misuse], checked, gaps);
+    expect(problems).toEqual([
+      expect.stringMatching(
+        /misuse-slot\.ts:2: angular cannot check a component's generic-slot-props \(slot directives cannot infer T\)\.$/,
+      ),
+      expect.stringMatching(
+        /misuse-slot\.ts:4: expected TS2339 for List\.slot:footer \(List\.uf\.tsx:6\), got none$/,
+      ),
+    ]);
+    // Without the gap, the generic slot is checked as any other.
+    expect(consumerProblems("react", info, [misuse], checked, gaps)).toEqual([
+      expect.stringMatching(/misuse-slot\.ts:4: expected TS2339 for List\.slot:footer/),
+    ]);
   });
 });
 

@@ -144,11 +144,12 @@ Its toolchain, for tests and tooling (the target's main entry never loads it):
   (`ToolchainContext.plugins`), so a styling engine's plugin resolves its `virtual:` modules,
   and the engine's stylesheet goes before the markup too (ADR-0064). The checks:
   - L3 runs `@astrojs/compiler-rs` with Astro's options and reports every diagnostic (it refuses
-    a compiler version other than the one `astro` uses);
+    a compiler version other than the one `astro` uses), and Vite's TypeScript transform over a
+    `.ts` module, a shared one (ADR-0070) or a composable's (ADR-0069);
   - L4 runs `astro check` (`AstroCheck`, TypeScript 6) from the toolchain directory, once over
     every file;
   - L5 (ADR-0042) runs oxlint's shared baseline over the frontmatter and ESLint with
-    eslint-plugin-astro over the whole file.
+    eslint-plugin-astro over the whole file; a `.ts` module is oxlint's alone.
     A component other than a file's main one has a component id (`X.uf.tsx.Icon.astro`,
     ADR-0053), which the browser project's reference and the render server take as they take a
     main id.

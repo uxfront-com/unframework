@@ -6,9 +6,13 @@ import tseslint from "typescript-eslint";
 
 export default [
   ...svelte.configs["flat/recommended"],
+  // A composable's `.svelte.ts` module (ADR-0069) is TypeScript, as a component's script is.
+  {
+    files: ["**/*.svelte", "**/*.svelte.ts"],
+    languageOptions: { parserOptions: { parser: tseslint.parser } },
+  },
   {
     files: ["**/*.svelte"],
-    languageOptions: { parserOptions: { parser: tseslint.parser } },
     plugins: { "@typescript-eslint": tseslint.plugin },
     rules: {
       // The baseline's unused-variable rule, which oxlint does not run on a `.svelte` file: the

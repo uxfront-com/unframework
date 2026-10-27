@@ -252,4 +252,7 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   that extends it and lists them, as `runChecker` does), and `mergeLintResults` joins the two.
   Both reject a linter that cannot start or load its
   configuration or plugins, skips a file, or prints output they cannot read, and return every
-  message by file in a stable order.
+  message by file in a stable order. `compileScriptModules` is L3 for the plain `.ts` modules
+  of a template target's output tree, a shared module (ADR-0070) or a composable's (ADR-0069),
+  which no framework compiler reads: Vite's `transformWithOxc`, as each dev server loads them;
+  `transformScriptModule` also returns one module's JavaScript, which Svelte compiles next.

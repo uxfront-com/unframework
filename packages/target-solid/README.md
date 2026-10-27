@@ -401,7 +401,7 @@ The tests and tooling build, check and run Solid output through three entries:
 - `@unframework/target-solid/toolchain` (Node): the Vite configuration of browser and SSR
   projects (`vite-plugin-solid`, with `ssr: true` for SSR and without solid-refresh), the
   framework compile check (L3: babel-preset-solid in `dom` and `ssr` modes, where a template a
-  browser would parse differently is a warning), the type check (L4: one TypeScript 7 run over
+  browser would parse differently is a warning, and a `.ts` module parses without JSX), the type check (L4: one TypeScript 7 run over
   all files, against `tests/toolchains/solid/tsconfig.json`) and the lint (L5: oxlint with the
   shared baseline and eslint-plugin-solid as a JS plugin,
   `tests/toolchains/solid/output.oxlintrc.json`).
