@@ -122,8 +122,16 @@ class Rules {
     this.#setup = new Map(
       [...render.setup.bindings.values()].map((binding) => [binding.id, binding]),
     );
+    // A module's constants and imports are static too: Qwik reads them where they are declared,
+    // at the module's top level (ADR-0070).
+    for (const binding of this.#component.bindings) {
+      if (binding.kind === "moduleConst" || binding.kind === "import") this.#static.add(binding.id);
+    }
     for (const item of setup.items) {
-      if (item.kind === "Const" && !item.value.refs.some((ref) => ref.kind === "Binding")) {
+      if (
+        item.kind === "Const" &&
+        item.value.refs.every((ref) => ref.kind !== "Binding" || this.#static.has(ref.binding))
+      ) {
         this.#static.add(item.binding);
       }
     }

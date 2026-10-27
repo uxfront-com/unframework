@@ -9,6 +9,7 @@ import {
   createModule,
   createModuleImport,
   createNamedImport,
+  createSharedModuleImport,
   createTypeDeclaration,
   createTypeExportName,
   createTypeImport,
@@ -22,9 +23,11 @@ import type {
   ImportedName,
   InjectionKeyDeclaration,
   ModuleApi,
+  ModuleConstant,
   ModuleImport,
   NamedImport,
   PassThroughImport,
+  SharedModuleImport,
   TypeDeclaration,
   TypeExport,
   TypeImport,
@@ -66,6 +69,8 @@ import { checkDirective, declareSetup, isDirective, refTypeOf } from "./setup.ts
 import type { InjectionKeyInfo } from "./setup.ts";
 import { ownShapes } from "./shapes.ts";
 import type { Shapes } from "./shapes.ts";
+import { isSharedModuleSpecifier, lowerConstant, sharedValue } from "./shared.ts";
+import type { ConstantCandidate, SharedModule, SharedValues } from "./shared.ts";
 import { scopeIdOf, STYLESHEET_SPECIFIER, stylesheetImport } from "./styles.ts";
 import type { LoweredSheet, StylesheetSource } from "./styles.ts";
 import { syntaxError } from "./syntax.ts";
@@ -99,6 +104,12 @@ export interface AnalyzeOptions {
    * compiler's resolver read it: `undefined` for one it could not read (UF5005, ADR-0063).
    */
   stylesheets?: ReadonlyMap<string, StylesheetSource | undefined>;
+  /**
+   * Each shared `.ts` module the source imports (`sharedModuleImports`), by the import's
+   * specifier, as the compiler's resolver read it (ADR-0070): `undefined` for one it could not
+   * read, whose value import is UF1202.
+   */
+  modules?: ReadonlyMap<string, SharedModule | undefined>;
   /**
    * The specifier prefixes whose imports pass through to every output as written (ADR-0064):
    * `["virtual:"]` when absent. An import the analyser classifies otherwise (the authoring API, a
@@ -266,12 +277,20 @@ export function analyzeModule(
     passThroughImports: [],
     typeImports: [],
     typeExports: [],
+    modules: options.modules ?? new Map(),
+    moduleImports: [],
+    shared: { values: new Map(), failed: new Set() },
+    constants: [],
   };
   const moduleMark = reporter.diagnostics.length;
   for (const statement of parsed.program.body) {
     if (componentStatements.has(statement.start) || keyCandidates.has(statement.start)) continue;
     checkTopLevelStatement(statement, context);
   }
+  // Lowered once every import is known: a constant may read one declared after it (ADR-0070).
+  const constants = context.constants.map((candidate) =>
+    lowerConstant(candidate, { source: parsed.source, scopes, reporter, shared: context.shared }),
+  );
   // A module-level error drops every component, but they are still checked: fixing it must
   // reveal nothing new (the harness's L1).
   const moduleErrors = keyErrors || reporter.hasErrorsSince(moduleMark);
@@ -314,6 +333,7 @@ export function analyzeModule(
     components,
     keys,
     passThrough: context.passThrough,
+    shared: context.shared,
     ...(observe ? { observe } : {}),
   };
   const lowered: UfComponent[] = [];
@@ -389,11 +409,35 @@ export function analyzeModule(
           ...context.typeExports,
           ...declaredTypeExports(types, parsed.source),
         ].toSorted((a, b) => a.span.start - b.span.start),
+        moduleImports: context.moduleImports,
+        constants: readConstants(constants, lowered),
       },
     ),
     diagnostics: reporter.diagnostics,
     api,
   };
+}
+
+/**
+ * The module's constants its components read, and those they read in turn, in source order
+ * (ADR-0070): what every output declares.
+ */
+function readConstants(
+  constants: readonly ModuleConstant[],
+  components: readonly UfComponent[],
+): ModuleConstant[] {
+  const byId = new Map(constants.map((constant) => [constant.binding, constant]));
+  const read = new Set<string>();
+  const add = (id: string) => {
+    const constant = byId.get(id);
+    if (!constant || read.has(id)) return;
+    read.add(id);
+    for (const ref of constant.value.refs) if (ref.kind === "Binding") add(ref.binding);
+  };
+  for (const component of components) {
+    for (const binding of component.bindings) if (binding.kind === "moduleConst") add(binding.id);
+  }
+  return constants.filter((constant) => read.has(constant.binding));
 }
 
 /**
@@ -547,6 +591,14 @@ interface ModuleContext {
   typeImports: TypeImport[];
   /** The module's type re-exports, in source order (ADR-0068). */
   typeExports: TypeExport[];
+  /** Each shared `.ts` module the module imports, by specifier, as the resolver read it. */
+  modules: ReadonlyMap<string, SharedModule | undefined>;
+  /** The module's value imports of shared modules, in source order (ADR-0070). */
+  moduleImports: SharedModuleImport[];
+  /** The values the module's components may read: its value imports and constants. */
+  shared: SharedValues;
+  /** The module's top-level `const`s, in source order, lowered once every import is known. */
+  constants: ConstantCandidate[];
 }
 
 /** The local names a module exports as values in `export { name }` and `export default name`. */
@@ -614,6 +666,9 @@ function checkTopLevelStatement(
     // A stray `;`, such as one after a function, does nothing.
     case "EmptyStatement":
       return;
+    case "VariableDeclaration":
+      moduleConstant(statement, context);
+      return;
     case "ImportDeclaration":
       if (COMPONENT_SPECIFIER.test(statement.source.value) && statement.importKind !== "type") {
         componentImport(statement, context);
@@ -657,6 +712,16 @@ function checkTopLevelStatement(
           statement.specifiers.every((specifier) => specifier.exportKind === "type"))
       ) {
         typeReExport(statement, statement.source.value, context);
+        return;
+      }
+      if (statement.declaration?.type === "VariableDeclaration") {
+        reporter.unsupported(
+          statement,
+          "A module exports its components and injection keys, and no other value.",
+          {
+            help: "Move the value to a shared `.ts` module, which each component that reads it imports (ADR-0070).",
+          },
+        );
         return;
       }
       if (statement.declaration || statement.source) break;
@@ -727,8 +792,56 @@ function checkTopLevelStatement(
   }
   reporter.unsupported(
     statement,
-    "Top-level declarations other than imports and components are not supported yet.",
+    "Top-level declarations other than imports, components and `const`s are not supported yet.",
   );
+}
+
+/**
+ * A top-level `const` (ADR-0070): a plain value the module's components read, never write. A `let`
+ * or a `var` would be state shared between instances, which has no form.
+ */
+function moduleConstant(statement: AST.VariableDeclaration, context: ModuleContext): void {
+  const { reporter } = context;
+  if (statement.kind !== "const" || statement.declare) {
+    reporter.unsupported(
+      statement,
+      statement.declare
+        ? "An ambient declaration declares no value a component can read."
+        : `A module's top-level \`${statement.kind}\` is not supported: its values are read-only, so state shared between a component's instances has no form.`,
+      {
+        help: "Declare a constant with `const`, or keep state in a component's `ref`.",
+      },
+    );
+    return;
+  }
+  if (statement.declarations.length > 1) {
+    reporter.unsupported(statement, "A top-level `const` declares one constant.", {
+      help: "Declare each constant with a `const` of its own.",
+    });
+    return;
+  }
+  const [declarator] = statement.declarations;
+  if (!declarator || declarator.id.type !== "Identifier" || !declarator.init) {
+    reporter.unsupported(
+      declarator?.id ?? statement,
+      "Destructuring is not supported in a module's constants.",
+      { help: "Declare each constant by its name." },
+    );
+    return;
+  }
+  const annotation = declarator.id.typeAnnotation?.typeAnnotation;
+  context.shared.values.set(
+    declarator.id,
+    sharedValue(
+      "moduleConst",
+      declarator.id,
+      annotation ? context.types.table.kindsOf(annotation) : undefined,
+    ),
+  );
+  context.constants.push({
+    statement,
+    declarator: declarator as ConstantCandidate["declarator"],
+  });
 }
 
 /**
@@ -1159,11 +1272,89 @@ function checkImport(statement: AST.ImportDeclaration, context: ModuleContext): 
     checkAuthoringImport(statement, reporter);
     return;
   }
+  if (isSharedModuleSpecifier(specifier)) {
+    sharedImport(statement, context);
+    return;
+  }
   if (statement.importKind === "type") {
     typeImport(statement, statement.specifiers, context);
     return;
   }
   reporter.unsupported(statement, "Importing modules is not supported yet.");
+}
+
+/**
+ * An import of a shared `.ts` module (ADR-0070): its values are read through `import` bindings,
+ * and its types re-imported by name (ADR-0067). The module is copied into every output tree, so
+ * it may reach no framework (UF1204), and every relative module it reaches must be read (UF1202).
+ * A type import the resolver could not read is the type oracle's to report (UF6001).
+ */
+function sharedImport(statement: AST.ImportDeclaration, context: ModuleContext): void {
+  const { reporter } = context;
+  const specifier = statement.source.value;
+  const typeOnly = (item: AST.ImportDeclarationSpecifier) =>
+    statement.importKind === "type" ||
+    (item.type === "ImportSpecifier" && item.importKind === "type");
+  const values = statement.specifiers.filter((item) => !typeOnly(item));
+  const types = statement.specifiers.filter(typeOnly);
+  if (!statement.specifiers.length) {
+    reporter.unsupported(
+      statement,
+      "A side-effect import of a shared module is not supported: a component imports the values it reads.",
+      { help: `Import each value by its name, as in \`import { sizes } from "${specifier}";\`.` },
+    );
+    return;
+  }
+  const module = context.modules.get(specifier);
+  const fail = (code: "UF1202" | "UF1204", message: string, help: string) => {
+    for (const item of values) context.shared.failed.add(item.local);
+    reporter.report(code, statement.source, message, { help });
+  };
+  if (!module) {
+    if (values.length) {
+      fail(
+        "UF1202",
+        `"${specifier}" cannot be resolved: the compiler finds no \`.ts\` module there.`,
+        "Import a `.ts` file of the project by its relative path, as in `./tokens.ts`.",
+      );
+      return;
+    }
+  } else if (module.framework) {
+    const { file, specifier: framework } = module.framework;
+    fail(
+      "UF1204",
+      `"${specifier}" ${file === module.file ? "" : `reaches "${file}", which `}imports "${framework}": a shared module is copied unchanged into every framework's output, so it imports no framework, and no \`unframework\`.`,
+      "Keep the shared module to plain values, types and functions, and move what needs reactivity into a composable in a `.uf.ts` module.",
+    );
+    return;
+  } else if (module.unresolved) {
+    const { file, specifier: missing } = module.unresolved;
+    fail(
+      "UF1202",
+      `"${specifier}" ${file === module.file ? "" : `reaches "${file}", which `}imports "${missing}", which the compiler cannot read: every output tree holds a copy of each module it reaches.`,
+      "Import a `.ts` file of the project by its relative path, as in `./tokens.ts`.",
+    );
+    return;
+  }
+  if (types.length) typeImport(statement, types, context);
+  if (!module) return;
+  const names: NamedImport[] = [];
+  for (const item of values) {
+    if (item.type === "ImportNamespaceSpecifier") {
+      context.shared.failed.add(item.local);
+      reporter.unsupported(item, "A namespace import of a shared module is not supported.", {
+        help: `Import each value by its name, as in \`import { sizes } from "${specifier}";\`.`,
+      });
+      continue;
+    }
+    const imported = item.type === "ImportDefaultSpecifier" ? "default" : exportName(item.imported);
+    names.push(createNamedImport(imported, item.local.name, spanOf(item)));
+    context.shared.values.set(item.local, sharedValue("import", item.local));
+  }
+  if (!names.length) return;
+  context.moduleImports.push(
+    createSharedModuleImport(specifier, module.file, names, spanOf(statement)),
+  );
 }
 
 /**
@@ -1254,6 +1445,8 @@ interface ComponentModule {
   keys: ReadonlyMap<object, InjectionKeyInfo>;
   /** The module's pass-through imports (ADR-0064). */
   passThrough: PassThrough;
+  /** The values the module's components may read (ADR-0070). */
+  shared: SharedValues;
   observe?: SetupObserver;
 }
 
@@ -1334,6 +1527,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     components: module.components,
     slots: setup.slots,
     passThrough: module.passThrough,
+    shared: module.shared,
   };
   setup.lower(render);
   if (!returned || (returned.type !== "JSXElement" && returned.type !== "JSXFragment")) {

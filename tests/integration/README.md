@@ -58,8 +58,9 @@ ADR-0070). It still needs a `.uf.tsx`: the main input is a component.
   (`useToggle.ts`, Svelte's `useToggle.svelte.ts`, Angular's `use-toggle.ts`). A `.uf.ts` and a
   `.uf.tsx` of one stem would share a snapshot, so the loader refuses them.
 - A `.ts` module that is not the spec is no compile's input. The compile of each source that
-  imports it copies it into `__output__/<target>/` at its own file name (ADR-0070, from M5's
-  shared modules on), and L2 fails a copy that is not the module byte for byte.
+  imports it copies it into `__output__/<target>/` at its own file name (ADR-0070), and L2 fails a
+  copy that is not the module byte for byte. Two sources that import one module each copy it:
+  `caseOutputs` keeps a path two sources produce once when the contents are the same.
 - The toolchain projects hand every emitted file but a sheet to L3, L4 and L5, the `.ts` and
   `.svelte.ts` modules included. On Vue, Svelte and Astro, L3 runs Vite's TypeScript transform
   over a `.ts` module, where no framework compiler reads one, and Svelte's `compileModule` after

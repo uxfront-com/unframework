@@ -66,6 +66,20 @@ checked as the declaration its likely fix writes (`analyze.ts`).
   names an imported type), and `analyze(parsed, { shapes })` takes them, as the compiler's oracle
   resolved them. Without `shapes` it reads the module's own declarations (`localShapes`), and an
   imported type is UF6001. The shapes reach the API, setup and render contexts.
+- **Shared modules and module-level values** (`shared.ts`, ADR-0070): a component reads values
+  from relative `.ts` modules and its module's top-level `const`s, each through a read-only
+  binding of its own (`import`, `moduleConst`), which a write (UF2011) or a change in place
+  (UF2004) never touches. `analyze(parsed, { modules })` takes each shared module the source
+  imports, by specifier (`sharedModuleImports(parsed)` lists them, values or types), as the
+  compiler's resolver read it: a value import of one it could not read, or of one that reaches a
+  file it could not read, is UF1202; one that imports a framework or `unframework`, itself or
+  through another `.ts` (`moduleSpecifiers(parsed)` lists what a module imports), is UF1204, for
+  a type import too. Both are module-level errors. The module records its value imports
+  (`moduleImports`) and the constants its components read, with those they read in turn
+  (`constants`). A constant's value reads the module's other constants, its value imports and
+  the pure globals; a `let`, a destructured or exported `const` and a `const` of two names are
+  UF1002. Qwik reads both kinds where they are declared, so a getter's function may read them
+  (UF2014).
 - **The authoring API** (`authoring.ts`): named imports from `"unframework"`, recognised by the
   binding each declares (ADR-0006), as the package exports them (a test reads its `index.ts`).
   Anything else is UF2016.

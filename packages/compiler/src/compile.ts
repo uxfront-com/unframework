@@ -1,5 +1,11 @@
-import { analyze, componentImports, shapeQueries, stylesheetImports } from "@unframework/analyzer";
-import type { StylesheetSource } from "@unframework/analyzer";
+import {
+  analyze,
+  componentImports,
+  shapeQueries,
+  sharedModuleImports,
+  stylesheetImports,
+} from "@unframework/analyzer";
+import type { SharedModule, StylesheetSource } from "@unframework/analyzer";
 import { formatOutput, scopeStylesheet } from "@unframework/codegen";
 import type { OutputFile, Target } from "@unframework/codegen";
 import { createDiagnostic, sortDiagnostics } from "@unframework/diagnostics";
@@ -12,7 +18,7 @@ import type { TypeOracle, TypeShape } from "@unframework/type-oracle";
 
 import { checkCapabilities } from "./capabilities.ts";
 import { isSpanIn, pluginIrProblems } from "./plugin-ir.ts";
-import { stylesheetSource } from "./resolver.ts";
+import { directoryOf, relativePath, stylesheetSource } from "./resolver.ts";
 import type { Resolver } from "./resolver.ts";
 import { resolveTarget } from "./targets.ts";
 import type { TargetName } from "./targets.ts";
@@ -61,7 +67,9 @@ export interface CompileOptions {
    * child's declarations, never compiles it, so the output depends only on the source, the
    * options and what it returns. Without it, or when it returns nothing, the import is UF1202;
    * a resolver that throws is UF9001 as well. Its `stylesheet` reads each stylesheet the source
-   * imports (ADR-0063): without it, or when it returns nothing, the import is UF5005.
+   * imports (ADR-0063): without it, or when it returns nothing, the import is UF5005. Its `module`
+   * reads each shared `.ts` module the source imports (ADR-0070): without it, or when it returns
+   * nothing, a value import of one is UF1202.
    */
   resolve?: Resolver;
   /**
@@ -107,7 +115,11 @@ export interface CompileResult {
   ir: UfModule | undefined;
   /** Every diagnostic, sorted. Portability diagnostics carry their target. */
   diagnostics: Diagnostic[];
-  /** Each target's files, by target name, in the order of `targets`. */
+  /**
+   * Each target's files, by target name, in the order of `targets`: each component's, then a copy
+   * of each shared `.ts` module the source reaches, unchanged, at its path relative to the source
+   * (ADR-0070).
+   */
   outputs: Record<string, OutputFile[]>;
   /**
    * The component each output file is written for, by target name, then by the file's path:
@@ -117,8 +129,9 @@ export interface CompileResult {
   owners: Record<string, Record<string, string>>;
   /**
    * What the compile read besides the source, sorted, each once (ADR-0071): the files the type
-   * oracle read or looked for, relative to its root, and the packages, as `pkg:<name>`, one that
-   * is not installed included. Never an absolute path (P8).
+   * oracle read or looked for, relative to its root, the shared `.ts` modules the resolver read,
+   * named as `filename` is, and the packages, as `pkg:<name>`, one that is not installed included.
+   * Never an absolute path (P8).
    */
   dependencies: string[];
 }
@@ -152,6 +165,8 @@ export async function compile(source: string, options: CompileOptions): Promise<
   /** Each stylesheet's file, by its specifier, as the resolver named it. */
   let sheetFiles = new Map<string, string>();
   const dependencies = new Set<string>();
+  /** Each shared `.ts` module's text, by its path relative to the source (ADR-0070). */
+  const copies = new Map<string, string>();
   try {
     const parsed = parseModule(file, source);
     // Each type the analyser reads, resolved before it analyses: the analyser is synchronous,
@@ -190,8 +205,35 @@ export async function compile(source: string, options: CompileOptions): Promise<
     sheetFiles = new Map(
       [...stylesheets].flatMap(([specifier, sheet]) => (sheet ? [[specifier, sheet.file]] : [])),
     );
+    const modules = new Map<string, SharedModule | undefined>();
+    const fromSource = (path: string) => relativePath(directoryOf(file), path);
+    for (const specifier of options.resolve?.module ? sharedModuleImports(parsed) : []) {
+      try {
+        const resolved = await options.resolve!.module!({ specifier, importer: file });
+        if (!resolved?.files.length) {
+          modules.set(specifier, undefined);
+          continue;
+        }
+        const { framework, unresolved } = resolved;
+        modules.set(specifier, {
+          file: fromSource(resolved.files[0]!.file),
+          ...(framework ? { framework: { ...framework, file: fromSource(framework.file) } } : {}),
+          ...(unresolved
+            ? { unresolved: { ...unresolved, file: fromSource(unresolved.file) } }
+            : {}),
+        });
+        for (const { file: path, source: text } of resolved.files) {
+          dependencies.add(path);
+          copies.set(fromSource(path), text);
+        }
+      } catch (error) {
+        modules.set(specifier, undefined);
+        diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
+      }
+    }
     const analysis = analyze(parsed, {
       imports,
+      modules,
       stylesheets,
       shapes: (span) => shapes.get(`${span.start}:${span.end}`),
       ...(options.passThrough ? { passThrough: options.passThrough } : {}),
@@ -252,7 +294,15 @@ export async function compile(source: string, options: CompileOptions): Promise<
   if (module) {
     for (const target of targets) {
       try {
-        const emitted = await emitTarget(target, module, source, options, diagnostics, sheets);
+        const emitted = await emitTarget(
+          target,
+          module,
+          source,
+          options,
+          diagnostics,
+          sheets,
+          copies,
+        );
         outputs[target.name] = emitted.files;
         owners[target.name] = emitted.owners;
       } catch (error) {
@@ -289,7 +339,8 @@ function sourceOracle(file: string, source: string): TypeOracle {
  * `output` hooks see and formatting keeps as printed, and which `owners` leaves out: the
  * unplugin serves it on an id of its own. The files of two components, or two files of one,
  * may not share a path, compared without case: case-insensitive file systems would write one
- * over the other.
+ * over the other. Each shared `.ts` module's copy follows, unchanged, where a component's files
+ * were written: neither the hooks nor formatting see it, and `owners` leaves it out (ADR-0070).
  */
 async function emitTarget(
   target: Target,
@@ -298,6 +349,7 @@ async function emitTarget(
   options: CompileOptions,
   diagnostics: Diagnostic[],
   sheets: ReadonlyMap<string, string>,
+  copies: ReadonlyMap<string, string>,
 ): Promise<{ files: OutputFile[]; owners: Record<string, string> }> {
   const file = options.filename;
   const sheetPath = `${file.slice(file.lastIndexOf("/") + 1)}.css`;
@@ -371,6 +423,21 @@ async function emitTarget(
       owners.set(key, { path: output.path, component: component.name });
       written.push(output);
     }
+  }
+  for (const [path, contents] of written.length ? copies : []) {
+    const owner = owners.get(path.toLowerCase());
+    if (owner) {
+      diagnostics.push(
+        internal(
+          file,
+          `${owner.path} (${owner.component}) and the shared module ${path} are one file on a case-insensitive file system`,
+          `The ${target.name} target wrote two files at one path`,
+          target.name,
+        ),
+      );
+      continue;
+    }
+    written.push({ path, contents });
   }
   return {
     files: written,

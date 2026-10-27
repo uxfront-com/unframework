@@ -14,8 +14,18 @@ import { createSyntacticOracle } from "@unframework/type-oracle";
 import type { TypeOracle, TypeShape } from "@unframework/type-oracle";
 import { describe, expect, it } from "vitest";
 
-import { analyze, componentImports, shapeQueries, stylesheetImports } from "../src/index.ts";
-import type { Shapes, StylesheetSource } from "../src/index.ts";
+import {
+  analyze,
+  componentImports,
+  frameworkOf,
+  isAuthoringModule,
+  isSharedModuleSpecifier,
+  moduleSpecifiers,
+  shapeQueries,
+  sharedModuleImports,
+  stylesheetImports,
+} from "../src/index.ts";
+import type { SharedModule, Shapes, StylesheetSource } from "../src/index.ts";
 
 const CASES = new URL("../../../tests/integration/cases/", import.meta.url).pathname;
 
@@ -82,11 +92,57 @@ async function shapesOf(parsed: ParsedModule, oracle: TypeOracle): Promise<Shape
   return (span) => shapes.get(`${span.start}:${span.end}`);
 }
 
+/** A file of a case, or `undefined` where there is none. */
+function caseFile(file: string): string | undefined {
+  try {
+    return readFileSync(join(CASES, file), "utf8");
+  } catch {
+    return undefined;
+  }
+}
+
+/** A shared module's file, as the resolver names it: with `.ts` where its specifier has none. */
+function fileOf(from: string, written: string): string | undefined {
+  return isSharedModuleSpecifier(written)
+    ? join(from, written.endsWith(".ts") ? written : `${written}.ts`)
+    : undefined;
+}
+
+/**
+ * A shared `.ts` module a case source imports, as the compiler's file resolver reads it
+ * (ADR-0070): the first framework import and the first unreadable relative import of the modules
+ * it reaches, each named relative to the importer's directory.
+ */
+function sharedModule(directory: string, specifier: string): SharedModule | undefined {
+  const first = fileOf(directory, specifier);
+  if (first === undefined || caseFile(first) === undefined) return undefined;
+  const local = (file: string) => relative(directory, file).split(sep).join("/");
+  const module: SharedModule = { file: local(first) };
+  const files = [first];
+  for (let index = 0; index < files.length; index++) {
+    const file = files[index]!;
+    for (const imported of moduleSpecifiers(parseModule(file, caseFile(file)!))) {
+      if (frameworkOf(imported) || isAuthoringModule(imported)) {
+        module.framework ??= { specifier: imported, file: local(file) };
+      } else if (imported.startsWith("./") || imported.startsWith("../")) {
+        const next = fileOf(dirname(file), imported);
+        if (next === undefined || caseFile(next) === undefined) {
+          module.unresolved ??= { specifier: imported, file: local(file) };
+        } else if (!files.includes(next)) {
+          files.push(next);
+        }
+      }
+    }
+  }
+  return module;
+}
+
 /**
  * A case source analysed as `compile()` analyses it: with the shapes of its types and the APIs
  * of the files it imports in its case, each read through the case's oracle, as the compiler's
- * file resolver gives them (ADR-0053, ADR-0067), and the stylesheets beside it (ADR-0063), whose
- * use of `:slotted()` only the codegen scoper reads: no case here needs it.
+ * file resolver gives them (ADR-0053, ADR-0067), the shared `.ts` modules it imports (ADR-0070),
+ * and the stylesheets beside it (ADR-0063), whose use of `:slotted()` only the codegen scoper
+ * reads: no case here needs it.
  */
 async function analyzeCase(file: string) {
   const parsed = parseModule(file, readFileSync(join(CASES, file), "utf8"));
@@ -116,9 +172,12 @@ async function analyzeCase(file: string) {
       stylesheets.set(specifier, undefined);
     }
   }
+  const modules = new Map(
+    sharedModuleImports(parsed).map((specifier) => [specifier, sharedModule(directory, specifier)]),
+  );
   const shapes = await shapesOf(parsed, oracle);
   await oracle.dispose();
-  return analyze(parsed, { imports, stylesheets, shapes });
+  return analyze(parsed, { imports, modules, stylesheets, shapes });
 }
 
 describe("the corpus", () => {

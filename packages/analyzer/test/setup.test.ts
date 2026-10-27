@@ -76,7 +76,7 @@ describe("directives", () => {
     expect(problems(source, diagnostics)).toEqual([]);
     const top = "foo();\nexport function A() { return <p />; }";
     expect(run(top).diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
-      "Top-level declarations other than imports and components are not supported yet.",
+      "Top-level declarations other than imports, components and `const`s are not supported yet.",
     ]);
   });
 

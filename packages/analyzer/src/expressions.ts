@@ -18,6 +18,7 @@ import {
   angularRespellsRegex,
   CLIENT_GLOBALS,
   createApiReference,
+  createBinding,
   createBindingReference,
   createCode,
   createEmitReference,
@@ -109,6 +110,7 @@ import type { Provenance } from "./origins.ts";
 import { isStatic } from "./props.ts";
 import type { EventParameter, PropBinding, RenderContext, SetupBinding } from "./render.ts";
 import { setupBindingOf } from "./render.ts";
+import type { SharedValue } from "./shared.ts";
 import {
   arrayOf,
   BOOLEAN,
@@ -593,6 +595,8 @@ class Walk {
    * summary does not list (`Math.random`, `toLocaleString`): UF3019 where render calls it.
    */
   nondeterministic: string | undefined;
+  /** The callee of the call being walked, while it is: a shared value's reference marks it. */
+  #callee: object | undefined;
 
   constructor(context: RenderContext, mode: Mode) {
     this.#context = context;
@@ -745,7 +749,7 @@ class Walk {
         if (render) return this.#impure(node, "`import()` loads a module");
         return this.#rejected(
           node,
-          "Dynamic imports are not supported yet: imports of modules land in M5.",
+          "Dynamic imports are not supported: a component imports a shared module's values with an `import` declaration.",
         );
       case "MetaProperty":
         if (render) {
@@ -962,9 +966,11 @@ class Walk {
             this.#unresolved(node);
             return UNKNOWN;
           }
+          const value = context.shared.values.get(resolution.declaration);
+          if (value) return this.#sharedRead(node, value, shorthand);
           this.#unsupported(
             node,
-            `\`${node.name}\` is declared at the module's top level, which a component cannot read yet: module-level declarations land in M5.`,
+            `\`${node.name}\` is declared at the module's top level, and is not a \`const\` a component reads: an injection key is read only by \`provide\` and \`inject\`.`,
           );
           return UNKNOWN;
         }
@@ -974,7 +980,7 @@ class Walk {
         return local.kinds;
       }
       case "import":
-        return this.#imported(node, resolution.declaration);
+        return this.#imported(node, resolution.declaration, shorthand);
       default:
         if (!render && node.name === "arguments") {
           return this.#rejected(
@@ -1195,19 +1201,23 @@ class Walk {
 
   /**
    * An imported name: an authoring API, recognised by binding (ADR-0006), is called at the top of
-   * the component's body (UF2005) but `nextTick`, which client code calls anywhere; another
-   * module's import is reported where it is imported, and read here as not supported yet.
+   * the component's body (UF2005) but `nextTick`, which client code calls anywhere; a shared
+   * module's value is an `import` binding (ADR-0070); any other module's import is reported where
+   * it is imported, or here where it is read as a value.
    */
-  #imported(node: AST.IdentifierReference, declaration: object): Kinds {
+  #imported(node: AST.IdentifierReference, declaration: object, shorthand: boolean): Kinds {
     const { authoring } = this.#context.setup;
     if (this.#context.passThrough.names.has(declaration)) {
       this.#passThroughValue(node, declaration);
       return UNKNOWN;
     }
+    const value = this.#context.shared.values.get(declaration);
+    if (value) return this.#sharedRead(node, value, shorthand);
+    if (this.#context.shared.failed.has(declaration)) return UNKNOWN;
     if (!authoring.has(declaration)) {
       this.#unsupported(
         node,
-        `\`${node.name}\` is imported from another module, which a component cannot read yet: imports of modules land in M5.`,
+        `\`${node.name}\` is imported from a module whose values a component does not read: it reads the values of shared \`.ts\` modules, renders the components it imports and passes the keys it imports to \`provide\` and \`inject\`.`,
       );
       return UNKNOWN;
     }
@@ -1228,6 +1238,20 @@ class Walk {
     }
     this.#misplaced(node, api, false);
     return UNKNOWN;
+  }
+
+  /**
+   * A read of a value the module imports from a shared module, or of a constant it declares
+   * (ADR-0070): read-only, and a binding of the component's, declared once, which every target
+   * reads as a module binding. A call's callee is marked as one.
+   */
+  #sharedRead(node: AST.IdentifierReference, value: SharedValue, shorthand: boolean): Kinds {
+    const { bindings } = this.#context;
+    if (!bindings.some((binding) => binding.id === value.id)) {
+      bindings.push(createBinding(value.name, value.kind, value.span));
+    }
+    this.refs.push(createBindingReference(value.id, span(node), shorthand, this.#callee === node));
+    return value.kinds;
   }
 
   /**
@@ -2682,7 +2706,10 @@ class Walk {
       }
       calleeKinds = FUNCTION;
     } else {
+      // A shared value's reference marks the call (ADR-0070).
+      this.#callee = callee;
       calleeKinds = this.value(callee, "value", false);
+      this.#callee = undefined;
       if (callee.type === "Identifier" && this.#isGlobal(callee)) {
         if (callee.name === "Array" && render) {
           this.#unsupported(
@@ -3335,8 +3362,15 @@ class Walk {
               }
               return other(binding ? `\`${inner.name}\`, ${WHAT[binding.kind]},` : undefined);
             }
-            if ((resolution.scope as AST.Node).type === "Program") return other();
+            if ((resolution.scope as AST.Node).type === "Program") {
+              const value = context.shared.values.get(resolution.declaration);
+              return other(value ? `\`${inner.name}\`, ${WHAT[value.kind]},` : undefined);
+            }
             return this.#heldBy(resolution.declaration, inner.name, visiting);
+          }
+          case "import": {
+            const value = context.shared.values.get(resolution.declaration);
+            return other(value ? `\`${inner.name}\`, ${WHAT[value.kind]},` : undefined);
           }
           default:
             return other();
@@ -4897,11 +4931,11 @@ class Walk {
         }
         if (resolution.kind === "variable") {
           if ((resolution.scope as AST.Node).type === "Program") {
-            this.#unsupported(
+            return invalid(
               node,
-              `\`${node.name}\` is declared at the module's top level, which a component cannot read yet: module-level declarations land in M5.`,
+              `\`${node.name}\` is declared at the module's top level, and code does not write it: a module's values are read-only (ADR-0070).`,
+              "Keep what changes in a `ref` of the component's setup.",
             );
-            return { kind: "invalid" };
           }
           return { kind: "local" };
         }

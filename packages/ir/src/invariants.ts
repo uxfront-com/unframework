@@ -1062,13 +1062,7 @@ function setupWalk(
         item.kind === "Function" ? [[item.binding, item] as const] : [],
       ),
     ),
-    staticConsts: new Set(
-      component.setup.flatMap((item) =>
-        item.kind === "Const" && !item.value.refs.some((ref) => ref.kind === "Binding")
-          ? [item.binding]
-          : [],
-      ),
-    ),
+    staticConsts: staticConsts(component),
     apis,
     keys,
     passThrough,
@@ -2894,6 +2888,28 @@ function checkProvidedRef(code: Code, path: string, walk: Walk): void {
         "must be a `state`, `derived` or `model` binding by its name: a key of a ref takes the ref itself",
     });
   }
+}
+
+/**
+ * The constants a getter's function may read, which Qwik hoists out of the component: a setup
+ * `const` that reads no binding but these, and a module's constants and imports, which are
+ * declared at the module's top level (ADR-0070).
+ */
+function staticConsts(component: UfComponent): Set<BindingId> {
+  const found = new Set(
+    component.bindings.flatMap(({ id, kind }) =>
+      kind === "moduleConst" || kind === "import" ? [id] : [],
+    ),
+  );
+  for (const item of component.setup) {
+    if (
+      item.kind === "Const" &&
+      item.value.refs.every((ref) => ref.kind !== "Binding" || found.has(ref.binding))
+    ) {
+      found.add(item.binding);
+    }
+  }
+  return found;
 }
 
 /**
