@@ -294,26 +294,40 @@ describe("props", () => {
 });
 
 describe("props types", () => {
+  // A props type whose members name a global, utility or undeclared type is read from its shape
+  // (ADR-0067), and reports as the syntax does.
   it.each([
-    ["a: () => void", "() => void", "Function types are not supported in props"],
-    ["a(): void", "a(): void", "Function types are not supported in props"],
-    ["[key: string]: string", "[key: string]: string", "Index signatures"],
-    ["a: any", "any", "`any` is not supported in props yet"],
-    ["a: unknown", "unknown", "`unknown`"],
-    ["a: object", "object", "`object`"],
-    ["a: {}", "{}", "The empty object type `{}`"],
-    ["a: symbol", "symbol", "`symbol`"],
-    ["a: bigint", "bigint", "`bigint`"],
-    ["a: [string, number]", "[string, number]", "A tuple type"],
-    ["a: `x-${string}`", "`x-${string}`", "A template literal type"],
-    ["a: Record<string, string>", "Record<string, string>", "Utility, global and imported types"],
-    ["a: Date", "Date", "`Date` is not a type this module declares"],
-    ["a: { b: string } & { c: string }", "{ b: string } & { c: string }", "An intersection type"],
-    ["a: keyof X", "keyof X", "`keyof`"],
-  ])("reports the member %s (UF1002)", (member, at, message) => {
+    ["a: () => void", "UF1002 () => void", "Function types are not supported in props"],
+    ["a(): void", "UF1002 a(): void", "Function types are not supported in props"],
+    [
+      "[key: string]: string",
+      "UF6002 [key: string]: string",
+      "An index signature needs a type checker",
+    ],
+    ["a: any", "UF6002 any", "`any` is not a type a prop can take"],
+    ["a: unknown", "UF6002 unknown", "`unknown`"],
+    ["a: object", "UF6002 object", "`object`"],
+    ["a: {}", "UF6002 {}", "The empty object type `{}`"],
+    ["a: symbol", "UF6002 symbol", "`symbol`"],
+    ["a: bigint", "UF6002 bigint", "`bigint`"],
+    ["a: [string, number]", "UF6002 [string, number]", "A tuple type"],
+    ["a: `x-${string}`", "UF6002 `x-${string}`", "A template literal type needs a type checker"],
+    [
+      "a: Record<string, string>",
+      "UF6002 Record<string, string>",
+      "`Record<string, string>` needs a type checker",
+    ],
+    ["a: Date", "UF6001 Date", "`Date` is neither declared nor imported by this module"],
+    [
+      "a: { b: string } & { c: string }",
+      "UF6002 { b: string } & { c: string }",
+      "An intersection type is not a type a prop can take",
+    ],
+    ["a: keyof X", "UF6002 keyof X", "`keyof X` needs a type checker"],
+  ])("reports the member %s", (member, problem, message) => {
     const source = `interface P { ${member} }\nexport function A(props: P) { return <p />; }`;
     const { diagnostics } = run(source);
-    expect(problems(source, diagnostics)[0]).toBe(`UF1002 ${at}`);
+    expect(problems(source, diagnostics)[0]).toBe(problem);
     expect(diagnostics[0]!.message).toContain(message);
   });
 
@@ -328,18 +342,22 @@ describe("props types", () => {
   });
 
   it.each([
-    ["export function A(props: Imported) { return <p />; }", "Imported"],
-    [
-      "export function A(props: Partial<{ a: string }>) { return <p />; }",
-      "Partial<{ a: string }>",
-    ],
+    ["export function A(props: Imported) { return <p />; }", "UF6001 Imported"],
     [
       "export function A(props: { a: string } | { b: string }) { return <p />; }",
-      "{ a: string } | { b: string }",
+      "UF6004 { a: string } | { b: string }",
     ],
-    ['type U = "a" | "b";\nexport function A(props: U) { return <p />; }', '"a" | "b"'],
-  ])("reports the props type in %s as not supported yet", (source, at) => {
-    expect(problems(source, run(source).diagnostics)).toEqual([`UF1002 ${at}`]);
+    ['type U = "a" | "b";\nexport function A(props: U) { return <p />; }', "UF6004 U"],
+    [
+      'type M = { [K in "a"]: string };\nexport function A(props: M) { return <p />; }',
+      'UF6002 { [K in "a"]: string }',
+    ],
+    [
+      "interface L { x: string }\ninterface C { x: number }\nexport function A(props: L & C) { return <p />; }",
+      "UF6005 L & C",
+    ],
+  ])("reports the props type in %s", (source, problem) => {
+    expect(problems(source, run(source).diagnostics)).toEqual([problem]);
   });
 
   it.each([
@@ -347,11 +365,6 @@ describe("props types", () => {
       "interface P { a: string }\ninterface P { b: string }\nexport function A(props: P) { return <p />; }",
       "UF1002 P",
       "`P` is declared twice: TypeScript merges the declarations, which the outputs would not.",
-    ],
-    [
-      "interface Base { a: string }\ninterface P extends Base { b: string }\nexport function A(props: P) { return <p />; }",
-      "UF1002 Base",
-      "Interfaces that extend others are not supported in props yet: they land in M5.",
     ],
     [
       "interface P<T> { a: T }\nexport function A(props: P<string>) { return <p />; }",
@@ -371,7 +384,7 @@ describe("props types", () => {
     [
       "interface Unused { a: string }\nexport function A() { return <p />; }",
       "UF1002 Unused",
-      "`Unused` is not used by any component: types that a module exports on their own land in M5.",
+      "`Unused` is neither exported nor used by any component, so no output would declare it.",
     ],
     [
       "interface CSSProperties { a: string }\nexport function A(props: CSSProperties) { return <p />; }",

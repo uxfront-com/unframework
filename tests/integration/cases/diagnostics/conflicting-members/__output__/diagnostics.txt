@@ -1,0 +1,8 @@
+error[UF6005]: `label` is declared with different types by `Labelled` and `Counted`: the targets declare each prop once, with one type.
+  --> diagnostics/conflicting-members/Badge.uf.tsx:11:42
+   |
+11 | export default function Badge({ label }: Labelled & Counted) {
+   |                                          ^^^^^^^^^^^^^^^^^^
+   |
+   = help: Declare the member once, or give both declarations the same type and optionality.
+   = see: https://unframework.dev/diagnostics/UF6005

@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF6004",
+    "severity": "error",
+    "message": "The props type resolves to a union, not to an object type: the targets declare the members of one object type as props.",
+    "file": "diagnostics/props-not-object/Badge.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 38,
+      "offset": 266
+    },
+    "end": {
+      "line": 5,
+      "column": 48,
+      "offset": 276
+    },
+    "help": "Give the component one object type of props. Write alternatives as optional members, or as a member whose literal union says which applies."
+  }
+]

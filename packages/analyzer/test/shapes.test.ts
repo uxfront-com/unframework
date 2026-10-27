@@ -1,0 +1,282 @@
+import { checkInvariants } from "@unframework/ir";
+import type { UfModule } from "@unframework/ir";
+import { parseModule } from "@unframework/parser";
+import { createSyntacticOracle } from "@unframework/type-oracle";
+import type { TypeShape } from "@unframework/type-oracle";
+import { describe, expect, it } from "vitest";
+
+import { analyze, shapeQueries } from "../src/index.ts";
+import type { AnalyzeResult } from "../src/index.ts";
+import { codes, only, problems, run } from "./helpers.ts";
+
+/**
+ * Analyses `A.uf.tsx` as `compile()` does (ADR-0067): it asks a syntactic oracle over the
+ * files for the shape of every type `shapeQueries` names, and hands the shapes to `analyze`.
+ */
+async function analyzeWith(files: Record<string, string>): Promise<AnalyzeResult> {
+  const parsed = parseModule("A.uf.tsx", files["A.uf.tsx"]!);
+  const oracle = createSyntacticOracle({
+    root: "/project",
+    readFile: async (path) => files[path.slice("/project/".length)],
+  });
+  const shapes = new Map<string, TypeShape>();
+  for (const query of shapeQueries(parsed)) {
+    shapes.set(`${query.span.start}:${query.span.end}`, await oracle.resolveShape(query));
+  }
+  const result = analyze(parsed, { shapes: (span) => shapes.get(`${span.start}:${span.end}`) });
+  if (result.module) expect(checkInvariants(result.module)).toEqual([]);
+  return result;
+}
+
+const TYPES = [
+  "interface Hidden { id: string }",
+  "export interface Base extends Hidden { tone?: Tone }",
+  'export type Tone = "info" | "danger";',
+  "export interface ButtonProps extends Base { label: string; disabled?: boolean }",
+].join("\n");
+
+describe("shapeQueries", () => {
+  it("names each type an API is declared by, and setup types that name an import", () => {
+    const source = [
+      'import type { Item } from "./types.ts";',
+      'import { defineEmits, defineModel, defineSlots, ref } from "unframework";',
+      'import type { InjectionKey } from "unframework";',
+      "export const Key: InjectionKey<Item> = Symbol();",
+      "interface P { a: string }",
+      "export function A(props: P) {",
+      "  const emit = defineEmits<{ pick: [item: Item] }>();",
+      "  const open = defineModel<boolean>();",
+      "  defineSlots<{ default(): unknown }>();",
+      "  const item = ref<Item | null>(null);",
+      "  const count = ref<number>(0);",
+      "  return <p />;",
+      "}",
+    ].join("\n");
+    const queries = shapeQueries(parseModule("A.uf.tsx", source));
+    expect(queries.map(({ span }) => source.slice(span.start, span.end))).toEqual([
+      "InjectionKey<Item>",
+      "Item",
+      "P",
+      "{ pick: [item: Item] }",
+      "boolean",
+      "{ default(): unknown }",
+      "Item | null",
+    ]);
+    expect(queries.every(({ file }) => file === "A.uf.tsx")).toBe(true);
+  });
+});
+
+describe("props types read through the type oracle", () => {
+  it("accepts an imported props type, with each member's declaring file and declaration", async () => {
+    const files = {
+      "types.ts": TYPES,
+      "A.uf.tsx": [
+        'import type { ButtonProps } from "./types.ts";',
+        "export function A({ label, tone }: ButtonProps) {",
+        "  return <p class={tone}>{label}</p>;",
+        "}",
+      ].join("\n"),
+    };
+    const { module, diagnostics } = await analyzeWith(files);
+    expect(diagnostics).toEqual([]);
+    const a = only(module);
+    const annotation = files["A.uf.tsx"].indexOf("ButtonProps)");
+    const at = { start: annotation, end: annotation + "ButtonProps".length };
+    expect(
+      a.props.map(({ name, optional, type, span, declaredBy }) => [
+        name,
+        optional,
+        type,
+        span,
+        declaredBy && [declaredBy.file, declaredBy.declaration],
+      ]),
+    ).toEqual([
+      ["label", false, { code: "string", span: at }, at, ["types.ts", "ButtonProps"]],
+      ["disabled", true, { code: "boolean", span: at }, at, ["types.ts", "ButtonProps"]],
+      ["tone", true, { code: "Tone", span: at }, at, ["types.ts", "Base"]],
+      ["id", false, { code: "string", span: at }, at, ["types.ts", "Hidden"]],
+    ]);
+    const { declaredBy } = a.props[0]!;
+    expect(TYPES.slice(declaredBy!.span.start, declaredBy!.span.end)).toBe("label: string;");
+    expect(module!.typeImports).toEqual([
+      {
+        specifier: "./types.ts",
+        names: [{ imported: "ButtonProps", local: "ButtonProps", span: expect.any(Object) }],
+        span: { start: 0, end: files["A.uf.tsx"].indexOf("\n") },
+      },
+    ]);
+    // A type the module imports is not one it declares: no output copies it.
+    expect(a.types).toEqual([]);
+  });
+
+  it("accepts `extends`, an intersection and a utility type of the module's own types", async () => {
+    const source = [
+      "interface Base { id: string; tone?: string }",
+      "interface P extends Base { label: string }",
+      'type Q = Pick<Base, "tone"> & { size: number };',
+      "export function A(props: P) { return <p>{props.label}</p>; }",
+      "export function B(props: Q) { return <p>{props.size}</p>; }",
+    ].join("\n");
+    const { module, diagnostics } = await analyzeWith({ "A.uf.tsx": source });
+    expect(diagnostics).toEqual([]);
+    const [a, b] = module!.components;
+    const text = (prop: { span: { start: number; end: number } }) =>
+      source.slice(prop.span.start, prop.span.end);
+    expect(a!.props.map((prop) => [prop.name, text(prop), prop.declaredBy?.declaration])).toEqual([
+      ["label", "label: string", undefined],
+      ["id", "id: string;", "Base"],
+      ["tone", "tone?: string", "Base"],
+    ]);
+    expect(b!.props.map((prop) => [prop.name, prop.declaredBy?.declaration])).toEqual([
+      ["tone", "Base"],
+      ["size", undefined],
+    ]);
+    // Each output copies the declarations the props reach, the extended one too.
+    expect(a!.types).toEqual(["Base", "P"]);
+    expect(b!.types).toEqual(["Base", "Q"]);
+  });
+
+  it("reads an imported prop's kinds from its shape", async () => {
+    const files = {
+      "types.ts": "export interface P { flag?: boolean | string }",
+      "A.uf.tsx":
+        'import type { P } from "./types.ts";\nexport function A(props: P) { return <p />; }',
+    };
+    const { diagnostics } = await analyzeWith(files);
+    // Vue reads `""` as `true` (ADR-0034), reported at the one span this module holds.
+    expect(problems(files["A.uf.tsx"], diagnostics)).toEqual(["UF1002 P"]);
+    expect(diagnostics[0]!.message).toContain("both a boolean and any string");
+  });
+
+  it.each([
+    [
+      "a module that does not exist",
+      {
+        "A.uf.tsx":
+          'import type { P } from "./missing.ts";\nexport function A(props: P) { return <p />; }',
+      },
+      "UF6001 P",
+      "`P` cannot be resolved: the type oracle cannot read the module it is imported from.",
+    ],
+    [
+      "a type the module does not export",
+      {
+        "types.ts": "interface P { a: string }",
+        "A.uf.tsx":
+          'import type { P } from "./types.ts";\nexport function A(props: P) { return <p />; }',
+      },
+      "UF6001 P",
+      "`P` cannot be resolved: the module it is imported from does not export it.",
+    ],
+    [
+      "a construct of another file the oracle cannot evaluate",
+      {
+        "types.ts": 'export type P = { [K in "a" | "b"]: string };',
+        "A.uf.tsx":
+          'import type { P } from "./types.ts";\nexport function A(props: P) { return <p />; }',
+      },
+      "UF6002 P",
+      '`{ [K in "a" | "b"]: string }` in `types.ts` needs a type checker to evaluate, and the default type oracle reads types as written.',
+    ],
+    [
+      "a member of another file whose type is a function",
+      {
+        "types.ts": "export interface P { onPick: () => void }",
+        "A.uf.tsx":
+          'import type { P } from "./types.ts";\nexport function A(props: P) { return <p />; }',
+      },
+      "UF1002 P",
+      "Function types are not supported in props: a callback is an event, which a component declares with `defineEmits` (ADR-0047), and a render function is a slot (`defineSlots`).",
+    ],
+    [
+      "members two files give different types",
+      {
+        "types.ts": "export interface L { x: string }",
+        "A.uf.tsx": [
+          'import type { L } from "./types.ts";',
+          "interface C { x: number }",
+          "export function A(props: L & C) { return <p />; }",
+        ].join("\n"),
+      },
+      "UF6005 L & C",
+      "`x` is declared with different types by `L` and `C`: the targets declare each prop once, with one type.",
+    ],
+    [
+      "a type another file declares without `export`",
+      {
+        "types.ts": "interface Item { id: string }\nexport interface P { item: Item }",
+        "A.uf.tsx":
+          'import type { P } from "./types.ts";\nexport function A(props: P) { return <p />; }',
+      },
+      "UF6003 P",
+      "`item`'s type names `Item`, which `types.ts` declares without `export`: an output that writes the prop's type cannot import it.",
+    ],
+  ])("reports %s", async (_, files, problem, message) => {
+    const { module, diagnostics } = await analyzeWith(files as Record<string, string>);
+    expect(problems(files["A.uf.tsx"], diagnostics)).toEqual([problem]);
+    expect(diagnostics[0]!.message).toBe(message);
+    expect(module?.components ?? []).toEqual([]);
+  });
+
+  it("reports an imported props type when it is given no shapes (UF6001)", () => {
+    const source =
+      'import type { P } from "./types.ts";\nexport function A(props: P) { return <p />; }';
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF6001 P"]);
+    expect(diagnostics[0]!.help).toContain("compile()");
+  });
+
+  it("accepts a utility type of a local object without shapes", () => {
+    const source = "export function A(props: Partial<{ a: string }>) { return <p />; }";
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    expect(only(module).props.map(({ name, optional }) => [name, optional])).toEqual([["a", true]]);
+  });
+});
+
+/** Each type export of a module, as one line. */
+const exports = (module: UfModule | undefined) =>
+  module?.typeExports?.map((entry) =>
+    entry.kind === "ReExport"
+      ? `${entry.specifier}: ${entry.names.map((name) => `${name.imported} as ${name.exported}`).join(", ")}`
+      : `${entry.name}: ${entry.code}`,
+  );
+
+describe("type exports", () => {
+  it("records re-exports and the exported types no component reaches", () => {
+    const source = [
+      'export type { Tone, Size as Scale } from "./types.ts";',
+      'export { type Item } from "./item.ts";',
+      'export type Shade = "light" | "dark";',
+      "export function A() { return <p />; }",
+    ].join("\n");
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    expect(exports(module)).toEqual([
+      "./types.ts: Tone as Tone, Size as Scale",
+      "./item.ts: Item as Item",
+      'Shade: type Shade = "light" | "dark";',
+    ]);
+  });
+
+  it("exports a local type that an export list names, as its declaration would", () => {
+    const source = [
+      'type Shade = "light" | "dark";',
+      "interface P { shade: Shade }",
+      "export type { Shade, P };",
+      "export function A(props: P) { return <p />; }",
+    ].join("\n");
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    expect(module!.types.map(({ name, exported }) => [name, exported])).toEqual([
+      ["Shade", true],
+      ["P", true],
+    ]);
+    expect(
+      codes(
+        run("type T = string;\nexport type { T as U };\nexport function A() { return <p />; }")
+          .diagnostics,
+      ),
+    ).toEqual(["UF1002", "UF1002"]);
+  });
+});

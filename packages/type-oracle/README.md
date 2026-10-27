@@ -72,8 +72,8 @@ The TypeOracle interface and the syntactic resolver (plan §5.5).
   name and arguments (`Tree<string>`). It rejects a type with unresolved parts, and a recursive
   object with no name, which TypeScript cannot write without one.
 - **`localShapes(parsed, filename)`** is the same resolution over one parsed module, synchronous,
-  and it reads no file. An imported name is `unresolved` as `external`. It is meant for
-  `analyze()` when it is given no shapes; the analyser does not call it yet.
+  and it reads no file. An imported name is `unresolved` as `external`. `analyze()` reads it when
+  it is given no shapes.
 - **`printShape(shape)`** prints a shape as a TypeScript type, and throws for a recursive object
   with no name. With `{ canonical: true }` it sorts unions and members, prints that recursion as
   `(cycle ^n)` and an unresolved opaque node as `(unresolved)`, which is how the contract

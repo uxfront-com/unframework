@@ -12,6 +12,7 @@ import { isComponentName } from "@unframework/parser";
 import type { AuthoringApi } from "./authoring.ts";
 import type { ComponentFunction } from "./render.ts";
 import type { Scopes } from "./scope.ts";
+import type { Shapes } from "./shapes.ts";
 import type { TypeTable } from "./types/from-type.ts";
 
 /** What reading a component's API needs of its module. */
@@ -19,6 +20,8 @@ export interface ApiContext {
   readonly source: string;
   readonly scopes: Scopes;
   readonly types: TypeTable;
+  /** The shapes of the types the module writes where an API is declared (ADR-0067). */
+  readonly shapes: Shapes;
   /** The module's authoring imports, by the identifier that declares each. */
   readonly authoring: ReadonlyMap<object, AuthoringApi | undefined>;
 }

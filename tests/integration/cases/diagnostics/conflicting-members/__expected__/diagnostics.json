@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF6005",
+    "severity": "error",
+    "message": "`label` is declared with different types by `Labelled` and `Counted`: the targets declare each prop once, with one type.",
+    "file": "diagnostics/conflicting-members/Badge.uf.tsx",
+    "start": {
+      "line": 11,
+      "column": 42,
+      "offset": 274
+    },
+    "end": {
+      "line": 11,
+      "column": 60,
+      "offset": 292
+    },
+    "help": "Declare the member once, or give both declarations the same type and optionality."
+  }
+]

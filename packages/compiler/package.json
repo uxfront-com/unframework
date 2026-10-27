@@ -58,7 +58,8 @@
     "@unframework/target-react": "workspace:*",
     "@unframework/target-solid": "workspace:*",
     "@unframework/target-svelte": "workspace:*",
-    "@unframework/target-vue": "workspace:*"
+    "@unframework/target-vue": "workspace:*",
+    "@unframework/type-oracle": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",
