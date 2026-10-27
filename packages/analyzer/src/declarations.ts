@@ -4,7 +4,8 @@
 // reach must be a type every target's props can declare (ADR-0034); one only the setup
 // reaches is copied, so it must only copy safely (ADR-0045); and one no component reaches is
 // exported on its own (ADR-0068), or reported. Every props type is read from its shape, through
-// the type oracle (ADR-0067), and the members of the declarations it reaches are checked there
+// the type oracle (ADR-0067); the members of the declarations it reaches are checked as written
+// (`checkMembers`, `checkType`) by the props, which leave to the shape what only it resolves
 // (`props.ts`).
 
 import type { DiagnosticCode } from "@unframework/diagnostics";
@@ -141,7 +142,7 @@ export function closure(type: unknown, table: TypeTable): string[] {
  * Checks a top-level type declaration: declared once, generic-free, holding no text that would
  * end a script block or Astro's frontmatter, named apart from the types the outputs declare,
  * and reached by some component's props or setup, or exported. The members of a type the props
- * reach are checked on their shapes (`props.ts`).
+ * reach are checked by the props (`props.ts`).
  */
 export function checkTypeDeclaration(
   declaration: TypeDeclarationStatement,
@@ -220,8 +221,8 @@ export function checkTypeDeclaration(
   }
   checkCopiedText({ start: node.start, end: node.end }, source, reporter, "A type declaration");
   checkDirectives({ start: node.start, end: node.end }, comments, reporter);
-  // Its members are checked on the shapes of the props that reach it, which resolve what it
-  // extends and imports (ADR-0067).
+  // Its members are checked by the props that reach it, as written where the syntax can read
+  // them and on their shapes where only the type oracle resolves them (ADR-0067).
 }
 
 /**
@@ -328,9 +329,9 @@ const PROP_TYPES =
 /**
  * Checks a member's type: the types every target's props can declare (ADR-0034). With `shaped`,
  * the names a props type imports, the type is one the props read from their shape (ADR-0067): an
- * imported type, a utility or generic type and the parts of an intersection of object types are
- * checked on the shape, where they are resolved, and an intersection with any other part is
- * reported here.
+ * imported type and a utility or generic type are left to the props' check of the shape, where
+ * they are resolved; an intersection's object parts are checked here, and an intersection with
+ * any other part, or of empty object types alone, is reported.
  */
 export function checkType(
   type: AST.TSType,
@@ -426,7 +427,11 @@ export function checkType(
           checkType(part, types, reporter, shaped);
         } else if (part.type !== "TSTypeReference") other = true;
       }
+      const empty = type.types.every(
+        (part) => part.type === "TSTypeLiteral" && !part.members.length,
+      );
       if (other) report(types, reporter, "UF6002", type, ...notAProp(INTERSECTION));
+      else if (empty) later("An intersection of empty object types");
       return;
     }
     default:

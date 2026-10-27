@@ -396,11 +396,11 @@ describe("props types", () => {
     ['interface P { s: "a" | (string & {}); c: {} }', ["UF6002 string & {}", "UF6002 {}"]],
     [
       'type Size = "sm" | (string & {});\ninterface P { s: string; c: Size | {} }',
-      ["UF6002 string & {}", "UF6002 {}"],
+      ["UF6002 {}", "UF6002 string & {}"],
     ],
     [
       "type B = string & {};\ninterface P { c: { b: B; e: {} } }",
-      ["UF6002 string & {}", "UF6002 {}"],
+      ["UF6002 {}", "UF6002 string & {}"],
     ],
     ["interface P { c: {}[] }", ["UF6002 {}"]],
   ])("reports a written `{}` beside another member's problem: %s", (types, expected) => {
@@ -438,6 +438,46 @@ describe("props types", () => {
   ])("reports what %s writes where it is written", (types, expected) => {
     const source = `${types}\nexport function A(props: P) { return <p />; }`;
     expect(problems(source, run(source).diagnostics)).toEqual(expected);
+  });
+
+  // What a utility or a generic builds is the shape's: only the members that survive it.
+  it.each([
+    ['interface Base { a: string; b: object }\ntype P = Omit<Base, "b">;', []],
+    ['interface Base { a: string; onClick(): void }\ntype P = Pick<Base, "a">;', []],
+    ['type F = () => void;\ninterface Base { a: string; b: F }\ntype P = Omit<Base, "b">;', []],
+    ['interface Base { a: string; b: object }\ninterface P extends Omit<Base, "b"> {}', []],
+    ['type P = Omit<{ a: string; b: object }, "b">;', []],
+    ["type P = Partial<{ m: {} }>;", ["UF6002 {}"]],
+    ["type P = Readonly<{ m: () => void }>;", ["UF1002 () => void"]],
+    ["type P = Required<{ m?: object }>;", ["UF6002 object"]],
+    ["interface P extends Partial<{ m: Date }> {}", ["UF6001 Date"]],
+    // A member written twice is the syntax's UF2001, inside an intersection too.
+    ["interface P { m: { a: string; a: number } & {} }", ["UF2001 a"]],
+    ["type P = Partial<{ m: { (): void } }>;", ["UF1002 (): void"]],
+    ["type P = Readonly<{ m: { [k: string]: string } }>;", ["UF6002 [k: string]: string"]],
+    // An intersection of empty object types is `{}`.
+    ["interface P { m: {} & {} }", ["UF6002 {} & {}"]],
+    // A props type that is no object is reported once, as a whole.
+    ["type P = object;", ["UF6004 P"]],
+    ["type P = () => void;", ["UF6004 P"]],
+    ["type P = Missing;", ["UF6001 P"]],
+  ])("reports %s as the shape gives it", (types, expected) => {
+    const source = `${types}\nexport function A(props: P) { return <p />; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual(expected);
+  });
+
+  it("reports an enum a member names as the oracle does", () => {
+    const source =
+      "enum E { A }\ninterface P { e: E }\nexport function A(props: P) { return <p />; }";
+    expect(problems(source, run(source).diagnostics)).toContain("UF6002 E");
+  });
+
+  it("reports a nested conflict at the innermost intersection", () => {
+    const source =
+      "type P = { m: { a: string } & { a: number } } & { s: string };\nexport function A(props: P) { return <p />; }";
+    expect(problems(source, run(source).diagnostics)).toEqual([
+      "UF6005 { a: string } & { a: number }",
+    ]);
   });
 
   // R5: a conflict in a member's intersection names the member, where it is written.
