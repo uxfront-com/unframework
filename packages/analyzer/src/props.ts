@@ -12,6 +12,7 @@ import {
   createPropsParameter,
   createTypeText,
   isIdentifier,
+  RESERVED_TYPE_NAMES,
   reservedPropName,
   reservedPropsParameterName,
 } from "@unframework/ir";
@@ -155,7 +156,10 @@ export function analyzeProps(
   checkDirectives(span(annotation), comments, reporter);
   // The outputs copy the annotation as written, as they copy a type declaration.
   checkCopiedText(span(annotation), source, reporter, "A props type");
-  const read = shapeMembers(annotation, types, shapes, parsed, reporter);
+  // A generic component's props may name its type parameters (ADR-0068).
+  const parameters = fn.typeParameters?.params.map((each) => each.name.name) ?? [];
+  const scoped = parameters.length ? { ...types, parameters: new Set(parameters) } : types;
+  const read = shapeMembers(annotation, scoped, shapes, parsed, reporter);
   if (!read) {
     result.failed = true;
     return result;
@@ -254,6 +258,91 @@ export function analyzeProps(
   result.bindings.sort((a, b) => a.span.start - b.span.start);
   if (reporter.hasErrorsSince(mark)) result.failed = true;
   return result;
+}
+
+/**
+ * Checks a generic component's type parameters (ADR-0068), which the outputs copy as written into
+ * each target's generic form: each named once, as a type is named, and apart from the module's
+ * types and the types the outputs declare, without `const`, and each constraint and default
+ * safe to copy and checked as the syntax reads a setup's types (members it reaches are not).
+ */
+export function checkTypeParameters(
+  fn: ComponentFunction,
+  types: ModuleTypes,
+  parsed: ParsedModule,
+  reporter: Reporter,
+): void {
+  const parameters = fn.typeParameters?.params ?? [];
+  if (!parameters.length) return;
+  const { source, comments } = parsed;
+  const scoped: ModuleTypes = {
+    ...types,
+    reported: new Set(),
+    parameters: new Set(parameters.map((each) => each.name.name)),
+  };
+  const shaped = new Set(typeImportsOf(parsed.program).keys());
+  const names = new Set<string>();
+  for (const parameter of parameters) {
+    const { name } = parameter.name;
+    if (names.has(name)) {
+      reporter.unsupported(
+        parameter.name,
+        `\`${name}\` is declared twice in the component's type parameters: TypeScript rejects the second.`,
+        { help: "Declare it once." },
+      );
+    } else if (types.table.declaration(name)) {
+      reporter.unsupported(
+        parameter.name,
+        `\`${name}\` names a type parameter and a type of this module: the compiler would read one as the other.`,
+        { help: "Rename the type parameter or the type." },
+      );
+    }
+    names.add(name);
+    if (!isIdentifier(name)) {
+      reporter.unsupported(
+        parameter.name,
+        `\`${name}\` is not written in ASCII letters, digits, \`_\` and \`$\`: the outputs name types as Angular's templates read names.`,
+        { help: "Rename the type parameter." },
+      );
+    }
+    const clash = RESERVED_TYPE_NAMES.get(name);
+    if (clash) {
+      reporter.report(
+        "UF2003",
+        parameter.name,
+        `A type parameter cannot be named \`${name}\`: ${clash}.`,
+        {
+          help: "Rename the type parameter.",
+        },
+      );
+    }
+    if (parameter.const) {
+      reporter.unsupported(
+        { start: parameter.start, end: parameter.start + "const".length },
+        "A `const` type parameter is not supported: the targets' generic forms would infer it as a plain one.",
+        { help: "Remove `const`." },
+      );
+    }
+    for (const [type, what] of [
+      [parameter.constraint, "A type parameter's constraint"],
+      [parameter.default, "A type parameter's default"],
+    ] as const) {
+      if (!type) continue;
+      checkDirectives(span(type), comments, reporter);
+      checkCopiedText(span(type), source, reporter, what);
+      // Checked as the syntax reads a setup's types: its members are not.
+      const probe = new Reporter(reporter.file);
+      checkType(type, scoped, probe, shaped);
+      for (const diagnostic of probe.diagnostics) {
+        const [message, help] = /^(This type|`[a-z]+`) needs a type checker/.test(
+          diagnostic.message,
+        )
+          ? needsChecker(quoted(source.slice(diagnostic.span.start, diagnostic.span.end)))
+          : [diagnostic.message, diagnostic.help];
+        report(types, reporter, diagnostic.code, diagnostic.span, message, help);
+      }
+    }
+  }
 }
 
 /** Reports a problem of a props type, and fails the component it was found for. */
@@ -795,17 +884,38 @@ function ownDeclarations(annotation: AST.TSType, types: ModuleTypes): Set<string
     if (
       type.type !== "TSTypeReference" ||
       type.typeName.type !== "Identifier" ||
-      type.typeArguments ||
       names.has(type.typeName.name)
     ) {
       return names;
     }
     const declaration = types.table.declaration(type.typeName.name);
-    if (!declaration) return names;
+    if (!declaration || !ownArguments(type, declaration.node)) return names;
     names.add(type.typeName.name);
     if (declaration.node.type === "TSInterfaceDeclaration") return names;
     type = declaration.node.typeAnnotation;
   }
+}
+
+/**
+ * Whether a reference passes a declaration its own type parameters, by name and in order, as
+ * `(props: ListProps<T>)` does for `interface ListProps<T>` (ADR-0068): its members' text then
+ * reads the same where the component writes it. A reference without type arguments passes a
+ * declaration without type parameters.
+ */
+function ownArguments(
+  reference: AST.TSTypeReference,
+  declaration: AST.TSInterfaceDeclaration | AST.TSTypeAliasDeclaration,
+): boolean {
+  const passed = reference.typeArguments?.params ?? [];
+  const declared = declaration.typeParameters?.params ?? [];
+  return (
+    passed.length === declared.length &&
+    passed.every((argument, index) => {
+      if (argument.type !== "TSTypeReference" || argument.typeArguments) return false;
+      const { typeName } = argument;
+      return typeName.type === "Identifier" && typeName.name === declared[index]!.name.name;
+    })
+  );
 }
 
 /** Where a problem in a nested member's type is reported, given where its object is used. */

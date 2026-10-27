@@ -57,6 +57,14 @@ checked as the declaration its likely fix writes (`analyze.ts`).
   TypeScript in that file, and the oracle reports its intersections' conflicts). Each top-level type
   declaration is reached by some component's props or setup, which the outputs copy as written, or
   exported on its own (`typeExports`); an export list may export a local type by its own name.
+- **Generic components** (`analyze.ts`, `props.ts`, ADR-0068):
+  `function List<T>(props: ListProps<T>)` records its type parameters, with their constraints and
+  defaults as written, in `UfComponent.typeParameters`, and their names in
+  `ComponentApi.typeParameters`. Its props, slots and events' payloads may name them, and a slot
+  records the names its props reference. A declaration given its own type parameters, by name and
+  in order, is the props type's own; any other instantiation is another declaration's
+  (`declaredBy`). Type arguments on a tag (`<List<string> />`), and a generic component as a
+  candidate of `<component is>`, are UF6006: its consumer's props infer `T`.
 - **Types from other modules** (`shapes.ts`, ADR-0067): `import type` (or a `type` specifier) from
   any module but the authoring API and a framework is a `typeImports` entry, which every output
   re-imports by name; `export type { … } from` is a `typeExports` re-export. The analyser is

@@ -51,6 +51,9 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
     inheritAttrs: true,
     root: "other",
   };
+  // A parent reads it to reject explicit type arguments and `<component is>` (UF6006).
+  const parameters = node.typeParameters?.params ?? [];
+  if (parameters.length) api.typeParameters = parameters.map((parameter) => parameter.name.name);
   for (const statement of body) {
     const call = macroCall(statement, context);
     if (!call) continue;

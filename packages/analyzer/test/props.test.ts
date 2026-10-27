@@ -477,15 +477,12 @@ describe("props types", () => {
     ["type P = {};", ["UF6002 {}"]],
     ["type P = {} & {};", []],
     // A generic's type argument is reported where it is written, at each use.
-    ["interface G<T> { v: T }\ninterface P { g: G<object> }", ["UF1002 <T>", "UF6002 G<object>"]],
+    ["interface G<T> { v: T }\ninterface P { g: G<object> }", ["UF6002 G<object>"]],
     [
       "interface G<T> { v: T }\ninterface P { g: G<object>; h: G<{}> }",
-      ["UF1002 <T>", "UF6002 G<object>", "UF6002 G<{}>"],
+      ["UF6002 G<object>", "UF6002 G<{}>"],
     ],
-    [
-      "type G<T> = Partial<{ v: T }>;\ninterface P { m: G<() => void> }",
-      ["UF1002 <T>", "UF1002 G<() => void>"],
-    ],
+    ["type G<T> = Partial<{ v: T }>;\ninterface P { m: G<() => void> }", ["UF1002 G<() => void>"]],
   ])("reports %s as the base does", (types, expected) => {
     const source = `${types}\nexport function A(props: P) { return <p />; }`;
     expect(problems(source, run(source).diagnostics)).toEqual(expected);
@@ -562,11 +559,6 @@ describe("props types", () => {
       "interface P { a: string }\ninterface P { b: string }\nexport function A(props: P) { return <p />; }",
       "UF1002 P",
       "`P` is declared twice: TypeScript merges the declarations, which the outputs would not.",
-    ],
-    [
-      "interface P<T> { a: T }\nexport function A(props: P<string>) { return <p />; }",
-      "UF1002 <T>",
-      "Generic types are not supported in props yet: they land in M5.",
     ],
     [
       'interface P { a: "</script>" }\nexport function A(props: P) { return <p />; }',

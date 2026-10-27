@@ -64,6 +64,29 @@ describe("compile() with a type oracle", () => {
     await oracle.dispose();
   });
 
+  it("reads an imported type that a type parameter's constraint names (ADR-0068)", async () => {
+    const list = [
+      'import type { Item } from "./types.ts";',
+      "export default function List<T extends Item>({ items }: { items: T[] }) {",
+      "  return <ul>{items.map((item) => <li key={item.id}>{item.id}</li>)}</ul>;",
+      "}",
+    ].join("\n");
+    const oracle = memoryOracle({
+      "List.uf.tsx": list,
+      "types.ts": "export interface Item { id: string }",
+    });
+    const result = await compile(list, {
+      filename: "List.uf.tsx",
+      targets: [],
+      typeOracle: oracle,
+    });
+    expect(result.diagnostics).toEqual([]);
+    expect(
+      result.ir!.components[0]!.typeParameters!.map(({ constraint }) => constraint?.code),
+    ).toEqual(["Item"]);
+    await oracle.dispose();
+  });
+
   it("reads the source's own types without an oracle, and reports an imported one (UF6001)", async () => {
     const result = await compile(BUTTON, { filename: "Button.uf.tsx", targets: [] });
     expect(result.diagnostics.map(({ code }) => code)).toEqual(["UF6001"]);
