@@ -199,7 +199,7 @@ describe("props types read through the type oracle", () => {
         ].join("\n"),
       },
       "UF6005 L & C",
-      "`x` is declared with different types by `L` and `C`: the targets declare each prop once, with one type.",
+      "`x` is declared with different types or optionality by `L` and `C`: the targets declare each prop once, with one type.",
     ],
     [
       "a type another file declares without `export`",
@@ -278,5 +278,114 @@ describe("type exports", () => {
           .diagnostics,
       ),
     ).toEqual(["UF1002", "UF1002"]);
+  });
+});
+
+describe("the shape path's checks", () => {
+  const imported = (members: string) => ({
+    "types.ts": `export interface P { label: string; ${members} }`,
+    "A.uf.tsx":
+      'import type { P } from "./types.ts";\nexport function A(props: P) { return <p />; }',
+  });
+
+  it.each([
+    ["a: any", "UF6002 P", "`any` is not a type a prop can take."],
+    ["a: unknown", "UF6002 P", "`unknown` is not a type a prop can take."],
+    ["a: [string, number]", "UF6002 P", "A tuple type is not a type a prop can take."],
+    ["a: {}", "UF6002 P", "The empty object type `{}` is not a type a prop can take."],
+    [
+      "a: Date",
+      "UF6001 P",
+      "`Date` is neither declared nor imported by this module: the compiler reads no global type in a props type.",
+    ],
+  ])("reports the imported member %s", async (member, problem, message) => {
+    const files = imported(member);
+    const { module, diagnostics } = await analyzeWith(files);
+    expect(problems(files["A.uf.tsx"], diagnostics)).toEqual([problem]);
+    expect(diagnostics[0]!.message).toBe(message);
+    expect(module?.components ?? []).toEqual([]);
+  });
+
+  it('reads literal kinds from the shape: a boolean beside `"mixed"` renders alike on Vue', async () => {
+    const files = imported('pressed?: boolean | "mixed"; size?: 1 | 2');
+    const { module, diagnostics } = await analyzeWith(files);
+    expect(diagnostics).toEqual([]);
+    expect(only(module).props.map(({ name }) => name)).toEqual(["label", "pressed", "size"]);
+  });
+
+  // A type that two components share is reported once, and fails both (P2).
+  it.each([
+    [
+      "interface A { label: string; x: any }\nexport function One(p: Readonly<A>) { return <p />; }\nexport function Two(p: Partial<A>) { return <p />; }",
+      ["UF6002 any"],
+    ],
+    [
+      "interface B { label: string; cb: () => void }\ninterface A extends B {}\nexport function One(p: A) { return <p />; }\nexport function Two(p: Partial<A>) { return <p />; }",
+      ["UF1002 () => void"],
+    ],
+  ])("fails every component that shares a bad shaped type: %j", async (source, expected) => {
+    const { module, diagnostics } = await analyzeWith({ "A.uf.tsx": source });
+    expect(problems(source, diagnostics)).toEqual(expected);
+    expect(module?.components ?? []).toEqual([]);
+  });
+
+  it.each([
+    "interface A { x: string }\ninterface P extends A { label: string; label: string }\nexport default function Badge(props: P) { return <p />; }",
+    "type P = { label: string; label: string } & { x: number };\nexport default function Badge(props: P) { return <p />; }",
+  ])("reports a member a shaped props type writes twice (UF2001): %j", async (source) => {
+    const { module, diagnostics } = await analyzeWith({ "A.uf.tsx": source });
+    expect(codes(diagnostics)).toEqual(["UF2001"]);
+    const [problem] = diagnostics;
+    expect(source.slice(problem!.span.start, problem!.span.end)).toBe("label");
+    expect(problem!.span.start).toBe(source.lastIndexOf("label"));
+    expect(module?.components ?? []).toEqual([]);
+  });
+
+  it.each([
+    [
+      "an override of another type",
+      "interface L { a: string }\ninterface P extends L { a: number }",
+      "P",
+      "`L`",
+    ],
+    [
+      "an override that is optional",
+      "interface L { a: string }\ninterface P extends L { a?: string }",
+      "P",
+      "`L`",
+    ],
+    [
+      "intersection parts of other optionality",
+      "interface L { a: string }\ninterface Q { a?: string }\ntype P = L & Q;",
+      "P",
+      "`L` and `Q`",
+    ],
+    [
+      "a narrowing override",
+      'interface L { a: string }\ninterface P extends L { a: "sm" | "md" }',
+      "P",
+      "`L`",
+    ],
+  ])("reports %s (UF6005)", async (_, types, at, by) => {
+    const source = `${types}\nexport function C(props: P) { return <p />; }`;
+    const { module, diagnostics } = await analyzeWith({ "A.uf.tsx": source });
+    expect(problems(source, diagnostics)).toEqual([`UF6005 ${at}`]);
+    expect(diagnostics[0]!.message).toContain(
+      "`a` is declared with different types or optionality by",
+    );
+    expect(diagnostics[0]!.message).toContain(by);
+    expect(module?.components ?? []).toEqual([]);
+  });
+
+  it("accepts an override of the same type, and a member's own object that shares a name", async () => {
+    const source = [
+      "interface Item { a: number }",
+      "interface L { a: string }",
+      "interface P extends L { a: string; item: Item }",
+      "export function C(props: P) { return <p />; }",
+    ].join("\n");
+    const { module, diagnostics } = await analyzeWith({ "A.uf.tsx": source });
+    expect(diagnostics).toEqual([]);
+    expect(only(module).props.map(({ name }) => name)).toEqual(["a", "item"]);
   });
 });

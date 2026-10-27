@@ -345,14 +345,7 @@ export function checkMembers(
         }
         // TypeScript rejects it (TS2300), and the outputs would declare the prop twice.
         if (names.has(name)) {
-          report(
-            types,
-            reporter,
-            "UF2001",
-            member.key,
-            `\`${name}\` is declared twice in this type: TypeScript rejects the second, and every target would declare it twice.`,
-            "Declare it once.",
-          );
+          report(types, reporter, "UF2001", member.key, ...declaredTwice(name));
           continue;
         }
         names.add(name);
@@ -481,6 +474,14 @@ export function checkType(type: AST.TSType, types: ModuleTypes, reporter: Report
     default:
       return unevaluated("This type");
   }
+}
+
+/** The message and help for a member a type writes twice (UF2001, TS2300). */
+export function declaredTwice(name: string): [message: string, help: string] {
+  return [
+    `\`${name}\` is declared twice in this type: TypeScript rejects the second, and every target would declare it twice.`,
+    "Declare it once.",
+  ];
 }
 
 /** The message and help for a type name the module neither declares nor imports (UF6001). */

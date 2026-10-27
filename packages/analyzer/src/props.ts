@@ -4,6 +4,7 @@
 // utility type. The props are the type's members, in member order; each gets a binding
 // expressions read it through, and the kinds of value it can have.
 
+import type { DiagnosticCode } from "@unframework/diagnostics";
 import {
   createBinding,
   createExpression,
@@ -17,13 +18,14 @@ import {
 import type { Binding, DeclaredBy, Prop, PropsParameter, Span, TypeText } from "@unframework/ir";
 import { visitorKeys } from "@unframework/parser";
 import type { AST, ParsedModule } from "@unframework/parser";
-import type { ShapeMember, TypeShape, UnresolvedType } from "@unframework/type-oracle";
+import type { ObjectNode, ShapeMember, TypeShape, UnresolvedType } from "@unframework/type-oracle";
 
 import type { Reporter } from "./context.ts";
 import {
   checkCopiedText,
   checkMembers,
   closure,
+  declaredTwice,
   FUNCTIONS,
   needsChecker,
   notAProp,
@@ -305,12 +307,16 @@ function propsMembers(
   });
 }
 
+/** Reports a problem of a props type, and fails the component it was found for. */
+type Problem = (code: DiagnosticCode, at: Span, message: string, help?: string) => void;
+
 /**
  * The members of a props type read from its shape (ADR-0067): one the module imports, extends,
  * intersects, or builds with a utility type. A member another file writes is reported at the
  * props annotation, the one span of it this module holds, and its prop takes the annotation's
  * span and the declaring file's text, with `declaredBy` naming where it is written. So does a
- * member of another declaration of this module, at its own span.
+ * member of another declaration of this module, at its own span. A problem of a type that
+ * components share is reported once, and fails each of them.
  */
 function shapeMembers(
   annotation: AST.TSType,
@@ -322,14 +328,19 @@ function shapeMembers(
   const at = span(annotation);
   const shape = shapes(at);
   if (!shape) {
-    // The compiler asks its oracle for every props annotation (`shapeQueries`).
+    // `compile()` asks its oracle for every props annotation (`shapeQueries`); an oracle that
+    // failed is reported there.
     reporter.report("UF6001", at, "The type oracle gave no shape for this props type.", {
-      help: "Compile the module with `compile()`, which asks its type oracle for every props type.",
+      help: "Give `analyze` the shape of every type `shapeQueries` names.",
     });
     return undefined;
   }
+  let failed = false;
+  const problem: Problem = (code, where, message, help) => {
+    failed = true;
+    report(types, reporter, code, where, message, help);
+  };
   const { file, source } = parsed;
-  const mark = reporter.diagnostics.length;
   const here = (entry: { file: string; span: Span }) => (entry.file === file ? entry.span : at);
   const textOf = (entry: UnresolvedType) => {
     if (entry.file === file) return source.slice(entry.span.start, entry.span.end);
@@ -344,42 +355,38 @@ function shapeMembers(
   };
   const root = shape.nodes[shape.root]!;
   const members = root.kind === "object" ? root.members : [];
+  // The members two declarations type differently, each with the declarations that write it.
+  const conflicting = root.kind === "object" ? overrides(shape, root) : new Map();
   for (const entry of shape.unresolved) {
-    const text = textOf(entry);
+    const text = code(textOf(entry));
     const where = entry.file === file ? "" : ` in \`${entry.file}\``;
     switch (entry.reason) {
       case "missing-module":
-        report(
-          types,
-          reporter,
+        problem(
           "UF6001",
           here(entry),
-          `\`${text}\`${where} cannot be resolved: the type oracle cannot read the module it is imported from.`,
+          `${text}${where} cannot be resolved: the type oracle cannot read the module it is imported from.`,
           "Check the import's path, and that the package ships its types.",
         );
         break;
       case "missing-export":
-        report(
-          types,
-          reporter,
+        problem(
           "UF6001",
           here(entry),
-          `\`${text}\`${where} cannot be resolved: the module it is imported from does not export it.`,
+          `${text}${where} cannot be resolved: the module it is imported from does not export it.`,
           "Check the name, and export the type from its module.",
         );
         break;
       case "external":
-        report(
-          types,
-          reporter,
+        problem(
           "UF6001",
           here(entry),
-          `\`${text}\` is imported, and without the compiler's shapes the analyser reads only this module's types.`,
+          `${text} is imported, and without the compiler's shapes the analyser reads only this module's types.`,
           "Compile the module with `compile()`, whose type oracle resolves imported types.",
         );
         break;
       case "unsupported":
-        report(types, reporter, "UF6002", here(entry), ...needsChecker(`\`${text}\`${where}`));
+        problem("UF6002", here(entry), ...needsChecker(`${text}${where}`));
         break;
       case "conflict": {
         const member = members.find(
@@ -388,27 +395,35 @@ function shapeMembers(
             each.typeText?.span.start === entry.span.start &&
             each.typeText.span.end === entry.span.end,
         );
-        if (member) conflict(member.name, shape, at, types, reporter);
-        else
-          report(
-            types,
-            reporter,
+        if (member) {
+          if (!conflicting.has(member.name))
+            conflicting.set(member.name, declarers(shape, member.name));
+        } else {
+          problem(
             "UF6005",
             at,
-            `Two declarations give \`${text}\`${where} different types: the targets declare each prop once, with one type.`,
-            "Declare the member once, or give both declarations the same type.",
+            `Two declarations give ${text}${where} different types: the targets declare each prop once, with one type.`,
+            "Declare the member once, or give both declarations the same type and optionality.",
           );
+        }
         break;
       }
     }
   }
+  for (const [name, by] of conflicting) {
+    const list = [...by];
+    problem(
+      "UF6005",
+      at,
+      `\`${name}\` is declared with different types or optionality${list.length > 1 ? ` by ${list.slice(0, -1).join(", ")} and ${list.at(-1)!}` : ""}: the targets declare each prop once, with one type.`,
+      "Declare the member once, or give both declarations the same type and optionality.",
+    );
+  }
   if (root.kind !== "object") {
     if (root.kind === "opaque") {
-      if (!shape.unresolved.length) report(types, reporter, "UF6001", at, ...undeclared(root.text));
+      if (!shape.unresolved.length) problem("UF6001", at, ...undeclared(root.text));
     } else {
-      report(
-        types,
-        reporter,
+      problem(
         "UF6004",
         at,
         `The props type resolves to ${describeNode(shape, shape.root)}, not to an object type: the targets declare the members of one object type as props.`,
@@ -417,6 +432,7 @@ function shapeMembers(
     }
     return undefined;
   }
+  duplicates(annotation, types, problem);
   // The props type's own declaration, when the annotation names one of this module: its members
   // are the type's own, and every other declaration's are another's (`declaredBy`).
   const own =
@@ -429,24 +445,15 @@ function shapeMembers(
   const result: PropMember[] = [];
   for (const member of members) {
     const local = member.file === file;
-    const declaration = member.declaration ?? root.declaration;
-    const declaredBy =
+    // A member another file writes always belongs to a named declaration: a file is reached only
+    // through an import of a type by its name.
+    const declaredBy: DeclaredBy | undefined =
       !local || (member.declaration && member.declaration.name !== own)
-        ? declaration && { file: member.file, declaration: declaration.name, span: member.span }
+        ? { file: member.file, declaration: member.declaration!.name, span: member.span }
         : undefined;
-    const problem = local ? (member.typeText?.span ?? member.span) : at;
-    if (!local && !declaredBy) {
-      report(
-        types,
-        reporter,
-        "UF6002",
-        at,
-        ...needsChecker(`\`${member.name}\`, written in place in \`${member.file}\`,`),
-      );
-      continue;
-    }
-    checkShapeType(shape, member.type, problem, types, reporter, new Set());
-    checkExported(shape, member, at, file, types, reporter);
+    const where = local ? (member.typeText?.span ?? member.span) : at;
+    checkShapeType(shape, member.type, where, problem, new Set());
+    checkExported(shape, member, at, file, problem);
     result.push({
       name: member.name,
       optional: member.optional,
@@ -454,39 +461,203 @@ function shapeMembers(
       type: local
         ? createTypeText(member.typeText?.code ?? "", member.typeText?.span ?? member.span)
         : createTypeText(member.typeText?.code ?? "", at),
-      at: problem,
+      at: where,
       span: local ? member.span : at,
       kinds: kindsFromShape(shape, keyOf, member.type),
       ...(declaredBy ? { declaredBy } : {}),
     });
   }
-  return reporter.hasErrorsSince(mark) ? undefined : result;
+  return failed ? undefined : result;
 }
 
-/** Reports a member two declarations write with different types (UF6005), naming both. */
-function conflict(
-  name: string,
-  shape: TypeShape,
-  at: Span,
-  types: ModuleTypes,
-  reporter: Reporter,
-): void {
-  const declarations = new Set<string>();
-  for (const node of shape.nodes) {
-    if (node.kind !== "object" || !node.declaration) continue;
-    if (node.members.some((member) => member.name === name)) {
-      declarations.add(`\`${node.declaration.name}\``);
+/** Code as a message quotes it: in backticks, or double ones around text that holds one. */
+function code(text: string): string {
+  return text.includes("`") ? `\`\` ${text} \`\`` : `\`${text}\``;
+}
+
+/**
+ * The members of a props type that two of the declarations it is built from write with
+ * different types, or optional in one and required in the other (UF6005): an interface's member
+ * over its base's, or two parts of an intersection. The oracle keeps an interface's own member,
+ * and merges optionality as TypeScript does; the targets declare one type for each prop, so the
+ * catalogue holds the declarations to one. A utility type or a generic instantiation changes its
+ * members on purpose, so its shape is left to the oracle's own conflicts.
+ */
+function overrides(shape: TypeShape, root: ObjectNode): Map<string, Set<string>> {
+  const found = new Map<string, Set<string>>();
+  if (shape.construction.some((each) => each.startsWith("utility:") || each === "generic")) {
+    return found;
+  }
+  // The objects the members' types reach are values of the props, not parts of their type.
+  const values = new Set<number>();
+  const reach = (id: number): void => {
+    if (values.has(id)) return;
+    values.add(id);
+    const node = shape.nodes[id]!;
+    switch (node.kind) {
+      case "union":
+        for (const each of node.types) reach(each);
+        return;
+      case "array":
+        reach(node.element);
+        return;
+      case "tuple":
+        for (const each of node.elements) reach(each.type);
+        return;
+      case "object":
+        for (const member of node.members) reach(member.type);
+        return;
+      case "function":
+        for (const parameter of node.parameters) reach(parameter.type);
+        reach(node.returns);
+        return;
+      case "typeParameter":
+        if (node.constraint !== undefined) reach(node.constraint);
+        return;
+      default:
+        return;
+    }
+  };
+  for (const member of root.members) reach(member.type);
+  for (const [id, node] of shape.nodes.entries()) {
+    if (id === shape.root || values.has(id) || node.kind !== "object" || !node.declaration) {
+      continue;
+    }
+    for (const part of node.members) {
+      const merged = root.members.find((member) => member.name === part.name);
+      if (!merged) continue;
+      if (merged.optional === part.optional && sameType(shape, merged.type, part.type, new Set())) {
+        continue;
+      }
+      const by = found.get(part.name) ?? new Set<string>();
+      by.add(declarer(merged));
+      by.add(declarer(part));
+      found.set(part.name, by);
     }
   }
-  const by = [...declarations];
-  report(
-    types,
-    reporter,
-    "UF6005",
-    at,
-    `\`${name}\` is declared with different types${by.length > 1 ? ` by ${by.slice(0, -1).join(", ")} and ${by.at(-1)!}` : ""}: the targets declare each prop once, with one type.`,
-    "Declare the member once, or give both declarations the same type and optionality.",
-  );
+  return found;
+}
+
+/** The declarations of the shape's objects that write a member, as a message names them. */
+function declarers(shape: TypeShape, name: string): Set<string> {
+  const found = new Set<string>();
+  for (const node of shape.nodes) {
+    if (node.kind !== "object") continue;
+    for (const member of node.members) if (member.name === name) found.add(declarer(member));
+  }
+  return found;
+}
+
+function declarer(member: ShapeMember): string {
+  return member.declaration ? `\`${member.declaration.name}\`` : "an object type written in place";
+}
+
+/** Whether two nodes of a shape are one type, as far as the shape can tell. */
+function sameType(shape: TypeShape, a: number, b: number, seen: Set<string>): boolean {
+  if (a === b) return true;
+  const key = `${a}:${b}`;
+  if (seen.has(key)) return true;
+  seen.add(key);
+  const left = shape.nodes[a]!;
+  const right = shape.nodes[b]!;
+  const same = (x: number, y: number) => sameType(shape, x, y, seen);
+  switch (left.kind) {
+    case "primitive":
+      return right.kind === "primitive" && left.name === right.name;
+    case "literal":
+      return right.kind === "literal" && left.value === right.value;
+    case "union":
+      return (
+        right.kind === "union" &&
+        left.types.length === right.types.length &&
+        left.types.every((x) => right.types.some((y) => same(x, y)))
+      );
+    case "array":
+      return (
+        right.kind === "array" &&
+        left.readonly === right.readonly &&
+        same(left.element, right.element)
+      );
+    case "tuple":
+      return (
+        right.kind === "tuple" &&
+        left.elements.length === right.elements.length &&
+        left.elements.every((element, index) => {
+          const other = right.elements[index]!;
+          return (
+            element.optional === other.optional &&
+            element.rest === other.rest &&
+            same(element.type, other.type)
+          );
+        })
+      );
+    case "object":
+      if (right.kind !== "object") return false;
+      if (left.declaration && right.declaration && !left.typeArguments && !right.typeArguments) {
+        return (
+          left.declaration.file === right.declaration.file &&
+          left.declaration.name === right.declaration.name
+        );
+      }
+      return (
+        left.members.length === right.members.length &&
+        left.members.every((member) => {
+          const other = right.members.find((each) => each.name === member.name);
+          return (
+            other !== undefined &&
+            other.optional === member.optional &&
+            same(member.type, other.type)
+          );
+        })
+      );
+    case "function":
+      return (
+        right.kind === "function" &&
+        left.parameters.length === right.parameters.length &&
+        left.parameters.every((parameter, index) =>
+          same(parameter.type, right.parameters[index]!.type),
+        ) &&
+        same(left.returns, right.returns)
+      );
+    case "typeParameter":
+      return right.kind === "typeParameter" && left.name === right.name;
+    case "opaque":
+      return right.kind === "opaque" && left.text === right.text;
+  }
+}
+
+/**
+ * Reports a member written twice in one of the objects this module writes that a props type
+ * reaches (UF2001): the oracle keeps one, but each output copies the declaration as written,
+ * which TypeScript rejects (TS2300), as `checkMembers` reports for a type the syntax reads.
+ */
+function duplicates(annotation: AST.TSType, types: ModuleTypes, problem: Problem): void {
+  const check = (signatures: readonly AST.TSSignature[]) => {
+    const names = new Set<string>();
+    for (const member of signatures) {
+      if (member.type !== "TSPropertySignature" && member.type !== "TSMethodSignature") continue;
+      const name = member.computed ? undefined : memberName(member.key);
+      if (name === undefined) continue;
+      if (names.has(name)) problem("UF2001", span(member.key), ...declaredTwice(name));
+      names.add(name);
+    }
+  };
+  const visit = (node: unknown): void => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    const typed = node as AST.Node;
+    if (typeof typed.type !== "string") return;
+    if (typed.type === "TSTypeLiteral") check(typed.members);
+    if (typed.type === "TSInterfaceBody") check(typed.body);
+    for (const key of visitorKeys[typed.type] ?? []) {
+      visit((node as unknown as Record<string, unknown>)[key]);
+    }
+  };
+  visit(annotation);
+  for (const name of closure(annotation, types.table)) visit(types.table.declaration(name)!.node);
 }
 
 /**
@@ -497,40 +668,37 @@ function checkShapeType(
   shape: TypeShape,
   id: number,
   at: Span,
-  types: ModuleTypes,
-  reporter: Reporter,
+  problem: Problem,
   seen: Set<number>,
 ): void {
   const node = shape.nodes[id]!;
   switch (node.kind) {
     case "primitive":
       if (!["string", "number", "boolean", "null", "undefined"].includes(node.name)) {
-        report(types, reporter, "UF6002", at, ...notAProp(`\`${node.name}\``));
+        problem("UF6002", at, ...notAProp(`\`${node.name}\``));
       }
       return;
     case "literal":
       return;
     case "union":
-      for (const each of node.types) checkShapeType(shape, each, at, types, reporter, seen);
+      for (const each of node.types) checkShapeType(shape, each, at, problem, seen);
       return;
     case "array":
-      checkShapeType(shape, node.element, at, types, reporter, seen);
+      checkShapeType(shape, node.element, at, problem, seen);
       return;
     case "tuple":
-      report(types, reporter, "UF6002", at, ...notAProp("A tuple type"));
+      problem("UF6002", at, ...notAProp("A tuple type"));
       return;
     case "object":
       if (seen.has(id)) return;
       seen.add(id);
       if (!node.declaration && !node.members.length) {
-        report(types, reporter, "UF6002", at, ...notAProp("The empty object type `{}`"));
+        problem("UF6002", at, ...notAProp("The empty object type `{}`"));
       }
-      for (const member of node.members) {
-        checkShapeType(shape, member.type, at, types, reporter, seen);
-      }
+      for (const member of node.members) checkShapeType(shape, member.type, at, problem, seen);
       return;
     case "function":
-      report(types, reporter, "UF1002", at, FUNCTIONS);
+      problem("UF1002", at, FUNCTIONS);
       return;
     case "typeParameter":
       // Only a generic component's props name a type parameter, and it is reported itself.
@@ -543,7 +711,7 @@ function checkShapeType(
           entry.span.end === node.span.end,
       );
       // An unresolved one is reported with the shape; any other is a global type.
-      if (!unresolved) report(types, reporter, "UF6001", at, ...undeclared(node.text));
+      if (!unresolved) problem("UF6001", at, ...undeclared(node.text));
     }
   }
 }
@@ -557,8 +725,7 @@ function checkExported(
   member: ShapeMember,
   at: Span,
   file: string,
-  types: ModuleTypes,
-  reporter: Reporter,
+  problem: Problem,
 ): void {
   if (member.file === file) return;
   for (const name of member.references) {
@@ -570,9 +737,7 @@ function checkExported(
         !node.declaration.exported,
     );
     if (!hidden) continue;
-    report(
-      types,
-      reporter,
+    problem(
       "UF6003",
       at,
       `\`${member.name}\`'s type names \`${name}\`, which \`${member.file}\` declares without \`export\`: an output that writes the prop's type cannot import it.`,
