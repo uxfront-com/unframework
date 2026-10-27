@@ -711,6 +711,38 @@ describe("children (ADR-0053)", () => {
   });
 });
 
+describe("types read through the type oracle (ADR-0067)", () => {
+  const TONES =
+    'export type Tone = "info" | "warning";\nexport interface ChipProps { tone: Tone }\n';
+  const CHIP =
+    'import type { ChipProps } from "./tones.ts";\n\nexport default function Chip({ tone }: ChipProps) {\n  return <b class={tone}>{tone}</b>;\n}\n';
+  const PANEL =
+    'import Chip from "./Chip.uf.tsx";\n\nexport default function Panel() {\n  return <Chip tone="info" />;\n}\n';
+
+  it("compiles a component whose props type another module declares, and a parent of it", async () => {
+    const types = createProject({ "tones.ts": TONES, "Chip.uf.tsx": CHIP, "Panel.uf.tsx": PANEL });
+    try {
+      const server = await startServer(types.root, [...unframework({ target: "vue" }), fakeVue]);
+      try {
+        const { client } = server;
+        const chip = codeOf(
+          await client.pluginContainer.load(`${join(types.root, "Chip.uf.tsx")}.vue`),
+        );
+        expect(chip).toContain("defineProps<ChipProps>()");
+        const panel = `${join(types.root, "Panel.uf.tsx")}.vue`;
+        expect(codeOf(await client.pluginContainer.load(panel))).toContain('<Chip tone="info" />');
+        // A literal outside the union the child's imported alias names (UF3039).
+        types.write("tones.ts", TONES.replace('"info" | ', ""));
+        await expect(client.pluginContainer.load(panel)).rejects.toThrow("UF3039");
+      } finally {
+        await server.close();
+      }
+    } finally {
+      types.remove();
+    }
+  });
+});
+
 describe("the golden guard (onCompile)", () => {
   it("receives every compile, and leaves a module it accepts alone", async () => {
     const events: CompileEvent[] = [];

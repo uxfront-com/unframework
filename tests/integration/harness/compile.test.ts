@@ -38,7 +38,7 @@ import {
 } from "./compile-checks.ts";
 import { coverageProblems } from "./coverage.ts";
 import { ROOT } from "./paths.ts";
-import { caseDiagnostics, caseOutputs, caseResolver, sourceTexts } from "./sources.ts";
+import { caseDiagnostics, caseOracle, caseOutputs, caseResolver, sourceTexts } from "./sources.ts";
 import type { SourceCompile } from "./sources.ts";
 import { REFERENCE, selectTargets } from "./targets.ts";
 
@@ -64,23 +64,29 @@ const NO_OUTPUT_LAYERS: readonly LayerName[] = [
 const validateIr = new Ajv({ allErrors: true, strict: true }).compile(irSchema);
 
 /**
- * One compile of a source to every target, its children resolved in its case (ADR-0057); each
- * compiles twice per run (determinism).
+ * One compile of a source to every target, its children and its types resolved in its case
+ * (ADR-0057, ADR-0067); each compiles twice per run (determinism).
  */
-function compileSource(
+async function compileSource(
   info: CaseInfo,
   source: CaseSource,
   text: string,
   plugins: readonly CompilerPlugin[],
   format = true,
 ): Promise<CompileResult> {
-  return compile(text, {
-    filename: source.filename,
-    targets: TARGET_NAMES,
-    plugins,
-    format,
-    resolve: caseResolver(info, harness.casesDir),
-  });
+  const typeOracle = caseOracle(info, harness.casesDir, { filename: source.filename, text });
+  try {
+    return await compile(text, {
+      filename: source.filename,
+      targets: TARGET_NAMES,
+      plugins,
+      format,
+      resolve: caseResolver(info, harness.casesDir, typeOracle),
+      typeOracle,
+    });
+  } finally {
+    await typeOracle.dispose();
+  }
 }
 
 /** A source of a case and its two compiles. */

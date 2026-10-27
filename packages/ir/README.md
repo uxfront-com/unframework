@@ -41,7 +41,8 @@ plain, versioned, schema-validated JSON (plan §5.3).
   component's `typeParameters`, and a child's in `ComponentApi.typeParameters`; a prop's
   `declaredBy`, where another declaration declares the member, whose type is then that file's
   text at the props annotation's span; the names a slot's props, an API member and a key
-  reference (`references`); a `.uf.ts` module's `ModuleApi.composables` (`ComposableApi`, with
+  reference (`references`), and the literals of a child's prop whose alias names a union of them
+  (`ApiMember.literals`), for UF3039; a `.uf.ts` module's `ModuleApi.composables` (`ComposableApi`, with
   `hasEffects`), imported by `Composable` names; and the `Use` setup item, a composable's call
   whose members are `usedState`, `usedDerived`, `usedFn` and `usedConst` bindings. Every new
   field is absent when empty. The analyser lowers none of it yet, and the targets report a

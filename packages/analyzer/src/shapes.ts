@@ -17,13 +17,16 @@ import { isAuthoringModule } from "./frameworks.ts";
  */
 export type Shapes = (span: Span) => TypeShape | undefined;
 
-/** The macros whose type arguments declare an API: events, models and slots. */
-const API_MACROS = new Set(["defineEmits", "defineModel", "defineSlots"]);
+/**
+ * The calls whose type arguments declare an API: events, models and slots, and what a template
+ * ref calls on a child, which is checked against what the child exposes (UF3046).
+ */
+const API_MACROS = new Set(["defineEmits", "defineModel", "defineSlots", "useTemplateRef"]);
 
 /**
  * The types a module writes whose shapes the analyser reads (ADR-0067), in source order, each
- * once: each props annotation, each type argument of `defineEmits`, `defineModel` and
- * `defineSlots`, each `InjectionKey<…>`'s argument, and each other annotation or type argument
+ * once: each props annotation, each type argument of `defineEmits`, `defineModel`,
+ * `defineSlots` and `useTemplateRef`, each `InjectionKey<…>`'s argument, and each other annotation or type argument
  * in a function's body that names a type the module imports. What `compile()` asks the type
  * oracle for before the module is analysed.
  */

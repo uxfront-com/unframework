@@ -219,7 +219,10 @@
           {
             "name": "ThemeKey",
             "description": "uf.theme",
-            "type": "Theme"
+            "type": "Theme",
+            "references": [
+              "Theme"
+            ]
           }
         ]
       },

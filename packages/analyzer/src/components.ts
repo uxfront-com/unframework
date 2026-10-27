@@ -206,15 +206,21 @@ function componentRefProblem(
   }
   const exposed = api.exposes.map((name) => `\`${name}\``).join(", ");
   const type = templateRefType(binding, render);
-  const members = type ? typeMembers(type, render.types) : undefined;
+  const members = type
+    ? typeMembers(
+        type,
+        { source: render.source, file: render.reporter.file, shapes: render.shapes },
+        true,
+      )
+    : undefined;
   if (!members) {
     return report(
       `The template ref on \`${info.name}\` is not typed as an object type of what it exposes (${exposed}): a call through it could name anything.`,
       `Type it with what ${info.name} exposes: \`useTemplateRef<{ ${api.exposes[0]}(): void }>()\`.`,
     );
   }
-  for (const member of members) {
-    const name = keyName(member);
+  for (const { signature } of members) {
+    const name = keyName(signature);
     if (name !== undefined && api.exposes.includes(name)) continue;
     return report(
       `The template ref's type names ${name === undefined ? "a member" : `\`${name}\``}, which \`${info.name}\` does not expose: it exposes ${exposed}.`,

@@ -7,6 +7,7 @@ import {
   checkPassThrough,
   compile,
   createFileResolver,
+  createSyntacticOracle,
   resolveTarget,
 } from "@unframework/compiler";
 import type { CompileResult, CompilerPlugin, TargetName, UfModule } from "@unframework/compiler";
@@ -111,8 +112,9 @@ interface CachedCompile {
   source: string;
   filename: string;
   /**
-   * The files the resolver read for the compile, with what it read (`undefined` for one that
-   * did not exist): a child's API is an input of its parent's compile (ADR-0053).
+   * The files the resolver and the type oracle read for the compile, with what they read
+   * (`undefined` for one that did not exist): a child's API and an imported type are inputs of
+   * the compile (ADR-0053, ADR-0067).
    */
   reads: Map<string, string | undefined>;
   result: Promise<CompileResult>;
@@ -228,8 +230,9 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
 
   /**
    * The compile of a file's current source, shared by every id that loads it. Its children's
-   * APIs come from the files they are in, read by the compile's resolver (ADR-0053): the compile
-   * is reused while the file and every file the resolver read are unchanged.
+   * APIs come from the files they are in, read by the compile's resolver (ADR-0053), and its
+   * types from the files and packages they are declared in, read by its type oracle (ADR-0067):
+   * the compile is reused while the file and every file either read are unchanged.
    */
   const compileFile = async (file: string, filename: string, source: string) => {
     const cached = cache.get(file);
@@ -242,22 +245,28 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
       return cached.result;
     }
     const reads = new Map<string, string | undefined>();
-    const resolve = createFileResolver({
+    const read = async (path: string) => {
+      const text = await readFile(path, "utf8").catch(() => undefined);
+      reads.set(path, text);
+      return text;
+    };
+    // The oracle reads the source's own file for its types: the text this compile is given.
+    const typeOracle = createSyntacticOracle({
       root,
-      readFile: async (path) => {
-        const text = await readFile(path, "utf8").catch(() => undefined);
-        reads.set(path, text);
-        return text;
-      },
+      readFile: (path) => (path === `${root}/${filename}` ? Promise.resolve(source) : read(path)),
     });
     const result = compile(source, {
       filename,
       targets: [target],
       format: options.format !== false,
       plugins: options.plugins,
-      resolve,
+      resolve: createFileResolver({ root, readFile: read, typeOracle }),
+      typeOracle,
       ...(options.passThrough ? { passThrough: options.passThrough } : {}),
     });
+    // The compile owns its oracle, which it no longer needs once it settles.
+    const dispose = () => typeOracle.dispose();
+    void result.then(dispose, dispose);
     cache.set(file, { source, filename, reads, result });
     // compile() never rejects unless the compiler has a bug. The load that awaits `result`
     // reports it; dropping the entry lets the next load try again.

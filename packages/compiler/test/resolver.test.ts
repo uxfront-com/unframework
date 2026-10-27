@@ -2,7 +2,7 @@
 // API relative to the importer, and `compile()` lowers a parent's components through it.
 import { describe, expect, it } from "vitest";
 
-import { compile, createFileResolver } from "../src/index.ts";
+import { compile, createFileResolver, createSyntacticOracle } from "../src/index.ts";
 
 const FIELD = `export default function Field({ label }: { label: string }) {
   return <span>{label}</span>;
@@ -87,7 +87,121 @@ describe("createFileResolver", () => {
   });
 });
 
+/** A resolver and a type oracle over the same in-memory files (ADR-0067). */
+function memoryProject(files: Record<string, string>) {
+  const readFile = (path: string) => Promise.resolve(files[path]);
+  const typeOracle = createSyntacticOracle({ root: "/project", readFile });
+  return { resolve: createFileResolver({ root: "/project", readFile, typeOracle }), typeOracle };
+}
+
+const TYPES = `export type Tone = "info" | "warning";
+interface Hidden { id: string }
+export interface Base extends Hidden { tone?: Tone }
+export interface ChipProps extends Base { label: string; icon?: Icon }
+export interface Icon { name: string }
+`;
+
+const CHIP = `import { defineEmits, defineSlots } from "unframework";
+import type { Element } from "unframework";
+import type { ChipProps, Icon } from "./types.ts";
+
+export default function Chip({ label, tone }: ChipProps) {
+  const emit = defineEmits<{ pick: [icon: Icon] }>();
+  const slots = defineSlots<{ hint?(props: { icon: Icon }): Element }>();
+  return <button type="button" class={tone} onClick={() => emit("pick", { name: label })}>{label}{slots.hint?.({ icon: { name: label } })}</button>;
+}
+`;
+
+describe("createFileResolver with a type oracle (ADR-0067)", () => {
+  it("reads a child's props, events and slots through the oracle, with what they reference", async () => {
+    const { resolve } = memoryProject({
+      "/project/types.ts": TYPES,
+      "/project/Chip.uf.tsx": CHIP,
+    });
+    const api = await resolve({ specifier: "./Chip.uf.tsx", importer: "Form.uf.tsx" });
+    const [chip] = api!.components;
+    expect(chip!.props).toEqual([
+      { name: "label", optional: false, type: "string" },
+      { name: "icon", optional: true, type: "Icon", references: ["Icon"] },
+      {
+        name: "tone",
+        optional: true,
+        type: "Tone",
+        references: ["Tone"],
+        literals: ['"info"', '"warning"'],
+      },
+      { name: "id", optional: false, type: "string" },
+    ]);
+    expect(chip!.events).toEqual([{ name: "pick", parameters: [{ name: "icon", type: "Icon" }] }]);
+    expect(chip!.slots).toEqual([
+      { name: "hint", optional: true, props: "{ icon: Icon }", references: ["Icon"] },
+    ]);
+  });
+
+  it("reads a child's own types alone without an oracle, as before", async () => {
+    const { resolve } = memoryResolver({
+      "/project/types.ts": TYPES,
+      "/project/Chip.uf.tsx": CHIP,
+    });
+    const api = await resolve({ specifier: "./Chip.uf.tsx", importer: "Form.uf.tsx" });
+    expect(api!.components[0]!.props).toEqual([]);
+  });
+
+  it("resolves the child again when a type it imports changes", async () => {
+    const files: Record<string, string> = {
+      "/project/types.ts": TYPES,
+      "/project/Chip.uf.tsx": CHIP,
+    };
+    const { resolve, typeOracle } = memoryProject(files);
+    const request = { specifier: "./Chip.uf.tsx", importer: "Form.uf.tsx" };
+    await resolve(request);
+    files["/project/types.ts"] = TYPES.replace("label: string", "text: string");
+    await typeOracle.update({ files: ["types.ts"] });
+    const api = await resolve(request);
+    expect(api!.components[0]!.props.map(({ name }) => name)).toContain("text");
+  });
+
+  it("gives an injection key's references (ADR-0054)", async () => {
+    const { resolve } = memoryProject({
+      "/project/keys.uf.tsx": `import type { InjectionKey } from "unframework";
+export interface Theme { tone: string }
+export const ThemeKey: InjectionKey<Theme> = Symbol("uf.theme");
+export default function Provider() { return <p />; }
+`,
+    });
+    const api = await resolve({ specifier: "./keys.uf.tsx", importer: "Form.uf.tsx" });
+    expect(api!.keys).toEqual([
+      { name: "ThemeKey", description: "uf.theme", type: "Theme", references: ["Theme"] },
+    ]);
+  });
+});
+
 describe("compile() with a resolver", () => {
+  it("checks a literal against a union a child's alias names (UF3039)", async () => {
+    const { resolve, typeOracle } = memoryProject({
+      "/project/types.ts": TYPES,
+      "/project/Chip.uf.tsx": CHIP,
+    });
+    const source = `import Chip from "./Chip.uf.tsx";
+
+export default function Form() {
+  return <form><Chip label="Name" id="n" tone="warn" /></form>;
+}
+`;
+    const result = await compile(source, {
+      filename: "Form.uf.tsx",
+      targets: ["vue"],
+      resolve,
+      typeOracle,
+    });
+    expect(result.diagnostics.map(({ code, message }) => [code, message])).toEqual([
+      [
+        "UF3039",
+        'Chip\'s `tone` takes `"info" | "warning"`, and "warn" is none of them. Did you mean "warning"?',
+      ],
+    ]);
+  });
+
   it("lowers a child component with the API the resolver gives", async () => {
     const { resolve } = memoryResolver({ "/project/src/sub/Field.uf.tsx": FIELD });
     const result = await compile(FORM, { filename: "src/Form.uf.tsx", targets: ["vue"], resolve });

@@ -440,6 +440,12 @@ export interface ApiMember {
    * what it prints. Absent when it references none.
    */
   references?: string[];
+  /**
+   * The literals a prop's type resolves to when it is a union of literals the text as written
+   * does not spell, as an alias does (`tone?: Tone`), each as TypeScript writes it (`"info"`,
+   * `2`, `true`), so a parent checks a literal it passes against them (UF3039). Absent otherwise.
+   */
+  literals?: string[];
 }
 
 /**

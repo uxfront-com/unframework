@@ -7,21 +7,19 @@
 
 import type { ApiEvent, ApiMember, ApiSlot, ComponentApi } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
-import { isComponentName } from "@unframework/parser";
+import { isComponentName, parseModule } from "@unframework/parser";
+import { printShape } from "@unframework/type-oracle";
+import type { ShapeMember, TypeShape } from "@unframework/type-oracle";
 
 import type { AuthoringApi } from "./authoring.ts";
+import { spellsLiterals } from "./cross-component.ts";
 import type { ComponentFunction } from "./render.ts";
 import type { Scopes } from "./scope.ts";
 import type { Shapes } from "./shapes.ts";
-import type { TypeTable } from "./types/from-type.ts";
 
 /** What reading a component's API needs of its module. */
-export interface ApiContext {
-  readonly source: string;
+export interface ApiContext extends MembersContext {
   readonly scopes: Scopes;
-  readonly types: TypeTable;
-  /** The shapes of the types the module writes where an API is declared (ADR-0067). */
-  readonly shapes: Shapes;
   /** The module's authoring imports, by the identifier that declares each. */
   readonly authoring: ReadonlyMap<object, AuthoringApi | undefined>;
 }
@@ -105,19 +103,122 @@ function macroCall(
   return api ? { api, call: expression } : undefined;
 }
 
-/** The members of a type: a type literal's, or a local `interface`'s or `type`'s of one. */
+/**
+ * A member of a type, as the API reads it (ADR-0067): its signature, parsed on its own from its
+ * text, and the source the signature's offsets index. A member of the module is its own text; a
+ * member another file writes is rebuilt from its name and its type as written there, or as the
+ * oracle prints it for a method, whose text a shape does not hold.
+ */
+export interface TypeMember {
+  readonly signature: AST.TSSignature;
+  readonly source: string;
+  /** The member's resolved type, in its shape. */
+  readonly shape: TypeShape;
+  readonly type: number;
+}
+
+/** What reading a type's members needs of its module. */
+export interface MembersContext {
+  readonly source: string;
+  /** The module's file, as the shapes name it. */
+  readonly file: string;
+  readonly shapes: Shapes;
+}
+
+/**
+ * The members of a type, read from its shape (ADR-0067): a type literal's, an interface's or an
+ * alias's, with what `extends`, intersections and the utility types bring in, from this module or
+ * from the files it imports. `undefined` when the type has no shape or is not an object, and, with
+ * `complete`, when the oracle could not read a part of it, as an index signature.
+ */
 export function typeMembers(
   type: AST.TSType,
-  table: TypeTable,
-): readonly AST.TSSignature[] | undefined {
-  if (type.type === "TSTypeLiteral") return type.members;
-  if (type.type !== "TSTypeReference" || type.typeName.type !== "Identifier" || type.typeArguments)
+  context: MembersContext,
+  complete = false,
+): readonly TypeMember[] | undefined {
+  const shape = context.shapes({ start: type.start, end: type.end });
+  const root = shape?.nodes[shape.root];
+  if (!shape || root?.kind !== "object" || (complete && shape.unresolved.length)) return undefined;
+  return root.members.flatMap((member) => {
+    const text = memberText(member, shape, context);
+    if (text === undefined) return [];
+    const source = `interface T {\n${text}\n}`;
+    const [statement] = parseModule("member.ts", source).program.body;
+    const signature =
+      statement?.type === "TSInterfaceDeclaration" && statement.body.body.length === 1
+        ? statement.body.body[0]!
+        : undefined;
+    return signature ? [{ signature, source, shape, type: member.type }] : [];
+  });
+}
+
+/** A member's signature as text: the module's own, or rebuilt from what its shape holds. */
+function memberText(
+  member: ShapeMember,
+  shape: TypeShape,
+  context: MembersContext,
+): string | undefined {
+  if (member.file === context.file) return context.source.slice(member.span.start, member.span.end);
+  const key = `${JSON.stringify(member.name)}${member.optional ? "?" : ""}`;
+  if (member.typeText) return `${key}: ${member.typeText.code}`;
+  if (shape.nodes[member.type]?.kind !== "function") return `${key}: unknown`;
+  try {
+    return `${key}: ${printShape({ ...shape, root: member.type })}`;
+  } catch {
     return undefined;
-  const declaration = table.declaration(type.typeName.name);
-  if (!declaration) return undefined;
-  const { node } = declaration;
-  if (node.type === "TSInterfaceDeclaration") return node.body.body;
-  return node.typeAnnotation.type === "TSTypeLiteral" ? node.typeAnnotation.members : undefined;
+  }
+}
+
+/**
+ * The type names some type's text references, each once, in source order: what a parent that
+ * prints the type imports (ADR-0067), read as the oracle reads a member's.
+ */
+function referencesOf(code: string): string[] {
+  const [statement] = parseModule("type.ts", `type T = ${code};`).program.body;
+  const names: string[] = [];
+  const visit = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item);
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+    const node = value as { type?: unknown; typeName?: AST.TSTypeName };
+    if (node.type === "TSTypeReference" && node.typeName) {
+      let name: AST.TSTypeName = node.typeName;
+      while (name.type === "TSQualifiedName") name = name.left;
+      if (name.type === "Identifier" && !names.includes(name.name)) names.push(name.name);
+    }
+    for (const [key, child] of Object.entries(value)) {
+      if (key !== "type" && typeof child === "object") visit(child);
+    }
+  };
+  if (statement?.type === "TSTypeAliasDeclaration") visit(statement.typeAnnotation);
+  return names;
+}
+
+/** `references`, present only when the type references a name. */
+export function withReferences(code: string): { references?: string[] } {
+  const references = referencesOf(code);
+  return references.length ? { references } : {};
+}
+
+/**
+ * The literals a member's type resolves to, when it is a union of literals, `null` and
+ * `undefined` with at least one literal, and its text as written does not spell them (UF3039).
+ */
+function aliasedLiterals(code: string, shape: TypeShape, type: number): { literals?: string[] } {
+  const node = shape.nodes[type];
+  const members = node?.kind === "union" ? node.types : [type];
+  const literals: string[] = [];
+  for (const id of members) {
+    const each = shape.nodes[id];
+    if (each?.kind === "literal") {
+      literals.push(typeof each.value === "string" ? JSON.stringify(each.value) : `${each.value}`);
+    } else if (each?.kind !== "primitive" || (each.name !== "null" && each.name !== "undefined")) {
+      return {};
+    }
+  }
+  return literals.length && !spellsLiterals(code) ? { literals } : {};
 }
 
 /** A member's name: an identifier's, or a string literal's. */
@@ -133,8 +234,8 @@ export function keyName(member: AST.TSSignature): string | undefined {
   return key.type === "Literal" && typeof key.value === "string" ? key.value : undefined;
 }
 
-const text = (node: { start: number; end: number }, context: ApiContext) =>
-  context.source.slice(node.start, node.end);
+const text = (node: { start: number; end: number }, source: string) =>
+  source.slice(node.start, node.end);
 
 /** The props: the members of the first parameter's type, in member order. */
 function propsOf(node: ComponentFunction, context: ApiContext): ApiMember[] {
@@ -143,20 +244,30 @@ function propsOf(node: ComponentFunction, context: ApiContext): ApiMember[] {
     parameter?.type === "Identifier" || parameter?.type === "ObjectPattern"
       ? parameter.typeAnnotation?.typeAnnotation
       : undefined;
-  const members = annotation ? typeMembers(annotation, context.types) : undefined;
-  return (members ?? []).flatMap((member) => {
-    const name = keyName(member);
-    if (name === undefined || member.type !== "TSPropertySignature") return [];
-    const type = member.typeAnnotation?.typeAnnotation;
-    return [{ name, optional: member.optional, type: type ? text(type, context) : "unknown" }];
+  const members = annotation ? typeMembers(annotation, context) : undefined;
+  return (members ?? []).flatMap(({ signature, source, shape, type }) => {
+    const name = keyName(signature);
+    if (name === undefined || signature.type !== "TSPropertySignature") return [];
+    const written = signature.typeAnnotation?.typeAnnotation;
+    const code = written ? text(written, source) : "unknown";
+    return [
+      {
+        name,
+        optional: signature.optional,
+        type: code,
+        ...withReferences(code),
+        ...aliasedLiterals(code, shape, type),
+      },
+    ];
   });
 }
 
 /** The events: each member a named tuple of its payload. */
 function eventsOf(type: AST.TSType, context: ApiContext): ApiEvent[] {
-  return (typeMembers(type, context.types) ?? []).flatMap((member) => {
-    const name = keyName(member);
-    const tuple = member.type === "TSPropertySignature" && member.typeAnnotation?.typeAnnotation;
+  return (typeMembers(type, context) ?? []).flatMap(({ signature, source }) => {
+    const name = keyName(signature);
+    const tuple =
+      signature.type === "TSPropertySignature" && signature.typeAnnotation?.typeAnnotation;
     if (name === undefined || !tuple || tuple.type !== "TSTupleType") return [];
     return [
       {
@@ -167,7 +278,7 @@ function eventsOf(type: AST.TSType, context: ApiContext): ApiEvent[] {
                 {
                   name: element.label.name,
                   ...(element.optional ? { optional: true as const } : {}),
-                  type: text(element.elementType, context),
+                  type: text(element.elementType, source),
                 },
               ]
             : [],
@@ -179,22 +290,29 @@ function eventsOf(type: AST.TSType, context: ApiContext): ApiEvent[] {
 
 /** The slots: each an optional method, whose one parameter, when it has one, is its props. */
 function slotsOf(type: AST.TSType, context: ApiContext): ApiSlot[] {
-  return (typeMembers(type, context.types) ?? []).flatMap((member) => {
-    const name = keyName(member);
+  return (typeMembers(type, context) ?? []).flatMap(({ signature, source }) => {
+    const name = keyName(signature);
     if (name === undefined) return [];
     const fn =
-      member.type === "TSMethodSignature"
-        ? member
-        : member.type === "TSPropertySignature" &&
-            member.typeAnnotation?.typeAnnotation.type === "TSFunctionType"
-          ? member.typeAnnotation.typeAnnotation
+      signature.type === "TSMethodSignature"
+        ? signature
+        : signature.type === "TSPropertySignature" &&
+            signature.typeAnnotation?.typeAnnotation.type === "TSFunctionType"
+          ? signature.typeAnnotation.typeAnnotation
           : undefined;
-    if (!fn || (member.type !== "TSMethodSignature" && member.type !== "TSPropertySignature"))
+    if (!fn || (signature.type !== "TSMethodSignature" && signature.type !== "TSPropertySignature"))
       return [];
     const [parameter] = fn.params;
     const props =
       parameter?.type === "Identifier" ? parameter.typeAnnotation?.typeAnnotation : undefined;
-    return [{ name, optional: member.optional, ...(props ? { props: text(props, context) } : {}) }];
+    const code = props && text(props, source);
+    return [
+      {
+        name,
+        optional: signature.optional,
+        ...(code === undefined ? {} : { props: code, ...withReferences(code) }),
+      },
+    ];
   });
 }
 
@@ -240,12 +358,13 @@ function modelOf(call: AST.CallExpression, context: ApiContext): ApiMember | und
     type.type === "TSFunctionType" ||
     type.type === "TSConstructorType" ||
     type.type === "TSConditionalType"
-      ? `(${text(type, context)})`
-      : text(type, context);
+      ? `(${text(type, context.source)})`
+      : text(type, context.source);
   return {
     name: name.value,
     optional: !isRequired,
     type: undefinable ? `${written} | undefined` : written,
+    ...withReferences(written),
   };
 }
 

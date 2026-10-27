@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF6003",
+    "severity": "error",
+    "message": "`icon`'s type names `Icon`, which `diagnostics/type-not-exported/types.ts` declares without `export`: an output that writes the prop's type cannot import it.",
+    "file": "diagnostics/type-not-exported/Card.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 41,
+      "offset": 253
+    },
+    "end": {
+      "line": 5,
+      "column": 50,
+      "offset": 262
+    },
+    "help": "Export `Icon` from `diagnostics/type-not-exported/types.ts`."
+  }
+]

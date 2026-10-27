@@ -92,12 +92,15 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
 - `moduleId`, `parseModuleId`, `componentId`, `parseComponentId` and `idSuffix` build and take
   these ids apart.
 - **Children** (ADR-0053). A file compiles with `createFileResolver` rooted at Vite's root, so a
-  parent lowers its children by their APIs. An output imports a child's output by its file
+  parent lowers its children by their APIs.
+- **Types** (ADR-0067). A file compiles with a syntactic type oracle rooted at Vite's root
+  (`createSyntacticOracle`, from `@unframework/compiler`), and so does its resolver: a props type
+  may come from another file or a package, and a child's API from its types' shapes. An output imports a child's output by its file
   (`./Field.vue`): such a relative import from one of the plugin's modules, or from a segment
   Qwik's optimizer splits off one (`Form.uf.tsx_Form_component_<hash>.js`), is looked up in the
   importer's compile and resolves to the child's module id, or its component id on a markup
   target where it is not its file's main component. A compile is reused while its file and every
-  file its resolver read hold what they held.
+  file its resolver and its type oracle read hold what they held.
 
 How `resolveId` answers:
 

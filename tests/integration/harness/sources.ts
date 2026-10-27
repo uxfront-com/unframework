@@ -6,8 +6,8 @@ import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
 
-import { createFileResolver } from "@unframework/compiler";
-import type { CompileResult, Resolver } from "@unframework/compiler";
+import { createFileResolver, createSyntacticOracle } from "@unframework/compiler";
+import type { CompileResult, Resolver, TypeOracle } from "@unframework/compiler";
 import { sortDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 
@@ -75,14 +75,46 @@ export function caseOutputs(
 /**
  * The resolver a case's sources compile with (ADR-0057): `createFileResolver` over the cases
  * directory, which finds only the files of the case itself, so each case stays self-contained.
- * An import of anything else is unresolved (UF1202), which fails the compile project.
+ * An import of anything else is unresolved (UF1202), which fails the compile project. The
+ * children's types are read through `typeOracle`, the compile's own (ADR-0067).
  */
-export function caseResolver(info: Pick<CaseInfo, "dir">, casesDir: string): Resolver {
+export function caseResolver(
+  info: Pick<CaseInfo, "dir">,
+  casesDir: string,
+  typeOracle?: TypeOracle,
+): Resolver {
   return createFileResolver({
     root: casesDir.split(sep).join("/"),
     readFile: async (path) => {
       const file = join(path);
       if (relative(info.dir, dirname(file)) !== "") return undefined;
+      return readFile(file, "utf8").catch(() => undefined);
+    },
+    ...(typeOracle ? { typeOracle } : {}),
+  });
+}
+
+/**
+ * The type oracle a case's sources compile with (ADR-0067): the syntactic adapter over the cases
+ * directory, which reads the case's own files, as `caseResolver` does, and the packages they
+ * import, from `node_modules`. Any other file is missing (UF6001). `compiled` is the source a
+ * compile is given, which the oracle reads for its file: a canary's corruption of it, or the
+ * source with its fixes applied.
+ */
+export function caseOracle(
+  info: Pick<CaseInfo, "dir">,
+  casesDir: string,
+  compiled: { filename: string; text: string },
+): TypeOracle {
+  const root = casesDir.split(sep).join("/");
+  return createSyntacticOracle({
+    root,
+    readFile: async (path) => {
+      if (path === `${root}/${compiled.filename}`) return compiled.text;
+      const file = join(path);
+      if (relative(info.dir, dirname(file)) !== "" && !file.split(sep).includes("node_modules")) {
+        return undefined;
+      }
       return readFile(file, "utf8").catch(() => undefined);
     },
   });

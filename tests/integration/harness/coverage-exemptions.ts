@@ -68,8 +68,6 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
   // Layer 9 of M5 accepts generic components.
   UF6006: "The analyser accepts generic components, and the case lands in layer 9 of M5.",
   // Layer 8 of M5 resolves child APIs and the corpus's types through the oracle.
-  UF6003:
-    "The case needs a second module, read through the file-backed oracle: it lands in layer 8 of M5.",
   // Layer 10 of M5 imports shared modules.
   UF1204: "The analyser reads shared `.ts` modules, and the case lands in layer 10 of M5.",
   // Layer 14 of M5 emits cross-file types and generics on Vue.

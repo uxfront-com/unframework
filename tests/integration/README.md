@@ -97,6 +97,11 @@ cases/components/form/
 - Every input compiles to every target. Their outputs share `__output__/<target>/`, so two
   components of a case may not have one name on any target, and the compile project fails a
   golden file that no input produces.
+- Each input compiles with its case's resolver and a syntactic type oracle over the cases
+  directory (`caseResolver` and `caseOracle` in `harness/sources.ts`, ADR-0067), which read the
+  case's own files and the packages they import: a props type or a child's API may come from
+  another input or a `.ts` module of the case. The browser and SSR projects compile through the
+  unplugin, whose resolver and oracle are rooted at Vite's root, this package.
 - `__expected__/diagnostics.json` holds every input's diagnostics, each with its `file`, sorted by
   file, then by span; `__output__/diagnostics.txt` frames them by file.
 - The golden guard judges each module the browser and SSR projects compile on the files that

@@ -5,8 +5,8 @@
     {
       "name": "Badge",
       "span": {
-        "start": 160,
-        "end": 272
+        "start": 310,
+        "end": 422
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "\"info\" | \"warning\"",
             "span": {
-              "start": 193,
-              "end": 211
+              "start": 343,
+              "end": 361
             }
           },
-          "binding": "tone@177",
+          "binding": "tone@327",
           "span": {
-            "start": 187,
-            "end": 211
+            "start": 337,
+            "end": 361
           }
         }
       ],
@@ -31,24 +31,24 @@
         "type": {
           "code": "{ tone: \"info\" | \"warning\" }",
           "span": {
-            "start": 185,
-            "end": 213
+            "start": 335,
+            "end": 363
           }
         },
         "span": {
-          "start": 175,
-          "end": 213
+          "start": 325,
+          "end": 363
         }
       },
       "types": [],
       "bindings": [
         {
-          "id": "tone@177",
+          "id": "tone@327",
           "name": "tone",
           "kind": "prop",
           "span": {
-            "start": 177,
-            "end": 181
+            "start": 327,
+            "end": 331
           }
         }
       ],
@@ -64,8 +64,8 @@
                 "kind": "Static",
                 "value": "badge",
                 "span": {
-                  "start": 240,
-                  "end": 247
+                  "start": 390,
+                  "end": 397
                 }
               },
               {
@@ -73,29 +73,29 @@
                 "value": {
                   "code": "tone",
                   "span": {
-                    "start": 249,
-                    "end": 253
+                    "start": 399,
+                    "end": 403
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "tone@177",
+                      "binding": "tone@327",
                       "span": {
-                        "start": 249,
-                        "end": 253
+                        "start": 399,
+                        "end": 403
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 249,
-                  "end": 253
+                  "start": 399,
+                  "end": 403
                 }
               }
             ],
             "span": {
-              "start": 232,
-              "end": 255
+              "start": 382,
+              "end": 405
             }
           }
         ],
@@ -105,33 +105,85 @@
             "value": {
               "code": "tone",
               "span": {
-                "start": 257,
-                "end": 261
+                "start": 407,
+                "end": 411
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "tone@177",
+                  "binding": "tone@327",
                   "span": {
-                    "start": 257,
-                    "end": 261
+                    "start": 407,
+                    "end": 411
                   }
                 }
               ]
             },
             "span": {
-              "start": 256,
-              "end": 262
+              "start": 406,
+              "end": 412
             }
           }
         ],
         "span": {
-          "start": 226,
-          "end": 269
+          "start": 376,
+          "end": 419
         }
       }
     }
   ],
   "exports": [],
-  "types": []
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Tag.uf.tsx",
+      "file": "Tag.uf.tsx",
+      "api": {
+        "file": "Tag.uf.tsx",
+        "components": [
+          {
+            "name": "Tag",
+            "export": "default",
+            "props": [
+              {
+                "name": "tone",
+                "optional": false,
+                "type": "Tone",
+                "references": [
+                  "Tone"
+                ],
+                "literals": [
+                  "\"info\"",
+                  "\"warning\""
+                ]
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "span"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Tag",
+          "span": {
+            "start": 284,
+            "end": 287
+          }
+        }
+      ],
+      "span": {
+        "start": 277,
+        "end": 308
+      }
+    }
+  ]
 }
