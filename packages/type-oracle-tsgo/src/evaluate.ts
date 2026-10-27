@@ -14,7 +14,7 @@ import type {
   TypeParameterNode,
   TypeShape,
 } from "@unframework/type-oracle";
-import { ModifierFlags } from "typescript/unstable/ast";
+import { ModifierFlags, SyntaxKind } from "typescript/unstable/ast";
 import type { Node } from "typescript/unstable/ast";
 import {
   isIdentifier,
@@ -27,7 +27,14 @@ import {
   isTypeAliasDeclaration,
   isTypeReferenceNode,
 } from "typescript/unstable/ast/is";
-import { ElementFlags, SignatureKind, SymbolFlags, TypeFlags } from "typescript/unstable/sync";
+import {
+  ElementFlags,
+  NodeBuilderFlags,
+  ObjectFlags,
+  SignatureKind,
+  SymbolFlags,
+  TypeFlags,
+} from "typescript/unstable/sync";
 import type { Checker, Signature, Symbol, Type, TypeReference } from "typescript/unstable/sync";
 
 export interface EvaluateContext {
@@ -38,8 +45,16 @@ export interface EvaluateContext {
   file: string;
 }
 
-/** The checker's `CheckFlags.Readonly`, which `typescript/unstable/sync` does not export. */
+/** The checker's `CheckFlags`, which `typescript/unstable/sync` does not export. */
 const CHECK_READONLY = 1 << 3;
+const CHECK_MAPPED = 1 << 18;
+
+/**
+ * How deep a conversion nests before it gives up: a type that takes new arguments inside itself
+ * (`type Wrap<T> = { inner: Wrap<[T]> }`) is a new type at each level and never ends, as the
+ * syntactic adapter's ten levels of instantiation never end (plan §5.5).
+ */
+const MAX_DEPTH = 50;
 
 const PRIMITIVES: readonly [TypeFlags, PrimitiveNode["name"]][] = [
   [TypeFlags.Any, "any"],
@@ -189,9 +204,21 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
   const converted = new Map<number, number>();
   const push = (node: ShapeNode) => nodes.push(node) - 1;
   let at: OpaqueNode;
+  let depth = 0;
 
   const build = (type: Type, optional = false): number => {
-    if (type.isErrorType()) throw new Unrepresentable();
+    if (depth >= MAX_DEPTH) throw new Unrepresentable();
+    depth++;
+    try {
+      return convertType(type, optional);
+    } finally {
+      depth--;
+    }
+  };
+
+  const convertType = (type: Type, optional: boolean): number => {
+    // An enum's members are not their values' literals: `"x"` is not assignable to `E`.
+    if (type.isErrorType() || type.flags & TypeFlags.EnumLike) throw new Unrepresentable();
     if (!optional) {
       const known = converted.get(type.id);
       if (known !== undefined) return known;
@@ -274,10 +301,14 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
       readonly: target.readonly,
       elements: elements.map((element, index) => {
         const optional = (flags[index]! & ElementFlags.Optional) !== 0;
+        const rest = (flags[index]! & ElementFlags.Rest) !== 0;
+        // A rest element holds its array, as the syntactic adapter writes it.
         return {
-          type: build(element, optional),
+          type: rest
+            ? push({ kind: "array", element: build(element), readonly: false })
+            : build(element, optional),
           optional,
-          rest: (flags[index]! & ElementFlags.Rest) !== 0,
+          rest,
         };
       }),
     };
@@ -308,6 +339,16 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
 
   const object = (type: Type): number => {
     if (checker.getIndexInfosOfType(type).length) throw new Unrepresentable();
+    // A mapped type over keys that are still generic (`keyof T`, `keyof T | "a"`) lists only
+    // the keys it knows; the checker writes it, alias expanded, as a mapped type only then.
+    if (
+      type.isObjectType() &&
+      type.objectFlags & ObjectFlags.Mapped &&
+      checker.typeToTypeNode(type, undefined, NodeBuilderFlags.InTypeAlias)?.kind ===
+        SyntaxKind.MappedType
+    ) {
+      throw new Unrepresentable();
+    }
     if (checker.getSignaturesOfType(type, SignatureKind.Construct).length) {
       throw new Unrepresentable();
     }
@@ -349,10 +390,13 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
         isPropertyDeclaration(node))
         ? node
         : undefined;
+    // A mapped type's member takes its modifiers (`readonly`, `-readonly`) and its type from
+    // the mapping: its declaration's are not its own.
+    const mapped = (property.checkFlags & CHECK_MAPPED) !== 0;
     const readonly =
       (property.checkFlags & CHECK_READONLY) !== 0 ||
-      ((written?.modifierFlags ?? 0) & ModifierFlags.Readonly) !== 0;
-    const typeNode = written?.type;
+      (!mapped && ((written?.modifierFlags ?? 0) & ModifierFlags.Readonly) !== 0);
+    const typeNode = mapped ? undefined : written?.type;
     const type = build(propertyType, optional);
     if (!node) {
       // A member a mapped type makes has no declaration: it is written where the type is.
@@ -387,10 +431,12 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
           span: { start: typeNode.getStart(source), end: typeNode.end },
         },
       }),
-      references: references([
-        ...(written && isMethodSignatureDeclaration(written) ? written.parameters : []),
-        ...(typeNode ? [typeNode] : []),
-      ]),
+      references: mapped
+        ? []
+        : references([
+            ...(written && isMethodSignatureDeclaration(written) ? written.parameters : []),
+            ...(typeNode ? [typeNode] : []),
+          ]),
     };
   };
 

@@ -1,4 +1,4 @@
-import { realpathSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { relative } from "node:path";
 
@@ -54,6 +54,17 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
   let api: API | undefined;
   let snapshot: Snapshot | undefined;
 
+  /** Stops the checker's process. */
+  const stop = () => {
+    try {
+      snapshot?.dispose();
+    } finally {
+      api?.close();
+      snapshot = undefined;
+      api = undefined;
+    }
+  };
+
   const project = (): Project => {
     api ??= new API({
       cwd: root,
@@ -70,17 +81,22 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
     return snapshot.getProject(config)!;
   };
 
-  /** A file as a shape names it: relative to the root, or `pkg:<name>/<path>` in a package. */
+  /**
+   * A file as a shape names it: relative to the root, or `pkg:<name>/<path>` in a package the
+   * root installs. A file outside the root, such as tsgo's own lib, has no name (P8).
+   */
   const fileOf = (fileName: string): string | undefined => {
-    const modules = fileName.lastIndexOf("/node_modules/");
-    if (modules !== -1) {
-      const path = fileName.slice(modules + "/node_modules/".length);
-      // DefinitelyTyped's `@types/x` types `x`, and `@types/scope__x` types `@scope/x`.
-      const typed = path.startsWith("@types/") ? path.slice("@types/".length) : path;
-      return `pkg:${typed.includes("__") ? `@${typed.replace("__", "/")}` : typed}`;
-    }
     const base = roots.find((each) => fileName.startsWith(`${each}/`));
-    return base === undefined ? undefined : relative(base, fileName);
+    if (base === undefined) return undefined;
+    const path = relative(base, fileName);
+    const modules = path.lastIndexOf("node_modules/");
+    if (modules === -1) return path;
+    const installed = path.slice(modules + "node_modules/".length);
+    if (!installed.startsWith("@types/")) return `pkg:${installed}`;
+    // DefinitelyTyped's `@types/x` types `x`, and `@types/scope__x` types `@scope/x`.
+    const [name, ...rest] = installed.slice("@types/".length).split("/");
+    const typed = name!.includes("__") ? `@${name!.replace("__", "/")}` : name!;
+    return `pkg:${[typed, ...rest].join("/")}`;
   };
 
   const resolveShape = async (query: ShapeQuery): Promise<TypeShape> => {
@@ -109,16 +125,25 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
     update: async (changes) => {
       await syntactic.update(changes);
       if (!api || !snapshot) return;
-      // The checker reads every file again: a created file can change how an import resolves.
-      const next = api.updateSnapshot({ fileChanges: { invalidateAll: true } });
+      // A package installed, removed or changed can change how any import resolves: the next
+      // query that needs the checker starts a new one.
+      if (changes.files.some((file) => file.startsWith("pkg:"))) return stop();
+      const { program } = snapshot.getProject(config)!;
+      const changed: string[] = [];
+      const created: string[] = [];
+      const deleted: string[] = [];
+      for (const file of changes.files) {
+        const path = `${root}/${file}`;
+        if (!existsSync(path)) deleted.push(path);
+        else if (program.getSourceFile(path)) changed.push(path);
+        else created.push(path);
+      }
+      const next = api.updateSnapshot({ fileChanges: { changed, created, deleted } });
       snapshot.dispose();
       snapshot = next;
     },
     dispose: async () => {
-      snapshot?.dispose();
-      api?.close();
-      snapshot = undefined;
-      api = undefined;
+      stop();
       await syntactic.dispose();
     },
   };
