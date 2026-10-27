@@ -1290,11 +1290,12 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
   const writtenType = (type: AST.TSType) => {
     const at = { start: type.start, end: type.end };
     const shape = shapes(at) ?? module.localShapes(at);
-    if (!shape) return { kinds: types.table.kindsOf(type), complete: false };
-    return {
-      kinds: kindsFromShape(shape, shapeReading(parsed, types.table, at)),
-      complete: !shape.unresolved.length,
-    };
+    // A shape that does not resolve in full keeps what it could not evaluate as an object (a
+    // branded `string & {}`), so its kinds are read as the module's own types give them, which
+    // leave such a type `unknown` (ADR-0035).
+    return shape && !shape.unresolved.length
+      ? { kinds: kindsFromShape(shape, shapeReading(parsed, types.table, at)), complete: true }
+      : { kinds: types.table.kindsOf(type), complete: false };
   };
   // The setup (ADR-0045): every statement before the return, declared before any code is walked.
   const setup = declareSetup({

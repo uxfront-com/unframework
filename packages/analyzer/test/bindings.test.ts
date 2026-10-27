@@ -890,6 +890,21 @@ describe("spreads", () => {
     expect(spreadsOf(module)).toEqual([expected]);
   });
 
+  // A type the oracle cannot evaluate in full reads as the module's own types give it: a branded
+  // primitive stays `unknown`, which every check accepts (ADR-0035).
+  it.each([
+    ['const size: Size = "sm";', "<p title={size}>{size}</p>"],
+    ['const size = ref<Size>("sm");', "<p title={size.value}>{size.value}</p>"],
+    ["const id: Id = 1 as Id;", "<p title={String(id)}>{id}</p>"],
+    ["const id = ref<Id>(1 as Id);", "<p>{id.value}</p>"],
+  ])("reads a branded primitive as the base did: %s", (setup, jsx) => {
+    const { diagnostics } = component(jsx, {
+      before: `${API}export type Size = "sm" | "md" | (string & {});\nexport type Id = number & { __brand: "id" };\n`,
+      setup,
+    });
+    expect(diagnostics).toEqual([]);
+  });
+
   it("reports a spread of a setup value whose type does not resolve in full (UF3048)", () => {
     const { source, diagnostics } = component("<p {...attrs}>x</p>", {
       before: `${API}export interface Attrs { id: string; [key: string]: string }\n`,

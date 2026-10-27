@@ -612,9 +612,9 @@ function readSpread(
   if (unwritten) {
     reporter.unsupported(
       item,
-      `This spread reads \`${unwritten.name}\`, a setup value whose type is not written as an annotation or as \`ref\`'s type argument: a spread renders the keys such a type declares.`,
+      `This spread reads \`${unwritten.name}\`, a setup value whose type is not written as an annotation or as \`ref\`'s type argument: a spread reads only setup values whose types are written, so that it renders the keys they declare.`,
       {
-        help: "Spread a value annotated with an object type (`const attrs: Attrs = …`) or held in `ref<Attrs>(…)`, or write the attributes.",
+        help: `Annotate \`${unwritten.name}\` with its type (\`const attrs: Attrs = …\`) or hold it in \`ref<Attrs>(…)\`, or write the attributes.`,
       },
     );
     return { node: item, binds: true, attribute: undefined, keys: [] };
@@ -624,7 +624,7 @@ function readSpread(
     reporter.report(
       "UF3048",
       item,
-      `This spread's keys are not all known: the type of \`${partial.name}\` does not resolve in full, and a spread renders exactly the keys its type declares (ADR-0054).`,
+      `This spread's keys are not all known: it reads \`${partial.name}\`, a setup value whose type does not resolve in full, and a spread renders exactly the keys its type declares (ADR-0054).`,
       {
         help: "Give the value a type the compiler resolves (no index signature, and every type it reaches declared or imported), or write the attributes.",
       },
@@ -639,7 +639,9 @@ function readSpread(
         item,
         "This spread's keys are not known: a spread renders exactly the keys its type declares, and no target can render keys only the run time knows (ADR-0054).",
         {
-          help: "Spread a prop or a list's item typed by an interface or an object type the module declares, or write the attributes.",
+          help: setupReads.length
+            ? "Spread a prop, a list's item or a setup value whose type is an interface or an object type, or write the attributes."
+            : "Spread a prop or a list's item typed by an interface or an object type the module declares, or write the attributes.",
         },
       );
     }

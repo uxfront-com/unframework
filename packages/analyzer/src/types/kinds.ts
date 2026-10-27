@@ -1,8 +1,9 @@
 // The value-kind model (ADR-0035): what kinds of value an expression can have, read from the
-// shapes of the props' types (`from-shape.ts`, ADR-0067), the module's own type declarations
-// (`from-type.ts`) and the expression itself. It exists for the checks that depend on a value's
-// kind (UF3016, UF3018, UF3023, spreads), never reaches the IR, and stays approximate: what it
-// cannot type, an inferred type among them, is `unknown`, which every check accepts.
+// shapes of the props' types and of the setup's written types (`from-shape.ts`, ADR-0067), the
+// module's own type declarations (`from-type.ts`) and the expression itself. It exists for the
+// checks that depend on a value's kind (UF3016, UF3018, UF3023, spreads), never reaches the IR,
+// and stays approximate: what it cannot type, an inferred type among them, is `unknown`, which
+// every check accepts.
 
 import type { Span } from "@unframework/ir";
 

@@ -303,6 +303,45 @@ describe("a spread of a setup value whose type is imported", () => {
     ]);
   });
 
+  it("renders the keys a local interface inherits through the compiler's shapes", async () => {
+    const source = [
+      "interface Base { title: string }",
+      "export interface Attrs extends Base { id: string }",
+      'export function A() { const attrs: Attrs = { id: "a", title: "b" }; return <p {...attrs}>x</p>; }',
+    ].join("\n");
+    const { module, diagnostics } = await analyzeWith({ "A.uf.tsx": source });
+    expect(diagnostics).toEqual([]);
+    expect(JSON.stringify(only(module).render)).toMatch(/"keys":\[\{"name":"id".*"name":"title"/);
+  });
+
+  it("reads each module's own types, module after module", async () => {
+    const one =
+      'interface Base { title: string }\nexport interface Attrs extends Base { id: string }\nexport function A() { const attrs: Attrs = { id: "a", title: "b" }; return <p {...attrs}>x</p>; }';
+    const two =
+      'interface Other { lang: string }\nexport interface Attrs extends Other { title: string }\nexport function A() { const attrs: Attrs = { title: "t", lang: "en" }; return <p {...attrs}>x</p>; }';
+    for (const [source, keys] of [
+      [one, /"keys":\[\{"name":"id".*"name":"title"/],
+      [two, /"keys":\[\{"name":"title".*"name":"lang"/],
+    ] as const) {
+      const { module, diagnostics } = await analyzeWith({ "A.uf.tsx": source });
+      expect(diagnostics).toEqual([]);
+      expect(JSON.stringify(only(module).render)).toMatch(keys);
+    }
+  });
+
+  it("reads an imported branded primitive as the base did", async () => {
+    const source = [
+      'import { ref } from "unframework";',
+      'import type { Size } from "./types.ts";',
+      'export function A() { const size = ref<Size>("sm"); const fixed: Size = "md"; return <p title={size.value}>{fixed}</p>; }',
+    ].join("\n");
+    const { diagnostics } = await analyzeWith({
+      "types.ts": 'export type Size = "sm" | "md" | (string & {});',
+      "A.uf.tsx": source,
+    });
+    expect(diagnostics).toEqual([]);
+  });
+
   it("renders the keys a local interface inherits from an imported one", async () => {
     const source = [
       'import type { Base } from "./types.ts";',

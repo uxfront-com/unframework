@@ -1,6 +1,6 @@
-// The value kinds of a type the type oracle resolved (ADR-0067): what a prop can hold, whether
-// its module declares its type or another file does, and whether it is built by `extends`, an
-// intersection or a utility type. The same model as `from-type.ts`, read from the shape's nodes
+// The value kinds of a type the type oracle resolved (ADR-0067): what a prop, or a setup value
+// whose type is written, can hold, whether its module declares its type or another file does,
+// and whether it is built by `extends`, an intersection or a utility type. The same model as `from-type.ts`, read from the shape's nodes
 // instead of the module's syntax.
 
 import type { Span } from "@unframework/ir";
