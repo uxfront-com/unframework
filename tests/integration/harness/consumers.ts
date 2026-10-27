@@ -3,8 +3,8 @@
 // carries a `@uf-expect <code> <Component>.<kind>:<name>` comment on the line before it, and the
 // judging is inverted: the checker's diagnostics on a fixture must equal its directives. A missing
 // expected error fails, as does any other diagnostic, so a correct consumer must check clean.
-// Source maps are M6's (L14): until then a failure names the declaration's `.uf.tsx` line from
-// the case's IR.
+// Source maps are M6's (L14): until then a failure names the declaration's line from the case's
+// IR, in its `.uf.tsx`, or in the `.ts` module a re-exported type comes from (ADR-0068).
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, sep } from "node:path";
 
@@ -187,7 +187,7 @@ export function consumerProblems(
 
 /**
  * Every declaration a directive can name in a case's IR (`ir.json`, and `ir.<Stem>.json` for a
- * case of several sources, ADR-0057), with its `.uf.tsx` line: `FileRow.prop:path` →
+ * case of several sources, ADR-0057), with its line: `FileRow.prop:path` →
  * `FileRow.uf.tsx:9`, and the finer part a gap may name (a slot without props, or one that
  * passes a type parameter). Models join when the IR has them (ADR-0055). So do the types each
  * component's module exports (ADR-0068), at their declaration: a re-exported one in the case's

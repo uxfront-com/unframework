@@ -191,8 +191,9 @@ The tests and tooling build, check and run React output through three entries:
   Babel 7, where a bailout is a warning; a function that opts out with `"use no memo"` passes
   only where React Compiler still finds what it cannot compile there, a `Todo` or an
   `Invariant`, and an opt-out it would compile is a warning, `react-compiler/needless-opt-out`;
-  a file in which nothing compiled is a warning too, but a `.ts` module that declares no hook, a
-  shared module, ADR-0070; a `.ts` module parses without JSX),
+  a file in which nothing compiled is a warning too, except a `.ts` module that declares no
+  hook, which is a shared module with nothing to compile, ADR-0070; and a `.ts` module parses
+  without JSX),
   the type check (L4: one TypeScript 7 run over all
   files, against `tests/toolchains/react/tsconfig.json`) and the lint (L5: oxlint with the
   shared baseline and its React rules, `tests/toolchains/react/output.oxlintrc.json`).

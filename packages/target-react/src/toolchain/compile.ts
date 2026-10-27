@@ -158,8 +158,13 @@ function compileFile(
  */
 const UNSUPPORTED: ReadonlySet<string> = new Set(["Todo", "Invariant"]);
 
-/** A hook's declaration, by React's naming rule: `function useToggle` or `const useToggle`. */
-const HOOK = /\b(?:function|const)\s+use[A-Z]/;
+/**
+ * A hook's declaration at the start of a line, by React's naming rule: `function useToggle(`,
+ * or a `const useToggle` that holds a function. A value named so (`const useCases = [...]`), or
+ * a name in a comment, declares none.
+ */
+const HOOK =
+  /^\s*(?:export\s+)?(?:(?:async\s+)?function\s+use[A-Z]|const\s+use[A-Z]\w*\s*(?::[^=]+)?=\s*(?:async\s+)?(?:function\b|\(|<))/m;
 
 /** React Compiler's opt-out directives (its `OPT_OUT_DIRECTIVES`). */
 const OPT_OUT = new Set(["use no memo", "use no forget"]);

@@ -178,14 +178,15 @@ describe("the finer gaps (ADR-0059)", () => {
 
 describe("the type kind and the generic-slot-props part (ADR-0068)", () => {
   // A case of its own: `List.uf.tsx` declares `ListProps<T>` and exports it, re-exports `Tone`
-  // from `types.ts`, and passes `T` through its `item` slot, beside a `footer` slot.
+  // from `types.ts` as `ListTone` (and a `Missing` the module lacks), exports a `Size` no
+  // component reaches, and passes `T` through its `item` slot, beside a `footer` slot.
   const dir = join(scratch, "generics", "list");
   const span = (source: string, text: string) => {
     const start = source.indexOf(text);
     return { start, end: start + text.length };
   };
   const list = [
-    `export type { Tone } from "./types";`,
+    `export type { Tone as ListTone, Missing } from "./types";`,
     `export interface ListProps<T> {`,
     `  items: T[];`,
     `}`,
@@ -193,6 +194,7 @@ describe("the type kind and the generic-slot-props part (ADR-0068)", () => {
     `  const slots = defineSlots<{ item?: (props: { item: T }) => unknown; footer?: (props: { count: number }) => unknown }>();`,
     `  return <ul />;`,
     `}`,
+    `export type Size = "sm" | "md";`,
     ``,
   ].join("\n");
   const types = `// The tones.\nexport type Tone = "info" | "danger";\n`;
@@ -215,8 +217,17 @@ describe("the type kind and the generic-slot-props part (ADR-0068)", () => {
         {
           kind: "ReExport",
           specifier: "./types",
-          names: [{ imported: "Tone", exported: "Tone", span: span(list, "Tone") }],
-          span: span(list, `export type { Tone } from "./types";`),
+          names: [
+            { imported: "Tone", exported: "ListTone", span: span(list, "Tone as") },
+            { imported: "Missing", exported: "Missing", span: span(list, "Missing") },
+          ],
+          span: span(list, `export type { Tone as ListTone, Missing } from "./types";`),
+        },
+        {
+          kind: "Declaration",
+          name: "Size",
+          code: `type Size = "sm" | "md";`,
+          span: span(list, `type Size`),
         },
       ],
       components: [
@@ -244,16 +255,39 @@ describe("the type kind and the generic-slot-props part (ADR-0068)", () => {
     ]);
     const misuse = fixture(
       "MisuseType.tsx",
-      "// @uf-expect TS2322 List.type:ListProps\nx;\n// @uf-expect TS2322 List.type:Tone\ny;\n",
+      [
+        "// @uf-expect TS2322 List.type:ListProps",
+        "x;",
+        "// @uf-expect TS2322 List.type:ListTone",
+        "y;",
+        "// @uf-expect TS2322 List.type:Size",
+        "z;",
+        "// @uf-expect TS2322 List.type:Missing",
+        "w;",
+        "",
+      ].join("\n"),
     );
-    // `ListProps` is met; `Tone` is declared in the `.ts` module it is re-exported from.
+    // Each named at its declaration: `ListTone` by its exported name, in the `.ts` module its
+    // original comes from; `Size`, which no component reaches, in the module; `Missing`, which
+    // the `.ts` module lacks, at the re-export.
     expect(consumerProblems("react", info, [misuse], results([[misuse, [mismatch(2)]]]))).toEqual([
       expect.stringMatching(
-        /MisuseType\.tsx:4: expected TS2322 for List\.type:Tone \(types\.ts:2\), got none$/,
+        /MisuseType\.tsx:4: expected TS2322 for List\.type:ListTone \(types\.ts:2\), got none$/,
+      ),
+      expect.stringMatching(
+        /:6: expected TS2322 for List\.type:Size \(List\.uf\.tsx:9\), got none$/,
+      ),
+      expect.stringMatching(
+        /:8: expected TS2322 for List\.type:Missing \(List\.uf\.tsx:1\), got none$/,
       ),
     ]);
     const missing = consumerProblems("react", info, [misuse], results([[misuse, []]]));
     expect(missing[0]).toMatch(/:2: expected TS2322 for List\.type:ListProps \(List\.uf\.tsx:2\)/);
+    // The original name is no export of the component's module.
+    const original = fixture("MisuseOriginal.tsx", "// @uf-expect TS2322 List.type:Tone\nx;\n");
+    expect(
+      consumerProblems("react", info, [original], results([[original, [mismatch(2)]]])),
+    ).toEqual([expect.stringMatching(/List\.type:Tone is not declared in generics\/list's IR\.$/)]);
     const unknown = fixture("MisuseUnknown.tsx", "// @uf-expect TS2322 List.type:Item\nx;\n");
     expect(consumerProblems("react", info, [unknown], results([[unknown, [mismatch(2)]]]))).toEqual(
       [expect.stringMatching(/List\.type:Item is not declared in generics\/list's IR\.$/)],

@@ -6,10 +6,26 @@ import tseslint from "typescript-eslint";
 
 export default [
   ...svelte.configs["flat/recommended"],
-  // A composable's `.svelte.ts` module (ADR-0069) is TypeScript, as a component's script is.
+  // A composable's `.svelte.ts` module (ADR-0069) is TypeScript, as a component's script is, and
+  // holds the author's setup code as a component's does: the rules that judge it are off for both.
   {
     files: ["**/*.svelte", "**/*.svelte.ts"],
     languageOptions: { parserOptions: { parser: tseslint.parser } },
+    rules: {
+      // L3 runs Svelte's compiler (`compileModule` for a module) and owns its warnings, as
+      // ADR-0028 did for L4.
+      "svelte/valid-compile": "off",
+      // Judges the author's local values: a handler that builds and fills a `new Map()`, a
+      // `new Set()` or a `new Date()` of its own, which the client subset allows (a fresh local
+      // value may be mutated, UF2004), would fail Svelte alone. The target makes no such value:
+      // state is a rune, and replaced whole (ADR-0008; the M2 amendment of ADR-0042).
+      "svelte/prefer-svelte-reactivity": "off",
+      // Judges the author's choice of `watchEffect` over `computed`: an effect that only writes
+      // one state is the author's code, which the target prints as an `$effect`. A writable
+      // `$derived` would change what the server renders, since an effect runs in the browser
+      // only and a derived value renders on the server too (ADR-0042, ADR-0048).
+      "svelte/prefer-writable-derived": "off",
+    },
   },
   {
     files: ["**/*.svelte"],
@@ -42,18 +58,6 @@ export default [
       "svelte/no-navigation-without-resolve": "off",
       // Judges the author's props type: a declared prop the component never reads is the author's.
       "svelte/no-unused-props": "off",
-      // L3 runs Svelte's compiler and owns its warnings, as ADR-0028 did for L4.
-      "svelte/valid-compile": "off",
-      // Judges the author's local values: a handler that builds and fills a `new Map()`, a
-      // `new Set()` or a `new Date()` of its own, which the client subset allows (a fresh local
-      // value may be mutated, UF2004), would fail Svelte alone. The target makes no such value:
-      // state is a rune, and replaced whole (ADR-0008; the M2 amendment of ADR-0042).
-      "svelte/prefer-svelte-reactivity": "off",
-      // Judges the author's choice of `watchEffect` over `computed`: an effect that only writes
-      // one state is the author's code, which the target prints as an `$effect`. A writable
-      // `$derived` would change what the server renders, since an effect runs in the browser
-      // only and a derived value renders on the server too (ADR-0042, ADR-0048).
-      "svelte/prefer-writable-derived": "off",
     },
   },
 ];

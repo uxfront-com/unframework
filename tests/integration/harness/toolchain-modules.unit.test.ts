@@ -78,14 +78,29 @@ export function useToggle(initial: boolean): { on: Accessor<boolean>; toggle: ()
   },
   svelte: {
     file: "useToggle.svelte.ts",
-    contents: `export function useToggle(initial: boolean): { readonly on: boolean; toggle: () => void } {
+    // With what the author's code may hold and Svelte's rules would judge: a \`watchEffect\` that
+    // writes a state (\`$effect\`), and a fresh local \`new Map()\` (ADR-0042).
+    contents: `export function useToggle(initial: boolean): {
+  readonly on: boolean;
+  readonly count: number;
+  toggle: () => void;
+} {
   let on = $state(initial);
+  let count = $state(0);
+  $effect(() => {
+    count = on ? 1 : 0;
+  });
   return {
     get on() {
       return on;
     },
+    get count() {
+      return count;
+    },
     toggle() {
-      on = !on;
+      const seen = new Map<string, boolean>();
+      seen.set("on", on);
+      on = !seen.get("on");
     },
   };
 }
