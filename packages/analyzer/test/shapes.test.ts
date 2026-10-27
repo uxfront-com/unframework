@@ -389,3 +389,86 @@ describe("the shape path's checks", () => {
     expect(only(module).props.map(({ name }) => name)).toEqual(["a", "item"]);
   });
 });
+
+// UF6005's parts are what the props type is written from: an interface's `extends` list and an
+// intersection's operands, through aliases and utility types.
+describe("the parts UF6005 compares", () => {
+  it.each([
+    [
+      "a base that is also a member's type",
+      "interface L { a: string }\ninterface P extends L { a: number; child?: L }",
+    ],
+    [
+      "a base that is a list's element",
+      "interface L { a: string }\ninterface P extends L { a: number; kids: L[] }",
+    ],
+    [
+      "a base built with `Partial`",
+      "interface L { a: string }\ninterface P extends Partial<L> { a: number }",
+    ],
+    [
+      "a base built with `Pick`",
+      'interface L { a: string }\ninterface P extends Pick<L, "a"> { a: number }',
+    ],
+    [
+      "a required override of a `Partial` base",
+      "interface L { a: string }\ninterface P extends Partial<L> { a: string }",
+    ],
+    [
+      "an optional part written in place",
+      "interface L { a: string }\ntype P = L & { a?: string };",
+    ],
+  ])("reports %s (UF6005)", async (_, types) => {
+    const source = `${types}\nexport function C(props: P) { return <p />; }`;
+    const { module, diagnostics } = await analyzeWith({ "A.uf.tsx": source });
+    expect(problems(source, diagnostics)).toEqual(["UF6005 P"]);
+    expect(diagnostics[0]!.message).toContain(
+      "`a` is declared with different types or optionality",
+    );
+    expect(module?.components ?? []).toEqual([]);
+  });
+
+  it("reports an override of an imported base (UF6005)", async () => {
+    const source = [
+      'import type { L } from "./types.ts";',
+      "interface P extends L { a: number }",
+      "export function C(props: P) { return <p />; }",
+    ].join("\n");
+    const { diagnostics } = await analyzeWith({
+      "types.ts": "export interface L { a: string }",
+      "A.uf.tsx": source,
+    });
+    expect(problems(source, diagnostics)).toEqual(["UF6005 P"]);
+    expect(diagnostics[0]!.message).toBe(
+      "`a` is declared with different types or optionality by `P` and `L`: the targets declare each prop once, with one type.",
+    );
+  });
+
+  it.each([
+    [
+      "a member's object type written again in place",
+      "interface Item { a: number }\ninterface A { a: string; item: Item }\ninterface P extends A { item: { a: number } }",
+    ],
+    [
+      "an intersection with a member's object type written again in place",
+      "interface Item { a: number }\ninterface A { a: string; item: Item }\ntype P = A & { item: { a: number } };",
+    ],
+    [
+      "`boolean` over `true | false`",
+      "interface A { a: boolean }\ninterface P extends A { a: true | false }",
+    ],
+    [
+      "an optional member's `undefined`",
+      "interface A { a?: string }\ninterface P extends A { a?: string | undefined }",
+    ],
+    [
+      "a `Partial` part over an optional one",
+      "interface L { a: string }\ntype P = Partial<L> & { a?: string };",
+    ],
+  ])("accepts %s", async (_, types) => {
+    const source = `${types}\nexport function C(props: P) { return <p />; }`;
+    const { module, diagnostics } = await analyzeWith({ "A.uf.tsx": source });
+    expect(diagnostics).toEqual([]);
+    expect(only(module).name).toBe("C");
+  });
+});

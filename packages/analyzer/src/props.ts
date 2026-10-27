@@ -356,9 +356,12 @@ function shapeMembers(
   const root = shape.nodes[shape.root]!;
   const members = root.kind === "object" ? root.members : [];
   // The members two declarations type differently, each with the declarations that write it.
-  const conflicting = root.kind === "object" ? overrides(shape, root) : new Map();
+  const conflicting =
+    root.kind === "object"
+      ? overrides(annotation, shape, types, parsed)
+      : new Map<string, Set<string>>();
   for (const entry of shape.unresolved) {
-    const text = code(textOf(entry));
+    const text = quoted(textOf(entry));
     const where = entry.file === file ? "" : ` in \`${entry.file}\``;
     switch (entry.reason) {
       case "missing-module":
@@ -395,9 +398,14 @@ function shapeMembers(
             each.typeText?.span.start === entry.span.start &&
             each.typeText.span.end === entry.span.end,
         );
+        // A props member this module writes is judged by the parts it is written from
+        // (`overrides`), which compares types by structure: the oracle calls two types the same
+        // only when it is sure, so an object written again in place is a conflict to it.
+        if (member && member.file === file) break;
         if (member) {
-          if (!conflicting.has(member.name))
+          if (!conflicting.has(member.name)) {
             conflicting.set(member.name, declarers(shape, member.name));
+          }
         } else {
           problem(
             "UF6005",
@@ -445,12 +453,21 @@ function shapeMembers(
   const result: PropMember[] = [];
   for (const member of members) {
     const local = member.file === file;
-    // A member another file writes always belongs to a named declaration: a file is reached only
-    // through an import of a type by its name.
+    // The syntactic oracle names a declaration for every member another file writes: a file is
+    // reached only through an import of a type by its name. Another adapter may not.
+    const declaration = member.declaration ?? root.declaration;
     const declaredBy: DeclaredBy | undefined =
-      !local || (member.declaration && member.declaration.name !== own)
-        ? { file: member.file, declaration: member.declaration!.name, span: member.span }
+      (!local || (member.declaration && member.declaration.name !== own)) && declaration
+        ? { file: member.file, declaration: declaration.name, span: member.span }
         : undefined;
+    if (!local && !declaredBy) {
+      problem(
+        "UF6002",
+        at,
+        ...needsChecker(`\`${member.name}\`, written in place in \`${member.file}\`,`),
+      );
+      continue;
+    }
     const where = local ? (member.typeText?.span ?? member.span) : at;
     checkShapeType(shape, member.type, where, problem, new Set());
     checkExported(shape, member, at, file, problem);
@@ -470,72 +487,302 @@ function shapeMembers(
   return failed ? undefined : result;
 }
 
-/** Code as a message quotes it: in backticks, or double ones around text that holds one. */
-function code(text: string): string {
-  return text.includes("`") ? `\`\` ${text} \`\`` : `\`${text}\``;
+/** Code as a message quotes it: in a run of backticks longer than any the text holds. */
+function quoted(text: string): string {
+  const longest = Math.max(0, ...[...text.matchAll(/`+/g)].map(([run]) => run.length));
+  const fence = "`".repeat(longest + 1);
+  return longest ? `${fence} ${text} ${fence}` : `${fence}${text}${fence}`;
+}
+
+/** A member of one part of a props type, as the part gives it. */
+interface PartMember {
+  optional: boolean;
+  /** The member's type in the shape. */
+  type: number;
+  /** Whether `Required` takes `undefined` out of its type. */
+  required: boolean;
+  /** The declaration that writes it, as a message names it. */
+  by: string;
 }
 
 /**
  * The members of a props type that two of the declarations it is built from write with
  * different types, or optional in one and required in the other (UF6005): an interface's member
- * over its base's, or two parts of an intersection. The oracle keeps an interface's own member,
- * and merges optionality as TypeScript does; the targets declare one type for each prop, so the
- * catalogue holds the declarations to one. A utility type or a generic instantiation changes its
- * members on purpose, so its shape is left to the oracle's own conflicts.
+ * over its base's, two bases', or two parts of an intersection. The oracle keeps an interface's
+ * own member and merges optionality as TypeScript does, but the targets declare one type for
+ * each prop, so the catalogue holds the declarations to one, a narrowing override included. The
+ * parts are read from the syntax this module writes, from the props annotation through its
+ * aliases, interfaces, `extends` lists, intersections and utility types, each part's members from
+ * the shape. A type another file builds is that file's, which TypeScript checks there; the oracle
+ * reports its intersections' conflicts itself.
  */
-function overrides(shape: TypeShape, root: ObjectNode): Map<string, Set<string>> {
+function overrides(
+  annotation: AST.TSType,
+  shape: TypeShape,
+  types: ModuleTypes,
+  parsed: ParsedModule,
+): Map<string, Set<string>> {
   const found = new Map<string, Set<string>>();
-  if (shape.construction.some((each) => each.startsWith("utility:") || each === "generic")) {
-    return found;
+  const { file } = parsed;
+  const imported = typeImportsOf(parsed.program);
+  // Every member the shape holds, by where it is written in this module.
+  const written = new Map<number, ShapeMember>();
+  for (const node of shape.nodes) {
+    if (node.kind !== "object") continue;
+    for (const member of node.members) {
+      if (member.file === file && !written.has(member.span.start)) {
+        written.set(member.span.start, member);
+      }
+    }
   }
-  // The objects the members' types reach are values of the props, not parts of their type.
-  const values = new Set<number>();
-  const reach = (id: number): void => {
-    if (values.has(id)) return;
-    values.add(id);
-    const node = shape.nodes[id]!;
-    switch (node.kind) {
-      case "union":
-        for (const each of node.types) reach(each);
+  /** The object a named type resolves to in the shape: this module's, or an import's. */
+  const named = (name: string): ObjectNode | undefined => {
+    const local = types.table.declaration(name) !== undefined;
+    const target = local ? name : imported.get(name);
+    if (target === undefined) return undefined;
+    return shape.nodes.find(
+      (node): node is ObjectNode =>
+        node.kind === "object" &&
+        !node.typeArguments &&
+        node.declaration?.name === target &&
+        (node.declaration.file === file) === local,
+    );
+  };
+  /** The members of the signatures this module writes, by name. */
+  const signatures = (list: readonly AST.TSSignature[]) => {
+    const members = new Map<string, PartMember>();
+    for (const signature of list) {
+      const member = written.get(signature.start);
+      if (member && !members.has(member.name)) members.set(member.name, partOf(member));
+    }
+    return members;
+  };
+  /** The members of a part a type reference names, `L` or `Partial<L>`. */
+  const reference = (
+    name: string,
+    args: readonly AST.TSType[] | undefined,
+    seen: Set<string>,
+  ): Map<string, PartMember> | undefined => {
+    if (!args) {
+      const declaration = types.table.declaration(name);
+      if (declaration?.node.type === "TSTypeAliasDeclaration" && !seen.has(name)) {
+        return members(declaration.node.typeAnnotation, new Set(seen).add(name));
+      }
+      const node = named(name);
+      return node && new Map(node.members.map((member) => [member.name, partOf(member)]));
+    }
+    const [inner, keys] = args;
+    const base = inner && members(inner, seen);
+    if (!base) return undefined;
+    const literals = keys && keyNames(keys);
+    switch (name) {
+      case "Partial":
+      case "Required":
+      case "Readonly":
+        return new Map(
+          [...base].map(([key, member]) => [
+            key,
+            name === "Readonly"
+              ? member
+              : { ...member, optional: name === "Partial", required: name === "Required" },
+          ]),
+        );
+      case "Pick":
+      case "Omit":
+        if (!literals) return undefined;
+        return new Map([...base].filter(([key]) => literals.has(key) === (name === "Pick")));
+      default:
+        return undefined;
+    }
+  };
+  /** The members of a part of a props type, or `undefined` where the syntax cannot tell. */
+  const members = (type: AST.TSType, seen: Set<string>): Map<string, PartMember> | undefined => {
+    switch (type.type) {
+      case "TSParenthesizedType":
+        return members(type.typeAnnotation, seen);
+      case "TSTypeLiteral":
+        return signatures(type.members);
+      case "TSIntersectionType": {
+        const merged = new Map<string, PartMember>();
+        for (const part of type.types) {
+          for (const [key, member] of members(part, seen) ?? []) {
+            const first = merged.get(key);
+            merged.set(
+              key,
+              first ? { ...first, optional: first.optional && member.optional } : member,
+            );
+          }
+        }
+        return merged;
+      }
+      case "TSTypeReference":
+        return type.typeName.type === "Identifier"
+          ? reference(type.typeName.name, type.typeArguments?.params, seen)
+          : undefined;
+      default:
+        return undefined;
+    }
+  };
+  const compare = (
+    left: Map<string, PartMember> | undefined,
+    right: Map<string, PartMember> | undefined,
+  ) => {
+    if (!left || !right) return;
+    for (const [name, member] of left) {
+      const other = right.get(name);
+      if (!other || sameMember(shape, member, other)) continue;
+      const by = found.get(name) ?? new Set<string>();
+      by.add(member.by);
+      by.add(other.by);
+      found.set(name, by);
+    }
+  };
+  /** Compares the parts of every construction that builds the props type. */
+  const build = (type: AST.TSType, seen: Set<string>): void => {
+    switch (type.type) {
+      case "TSParenthesizedType":
+        build(type.typeAnnotation, seen);
         return;
-      case "array":
-        reach(node.element);
+      case "TSIntersectionType": {
+        const parts = type.types.map((part) => members(part, seen));
+        for (const [index, part] of parts.entries()) {
+          for (const other of parts.slice(index + 1)) compare(part, other);
+        }
+        for (const part of type.types) build(part, seen);
         return;
-      case "tuple":
-        for (const each of node.elements) reach(each.type);
+      }
+      case "TSTypeReference": {
+        if (type.typeName.type !== "Identifier") return;
+        const name = type.typeName.name;
+        if (type.typeArguments) {
+          for (const argument of type.typeArguments.params) build(argument, seen);
+          return;
+        }
+        const declaration = types.table.declaration(name);
+        if (!declaration || seen.has(name)) return;
+        const next = new Set(seen).add(name);
+        if (declaration.node.type === "TSTypeAliasDeclaration") {
+          build(declaration.node.typeAnnotation, next);
+          return;
+        }
+        const own = signatures(declaration.node.body.body);
+        const bases = declaration.node.extends.map((heritage) =>
+          heritage.expression.type === "Identifier"
+            ? reference(heritage.expression.name, heritage.typeArguments?.params, next)
+            : undefined,
+        );
+        for (const [index, base] of bases.entries()) {
+          compare(own, base);
+          for (const other of bases.slice(index + 1)) compare(base, other);
+        }
+        for (const heritage of declaration.node.extends) {
+          if (heritage.expression.type !== "Identifier") continue;
+          for (const argument of heritage.typeArguments?.params ?? []) build(argument, next);
+          const base = types.table.declaration(heritage.expression.name);
+          if (base && !heritage.typeArguments) {
+            build(
+              {
+                type: "TSTypeReference",
+                typeName: heritage.expression,
+                start: heritage.start,
+                end: heritage.end,
+              } as unknown as AST.TSType,
+              next,
+            );
+          }
+        }
         return;
-      case "object":
-        for (const member of node.members) reach(member.type);
-        return;
-      case "function":
-        for (const parameter of node.parameters) reach(parameter.type);
-        reach(node.returns);
-        return;
-      case "typeParameter":
-        if (node.constraint !== undefined) reach(node.constraint);
-        return;
+      }
       default:
         return;
     }
   };
-  for (const member of root.members) reach(member.type);
-  for (const [id, node] of shape.nodes.entries()) {
-    if (id === shape.root || values.has(id) || node.kind !== "object" || !node.declaration) {
-      continue;
-    }
-    for (const part of node.members) {
-      const merged = root.members.find((member) => member.name === part.name);
-      if (!merged) continue;
-      if (merged.optional === part.optional && sameType(shape, merged.type, part.type, new Set())) {
+  build(annotation, new Set());
+  return found;
+}
+
+/** A member as a part of a props type gives it. */
+function partOf(member: ShapeMember): PartMember {
+  return { optional: member.optional, type: member.type, required: false, by: declarer(member) };
+}
+
+/** The names a `Pick` or `Omit` takes: string literals, or a union of them. */
+function keyNames(type: AST.TSType): Set<string> | undefined {
+  const parts = type.type === "TSUnionType" ? type.types : [type];
+  const names = new Set<string>();
+  for (const part of parts) {
+    if (part.type !== "TSLiteralType" || part.literal.type !== "Literal") return undefined;
+    if (typeof part.literal.value !== "string") return undefined;
+    names.add(part.literal.value);
+  }
+  return names;
+}
+
+/** The local names of the types the module imports, with the names they are imported by. */
+function typeImportsOf(program: AST.Program): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const statement of program.body) {
+    if (statement.type !== "ImportDeclaration") continue;
+    for (const specifier of statement.specifiers) {
+      if (specifier.type === "ImportNamespaceSpecifier") continue;
+      if (
+        statement.importKind !== "type" &&
+        !(specifier.type === "ImportSpecifier" && specifier.importKind === "type")
+      ) {
         continue;
       }
-      const by = found.get(part.name) ?? new Set<string>();
-      by.add(declarer(merged));
-      by.add(declarer(part));
-      found.set(part.name, by);
+      names.set(
+        specifier.local.name,
+        specifier.type === "ImportDefaultSpecifier"
+          ? "default"
+          : (memberName(specifier.imported) ?? ""),
+      );
     }
   }
-  return found;
+  return names;
+}
+
+/**
+ * Whether two parts write a member alike: both optional or both required, with one type. An
+ * optional member's `undefined` is its optionality's (TypeScript adds it without
+ * `exactOptionalPropertyTypes`), and `Required`'s takes it out, as TypeScript does.
+ */
+function sameMember(shape: TypeShape, left: PartMember, right: PartMember): boolean {
+  if (left.optional !== right.optional) return false;
+  const drop = (member: PartMember) => member.optional || member.required;
+  return sameAlternatives(
+    shape,
+    alternatives(shape, left.type, drop(left)),
+    alternatives(shape, right.type, drop(right)),
+  );
+}
+
+/**
+ * A type's alternatives, a union's members flattened: `boolean` is `true | false`, as TypeScript
+ * reads it, and `undefined` is left out when `dropUndefined` says so.
+ */
+function alternatives(shape: TypeShape, id: number, dropUndefined: boolean): (number | boolean)[] {
+  const node = shape.nodes[id]!;
+  if (node.kind === "union") {
+    return node.types.flatMap((each) => alternatives(shape, each, dropUndefined));
+  }
+  if (node.kind === "primitive" && node.name === "boolean") return [true, false];
+  if (node.kind === "literal" && typeof node.value === "boolean") return [node.value];
+  if (dropUndefined && node.kind === "primitive" && node.name === "undefined") return [];
+  return [id];
+}
+
+function sameAlternatives(
+  shape: TypeShape,
+  left: readonly (number | boolean)[],
+  right: readonly (number | boolean)[],
+): boolean {
+  const matches = (a: number | boolean, b: number | boolean) =>
+    typeof a === "boolean" || typeof b === "boolean" ? a === b : sameType(shape, a, b, new Set());
+  return (
+    left.every((a) => right.some((b) => matches(a, b))) &&
+    right.every((b) => left.some((a) => matches(a, b)))
+  );
 }
 
 /** The declarations of the shape's objects that write a member, as a message names them. */
@@ -561,17 +808,15 @@ function sameType(shape: TypeShape, a: number, b: number, seen: Set<string>): bo
   const left = shape.nodes[a]!;
   const right = shape.nodes[b]!;
   const same = (x: number, y: number) => sameType(shape, x, y, seen);
+  // `boolean` is `true | false`, whichever way it is written.
+  if (left.kind === "union" || right.kind === "union") {
+    return sameAlternatives(shape, alternatives(shape, a, false), alternatives(shape, b, false));
+  }
   switch (left.kind) {
     case "primitive":
       return right.kind === "primitive" && left.name === right.name;
     case "literal":
       return right.kind === "literal" && left.value === right.value;
-    case "union":
-      return (
-        right.kind === "union" &&
-        left.types.length === right.types.length &&
-        left.types.every((x) => right.types.some((y) => same(x, y)))
-      );
     case "array":
       return (
         right.kind === "array" &&
@@ -623,6 +868,8 @@ function sameType(shape: TypeShape, a: number, b: number, seen: Set<string>): bo
       return right.kind === "typeParameter" && left.name === right.name;
     case "opaque":
       return right.kind === "opaque" && left.text === right.text;
+    default:
+      return false;
   }
 }
 
@@ -635,7 +882,9 @@ function duplicates(annotation: AST.TSType, types: ModuleTypes, problem: Problem
   const check = (signatures: readonly AST.TSSignature[]) => {
     const names = new Set<string>();
     for (const member of signatures) {
-      if (member.type !== "TSPropertySignature" && member.type !== "TSMethodSignature") continue;
+      // A method may be overloaded, and an accessor pair writes one name twice: TypeScript takes
+      // both, and the targets reject methods and accessors on their own (UF1002, UF6002).
+      if (member.type !== "TSPropertySignature") continue;
       const name = member.computed ? undefined : memberName(member.key);
       if (name === undefined) continue;
       if (names.has(name)) problem("UF2001", span(member.key), ...declaredTwice(name));
