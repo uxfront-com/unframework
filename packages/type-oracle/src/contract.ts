@@ -482,6 +482,16 @@ const CONTRACT_CASES: readonly ContractCase[] = [
     construction: ["generic"],
   },
   {
+    name: "a generic alias, instantiated with two arguments in order",
+    project: "generics",
+    file: "List.uf.tsx",
+    where: "Explicit(props: Pair<number, string>)",
+    type: "Pair<number, string>",
+    expected: "{ first: number; second: string }",
+    dependencies: ["types.ts"],
+    construction: ["generic"],
+  },
+  {
     name: "a recursive generic interface",
     project: "generics",
     file: "List.uf.tsx",
@@ -617,6 +627,46 @@ const CONTRACT_CASES: readonly ContractCase[] = [
     unresolved: [{ file: "Badge.uf.tsx", text: "Missing", reason: "missing-module" }],
   },
   {
+    name: "a subpath import of the project's `package.json`",
+    project: "packages",
+    file: "Badge.uf.tsx",
+    where: "SubpathImport(props: Local)",
+    type: "Local",
+    expected: "(unresolved)",
+    dependencies: [],
+    unresolved: [{ file: "Badge.uf.tsx", text: "Local", reason: "missing-module" }],
+  },
+  {
+    name: "a subpath import inside a package",
+    project: "packages",
+    file: "Badge.uf.tsx",
+    where: "PackageSubpathImport(props: Kit)",
+    type: "Kit",
+    expected: "{ inner: (unresolved) }",
+    dependencies: ["pkg:inner-kit"],
+    unresolved: [{ file: pkg("inner-kit/index.d.ts"), text: "Inner", reason: "missing-module" }],
+  },
+  {
+    name: "the copy of a package the root resolves",
+    project: "packages",
+    file: "Badge.uf.tsx",
+    where: "RootCopy(props: Twin)",
+    type: "Twin",
+    expected: "{ v1: string }",
+    members: { v1: exported(pkg("twin/index.d.ts"), "Twin") },
+    dependencies: ["pkg:twin"],
+  },
+  {
+    name: "another copy of a package, nested in a dependency",
+    project: "packages",
+    file: "Badge.uf.tsx",
+    where: "NestedCopy(props: Uses)",
+    type: "Uses",
+    expected: "{ twin: (unresolved) }",
+    dependencies: ["pkg:nested-user", "pkg:twin"],
+    unresolved: [{ file: pkg("nested-user/index.d.ts"), text: "Twin", reason: "missing-module" }],
+  },
+  {
     name: "a subpath a package does not export",
     project: "packages",
     file: "Badge.uf.tsx",
@@ -640,11 +690,16 @@ function caseQuery(testCase: ContractCase): ShapeQuery {
   return { file: testCase.file, span: { start, end: start + testCase.type.length } };
 }
 
+/** Where a fixture project holds a file: a package's file where the fixture installs it. */
+function fixturePath(file: string): string {
+  return file.startsWith("pkg:") ? `node_modules/${file.slice("pkg:".length)}` : file;
+}
+
 /** What a case compares: the canonical print, the members' origins, and what was unresolved. */
 function observe(shape: TypeShape, project: string) {
   const root = shape.nodes[shape.root]!;
   const text = (file: string, start: number, end: number) =>
-    readFileSync(`${FIXTURES}${project}/${file}`, "utf8").slice(start, end);
+    readFileSync(`${FIXTURES}${project}/${fixturePath(file)}`, "utf8").slice(start, end);
   return {
     expected: printShape(shape, { canonical: true }),
     members:

@@ -49,9 +49,9 @@ const PAIRS = 1 << 20;
 const UTILITIES = new Set(["Partial", "Required", "Pick", "Omit", "Readonly"]);
 
 /**
- * How many instantiations of one declaration may be open inside one another. Each one inside
- * itself takes new arguments (`interface N<T> { n: N<T[]> }`) and would never end, as TypeScript's
- * own expansion does not (TS2589).
+ * How many instantiations of one declaration may be open inside one another. One that takes new
+ * arguments inside itself (`interface N<T> { n: N<T[]> }`) never ends when expanded eagerly, as
+ * this adapter expands; TypeScript instantiates its members lazily.
  */
 const DEPTH = 10;
 
@@ -256,10 +256,19 @@ class Resolution {
       }
     }
     const [part] = merge.parts;
-    if (merge.utility?.name === "Pick" && part && this.#merged.get(part.id) !== "merging") {
+    const keys = merge.utility?.keys;
+    if (keys && part && this.#merged.get(part.id) !== "merging") {
+      const { name } = merge.utility!;
+      // `2` and `"2"` are two keys to TypeScript and one name here, so a numeric name in the
+      // object or in the keys leaves what `Pick` and `Omit` give unknown.
+      const numeric =
+        [...keys].some(isNumeric) ||
+        (this.#nodes[part.id] as ObjectNode).members.some((m) => isNumeric(m.name));
       // A key the object lacks is an error (TS2344), so what `Pick` gives is not known.
-      const missing = [...merge.utility.keys!].some((key) => !members.some((m) => m.name === key));
-      if (missing) this.#unsupported("utility:Pick", part.use.module, part.use.node, id);
+      const missing =
+        name === "Pick" && [...keys].some((key) => !members.some((m) => m.name === key));
+      if (numeric || missing)
+        this.#unsupported(`utility:${name}`, part.use.module, part.use.node, id);
     }
     node.members = members;
     this.#merged.set(id, "done");
@@ -697,6 +706,10 @@ class Resolution {
       }
       if (UTILITIES.has(name)) return this.#utility(name, args, scope, at);
     }
+    // A utility takes its arguments (TS2314).
+    if (!args && UTILITIES.has(name) && !this.#bound(scope.module, name)) {
+      return this.#unsupported(`utility:${name}`, scope.module, at);
+    }
     const nodes = args?.map((arg) => this.convert(arg, scope));
     return this.#name(scope.module, name, at, nodes);
   }
@@ -857,6 +870,9 @@ class Resolution {
    * file it needs is unread, `null` when there is none.
    */
   #module(importer: string, specifier: string): SourceModule | null | undefined {
+    // A subpath import (`#types`) maps through `package.json`, which this adapter does not read,
+    // and an absolute path is outside the root.
+    if (specifier.startsWith("#") || specifier.startsWith("/")) return null;
     if (!isRelative(specifier)) {
       const name = `${PACKAGE}${packageName(specifier)}`;
       this.#construction.add("package");
@@ -1196,6 +1212,11 @@ class Resolution {
     this.#construction.add(construct);
     return this.#report("unsupported", module, at, owner);
   }
+}
+
+/** Whether a member name is a number's text, as a numeric key (`2: number`) gives. */
+function isNumeric(name: string): boolean {
+  return name !== "" && String(Number(name)) === name;
 }
 
 /** A declaration's type parameters' names, as one string. */

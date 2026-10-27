@@ -27,6 +27,10 @@ export function Defaulted(props: Pair<number>) {
   return props;
 }
 
+export function Explicit(props: Pair<number, string>) {
+  return props;
+}
+
 export function Recursive(props: Tree<string>) {
   return props;
 }

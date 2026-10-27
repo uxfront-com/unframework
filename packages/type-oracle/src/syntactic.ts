@@ -54,40 +54,40 @@ export function createSyntacticOracle(options: SyntacticOracleOptions): TypeOrac
   // An update during a query leaves its shape uncached.
   let generation = 0;
 
+  /** The file oxc-resolver finds for a specifier, and the directory of its package. */
   const locate = (from: string, specifier: string): { path: string; directory: string } | null => {
     const found = resolver.resolveDtsSync(from, specifier);
-    if (found.path && TYPESCRIPT.test(found.path)) {
-      const json = found.packageJsonPath;
-      // Its `package.json` keeps the path through `node_modules`; the file's path is the real one.
-      const directory = realpathSync(dirname(json ?? found.path));
-      return { path: found.path, directory };
-    }
-    // A package without types of its own takes them from DefinitelyTyped, as TypeScript does.
-    if (isRelative(specifier) || specifier.startsWith("@types/")) return null;
-    const name = packageName(specifier);
-    const types = `@types/${name.startsWith("@") ? name.slice(1).replace("/", "__") : name}`;
-    return locate(from, `${types}${specifier.slice(name.length)}`);
+    if (!found.path || !TYPESCRIPT.test(found.path)) return null;
+    // Its `package.json` keeps the path through `node_modules`; the file's path is the real one.
+    return {
+      path: found.path,
+      directory: realpathSync(dirname(found.packageJsonPath ?? found.path)),
+    };
   };
   const resolve = (importer: string, specifier: string): string | null => {
     const key = `${importer}\0${specifier}`;
     if (resolved.has(key)) return resolved.get(key)!;
     const inPackage = importer.startsWith(PACKAGE);
     const from = inPackage ? paths.get(importer)! : `${root}/${importer}`;
-    // A relative specifier in a package's file stays in that package.
-    const name = isRelative(specifier)
-      ? packageName(importer.slice(PACKAGE.length))
-      : packageName(specifier);
     const found = locate(from, specifier);
     let file: string | null = null;
-    if (found) {
-      const directory = isRelative(specifier) ? packages.get(name) : found.directory;
-      // Two copies of one package would give two files one name: neither is surely the one.
-      if (directory !== undefined && (packages.get(name) ?? directory) === directory) {
-        packages.set(name, directory);
-        file = `${PACKAGE}${name}/${relative(directory, found.path)}`;
-        paths.set(file, found.path);
+    if (found && isRelative(specifier)) {
+      // A relative specifier in a package's file stays in that package.
+      const name = packageName(importer.slice(PACKAGE.length));
+      const directory = packages.get(name);
+      const path = directory === undefined ? ".." : relative(directory, found.path);
+      if (!path.startsWith("..")) file = `${PACKAGE}${name}/${path}`;
+    } else if (found) {
+      // The copy of a package the root resolves owns its name, whichever query reaches it first;
+      // any other copy (a nested or another version) is not surely the one the name means.
+      const name = packageName(specifier);
+      const owner = locate(`${root}/package.json`, specifier);
+      if (owner?.directory === found.directory) {
+        packages.set(name, found.directory);
+        file = `${PACKAGE}${name}/${relative(found.directory, found.path)}`;
       }
     }
+    if (file) paths.set(file, found!.path);
     resolved.set(key, file);
     return file;
   };

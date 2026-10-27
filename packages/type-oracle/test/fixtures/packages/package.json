@@ -1,0 +1,7 @@
+{
+  "name": "packages-fixture",
+  "private": true,
+  "imports": {
+    "#local": "./local.ts"
+  }
+}

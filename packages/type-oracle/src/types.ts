@@ -23,7 +23,10 @@ export type TypeQuery = ShapeQuery;
 
 /** The files that changed, were created or were deleted, relative to the oracle's root. */
 export interface FileChanges {
-  /** Files relative to the root, and packages installed, removed or changed as `pkg:<name>`. */
+  /**
+   * Files relative to the root, and packages installed, removed or changed as `pkg:<name>`, by
+   * the name they are imported under (`pkg:x` for `@types/x`).
+   */
   files: string[];
 }
 

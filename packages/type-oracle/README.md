@@ -26,36 +26,43 @@ The TypeOracle interface and the syntactic resolver (plan §5.5).
   - **Utility types.** `Partial`, `Required`, `Pick`, `Omit` and `Readonly` map the members of
     the object they are given, which keep their files and declarations. `Required` takes
     `undefined` out of an optional member's type, as TypeScript does without
-    `exactOptionalPropertyTypes`. A utility over a type that is not an object, `Pick` and `Omit`
-    with keys that are not literals, and a `Pick` of a key the object lacks are unresolved.
+    `exactOptionalPropertyTypes`. A utility over a type that is not an object or with no
+    arguments, `Pick` and `Omit` with keys that are not literals or over an object with a numeric
+    member (`2` and `"2"` are two keys to TypeScript, and one name here), and a `Pick` of a key
+    the object lacks are unresolved.
   - **Generic declarations** are instantiated with their arguments and their parameters'
     defaults, a default reading the parameters before it. Each instantiation is one object with
     its `typeArguments`, so `Tree<string>` inside itself is a cycle. An instantiation that takes
-    new arguments inside itself (`interface N<T> { n: N<T[]> }`) would never end, as
-    TypeScript reports (TS2589): it stops after ten levels, unresolved. So are too many or too few arguments, and a
-    generic global (`Record`, `Map`).
+    new arguments inside itself (`interface N<T> { n: N<T[]> }`) never ends when expanded
+    eagerly, as this adapter expands, so it stops after ten levels, unresolved. So are too many or
+    too few arguments, and a generic global (`Record`, `Map`).
   - **Packages.** A bare specifier is resolved with oxc-resolver from the importing file on disk,
     as TypeScript's bundler resolution does: the `types` condition of `exports`, then `types` and
     `typings`, then the package's `@types/` package. A package's own imports resolve the same way.
-    Its files are named `pkg:<name>/<path in the package>`, never an absolute path, and are read
-    through `readFile` by the path oxc-resolver found. A package that is not installed, a subpath
-    it does not export, and two copies of one package are `missing-module`.
-
-  Everything else comes back opaque and `unresolved`, never wrong: classes and enums,
-  conditional, mapped and indexed-access types, `keyof`, `typeof`, template literals with holes,
-  index and call signatures, computed keys that are not literals, generic and overloaded methods,
-  accessors, and an interface that extends itself. A member the adapter cannot read keeps its
-  name, so no base or other part fills it in. A member that two intersection parts or two
-  interface declarations write with different types is a `conflict`, with its type kept as
-  written; so is a method and a property of one name in two interface declarations. Two types are
-  the same only when the adapter is sure: one declaration, one opaque node, or objects whose
-  members are all known and nothing lost. What a base or a part loses, the object built from it
-  loses too.
+    Its files are named `pkg:<name>/<path in the package>`, by the name it is imported under
+    (`pkg:x` for types from `@types/x`), never an absolute path, and are read through `readFile` by
+    the path oxc-resolver found. The copy of a package that the root resolves owns its name, so
+    every query gives the same answer. These are `missing-module`: a package that is not
+    installed, a subpath it does not export, any other copy of it (nested in a dependency, or
+    another version), a relative import that leaves the package, and a subpath import (`#types`),
+    whose `package.json` `imports` the adapter does not read.
+    Everything else comes back opaque and `unresolved`, never wrong: classes and enums,
+    conditional, mapped and indexed-access types, `keyof`, `typeof`, template literals with holes,
+    index and call signatures, computed keys that are not literals, generic and overloaded methods,
+    accessors, and an interface that extends itself. A member the adapter cannot read keeps its
+    name, so no base or other part fills it in. A member that two intersection parts or two
+    interface declarations write with different types is a `conflict`, with its type kept as
+    written; so is a method and a property of one name in two interface declarations. Two types are
+    the same only when the adapter is sure: one declaration, one opaque node, or objects whose
+    members are all known and nothing lost. What a base or a part loses, the object built from it
+    loses too.
 
   It keeps each file parsed and each shape until `update` names a file the shape was read from: a
   file it read, a candidate of a relative specifier that did not exist, or a package as
   `pkg:<name>`. So an edit drops the shapes of the file and of every module that reached a type
-  through it, and a package installed, removed or changed is resolved and read again.
+  through it, and a package installed, removed or changed is resolved and read again. A
+  workspace package linked under `node_modules` is a package too, so an edit to its sources
+  takes its `pkg:<name>`, not their paths.
 
 - **`printType`** prints the resolved shape, with an instantiation reached inside itself by its
   name and arguments (`Tree<string>`). It rejects a type with unresolved parts, and a recursive
