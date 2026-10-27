@@ -3,9 +3,10 @@
 // is checked where it is declared, once, as a top-level statement: one some component's props
 // reach must be a type every target's props can declare (ADR-0034); one only the setup
 // reaches is copied, so it must only copy safely (ADR-0045); and one no component reaches is
-// exported on its own (ADR-0068), or reported. A props type that the module's syntax cannot
-// follow (an import, `extends`, an intersection, a utility type) is read from its shape, through
-// the type oracle (ADR-0067), and its declarations' members are checked there.
+// exported on its own (ADR-0068), or reported. Every props type is read from its shape, through
+// the type oracle (ADR-0067); the members of the declarations it reaches are checked as written
+// (`checkMembers`, `checkType`) by the props, which leave to the shape what only it resolves
+// (`props.ts`).
 
 import type { DiagnosticCode } from "@unframework/diagnostics";
 import { isIdentifier, RESERVED_TYPE_NAMES } from "@unframework/ir";
@@ -28,13 +29,6 @@ export interface ModuleTypes {
    * of `ref` and `defineEmits`, annotations, `as` (ADR-0045). The outputs copy them.
    */
   readonly setupReached: ReadonlySet<string>;
-  /**
-   * The names only props annotations read from their shapes reach (ADR-0067): their members are
-   * checked on the shape, where each member's type is resolved.
-   */
-  readonly shaped: ReadonlySet<string>;
-  /** The props annotations read from their shapes rather than the module's syntax. */
-  readonly shapedAnnotations: ReadonlySet<AST.TSType>;
   /** Whether some component writes `Props` as its props annotation itself (`(props: Props)`). */
   readonly ownProps: boolean;
   /**
@@ -61,8 +55,6 @@ export function collectTypes(
 ): ModuleTypes {
   const table = new TypeTable(declarations);
   const reached = new Set<string>();
-  const syntactic = new Set<string>();
-  const shapedAnnotations = new Set<AST.TSType>();
   // An injection key's type is copied as the setup's types are, into the output that declares
   // the key (ADR-0054).
   const setupReached = new Set<string>(closure(keys, table));
@@ -82,12 +74,7 @@ export function collectTypes(
       type.typeName.name === "Props";
     if (own) ownProps = true;
     else if (names.includes("Props")) foreignProps.push(type);
-    const read = readsSyntax(type, table);
-    if (!read) shapedAnnotations.add(type);
-    for (const name of names) {
-      reached.add(name);
-      if (read) syntactic.add(name);
-    }
+    for (const name of names) reached.add(name);
   }
   for (const name of reached) setupReached.delete(name);
   return {
@@ -95,8 +82,6 @@ export function collectTypes(
     declarations,
     reached,
     setupReached,
-    shaped: new Set([...reached].filter((name) => !syntactic.has(name))),
-    shapedAnnotations,
     ownProps,
     foreignProps,
     reported: new Set(),
@@ -109,58 +94,6 @@ export function collectTypes(
  */
 export function setupTypes(fn: ComponentFunction, table: TypeTable): string[] {
   return closure([fn.params.slice(1), fn.body], table);
-}
-
-/**
- * Whether a props annotation is read from the module's syntax, as ADR-0034 reads it: an object
- * type literal, or a chain of local aliases to one or to a local interface, reaching through its
- * members only the module's own declarations, without `extends` or type arguments, and arrays.
- * Anything else is read from its shape, through the type oracle (ADR-0067): an imported or
- * global type, an `extends` chain, an intersection, a union, a utility or generic type.
- */
-export function readsSyntax(annotation: AST.TSType, table: TypeTable): boolean {
-  const seen = new Set<string>();
-  let type: AST.TSType = annotation;
-  for (;;) {
-    if (type.type === "TSTypeLiteral") break;
-    if (type.type === "TSParenthesizedType") {
-      type = type.typeAnnotation;
-      continue;
-    }
-    const name =
-      type.type === "TSTypeReference" && type.typeName.type === "Identifier" && !type.typeArguments
-        ? type.typeName.name
-        : undefined;
-    const declaration = name === undefined ? undefined : table.declaration(name);
-    if (!declaration || seen.has(name!)) return false;
-    seen.add(name!);
-    if (declaration.node.type === "TSInterfaceDeclaration") break;
-    type = declaration.node.typeAnnotation;
-  }
-  let plain = true;
-  const visit = (node: unknown): void => {
-    if (!plain || !node || typeof node !== "object") return;
-    if (Array.isArray(node)) {
-      for (const item of node) visit(item);
-      return;
-    }
-    const typed = node as AST.Node;
-    if (typed.type === "TSInterfaceHeritage") plain = false;
-    if (typed.type === "TSTypeReference") {
-      const name = typed.typeName.type === "Identifier" ? typed.typeName.name : undefined;
-      const array =
-        (name === "Array" || name === "ReadonlyArray") && typed.typeArguments?.params.length === 1;
-      if (!array && (name === undefined || typed.typeArguments || !table.declaration(name))) {
-        plain = false;
-      }
-    }
-    for (const key of visitorKeys[typed.type] ?? []) {
-      visit((node as unknown as Record<string, unknown>)[key]);
-    }
-  };
-  visit(annotation);
-  for (const name of closure(annotation, table)) visit(table.declaration(name)!.node);
-  return plain;
 }
 
 /**
@@ -208,7 +141,8 @@ export function closure(type: unknown, table: TypeTable): string[] {
 /**
  * Checks a top-level type declaration: declared once, generic-free, holding no text that would
  * end a script block or Astro's frontmatter, named apart from the types the outputs declare,
- * reached by some component's props or exported, and holding only types props can have.
+ * and reached by some component's props or setup, or exported. The members of a type the props
+ * reach are checked by the props (`props.ts`).
  */
 export function checkTypeDeclaration(
   declaration: TypeDeclarationStatement,
@@ -287,14 +221,8 @@ export function checkTypeDeclaration(
   }
   checkCopiedText({ start: node.start, end: node.end }, source, reporter, "A type declaration");
   checkDirectives({ start: node.start, end: node.end }, comments, reporter);
-  // Its members are checked on the shapes of the props that reach it, which resolve what it
-  // extends and imports (ADR-0067).
-  if (types.shaped.has(name)) return;
-  if (node.type === "TSInterfaceDeclaration") {
-    checkMembers(node.body.body, types, reporter);
-  } else {
-    checkType(node.typeAnnotation, types, reporter);
-  }
+  // Its members are checked by the props that reach it, as written where the syntax can read
+  // them and on their shapes where only the type oracle resolves them (ADR-0067).
 }
 
 /**
@@ -328,11 +256,15 @@ interface Span {
   end: number;
 }
 
-/** Checks the members of an interface or an object type literal (ADR-0034). */
+/**
+ * Checks the members of an interface or an object type literal (ADR-0034). With `shaped`, the
+ * names a props type imports, it checks a type the props read from their shape (ADR-0067).
+ */
 export function checkMembers(
   members: readonly AST.TSSignature[],
   types: ModuleTypes,
   reporter: Reporter,
+  shaped?: ReadonlySet<string>,
 ): void {
   const names = new Set<string>();
   for (const member of members) {
@@ -354,7 +286,7 @@ export function checkMembers(
           report(types, reporter, "UF1002", member, "A member of a props type needs a type.");
           continue;
         }
-        checkType(type, types, reporter);
+        checkType(type, types, reporter, shaped);
         break;
       }
       case "TSMethodSignature":
@@ -368,6 +300,10 @@ export function checkMembers(
     }
   }
 }
+
+/** What UF6002 calls an intersection the default type oracle reads only part of (ADR-0067). */
+export const INTERSECTION: string =
+  "An intersection with a part the default type oracle cannot read as an object type";
 
 export const FUNCTIONS: string =
   "Function types are not supported in props: a callback is an event, which a component declares with `defineEmits` (ADR-0047), and a render function is a slot (`defineSlots`).";
@@ -390,8 +326,19 @@ export function notAProp(what: string): [message: string, help: string] {
 const PROP_TYPES =
   "Give the prop a string, number or boolean type, a literal type, `null` or `undefined`, an array or an object type, or a union of these (ADR-0034).";
 
-/** Checks a member's type: the types every target's props can declare (ADR-0034). */
-export function checkType(type: AST.TSType, types: ModuleTypes, reporter: Reporter): void {
+/**
+ * Checks a member's type: the types every target's props can declare (ADR-0034). With `shaped`,
+ * the names a props type imports, the type is one the props read from their shape (ADR-0067): an
+ * imported type and a utility or generic type are left to the props' check of the shape, where
+ * they are resolved; an intersection's object parts are checked here, and an intersection with
+ * any other part, or of empty object types alone, is reported.
+ */
+export function checkType(
+  type: AST.TSType,
+  types: ModuleTypes,
+  reporter: Reporter,
+  shaped?: ReadonlySet<string>,
+): void {
   const later = (what: string) => report(types, reporter, "UF6002", type, ...notAProp(what));
   const unevaluated = (what: string) =>
     report(types, reporter, "UF6002", type, ...needsChecker(what));
@@ -412,34 +359,36 @@ export function checkType(type: AST.TSType, types: ModuleTypes, reporter: Report
       return;
     }
     case "TSUnionType":
-      for (const member of type.types) checkType(member, types, reporter);
+      for (const member of type.types) checkType(member, types, reporter, shaped);
       return;
     case "TSArrayType":
-      checkType(type.elementType, types, reporter);
+      checkType(type.elementType, types, reporter, shaped);
       return;
     case "TSParenthesizedType":
-      checkType(type.typeAnnotation, types, reporter);
+      checkType(type.typeAnnotation, types, reporter, shaped);
       return;
     case "TSTypeOperator":
       if (type.operator === "readonly" && type.typeAnnotation.type === "TSArrayType") {
-        checkType(type.typeAnnotation, types, reporter);
+        checkType(type.typeAnnotation, types, reporter, shaped);
       } else {
         unevaluated(`\`${type.operator}\``);
       }
       return;
     case "TSTypeLiteral":
       if (!type.members.length) later("The empty object type `{}`");
-      checkMembers(type.members, types, reporter);
+      checkMembers(type.members, types, reporter, shaped);
       return;
     case "TSTypeReference": {
       const name = type.typeName.type === "Identifier" ? type.typeName.name : undefined;
       const argument = type.typeArguments?.params;
       if ((name === "Array" || name === "ReadonlyArray") && argument?.length === 1) {
-        checkType(argument[0]!, types, reporter);
+        checkType(argument[0]!, types, reporter, shaped);
         return;
       }
       if (name !== undefined && !type.typeArguments && types.table.declaration(name)) return;
-      // A props type that names any other type is read from its shape (`readsSyntax`).
+      if (shaped && (type.typeArguments || (name !== undefined && shaped.has(name)))) return;
+      // Any other type is one the module neither declares nor reads (a global), or one only a
+      // checker evaluates.
       if (name !== undefined && !type.typeArguments) {
         report(types, reporter, "UF6001", type, ...undeclared(name));
       } else {
@@ -469,8 +418,22 @@ export function checkType(type: AST.TSType, types: ModuleTypes, reporter: Report
       return later("A tuple type");
     case "TSTemplateLiteralType":
       return unevaluated("A template literal type");
-    case "TSIntersectionType":
-      return later("An intersection type");
+    case "TSIntersectionType": {
+      if (!shaped) return later("An intersection type");
+      let other = false;
+      for (const part of type.types) {
+        if (part.type === "TSTypeLiteral") checkMembers(part.members, types, reporter, shaped);
+        else if (part.type === "TSParenthesizedType" || part.type === "TSIntersectionType") {
+          checkType(part, types, reporter, shaped);
+        } else if (part.type !== "TSTypeReference") other = true;
+      }
+      const empty = type.types.every(
+        (part) => part.type === "TSTypeLiteral" && !part.members.length,
+      );
+      if (other) report(types, reporter, "UF6002", type, ...notAProp(INTERSECTION));
+      else if (empty) later("An intersection of empty object types");
+      return;
+    }
     default:
       return unevaluated("This type");
   }

@@ -34,24 +34,29 @@ one it does not export is lowered too, and each output writes it as a sibling fi
 is a function declaration; one written as a value (`export const Card = (props) => …`) is UF1102,
 checked as the declaration its likely fix writes (`analyze.ts`).
 
-- **Props** (`props.ts`, `declarations.ts`): the one parameter, destructured with static defaults
-  or kept as one object read as `props.x`, typed by an object type literal or a local `interface`
-  or `type`, read from the module's syntax, or by a type read from its shape through the type
-  oracle (ADR-0067): one imported from a relative `.ts`, a `.uf.tsx`, a `.uf.ts` or a package, an
-  `extends` chain, an intersection, or `Partial`, `Required`, `Pick`, `Omit` or `Readonly`. A
-  member another declaration writes records it in `Prop.declaredBy`; one another file writes takes
-  the props annotation's span and its declaring file's text. Member types keep to what every
-  target's props can declare, read from the shape too. Problems are UF2001 to UF2003, a function
-  type UF1002, and UF6001 (a type that cannot be resolved), UF6002 (a construct the default oracle
-  cannot evaluate, or a member type props cannot take), UF6003 (a member's type names one its file
-  does not export), UF6004 (a props type that is not one object type) and UF6005 (a member two
-  declarations type differently, or make optional in one and required in the other: an
-  interface's member over its base's, two bases', or two intersection parts', read from the syntax
-  this module writes through aliases and utility types; one member written once and given twice,
-  as in `Partial<L> & L`, is declared once. A type another file builds is checked by TypeScript in
-  that file, and the oracle reports its intersections' conflicts). Each top-level type declaration is reached by some component's
-  props or setup, which the outputs copy as written, or exported on its own (`typeExports`); an
-  export list may export a local type by its own name.
+- **Props** (`props.ts`, `declarations.ts`): the one parameter, destructured with static defaults or
+  kept as one object read as `props.x`, typed by a type read from its shape through the type oracle
+  (ADR-0067), whatever its form: an object type literal, a local `interface` or `type`, one imported
+  from a relative `.ts`, a `.uf.tsx`, a `.uf.ts` or a package, an `extends` chain, an intersection,
+  or `Partial`, `Required`, `Pick`, `Omit` or `Readonly`. A member the props type's own declaration
+  writes, through its aliases, keeps its span and its type's text as written; one another
+  declaration writes records it in `Prop.declaredBy`; one another file writes takes the props
+  annotation's span and its declaring file's text. Member types keep to what every target's props
+  can declare: what this module writes is checked as written, each problem once, at its own span, as
+  ADR-0034 reads it, and what another file writes is checked on the shape and reported at the member
+  that reaches it, or at the props annotation. A problem in one member fails the component without
+  stopping the checks of the others. A prop's kinds are read from the shape (`kindsFromShape`).
+  Problems are UF2001 to UF2003, a function type, or a call or construct signature this module
+  writes, UF1002, and UF6001 (a type that cannot be resolved), UF6002 (a construct the default
+  oracle cannot evaluate, a computed key, or a member type props cannot take), UF6003 (a member's
+  type names one its file does not export), UF6004 (a props type that is not one object type) and
+  UF6005 (a member two declarations type differently, or make optional in one and required in the
+  other: an interface's member over its base's, two bases', or two intersection parts', read from
+  the syntax this module writes through aliases and utility types; one member written once and given
+  twice, as in `Partial<L> & L`, is declared once. A type another file builds is checked by
+  TypeScript in that file, and the oracle reports its intersections' conflicts). Each top-level type
+  declaration is reached by some component's props or setup, which the outputs copy as written, or
+  exported on its own (`typeExports`); an export list may export a local type by its own name.
 - **Types from other modules** (`shapes.ts`, ADR-0067): `import type` (or a `type` specifier) from
   any module but the authoring API and a framework is a `typeImports` entry, which every output
   re-imports by name; `export type { … } from` is a `typeExports` re-export. The analyser is
@@ -265,17 +270,19 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   listeners are judged by Svelte 5.57.1's five handler-dependent accessibility rules (`a11y.ts`,
   UF3030), on the source's listeners, its tables Svelte's own.
 - **Attributes** (`attribute-names.ts`, `attributes.ts`, `enumerated.ts`, `class.ts`, `style.ts`,
-  `aria.ts`): name checks first, whatever the value; then static values, literals in braces
-  (written statically, UF3004), bindings whose kinds must fit the attribute and whose values
-  every typed target's element types accept (UF3018: an enumerated attribute's tokens, a
-  string where a target types one), `class` parts, `style` declarations (parsed by
-  `@unframework/parser`, UF3022 for what the targets cannot keep apart) and spreads of objects
-  whose keys a local type declares. A spread records whether its object may be nullish where
-  it renders (`spread-source.ts`): its kinds say whether its type may be, and the conditions
-  around it narrow it as every target's checker does; a test the compiler does not follow is
-  UF1002, and a source the conditions show is absent UF3004. A bound `value` that may be nullish
-  on the elements whose `value` some targets set as a property (`NULLISH_VALUE_ELEMENTS`) is
-  UF1002.
+  `aria.ts`): name checks first, whatever the value; then static values, literals in braces (written
+  statically, UF3004), bindings whose kinds must fit the attribute and whose values every typed
+  target's element types accept (UF3018: an enumerated attribute's tokens, a string where a target
+  types one), `class` parts, `style` declarations (parsed by `@unframework/parser`, UF3022 for what
+  the targets cannot keep apart) and spreads of objects whose keys a type declares: a prop's, a
+  list's item's, or a setup value's whose type is written as an annotation or as `ref`'s type
+  argument, read from its shape. A spread that reads any setup value whose type is not written so,
+  its source or a condition's, is UF1002, and one that reads a setup value whose type does not
+  resolve in full UF3048. A spread records whether its object may be nullish where it renders
+  (`spread-source.ts`): its kinds say whether its type may be, and the conditions around it narrow
+  it as every target's checker does; a test the compiler does not follow is UF1002, and a source the
+  conditions show is absent UF3004. A bound `value` that may be nullish on the elements whose
+  `value` some targets set as a property (`NULLISH_VALUE_ELEMENTS`) is UF1002.
 
 Every fix leaves exactly the diagnostics that had none once all are applied (the harness's L1),
 which the tests check for each fix, for each pair that can meet, and over random mixes.

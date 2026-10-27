@@ -24,7 +24,8 @@ const API_MACROS = new Set(["defineEmits", "defineModel", "defineSlots"]);
  * The types a module writes whose shapes the analyser reads (ADR-0067), in source order, each
  * once: each props annotation, each type argument of `defineEmits`, `defineModel` and
  * `defineSlots`, each `InjectionKey<…>`'s argument, and each other annotation or type argument
- * in a function's body that names a type the module imports. What `compile()` asks the type
+ * in a function's body that reaches a type the module imports, directly or through its own
+ * declarations. What `compile()` asks the type
  * oracle for before the module is analysed.
  */
 export function shapeQueries(parsed: ParsedModule): ShapeQuery[] {
@@ -36,20 +37,15 @@ export function shapeQueries(parsed: ParsedModule): ShapeQuery[] {
       found.set(key, { file: parsed.file, span: { start: type.start, end: type.end } });
     }
   };
-  const names = (type: AST.TSType): boolean => {
-    let named = false;
-    visit(type, (node) => {
-      if (
-        node.type === "TSTypeReference" &&
-        node.typeName.type === "Identifier" &&
-        imported.has(node.typeName.name)
-      ) {
-        named = true;
-      }
-      return !named;
-    });
-    return named;
-  };
+  // A type that reaches an import through the module's own declarations (`interface X extends
+  // Imported`) is one the in-module path leaves `external`.
+  const local = localShapes(parsed, parsed.file);
+  const names = (type: AST.TSType) =>
+    namesImported(type, imported) ||
+    (local({ start: type.start, end: type.end })?.unresolved.some(
+      (entry) => entry.reason === "external",
+    ) ??
+      false);
   const inBody = (node: AST.Node) => {
     visit(node, (each) => {
       // A member's annotation inside a type is the type's, queried with it.
@@ -92,6 +88,22 @@ export function shapeQueries(parsed: ParsedModule): ShapeQuery[] {
  */
 export function ownShapes(parsed: ParsedModule): Shapes {
   return localShapes(parsed, parsed.file);
+}
+
+/** Whether a type names one of the given imported types, at any depth. */
+function namesImported(type: AST.TSType, imported: ReadonlySet<string>): boolean {
+  let named = false;
+  visit(type, (node) => {
+    if (
+      node.type === "TSTypeReference" &&
+      node.typeName.type === "Identifier" &&
+      imported.has(node.typeName.name)
+    ) {
+      named = true;
+    }
+    return !named;
+  });
+  return named;
 }
 
 /** The local names of the types a module imports from modules other than the authoring API. */
@@ -137,7 +149,7 @@ function functions(program: AST.Program): AST.Function[] {
 }
 
 /** Walks a node's tree, entering each node's children when `enter` returns true. */
-function visit(node: unknown, enter: (node: AST.Node) => boolean): void {
+export function visit(node: unknown, enter: (node: AST.Node) => boolean): void {
   if (!node || typeof node !== "object") return;
   if (Array.isArray(node)) {
     for (const item of node) visit(item, enter);

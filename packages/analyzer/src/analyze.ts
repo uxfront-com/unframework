@@ -58,7 +58,7 @@ import {
   reportUnread,
 } from "./pass-through.ts";
 import type { PassThrough } from "./pass-through.ts";
-import { analyzeProps } from "./props.ts";
+import { analyzeProps, shapeReading } from "./props.ts";
 import type { ComponentFunction, ComponentInfo, RenderContext, SetupBinding } from "./render.ts";
 import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
@@ -69,6 +69,7 @@ import type { Shapes } from "./shapes.ts";
 import { scopeIdOf, STYLESHEET_SPECIFIER, stylesheetImport } from "./styles.ts";
 import type { LoweredSheet, StylesheetSource } from "./styles.ts";
 import { syntaxError } from "./syntax.ts";
+import { kindsFromShape } from "./types/from-shape.ts";
 
 /** The result of analysing one module. */
 export interface AnalyzeResult {
@@ -205,6 +206,10 @@ export function analyzeModule(
   const scopes = new Scopes(parsed.program);
   const authoring = authoringBindings(parsed.program);
   const shapes = options.shapes ?? ownShapes(parsed);
+  // The module's own path, for the types the compiler did not ask its oracle for, indexed once
+  // and only when a component reads one.
+  let own: Shapes | undefined = options.shapes ? undefined : shapes;
+  const localShapes: Shapes = (at) => (own ??= ownShapes(parsed))(at);
   // Every component's API, read from its declarations before any is lowered: they render each
   // other, and themselves (ADR-0053).
   const apiContext: ApiContext = {
@@ -302,6 +307,7 @@ export function analyzeModule(
     parsed,
     types,
     shapes,
+    localShapes,
     scopes,
     authoring,
     reporter,
@@ -1236,6 +1242,8 @@ interface ComponentModule {
   parsed: ParsedModule;
   types: ModuleTypes;
   shapes: Shapes;
+  /** The module's own shapes, for a type `shapes` has none of. */
+  localShapes: Shapes;
   scopes: Scopes;
   /** The module's authoring imports, by the identifier that declares each (ADR-0006). */
   authoring: ReadonlyMap<object, AuthoringApi | undefined>;
@@ -1278,6 +1286,18 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
       : last?.type === "ReturnStatement"
         ? last.argument
         : undefined;
+  // A written type that reaches an imported type is one `shapeQueries` asks the oracle for; any
+  // other resolves in the module, which follows its `extends` and aliases as the oracle does.
+  const writtenType = (type: AST.TSType) => {
+    const at = { start: type.start, end: type.end };
+    const shape = shapes(at) ?? module.localShapes(at);
+    // A shape that does not resolve in full keeps what it could not evaluate as an object (a
+    // branded `string & {}`), so its kinds are read as the module's own types give them, which
+    // leave such a type `unknown` (ADR-0035).
+    return shape && !shape.unresolved.length
+      ? { kinds: kindsFromShape(shape, shapeReading(parsed, types.table, at)), complete: true }
+      : { kinds: types.table.kindsOf(type), complete: false };
+  };
   // The setup (ADR-0045): every statement before the return, declared before any code is walked.
   const setup = declareSetup({
     source: parsed.source,
@@ -1285,6 +1305,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     scopes,
     types: types.table,
     shapes,
+    writtenType,
     comments: parsed.comments,
     authoring,
     component: fn,

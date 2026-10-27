@@ -16,17 +16,19 @@ import {
   reservedPropsParameterName,
 } from "@unframework/ir";
 import type { Binding, DeclaredBy, Prop, PropsParameter, Span, TypeText } from "@unframework/ir";
-import { visitorKeys } from "@unframework/parser";
+import { parseModule, visitorKeys } from "@unframework/parser";
 import type { AST, ParsedModule } from "@unframework/parser";
 import type { ObjectNode, ShapeMember, TypeShape, UnresolvedType } from "@unframework/type-oracle";
 
-import type { Reporter } from "./context.ts";
+import { Reporter } from "./context.ts";
 import {
   checkCopiedText,
   checkMembers,
+  checkType,
   closure,
   declaredTwice,
   FUNCTIONS,
+  INTERSECTION,
   needsChecker,
   notAProp,
   report,
@@ -35,10 +37,13 @@ import {
 import type { ModuleTypes } from "./declarations.ts";
 import { checkDirectives, span } from "./expressions.ts";
 import type { ComponentFunction, PropBinding } from "./render.ts";
+import { visit as walkTypes } from "./shapes.ts";
 import type { Shapes } from "./shapes.ts";
 import { kindsFromShape } from "./types/from-shape.ts";
+import type { ShapeReading } from "./types/from-shape.ts";
 import { memberName } from "./types/from-type.ts";
-import { has, union, UNDEFINED, without } from "./types/kinds.ts";
+import type { TypeTable } from "./types/from-type.ts";
+import { has, union, UNDEFINED, UNKNOWN, without } from "./types/kinds.ts";
 import type { Kinds } from "./types/kinds.ts";
 
 /** What a component's props parameter declares. */
@@ -150,13 +155,15 @@ export function analyzeProps(
   checkDirectives(span(annotation), comments, reporter);
   // The outputs copy the annotation as written, as they copy a type declaration.
   checkCopiedText(span(annotation), source, reporter, "A props type");
-  const members = types.shapedAnnotations.has(annotation)
-    ? shapeMembers(annotation, types, shapes, parsed, reporter)
-    : propsMembers(annotation, types, source, reporter);
-  if (!members) {
+  const read = shapeMembers(annotation, types, shapes, parsed, reporter);
+  if (!read) {
     result.failed = true;
     return result;
   }
+  // A problem in a member's type fails the component, and its other members are still read,
+  // so their own problems are reported too.
+  const { members } = read;
+  if (read.failed) result.failed = true;
   const object = parameter.type === "Identifier";
   result.types = closure(annotation, types.table);
   result.propsParameter = createPropsParameter(
@@ -202,7 +209,7 @@ export function analyzeProps(
         reporter,
         "UF1002",
         member.at,
-        'Props that can be both a boolean and any string, `""` or the prop\'s own name are not supported yet: Vue reads `""` and the prop\'s own name as `true`. They land in M5.',
+        'Props that can be both a boolean and any string, `""` or the prop\'s own name are not supported: Vue reads `""` and the prop\'s own name as `true`, which the other targets do not.',
         'Type the strings as literals other than `""` and the prop\'s name, as in `boolean | "mixed"`.',
       );
     }
@@ -249,74 +256,18 @@ export function analyzeProps(
   return result;
 }
 
-/**
- * The members of a props type the module's syntax reads (`readsSyntax`): an object type
- * literal, or a reference to a local interface or to an alias of either, followed through
- * aliases.
- */
-function propsMembers(
-  annotation: AST.TSType,
-  types: ModuleTypes,
-  source: string,
-  reporter: Reporter,
-): PropMember[] | undefined {
-  const seen = new Set<string>();
-  let type: AST.TSType = annotation;
-  let signatures: readonly AST.TSSignature[] | undefined;
-  for (;;) {
-    if (type.type === "TSTypeLiteral") {
-      // An inline literal is checked here; a declaration where it is declared.
-      if (type === annotation) checkMembers(type.members, types, reporter);
-      signatures = type.members;
-      break;
-    }
-    if (type.type === "TSParenthesizedType") {
-      type = type.typeAnnotation;
-      continue;
-    }
-    const name =
-      type.type === "TSTypeReference" && type.typeName.type === "Identifier" && !type.typeArguments
-        ? type.typeName.name
-        : undefined;
-    const declaration = name === undefined ? undefined : types.table.declaration(name);
-    // `readsSyntax` admits only a chain that ends in an object type.
-    if (!declaration || seen.has(name!)) return undefined;
-    seen.add(name!);
-    if (declaration.node.type === "TSInterfaceDeclaration") {
-      signatures = declaration.node.body.body;
-      break;
-    }
-    type = declaration.node.typeAnnotation;
-  }
-  return signatures.flatMap((member): PropMember[] => {
-    if (member.type !== "TSPropertySignature" || member.computed) return [];
-    const name = memberName(member.key);
-    const written = member.typeAnnotation?.typeAnnotation;
-    if (name === undefined || !written) return [];
-    return [
-      {
-        name,
-        optional: member.optional,
-        key: span(member.key),
-        type: createTypeText(source.slice(written.start, written.end), span(written)),
-        at: span(written),
-        span: span(member),
-        kinds: types.table.kindsOf(written),
-      },
-    ];
-  });
-}
-
 /** Reports a problem of a props type, and fails the component it was found for. */
 type Problem = (code: DiagnosticCode, at: Span, message: string, help?: string) => void;
 
 /**
- * The members of a props type read from its shape (ADR-0067): one the module imports, extends,
- * intersects, or builds with a utility type. A member another file writes is reported at the
- * props annotation, the one span of it this module holds, and its prop takes the annotation's
- * span and the declaring file's text, with `declaredBy` naming where it is written. So does a
- * member of another declaration of this module, at its own span. A problem of a type that
- * components share is reported once, and fails each of them.
+ * The members of a props type read from its shape (ADR-0067), whether the module declares it or
+ * writes it in place, or imports, extends, intersects, or builds it with a utility type. A member
+ * this module writes keeps its own span and its type's text as written, as the outputs copy them.
+ * A member another file writes is reported at the props annotation, the one span of it this
+ * module holds, and its prop takes the annotation's span and the declaring file's text, with
+ * `declaredBy` naming where it is written. So does a member of another declaration of this
+ * module, at its own span. A problem of a type that components share is reported once, and fails
+ * each of them: `failed` says so. No members are read where the shape is not an object.
  */
 function shapeMembers(
   annotation: AST.TSType,
@@ -324,7 +275,7 @@ function shapeMembers(
   shapes: Shapes,
   parsed: ParsedModule,
   reporter: Reporter,
-): PropMember[] | undefined {
+): { members: PropMember[]; failed: boolean } | undefined {
   const at = span(annotation);
   const shape = shapes(at);
   if (!shape) {
@@ -342,6 +293,11 @@ function shapeMembers(
   };
   const { file, source } = parsed;
   const here = (entry: { file: string; span: Span }) => (entry.file === file ? entry.span : at);
+  const { properties: signatures, callables, intersections } = signaturesOf(parsed.program);
+  // The intersections whose non-object parts are reported: what the oracle merged of their
+  // object parts may be an empty object, which is not reported again.
+  const lost = new Set<AST.TSIntersectionType>();
+  let lostElsewhere = false;
   const textOf = (entry: UnresolvedType) => {
     if (entry.file === file) return source.slice(entry.span.start, entry.span.end);
     const node = shape.nodes.find(
@@ -360,7 +316,68 @@ function shapeMembers(
     root.kind === "object"
       ? overrides(annotation, shape, types, parsed)
       : { found: new Map<string, Set<string>>(), complete: false };
+  // What this module writes is checked where it is written, as the syntax gives it (ADR-0034):
+  // each object type the annotation writes in place, and each declaration it reaches but a
+  // generic one, which is reported itself, outside a utility's or a generic's type arguments,
+  // whose members only the shape knows (an `Omit` drops some). The shape checks the rest, and
+  // what other files write. A props type that is no object is reported as a whole (UF6004). A
+  // declaration two components share reports its problems once, and fails both.
+  const imports = typeImportsOf(parsed.program);
+  const shaped = new Set(imports.keys());
+  const scope =
+    root.kind === "object"
+      ? syntaxScope(annotation, types)
+      : { members: [], types: [], signatures: new Set<number>() };
+  // A name the oracle could not resolve here is its to report: it knows what the name is.
+  const unresolvedHere = new Set(
+    shape.unresolved
+      .filter((entry) => entry.file === file)
+      .map((entry) => `${entry.span.start}:${entry.span.end}`),
+  );
+  const checked: Span[] = [];
+  const syntax = (check: (probe: Reporter) => void) => {
+    const probe = new Reporter(reporter.file);
+    check(probe);
+    for (const diagnostic of probe.diagnostics) {
+      const { start, end } = diagnostic.span;
+      if (diagnostic.code === "UF6001" && unresolvedHere.has(`${start}:${end}`)) continue;
+      checked.push(diagnostic.span);
+      // The syntax names a construct it does not know "This type", and an operator by itself
+      // (`keyof`); the source text names it whole.
+      const [message, help] = /^(This type|`[a-z]+`) needs a type checker/.test(diagnostic.message)
+        ? needsChecker(quoted(source.slice(diagnostic.span.start, diagnostic.span.end)))
+        : [diagnostic.message, diagnostic.help];
+      problem(diagnostic.code, diagnostic.span, message, help);
+    }
+  };
+  const fresh: ModuleTypes = { ...types, reported: new Set() };
+  for (const list of scope.members) {
+    syntax((probe) => checkMembers(list, fresh, probe, shaped));
+  }
+  for (const type of scope.types) {
+    syntax((probe) => checkType(type, fresh, probe, shaped));
+  }
+  /**
+   * Whether an intersection's part is a name reported where it is named: an alias this module
+   * declares, which the syntax did not check as a prop's type (that reports its problem itself).
+   */
+  const namedAlone = (part: AST.TSType) => {
+    if (part.type !== "TSTypeReference" || part.typeName.type !== "Identifier") return false;
+    const declaration = part.typeArguments
+      ? undefined
+      : types.table.declaration(part.typeName.name);
+    return declaration !== undefined && !reportedAt(declaration.span);
+  };
+  /** Whether the syntax reported a problem in a span, or around it. */
+  const reportedAt = (where: Span) =>
+    checked.some(
+      (each) =>
+        (each.start <= where.start && where.end <= each.end) ||
+        (where.start <= each.start && each.end <= where.end),
+    );
   for (const entry of shape.unresolved) {
+    // A construct this module writes is the syntax's to report, in the catalogue's words.
+    if (entry.reason === "unsupported" && entry.file === file && reportedAt(entry.span)) continue;
     const text = quoted(textOf(entry));
     const where = entry.file === file ? "" : ` in \`${entry.file}\``;
     switch (entry.reason) {
@@ -389,7 +406,28 @@ function shapeMembers(
         );
         break;
       case "unsupported":
-        problem("UF6002", here(entry), ...needsChecker(`${text}${where}`));
+        // A call or construct signature this module writes is a function, which no oracle makes
+        // a prop (ADR-0034).
+        if (entry.file === file && callables.has(entry.span.start)) {
+          problem("UF1002", entry.span, FUNCTIONS);
+        } else if (
+          entry.file === file &&
+          intersections
+            .get(entry.span.start)
+            ?.types.some((part) => part.start === entry.span.start && !namedAlone(part))
+        ) {
+          // The oracle merges an intersection's object parts and reports each other part, such
+          // as a brand's `string` in `string & {}`: the intersection is the construct. A named
+          // part is reported where it is named, as any other construct.
+          const intersection = intersections.get(entry.span.start)!;
+          lost.add(intersection);
+          problem("UF6002", span(intersection), ...notAProp(INTERSECTION));
+        } else {
+          // A primitive resolves on its own, so one another file leaves unresolved may be an
+          // intersection's part there, whose object parts the oracle merged.
+          if (entry.file !== file && PRIMITIVE.test(textOf(entry))) lostElsewhere = true;
+          problem("UF6002", here(entry), ...needsChecker(`${text}${where}`));
+        }
         break;
       case "conflict": {
         const member = members.find(
@@ -408,12 +446,37 @@ function shapeMembers(
             conflicting.set(member.name, declarers(shape, member.name));
           }
         } else {
-          problem(
-            "UF6005",
-            at,
-            `Two declarations give ${text}${where} different types: the targets declare each prop once, with one type.`,
-            "Declare the member once, or give both declarations the same type and optionality.",
-          );
+          // A member of an object a prop's type writes: named, and reported where it is written.
+          const nested = shape.nodes
+            .flatMap((node) => (node.kind === "object" ? node.members : []))
+            .find(
+              (each) =>
+                each.file === entry.file &&
+                each.typeText?.span.start === entry.span.start &&
+                each.typeText.span.end === entry.span.end,
+            );
+          // In an intersection this module writes, the intersection is where it is written; a
+          // member one object type writes twice is the syntax's UF2001, wherever it sits.
+          const whole =
+            entry.file === file
+              ? [...new Set(intersections.values())]
+                  .filter((node) => node.start <= entry.span.start && entry.span.end <= node.end)
+                  .toSorted((a, b) => a.end - a.start - (b.end - b.start))[0]
+              : undefined;
+          const twice =
+            nested &&
+            entry.file === file &&
+            checked.some((each) => source.slice(each.start, each.end) === nested.name);
+          if (!twice) {
+            problem(
+              "UF6005",
+              whole ? span(whole) : here(entry),
+              nested
+                ? `\`${nested.name}\` is declared with different types or optionality${whole ? " by the parts of an intersection" : ""}${where}: the targets declare each prop once, with one type.`
+                : `Two declarations give ${text}${where} different types: the targets declare each prop once, with one type.`,
+              "Declare the member once, or give both declarations the same type and optionality.",
+            );
+          }
         }
         break;
       }
@@ -442,15 +505,118 @@ function shapeMembers(
     return undefined;
   }
   duplicates(annotation, types, problem);
-  // The props type's own declaration, when the annotation names one of this module: its members
-  // are the type's own, and every other declaration's are another's (`declaredBy`).
-  const own =
-    annotation.type === "TSTypeReference" && annotation.typeName.type === "Identifier"
-      ? annotation.typeName.name
-      : undefined;
-  const signatures = signaturesOf(parsed.program);
-  const keyOf = (member: ShapeMember): Span =>
-    member.file === file ? span(signatures.get(member.span.start)?.key ?? member.span) : at;
+  // The props type's own declarations, the aliases the annotation names through to the type of
+  // this module that writes its members: those members are the type's own, and every other
+  // declaration's are another's (`declaredBy`).
+  const own = ownDeclarations(annotation, types);
+  const reading = shapeReading(parsed, types.table, at);
+  const partial = shape.unresolved.length > 0;
+  /**
+   * Whether a member's type reaches an intersection whose non-object part is reported: in this
+   * module's syntax, or, for a part another file writes, through an import or that file's member.
+   * An empty object such a member's shape holds may be what the oracle merged of it.
+   */
+  const leavesEmpty = (member: ShapeMember): boolean => {
+    if (member.file !== file) return lostElsewhere;
+    const type = signatures.get(member.span.start)?.typeAnnotation?.typeAnnotation;
+    if (!type || (!lost.size && !lostElsewhere)) return false;
+    let found = false;
+    const enter = (node: AST.Node): boolean => {
+      if (node.type === "TSIntersectionType" && lost.has(node)) found = true;
+      if (
+        lostElsewhere &&
+        node.type === "TSTypeReference" &&
+        node.typeName.type === "Identifier" &&
+        imports.has(node.typeName.name)
+      ) {
+        found = true;
+      }
+      return !found;
+    };
+    walkTypes(type, enter);
+    for (const name of closure(type, types.table)) {
+      walkTypes(types.table.declaration(name)!.node, enter);
+    }
+    return found;
+  };
+  /**
+   * Reports each empty object type a member's own type writes (UF6002), at its span in this
+   * module or at the annotation for another file's, where the shape cannot tell it from what an
+   * intersection leaves; one that is a part of an intersection is that intersection's. Returns
+   * whether the shape's empty objects for the member are reported already, or may be such
+   * remainders: then they are not reported again.
+   */
+  const texts = new Map<string, AST.TSType | undefined>();
+  const checkMember: MemberCheck = (member, where) => {
+    const local = member.file === file;
+    const type = local
+      ? signatures.get(member.span.start)?.typeAnnotation?.typeAnnotation
+      : member.typeText && writtenType(member.typeText.code, texts);
+    const empties = type ? emptyObjects(type) : [];
+    for (const empty of empties) {
+      problem("UF6002", local ? span(empty) : where, ...notAProp("The empty object type `{}`"));
+    }
+    // An object type of signatures alone is no empty object: its signatures are reported.
+    return (
+      empties.length > 0 || (type !== undefined && signatureObjects(type)) || leavesEmpty(member)
+    );
+  };
+  /**
+   * Whether the syntax checked a member this module writes in full: the syntax checked its own
+   * signature, and its type reaches no import, utility or generic type, or the syntax found a
+   * problem in it, which the shape would report again.
+   */
+  const syntaxCovers = (member: ShapeMember): boolean => {
+    if (!scope.signatures.has(member.span.start)) return false;
+    const type = signatures.get(member.span.start)?.typeAnnotation?.typeAnnotation;
+    if (!type) return true;
+    const spans = [
+      span(type),
+      ...closure(type, types.table).map((name) => types.table.declaration(name)!.span),
+    ];
+    if (spans.some(reportedAt)) return true;
+    // An import, or a utility or generic type, is the shape's to resolve and check.
+    let imported = false;
+    const enter = (node: AST.Node): boolean => {
+      if (node.type === "TSTypeReference" && node.typeName.type === "Identifier") {
+        const { name } = node.typeName;
+        const array = name === "Array" || name === "ReadonlyArray";
+        if (imports.has(name) || (node.typeArguments && !array)) imported = true;
+      }
+      return !imported;
+    };
+    walkTypes(type, enter);
+    for (const name of closure(type, types.table)) {
+      walkTypes(types.table.declaration(name)!.node, enter);
+    }
+    return !imported;
+  };
+  /**
+   * Where a problem in a nested member's type is reported: where this module writes it, but at
+   * the use where the type names a type parameter of the generic that writes it, which the use
+   * instantiates (`G<object>`), and at the use for another file's member.
+   */
+  const place: Place = (member, where) => {
+    if (member.file !== file) return where;
+    const parameters = types.declarations.flatMap(({ node }) =>
+      node.typeParameters && node.start <= member.span.start && member.span.end <= node.end
+        ? node.typeParameters.params.map((parameter) => parameter.name.name)
+        : [],
+    );
+    const text = member.typeText?.code ?? "";
+    const names = new Set(text.match(/[A-Za-z_$][\w$]*/g) ?? []);
+    if (parameters.some((name) => member.references.includes(name) || names.has(name))) {
+      return where;
+    }
+    return member.typeText?.span ?? member.span;
+  };
+  const written = (member: ShapeMember): Kinds | undefined => {
+    const type =
+      member.file === file
+        ? signatures.get(member.span.start)?.typeAnnotation?.typeAnnotation
+        : undefined;
+    return type && types.table.kindsOf(type);
+  };
   const result: PropMember[] = [];
   for (const member of members) {
     const local = member.file === file;
@@ -458,7 +624,7 @@ function shapeMembers(
     // reached only through an import of a type by its name. Another adapter may not.
     const declaration = member.declaration ?? root.declaration;
     const declaredBy: DeclaredBy | undefined =
-      (!local || (member.declaration && member.declaration.name !== own)) && declaration
+      (!local || (member.declaration && !own.has(member.declaration.name))) && declaration
         ? { file: member.file, declaration: declaration.name, span: member.span }
         : undefined;
     if (!local && !declaredBy) {
@@ -470,23 +636,247 @@ function shapeMembers(
       continue;
     }
     const where = local ? (member.typeText?.span ?? member.span) : at;
-    checkShapeType(shape, member.type, where, problem, new Set());
+    // The oracle reads a literal computed key (`["b"]: string`) as a name, and Vue's
+    // `compileScript` rejects any computed key in a props type.
+    const signature = local ? signatures.get(member.span.start) : undefined;
+    if (signature?.computed) {
+      problem("UF6002", span(signature.key), ...needsChecker("A computed key"));
+    }
+    if (!local || !syntaxCovers(member)) {
+      const skip = checkMember(member, where);
+      checkShapeType(shape, member.type, where, problem, new Set(), place, skip, checkMember);
+    }
     checkExported(shape, member, at, file, problem);
     result.push({
       name: member.name,
       optional: member.optional,
-      key: keyOf(member),
+      key: reading.keyOf(member),
       type: local
         ? createTypeText(member.typeText?.code ?? "", member.typeText?.span ?? member.span)
         : createTypeText(member.typeText?.code ?? "", at),
       at: where,
       span: local ? member.span : at,
-      kinds: kindsFromShape(shape, keyOf, member.type),
+      // A shape that does not resolve in full keeps what it could not evaluate as an object, so
+      // its members read as the module's own types give them, which leave that `unknown`.
+      kinds: partial ? (written(member) ?? UNKNOWN) : kindsFromShape(shape, reading, member.type),
       ...(declaredBy ? { declaredBy } : {}),
     });
   }
-  return failed ? undefined : result;
+  return { members: result, failed };
 }
+
+/** What the syntax checks of a props type (`shapeMembers`). */
+interface SyntaxScope {
+  /** The member lists whose members are props, or members of a prop's object type. */
+  members: (readonly AST.TSSignature[])[];
+  /** The aliased types a prop's type names, each checked as a prop's type. */
+  types: AST.TSType[];
+  /** Where each member signature the syntax checks starts. */
+  signatures: Set<number>;
+}
+
+/**
+ * What the syntax checks of a props type, as the base read it. The props type's own structure
+ * (its aliases, the parts of its intersections, the interfaces it extends) gives members: their
+ * object types are checked member by member, and what else they are is the shape's (a part that
+ * is no object) or the props type's as a whole (UF6004). A member's type is checked as a prop's
+ * type, and so is each alias it names. A utility's or a generic's type arguments (`Array`
+ * aside) and a generic declaration give members only the shape knows (an `Omit` drops some).
+ */
+function syntaxScope(annotation: AST.TSType, types: ModuleTypes): SyntaxScope {
+  const scope: SyntaxScope = { members: [], types: [], signatures: new Set() };
+  const interfaces = new Set<string>();
+  const parts = new Set<string>();
+  const aliases = new Set<string>();
+  const declared = (name: string) => {
+    const declaration = types.table.declaration(name);
+    return declaration && !declaration.node.typeParameters ? declaration : undefined;
+  };
+  const mark = (list: readonly AST.TSSignature[]) => {
+    for (const member of list) scope.signatures.add(member.start);
+  };
+  /** A list of members, each a prop or a member of a prop's object type. */
+  const members = (list: readonly AST.TSSignature[]) => {
+    scope.members.push(list);
+    mark(list);
+    for (const member of list) {
+      if (member.type === "TSPropertySignature" && member.typeAnnotation) {
+        memberType(member.typeAnnotation.typeAnnotation);
+      }
+    }
+  };
+  /** An interface: its members, and the bases it extends, which build its object. */
+  const reachInterface = (node: AST.TSInterfaceDeclaration) => {
+    if (interfaces.has(node.id.name)) return;
+    interfaces.add(node.id.name);
+    members(node.body.body);
+    for (const heritage of node.extends) {
+      if (!heritage.typeArguments && heritage.expression.type === "Identifier") {
+        part(heritage.expression.name);
+      }
+    }
+  };
+  /**
+   * A declaration the props type, or an interface, is built from: `whole` where it is the props
+   * type itself, through its aliases.
+   */
+  const part = (name: string, whole = false) => {
+    const declaration = declared(name);
+    if (!declaration) return;
+    if (declaration.node.type === "TSInterfaceDeclaration") reachInterface(declaration.node);
+    else if (!parts.has(name)) {
+      parts.add(name);
+      structure(declaration.node.typeAnnotation, whole, true);
+    }
+  };
+  /**
+   * The props type's structure: what builds its object. An empty object type that is the props
+   * type itself (`whole`) through an alias (`aliased`) is checked as a type, as the base checked
+   * it; written in place, or as a part, it is an object with no members.
+   */
+  const structure = (type: AST.TSType, whole = false, aliased = false): void => {
+    switch (type.type) {
+      case "TSParenthesizedType":
+        structure(type.typeAnnotation, whole, aliased);
+        return;
+      case "TSIntersectionType":
+        for (const each of type.types) structure(each);
+        return;
+      case "TSTypeLiteral":
+        if (whole && aliased && !type.members.length) scope.types.push(type);
+        members(type.members);
+        return;
+      case "TSTypeReference":
+        if (type.typeName.type === "Identifier" && !type.typeArguments) {
+          part(type.typeName.name, whole);
+        }
+        return;
+      default:
+        return;
+    }
+  };
+  /** A prop's type: its object types' members are the syntax's, and each alias it names. */
+  const memberType = (type: AST.TSType) => {
+    walkTypes(type, (node) => {
+      if (node.type === "TSTypeLiteral") {
+        mark(node.members);
+        return true;
+      }
+      if (node.type !== "TSTypeReference") return true;
+      if (node.typeName.type !== "Identifier") return false;
+      const { name } = node.typeName;
+      if (node.typeArguments) return name === "Array" || name === "ReadonlyArray";
+      const declaration = declared(name);
+      if (declaration?.node.type === "TSInterfaceDeclaration") reachInterface(declaration.node);
+      else if (declaration && !aliases.has(name)) {
+        aliases.add(name);
+        scope.types.push(declaration.node.typeAnnotation);
+        memberType(declaration.node.typeAnnotation);
+      }
+      return false;
+    });
+  };
+  structure(annotation, true);
+  return scope;
+}
+
+/**
+ * The names of this module's declarations a props annotation names in turn, through aliases and
+ * parentheses, down to the interface or object type that writes its members.
+ */
+function ownDeclarations(annotation: AST.TSType, types: ModuleTypes): Set<string> {
+  const names = new Set<string>();
+  let type = annotation;
+  for (;;) {
+    if (type.type === "TSParenthesizedType") {
+      type = type.typeAnnotation;
+      continue;
+    }
+    if (
+      type.type !== "TSTypeReference" ||
+      type.typeName.type !== "Identifier" ||
+      type.typeArguments ||
+      names.has(type.typeName.name)
+    ) {
+      return names;
+    }
+    const declaration = types.table.declaration(type.typeName.name);
+    if (!declaration) return names;
+    names.add(type.typeName.name);
+    if (declaration.node.type === "TSInterfaceDeclaration") return names;
+    type = declaration.node.typeAnnotation;
+  }
+}
+
+/** Where a problem in a nested member's type is reported, given where its object is used. */
+type Place = (member: ShapeMember, where: Span) => Span;
+
+/**
+ * Reports the empty objects a member's own type writes, and says whether the empty objects of its
+ * shape may be what an intersection leaves.
+ */
+type MemberCheck = (member: ShapeMember, where: Span) => boolean;
+
+/**
+ * The empty object types a type writes as a prop's own type, `{}`: through unions, arrays and
+ * parentheses, but not a part of an intersection, such as a brand's `string & {}`, a function's
+ * parameter, a type argument or an operator's operand, which are no prop's type. A type
+ * literal's members and the declarations a reference names are read as their own members.
+ */
+function emptyObjects(type: AST.TSType): AST.TSTypeLiteral[] {
+  switch (type.type) {
+    case "TSTypeLiteral":
+      return type.members.length ? [] : [type];
+    case "TSUnionType":
+      return type.types.flatMap(emptyObjects);
+    case "TSArrayType":
+      return emptyObjects(type.elementType);
+    case "TSParenthesizedType":
+      return emptyObjects(type.typeAnnotation);
+    case "TSTypeOperator":
+      return type.operator === "readonly" ? emptyObjects(type.typeAnnotation) : [];
+    default:
+      return [];
+  }
+}
+
+/**
+ * Whether a type writes, as a prop's own type, an object type of signatures alone (`{ (): void }`,
+ * `{ [k: string]: string }`), which the shape holds as an object without members.
+ */
+function signatureObjects(type: AST.TSType): boolean {
+  switch (type.type) {
+    case "TSTypeLiteral":
+      return (
+        type.members.length > 0 &&
+        type.members.every((member) => member.type !== "TSPropertySignature")
+      );
+    case "TSUnionType":
+    case "TSIntersectionType":
+      return type.types.some(signatureObjects);
+    case "TSArrayType":
+      return signatureObjects(type.elementType);
+    case "TSParenthesizedType":
+      return signatureObjects(type.typeAnnotation);
+    default:
+      return false;
+  }
+}
+
+/** Another file's type, as a member's text writes it. */
+function writtenType(code: string, parsed: Map<string, AST.TSType | undefined>) {
+  if (!parsed.has(code)) {
+    const [statement] = parseModule("type.ts", `type T = ${code};`).program.body;
+    parsed.set(
+      code,
+      statement?.type === "TSTypeAliasDeclaration" ? statement.typeAnnotation : undefined,
+    );
+  }
+  return parsed.get(code);
+}
+
+/** A primitive keyword's text, which resolves on its own. */
+const PRIMITIVE = /^(?:string|number|boolean|bigint|symbol|null|undefined)$/;
 
 /** Code as a message quotes it: in a run of backticks longer than any the text holds. */
 function quoted(text: string): string {
@@ -901,7 +1291,7 @@ function sameType(shape: TypeShape, a: number, b: number, seen: Set<string>): bo
 /**
  * Reports a member written twice in one of the objects this module writes that a props type
  * reaches (UF2001): the oracle keeps one, but each output copies the declaration as written,
- * which TypeScript rejects (TS2300), as `checkMembers` reports for a type the syntax reads.
+ * which TypeScript rejects (TS2300).
  */
 function duplicates(annotation: AST.TSType, types: ModuleTypes, problem: Problem): void {
   const check = (signatures: readonly AST.TSSignature[]) => {
@@ -936,7 +1326,12 @@ function duplicates(annotation: AST.TSType, types: ModuleTypes, problem: Problem
 
 /**
  * Checks a member's resolved type as `checkType` checks one written in the module (ADR-0034),
- * reporting at `at`: what the type oracle could not resolve is reported where it met it.
+ * reporting at `at`: what the type oracle could not resolve is reported where it met it. The
+ * members of an object `file` writes are checked at their own spans, so a declaration that
+ * several members reach reports its problem once, where it is written. `checkMember` reports
+ * the empty objects each member writes, and says whether an empty object in its shape may be what
+ * an intersection whose other parts are reported leaves (`leavesEmpty`), which is not reported
+ * again.
  */
 function checkShapeType(
   shape: TypeShape,
@@ -944,6 +1339,9 @@ function checkShapeType(
   at: Span,
   problem: Problem,
   seen: Set<number>,
+  place: Place,
+  leavesEmpty: boolean,
+  checkMember: MemberCheck,
 ): void {
   const node = shape.nodes[id]!;
   switch (node.kind) {
@@ -955,10 +1353,12 @@ function checkShapeType(
     case "literal":
       return;
     case "union":
-      for (const each of node.types) checkShapeType(shape, each, at, problem, seen);
+      for (const each of node.types) {
+        checkShapeType(shape, each, at, problem, seen, place, leavesEmpty, checkMember);
+      }
       return;
     case "array":
-      checkShapeType(shape, node.element, at, problem, seen);
+      checkShapeType(shape, node.element, at, problem, seen, place, leavesEmpty, checkMember);
       return;
     case "tuple":
       problem("UF6002", at, ...notAProp("A tuple type"));
@@ -966,10 +1366,14 @@ function checkShapeType(
     case "object":
       if (seen.has(id)) return;
       seen.add(id);
-      if (!node.declaration && !node.members.length) {
+      if (!node.declaration && !node.members.length && !leavesEmpty) {
         problem("UF6002", at, ...notAProp("The empty object type `{}`"));
       }
-      for (const member of node.members) checkShapeType(shape, member.type, at, problem, seen);
+      for (const member of node.members) {
+        const where = place(member, at);
+        const skip = checkMember(member, where);
+        checkShapeType(shape, member.type, where, problem, seen, place, skip, checkMember);
+      }
       return;
     case "function":
       problem("UF1002", at, FUNCTIONS);
@@ -1042,9 +1446,43 @@ function describeNode(shape: TypeShape, id: number): string {
   }
 }
 
-/** The module's property signatures, by where each starts: a member's key is read there. */
-function signaturesOf(program: AST.Program): Map<number, AST.TSPropertySignature> {
+/**
+ * How the kinds of a shape the module writes at `at` read its members (ADR-0067): a member this
+ * module writes points at its key, and one another file writes at `at`, the one span of it this
+ * module holds. Only this module's declarations are known by kind: another file's objects read
+ * as an alias's do.
+ */
+export function shapeReading(parsed: ParsedModule, table: TypeTable, at: Span): ShapeReading {
+  const { file } = parsed;
+  return {
+    keyOf: (member) =>
+      member.file === file
+        ? span(signaturesOf(parsed.program).properties.get(member.span.start)?.key ?? member.span)
+        : at,
+    isInterface: (declaration) =>
+      declaration.file === file &&
+      table.declaration(declaration.name)?.node.type === "TSInterfaceDeclaration",
+  };
+}
+
+/** The signatures a module writes: walked once for every component and type that reads them. */
+interface Signatures {
+  /** Its property signatures, by where each starts: a member's key is read there. */
+  properties: Map<number, AST.TSPropertySignature>;
+  /** Where each call or construct signature starts, which is a function. */
+  callables: Set<number>;
+  /** The intersection each part of one belongs to, by where the part starts. */
+  intersections: Map<number, AST.TSIntersectionType>;
+}
+
+const SIGNATURES = new WeakMap<AST.Program, Signatures>();
+
+function signaturesOf(program: AST.Program): Signatures {
+  const cached = SIGNATURES.get(program);
+  if (cached) return cached;
   const found = new Map<number, AST.TSPropertySignature>();
+  const callables = new Set<number>();
+  const intersections = new Map<number, AST.TSIntersectionType>();
   const visit = (node: unknown): void => {
     if (!node || typeof node !== "object") return;
     if (Array.isArray(node)) {
@@ -1054,12 +1492,23 @@ function signaturesOf(program: AST.Program): Map<number, AST.TSPropertySignature
     const typed = node as AST.Node;
     if (typeof typed.type !== "string") return;
     if (typed.type === "TSPropertySignature") found.set(typed.start, typed);
+    if (
+      typed.type === "TSCallSignatureDeclaration" ||
+      typed.type === "TSConstructSignatureDeclaration"
+    ) {
+      callables.add(typed.start);
+    }
+    if (typed.type === "TSIntersectionType") {
+      for (const part of typed.types) intersections.set(part.start, typed);
+    }
     for (const key of visitorKeys[typed.type] ?? []) {
       visit((node as unknown as Record<string, unknown>)[key]);
     }
   };
   visit(program);
-  return found;
+  const signatures = { properties: found, callables, intersections };
+  SIGNATURES.set(program, signatures);
+  return signatures;
 }
 
 /** Checks a destructured props pattern, and returns its properties by prop name. */
