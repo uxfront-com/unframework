@@ -339,6 +339,54 @@ describe("tsgo adapter", () => {
     expect(reasons(shape)).toContain("unsupported");
   });
 
+  it.each([
+    [
+      "the const of `as const`",
+      'const xs = ["a", "b"] as const;',
+      "{ a: (typeof xs)[number] }",
+      '{ a: "a" | "b" }',
+    ],
+    [
+      "`as const` on an object",
+      "const v = { sm: 1, md: 2 } as const;",
+      "{ a: keyof typeof v }",
+      '{ a: "md" | "sm" }',
+    ],
+    ["`undefined`", "", "{ a: typeof undefined }", "{ a: undefined }"],
+    [
+      "a mixin's call",
+      [
+        "function Mix<T extends new (...args: any[]) => object>(B: T) { return class extends B { m() {} }; }",
+        "class Base { x = 1 }",
+        "class C extends Mix(Base) { b = 1 }",
+      ].join("\n"),
+      "{ a: keyof C }",
+      '{ a: "b" | "m" | "x" }',
+    ],
+  ])(
+    "evaluates a name with no declaration that is not missing: %s",
+    async (_, prelude, type, expected) => {
+      const shape = await resolve(type, prelude);
+      expect(canonical(shape)).toBe(expected);
+      expect(shape.unresolved).toEqual([]);
+    },
+  );
+
+  it("keeps unresolved a missing name in a declaration outside the root", async () => {
+    await writeFile(join(base, "outside.ts"), "export type O = keyof Missing;\n");
+    const prelude = 'import type { O } from "../outside.ts";';
+    const shape = await resolve("{ a: O extends infer U ? U : never }", prelude);
+    expect(canonical(shape)).toBe("{ a: (unresolved) }");
+  });
+
+  it("keeps unresolved a part whose text is not a type node it can read", async () => {
+    // The member `m` that `I` inherits beside a computed key is kept opaque at its signature.
+    const prelude =
+      "declare const k: string;\ninterface B { m(): void }\ninterface I extends B { [k]: number }";
+    const shape = await resolve("I", prelude);
+    expect(canonical(shape)).toBe("{ m: (unresolved) }");
+  });
+
   it("follows an alias chain as long as a project makes it", async () => {
     const chain = Array.from({ length: 2000 }, (_, index) => `type T${index} = T${index + 1};`);
     const shape = await resolve(
@@ -346,6 +394,17 @@ describe("tsgo adapter", () => {
       [...chain, "type T2000 = { p: string };"].join("\n"),
     );
     expect(canonical(shape)).toBe('{ a: "p" }');
+  });
+
+  it("lists a module an import type reads without a qualifier, and none it imports", async () => {
+    await put(
+      "c.ts",
+      'import type { E } from "./e.ts";\nexport const k = 1;\nexport type C2 = E;\n',
+    );
+    await put("e.ts", "export type E = string;\n");
+    const shape = await resolve('{ a: keyof typeof import("./c.ts") }');
+    expect(canonical(shape)).toBe('{ a: "k" }');
+    expect(shape.dependencies).toEqual(["c.ts"]);
   });
 
   it("lists the files an import type and a typeof read", async () => {
@@ -531,6 +590,34 @@ describe("tsgo adapter", () => {
       const shape = await resolve("{ a: Kind<string> extends string ? XP : never }", prelude);
       expect(canonical(shape)).toBe("{ a: (unresolved) }");
     });
+
+    it.each([
+      [
+        "its `exports`",
+        { name: "w", version: "1.0.0", exports: { ".": { types: "./dist/w.d.ts" } } },
+        "dist/w.d.ts",
+      ],
+      ["an `index.d.ts`", { name: "w", version: "1.0.0" }, "index.d.ts"],
+      ["its `types`", { name: "w", version: "1.0.0", types: "w.d.ts" }, "w.d.ts"],
+    ])(
+      "names a package that declares its types by %s over its @types/ package",
+      async (_, manifest, types) => {
+        await put("node_modules/w/package.json", JSON.stringify(manifest));
+        await put(`node_modules/w/${types}`, "export interface W { a: string }\n");
+        await pkg(
+          "node_modules/@types/w",
+          "@types/w",
+          "1.0.0",
+          "export interface W { b: string }\n",
+        );
+        const prelude = `${KIND}\nimport type { W } from "w";`;
+        const shape = await resolve("{ a: Kind<string> extends string ? W : never }", prelude);
+        expect(canonical(shape)).toBe("{ a: { a: string } }");
+        const object = shape.nodes[shape.root]!;
+        const w = object.kind === "object" ? shape.nodes[object.members[0]!.type] : undefined;
+        expect(w?.kind === "object" && w.members[0]!.file).toBe(`pkg:w/${types}`);
+      },
+    );
 
     it("names a package typed by its @types/ package, beside an untyped copy", async () => {
       await put("node_modules/w/package.json", '{ "name": "w", "version": "1.0.0" }');

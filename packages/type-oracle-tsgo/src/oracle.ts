@@ -152,7 +152,9 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
       const written = fileName === undefined ? undefined : program.getSourceFile(fileName);
       return written && typeNodeAt(written, span);
     };
-    return type ? evaluate(shape, type, { checker, fileOf, file: query.file, nodeAt }) : shape;
+    const isDefaultLibrary = (written: SourceFile) => program.isSourceFileDefaultLibrary(written);
+    const context = { checker, fileOf, file: query.file, nodeAt, isDefaultLibrary };
+    return type ? evaluate(shape, type, context) : shape;
   };
 
   return {

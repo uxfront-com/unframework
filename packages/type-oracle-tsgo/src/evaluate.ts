@@ -15,7 +15,7 @@ import type {
   TypeShape,
 } from "@unframework/type-oracle";
 import { ModifierFlags, SyntaxKind } from "typescript/unstable/ast";
-import type { Node } from "typescript/unstable/ast";
+import type { Node, SourceFile } from "typescript/unstable/ast";
 import {
   isExpressionWithTypeArguments,
   isIdentifier,
@@ -49,6 +49,8 @@ export interface EvaluateContext {
   file: string;
   /** The type node at a span of a file, named as a shape names it. */
   nodeAt(file: string, span: Span): Node | undefined;
+  /** Whether a source file is one of TypeScript's lib files. */
+  isDefaultLibrary(source: SourceFile): boolean;
 }
 
 /** The checker's `CheckFlags`, which `typescript/unstable/sync` does not export. */
@@ -502,34 +504,46 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
     const pending: Node[] = [written];
     // Set by `reach`, inside the walk.
     const found = { missing: false };
-    const reach = (symbol: Symbol | undefined) => {
+    /**
+     * Follows a name to its declarations. One with none is missing only when the checker types it
+     * as its error type, which is what tsgo gives a name that resolves to nothing: `undefined`,
+     * `globalThis` and the `const` of `as const` have no declaration either.
+     */
+    const reach = (name: Node, typed: () => Type | undefined) => {
+      const symbol = checker.getSymbolAtLocation(name);
       const target =
         symbol && symbol.flags & SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
-      // tsgo gives a name that resolves to nothing, as its unknown symbol, no declaration.
       if (!target?.declarations.length) {
-        found.missing = true;
+        if (typed()?.isErrorType() ?? true) found.missing = true;
         return;
       }
       if (visited.has(target.id)) return;
       visited.add(target.id);
       for (const handle of target.declarations) {
         const node = handle.resolve();
-        const file = node && context.fileOf(node.getSourceFile().fileName);
-        if (!node || file === undefined) continue;
-        files.add(file);
+        if (!node) continue;
+        const source = node.getSourceFile();
+        // A file a shape cannot name is walked for missing names, and left out of the files.
+        const file = context.fileOf(source.fileName);
+        if (file !== undefined) files.add(file);
+        else if (context.isDefaultLibrary(source)) continue;
         // A module's declaration is its file, which `import("./b.ts")` reads only for the names
         // its qualifier reaches.
         if (node.kind !== SyntaxKind.SourceFile) pending.push(node);
       }
     };
     const visit = (node: Node): void => {
-      if (isTypeReferenceNode(node)) reach(checker.getSymbolAtLocation(node.typeName));
-      else if (isTypeQueryNode(node)) reach(checker.getSymbolAtLocation(node.exprName));
-      else if (isExpressionWithTypeArguments(node)) {
-        reach(checker.getSymbolAtLocation(node.expression));
+      if (isTypeReferenceNode(node)) {
+        // The `const` of `as const` has no declaration, and is not the error type.
+        reach(node.typeName, () => checker.getTypeFromTypeNode(node));
+      } else if (isTypeQueryNode(node)) {
+        reach(node.exprName, () => checker.getTypeFromTypeNode(node));
+      } else if (isExpressionWithTypeArguments(node)) {
+        // A mixin's call, `extends Mix(Base)`, names no declaration itself.
+        reach(node.expression, () => checker.getTypeAtLocation(node.expression));
       } else if (isImportTypeNode(node)) {
         const name = node.qualifier ?? (isLiteralTypeNode(node.argument) && node.argument.literal);
-        reach(name ? checker.getSymbolAtLocation(name) : undefined);
+        if (name) reach(name, () => checker.getTypeFromTypeNode(node));
       }
       node.forEachChild(visit);
     };
