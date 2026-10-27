@@ -289,8 +289,7 @@ function shapeMembers(
   };
   const { file, source } = parsed;
   const here = (entry: { file: string; span: Span }) => (entry.file === file ? entry.span : at);
-  const callables = new Set<number>();
-  const signatures = signaturesOf(parsed.program, callables);
+  const { properties: signatures, callables } = signaturesOf(parsed.program);
   const textOf = (entry: UnresolvedType) => {
     if (entry.file === file) return source.slice(entry.span.start, entry.span.end);
     const node = shape.nodes.find(
@@ -1041,28 +1040,32 @@ function describeNode(shape: TypeShape, id: number): string {
  */
 export function shapeReading(parsed: ParsedModule, table: TypeTable, at: Span): ShapeReading {
   const { file } = parsed;
-  let signatures: Map<number, AST.TSPropertySignature> | undefined;
   return {
-    keyOf: (member) => {
-      if (member.file !== file) return at;
-      signatures ??= signaturesOf(parsed.program);
-      return span(signatures.get(member.span.start)?.key ?? member.span);
-    },
+    keyOf: (member) =>
+      member.file === file
+        ? span(signaturesOf(parsed.program).properties.get(member.span.start)?.key ?? member.span)
+        : at,
     isInterface: (declaration) =>
       declaration.file === file &&
       table.declaration(declaration.name)?.node.type === "TSInterfaceDeclaration",
   };
 }
 
-/**
- * The module's property signatures, by where each starts: a member's key is read there. With
- * `callables`, where each call or construct signature starts, which is a function.
- */
-function signaturesOf(
-  program: AST.Program,
-  callables?: Set<number>,
-): Map<number, AST.TSPropertySignature> {
+/** The signatures a module writes: walked once for every component and type that reads them. */
+interface Signatures {
+  /** Its property signatures, by where each starts: a member's key is read there. */
+  properties: Map<number, AST.TSPropertySignature>;
+  /** Where each call or construct signature starts, which is a function. */
+  callables: Set<number>;
+}
+
+const SIGNATURES = new WeakMap<AST.Program, Signatures>();
+
+function signaturesOf(program: AST.Program): Signatures {
+  const cached = SIGNATURES.get(program);
+  if (cached) return cached;
   const found = new Map<number, AST.TSPropertySignature>();
+  const callables = new Set<number>();
   const visit = (node: unknown): void => {
     if (!node || typeof node !== "object") return;
     if (Array.isArray(node)) {
@@ -1076,14 +1079,16 @@ function signaturesOf(
       typed.type === "TSCallSignatureDeclaration" ||
       typed.type === "TSConstructSignatureDeclaration"
     ) {
-      callables?.add(typed.start);
+      callables.add(typed.start);
     }
     for (const key of visitorKeys[typed.type] ?? []) {
       visit((node as unknown as Record<string, unknown>)[key]);
     }
   };
   visit(program);
-  return found;
+  const signatures = { properties: found, callables };
+  SIGNATURES.set(program, signatures);
+  return signatures;
 }
 
 /** Checks a destructured props pattern, and returns its properties by prop name. */

@@ -206,6 +206,10 @@ export function analyzeModule(
   const scopes = new Scopes(parsed.program);
   const authoring = authoringBindings(parsed.program);
   const shapes = options.shapes ?? ownShapes(parsed);
+  // The module's own path, for the types the compiler did not ask its oracle for, indexed once
+  // and only when a component reads one.
+  let own: Shapes | undefined = options.shapes ? undefined : shapes;
+  const localShapes: Shapes = (at) => (own ??= ownShapes(parsed))(at);
   // Every component's API, read from its declarations before any is lowered: they render each
   // other, and themselves (ADR-0053).
   const apiContext: ApiContext = {
@@ -302,6 +306,7 @@ export function analyzeModule(
     parsed,
     types,
     shapes,
+    localShapes,
     scopes,
     authoring,
     reporter,
@@ -1236,6 +1241,8 @@ interface ComponentModule {
   parsed: ParsedModule;
   types: ModuleTypes;
   shapes: Shapes;
+  /** The module's own shapes, for a type `shapes` has none of. */
+  localShapes: Shapes;
   scopes: Scopes;
   /** The module's authoring imports, by the identifier that declares each (ADR-0006). */
   authoring: ReadonlyMap<object, AuthoringApi | undefined>;
@@ -1280,10 +1287,9 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
         : undefined;
   // A written type that reaches an imported type is one `shapeQueries` asks the oracle for; any
   // other resolves in the module, which follows its `extends` and aliases as the oracle does.
-  const local = ownShapes(parsed);
   const writtenType = (type: AST.TSType) => {
     const at = { start: type.start, end: type.end };
-    const shape = shapes(at) ?? local(at);
+    const shape = shapes(at) ?? module.localShapes(at);
     if (!shape) return { kinds: types.table.kindsOf(type), complete: false };
     return {
       kinds: kindsFromShape(shape, shapeReading(parsed, types.table, at)),
