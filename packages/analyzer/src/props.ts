@@ -23,7 +23,6 @@ import type { ObjectNode, ShapeMember, TypeShape, UnresolvedType } from "@unfram
 import type { Reporter } from "./context.ts";
 import {
   checkCopiedText,
-  checkMembers,
   closure,
   declaredTwice,
   FUNCTIONS,
@@ -37,7 +36,9 @@ import { checkDirectives, span } from "./expressions.ts";
 import type { ComponentFunction, PropBinding } from "./render.ts";
 import type { Shapes } from "./shapes.ts";
 import { kindsFromShape } from "./types/from-shape.ts";
+import type { ShapeReading } from "./types/from-shape.ts";
 import { memberName } from "./types/from-type.ts";
+import type { TypeTable } from "./types/from-type.ts";
 import { has, union, UNDEFINED, without } from "./types/kinds.ts";
 import type { Kinds } from "./types/kinds.ts";
 
@@ -150,13 +151,15 @@ export function analyzeProps(
   checkDirectives(span(annotation), comments, reporter);
   // The outputs copy the annotation as written, as they copy a type declaration.
   checkCopiedText(span(annotation), source, reporter, "A props type");
-  const members = types.shapedAnnotations.has(annotation)
-    ? shapeMembers(annotation, types, shapes, parsed, reporter)
-    : propsMembers(annotation, types, source, reporter);
-  if (!members) {
+  const read = shapeMembers(annotation, types, shapes, parsed, reporter);
+  if (!read) {
     result.failed = true;
     return result;
   }
+  // A problem in a member's type fails the component, and its other members are still read,
+  // so their own problems are reported too.
+  const { members } = read;
+  if (read.failed) result.failed = true;
   const object = parameter.type === "Identifier";
   result.types = closure(annotation, types.table);
   result.propsParameter = createPropsParameter(
@@ -202,7 +205,7 @@ export function analyzeProps(
         reporter,
         "UF1002",
         member.at,
-        'Props that can be both a boolean and any string, `""` or the prop\'s own name are not supported yet: Vue reads `""` and the prop\'s own name as `true`. They land in M5.',
+        'Props that can be both a boolean and any string, `""` or the prop\'s own name are not supported: Vue reads `""` and the prop\'s own name as `true`, which the other targets do not.',
         'Type the strings as literals other than `""` and the prop\'s name, as in `boolean | "mixed"`.',
       );
     }
@@ -249,74 +252,18 @@ export function analyzeProps(
   return result;
 }
 
-/**
- * The members of a props type the module's syntax reads (`readsSyntax`): an object type
- * literal, or a reference to a local interface or to an alias of either, followed through
- * aliases.
- */
-function propsMembers(
-  annotation: AST.TSType,
-  types: ModuleTypes,
-  source: string,
-  reporter: Reporter,
-): PropMember[] | undefined {
-  const seen = new Set<string>();
-  let type: AST.TSType = annotation;
-  let signatures: readonly AST.TSSignature[] | undefined;
-  for (;;) {
-    if (type.type === "TSTypeLiteral") {
-      // An inline literal is checked here; a declaration where it is declared.
-      if (type === annotation) checkMembers(type.members, types, reporter);
-      signatures = type.members;
-      break;
-    }
-    if (type.type === "TSParenthesizedType") {
-      type = type.typeAnnotation;
-      continue;
-    }
-    const name =
-      type.type === "TSTypeReference" && type.typeName.type === "Identifier" && !type.typeArguments
-        ? type.typeName.name
-        : undefined;
-    const declaration = name === undefined ? undefined : types.table.declaration(name);
-    // `readsSyntax` admits only a chain that ends in an object type.
-    if (!declaration || seen.has(name!)) return undefined;
-    seen.add(name!);
-    if (declaration.node.type === "TSInterfaceDeclaration") {
-      signatures = declaration.node.body.body;
-      break;
-    }
-    type = declaration.node.typeAnnotation;
-  }
-  return signatures.flatMap((member): PropMember[] => {
-    if (member.type !== "TSPropertySignature" || member.computed) return [];
-    const name = memberName(member.key);
-    const written = member.typeAnnotation?.typeAnnotation;
-    if (name === undefined || !written) return [];
-    return [
-      {
-        name,
-        optional: member.optional,
-        key: span(member.key),
-        type: createTypeText(source.slice(written.start, written.end), span(written)),
-        at: span(written),
-        span: span(member),
-        kinds: types.table.kindsOf(written),
-      },
-    ];
-  });
-}
-
 /** Reports a problem of a props type, and fails the component it was found for. */
 type Problem = (code: DiagnosticCode, at: Span, message: string, help?: string) => void;
 
 /**
- * The members of a props type read from its shape (ADR-0067): one the module imports, extends,
- * intersects, or builds with a utility type. A member another file writes is reported at the
- * props annotation, the one span of it this module holds, and its prop takes the annotation's
- * span and the declaring file's text, with `declaredBy` naming where it is written. So does a
- * member of another declaration of this module, at its own span. A problem of a type that
- * components share is reported once, and fails each of them.
+ * The members of a props type read from its shape (ADR-0067), whether the module declares it or
+ * writes it in place, or imports, extends, intersects, or builds it with a utility type. A member
+ * this module writes keeps its own span and its type's text as written, as the outputs copy them.
+ * A member another file writes is reported at the props annotation, the one span of it this
+ * module holds, and its prop takes the annotation's span and the declaring file's text, with
+ * `declaredBy` naming where it is written. So does a member of another declaration of this
+ * module, at its own span. A problem of a type that components share is reported once, and fails
+ * each of them: `failed` says so. No members are read where the shape is not an object.
  */
 function shapeMembers(
   annotation: AST.TSType,
@@ -324,7 +271,7 @@ function shapeMembers(
   shapes: Shapes,
   parsed: ParsedModule,
   reporter: Reporter,
-): PropMember[] | undefined {
+): { members: PropMember[]; failed: boolean } | undefined {
   const at = span(annotation);
   const shape = shapes(at);
   if (!shape) {
@@ -442,15 +389,11 @@ function shapeMembers(
     return undefined;
   }
   duplicates(annotation, types, problem);
-  // The props type's own declaration, when the annotation names one of this module: its members
-  // are the type's own, and every other declaration's are another's (`declaredBy`).
-  const own =
-    annotation.type === "TSTypeReference" && annotation.typeName.type === "Identifier"
-      ? annotation.typeName.name
-      : undefined;
-  const signatures = signaturesOf(parsed.program);
-  const keyOf = (member: ShapeMember): Span =>
-    member.file === file ? span(signatures.get(member.span.start)?.key ?? member.span) : at;
+  // The props type's own declarations, the aliases the annotation names through to the type of
+  // this module that writes its members: those members are the type's own, and every other
+  // declaration's are another's (`declaredBy`).
+  const own = ownDeclarations(annotation, types);
+  const reading = shapeReading(parsed, types.table, at);
   const result: PropMember[] = [];
   for (const member of members) {
     const local = member.file === file;
@@ -458,7 +401,7 @@ function shapeMembers(
     // reached only through an import of a type by its name. Another adapter may not.
     const declaration = member.declaration ?? root.declaration;
     const declaredBy: DeclaredBy | undefined =
-      (!local || (member.declaration && member.declaration.name !== own)) && declaration
+      (!local || (member.declaration && !own.has(member.declaration.name))) && declaration
         ? { file: member.file, declaration: declaration.name, span: member.span }
         : undefined;
     if (!local && !declaredBy) {
@@ -475,17 +418,45 @@ function shapeMembers(
     result.push({
       name: member.name,
       optional: member.optional,
-      key: keyOf(member),
+      key: reading.keyOf(member),
       type: local
         ? createTypeText(member.typeText?.code ?? "", member.typeText?.span ?? member.span)
         : createTypeText(member.typeText?.code ?? "", at),
       at: where,
       span: local ? member.span : at,
-      kinds: kindsFromShape(shape, keyOf, member.type),
+      kinds: kindsFromShape(shape, reading, member.type),
       ...(declaredBy ? { declaredBy } : {}),
     });
   }
-  return failed ? undefined : result;
+  return { members: result, failed };
+}
+
+/**
+ * The names of this module's declarations a props annotation names in turn, through aliases and
+ * parentheses, down to the interface or object type that writes its members.
+ */
+function ownDeclarations(annotation: AST.TSType, types: ModuleTypes): Set<string> {
+  const names = new Set<string>();
+  let type = annotation;
+  for (;;) {
+    if (type.type === "TSParenthesizedType") {
+      type = type.typeAnnotation;
+      continue;
+    }
+    if (
+      type.type !== "TSTypeReference" ||
+      type.typeName.type !== "Identifier" ||
+      type.typeArguments ||
+      names.has(type.typeName.name)
+    ) {
+      return names;
+    }
+    const declaration = types.table.declaration(type.typeName.name);
+    if (!declaration) return names;
+    names.add(type.typeName.name);
+    if (declaration.node.type === "TSInterfaceDeclaration") return names;
+    type = declaration.node.typeAnnotation;
+  }
 }
 
 /** Code as a message quotes it: in a run of backticks longer than any the text holds. */
@@ -901,7 +872,7 @@ function sameType(shape: TypeShape, a: number, b: number, seen: Set<string>): bo
 /**
  * Reports a member written twice in one of the objects this module writes that a props type
  * reaches (UF2001): the oracle keeps one, but each output copies the declaration as written,
- * which TypeScript rejects (TS2300), as `checkMembers` reports for a type the syntax reads.
+ * which TypeScript rejects (TS2300).
  */
 function duplicates(annotation: AST.TSType, types: ModuleTypes, problem: Problem): void {
   const check = (signatures: readonly AST.TSSignature[]) => {
@@ -1040,6 +1011,27 @@ function describeNode(shape: TypeShape, id: number): string {
     default:
       return "a type";
   }
+}
+
+/**
+ * How the kinds of a shape the module writes at `at` read its members (ADR-0067): a member this
+ * module writes points at its key, and one another file writes at `at`, the one span of it this
+ * module holds. Only this module's declarations are known by kind: another file's objects read
+ * as an alias's do.
+ */
+export function shapeReading(parsed: ParsedModule, table: TypeTable, at: Span): ShapeReading {
+  const { file } = parsed;
+  let signatures: Map<number, AST.TSPropertySignature> | undefined;
+  return {
+    keyOf: (member) => {
+      if (member.file !== file) return at;
+      signatures ??= signaturesOf(parsed.program);
+      return span(signatures.get(member.span.start)?.key ?? member.span);
+    },
+    isInterface: (declaration) =>
+      declaration.file === file &&
+      table.declaration(declaration.name)?.node.type === "TSInterfaceDeclaration",
+  };
 }
 
 /** The module's property signatures, by where each starts: a member's key is read there. */

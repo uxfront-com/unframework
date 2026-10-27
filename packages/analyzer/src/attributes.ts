@@ -599,17 +599,25 @@ function readSpread(
   }
   const mark = reporter.diagnostics.length;
   const checked = checkExpression(argument, render);
-  // A setup value's keys are its inferred type's, which M5's type oracle reads (ADR-0045,
-  // amending ADR-0039).
-  const setup = new Set([...render.setup.bindings.values()].map((binding) => binding.id));
-  if (
-    checked.clean &&
-    checked.expression.refs.some((ref) => ref.kind === "Binding" && setup.has(ref.binding))
-  ) {
+  // A setup value's keys are its type's, which only a written type declares: an annotation, or
+  // `ref`'s type argument, read through the type oracle where it names an imported type
+  // (ADR-0045, ADR-0067, amending ADR-0039). An inferred type is the checker's alone.
+  const inferred = checked.clean
+    ? [...render.setup.bindings.values()].find(
+        (binding) =>
+          !binding.typed &&
+          checked.expression.refs.some(
+            (ref) => ref.kind === "Binding" && ref.binding === binding.id,
+          ),
+      )
+    : undefined;
+  if (inferred) {
     reporter.unsupported(
       item,
-      "Spreads of the setup's values are not supported yet: a setup value's type is mostly inferred, which M5's type oracle reads.",
-      { help: "Spread a prop or a list's item, or write the attributes." },
+      `This spread reads \`${inferred.name}\`, a setup value whose type is inferred: a spread renders the keys a written type declares, and the compiler reads no inferred type.`,
+      {
+        help: "Annotate it with an object type (`const attrs: Attrs = …`), give `ref` one (`ref<Attrs>(…)`), or write the attributes.",
+      },
     );
     return { node: item, binds: true, attribute: undefined, keys: [] };
   }

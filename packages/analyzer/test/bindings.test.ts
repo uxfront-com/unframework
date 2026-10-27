@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { enumeratedProblem } from "../src/enumerated.ts";
 import { NULL, STRING, union, UNKNOWN } from "../src/types/kinds.ts";
-import { applyAndRecheck, codes, component, only, problems, root } from "./helpers.ts";
+import { API, applyAndRecheck, codes, component, only, problems, root } from "./helpers.ts";
 
 const PROPS = [
   "label: string",
@@ -851,6 +851,25 @@ describe("spreads", () => {
     const { module, diagnostics } = component(`<p ${spread}>x</p>`, { props, before, pattern });
     expect(diagnostics).toEqual([]);
     expect(root(module).attributes.map(describeAttribute)).toEqual([expected]);
+  });
+
+  // A setup value's keys are those of its written type (ADR-0039, ADR-0067).
+  it.each([
+    ['const attrs = ref<Attrs>({ id: "a" });', "{...attrs.value}", "...{attrs.value}[id title]"],
+    ["const attrs = ref<Attrs>();", "{...attrs.value}", "...{attrs.value}?.[id title]"],
+    ['const attrs: Attrs = { id: "a" };', "{...attrs}", "...{attrs}[id title]"],
+    [
+      'const attrs = ref<{ id: string; title?: string }>({ id: "a" });',
+      "{...attrs.value}",
+      "...{attrs.value}[id title]",
+    ],
+  ])("lowers a spread of a typed setup value: %s", (setup, spread, expected) => {
+    const { module, diagnostics } = component(`<p ${spread}>x</p>`, {
+      before: `${API}export interface Attrs { id: string; title?: string }\n`,
+      setup,
+    });
+    expect(diagnostics).toEqual([]);
+    expect(spreadsOf(module)).toEqual([expected]);
   });
 
   it("reads a list's item that may be absent through `?.`", () => {

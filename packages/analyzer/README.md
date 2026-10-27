@@ -35,13 +35,15 @@ is a function declaration; one written as a value (`export const Card = (props) 
 checked as the declaration its likely fix writes (`analyze.ts`).
 
 - **Props** (`props.ts`, `declarations.ts`): the one parameter, destructured with static defaults
-  or kept as one object read as `props.x`, typed by an object type literal or a local `interface`
-  or `type`, read from the module's syntax, or by a type read from its shape through the type
-  oracle (ADR-0067): one imported from a relative `.ts`, a `.uf.tsx`, a `.uf.ts` or a package, an
-  `extends` chain, an intersection, or `Partial`, `Required`, `Pick`, `Omit` or `Readonly`. A
-  member another declaration writes records it in `Prop.declaredBy`; one another file writes takes
-  the props annotation's span and its declaring file's text. Member types keep to what every
-  target's props can declare, read from the shape too. Problems are UF2001 to UF2003, a function
+  or kept as one object read as `props.x`, typed by a type read from its shape through the type
+  oracle (ADR-0067), whatever its form: an object type literal, a local `interface` or `type`, one
+  imported from a relative `.ts`, a `.uf.tsx`, a `.uf.ts` or a package, an `extends` chain, an
+  intersection, or `Partial`, `Required`, `Pick`, `Omit` or `Readonly`. A member the props type's
+  own declaration writes, through its aliases, keeps its span and its type's text as written; one
+  another declaration writes records it in `Prop.declaredBy`; one another file writes takes the
+  props annotation's span and its declaring file's text. Member types keep to what every target's
+  props can declare, read from the shape too, and a problem in one fails the component without
+  stopping the checks of the others. A prop's kinds are read from the shape (`kindsFromShape`). Problems are UF2001 to UF2003, a function
   type UF1002, and UF6001 (a type that cannot be resolved), UF6002 (a construct the default oracle
   cannot evaluate, or a member type props cannot take), UF6003 (a member's type names one its file
   does not export), UF6004 (a props type that is not one object type) and UF6005 (a member two
@@ -265,7 +267,9 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   every typed target's element types accept (UF3018: an enumerated attribute's tokens, a
   string where a target types one), `class` parts, `style` declarations (parsed by
   `@unframework/parser`, UF3022 for what the targets cannot keep apart) and spreads of objects
-  whose keys a local type declares. A spread records whether its object may be nullish where
+  whose keys a type declares: a prop's, a list's item's, or a setup value's whose type is written,
+  as an annotation or `ref`'s type argument, and read from its shape where it names an imported
+  type (a setup value whose type is inferred is UF1002). A spread records whether its object may be nullish where
   it renders (`spread-source.ts`): its kinds say whether its type may be, and the conditions
   around it narrow it as every target's checker does; a test the compiler does not follow is
   UF1002, and a source the conditions show is absent UF3004. A bound `value` that may be nullish

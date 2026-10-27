@@ -36,20 +36,7 @@ export function shapeQueries(parsed: ParsedModule): ShapeQuery[] {
       found.set(key, { file: parsed.file, span: { start: type.start, end: type.end } });
     }
   };
-  const names = (type: AST.TSType): boolean => {
-    let named = false;
-    visit(type, (node) => {
-      if (
-        node.type === "TSTypeReference" &&
-        node.typeName.type === "Identifier" &&
-        imported.has(node.typeName.name)
-      ) {
-        named = true;
-      }
-      return !named;
-    });
-    return named;
-  };
+  const names = (type: AST.TSType) => namesImported(type, imported);
   const inBody = (node: AST.Node) => {
     visit(node, (each) => {
       // A member's annotation inside a type is the type's, queried with it.
@@ -92,6 +79,22 @@ export function shapeQueries(parsed: ParsedModule): ShapeQuery[] {
  */
 export function ownShapes(parsed: ParsedModule): Shapes {
   return localShapes(parsed, parsed.file);
+}
+
+/** Whether a type names one of the given imported types, at any depth. */
+export function namesImported(type: AST.TSType, imported: ReadonlySet<string>): boolean {
+  let named = false;
+  visit(type, (node) => {
+    if (
+      node.type === "TSTypeReference" &&
+      node.typeName.type === "Identifier" &&
+      imported.has(node.typeName.name)
+    ) {
+      named = true;
+    }
+    return !named;
+  });
+  return named;
 }
 
 /** The local names of the types a module imports from modules other than the authoring API. */

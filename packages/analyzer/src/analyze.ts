@@ -58,17 +58,18 @@ import {
   reportUnread,
 } from "./pass-through.ts";
 import type { PassThrough } from "./pass-through.ts";
-import { analyzeProps } from "./props.ts";
+import { analyzeProps, shapeReading } from "./props.ts";
 import type { ComponentFunction, ComponentInfo, RenderContext, SetupBinding } from "./render.ts";
 import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
 import { checkDirective, declareSetup, isDirective, refTypeOf } from "./setup.ts";
 import type { InjectionKeyInfo } from "./setup.ts";
-import { ownShapes } from "./shapes.ts";
+import { namesImported, ownShapes, typeImportNames } from "./shapes.ts";
 import type { Shapes } from "./shapes.ts";
 import { scopeIdOf, STYLESHEET_SPECIFIER, stylesheetImport } from "./styles.ts";
 import type { LoweredSheet, StylesheetSource } from "./styles.ts";
 import { syntaxError } from "./syntax.ts";
+import { kindsFromShape } from "./types/from-shape.ts";
 
 /** The result of analysing one module. */
 export interface AnalyzeResult {
@@ -1277,6 +1278,16 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
       : last?.type === "ReturnStatement"
         ? last.argument
         : undefined;
+  // A written type that names an imported type is one `shapeQueries` asks the oracle for; the
+  // module's own types read as they always have.
+  const imported = typeImportNames(parsed.program);
+  const typeKinds = (type: AST.TSType) => {
+    const at = { start: type.start, end: type.end };
+    const shape = namesImported(type, imported) ? shapes(at) : undefined;
+    return shape
+      ? kindsFromShape(shape, shapeReading(parsed, types.table, at))
+      : types.table.kindsOf(type);
+  };
   // The setup (ADR-0045): every statement before the return, declared before any code is walked.
   const setup = declareSetup({
     source: parsed.source,
@@ -1284,6 +1295,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     scopes,
     types: types.table,
     shapes,
+    typeKinds,
     comments: parsed.comments,
     authoring,
     component: fn,

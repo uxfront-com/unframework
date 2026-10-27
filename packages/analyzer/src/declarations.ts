@@ -3,9 +3,9 @@
 // is checked where it is declared, once, as a top-level statement: one some component's props
 // reach must be a type every target's props can declare (ADR-0034); one only the setup
 // reaches is copied, so it must only copy safely (ADR-0045); and one no component reaches is
-// exported on its own (ADR-0068), or reported. A props type that the module's syntax cannot
-// follow (an import, `extends`, an intersection, a utility type) is read from its shape, through
-// the type oracle (ADR-0067), and its declarations' members are checked there.
+// exported on its own (ADR-0068), or reported. Every props type is read from its shape, through
+// the type oracle (ADR-0067), and the members of the declarations it reaches are checked there
+// (`props.ts`).
 
 import type { DiagnosticCode } from "@unframework/diagnostics";
 import { isIdentifier, RESERVED_TYPE_NAMES } from "@unframework/ir";
@@ -28,13 +28,6 @@ export interface ModuleTypes {
    * of `ref` and `defineEmits`, annotations, `as` (ADR-0045). The outputs copy them.
    */
   readonly setupReached: ReadonlySet<string>;
-  /**
-   * The names only props annotations read from their shapes reach (ADR-0067): their members are
-   * checked on the shape, where each member's type is resolved.
-   */
-  readonly shaped: ReadonlySet<string>;
-  /** The props annotations read from their shapes rather than the module's syntax. */
-  readonly shapedAnnotations: ReadonlySet<AST.TSType>;
   /** Whether some component writes `Props` as its props annotation itself (`(props: Props)`). */
   readonly ownProps: boolean;
   /**
@@ -61,8 +54,6 @@ export function collectTypes(
 ): ModuleTypes {
   const table = new TypeTable(declarations);
   const reached = new Set<string>();
-  const syntactic = new Set<string>();
-  const shapedAnnotations = new Set<AST.TSType>();
   // An injection key's type is copied as the setup's types are, into the output that declares
   // the key (ADR-0054).
   const setupReached = new Set<string>(closure(keys, table));
@@ -82,12 +73,7 @@ export function collectTypes(
       type.typeName.name === "Props";
     if (own) ownProps = true;
     else if (names.includes("Props")) foreignProps.push(type);
-    const read = readsSyntax(type, table);
-    if (!read) shapedAnnotations.add(type);
-    for (const name of names) {
-      reached.add(name);
-      if (read) syntactic.add(name);
-    }
+    for (const name of names) reached.add(name);
   }
   for (const name of reached) setupReached.delete(name);
   return {
@@ -95,8 +81,6 @@ export function collectTypes(
     declarations,
     reached,
     setupReached,
-    shaped: new Set([...reached].filter((name) => !syntactic.has(name))),
-    shapedAnnotations,
     ownProps,
     foreignProps,
     reported: new Set(),
@@ -109,58 +93,6 @@ export function collectTypes(
  */
 export function setupTypes(fn: ComponentFunction, table: TypeTable): string[] {
   return closure([fn.params.slice(1), fn.body], table);
-}
-
-/**
- * Whether a props annotation is read from the module's syntax, as ADR-0034 reads it: an object
- * type literal, or a chain of local aliases to one or to a local interface, reaching through its
- * members only the module's own declarations, without `extends` or type arguments, and arrays.
- * Anything else is read from its shape, through the type oracle (ADR-0067): an imported or
- * global type, an `extends` chain, an intersection, a union, a utility or generic type.
- */
-export function readsSyntax(annotation: AST.TSType, table: TypeTable): boolean {
-  const seen = new Set<string>();
-  let type: AST.TSType = annotation;
-  for (;;) {
-    if (type.type === "TSTypeLiteral") break;
-    if (type.type === "TSParenthesizedType") {
-      type = type.typeAnnotation;
-      continue;
-    }
-    const name =
-      type.type === "TSTypeReference" && type.typeName.type === "Identifier" && !type.typeArguments
-        ? type.typeName.name
-        : undefined;
-    const declaration = name === undefined ? undefined : table.declaration(name);
-    if (!declaration || seen.has(name!)) return false;
-    seen.add(name!);
-    if (declaration.node.type === "TSInterfaceDeclaration") break;
-    type = declaration.node.typeAnnotation;
-  }
-  let plain = true;
-  const visit = (node: unknown): void => {
-    if (!plain || !node || typeof node !== "object") return;
-    if (Array.isArray(node)) {
-      for (const item of node) visit(item);
-      return;
-    }
-    const typed = node as AST.Node;
-    if (typed.type === "TSInterfaceHeritage") plain = false;
-    if (typed.type === "TSTypeReference") {
-      const name = typed.typeName.type === "Identifier" ? typed.typeName.name : undefined;
-      const array =
-        (name === "Array" || name === "ReadonlyArray") && typed.typeArguments?.params.length === 1;
-      if (!array && (name === undefined || typed.typeArguments || !table.declaration(name))) {
-        plain = false;
-      }
-    }
-    for (const key of visitorKeys[typed.type] ?? []) {
-      visit((node as unknown as Record<string, unknown>)[key]);
-    }
-  };
-  visit(annotation);
-  for (const name of closure(annotation, table)) visit(table.declaration(name)!.node);
-  return plain;
 }
 
 /**
@@ -289,12 +221,6 @@ export function checkTypeDeclaration(
   checkDirectives({ start: node.start, end: node.end }, comments, reporter);
   // Its members are checked on the shapes of the props that reach it, which resolve what it
   // extends and imports (ADR-0067).
-  if (types.shaped.has(name)) return;
-  if (node.type === "TSInterfaceDeclaration") {
-    checkMembers(node.body.body, types, reporter);
-  } else {
-    checkType(node.typeAnnotation, types, reporter);
-  }
 }
 
 /**
@@ -439,7 +365,8 @@ export function checkType(type: AST.TSType, types: ModuleTypes, reporter: Report
         return;
       }
       if (name !== undefined && !type.typeArguments && types.table.declaration(name)) return;
-      // A props type that names any other type is read from its shape (`readsSyntax`).
+      // Any other type is one the module neither declares nor reads (a global), or one only a
+      // checker evaluates.
       if (name !== undefined && !type.typeArguments) {
         report(types, reporter, "UF6001", type, ...undeclared(name));
       } else {

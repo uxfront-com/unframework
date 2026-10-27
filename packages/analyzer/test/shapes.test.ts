@@ -181,7 +181,7 @@ describe("props types read through the type oracle", () => {
     [
       "a member of another file whose type is a function",
       {
-        "types.ts": "export interface P { onPick: () => void }",
+        "types.ts": "export interface P { pick: () => void }",
         "A.uf.tsx":
           'import type { P } from "./types.ts";\nexport function A(props: P) { return <p />; }',
       },
@@ -278,6 +278,37 @@ describe("type exports", () => {
           .diagnostics,
       ),
     ).toEqual(["UF1002", "UF1002"]);
+  });
+});
+
+describe("a spread of a setup value whose type is imported", () => {
+  it("renders the keys of the shape the type oracle resolves", async () => {
+    const source = [
+      'import { ref } from "unframework";',
+      'import type { Attrs } from "./types.ts";',
+      'export function A() { const attrs = ref<Attrs>({ id: "a" }); const more: Attrs = { id: "b" }; return <p {...attrs.value}><a {...more}>x</a></p>; }',
+    ].join("\n");
+    const { module, diagnostics } = await analyzeWith({
+      "types.ts": "export interface Attrs { id: string; title?: string }",
+      "A.uf.tsx": source,
+    });
+    expect(diagnostics).toEqual([]);
+    const spreads = JSON.stringify(only(module).render).match(/"keys":\[[^\]]*\]/g);
+    expect(
+      spreads?.map((keys) => [...keys.matchAll(/"name":"(\w+)"/g)].map(([, name]) => name)),
+    ).toEqual([
+      ["id", "title"],
+      ["id", "title"],
+    ]);
+  });
+
+  it("reports the keys as unknown without the shapes (UF3048)", () => {
+    const source = [
+      'import { ref } from "unframework";',
+      'import type { Attrs } from "./types.ts";',
+      'export function A() { const attrs = ref<Attrs>({ id: "a" }); return <p {...attrs.value}>x</p>; }',
+    ].join("\n");
+    expect(problems(source, run(source).diagnostics)).toEqual(["UF3048 {...attrs.value}"]);
   });
 });
 

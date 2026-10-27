@@ -294,15 +294,15 @@ describe("props", () => {
 });
 
 describe("props types", () => {
-  // A props type whose members name a global, utility or undeclared type is read from its shape
-  // (ADR-0067), and reports as the syntax does.
+  // Every props type is read from its shape (ADR-0067): what the default oracle cannot evaluate
+  // is named as written.
   it.each([
     ["a: () => void", "UF1002 () => void", "Function types are not supported in props"],
     ["a(): void", "UF1002 a(): void", "Function types are not supported in props"],
     [
       "[key: string]: string",
       "UF6002 [key: string]: string",
-      "An index signature needs a type checker",
+      "`[key: string]: string` needs a type checker",
     ],
     ["a: any", "UF6002 any", "`any` is not a type a prop can take"],
     ["a: unknown", "UF6002 unknown", "`unknown`"],
@@ -311,18 +311,13 @@ describe("props types", () => {
     ["a: symbol", "UF6002 symbol", "`symbol`"],
     ["a: bigint", "UF6002 bigint", "`bigint`"],
     ["a: [string, number]", "UF6002 [string, number]", "A tuple type"],
-    ["a: `x-${string}`", "UF6002 `x-${string}`", "A template literal type needs a type checker"],
+    ["a: `x-${string}`", "UF6002 `x-${string}`", "`` `x-${string}` `` needs a type checker"],
     [
       "a: Record<string, string>",
       "UF6002 Record<string, string>",
       "`Record<string, string>` needs a type checker",
     ],
     ["a: Date", "UF6001 Date", "`Date` is neither declared nor imported by this module"],
-    [
-      "a: { b: string } & { c: string }",
-      "UF6002 { b: string } & { c: string }",
-      "An intersection type is not a type a prop can take",
-    ],
     ["a: keyof X", "UF6002 keyof X", "`keyof X` needs a type checker"],
   ])("reports the member %s", (member, problem, message) => {
     const source = `interface P { ${member} }\nexport function A(props: P) { return <p />; }`;
@@ -339,6 +334,28 @@ describe("props types", () => {
   ])("accepts the members %s", (members) => {
     const source = `interface Item { name: string; items?: Item[] }\ninterface P { ${members}; item?: Item }\nexport function A(props: P) { return <p />; }`;
     expect(run(source).diagnostics).toEqual([]);
+  });
+
+  it.each([
+    ["interface I { a: string }\ntype P = I;", "P"],
+    ["type Q = { a: string };\ntype P = (Q);", "P"],
+    ["interface P { a: string }", "(P)"],
+  ])("keeps the members of %s as the props type's own, without `declaredBy`", (before, type) => {
+    const source = `${before}\nexport function A(props: ${type}) { return <p>{props.a}</p>; }`;
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    const [prop] = only(module).props;
+    expect(prop!.declaredBy).toBeUndefined();
+    expect(source.slice(prop!.span.start, prop!.span.end)).toBe("a: string");
+    expect(prop!.type.code).toBe("string");
+  });
+
+  it("accepts a member typed by an intersection of object types, as an imported one is", () => {
+    const source =
+      "interface P { a: { b: string } & { c: string } }\nexport function A(props: P) { return <p />; }";
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    expect(only(module).props[0]!.type.code).toBe("{ b: string } & { c: string }");
   });
 
   it.each([
