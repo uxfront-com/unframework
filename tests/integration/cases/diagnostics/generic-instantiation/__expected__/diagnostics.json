@@ -1,0 +1,51 @@
+[
+  {
+    "code": "UF6006",
+    "severity": "error",
+    "message": "`Tree` is generic, and cannot be a candidate of `<component is>`: no one type argument types the props of every candidate.",
+    "file": "diagnostics/generic-instantiation/Fruits.uf.tsx",
+    "start": {
+      "line": 18,
+      "column": 43,
+      "offset": 668
+    },
+    "end": {
+      "line": 18,
+      "column": 47,
+      "offset": 672
+    },
+    "help": "Render `Tree` by its own tag, which infers its type arguments from its props."
+  },
+  {
+    "code": "UF6006",
+    "severity": "error",
+    "message": "A tag cannot take type arguments: a generic component infers them from the props its consumer passes, on every target.",
+    "file": "diagnostics/generic-instantiation/Tree.uf.tsx",
+    "start": {
+      "line": 15,
+      "column": 16,
+      "offset": 511
+    },
+    "end": {
+      "line": 15,
+      "column": 19,
+      "offset": 514
+    },
+    "help": "Remove the type arguments, and pass props whose types give them.",
+    "fixes": [
+      {
+        "title": "Remove the type arguments",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 511,
+              "end": 514
+            },
+            "text": ""
+          }
+        ]
+      }
+    ]
+  }
+]

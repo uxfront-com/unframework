@@ -155,7 +155,10 @@ export function analyzeProps(
   checkDirectives(span(annotation), comments, reporter);
   // The outputs copy the annotation as written, as they copy a type declaration.
   checkCopiedText(span(annotation), source, reporter, "A props type");
-  const read = shapeMembers(annotation, types, shapes, parsed, reporter);
+  // A generic component's props may name its type parameters (ADR-0068).
+  const parameters = fn.typeParameters?.params.map((each) => each.name.name) ?? [];
+  const scoped = parameters.length ? { ...types, parameters: new Set(parameters) } : types;
+  const read = shapeMembers(annotation, scoped, shapes, parsed, reporter);
   if (!read) {
     result.failed = true;
     return result;
@@ -795,17 +798,38 @@ function ownDeclarations(annotation: AST.TSType, types: ModuleTypes): Set<string
     if (
       type.type !== "TSTypeReference" ||
       type.typeName.type !== "Identifier" ||
-      type.typeArguments ||
       names.has(type.typeName.name)
     ) {
       return names;
     }
     const declaration = types.table.declaration(type.typeName.name);
-    if (!declaration) return names;
+    if (!declaration || !ownArguments(type, declaration.node)) return names;
     names.add(type.typeName.name);
     if (declaration.node.type === "TSInterfaceDeclaration") return names;
     type = declaration.node.typeAnnotation;
   }
+}
+
+/**
+ * Whether a reference passes a declaration its own type parameters, by name and in order, as
+ * `(props: ListProps<T>)` does for `interface ListProps<T>` (ADR-0068): its members' text then
+ * reads the same where the component writes it. A reference without type arguments passes a
+ * declaration without type parameters.
+ */
+function ownArguments(
+  reference: AST.TSTypeReference,
+  declaration: AST.TSInterfaceDeclaration | AST.TSTypeAliasDeclaration,
+): boolean {
+  const passed = reference.typeArguments?.params ?? [];
+  const declared = declaration.typeParameters?.params ?? [];
+  return (
+    passed.length === declared.length &&
+    passed.every((argument, index) => {
+      if (argument.type !== "TSTypeReference" || argument.typeArguments) return false;
+      const { typeName } = argument;
+      return typeName.type === "Identifier" && typeName.name === declared[index]!.name.name;
+    })
+  );
 }
 
 /** Where a problem in a nested member's type is reported, given where its object is used. */

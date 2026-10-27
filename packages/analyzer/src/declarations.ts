@@ -42,6 +42,11 @@ export interface ModuleTypes {
    * declaration report its props' problems once.
    */
   readonly reported: Set<string>;
+  /**
+   * The type parameters of the generic component being checked (ADR-0068), which its props and
+   * its events' payloads may name.
+   */
+  readonly parameters?: ReadonlySet<string>;
 }
 
 /**
@@ -139,10 +144,10 @@ export function closure(type: unknown, table: TypeTable): string[] {
 }
 
 /**
- * Checks a top-level type declaration: declared once, generic-free, holding no text that would
- * end a script block or Astro's frontmatter, named apart from the types the outputs declare,
- * and reached by some component's props or setup, or exported. The members of a type the props
- * reach are checked by the props (`props.ts`).
+ * Checks a top-level type declaration: declared once, holding no text that would end a script
+ * block or Astro's frontmatter, named apart from the types the outputs declare, and reached by
+ * some component's props or setup, or exported. It may be generic (ADR-0068). The members of a
+ * type the props reach are checked by the props (`props.ts`).
  */
 export function checkTypeDeclaration(
   declaration: TypeDeclarationStatement,
@@ -212,12 +217,6 @@ export function checkTypeDeclaration(
     checkCopiedText({ start: node.start, end: node.end }, source, reporter, "A type declaration");
     checkDirectives({ start: node.start, end: node.end }, comments, reporter);
     return;
-  }
-  if (node.typeParameters) {
-    reporter.unsupported(
-      node.typeParameters,
-      "Generic types are not supported in props yet: they land in M5.",
-    );
   }
   checkCopiedText({ start: node.start, end: node.end }, source, reporter, "A type declaration");
   checkDirectives({ start: node.start, end: node.end }, comments, reporter);
@@ -386,6 +385,7 @@ export function checkType(
         return;
       }
       if (name !== undefined && !type.typeArguments && types.table.declaration(name)) return;
+      if (name !== undefined && !type.typeArguments && types.parameters?.has(name)) return;
       if (shaped && (type.typeArguments || (name !== undefined && shaped.has(name)))) return;
       // Any other type is one the module neither declares nor reads (a global), or one only a
       // checker evaluates.

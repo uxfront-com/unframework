@@ -57,7 +57,7 @@ import type {
 import type { AST } from "@unframework/parser";
 import { visitorKeys } from "@unframework/parser";
 
-import { inheritAttrsOption } from "./api.ts";
+import { inheritAttrsOption, withReferences } from "./api.ts";
 import type { AuthoringApi } from "./authoring.ts";
 import { Reporter } from "./context.ts";
 import { checkCopiedText, checkMembers, checkType, closure } from "./declarations.ts";
@@ -897,7 +897,13 @@ export function declareSetup(context: SetupContext): Setup {
         props = typeText(annotation);
       }
       declarations.push(
-        createSlotDeclaration(name, optional, { start: member.start, end: member.end }, props),
+        createSlotDeclaration(
+          name,
+          optional,
+          { start: member.start, end: member.end },
+          props,
+          props && withReferences(props.code).references,
+        ),
       );
     }
     // Kept even where a slot is reported: the template still renders and tests the others, and
@@ -1312,7 +1318,15 @@ export function declareSetup(context: SetupContext): Setup {
    */
   function payloadType(event: string, element: AST.TSNamedTupleMember): boolean {
     const probe = new Reporter(reporter.file);
-    const types = { table: context.types, reported: new Set<string>() } as unknown as ModuleTypes;
+    // A generic component's payloads may name its type parameters (ADR-0068).
+    const parameters = new Set(
+      context.component.typeParameters?.params.map((each) => each.name.name),
+    );
+    const types = {
+      table: context.types,
+      reported: new Set<string>(),
+      parameters,
+    } as unknown as ModuleTypes;
     const type = element.elementType as AST.TSType;
     checkType(type, types, probe);
     for (const name of closure(type, context.types)) {
