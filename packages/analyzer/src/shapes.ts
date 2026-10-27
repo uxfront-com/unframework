@@ -26,9 +26,9 @@ const API_MACROS = new Set(["defineEmits", "defineModel", "defineSlots", "useTem
 /**
  * The types a module writes whose shapes the analyser reads (ADR-0067), in source order, each
  * once: each props annotation, each type argument of `defineEmits`, `defineModel`,
- * `defineSlots` and `useTemplateRef`, each `InjectionKey<…>`'s argument, and each other annotation or type argument
- * in a function's body that names a type the module imports. What `compile()` asks the type
- * oracle for before the module is analysed.
+ * `defineSlots` and `useTemplateRef`, each `InjectionKey<…>`'s argument, and each other
+ * annotation or type argument in a function's body that names a type the module imports. What
+ * `compile()` asks the type oracle for before the module is analysed.
  */
 export function shapeQueries(parsed: ParsedModule): ShapeQuery[] {
   const imported = typeImportNames(parsed.program);

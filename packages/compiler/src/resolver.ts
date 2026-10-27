@@ -83,11 +83,13 @@ export function createFileResolver(options: FileResolverOptions): Resolver {
       stylesheets.set(specifier, sheet && stylesheetSource(sheet.path, sheet.source));
     }
     // Each type the child's API is declared with, as `compile()` reads its source's (ADR-0067).
-    // One the oracle cannot read is left out, and the child's own compile reports it.
+    // An oracle that throws makes the resolver throw, which `compile()` reports (UF9001).
     const shapes = new Map<string, TypeShape>();
     for (const query of options.typeOracle ? shapeQueries(parsed) : []) {
-      const shape = await options.typeOracle!.resolveShape(query).catch(() => undefined);
-      if (shape) shapes.set(`${query.span.start}:${query.span.end}`, shape);
+      shapes.set(
+        `${query.span.start}:${query.span.end}`,
+        await options.typeOracle!.resolveShape(query),
+      );
     }
     const key = JSON.stringify([
       child.source,

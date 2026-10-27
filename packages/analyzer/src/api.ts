@@ -9,7 +9,7 @@ import type { ApiEvent, ApiMember, ApiSlot, ComponentApi } from "@unframework/ir
 import type { AST } from "@unframework/parser";
 import { isComponentName, parseModule } from "@unframework/parser";
 import { printShape } from "@unframework/type-oracle";
-import type { ShapeMember, TypeShape } from "@unframework/type-oracle";
+import type { ShapeMember, TypeShape, UnresolvedType } from "@unframework/type-oracle";
 
 import type { AuthoringApi } from "./authoring.ts";
 import { spellsLiterals } from "./cross-component.ts";
@@ -129,7 +129,10 @@ export interface MembersContext {
  * The members of a type, read from its shape (ADR-0067): a type literal's, an interface's or an
  * alias's, with what `extends`, intersections and the utility types bring in, from this module or
  * from the files it imports. `undefined` when the type has no shape or is not an object, and, with
- * `complete`, when the oracle could not read a part of it, as an index signature.
+ * `complete`, when the oracle could not read which members it has: an index signature, a computed
+ * key, or a base or utility argument it could not resolve. A part it could not read inside a
+ * member's own signature, as `Promise<void>` in `focus(): Promise<void>`, leaves the member's
+ * name known, and counts for nothing here.
  */
 export function typeMembers(
   type: AST.TSType,
@@ -138,7 +141,15 @@ export function typeMembers(
 ): readonly TypeMember[] | undefined {
   const shape = context.shapes({ start: type.start, end: type.end });
   const root = shape?.nodes[shape.root];
-  if (!shape || root?.kind !== "object" || (complete && shape.unresolved.length)) return undefined;
+  if (!shape || root?.kind !== "object") return undefined;
+  const inMember = (entry: UnresolvedType) =>
+    root.members.some(
+      (member) =>
+        member.file === entry.file &&
+        member.span.start <= entry.span.start &&
+        entry.span.end <= member.span.end,
+    );
+  if (complete && !shape.unresolved.every(inMember)) return undefined;
   return root.members.flatMap((member) => {
     const text = memberText(member, shape, context);
     if (text === undefined) return [];

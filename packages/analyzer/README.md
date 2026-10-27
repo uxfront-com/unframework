@@ -56,11 +56,12 @@ checked as the declaration its likely fix writes (`analyze.ts`).
   any module but the authoring API and a framework is a `typeImports` entry, which every output
   re-imports by name; `export type { … } from` is a `typeExports` re-export. The analyser is
   synchronous, so `shapeQueries(parsed)` lists the types whose shapes it reads (each props
-  annotation, each type argument of `defineEmits`, `defineModel` and `defineSlots`, each
-  `InjectionKey<…>`'s argument, and each annotation or type argument in a function's body that
-  names an imported type), and `analyze(parsed, { shapes })` takes them, as the compiler's oracle
-  resolved them. Without `shapes` it reads the module's own declarations (`localShapes`), and an
-  imported type is UF6001. The shapes reach the API, setup and render contexts.
+  annotation, each type argument of `defineEmits`, `defineModel`, `defineSlots` and
+  `useTemplateRef`, each `InjectionKey<…>`'s argument, and each annotation or type argument in a
+  function's body that names an imported type), and `analyze(parsed, { shapes })` takes them, as
+  the compiler's oracle resolved them. Without `shapes` it reads the module's own declarations
+  (`localShapes`), and an imported type is UF6001. The shapes reach the API, setup and render
+  contexts.
 - **The authoring API** (`authoring.ts`): named imports from `"unframework"`, recognised by the
   binding each declares (ADR-0006), as the package exports them (a test reads its `index.ts`).
   Anything else is UF2016.

@@ -202,14 +202,18 @@ async function outputFiles(): Promise<Map<string, string[]>> {
     for (const source of info.sources) {
       const text = readFileSync(source.source, "utf8");
       const typeOracle = caseOracle(info, harness.casesDir, { filename: source.filename, text });
-      const result = await compile(text, {
-        filename: source.filename,
-        targets: [target as TargetName],
-        plugins: canaryPlugins(canary, target),
-        resolve: caseResolver(info, harness.casesDir, typeOracle),
-        typeOracle,
-      });
-      await typeOracle.dispose();
+      let result: Awaited<ReturnType<typeof compile>>;
+      try {
+        result = await compile(text, {
+          filename: source.filename,
+          targets: [target as TargetName],
+          plugins: canaryPlugins(canary, target),
+          resolve: caseResolver(info, harness.casesDir, typeOracle),
+          typeOracle,
+        });
+      } finally {
+        await typeOracle.dispose();
+      }
       for (const file of result.outputs[target] ?? []) {
         const path = join(directory, file.path);
         writeIfChanged(path, file.contents);
