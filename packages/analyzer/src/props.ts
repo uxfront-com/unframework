@@ -12,6 +12,7 @@ import {
   createPropsParameter,
   createTypeText,
   isIdentifier,
+  RESERVED_TYPE_NAMES,
   reservedPropName,
   reservedPropsParameterName,
 } from "@unframework/ir";
@@ -261,8 +262,9 @@ export function analyzeProps(
 
 /**
  * Checks a generic component's type parameters (ADR-0068), which the outputs copy as written into
- * each target's generic form: each named once and apart from the module's types, without
- * `const`, and each constraint and default a type the props could take, safe to copy.
+ * each target's generic form: each named once, as a type is named, and apart from the module's
+ * types and the types the outputs declare, without `const`, and each constraint and default
+ * safe to copy and checked as the syntax reads a setup's types (members it reaches are not).
  */
 export function checkTypeParameters(
   fn: ComponentFunction,
@@ -296,6 +298,24 @@ export function checkTypeParameters(
       );
     }
     names.add(name);
+    if (!isIdentifier(name)) {
+      reporter.unsupported(
+        parameter.name,
+        `\`${name}\` is not written in ASCII letters, digits, \`_\` and \`$\`: the outputs name types as Angular's templates read names.`,
+        { help: "Rename the type parameter." },
+      );
+    }
+    const clash = RESERVED_TYPE_NAMES.get(name);
+    if (clash) {
+      reporter.report(
+        "UF2003",
+        parameter.name,
+        `A type parameter cannot be named \`${name}\`: ${clash}.`,
+        {
+          help: "Rename the type parameter.",
+        },
+      );
+    }
     if (parameter.const) {
       reporter.unsupported(
         { start: parameter.start, end: parameter.start + "const".length },
@@ -310,7 +330,7 @@ export function checkTypeParameters(
       if (!type) continue;
       checkDirectives(span(type), comments, reporter);
       checkCopiedText(span(type), source, reporter, what);
-      // Checked as a prop's type is, as the syntax reads it.
+      // Checked as the syntax reads a setup's types: its members are not.
       const probe = new Reporter(reporter.file);
       checkType(type, scoped, probe, shaped);
       for (const diagnostic of probe.diagnostics) {

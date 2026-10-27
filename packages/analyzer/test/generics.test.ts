@@ -145,10 +145,28 @@ describe("type parameters", () => {
       ["UF1002 const"],
     ],
     ["export function A<T, T>(props: { v: T }) { return <p />; }", ["UF1002 T"]],
+    ["export function A<Ü>(props: { v: Ü }) { return <p />; }", ["UF1002 Ü"]],
+    ["export function A<Props>(props: { v: Props }) { return <p />; }", ["UF2003 Props"]],
+    [
+      "export function A<T extends { /* @ts-ignore */ id: string }>(props: { v: T }) { return <p />; }",
+      ["UF1002 /* @ts-ignore */"],
+    ],
+    [
+      "export function A<T = { /* @ts-ignore */ id: string }>(props: { v: T }) { return <p />; }",
+      ["UF1002 /* @ts-ignore */"],
+    ],
   ])("reports the type parameters of %j", (source, expected) => {
     const { module, diagnostics } = run(source);
     expect(problems(source, diagnostics)).toEqual(expected);
     expect(module?.components ?? []).toEqual([]);
+  });
+
+  // Without the compiler's shapes, an imported type is unresolved: reported once, where it is
+  // imported (`compile()` resolves it, in the compiler's tests).
+  it("reads a constraint's imported type as the props read one", () => {
+    const source =
+      'import type { Item } from "./types.ts";\nexport function A<T extends Item>(props: { items: T[] }) { return <p>{props.items.length}</p>; }';
+    expect(codes(run(source).diagnostics)).toEqual(["UF6001"]);
   });
 
   it("accepts a constraint that names another type parameter", () => {
@@ -179,7 +197,7 @@ describe("generic instantiation (UF6006)", () => {
     const { module, diagnostics } = run(source);
     expect(problems(source, diagnostics)).toEqual([`UF6006 ${at}`]);
     expect(diagnostics[0]!.message).toBe(
-      "A tag cannot take type arguments: no target's template writes them, and a generic component infers them from the props its consumer passes.",
+      "A tag cannot take type arguments: several targets' templates cannot write them, and a generic component infers them from the props its consumer passes.",
     );
     expect(module?.components.some((each) => each.name === "A")).toBe(false);
     expect(applyAndRecheck(source, diagnostics)).not.toContain("<string>");

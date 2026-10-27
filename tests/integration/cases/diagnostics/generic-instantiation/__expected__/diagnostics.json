@@ -2,7 +2,7 @@
   {
     "code": "UF6006",
     "severity": "error",
-    "message": "A tag cannot take type arguments: no target's template writes them, and a generic component infers them from the props its consumer passes.",
+    "message": "A tag cannot take type arguments: several targets' templates cannot write them, and a generic component infers them from the props its consumer passes.",
     "file": "diagnostics/generic-instantiation/Fruits.uf.tsx",
     "start": {
       "line": 21,
@@ -51,7 +51,7 @@
   {
     "code": "UF6006",
     "severity": "error",
-    "message": "A tag cannot take type arguments: no target's template writes them, and a generic component infers them from the props its consumer passes.",
+    "message": "A tag cannot take type arguments: several targets' templates cannot write them, and a generic component infers them from the props its consumer passes.",
     "file": "diagnostics/generic-instantiation/Tree.uf.tsx",
     "start": {
       "line": 15,
