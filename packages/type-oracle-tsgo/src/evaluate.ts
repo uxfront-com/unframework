@@ -17,6 +17,7 @@ import type {
 import { ModifierFlags, SyntaxKind } from "typescript/unstable/ast";
 import type { Node } from "typescript/unstable/ast";
 import {
+  isExpressionWithTypeArguments,
   isIdentifier,
   isInterfaceDeclaration,
   isMethodSignatureDeclaration,
@@ -24,6 +25,7 @@ import {
   isPropertyDeclaration,
   isPropertySignatureDeclaration,
   isQualifiedName,
+  isTypeQueryNode,
   isTypeAliasDeclaration,
   isTypeReferenceNode,
 } from "typescript/unstable/ast/is";
@@ -43,9 +45,12 @@ export interface EvaluateContext {
   fileOf(fileName: string): string | undefined;
   /** The query's own file, which `dependencies` leaves out. */
   file: string;
+  /** The type node at a span of a root-relative file. */
+  nodeAt(file: string, span: Span): Node | undefined;
 }
 
 /** The checker's `CheckFlags`, which `typescript/unstable/sync` does not export. */
+const CHECK_SYNTHETIC = 1 << 1;
 const CHECK_READONLY = 1 << 3;
 const CHECK_MAPPED = 1 << 18;
 
@@ -99,8 +104,13 @@ export function evaluate(shape: TypeShape, queried: Type, context: EvaluateConte
     if (node.kind === "opaque") {
       if (!open.has(keyOf(node))) return id;
       const converted = converter.convert(type, optional, node);
-      if (converted !== undefined) replaced.add(keyOf(node));
-      return converted ?? id;
+      if (converted === undefined) return id;
+      replaced.add(keyOf(node));
+      const written = node.file.startsWith("pkg:")
+        ? undefined
+        : context.nodeAt(node.file, node.span);
+      if (written) converter.read(written);
+      return converted;
     }
     const each = parts(type, optional);
     const sole = each.length === 1 ? each[0] : undefined;
@@ -267,10 +277,6 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
     }
     if (type.isTypeReference() && checker.isTupleType(type)) return tuple(type);
     if (type.isObjectType()) {
-      const symbol = type.getSymbol();
-      if (symbol && symbol.flags & (SymbolFlags.Class | SymbolFlags.Enum)) {
-        throw new Unrepresentable();
-      }
       const calls = checker.getSignaturesOfType(type, SignatureKind.Call);
       if (calls.length) {
         if (calls.length !== 1 || checker.getPropertiesOfType(type).length) {
@@ -280,9 +286,7 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
       }
       return object(type);
     }
-    if (type.isIntersectionType() && type.getTypes().every((part) => part.isObjectType())) {
-      return object(type);
-    }
+    if (type.isIntersectionType()) return object(type);
     // Index, indexed-access, conditional and substitution types left generic, template literals
     // and string mappings that keep a hole, enums, unique symbols and bigint literals.
     throw new Unrepresentable();
@@ -337,19 +341,32 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
     return id;
   };
 
-  const object = (type: Type): number => {
-    if (checker.getIndexInfosOfType(type).length) throw new Unrepresentable();
+  /** Throws for an object type, or a part of an intersection, a shape cannot hold. */
+  const representable = (type: Type) => {
+    if (!type.isObjectType()) throw new Unrepresentable();
+    const symbol = type.getSymbol();
+    if (symbol && symbol.flags & (SymbolFlags.Class | SymbolFlags.Enum)) {
+      throw new Unrepresentable();
+    }
     // A mapped type over keys that are still generic (`keyof T`, `keyof T | "a"`) lists only
     // the keys it knows; the checker writes it, alias expanded, as a mapped type only then.
     if (
-      type.isObjectType() &&
       type.objectFlags & ObjectFlags.Mapped &&
       checker.typeToTypeNode(type, undefined, NodeBuilderFlags.InTypeAlias)?.kind ===
         SyntaxKind.MappedType
     ) {
       throw new Unrepresentable();
     }
-    if (checker.getSignaturesOfType(type, SignatureKind.Construct).length) {
+  };
+
+  const object = (type: Type): number => {
+    // An intersection's members are read only when each of its parts could be.
+    for (const part of type.isIntersectionType() ? type.getTypes() : [type]) representable(part);
+    if (checker.getIndexInfosOfType(type).length) throw new Unrepresentable();
+    if (
+      checker.getSignaturesOfType(type, SignatureKind.Construct).length ||
+      checker.getSignaturesOfType(type, SignatureKind.Call).length
+    ) {
       throw new Unrepresentable();
     }
     const named = type.getAliasSymbol() ?? type.getSymbol();
@@ -391,8 +408,9 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
         ? node
         : undefined;
     // A mapped type's member takes its modifiers (`readonly`, `-readonly`) and its type from
-    // the mapping: its declaration's are not its own.
-    const mapped = (property.checkFlags & CHECK_MAPPED) !== 0;
+    // the mapping, and an intersection's from all its parts (readonly only when each part makes
+    // it so): its first declaration's are not its own.
+    const mapped = (property.checkFlags & (CHECK_MAPPED | CHECK_SYNTHETIC)) !== 0;
     const readonly =
       (property.checkFlags & CHECK_READONLY) !== 0 ||
       (!mapped && ((written?.modifierFlags ?? 0) & ModifierFlags.Readonly) !== 0);
@@ -413,9 +431,7 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
     const source = node.getSourceFile();
     const file = context.fileOf(source.fileName);
     if (file === undefined) throw new Unrepresentable();
-    if (file !== context.file) {
-      dependencies.add(file.startsWith("pkg:") ? packageOf(file) : file);
-    }
+    depend(file);
     const owner = ownerOf(node);
     return {
       name: property.name,
@@ -465,7 +481,43 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
     };
   };
 
+  const depend = (file: string) => {
+    if (file !== context.file) dependencies.add(file.startsWith("pkg:") ? packageOf(file) : file);
+  };
+
+  /**
+   * Adds the files of every declaration a construct's text reaches, through the names it
+   * references, to `dependencies`: `keyof X` reads `X`'s file and the files `X` reads, though
+   * its result has no member to name them.
+   */
+  const read = (written: Node) => {
+    const declarations = (symbol: Symbol | undefined) => {
+      if (!symbol || visited.has(symbol.id)) return;
+      visited.add(symbol.id);
+      const target = symbol.flags & SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
+      if (target !== symbol) return declarations(target);
+      for (const handle of symbol.declarations) {
+        const node = handle.resolve();
+        const file = node && context.fileOf(node.getSourceFile().fileName);
+        if (!node || file === undefined) continue;
+        depend(file);
+        visit(node);
+      }
+    };
+    const visit = (node: Node): void => {
+      if (isTypeReferenceNode(node)) declarations(checker.getSymbolAtLocation(node.typeName));
+      else if (isTypeQueryNode(node)) declarations(checker.getSymbolAtLocation(node.exprName));
+      else if (isExpressionWithTypeArguments(node)) {
+        declarations(checker.getSymbolAtLocation(node.expression));
+      }
+      node.forEachChild(visit);
+    };
+    visit(written);
+  };
+  const visited = new Set<number>();
+
   return {
+    read,
     /** The node for `type`, or `undefined`, with nothing added, when a shape cannot hold it. */
     convert(type: Type, optional: boolean, opaque: OpaqueNode): number | undefined {
       const mark = nodes.length;
@@ -485,10 +537,11 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
   };
 }
 
-/** `pkg:<name>` for a package's file, `pkg:<name>/<path>`. */
+/** `pkg:<name>` for a package's file, `pkg:<name>/<path>` or `pkg:<name>@<version>/<path>`. */
 function packageOf(file: string): string {
   const segments = file.slice("pkg:".length).split("/");
-  return `pkg:${segments[0]!.startsWith("@") ? `${segments[0]}/${segments[1]}` : segments[0]}`;
+  const name = segments[0]!.startsWith("@") ? `${segments[0]}/${segments[1]}` : segments[0]!;
+  return `pkg:${name.replace(/(?<=.)@[^@/]*$/, "")}`;
 }
 
 /** The type names the type references in some nodes reference, each once, in source order. */

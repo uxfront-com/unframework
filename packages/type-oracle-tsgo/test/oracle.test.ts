@@ -38,15 +38,19 @@ const reasons = (shape: TypeShape) => shape.unresolved.map((entry) => entry.reas
 const KIND = 'type Kind<T> = T extends string ? "text" : "other";';
 
 describe("tsgo adapter", () => {
+  // The root is a directory of `base`, so a test can write a file outside it.
+  let base: string;
   let root: string;
   let oracles: TypeOracle[];
   beforeEach(async () => {
-    root = await realpath(await mkdtemp(join(tmpdir(), "uf-tsgo-")));
+    base = await realpath(await mkdtemp(join(tmpdir(), "uf-tsgo-")));
+    root = join(base, "root");
+    await mkdir(root);
     oracles = [];
   });
   afterEach(async () => {
     for (const oracle of oracles) await oracle.dispose();
-    await rm(root, { recursive: true, force: true });
+    await rm(base, { recursive: true, force: true });
   });
 
   const open = () => {
@@ -57,6 +61,10 @@ describe("tsgo adapter", () => {
   const put = async (file: string, source: string) => {
     await mkdir(dirname(join(root, file)), { recursive: true });
     await writeFile(join(root, file), source);
+  };
+  const pkg = async (directory: string, name: string, version: string, types: string) => {
+    await put(`${directory}/package.json`, JSON.stringify({ name, version, types: "index.d.ts" }));
+    await put(`${directory}/index.d.ts`, types);
   };
   /** Writes `file`, `prelude` then `export function <head>(props: <type>) {}`. */
   const component = async (type: string, prelude = "", head = "A", file = "A.uf.tsx") => {
@@ -84,6 +92,7 @@ describe("tsgo adapter", () => {
 
       await oracle.dispose();
       await exited(checker);
+      expect(started()).toEqual([]);
     });
 
     it("stops when a package changes, and starts again for the next query", async () => {
@@ -215,6 +224,45 @@ describe("tsgo adapter", () => {
       ],
       ["a lib type", "", '{ [K in "a"]: Date }', "(unresolved)"],
       ["a lib alias, whose file has no name (P8)", "", 'Record<"x", string>', "(unresolved)"],
+      ["a construct signature", "", '{ [K in "a"]: { new (): object } }', "(unresolved)"],
+      [
+        "a callable intersection",
+        "",
+        '{ [K in "a"]: ((x: number) => void) & { b: 1 } }',
+        "(unresolved)",
+      ],
+      [
+        "a generic mapped part of an intersection",
+        "",
+        '{ a: { z: Partial<T> & { y: string } }["z"] }',
+        "{ a: (unresolved) }",
+        "A<T>",
+      ],
+      [
+        "a generic mapped part of an intersection, after another part",
+        "",
+        '{ a: { z: { y: string } & Partial<T> }["z"] }',
+        "{ a: (unresolved) }",
+        "A<T>",
+      ],
+      [
+        "a class in an intersection, after another part",
+        'class C { private p = 1; protected q = 1; r = "" }',
+        '{ a: { z: { y: string } & C }["z"] }',
+        "{ a: (unresolved) }",
+      ],
+      [
+        "a class in an intersection",
+        'class C { private p = 1; protected q = 1; r = "" }',
+        '{ a: { z: C & { y: string } }["z"] }',
+        "{ a: (unresolved) }",
+      ],
+      [
+        "a member declared outside the root, in no named declaration",
+        'import { o } from "../outside.ts";',
+        '{ [K in "a"]: typeof o }',
+        "(unresolved)",
+      ],
       [
         "a type that expands without end",
         "type Wrap<T> = { inner: Wrap<[T]> };",
@@ -222,6 +270,7 @@ describe("tsgo adapter", () => {
         "(unresolved)",
       ],
     ])("%s", async (_, prelude, type, expected, head = "A") => {
+      await writeFile(join(base, "outside.ts"), "export declare const o: { o: string };\n");
       const shape = await resolve(type, prelude, head);
       expect(canonical(shape)).toBe(expected);
       expect(reasons(shape)).toEqual(["unsupported"]);
@@ -238,6 +287,29 @@ describe("tsgo adapter", () => {
       expect(canonical(shape)).toBe('{ a: (unresolved); c: "text" }');
       expect(reasons(shape)).toEqual(["conflict"]);
     });
+  });
+
+  it.each([
+    ["{ readonly x: string } & { x: string }", "{ a: { x: string } }"],
+    ["{ x: string } & { readonly x: string }", "{ a: { x: string } }"],
+    ["{ readonly x: string } & { readonly x: string }", "{ a: { readonly x: string } }"],
+  ])(
+    "makes an intersection's member readonly only when each part does: %s",
+    async (parts, expected) => {
+      const shape = await resolve(`{ a: { z: ${parts} }["z"] }`);
+      expect(canonical(shape)).toBe(expected);
+      const object = shape.nodes[shape.root]!;
+      const inner = object.kind === "object" ? shape.nodes[object.members[0]!.type] : undefined;
+      expect(inner?.kind === "object" && inner.members[0]!.typeText).toBeUndefined();
+    },
+  );
+
+  it("lists the files a construct reads, though its result names none", async () => {
+    await put("X.ts", 'import type { Y } from "./Y.ts";\nexport type X = Y;\n');
+    await put("Y.ts", "export interface Y { p: string; q: string }\n");
+    const shape = await resolve('{ a: keyof X; b: X["p"] }', 'import type { X } from "./X.ts";');
+    expect(canonical(shape)).toBe('{ a: "p" | "q"; b: string }');
+    expect(shape.dependencies).toEqual(["X.ts", "Y.ts"]);
   });
 
   describe("names where a member comes from", () => {
@@ -346,6 +418,57 @@ describe("tsgo adapter", () => {
         "pkg:z/__gen/types.d.ts",
       ]);
       expect(shape.dependencies).toEqual(["pkg:@scope/x", "pkg:kit", "pkg:z"]);
+    });
+  });
+
+  describe("names a package's copies as the syntactic adapter does", () => {
+    beforeEach(async () => {
+      await pkg("node_modules/twin", "twin", "1.0.0", "export interface Twin { v1: string }\n");
+      await pkg(
+        "node_modules/user",
+        "user",
+        "1.0.0",
+        'import type { Twin } from "twin";\nexport interface Uses { twin: Twin }\n',
+      );
+      await pkg(
+        "node_modules/user/node_modules/twin",
+        "twin",
+        "2.0.0",
+        "export interface Twin { v2: string }\n",
+      );
+      await pkg(
+        "node_modules/ui-deep",
+        "ui-deep",
+        "1.0.0",
+        'import type { DeepBase } from "@deep/tokens";\nexport interface DeepProps extends DeepBase { tone: string }\n',
+      );
+      await pkg(
+        "node_modules/ui-deep/node_modules/@deep/tokens",
+        "@deep/tokens",
+        "2.0.0",
+        "export interface DeepBase { id: string }\n",
+      );
+    });
+
+    it("leaves a copy other than the root's unnamed", async () => {
+      const prelude = `${KIND}\nimport type { Uses } from "user";`;
+      const shape = await resolve("{ a: Kind<string> extends string ? Uses : never }", prelude);
+      expect(canonical(shape)).toBe("{ a: (unresolved) }");
+    });
+
+    it("names a copy the root resolves none of by its version", async () => {
+      const prelude = `${KIND}\nimport type { DeepProps } from "ui-deep";`;
+      const shape = await resolve(
+        "{ a: Kind<string> extends string ? DeepProps : never }",
+        prelude,
+      );
+      expect(canonical(shape)).toBe("{ a: { id: string; tone: string } }");
+      const object = shape.nodes[shape.root]!;
+      const deep = object.kind === "object" ? shape.nodes[object.members[0]!.type] : undefined;
+      expect(
+        deep?.kind === "object" && deep.members.map((member) => member.file).toSorted(),
+      ).toEqual(["pkg:@deep/tokens@2.0.0/index.d.ts", "pkg:ui-deep/index.d.ts"]);
+      expect(shape.dependencies).toEqual(["pkg:@deep/tokens", "pkg:ui-deep"]);
     });
   });
 

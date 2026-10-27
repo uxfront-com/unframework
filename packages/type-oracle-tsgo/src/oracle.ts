@@ -1,4 +1,4 @@
-import { existsSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { relative } from "node:path";
 
@@ -82,21 +82,34 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
   };
 
   /**
-   * A file as a shape names it: relative to the root, or `pkg:<name>/<path>` in a package the
-   * root installs. A file outside the root, such as tsgo's own lib, has no name (P8).
+   * A file as a shape names it: relative to the root, or in a package as the syntactic adapter
+   * names it. A file outside the root, such as tsgo's own lib, has no name (P8).
    */
   const fileOf = (fileName: string): string | undefined => {
     const base = roots.find((each) => fileName.startsWith(`${each}/`));
     if (base === undefined) return undefined;
     const path = relative(base, fileName);
     const modules = path.lastIndexOf("node_modules/");
-    if (modules === -1) return path;
-    const installed = path.slice(modules + "node_modules/".length);
-    if (!installed.startsWith("@types/")) return `pkg:${installed}`;
+    return modules === -1 ? path : packageFile(base, path, modules + "node_modules/".length);
+  };
+
+  /**
+   * `pkg:<name>/<path>` for the copy of a package the root resolves, and `undefined` for any
+   * other copy of it, which is not surely the one the name means. A package the root resolves no
+   * copy of, a dependency's own dependency, is `pkg:<name>@<version>/<path>`.
+   */
+  const packageFile = (base: string, path: string, at: number): string | undefined => {
+    const segments = path.slice(at).split("/");
+    const length = segments[0]!.startsWith("@") ? 2 : 1;
+    const installed = segments.slice(0, length).join("/");
+    const inner = segments.slice(length).join("/");
     // DefinitelyTyped's `@types/x` types `x`, and `@types/scope__x` types `@scope/x`.
-    const [name, ...rest] = installed.slice("@types/".length).split("/");
-    const typed = name!.includes("__") ? `@${name!.replace("__", "/")}` : name!;
-    return `pkg:${[typed, ...rest].join("/")}`;
+    const typed = installed.startsWith("@types/") ? installed.slice("@types/".length) : installed;
+    const name = typed.includes("__") ? `@${typed.replace("__", "/")}` : typed;
+    const directory = `${base}/${path.slice(0, at)}${installed}`;
+    const own = realpathOrUndefined(`${root}/node_modules/${installed}`);
+    if (own === undefined) return `pkg:${name}@${versionOf(directory)}/${inner}`;
+    return own === realpathOrUndefined(directory) ? `pkg:${name}/${inner}` : undefined;
   };
 
   const resolveShape = async (query: ShapeQuery): Promise<TypeShape> => {
@@ -107,7 +120,11 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
     const source = program.getSourceFile(`${root}/${query.file}`);
     const node = source && typeNodeAt(source, query.span);
     const type = node && checker.getTypeFromTypeNode(node);
-    return type ? evaluate(shape, type, { checker, fileOf, file: query.file }) : shape;
+    const nodeAt = (file: string, span: Span) => {
+      const written = program.getSourceFile(`${root}/${file}`);
+      return written && typeNodeAt(written, span);
+    };
+    return type ? evaluate(shape, type, { checker, fileOf, file: query.file, nodeAt }) : shape;
   };
 
   return {
@@ -147,6 +164,26 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
       await syntactic.dispose();
     },
   };
+}
+
+function realpathOrUndefined(path: string): string | undefined {
+  try {
+    return realpathSync(path);
+  } catch {
+    return undefined;
+  }
+}
+
+/** The `version` in a package directory's `package.json`, or `""` when it has none. */
+function versionOf(directory: string): string {
+  try {
+    const manifest: unknown = JSON.parse(readFileSync(`${directory}/package.json`, "utf8"));
+    const version =
+      typeof manifest === "object" && manifest && "version" in manifest && manifest.version;
+    return typeof version === "string" ? version : "";
+  } catch {
+    return "";
+  }
 }
 
 /** The outermost type node at exactly `span`. */

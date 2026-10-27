@@ -14,16 +14,22 @@ loads TypeScript's API: `typescript/unstable/sync`, pinned exactly at 7.0.2 by t
   `unresolved` goes with it. A part reached only through a union keeps its entry, since which
   of the union's parts it belongs to is not sure. A part whose result holds anything a shape
   cannot hold stays opaque and `unresolved` as a whole: index signatures, overloads, generic and
-  construct signatures, accessors, classes and enums, symbol keys, a mapped type over keys that
-  are still generic (`keyof T`), a type that expands without end, lib types such as `Date`, and
-  anything declared outside `root`, whose file a shape cannot name without the machine (P8).
+  construct signatures, an object that can also be called, accessors, classes and enums, symbol
+  keys, a mapped type over keys that are still generic (`keyof T`), an intersection with any such
+  part, a type that expands without end, lib types such as `Date`, anything declared outside
+  `root`, whose file a shape cannot name without the machine (P8), and a copy of a package
+  other than the one the root resolves.
 - **What it keeps.** Every other answer is the syntactic adapter's: members' origins,
   `construction`, `dependencies` and which packages it reads. So both adapters pass the same
   contract, and a props type resolves alike under either unless it needs the checker. A member
-  tsgo evaluates names the declaration it comes from, and its file joins `dependencies`. A
-  member a mapped type makes takes its modifiers and type from the mapping, so it keeps the
-  declaration it maps but no `typeText`. One made from keys alone has no declaration, and is
-  placed at the mapped type.
+  tsgo evaluates names the declaration it comes from, and its file joins `dependencies`, as do
+  the files of every declaration the evaluated construct's text reaches (`keyof X` reads `X`'s
+  file and what `X` reads). A package's file is named as the syntactic adapter names it,
+  `pkg:<name>/<path>`, or `pkg:<name>@<version>/<path>` for a package the root resolves no copy
+  of. A member a mapped type makes takes its modifiers and type from the mapping, and an
+  intersection's member from all its parts (readonly only when each part makes it so), so it
+  keeps the declaration it comes from but no `typeText`. One a mapped type makes from keys alone
+  has no declaration, and is placed at the mapped type.
 - **The checker** is a tsgo process over a project of every TypeScript file under `root`, with
   `strict`, `moduleResolution: "bundler"` and `jsx: "preserve"`, served from memory so the root
   needs no tsconfig. The first query that needs the checker starts it, a query the syntactic
