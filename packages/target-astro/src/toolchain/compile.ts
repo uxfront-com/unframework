@@ -10,7 +10,11 @@ import type {
   ToolchainFile,
   ToolchainMessage,
 } from "@unframework/codegen";
-import { assertFilesToCompile, resolveInstalled } from "@unframework/codegen/toolchain-node";
+import {
+  assertFilesToCompile,
+  compileScriptModules,
+  resolveInstalled,
+} from "@unframework/codegen/toolchain-node";
 
 const COMPILER = "@astrojs/compiler-rs";
 
@@ -24,6 +28,9 @@ const COMPILER = "@astrojs/compiler-rs";
  * Two of Astro's inputs need a Vite server and are left out: `preprocessedStyles` (Vite's CSS
  * pipeline, which is what reports CSS syntax errors) and the project's `site`.
  *
+ * A `.ts` module beside the components, a shared module (ADR-0070) or a composable's
+ * (ADR-0069), is no Astro file: Vite's TypeScript transform checks it (`compileScriptModules`).
+ *
  * Rejects when the compiler is not the version the project's `astro` depends on.
  */
 export async function astroFrameworkCompile(
@@ -33,8 +40,8 @@ export async function astroFrameworkCompile(
   assertFilesToCompile(files);
   assertCompilerMatchesAstro(context.root);
   const { transform } = await import("@astrojs/compiler-rs");
-  const results = new Map<string, FrameworkCompileResult>();
-  for (const file of files) {
+  const results = await compileScriptModules(files.filter((file) => file.path.endsWith(".ts")));
+  for (const file of files.filter((each) => !each.path.endsWith(".ts"))) {
     const result: FrameworkCompileResult = { errors: [], warnings: [] };
     try {
       const output = transform(file.contents, transformOptions(file.path, context.root));

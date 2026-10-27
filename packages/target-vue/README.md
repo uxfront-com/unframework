@@ -156,13 +156,17 @@ For tests and tooling (the target's main entry never loads it):
   plain strings, as on every other target. The checks:
   - L3 runs `@vue/compiler-sfc` the way plugin-vue does, for the DOM and for SSR, and reports
     every error and warning with its position. It refuses `NODE_ENV=production`, which silences
-    them.
+    them. `compileScript` reads the files it was given, so `defineProps<X>()` resolves an `X`
+    imported from a `.ts` module or another `.vue` file of the tree (ADR-0067). A `.ts` module,
+    a shared one (ADR-0070) or a composable's (ADR-0069), goes through Vite's TypeScript
+    transform instead.
   - L4 runs vue-tsc with `strictTemplates`, from the toolchain directory, once over every file.
     `tests/toolchains/vue/tsconfig.json` allows `data-*` and the few HTML attributes Vue's
     element types lack.
   - L5 (ADR-0042) runs oxlint's shared baseline over the script block and ESLint with
     eslint-plugin-vue over the whole file, with typescript-eslint's `no-unused-vars`, which
-    oxlint does not run on a `.vue` file. No rule is off for M2.
+    oxlint does not run on a `.vue` file. No rule is off for M2. A `.ts` module is oxlint's
+    alone.
 - **`…/toolchain/client`**: mounts with `createApp`, through a render function that passes the
   props from a shallow reactive object, and the test's listeners beside them as Vue's listener
   props (`onChange` for an event `change`), only for the events the component declares, so a

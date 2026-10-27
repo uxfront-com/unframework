@@ -202,6 +202,56 @@ describe("vue frameworkCompile", () => {
     expect(results.get("/virtual/Bad.vue")!.errors.length).toBeGreaterThan(0);
   });
 
+  // As @vitejs/plugin-vue, compileScript reads the files a `defineProps<X>()` imports `X` from,
+  // here from the output tree it was given: a `.ts` module and another `.vue` file (ADR-0067).
+  it("resolves defineProps' type from the output tree's modules and components", async () => {
+    const card = [
+      `<script setup lang="ts">`,
+      `import type { CardProps } from "./types";`,
+      `import type { BadgeProps } from "./Badge.vue";`,
+      `const { title, tone } = defineProps<CardProps & Pick<BadgeProps, "tone">>();`,
+      `</script>`,
+      ``,
+      `<template>`,
+      `  <article :data-tone="tone">{{ title }}</article>`,
+      `</template>`,
+      ``,
+    ].join("\n");
+    const badge = [
+      `<script setup lang="ts">`,
+      `export interface BadgeProps {`,
+      `  tone?: "info" | "danger";`,
+      `}`,
+      `const { tone } = defineProps<BadgeProps>();`,
+      `</script>`,
+      ``,
+      `<template>`,
+      `  <span>{{ tone }}</span>`,
+      `</template>`,
+      ``,
+    ].join("\n");
+    const types = [
+      `interface Base {`,
+      `  title: string;`,
+      `  subtitle?: string;`,
+      `}`,
+      ``,
+      `export interface CardProps extends Omit<Base, "subtitle"> {}`,
+      ``,
+    ].join("\n");
+    const results = await toolchain.frameworkCompile(
+      [
+        { path: "/virtual/types/Card.vue", contents: card },
+        { path: "/virtual/types/Badge.vue", contents: badge },
+        { path: "/virtual/types/types.ts", contents: types },
+      ],
+      context,
+    );
+    for (const [path, result] of results) {
+      expect(result, path).toEqual({ errors: [], warnings: [] });
+    }
+  });
+
   it("rejects a compile over no files", async () => {
     await expect(toolchain.frameworkCompile([], context)).rejects.toThrow(
       "frameworkCompile received no files: a check over nothing proves nothing.",

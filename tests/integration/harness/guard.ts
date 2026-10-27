@@ -11,7 +11,7 @@ import type { CompileEvent } from "@unframework/unplugin/vite";
 import { ROOT } from "./paths.ts";
 
 /**
- * Compares a compile's files with `__output__/<target>/` next to the `.uf.tsx`. Returns the
+ * Compares a compile's files with `__output__/<target>/` next to its source. Returns the
  * failure message, or nothing when the files match exactly (no missing, extra or different file).
  * In a case of several sources, whose compiles share that directory (ADR-0057), a compile is
  * judged on the files it produced, so a child's module is judged against its own files; the
@@ -26,7 +26,8 @@ export function goldenGuard(
   const rel = (path: string) => relative(root, path).split(sep).join("/");
   const golden = existsSync(directory) ? listFiles(directory) : [];
   const produced = new Map(event.files.map((file) => [file.path, file.contents]));
-  const shared = readdirSync(dirname(event.file)).filter((file) => file.endsWith(".uf.tsx"));
+  // Every source a case compiles: its components and its composables (ADR-0069).
+  const shared = readdirSync(dirname(event.file)).filter((file) => /\.uf\.tsx?$/.test(file));
   const problems: string[] = [];
   for (const path of shared.length > 1 ? [] : golden) {
     if (!produced.has(path))

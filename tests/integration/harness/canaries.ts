@@ -383,9 +383,11 @@ export const CANARIES: readonly Canary[] = [
     description:
       "Types every output's props, events and slots `any`, where its consumers' checker reads them: each consumer fixture's expected error goes unmet (ADR-0059).",
     evidence: {
-      // A directive the checker no longer meets, named with the declaration's `.uf.tsx` line.
+      // A directive the checker no longer meets, named with the declaration's line: in a
+      // `.uf.tsx`, or in a `.ts` module for a type re-exported from one (ADR-0068).
       toolchain: {
-        "consumer check": /consumers\/\S+:\d+: expected \S+ for \S+ \(\S+\.uf\.tsx:\d+\), got none/,
+        "consumer check":
+          /consumers\/\S+:\d+: expected \S+ for \S+ \(\S+\.(?:uf\.tsx|ts):\d+\), got none/,
       },
     },
     appliesTo: (info, target) => consumerFixtures(target, info.id).length > 0,

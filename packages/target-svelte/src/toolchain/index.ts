@@ -46,9 +46,17 @@ export const toolchain: Toolchain = {
   frameworkCompile,
   typecheck,
   // L5 (ADR-0042): oxlint's shared baseline over the script block, ESLint over the whole file.
+  // ESLint reads the `.svelte` files and the composables' `.svelte.ts` modules, whose runes
+  // eslint-plugin-svelte checks (ADR-0069); a shared `.ts` module (ADR-0070) is oxlint's alone.
   lint: async (files, context) =>
     mergeLintResults(
-      await Promise.all([lintWithOxlint(files, context), lintWithEslint(files, context)]),
+      await Promise.all([
+        lintWithOxlint(files, context),
+        lintWithEslint(
+          files.filter((file) => /\.svelte(?:\.ts)?$/.test(file)),
+          context,
+        ),
+      ]),
     ),
 };
 

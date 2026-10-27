@@ -127,12 +127,15 @@ Its toolchain, for tests and tooling (the target's main entry never loads it):
 
 - **`@unframework/target-svelte/toolchain`**: `@sveltejs/vite-plugin-svelte` for Vite; L3 runs
   `svelte/compiler` for the client and the server and reports its errors and warnings
-  (accessibility included), and a component that would compile in legacy mode; L4 runs
+  (accessibility included), and a component that would compile in legacy mode, and compiles a
+  composable's `.svelte.ts` module (ADR-0069) as vite-plugin-svelte does, Vite's TypeScript
+  transform then `compileModule`, and a shared `.ts` module (ADR-0070) with the transform alone; L4 runs
   svelte-check, from the toolchain directory, once over every file, for types only
   (`--diagnostic-sources js`: the compiler's warnings are L3's), with warnings failing as errors
   do. It refuses files under `node_modules`, which svelte-check reports clean unchecked. L5 runs
   oxlint's shared baseline over the script and ESLint with eslint-plugin-svelte over the whole
-  file (ADR-0042, `tests/toolchains/svelte`), with the rules that judge the author's code off
+  file and over each `.svelte.ts` module, a shared `.ts` module being oxlint's alone (ADR-0042,
+  `tests/toolchains/svelte`), with the rules that judge the author's code off
   (`svelte/prefer-svelte-reactivity`: a handler's own `new Map()`; `svelte/prefer-writable-derived`:
   the author's `watchEffect` that writes a state, which a `$derived` would render on the server). In the browser, Vite
   pre-bundles `svelte`, `svelte/events` and the runtime entries the compiled output imports.
