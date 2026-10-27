@@ -7,7 +7,7 @@ import type { ShapeQuery, Span, TypeOracle, TypeShape } from "@unframework/type-
 import type { Node, SourceFile, TypeNode } from "typescript/unstable/ast";
 import { isTypeNode } from "typescript/unstable/ast/is";
 import { API } from "typescript/unstable/sync";
-import type { Project, Snapshot } from "typescript/unstable/sync";
+import type { Program, Project, Snapshot } from "typescript/unstable/sync";
 
 import { evaluate } from "./evaluate.ts";
 
@@ -94,6 +94,18 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
   };
 
   /**
+   * The directory of the copy of a package the root resolves its types from, as the syntactic
+   * adapter's resolver does: the package itself when it declares types, or else its `@types/`
+   * package.
+   */
+  const rootCopy = (name: string): string | undefined => {
+    const own = `${root}/node_modules/${name}`;
+    if (declaresTypes(own)) return realpathOrUndefined(own);
+    const typed = name.startsWith("@") ? name.slice(1).replace("/", "__") : name;
+    return realpathOrUndefined(`${root}/node_modules/@types/${typed}`);
+  };
+
+  /**
    * `pkg:<name>/<path>` for the copy of a package the root resolves, and `undefined` for any
    * other copy of it, which is not surely the one the name means. A package the root resolves no
    * copy of, a dependency's own dependency, is `pkg:<name>@<version>/<path>`.
@@ -107,9 +119,24 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
     const typed = installed.startsWith("@types/") ? installed.slice("@types/".length) : installed;
     const name = typed.includes("__") ? `@${typed.replace("__", "/")}` : typed;
     const directory = `${base}/${path.slice(0, at)}${installed}`;
-    const own = realpathOrUndefined(`${root}/node_modules/${installed}`);
+    const own = rootCopy(name);
     if (own === undefined) return `pkg:${name}@${versionOf(directory)}/${inner}`;
     return own === realpathOrUndefined(directory) ? `pkg:${name}/${inner}` : undefined;
+  };
+
+  /** Each program's files, by the names a shape gives them. */
+  const names = new WeakMap<Program, Map<string, string>>();
+  const namesOf = (program: Program) => {
+    let known = names.get(program);
+    if (!known) {
+      known = new Map();
+      for (const fileName of program.getSourceFileNames()) {
+        const file = fileOf(fileName);
+        if (file !== undefined) known.set(file, fileName);
+      }
+      names.set(program, known);
+    }
+    return known;
   };
 
   const resolveShape = async (query: ShapeQuery): Promise<TypeShape> => {
@@ -121,7 +148,8 @@ export function createTsgoOracle(options: TsgoOracleOptions): TypeOracle {
     const node = source && typeNodeAt(source, query.span);
     const type = node && checker.getTypeFromTypeNode(node);
     const nodeAt = (file: string, span: Span) => {
-      const written = program.getSourceFile(`${root}/${file}`);
+      const fileName = file.startsWith("pkg:") ? namesOf(program).get(file) : `${root}/${file}`;
+      const written = fileName === undefined ? undefined : program.getSourceFile(fileName);
       return written && typeNodeAt(written, span);
     };
     return type ? evaluate(shape, type, { checker, fileOf, file: query.file, nodeAt }) : shape;
@@ -172,6 +200,23 @@ function realpathOrUndefined(path: string): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+/** Whether a package directory names its types, or holds an `index.d.ts`. */
+function declaresTypes(directory: string): boolean {
+  try {
+    const manifest: unknown = JSON.parse(readFileSync(`${directory}/package.json`, "utf8"));
+    if (
+      typeof manifest === "object" &&
+      manifest &&
+      ("types" in manifest || "typings" in manifest || "exports" in manifest)
+    ) {
+      return true;
+    }
+  } catch {
+    // No `package.json`: only an `index.d.ts` types it.
+  }
+  return existsSync(`${directory}/index.d.ts`);
 }
 
 /** The `version` in a package directory's `package.json`, or `""` when it has none. */

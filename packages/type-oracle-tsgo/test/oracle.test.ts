@@ -226,6 +226,19 @@ describe("tsgo adapter", () => {
       ["a lib alias, whose file has no name (P8)", "", 'Record<"x", string>', "(unresolved)"],
       ["a construct signature", "", '{ [K in "a"]: { new (): object } }', "(unresolved)"],
       [
+        "a callable object with members",
+        "interface F { (x: number): void; p: string }",
+        '{ [K in "a"]: F }',
+        "(unresolved)",
+      ],
+      [
+        "a type parameter part of an intersection",
+        "",
+        '{ a: { z: T & { y: string } }["z"] }',
+        "{ a: (unresolved) }",
+        "A<T>",
+      ],
+      [
         "a callable intersection",
         "",
         '{ [K in "a"]: ((x: number) => void) & { b: 1 } }',
@@ -303,6 +316,50 @@ describe("tsgo adapter", () => {
       expect(inner?.kind === "object" && inner.members[0]!.typeText).toBeUndefined();
     },
   );
+
+  it.each([
+    [
+      "an import of a missing module",
+      'import type { Missing } from "./nope.ts";',
+      '{ a: Missing extends string ? "a" : "b" }',
+    ],
+    ["a missing namespace", "", "{ a: keyof NoSuch.X }"],
+    ["a name declared nowhere", "", "{ a: keyof Missing }"],
+    ["a missing export", 'import type { Gone } from "./b.ts";', "{ a: keyof Gone }"],
+    [
+      "a missing name in a declaration it reaches",
+      'import type { X } from "./x.ts";',
+      "{ a: keyof X }",
+    ],
+  ])("keeps unresolved a construct that names something missing: %s", async (_, prelude, type) => {
+    await put("b.ts", "export interface B { x: string }\n");
+    await put("x.ts", "export type X = { p: Missing };\n");
+    const shape = await resolve(type, prelude);
+    expect(canonical(shape)).toBe("{ a: (unresolved) }");
+    expect(reasons(shape)).toContain("unsupported");
+  });
+
+  it("follows an alias chain as long as a project makes it", async () => {
+    const chain = Array.from({ length: 2000 }, (_, index) => `type T${index} = T${index + 1};`);
+    const shape = await resolve(
+      "{ a: keyof T0 }",
+      [...chain, "type T2000 = { p: string };"].join("\n"),
+    );
+    expect(canonical(shape)).toBe('{ a: "p" }');
+  });
+
+  it("lists the files an import type and a typeof read", async () => {
+    await put(
+      "b.ts",
+      'import type { D } from "./d.ts";\nexport interface B extends D { x: string }\n',
+    );
+    await put("d.ts", "export interface D { y: string }\n");
+    await put("c.ts", "export const c = { k: 1 };\n");
+    const prelude = 'import { c } from "./c.ts";';
+    const shape = await resolve('{ a: keyof import("./b.ts").B; b: keyof typeof c }', prelude);
+    expect(canonical(shape)).toBe('{ a: "x" | "y"; b: "k" }');
+    expect(shape.dependencies).toEqual(["b.ts", "c.ts", "d.ts"]);
+  });
 
   it("lists the files a construct reads, though its result names none", async () => {
     await put("X.ts", 'import type { Y } from "./Y.ts";\nexport type X = Y;\n');
@@ -454,6 +511,49 @@ describe("tsgo adapter", () => {
       const prelude = `${KIND}\nimport type { Uses } from "user";`;
       const shape = await resolve("{ a: Kind<string> extends string ? Uses : never }", prelude);
       expect(canonical(shape)).toBe("{ a: (unresolved) }");
+    });
+
+    it("leaves unnamed a copy other than the one the root resolves its types from", async () => {
+      await pkg("node_modules/@types/w", "@types/w", "1.0.0", "export interface W { a: string }\n");
+      await pkg(
+        "node_modules/x",
+        "x",
+        "1.0.0",
+        'import type { W } from "w";\nexport interface XP { w: W }\n',
+      );
+      await pkg(
+        "node_modules/x/node_modules/w",
+        "w",
+        "5.0.0",
+        "export interface W { b: string }\n",
+      );
+      const prelude = `${KIND}\nimport type { XP } from "x";`;
+      const shape = await resolve("{ a: Kind<string> extends string ? XP : never }", prelude);
+      expect(canonical(shape)).toBe("{ a: (unresolved) }");
+    });
+
+    it("names a package typed by its @types/ package, beside an untyped copy", async () => {
+      await put("node_modules/w/package.json", '{ "name": "w", "version": "1.0.0" }');
+      await put("node_modules/w/index.js", "export {};\n");
+      await pkg("node_modules/@types/w", "@types/w", "1.0.0", "export interface W { a: string }\n");
+      const prelude = `${KIND}\nimport type { W } from "w";`;
+      const shape = await resolve("{ a: Kind<string> extends string ? W : never }", prelude);
+      const object = shape.nodes[shape.root]!;
+      const w = object.kind === "object" ? shape.nodes[object.members[0]!.type] : undefined;
+      expect(w?.kind === "object" && w.members[0]!.file).toBe("pkg:w/index.d.ts");
+    });
+
+    it("lists the packages a construct in a package's file reads", async () => {
+      await pkg(
+        "node_modules/ui",
+        "ui",
+        "1.0.0",
+        'import type { Other } from "other";\nexport type P = { a: keyof Other };\n',
+      );
+      await pkg("node_modules/other", "other", "1.0.0", "export interface Other { o: string }\n");
+      const shape = await resolve("P", 'import type { P } from "ui";');
+      expect(canonical(shape)).toBe('{ a: "o" }');
+      expect(shape.dependencies).toEqual(["pkg:other", "pkg:ui"]);
     });
 
     it("names a copy the root resolves none of by its version", async () => {

@@ -19,7 +19,9 @@ import type { Node } from "typescript/unstable/ast";
 import {
   isExpressionWithTypeArguments,
   isIdentifier,
+  isImportTypeNode,
   isInterfaceDeclaration,
+  isLiteralTypeNode,
   isMethodSignatureDeclaration,
   isParameterDeclaration,
   isPropertyDeclaration,
@@ -45,7 +47,7 @@ export interface EvaluateContext {
   fileOf(fileName: string): string | undefined;
   /** The query's own file, which `dependencies` leaves out. */
   file: string;
-  /** The type node at a span of a root-relative file. */
+  /** The type node at a span of a file, named as a shape names it. */
   nodeAt(file: string, span: Span): Node | undefined;
 }
 
@@ -103,13 +105,14 @@ export function evaluate(shape: TypeShape, queried: Type, context: EvaluateConte
     const node = nodes[id]!;
     if (node.kind === "opaque") {
       if (!open.has(keyOf(node))) return id;
+      // Its text is read first: a construct that names something missing stays opaque.
+      const written = context.nodeAt(node.file, node.span);
+      const files = written && converter.read(written);
+      if (!files) return id;
       const converted = converter.convert(type, optional, node);
       if (converted === undefined) return id;
+      for (const file of files) converter.depend(file);
       replaced.add(keyOf(node));
-      const written = node.file.startsWith("pkg:")
-        ? undefined
-        : context.nodeAt(node.file, node.span);
-      if (written) converter.read(written);
       return converted;
     }
     const each = parts(type, optional);
@@ -486,38 +489,57 @@ function createConverter(nodes: ShapeNode[], dependencies: Set<string>, context:
   };
 
   /**
-   * Adds the files of every declaration a construct's text reaches, through the names it
-   * references, to `dependencies`: `keyof X` reads `X`'s file and the files `X` reads, though
-   * its result has no member to name them.
+   * The files of every declaration a construct's text reaches, through the names it references
+   * (`keyof X` reads `X`'s file and the files `X` reads, though its result names neither), or
+   * `undefined` when a name it reaches resolves to nothing. The checker evaluates a missing name
+   * as its error type, which gives a complete but wrong result: `keyof Missing` is
+   * `string | number | symbol`.
    */
-  const read = (written: Node) => {
-    const declarations = (symbol: Symbol | undefined) => {
-      if (!symbol || visited.has(symbol.id)) return;
-      visited.add(symbol.id);
-      const target = symbol.flags & SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
-      if (target !== symbol) return declarations(target);
-      for (const handle of symbol.declarations) {
+  const read = (written: Node): Set<string> | undefined => {
+    const files = new Set<string>();
+    const visited = new Set<number>();
+    // A worklist, not recursion: an alias chain may be as long as a project makes it.
+    const pending: Node[] = [written];
+    // Set by `reach`, inside the walk.
+    const found = { missing: false };
+    const reach = (symbol: Symbol | undefined) => {
+      const target =
+        symbol && symbol.flags & SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
+      // tsgo gives a name that resolves to nothing, as its unknown symbol, no declaration.
+      if (!target?.declarations.length) {
+        found.missing = true;
+        return;
+      }
+      if (visited.has(target.id)) return;
+      visited.add(target.id);
+      for (const handle of target.declarations) {
         const node = handle.resolve();
         const file = node && context.fileOf(node.getSourceFile().fileName);
         if (!node || file === undefined) continue;
-        depend(file);
-        visit(node);
+        files.add(file);
+        // A module's declaration is its file, which `import("./b.ts")` reads only for the names
+        // its qualifier reaches.
+        if (node.kind !== SyntaxKind.SourceFile) pending.push(node);
       }
     };
     const visit = (node: Node): void => {
-      if (isTypeReferenceNode(node)) declarations(checker.getSymbolAtLocation(node.typeName));
-      else if (isTypeQueryNode(node)) declarations(checker.getSymbolAtLocation(node.exprName));
+      if (isTypeReferenceNode(node)) reach(checker.getSymbolAtLocation(node.typeName));
+      else if (isTypeQueryNode(node)) reach(checker.getSymbolAtLocation(node.exprName));
       else if (isExpressionWithTypeArguments(node)) {
-        declarations(checker.getSymbolAtLocation(node.expression));
+        reach(checker.getSymbolAtLocation(node.expression));
+      } else if (isImportTypeNode(node)) {
+        const name = node.qualifier ?? (isLiteralTypeNode(node.argument) && node.argument.literal);
+        reach(name ? checker.getSymbolAtLocation(name) : undefined);
       }
       node.forEachChild(visit);
     };
-    visit(written);
+    while (pending.length && !found.missing) visit(pending.pop()!);
+    return found.missing ? undefined : files;
   };
-  const visited = new Set<number>();
 
   return {
     read,
+    depend,
     /** The node for `type`, or `undefined`, with nothing added, when a shape cannot hold it. */
     convert(type: Type, optional: boolean, opaque: OpaqueNode): number | undefined {
       const mark = nodes.length;

@@ -18,13 +18,16 @@ loads TypeScript's API: `typescript/unstable/sync`, pinned exactly at 7.0.2 by t
   keys, a mapped type over keys that are still generic (`keyof T`), an intersection with any such
   part, a type that expands without end, lib types such as `Date`, anything declared outside
   `root`, whose file a shape cannot name without the machine (P8), and a copy of a package
-  other than the one the root resolves.
+  other than the one the root resolves. So does a part whose text names something missing (a
+  typo, a stale import), which tsgo would evaluate as its error type (`keyof Missing` is
+  `string | number | symbol`).
 - **What it keeps.** Every other answer is the syntactic adapter's: members' origins,
   `construction`, `dependencies` and which packages it reads. So both adapters pass the same
   contract, and a props type resolves alike under either unless it needs the checker. A member
   tsgo evaluates names the declaration it comes from, and its file joins `dependencies`, as do
-  the files of every declaration the evaluated construct's text reaches (`keyof X` reads `X`'s
-  file and what `X` reads). A package's file is named as the syntactic adapter names it,
+  the files of every declaration the evaluated construct's text reaches, through type
+  references, `typeof`, `extends` and import types (`keyof X` reads `X`'s file and what `X`
+  reads). A package's file is named as the syntactic adapter names it,
   `pkg:<name>/<path>`, or `pkg:<name>@<version>/<path>` for a package the root resolves no copy
   of. A member a mapped type makes takes its modifiers and type from the mapping, and an
   intersection's member from all its parts (readonly only when each part makes it so), so it
