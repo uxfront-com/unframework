@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 
 import { parseSync } from "oxc-parser";
 import { describe, expect, it } from "vitest";
@@ -87,8 +88,13 @@ describe("createSyntacticOracle", () => {
   });
 
   it.each([
-    ["Partial<P>", "utility:Partial"],
-    ["Wrap<string>", "generic"],
+    ["Partial<string>", "utility:Partial"],
+    ["Pick<P, string>", "utility:Pick"],
+    ['Pick<P, "a" | "z">', "utility:Pick"],
+    ["Omit<P>", "utility:Omit"],
+    ["Map<string, P>", "generic"],
+    ["Wrap", "generic"],
+    ["Wrap<string, number>", "generic"],
     ["P extends string ? A : B", "conditional"],
     ["{ [K in Keys]: string }", "mapped"],
     ["P['a']", "indexed-access"],
@@ -108,7 +114,7 @@ describe("createSyntacticOracle", () => {
     expect(printShape(shape)).not.toContain("never");
   });
 
-  it("names a package it does not read yet as a dependency, unresolved", async () => {
+  it("names a package it cannot find as a dependency, with the import missing", async () => {
     const source = 'import type { Item } from "@scope/ui/types";\nfunction C(props: Item) {}';
     const { oracle, reads } = memory({ "C.uf.tsx": source });
     const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "Item"));
@@ -118,7 +124,7 @@ describe("createSyntacticOracle", () => {
       {
         file: "C.uf.tsx",
         span: at("C.uf.tsx", source, "props: ", "Item").span,
-        reason: "unsupported",
+        reason: "missing-module",
       },
     ]);
     expect(reads).toEqual(["/project/C.uf.tsx"]);
@@ -438,13 +444,18 @@ describe("createSyntacticOracle", () => {
       "P",
     ],
     [
-      "a generic base of a base",
-      "interface G<T> { g: T }\ninterface B extends G<string> { a: 1 }\ninterface P extends B { b: 1 }",
+      "a generic global base of a base",
+      "interface B extends Map<string, number> { a: 1 }\ninterface P extends B { b: 1 }",
       "P",
     ],
     [
       "an unresolved part of a base",
-      "interface Q { a: 1 }\ntype B = Partial<Q> & { b: 1 };\ninterface P extends B { c: 1 }",
+      "interface Q { a: 1 }\ntype B = (Q extends 1 ? Q : Q) & { b: 1 };\ninterface P extends B { c: 1 }",
+      "P",
+    ],
+    [
+      "a utility of a base that loses a member",
+      'interface Q { a: 1 }\ninterface B extends Pick<Q, "z"> { a: 1 }\ninterface P extends B { b: 1 }',
       "P",
     ],
     [
@@ -473,7 +484,7 @@ describe("createSyntacticOracle", () => {
   it.each([
     ["an index signature", "{ [k: string]: number; a: 1 }"],
     ["a call signature", "{ (): void; a: 1 }"],
-    ["an unresolved part", "{ a: 1 } & Partial<Q>"],
+    ["an unresolved part", "{ a: 1 } & (Q extends 1 ? Q : Q)"],
     ["a construct two levels down", "{ w: { [k: string]: number }; a: 1 }"],
   ])("is not sure of an object that lost %s, in either part", async (_, lossy) => {
     for (const type of [`{ v: { a: 1 } } & { v: ${lossy} }`, `{ v: ${lossy} } & { v: { a: 1 } }`]) {
@@ -488,7 +499,7 @@ describe("createSyntacticOracle", () => {
   it("keeps an entry a failed base carries while its opaque node is reachable by another path", async () => {
     const source = [
       "interface X { x: 1 }",
-      "type S = Partial<X>;",
+      "type S = X extends 1 ? X : X;",
       "interface B extends S { a: 1 }",
       "interface Q { m: B }",
       "interface D extends Q { m: never }",
@@ -799,6 +810,134 @@ describe("createSyntacticOracle", () => {
     expect(root(own).declaration).toEqual({ file: "B.uf.tsx", name: "Own", exported: false });
   });
 
+  it("keeps each shape until update names a file it was read from", async () => {
+    const files: Record<string, string> = {
+      "C.uf.tsx": 'import type { P } from "./types";\nfunction C(props: P) {}',
+      "D.uf.tsx": "function D(props: { d: string }) {}",
+      "types.tsx": "export interface P { a: string }",
+    };
+    const reads: string[] = [];
+    const oracle = createSyntacticOracle({
+      root: "/project",
+      readFile: (path) => {
+        reads.push(path.slice("/project/".length));
+        return Promise.resolve(files[path.slice("/project/".length)]);
+      },
+    });
+    const c = at("C.uf.tsx", files["C.uf.tsx"]!, "props: ", "P");
+    const d = at("D.uf.tsx", files["D.uf.tsx"]!, "props: ", "{ d: string }");
+    await oracle.resolveShape(c);
+    await oracle.resolveShape(d);
+    expect(reads).toEqual(["C.uf.tsx", "types.ts", "types.tsx", "D.uf.tsx"]);
+    // A file no shape was read from drops nothing.
+    await oracle.update({ files: ["other.ts"] });
+    await oracle.resolveShape(c);
+    await oracle.resolveShape(d);
+    expect(reads).toHaveLength(4);
+    // A candidate that did not exist, created, takes over the import.
+    files["types.ts"] = "export interface P { b: number }";
+    await oracle.update({ files: ["types.ts"] });
+    expect(printShape(await oracle.resolveShape(c))).toBe("{ b: number }");
+    await oracle.resolveShape(d);
+    expect(reads.slice(4)).toEqual(["types.ts"]);
+    // An edit to the imported module drops the shape of the module that imports it.
+    files["types.ts"] = "export interface P { c: boolean }";
+    await oracle.update({ files: ["types.ts"] });
+    expect(printShape(await oracle.resolveShape(c))).toBe("{ c: boolean }");
+    expect(reads.slice(5)).toEqual(["types.ts"]);
+  });
+
+  it("reads a package again after update names it", async () => {
+    const project = fileURLToPath(new URL("fixtures/packages", import.meta.url));
+    const reads: string[] = [];
+    const oracle = createSyntacticOracle({
+      root: project,
+      readFile: (path) => {
+        reads.push(path);
+        return readFile(path, "utf8").catch(() => undefined);
+      },
+    });
+    const source = await readFile(`${project}/Badge.uf.tsx`, "utf8");
+    const query = at("Badge.uf.tsx", source, "Exported(props: ", "ButtonProps");
+    const shape = await oracle.resolveShape(query);
+    const count = reads.length;
+    expect(count).toBe(4);
+    expect(reads.every((path) => !path.includes("@acme"))).toBe(true);
+    await oracle.update({ files: ["pkg:@acme/types"] });
+    expect(await oracle.resolveShape(query)).toBe(shape);
+    await oracle.update({ files: ["pkg:ui-kit"] });
+    expect(await oracle.resolveShape(query)).toEqual(shape);
+    expect(reads.slice(count).map((path) => path.slice(path.lastIndexOf("/") + 1))).toEqual([
+      "index.d.ts",
+      "base.d.ts",
+      "tokens.d.ts",
+    ]);
+  });
+
+  it("names no absolute path in a package's shape", async () => {
+    const project = fileURLToPath(new URL("fixtures/packages", import.meta.url));
+    const oracle = createSyntacticOracle({
+      root: project,
+      readFile: (path) => readFile(path, "utf8").catch(() => undefined),
+    });
+    const source = await readFile(`${project}/Badge.uf.tsx`, "utf8");
+    const shape = await oracle.resolveShape(at("Badge.uf.tsx", source, "props: ", "ButtonProps"));
+    expect(JSON.stringify(shape)).not.toContain(project);
+    expect(JSON.stringify(shape)).not.toContain("node_modules");
+  });
+
+  it.each([
+    ["a type parameter", "interface P<T> { a?: T }\nfunction C<T>(props: Required<P<T>>) {}"],
+    ["void", "interface P { a?: void | string }\nfunction C(props: Required<P>) {}"],
+  ])("keeps an optional member Required cannot narrow, %s, unresolved", async (_, source) => {
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const type = source.slice(source.indexOf("Required<"), source.lastIndexOf(")"));
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(printShape(shape, { canonical: true })).toBe("{ a: (unresolved) }");
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+  });
+
+  it("gives `never` for an optional member that holds only `undefined`, under Required", async () => {
+    const source = "interface P { a?: undefined }\nfunction C(props: Required<P>) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "Required<P>"));
+    expect(printShape(shape)).toBe("{ a: never }");
+  });
+
+  it("stops an instantiation that takes new arguments inside itself", async () => {
+    const source = "interface N<T> { v: T; n: N<T[]> }\nfunction C(props: N<string>) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "N<string>"));
+    expect(shape.construction).toContain("generic");
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+  });
+
+  it.each([
+    ["a default that reads its own declaration", "type P<T = P> = { a: T };", "P"],
+    ["too many arguments", "type P<T> = { a: T };", "P<string, number>"],
+    ["arguments to a type parameter", "type P<T> = { a: T<string> };", "P<string>"],
+    ["an interface that extends its parameter", "interface P<T> extends T { a: 1 }", "P<{}>"],
+  ])("leaves %s unresolved", async (_, declaration, type) => {
+    const source = `${declaration}\nfunction C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(shape.unresolved).not.toEqual([]);
+  });
+
+  it("keeps two instantiations of one declaration apart", async () => {
+    const source =
+      "type Box<T> = { value: T };\nfunction C(props: { a: Box<string>; b: Box<number>; c: Box<string> }) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const type = "{ a: Box<string>; b: Box<number>; c: Box<string> }";
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    const [a, b, c] = root(shape).members.map((member) => member.type);
+    expect(a).toBe(c);
+    expect(a).not.toBe(b);
+    expect(printShape(shape)).toBe(
+      "{ a: { value: string }; b: { value: number }; c: { value: string } }",
+    );
+  });
+
   it("reads every file again after dispose", async () => {
     const source = "function C(props: { a: string }) {}";
     const { oracle, reads } = memory({ "C.uf.tsx": source });
@@ -846,9 +985,9 @@ describe("printShape", () => {
   });
 
   it("is rejected by printType for a type with unresolved parts", async () => {
-    const source = "function C(props: { a: Partial<{ b: string }> }) {}";
+    const source = "function C(props: { a: keyof { b: string } }) {}";
     const { oracle } = memory({ "C.uf.tsx": source });
-    const query = at("C.uf.tsx", source, "props: ", "{ a: Partial<{ b: string }> }");
+    const query = at("C.uf.tsx", source, "props: ", "{ a: keyof { b: string } }");
     await expect(oracle.printType(query)).rejects.toThrow("it has unresolved parts.");
   });
 });

@@ -23,6 +23,7 @@ export type TypeQuery = ShapeQuery;
 
 /** The files that changed, were created or were deleted, relative to the oracle's root. */
 export interface FileChanges {
+  /** Files relative to the root, and packages installed, removed or changed as `pkg:<name>`. */
   files: string[];
 }
 
@@ -47,11 +48,13 @@ export interface TypeShape {
   nodes: TypeNode[];
   /**
    * How the type is built, each construct once, in the order resolution met it: `import`,
-   * `extends`, `intersection` and `union`, and for what it could not evaluate `package`,
-   * `generic`, `utility:<Name>` (`utility:Pick`), `conditional`, `mapped`, `indexed-access`,
-   * `keyof`, `typeof`, `template-literal`, `import-type`, `infer`, `qualified-name`,
-   * `class-or-enum`, `index-signature`, `call-signature`, `computed-key`, `accessor`, `overload`,
-   * `circular`, `duplicate-declaration` or `unsupported`.
+   * `package`, `extends`, `intersection`, `union`, `generic` (an instantiation) and
+   * `utility:<Name>` (`utility:Pick`), and for what it could not evaluate `conditional`,
+   * `mapped`, `indexed-access`, `keyof`, `typeof`, `template-literal`, `import-type`, `infer`,
+   * `qualified-name`, `class-or-enum`, `index-signature`, `call-signature`, `computed-key`,
+   * `accessor`, `overload`, `circular`, `duplicate-declaration` or `unsupported`. A construct it
+   * met and could not evaluate there, such as a `Pick` of a key the object lacks, is listed too,
+   * with its span in `unresolved`.
    */
   construction: string[];
   /**
@@ -126,6 +129,8 @@ export interface ObjectNode {
   kind: "object";
   /** The interface or alias that declares this object, when one does. */
   declaration?: DeclarationRef;
+  /** The arguments that instantiate a generic declaration, `ListProps<string>`, in order. */
+  typeArguments?: number[];
   members: ShapeMember[];
 }
 

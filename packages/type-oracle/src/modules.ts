@@ -134,6 +134,12 @@ function exportName(name: ModuleExportName): string {
   return name.type === "Literal" ? name.value : name.name;
 }
 
+/**
+ * The prefix of a package's file, `pkg:<name>/<path in the package>`, and of a package itself in
+ * `dependencies`, `pkg:<name>`: never an absolute path (P8).
+ */
+export const PACKAGE = "pkg:";
+
 /** Whether a specifier names a file relative to its importer. */
 export function isRelative(specifier: string): boolean {
   return (

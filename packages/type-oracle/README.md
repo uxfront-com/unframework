@@ -13,17 +13,35 @@ The TypeOracle interface and the syntactic resolver (plan §5.5).
   the type names that text references. Each shape also lists its `construction`, its
   `dependencies` (files relative to the root, packages as `pkg:<name>`, never an absolute path)
   and its `unresolved` spans, each with its reason.
-- **`createSyntacticOracle({ root, readFile })`** is the syntactic adapter, on oxc. It reads
-  `root`, a `/` and a file's path through `readFile`, as the compiler's `createFileResolver`
-  does, and only the files a query needs. It follows type literals, local and imported
-  interfaces and aliases across relative `.ts` and `.uf.tsx` files and their re-exports
-  (`export { X } from`, `export type { X as Y } from`, `export * from`), `extends` chains,
-  intersections, unions and literal unions. Interfaces of one name merge, as in TypeScript, and a
-  member that an interface and its base both declare is the interface's own. An intersection's
-  member is optional, or readonly, only when every part that declares it makes it so. A name
-  that a module neither declares nor imports is a global of TypeScript's lib (`Date`,
-  `Element`): it stays opaque, and is not unresolved. Everything else comes back opaque and
-  `unresolved`, never wrong: utility and generic types, package types, classes and enums,
+- **`createSyntacticOracle({ root, readFile })`** is the syntactic adapter, on oxc and
+  oxc-resolver. It reads `root`, a `/` and a file's path through `readFile`, as the compiler's
+  `createFileResolver` does, and only the files a query needs. It follows type literals, local
+  and imported interfaces and aliases across relative `.ts` and `.uf.tsx` files and their
+  re-exports (`export { X } from`, `export type { X as Y } from`, `export * from`), `extends`
+  chains, intersections, unions and literal unions. Interfaces of one name merge, as in
+  TypeScript, and a member that an interface and its base both declare is the interface's own. An
+  intersection's member is optional, or readonly, only when every part that declares it makes it
+  so. A name that a module neither declares nor imports is a global of TypeScript's lib (`Date`,
+  `Element`): it stays opaque, and is not unresolved.
+  - **Utility types.** `Partial`, `Required`, `Pick`, `Omit` and `Readonly` map the members of
+    the object they are given, which keep their files and declarations. `Required` takes
+    `undefined` out of an optional member's type, as TypeScript does without
+    `exactOptionalPropertyTypes`. A utility over a type that is not an object, `Pick` and `Omit`
+    with keys that are not literals, and a `Pick` of a key the object lacks are unresolved.
+  - **Generic declarations** are instantiated with their arguments and their parameters'
+    defaults, a default reading the parameters before it. Each instantiation is one object with
+    its `typeArguments`, so `Tree<string>` inside itself is a cycle. An instantiation that takes
+    new arguments inside itself (`interface N<T> { n: N<T[]> }`) would never end, as
+    TypeScript reports (TS2589): it stops after ten levels, unresolved. So are too many or too few arguments, and a
+    generic global (`Record`, `Map`).
+  - **Packages.** A bare specifier is resolved with oxc-resolver from the importing file on disk,
+    as TypeScript's bundler resolution does: the `types` condition of `exports`, then `types` and
+    `typings`, then the package's `@types/` package. A package's own imports resolve the same way.
+    Its files are named `pkg:<name>/<path in the package>`, never an absolute path, and are read
+    through `readFile` by the path oxc-resolver found. A package that is not installed, a subpath
+    it does not export, and two copies of one package are `missing-module`.
+
+  Everything else comes back opaque and `unresolved`, never wrong: classes and enums,
   conditional, mapped and indexed-access types, `keyof`, `typeof`, template literals with holes,
   index and call signatures, computed keys that are not literals, generic and overloaded methods,
   accessors, and an interface that extends itself. A member the adapter cannot read keeps its
@@ -32,9 +50,16 @@ The TypeOracle interface and the syntactic resolver (plan §5.5).
   written; so is a method and a property of one name in two interface declarations. Two types are
   the same only when the adapter is sure: one declaration, one opaque node, or objects whose
   members are all known and nothing lost. What a base or a part loses, the object built from it
-  loses too. `update` drops the files it names, which the next query reads again.
-- **`printType`** rejects a type with unresolved parts, and a recursive object with no name,
-  which TypeScript cannot write without one.
+  loses too.
+
+  It keeps each file parsed and each shape until `update` names a file the shape was read from: a
+  file it read, a candidate of a relative specifier that did not exist, or a package as
+  `pkg:<name>`. So an edit drops the shapes of the file and of every module that reached a type
+  through it, and a package installed, removed or changed is resolved and read again.
+
+- **`printType`** prints the resolved shape, with an instantiation reached inside itself by its
+  name and arguments (`Tree<string>`). It rejects a type with unresolved parts, and a recursive
+  object with no name, which TypeScript cannot write without one.
 - **`localShapes(parsed, filename)`** is the same resolution over one parsed module, synchronous,
   and it reads no file. An imported name is `unresolved` as `external`. It is meant for
   `analyze()` when it is given no shapes; the analyser does not call it yet.
@@ -42,12 +67,16 @@ The TypeOracle interface and the syntactic resolver (plan §5.5).
   with no name. With `{ canonical: true }` it sorts unions and members, prints that recursion as
   `(cycle ^n)` and an unresolved opaque node as `(unresolved)`, which is how the contract
   compares two adapters.
-- **The contract** (`@unframework/type-oracle/contract`): `typeOracleContract(name, factory)`
-  registers one Vitest test per case, over the fixture projects in `test/fixtures/`. The factory
-  gets each project's `root` and returns the adapter under test. Every adapter runs it from its
-  own tests. The fixtures are not published, so the contract runs from the workspace only.
+- **The contract** (`@unframework/type-oracle/contract`):
+  `typeOracleContract(name, factory, options)` registers one Vitest test per case, over the
+  fixture projects in `test/fixtures/`. The factory gets each project's `root` and returns the
+  adapter under test. Every adapter runs it from its own tests. A conditional and a mapped type
+  are unresolved for the syntactic adapter; an adapter backed by a type-checker passes
+  `{ checker: true }`, and is held to their evaluated shapes instead. The `packages` project
+  commits its `node_modules`, as a package manager installs them. The fixtures are not published,
+  so the contract runs from the workspace only.
 
 Relative specifiers are joined to the importer's path and read through `readFile`, so a project
-in memory resolves as one on disk: `oxc-resolver` reads only the real disk. The dependency is for
-package types, which the syntactic adapter resolves next.
+in memory resolves as one on disk. oxc-resolver reads only the real disk, so it resolves packages
+only.
 Nothing here imports TypeScript's API: the tsgo adapter lives in its own package.

@@ -12,7 +12,8 @@ export interface PrintOptions {
 
 /**
  * Prints a shape as a TypeScript type every target's type system accepts. An opaque node keeps
- * its text as written. An object reached again inside itself prints as its declaration's name.
+ * its text as written. An object reached again inside itself prints as its declaration's name,
+ * with the arguments of its instantiation.
  * Throws for one with no declaration: TypeScript cannot write that type without a name.
  */
 export function printShape(shape: TypeShape, options: PrintOptions = {}): string {
@@ -52,7 +53,11 @@ export function printShape(shape: TypeShape, options: PrintOptions = {}): string
       }
       case "object": {
         if (stack.includes(id)) {
-          if (node.declaration) return node.declaration.name;
+          if (node.declaration) {
+            // An instantiation names its arguments: `Tree<string>`.
+            const args = node.typeArguments?.map(inner).join(", ");
+            return args ? `${node.declaration.name}<${args}>` : node.declaration.name;
+          }
           if (options.canonical) return `(cycle ^${stack.length - stack.indexOf(id)})`;
           throw new Error("Cannot print a recursive type that has no name.");
         }
