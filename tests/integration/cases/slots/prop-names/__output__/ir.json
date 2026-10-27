@@ -300,7 +300,10 @@
               {
                 "name": "people",
                 "optional": false,
-                "type": "Person[]"
+                "type": "Person[]",
+                "references": [
+                  "Person"
+                ]
               }
             ],
             "events": [],

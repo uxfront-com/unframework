@@ -42,7 +42,7 @@ import {
 } from "@unframework/parser";
 import type { AST, ComponentExport, ParsedModule } from "@unframework/parser";
 
-import { componentApi } from "./api.ts";
+import { componentApi, withReferences } from "./api.ts";
 import type { ApiContext } from "./api.ts";
 import { authoringBindings, checkAuthoringImport } from "./authoring.ts";
 import type { AuthoringApi } from "./authoring.ts";
@@ -209,8 +209,8 @@ export function analyzeModule(
   // other, and themselves (ADR-0053).
   const apiContext: ApiContext = {
     source: parsed.source,
+    file: parsed.file,
     scopes,
-    types: types.table,
     shapes,
     authoring,
   };
@@ -294,6 +294,7 @@ export function analyzeModule(
       description: key.description,
       type: key.type.code,
       ...(key.ref ? { ref: key.ref } : {}),
+      ...withReferences(key.type.code),
     })),
   };
 

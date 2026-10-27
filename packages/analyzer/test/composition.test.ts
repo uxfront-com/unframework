@@ -453,12 +453,28 @@ export function Outer() {
     ["HTMLInputElement", "UF3046"],
     ["{ focus(): void; clear(): void }", "UF3046"],
     ["{ focus(): void }", undefined],
+    // A member's own type the oracle cannot read leaves its name known (ADR-0067).
+    ["{ focus(): Promise<void> }", undefined],
+    ["{ focus(): Promise<void>; clear(): void }", "UF3046"],
+    // Which members an index signature holds is unknown.
+    ["{ [name: string]: () => void }", "UF3046"],
   ])("checks a component ref typed %s against what it exposes", (type, code) => {
     const { diagnostics } = parent(
       "<Field ref={field} label='x' />",
       `const field = useTemplateRef<${type}>();`,
     );
     expect(codes(diagnostics)).toEqual(code ? [code] : []);
+  });
+
+  it("reads a component ref whose member names an imported type, without the compiler's shapes", () => {
+    const source = `${CHILD}
+import type { Target } from "./types.ts";
+export function Form() {
+  const field = useTemplateRef<{ focus(target?: Target): void }>();
+  return <Field ref={field} label="x" />;
+}
+`;
+    expect(codes(run(source).diagnostics)).toEqual([]);
   });
 
   it('reads `"inheritAttrs": false` as the setup accepts it', () => {

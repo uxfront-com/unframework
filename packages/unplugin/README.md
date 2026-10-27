@@ -97,7 +97,11 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   Qwik's optimizer splits off one (`Form.uf.tsx_Form_component_<hash>.js`), is looked up in the
   importer's compile and resolves to the child's module id, or its component id on a markup
   target where it is not its file's main component. A compile is reused while its file and every
-  file its resolver read hold what they held.
+  file its resolver and its type oracle read hold what they held.
+- **Types** (ADR-0067). A file compiles with a syntactic type oracle created at Vite's root
+  (`createSyntacticOracle`, from `@unframework/compiler`), and so does its resolver: a props type
+  may come from another file or a package, and a child's API from its types' shapes. The oracle
+  follows the source's imports, so it may read a TypeScript file outside the root.
 
 How `resolveId` answers:
 

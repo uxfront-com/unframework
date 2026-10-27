@@ -1,8 +1,9 @@
-import { analyze, stylesheetImports } from "@unframework/analyzer";
+import { analyze, shapeQueries, stylesheetImports } from "@unframework/analyzer";
 import type { StylesheetSource } from "@unframework/analyzer";
 import { scopeStylesheet } from "@unframework/codegen";
 import type { ModuleApi } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
+import type { TypeOracle, TypeShape } from "@unframework/type-oracle";
 
 /** What {@link compile}'s `resolve` option receives: an import's specifier, and its importer. */
 export interface ResolveRequest {
@@ -43,16 +44,25 @@ export interface FileResolverOptions {
    * `undefined` for one that does not exist.
    */
   readFile(path: string): Promise<string | undefined>;
+  /**
+   * The type oracle a child's declarations are read through (ADR-0067), over the same `root`: a
+   * prop, event, slot or model whose type the child imports, extends or builds with a utility
+   * type reaches the parent's API, which also resolves the literals behind an alias (UF3039).
+   * Without it, a child's types are read from its own module alone (`localShapes`), and what it
+   * imports is unresolved. The caller owns it, and disposes of it.
+   */
+  typeOracle?: TypeOracle;
 }
 
 /**
  * A resolver over files (ADR-0053): it reads the imported file, analyses it up to its
- * declarations, and gives its API with its `file` relative to the importer. The analysis is
- * cached by the contents of the file and its stylesheets, so an edit that leaves the API alone
- * resolves to the same API, and the parent compiles to the same bytes. A child's own `.uf.tsx`
- * imports are never resolved: its API is read from its declarations alone, so a cycle cannot make
- * it loop. Its stylesheets are read, for the scope id its API carries (ADR-0063). It reads a
- * stylesheet for `stylesheet` too. M5's project graph replaces it behind the same option (§5.10).
+ * declarations, its types read through the type oracle (ADR-0067), and gives its API with its
+ * `file` relative to the importer. The analysis is cached by the contents of the file, its
+ * stylesheets and its shapes, so an edit that leaves the API alone resolves to the same API, and
+ * the parent compiles to the same bytes. A child's own `.uf.tsx` imports are never resolved: its
+ * API is read from its declarations alone, so a cycle cannot make it loop. Its stylesheets are
+ * read, for the scope id its API carries (ADR-0063). It reads a stylesheet for `stylesheet` too.
+ * M5's project graph replaces it behind the same option (§5.10).
  */
 export function createFileResolver(options: FileResolverOptions): Resolver {
   const root = options.root.replace(/\/+$/, "");
@@ -72,13 +82,29 @@ export function createFileResolver(options: FileResolverOptions): Resolver {
       const sheet = await read({ specifier, importer: child.path });
       stylesheets.set(specifier, sheet && stylesheetSource(sheet.path, sheet.source));
     }
+    // Each type the child's API is declared with, as `compile()` reads its source's (ADR-0067).
+    // An oracle that throws makes the resolver throw, which `compile()` reports (UF9001).
+    const shapes = new Map<string, TypeShape>();
+    for (const query of options.typeOracle ? shapeQueries(parsed) : []) {
+      shapes.set(
+        `${query.span.start}:${query.span.end}`,
+        await options.typeOracle!.resolveShape(query),
+      );
+    }
     const key = JSON.stringify([
       child.source,
       ...[...stylesheets.values()].map((sheet) => sheet?.source ?? null),
+      ...shapes,
     ]);
     let cached = cache.get(child.path);
     if (cached?.key !== key) {
-      cached = { key, api: analyze(parsed, { stylesheets }).api };
+      const analysis = analyze(parsed, {
+        stylesheets,
+        ...(options.typeOracle
+          ? { shapes: (span) => shapes.get(`${span.start}:${span.end}`) }
+          : {}),
+      });
+      cached = { key, api: analysis.api };
       cache.set(child.path, cached);
     }
     return (

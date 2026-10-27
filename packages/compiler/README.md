@@ -21,8 +21,10 @@ diagnostic, including a plugin or a target that throws, or returns or reports so
 targets receive the IR frozen, a target's missing capability cell counts as unsupported, and two
 output files whose paths differ only in case are reported, since they collide on macOS and Windows.
 The `resolve` option gives each imported `.uf.tsx` module's public API (ADR-0053), which the
-analyser lowers a parent's components by; `createFileResolver({ root, readFile })` reads the file,
-analyses its declarations (never its children's) and caches that by its contents. An import it
+analyser lowers a parent's components by; `createFileResolver({ root, readFile, typeOracle })`
+reads the file, analyses its declarations (never its children's), their types read through the
+type oracle over the same root (ADR-0067), and caches that by its contents and its shapes. Without
+`typeOracle`, a child's types are read from its own module alone. An import it
 cannot resolve is UF1202, and a resolver that throws UF9001. The resolver's `stylesheet` reads each
 stylesheet the source imports (ADR-0063), and `createFileResolver` also reads a child's sheets, for
 the scope id its API carries, and caches by their text too: a sheet it cannot read is UF5005.

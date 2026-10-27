@@ -3140,6 +3140,13 @@
             "type": "string"
           },
           "description": "The names its type references, in order of their first use (ADR-0067), so a parent imports what it prints. Absent when it references none."
+        },
+        "literals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The literals a prop's type resolves to when it is a union of literals the text as written does not spell, as an alias does (`tone?: Tone`), each as TypeScript writes it (`\"info\"`, `2`, `true`), so a parent checks a literal it passes against them (UF3039). Absent otherwise."
         }
       },
       "required": [

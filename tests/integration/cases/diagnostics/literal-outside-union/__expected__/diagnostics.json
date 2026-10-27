@@ -5,14 +5,14 @@
     "message": "Badge's `tone` takes `\"info\" | \"warning\"`, and \"warn\" is none of them. Did you mean \"warning\"?",
     "file": "diagnostics/literal-outside-union/Status.uf.tsx",
     "start": {
-      "line": 10,
+      "line": 13,
       "column": 31,
-      "offset": 358
+      "offset": 508
     },
     "end": {
-      "line": 10,
+      "line": 13,
       "column": 37,
-      "offset": 364
+      "offset": 514
     },
     "help": "Pass one of the literals of `tone`, or add \"warn\" to its type in Badge.",
     "fixes": [
@@ -22,8 +22,40 @@
         "edits": [
           {
             "span": {
-              "start": 358,
-              "end": 364
+              "start": 508,
+              "end": 514
+            },
+            "text": "\"warning\""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "UF3039",
+    "severity": "error",
+    "message": "Tag's `tone` takes `\"info\" | \"warning\"`, and \"warn\" is none of them. Did you mean \"warning\"?",
+    "file": "diagnostics/literal-outside-union/Status.uf.tsx",
+    "start": {
+      "line": 13,
+      "column": 51,
+      "offset": 528
+    },
+    "end": {
+      "line": 13,
+      "column": 57,
+      "offset": 534
+    },
+    "help": "Pass one of the literals of `tone`, or add \"warn\" to its type in Tag.",
+    "fixes": [
+      {
+        "title": "Write `\"warning\"`",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 528,
+              "end": 534
             },
             "text": "\"warning\""
           }

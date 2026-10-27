@@ -31,7 +31,7 @@ import type {
 } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
 
-import { keyName, typeMembers } from "./api.ts";
+import { keyName } from "./api.ts";
 import { keyCase, lowerAttributes, misplacedKey } from "./attributes.ts";
 import { closest, literalOutsideUnion, renameFix } from "./cross-component.ts";
 import { checkPlacement } from "./elements.ts";
@@ -42,6 +42,7 @@ import type { Place } from "./lower.ts";
 import { CONTROL_MODEL, lowerModelBinding, namelessModel } from "./models.ts";
 import type { ComponentInfo, LoopVariable, RenderContext } from "./render.ts";
 import { setupBindingOf } from "./render.ts";
+import type { TypeTable } from "./types/from-type.ts";
 import { UNKNOWN } from "./types/kinds.ts";
 
 /** A component element, lowered, and the `key` a list lifts off it. */
@@ -206,7 +207,7 @@ function componentRefProblem(
   }
   const exposed = api.exposes.map((name) => `\`${name}\``).join(", ");
   const type = templateRefType(binding, render);
-  const members = type ? typeMembers(type, render.types) : undefined;
+  const members = type ? refMembers(type, render.types) : undefined;
   if (!members) {
     return report(
       `The template ref on \`${info.name}\` is not typed as an object type of what it exposes (${exposed}): a call through it could name anything.`,
@@ -222,6 +223,22 @@ function componentRefProblem(
     );
   }
   return false;
+}
+
+/**
+ * The members of a template ref's type, as written in the module: a type literal's, or a local
+ * `interface`'s or `type`'s of one. Read from the syntax, not the type oracle's shapes: UF3046
+ * needs only the member names, and a shape cannot say which unread parts hide a member.
+ */
+function refMembers(type: AST.TSType, table: TypeTable): readonly AST.TSSignature[] | undefined {
+  if (type.type === "TSTypeLiteral") return type.members;
+  if (type.type !== "TSTypeReference" || type.typeName.type !== "Identifier" || type.typeArguments)
+    return undefined;
+  const declaration = table.declaration(type.typeName.name);
+  if (!declaration) return undefined;
+  const { node } = declaration;
+  if (node.type === "TSInterfaceDeclaration") return node.body.body;
+  return node.typeAnnotation.type === "TSTypeLiteral" ? node.typeAnnotation.members : undefined;
 }
 
 /** The type argument of the `useTemplateRef` call that declares a template ref, if it has one. */

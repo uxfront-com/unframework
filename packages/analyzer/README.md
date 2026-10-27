@@ -68,7 +68,11 @@ checked as the declaration its likely fix writes (`analyze.ts`).
   - A component's API (`ComponentApi`: its props, events, slots, exposed functions, options and
     the shape of its root) is read from its declarations alone, before any component is lowered:
     the module's components render each other and themselves, and `analyze` returns the module's
-    API for the compiler's resolver, whatever its templates hold.
+    API for the compiler's resolver, whatever its templates hold. Its props, events and slots are
+    the members of their types' shapes (ADR-0067), so a type the module imports, extends or builds
+    with a utility type reaches it; a prop, a model, a scoped slot's props and a key name what
+    their types reference (`references`), and a prop typed by an alias of a union of literals
+    holds them (`literals`).
   - `analyze(parsed, { imports })` takes the API of each `.uf.tsx` module the source imports,
     by specifier (`componentImports(parsed)` lists them): an import the resolver gave nothing
     for, or a name the module does not export, is UF1202, and the module records each one it
@@ -103,8 +107,9 @@ checked as the declaration its likely fix writes (`analyze.ts`).
     it begins alone (`"warn"` for `"warning"`), and a likely fix that writes it. The fix is
     withheld on `<component is>`, and in a JSX string for a literal holding `"`, `\`, `&` or a
     line break, which the string cannot hold as written. The union is read from the type as the
-    child writes it: an alias or a union with a wider member is not checked, and the outputs'
-    type checks (L4) catch the rest.
+    child writes it, or for an alias from the literals the child's API resolved
+    (`ApiMember.literals`, ADR-0067). A union with a wider member is not checked, and the
+    outputs' type checks (L4) catch the rest.
 - **Models** (`setup.ts`, `models.ts`, ADR-0054): `const value = defineModel<T>("value", { default,
 required })` declares a `model` binding, read and written as `value.value`, as state is; the
   name is a camelCase string literal apart from the props, the other models and an event's

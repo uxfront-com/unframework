@@ -2,9 +2,9 @@
 // child's API, which the resolver gives (ADR-0053). An unknown or misspelt prop, event, model or
 // slot is reported where `./components.ts` and `./models.ts` lower it, with the name it may mean
 // and the rename these helpers offer; a literal outside a prop's union of literals is checked
-// here. TypeScript cannot see the macros that declare events, models and slots, and stock JSX
-// types accept any of them (§5.6's layer 1), so the compiler is what catches these before M5's
-// content mapper.
+// here, through an alias too, which the child's API resolves (ADR-0067). TypeScript cannot see
+// the macros that declare events, models and slots, and stock JSX types accept any of them (§5.6's
+// layer 1), so the compiler is what catches these without the content mapper (ADR-0072).
 
 import type { Fix } from "@unframework/diagnostics";
 import type { ApiMember } from "@unframework/ir";
@@ -69,9 +69,9 @@ type LiteralValue = string | number | boolean;
 /**
  * UF3039: a literal passed to a prop whose type is a union of literals (`tone?: "info" |
  * "warning"`), when it is not one of them. `value` is the attribute's string (`tone="warn"`) or
- * the literal in its braces (`tone={"warn"}`). A type the parent's compile cannot read as such a
- * union, a type alias of the child's module among them, is not checked: the outputs' type checks
- * (L4) catch the rest. Returns whether it reported.
+ * the literal in its braces (`tone={"warn"}`). The union is read from the prop's type as written,
+ * or, for an alias the child's API resolved (`tone?: Tone`), from its `literals`. Any other type
+ * is not checked: the outputs' type checks (L4) catch the rest. Returns whether it reported.
  */
 export function literalOutsideUnion(
   value: Located & { value: unknown },
@@ -85,7 +85,8 @@ export function literalOutsideUnion(
   if (typeof written !== "string" && typeof written !== "number" && typeof written !== "boolean") {
     return false;
   }
-  const literals = literalsOf(prop.type);
+  const literals =
+    literalsOf(prop.type) ?? (prop.literals && literalsOf(prop.literals.join(" | ")));
   if (!literals || literals.some((literal) => literal.value === written)) return false;
   const strings = literals.flatMap((literal) =>
     typeof literal.value === "string" ? [literal.value] : [],
@@ -131,6 +132,11 @@ function meantString(value: string, literals: readonly string[]): string | undef
   if (near !== undefined) return near;
   const started = literals.filter((literal) => value && literal.startsWith(value));
   return started.length === 1 ? started[0] : undefined;
+}
+
+/** Whether a type as written is a union of literals, which UF3039 reads from its text. */
+export function spellsLiterals(type: string): boolean {
+  return literalsOf(type) !== undefined;
 }
 
 /**
