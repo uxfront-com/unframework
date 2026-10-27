@@ -117,6 +117,25 @@ describe("createFileResolver's `module`", () => {
     });
   });
 
+  it("follows `import()` of a template without holes, and notes a load it cannot follow", async () => {
+    const OTHER = 'import { ref } from "vue";\nexport const r = ref;\n';
+    const { resolve } = memoryResolver({
+      "/project/tokens.ts": "export const l = () => import(`./other.ts`);\n",
+      "/project/other.ts": OTHER,
+      "/project/lazy.ts": "export const l = (name: string) => import(name);\n",
+      "/project/glob.ts": 'export const all = import.meta.glob("./x/*.ts");\n',
+    });
+    expect(await resolve.module!({ specifier: "./tokens", importer: "A.uf.tsx" })).toMatchObject({
+      framework: { specifier: "vue", file: "other.ts" },
+    });
+    expect(await resolve.module!({ specifier: "./lazy", importer: "A.uf.tsx" })).toMatchObject({
+      unresolved: { specifier: "import(name)", file: "lazy.ts" },
+    });
+    expect(await resolve.module!({ specifier: "./glob", importer: "A.uf.tsx" })).toMatchObject({
+      unresolved: { specifier: "import.meta.glob", file: "glob.ts" },
+    });
+  });
+
   it("reads nothing that is missing, not relative or not a `.ts` module", async () => {
     const { resolve, reads } = memoryResolver({ "/project/useX.uf.ts": "" });
     for (const specifier of ["./missing", "pkg", "./useX.uf.ts", "./data.json"]) {
@@ -230,34 +249,94 @@ describe("compile() with shared modules", () => {
   });
 
   // Angular names a component's file in kebab-case: `Badge` writes `badge.ts`.
-  it("reports a shared module that is a component's output file (UF1104), on that target", async () => {
+  // An output imports a component's file by its name without the extension, and Angular names
+  // it in kebab-case: a copy at that name would be what the import loads.
+  it.each([
+    [
+      "the component itself, on Angular",
+      {
+        "/project/src/Badge.uf.tsx": [
+          'import type { Tone } from "./badge.ts";',
+          "export default function Badge({ tone }: { tone: Tone }) {",
+          "  return <span class={tone}>Badge</span>;",
+          "}",
+        ].join("\n"),
+        "/project/src/badge.ts": TONES,
+      },
+      "src/Badge.uf.tsx",
+      "The shared module badge.ts is named like Badge's output file, which an output imports without its extension (`Badge`, and `badge` on Angular): each output tree holds the module's copy beside the components.",
+    ],
+    [
+      "another component of the module, by another extension",
+      {
+        "/project/Card.uf.tsx": [
+          'import type { Tone } from "./CardIcon.ts";',
+          "function CardIcon({ tone }: { tone: Tone }) {",
+          "  return <i class={tone} />;",
+          "}",
+          "export default function Card() {",
+          '  return <div><CardIcon tone="info" /></div>;',
+          "}",
+        ].join("\n"),
+        "/project/CardIcon.ts": TONES,
+      },
+      "Card.uf.tsx",
+      "The shared module CardIcon.ts is named like CardIcon's output file, which an output imports without its extension (`CardIcon`, and `card-icon` on Angular): each output tree holds the module's copy beside the components.",
+    ],
+    [
+      "an imported child",
+      {
+        "/project/Panel.uf.tsx": [
+          'import Badge from "./Badge.uf.tsx";',
+          'import type { Tone } from "./Badge.ts";',
+          "export default function Panel({ tone }: { tone: Tone }) {",
+          "  return <div class={tone}><Badge /></div>;",
+          "}",
+        ].join("\n"),
+        "/project/Badge.uf.tsx":
+          "export default function Badge() {\n  return <span>Badge</span>;\n}\n",
+        "/project/Badge.ts": TONES,
+      },
+      "Panel.uf.tsx",
+      "The shared module Badge.ts is named like Badge's output file, which an output imports without its extension (`Badge`, and `badge` on Angular): each output tree holds the module's copy beside the components.",
+    ],
+  ])(
+    "reports a shared module named like %s (UF1104), for every target",
+    async (_, files, filename, message) => {
+      const { resolve, typeOracle } = memoryResolver(files);
+      const source = files[`/project/${filename}` as keyof typeof files];
+      const result = await compile(source, {
+        filename,
+        targets: ["vue", "react", "angular"],
+        resolve,
+        typeOracle,
+      });
+      expect(
+        result.diagnostics.map(({ code, target, message: text }) => [code, target, text]),
+      ).toEqual([["UF1104", undefined, message]]);
+      expect(result.ir).toBeUndefined();
+      expect(result.outputs).toEqual({ vue: [], react: [], angular: [] });
+    },
+  );
+
+  it("accepts a shared module beside a component of another name", async () => {
     const source = [
-      'import type { Tone } from "./badge.ts";',
+      'import type { Tone } from "./badge-tones.ts";',
       "export default function Badge({ tone }: { tone: Tone }) {",
       "  return <span class={tone}>Badge</span>;",
       "}",
     ].join("\n");
     const { resolve, typeOracle } = memoryResolver({
-      "/project/src/Badge.uf.tsx": source,
-      "/project/src/badge.ts": TONES,
+      "/project/Badge.uf.tsx": source,
+      "/project/badge-tones.ts": TONES,
     });
     const result = await compile(source, {
-      filename: "src/Badge.uf.tsx",
-      targets: ["vue", "angular"],
+      filename: "Badge.uf.tsx",
+      targets: ["react", "angular"],
       resolve,
       typeOracle,
     });
-    expect(result.diagnostics).toEqual([
-      expect.objectContaining({
-        code: "UF1104",
-        target: "angular",
-        span: { start: 26, end: 38 },
-        message:
-          "The shared module badge.ts and Badge's angular output, badge.ts, are one file: each output tree holds a copy of the module beside the components.",
-      }),
-    ]);
-    expect(result.outputs.vue!.map(({ path }) => path)).toEqual(["Badge.vue", "badge.ts"]);
-    expect(result.outputs.angular!.map(({ path }) => path)).toEqual(["badge.ts"]);
-    expect(result.outputs.angular![0]!.contents).not.toBe(TONES);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.outputs.angular!.map(({ path }) => path)).toEqual(["badge.ts", "badge-tones.ts"]);
   });
 });

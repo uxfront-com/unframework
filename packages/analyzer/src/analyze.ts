@@ -69,7 +69,7 @@ import { checkDirective, declareSetup, isDirective, refTypeOf } from "./setup.ts
 import type { InjectionKeyInfo } from "./setup.ts";
 import { ownShapes } from "./shapes.ts";
 import type { Shapes } from "./shapes.ts";
-import { isSharedModuleSpecifier, lowerConstant, sharedValue } from "./shared.ts";
+import { isSharedModuleSpecifier, lowerConstants, sharedValue } from "./shared.ts";
 import type { ConstantCandidate, SharedModule, SharedValues } from "./shared.ts";
 import { scopeIdOf, STYLESHEET_SPECIFIER, stylesheetImport } from "./styles.ts";
 import type { LoweredSheet, StylesheetSource } from "./styles.ts";
@@ -289,9 +289,12 @@ export function analyzeModule(
   }
   // Lowered once every import is known: imports are hoisted, so a constant may read one
   // written after it.
-  const constants = context.constants.map((candidate) =>
-    lowerConstant(candidate, { source: parsed.source, scopes, reporter, shared: context.shared }),
-  );
+  const constants = lowerConstants(context.constants, {
+    source: parsed.source,
+    scopes,
+    reporter,
+    shared: context.shared,
+  });
   // A module-level error drops every component, but they are still checked: fixing it must
   // reveal nothing new (the harness's L1).
   const moduleErrors = keyErrors || reporter.hasErrorsSince(moduleMark);
@@ -1332,7 +1335,7 @@ function sharedImport(statement: AST.ImportDeclaration, context: ModuleContext):
     const { file, specifier: missing } = module.unresolved;
     fail(
       "UF1202",
-      `"${specifier}" ${file === module.file ? "" : `reaches "${file}", which `}imports "${missing}", which the compiler cannot read: every output tree holds a copy of each module it reaches.`,
+      `"${specifier}" ${file === module.file ? "" : `reaches "${file}", which `}loads \`${missing}\`, which the compiler cannot read or follow: every output tree holds a copy of each module it reaches.`,
       "Import a `.ts` file of the project by its relative path, as in `./tokens.ts`.",
     );
     return;

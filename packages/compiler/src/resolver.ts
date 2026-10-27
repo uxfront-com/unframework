@@ -6,6 +6,7 @@ import {
   moduleSpecifiers,
   shapeQueries,
   stylesheetImports,
+  unfollowedImports,
 } from "@unframework/analyzer";
 import type { StylesheetSource } from "@unframework/analyzer";
 import { scopeStylesheet } from "@unframework/codegen";
@@ -44,7 +45,11 @@ export interface ResolvedModule {
   files: { file: string; source: string }[];
   /** The first import of a framework or `unframework` they make, and its file (UF1204). */
   framework?: { specifier: string; file: string };
-  /** The first relative import among them the resolver could not read, and its file (UF1202). */
+  /**
+   * The first relative import among them the resolver could not read, or the first load it
+   * cannot follow (an `import()` of no string, `import.meta.glob`), as written, and its file
+   * (UF1202).
+   */
   unresolved?: { specifier: string; file: string };
 }
 
@@ -160,7 +165,10 @@ export function createFileResolver(options: FileResolverOptions): Resolver {
       const resolved: ResolvedModule = { files };
       for (let index = 0; index < files.length; index++) {
         const { file, source } = files[index]!;
-        for (const specifier of moduleSpecifiers(parseModule(file, source))) {
+        const parsed = parseModule(file, source);
+        const [unfollowed] = unfollowedImports(parsed);
+        if (unfollowed !== undefined) resolved.unresolved ??= { specifier: unfollowed, file };
+        for (const specifier of moduleSpecifiers(parsed)) {
           if (frameworkOf(specifier) || isAuthoringModule(specifier)) {
             resolved.framework ??= { specifier, file };
             continue;

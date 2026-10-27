@@ -38,6 +38,7 @@ import { closure } from "./declarations.ts";
 import type { PropsAnalysis } from "./props.ts";
 import type { RenderContext, SetupBinding } from "./render.ts";
 import type { ItemSource, Setup } from "./setup.ts";
+import type { SharedValue } from "./shared.ts";
 import { deferredFunctions, isLater, laterRegions, markLater } from "./suspension.ts";
 import type { FunctionNode } from "./suspension.ts";
 import { checkTypeQueries } from "./type-queries.ts";
@@ -97,6 +98,8 @@ class Rules {
   readonly #setup: ReadonlyMap<BindingId, SetupBinding>;
   /** The constants whose value reads no binding: what a getter's function may read (UF2014). */
   readonly #static = new Set<BindingId>();
+  /** The module's constants and value imports, by binding id (ADR-0070). */
+  readonly #shared: ReadonlyMap<BindingId, SharedValue>;
   /** The functions client code hands on to run later (ADR-0048). */
   readonly #deferred: ReadonlySet<FunctionNode>;
 
@@ -122,6 +125,7 @@ class Rules {
     this.#setup = new Map(
       [...render.setup.bindings.values()].map((binding) => [binding.id, binding]),
     );
+    this.#shared = new Map([...render.shared.values.values()].map((value) => [value.id, value]));
     // A module's constants and imports are static too: Qwik reads them where they are declared,
     // at the module's top level (ADR-0070).
     for (const binding of this.#component.bindings) {
@@ -174,6 +178,11 @@ class Rules {
     for (const reached of [id, ...summary.reaches]) {
       const reason = this.#setup.get(reached)?.nondeterministic;
       if (reason) return reason;
+    }
+    // A function of the module it calls, which its summary counts as a read (ADR-0070).
+    for (const read of summary.reads) {
+      const shared = this.#shared.get(read)?.nondeterministic;
+      if (shared) return `calls \`${this.#name(read)}\`, which ${shared}`;
     }
     for (const global of summary.clientGlobals) {
       const reason = NONDETERMINISTIC.get(global);
@@ -228,6 +237,22 @@ class Rules {
     ];
     for (const { refs, where, getter } of sites) {
       for (const ref of refs) {
+        // A function of the module runs where it is called, as a local function does (ADR-0070).
+        const shared =
+          ref.kind === "Binding" && ref.call
+            ? this.#shared.get(ref.binding)?.nondeterministic
+            : undefined;
+        if (ref.kind === "Binding" && shared) {
+          this.#reporter.report(
+            "UF3019",
+            ref.span,
+            `\`${this.#name(ref.binding)}\` ${shared}, and ${where} calls it: ${where === "a template expression" ? "the server's render and the browser's" : "the server's setup and the browser's"} would differ.`,
+            {
+              help: "Pass the value in as a prop, or set it from client code (`onMounted`, a handler).",
+            },
+          );
+          continue;
+        }
         if (ref.kind !== "Binding" || !ref.call || this.#kind(ref.binding) !== "localFn") continue;
         const summary = this.#summaries.get(ref.binding);
         if (!summary) continue;

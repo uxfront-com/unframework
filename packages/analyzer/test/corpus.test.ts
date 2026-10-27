@@ -21,6 +21,7 @@ import {
   isAuthoringModule,
   isSharedModuleSpecifier,
   moduleSpecifiers,
+  unfollowedImports,
   shapeQueries,
   sharedModuleImports,
   stylesheetImports,
@@ -121,7 +122,11 @@ function sharedModule(directory: string, specifier: string): SharedModule | unde
   const files = [first];
   for (let index = 0; index < files.length; index++) {
     const file = files[index]!;
-    for (const imported of moduleSpecifiers(parseModule(file, caseFile(file)!))) {
+    const parsed = parseModule(file, caseFile(file)!);
+    const [unfollowed] = unfollowedImports(parsed);
+    if (unfollowed !== undefined)
+      module.unresolved ??= { specifier: unfollowed, file: local(file) };
+    for (const imported of moduleSpecifiers(parsed)) {
       if (frameworkOf(imported) || isAuthoringModule(imported)) {
         module.framework ??= { specifier: imported, file: local(file) };
       } else if (imported.startsWith("./") || imported.startsWith("../")) {

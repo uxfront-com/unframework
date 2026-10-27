@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 // relative `.ts` modules, as the compiler's resolver read them, and its module's top-level `const`
 // declarations, each through a read-only binding of its own.
 import type { SharedModule } from "../src/index.ts";
-import { moduleSpecifiers, sharedModuleImports } from "../src/index.ts";
+import { moduleSpecifiers, sharedModuleImports, unfollowedImports } from "../src/index.ts";
 import { codes, problems, run } from "./helpers.ts";
 
 /** The shared modules a test's resolver read, by specifier. */
@@ -124,11 +124,44 @@ describe("module-level constants", () => {
     ["JSX (UF3012)", "const ICON = <svg />;", "{ICON}", "UF3012 <svg />"],
     ["chance (UF3019)", "const SEED = Math.random();", "{SEED}", "UF3019 Math.random"],
     ["the clock (UF3019)", "const NOW = Date.now();", "{NOW}", "UF3019 Date"],
+    ["the locale (UF3019)", "const L = (1).toLocaleString();", "{L}", "UF3019 toLocaleString"],
     [
-      "the locale (UF3019)",
-      "const fmt = (n: number) => n.toLocaleString();",
-      "{fmt(1)}",
-      "UF3019 toLocaleString",
+      "the clock through `Intl` (UF3019)",
+      "const F = new Intl.NumberFormat();",
+      "{String(F)}",
+      "UF3019 Intl",
+    ],
+    ["chance through `crypto` (UF3019)", "const U = crypto.randomUUID();", "{U}", "UF3019 crypto"],
+    [
+      "the clock through `performance` (UF3019)",
+      "const P = performance.now();",
+      "{P}",
+      "UF3019 performance",
+    ],
+    [
+      "a computed `Math.random` (UF3019)",
+      'const R = Math["random"]();',
+      "{R}",
+      'UF3019 Math["random"]',
+    ],
+    [
+      "a computed locale method (UF3019)",
+      "const S = (1)[`toLocaleString`]();",
+      "{S}",
+      "UF3019 `toLocaleString`",
+    ],
+    [
+      "a computed member of `Math` (UF1002)",
+      'const K = "max";\nconst M2 = Math[K](1, 2);',
+      "{M2}",
+      "UF1002 Math[K]",
+    ],
+    ["`this` (UF1002)", "const T = this;", "{String(T)}", "UF1002 this"],
+    [
+      "a function expression, a generator among them (UF1002)",
+      "const G = function* () { yield 1; };",
+      "{String(G)}",
+      "UF1002 function* () { yield 1; }",
     ],
     ["`import.meta` (UF1002)", "const M = import.meta.url;", "{M}", "UF1002 import.meta"],
     [
@@ -155,6 +188,30 @@ describe("module-level constants", () => {
       "{TOTAL}",
       "UF2023 STEP",
     ],
+    [
+      "a call of a function that reads a constant declared after it (UF2023)",
+      "const g = () => STEP;\nconst TOTAL = g();\nconst STEP = 1;",
+      "{TOTAL}",
+      "UF2023 g",
+    ],
+    [
+      "a function called where it is written, reading a later constant (UF2023)",
+      "const TOTAL = (() => STEP)();\nconst STEP = 1;",
+      "{TOTAL}",
+      "UF2023 STEP",
+    ],
+    [
+      "a function it passes on, reading a later constant (UF2023)",
+      "const ALL = [1].map((n) => n + STEP);\nconst STEP = 1;",
+      "{ALL.length}",
+      "UF2023 STEP",
+    ],
+    [
+      "a call, as it loads, of a function that reads the clock (UF3019)",
+      "const stamp = () => Date.now();\nconst T0 = stamp();",
+      "{T0}",
+      "UF3019 stamp",
+    ],
   ])("reports a constant whose value holds %s", (_, before, read, problem) => {
     const source = `${before}\nexport function A() { return <p>${read}</p>; }`;
     const { module, diagnostics } = run(source);
@@ -162,15 +219,130 @@ describe("module-level constants", () => {
     expect(problems(source, diagnostics)).toEqual([problem]);
   });
 
-  it("accepts a function that reads a constant declared after it, and changes its own values", () => {
+  it("accepts a function that reads a constant declared after it, and writes its own locals", () => {
     const source = [
-      "const total = (items: number[]) => { const all: number[] = []; all.push(...items); return all.length + STEP; };",
+      "const total = (items: number[]) => { let sum = 0; for (const item of items) sum += item; const [first = 0] = items; return sum + first + STEP; };",
       "const STEP = 2;",
-      "export function A() { return <p>{total([1])}</p>; }",
+      "const SIZES = {} as typeof TABLE;",
+      "const TABLE = { sm: 1 };",
+      "export function A() { return <p>{total([1])}{String(SIZES)}{TABLE.sm}</p>; }",
     ].join("\n");
     const { module, diagnostics } = run(source);
     expect(diagnostics).toEqual([]);
-    expect(module!.constants!.map(({ name }) => name)).toEqual(["total", "STEP"]);
+    expect(module!.constants!.map(({ name }) => name)).toEqual(["total", "STEP", "SIZES", "TABLE"]);
+  });
+
+  // A module's values are plain and read-only (ADR-0070): nothing in a constant changes a value
+  // in place, whatever the receiver, and a function writes only its own locals.
+  it.each([
+    [
+      "a write through `as`",
+      "const T = { a: 1 } as const;\nconst f = () => { (T as { a: number }).a = 2; };",
+      "UF2004 (T as { a: number }).a = 2",
+    ],
+    [
+      "a write through `!`",
+      "const T = { a: 1 };\nconst f = () => { T!.a = 2; };",
+      "UF2004 T!.a = 2",
+    ],
+    [
+      "a mutating call through `as`",
+      "const L: number[] = [];\nconst f = () => { (L as number[]).push(1); };",
+      "UF2004 (L as number[]).push(1)",
+    ],
+    [
+      "a computed mutating call",
+      'const L = [2, 1];\nconst f = () => { L["sort"](); };',
+      'UF2004 L["sort"]()',
+    ],
+    [
+      "a call of a computed member",
+      'const L = [2, 1];\nconst K = "sort";\nconst f = () => { L[K](); };',
+      "UF1002 L[K]",
+    ],
+    [
+      "an array pattern's target",
+      "const T = { n: 0 };\nconst f = () => { [T.n] = [1]; };",
+      "UF2004 [T.n] = [1]",
+    ],
+    [
+      "an object pattern's target",
+      "const T = { n: 0 };\nconst f = () => { ({ a: T.n } = { a: 1 }); };",
+      "UF2004 { a: T.n } = { a: 1 }",
+    ],
+    [
+      "a call through an alias",
+      "const L: number[] = [];\nconst f = () => { const b = L; b.push(1); };",
+      "UF2004 b.push(1)",
+    ],
+    [
+      "a loop's member target",
+      'const T = { n: "" };\nconst f = () => { for (T.n in { a: 1 }) {} };',
+      "UF2004 T.n",
+    ],
+    [
+      "`++` on a constant",
+      "let i = 0;\nconst f = () => { i++; };",
+      "UF1002 let i = 0;\nUF2011 i++",
+    ],
+    ["`++` on a member", "const T = { n: 0 };\nconst f = () => { T.n++; };", "UF2004 T.n++"],
+    [
+      "`delete`",
+      "const T: { n?: number } = { n: 0 };\nconst f = () => { delete T.n; };",
+      "UF2004 delete T.n",
+    ],
+    [
+      "`Object.assign`",
+      "const T = { n: 0 };\nconst f = () => { Object.assign(T, { n: 1 }); };",
+      "UF2004 Object.assign(T, { n: 1 })",
+    ],
+    [
+      "a `Map`'s `set`",
+      'const M = new Map<string, number>();\nconst f = () => { M.set("a", 1); };',
+      'UF2004 M.set("a", 1)',
+    ],
+    [
+      "a write of an import",
+      'import { sizes } from "./tokens";\nconst f = () => { sizes = {}; };',
+      "UF2011 sizes = {}",
+    ],
+  ])("reports %s in a module's function", (_, before, expected) => {
+    const source = `${before}\nexport function A() { return <p>{String(f)}</p>; }`;
+    const { diagnostics } = run(source, "Test.uf.tsx", { modules: TOKENS });
+    expect(problems(source, diagnostics).filter((each) => !each.startsWith("UF1002 f"))).toEqual(
+      expected.split("\n"),
+    );
+  });
+
+  // A function's body runs where it is called, as a local function's does (UF3019, ADR-0045).
+  it("reports chance, the clock and the locale in a module's function only where render calls it", () => {
+    const handler = [
+      'import { ref } from "unframework";',
+      "const stamp = () => Date.now();",
+      "const newId = () => crypto.randomUUID();",
+      "export function A() {",
+      "  const last = ref(0);",
+      '  const id = ref("");',
+      "  function save() { last.value = stamp(); id.value = newId(); }",
+      '  return <button type="button" onClick={save}>{last.value}{id.value}</button>;',
+      "}",
+    ].join("\n");
+    expect(run(handler).diagnostics).toEqual([]);
+    const rendered = [
+      "const stamp = () => Date.now();",
+      "const later = () => stamp();",
+      "const fmt = (n: number) => n.toLocaleString();",
+      "export function A() {",
+      "  function shown() { return later(); }",
+      "  return <p>{fmt(1)}{shown()}</p>;",
+      "}",
+    ].join("\n");
+    const { diagnostics } = run(rendered);
+    expect(problems(rendered, diagnostics)).toEqual(["UF3019 fmt", "UF3019 shown"]);
+    expect(diagnostics[0]!.message).toBe(
+      "`fmt` formats by the machine's locale (`toLocaleString`), and a template expression calls it: the server's render and the browser's would differ.",
+    );
+    expect(diagnostics[1]!.message).toContain("calls `later`, which reads the clock (`Date`)");
   });
 
   it("reports a write of a constant (UF2011), and a change in place (UF2004)", () => {
@@ -212,9 +384,26 @@ describe("imports of shared modules", () => {
         'import R = require("vue");',
         'export const c = () => import("./lazy");',
         "export const d = (name: string) => import(name);",
+        "export const e = () => import(`react-dom`);",
+        "export const f = () => import(`./${name}.ts`);",
+        'export const g = import.meta.glob("./x/*.ts");',
+        "export const h = import.meta.env;",
       ].join("\n"),
     );
-    expect(moduleSpecifiers(shared)).toEqual(["./a.ts", "pkg", "react", "vue", "./lazy"]);
+    expect(moduleSpecifiers(shared)).toEqual([
+      "./a.ts",
+      "pkg",
+      "react",
+      "vue",
+      "./lazy",
+      "react-dom",
+    ]);
+    // What the compiler cannot follow, as written (UF1202).
+    expect(unfollowedImports(shared)).toEqual([
+      "import(name)",
+      "import(`./${name}.ts`)",
+      "import.meta.glob",
+    ]);
   });
 
   it("reads a shared module's values through `import` bindings, and re-imports its types", () => {
@@ -308,7 +497,7 @@ describe("imports of shared modules", () => {
     });
     expect(module).toBeUndefined();
     expect(problems(source, diagnostics)).toEqual(['UF1202 "./tokens"']);
-    expect(diagnostics[0]!.message).toContain('"./tokens" imports "./gone"');
+    expect(diagnostics[0]!.message).toContain('"./tokens" loads `./gone`');
   });
 
   it.each([

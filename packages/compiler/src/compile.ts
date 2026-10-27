@@ -6,7 +6,7 @@ import {
   stylesheetImports,
 } from "@unframework/analyzer";
 import type { SharedModule, StylesheetSource } from "@unframework/analyzer";
-import { formatOutput, scopeStylesheet } from "@unframework/codegen";
+import { formatOutput, kebabCase, scopeStylesheet } from "@unframework/codegen";
 import type { OutputFile, Target } from "@unframework/codegen";
 import { createDiagnostic, sortDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
@@ -260,6 +260,10 @@ export async function compile(source: string, options: CompileOptions): Promise<
     } else {
       analysed = analysis.module && deepFreeze(analysis.module);
     }
+    // A copy named like a component's output withholds the module, as an analyser error does.
+    const collisions = analysed ? copyCollisions(analysed, copies, file) : [];
+    diagnostics.push(...collisions);
+    if (collisions.length) analysed = undefined;
   } catch (error) {
     diagnostics.push(internal(file, error, "The analyser failed"));
   }
@@ -343,6 +347,46 @@ function sourceOracle(file: string, source: string): TypeOracle {
   return createSyntacticOracle({
     root: "",
     readFile: async (path) => (path === `/${file}` ? source : undefined),
+  });
+}
+
+/**
+ * The shared modules whose copy would take a component's output file (UF1104, ADR-0070): an
+ * output imports a component's file by its name without the extension (`./CardIcon`), React,
+ * Solid and Qwik name it as the component and Angular in kebab-case, and the output tree holds
+ * the module's own components and every child it imports. So a copy whose path, without `.ts`,
+ * is one of those names, compared without case, is reported for every target, since the module
+ * compiles to each.
+ */
+function copyCollisions(
+  module: UfModule,
+  copies: ReadonlyMap<string, Copy>,
+  file: string,
+): Diagnostic[] {
+  const names = new Map<string, string>();
+  const add = (directory: string, name: string) => {
+    for (const stem of [name, kebabCase(name)]) {
+      names.set(`${directory}${stem}`.toLowerCase(), name);
+    }
+  };
+  for (const component of module.components) add("", component.name);
+  for (const entry of module.imports ?? []) {
+    const slash = entry.file.lastIndexOf("/");
+    for (const component of entry.api.components) {
+      add(slash === -1 ? "" : entry.file.slice(0, slash + 1), component.name);
+    }
+  }
+  return [...copies].flatMap(([path, { span }]) => {
+    const name = names.get(path.replace(/\.ts$/, "").toLowerCase());
+    if (name === undefined) return [];
+    return [
+      createDiagnostic("UF1104", {
+        file,
+        span,
+        message: `The shared module ${path} is named like ${name}'s output file, which an output imports without its extension (\`${name}\`, and \`${kebabCase(name)}\` on Angular): each output tree holds the module's copy beside the components.`,
+        help: "Rename the shared module, or the component.",
+      }),
+    ];
   });
 }
 
