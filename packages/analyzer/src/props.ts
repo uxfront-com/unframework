@@ -17,7 +17,7 @@ import {
 } from "@unframework/ir";
 import type { Binding, DeclaredBy, Prop, PropsParameter, Span, TypeText } from "@unframework/ir";
 import { parseModule, visitorKeys } from "@unframework/parser";
-import type { AST, ParsedModule, TypeDeclarationStatement } from "@unframework/parser";
+import type { AST, ParsedModule } from "@unframework/parser";
 import type { ObjectNode, ShapeMember, TypeShape, UnresolvedType } from "@unframework/type-oracle";
 
 import { Reporter } from "./context.ts";
