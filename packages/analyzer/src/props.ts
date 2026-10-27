@@ -39,7 +39,7 @@ import { kindsFromShape } from "./types/from-shape.ts";
 import type { ShapeReading } from "./types/from-shape.ts";
 import { memberName } from "./types/from-type.ts";
 import type { TypeTable } from "./types/from-type.ts";
-import { has, union, UNDEFINED, without } from "./types/kinds.ts";
+import { has, union, UNDEFINED, UNKNOWN, without } from "./types/kinds.ts";
 import type { Kinds } from "./types/kinds.ts";
 
 /** What a component's props parameter declares. */
@@ -289,7 +289,7 @@ function shapeMembers(
   };
   const { file, source } = parsed;
   const here = (entry: { file: string; span: Span }) => (entry.file === file ? entry.span : at);
-  const { properties: signatures, callables } = signaturesOf(parsed.program);
+  const { properties: signatures, callables, intersections } = signaturesOf(parsed.program);
   const textOf = (entry: UnresolvedType) => {
     if (entry.file === file) return source.slice(entry.span.start, entry.span.end);
     const node = shape.nodes.find(
@@ -341,6 +341,14 @@ function shapeMembers(
         // a prop (ADR-0034).
         if (entry.file === file && callables.has(entry.span.start)) {
           problem("UF1002", entry.span, FUNCTIONS);
+        } else if (entry.file === file && intersections.has(entry.span.start)) {
+          // The oracle merges an intersection's object parts and reports each other part, such
+          // as a brand's `string` in `string & {}`: the intersection is the construct.
+          problem(
+            "UF6002",
+            span(intersections.get(entry.span.start)!),
+            ...notAProp("An intersection with a part that is not an object type"),
+          );
         } else {
           problem("UF6002", here(entry), ...needsChecker(`${text}${where}`));
         }
@@ -401,6 +409,14 @@ function shapeMembers(
   // declaration's are another's (`declaredBy`).
   const own = ownDeclarations(annotation, types);
   const reading = shapeReading(parsed, types.table, at);
+  const partial = shape.unresolved.length > 0;
+  const written = (member: ShapeMember): Kinds | undefined => {
+    const type =
+      member.file === file
+        ? signatures.get(member.span.start)?.typeAnnotation?.typeAnnotation
+        : undefined;
+    return type && types.table.kindsOf(type);
+  };
   const result: PropMember[] = [];
   for (const member of members) {
     const local = member.file === file;
@@ -426,7 +442,7 @@ function shapeMembers(
     if (signature?.computed) {
       problem("UF6002", span(signature.key), ...needsChecker("A computed key"));
     }
-    checkShapeType(shape, member.type, where, problem, new Set(), file);
+    checkShapeType(shape, member.type, where, problem, new Set(), file, partial);
     checkExported(shape, member, at, file, problem);
     result.push({
       name: member.name,
@@ -437,7 +453,9 @@ function shapeMembers(
         : createTypeText(member.typeText?.code ?? "", at),
       at: where,
       span: local ? member.span : at,
-      kinds: kindsFromShape(shape, reading, member.type),
+      // A shape that does not resolve in full keeps what it could not evaluate as an object, so
+      // its members read as the module's own types give them, which leave that `unknown`.
+      kinds: partial ? (written(member) ?? UNKNOWN) : kindsFromShape(shape, reading, member.type),
       ...(declaredBy ? { declaredBy } : {}),
     });
   }
@@ -922,7 +940,9 @@ function duplicates(annotation: AST.TSType, types: ModuleTypes, problem: Problem
  * Checks a member's resolved type as `checkType` checks one written in the module (ADR-0034),
  * reporting at `at`: what the type oracle could not resolve is reported where it met it. The
  * members of an object `file` writes are checked at their own spans, so a declaration that
- * several members reach reports its problem once, where it is written.
+ * several members reach reports its problem once, where it is written. In a `partial` shape an
+ * empty object may be what is left of an intersection whose other parts are reported, so it is
+ * not reported again.
  */
 function checkShapeType(
   shape: TypeShape,
@@ -931,6 +951,7 @@ function checkShapeType(
   problem: Problem,
   seen: Set<number>,
   file: string,
+  partial: boolean,
 ): void {
   const node = shape.nodes[id]!;
   switch (node.kind) {
@@ -942,10 +963,12 @@ function checkShapeType(
     case "literal":
       return;
     case "union":
-      for (const each of node.types) checkShapeType(shape, each, at, problem, seen, file);
+      for (const each of node.types) {
+        checkShapeType(shape, each, at, problem, seen, file, partial);
+      }
       return;
     case "array":
-      checkShapeType(shape, node.element, at, problem, seen, file);
+      checkShapeType(shape, node.element, at, problem, seen, file, partial);
       return;
     case "tuple":
       problem("UF6002", at, ...notAProp("A tuple type"));
@@ -953,12 +976,12 @@ function checkShapeType(
     case "object":
       if (seen.has(id)) return;
       seen.add(id);
-      if (!node.declaration && !node.members.length) {
+      if (!node.declaration && !node.members.length && !partial) {
         problem("UF6002", at, ...notAProp("The empty object type `{}`"));
       }
       for (const member of node.members) {
         const where = member.file === file ? (member.typeText?.span ?? member.span) : at;
-        checkShapeType(shape, member.type, where, problem, seen, file);
+        checkShapeType(shape, member.type, where, problem, seen, file, partial);
       }
       return;
     case "function":
@@ -1057,6 +1080,8 @@ interface Signatures {
   properties: Map<number, AST.TSPropertySignature>;
   /** Where each call or construct signature starts, which is a function. */
   callables: Set<number>;
+  /** The intersection each part of one belongs to, by where the part starts. */
+  intersections: Map<number, AST.TSIntersectionType>;
 }
 
 const SIGNATURES = new WeakMap<AST.Program, Signatures>();
@@ -1066,6 +1091,7 @@ function signaturesOf(program: AST.Program): Signatures {
   if (cached) return cached;
   const found = new Map<number, AST.TSPropertySignature>();
   const callables = new Set<number>();
+  const intersections = new Map<number, AST.TSIntersectionType>();
   const visit = (node: unknown): void => {
     if (!node || typeof node !== "object") return;
     if (Array.isArray(node)) {
@@ -1081,12 +1107,15 @@ function signaturesOf(program: AST.Program): Signatures {
     ) {
       callables.add(typed.start);
     }
+    if (typed.type === "TSIntersectionType") {
+      for (const part of typed.types) intersections.set(part.start, typed);
+    }
     for (const key of visitorKeys[typed.type] ?? []) {
       visit((node as unknown as Record<string, unknown>)[key]);
     }
   };
   visit(program);
-  const signatures = { properties: found, callables };
+  const signatures = { properties: found, callables, intersections };
   SIGNATURES.set(program, signatures);
   return signatures;
 }

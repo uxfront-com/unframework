@@ -361,6 +361,28 @@ describe("props types", () => {
     expect(diagnostics[0]!.message).toContain(message);
   });
 
+  // The oracle keeps a brand's object part and reports its primitive part: one problem, at the
+  // intersection, and no uses that read the member as an object.
+  it.each([
+    [
+      'type Size = "sm" | "md" | (string & {});\ninterface P { size: Size }',
+      "<p title={props.size}>{props.size}</p>",
+      "UF6002 string & {}",
+    ],
+    [
+      'type Id = number & { __brand: "id" };\ninterface P { id: Id }',
+      "<p>{props.id}</p>",
+      'UF6002 number & { __brand: "id" }',
+    ],
+  ])("reports a branded member once: %s", (types, jsx, problem) => {
+    const source = `${types}\nexport function A(props: P) { return ${jsx}; }`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual([problem]);
+    expect(diagnostics[0]!.message).toContain(
+      "An intersection with a part that is not an object type",
+    );
+  });
+
   it("reports a problem of a type several members reach once, where it is written", () => {
     const source = [
       "interface Item { run(): void }",

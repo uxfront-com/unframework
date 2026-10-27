@@ -614,7 +614,7 @@ function readSpread(
       item,
       `This spread reads \`${unwritten.name}\`, a setup value whose type is not written as an annotation or as \`ref\`'s type argument: a spread reads only setup values whose types are written, so that it renders the keys they declare.`,
       {
-        help: `Annotate \`${unwritten.name}\` with its type (\`const attrs: Attrs = …\`) or hold it in \`ref<Attrs>(…)\`, or write the attributes.`,
+        help: `Write \`${unwritten.name}\`'s type, as an annotation or as \`ref\`'s type argument, or write the attributes.`,
       },
     );
     return { node: item, binds: true, attribute: undefined, keys: [] };

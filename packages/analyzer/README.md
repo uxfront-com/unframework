@@ -270,12 +270,13 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   types one), `class` parts, `style` declarations (parsed by `@unframework/parser`, UF3022 for what
   the targets cannot keep apart) and spreads of objects whose keys a type declares: a prop's, a
   list's item's, or a setup value's whose type is written as an annotation or as `ref`'s type
-  argument, read from its shape. A setup value whose type is not written so is UF1002, and one whose
-  type does not resolve in full UF3048. A spread records whether its object may be nullish where it
-  renders (`spread-source.ts`): its kinds say whether its type may be, and the conditions around it
-  narrow it as every target's checker does; a test the compiler does not follow is UF1002, and a
-  source the conditions show is absent UF3004. A bound `value` that may be nullish on the elements
-  whose `value` some targets set as a property (`NULLISH_VALUE_ELEMENTS`) is UF1002.
+  argument, read from its shape. A spread that reads any setup value whose type is not written so,
+  its source or a condition's, is UF1002, and one that reads a setup value whose type does not
+  resolve in full UF3048. A spread records whether its object may be nullish where it renders
+  (`spread-source.ts`): its kinds say whether its type may be, and the conditions around it narrow
+  it as every target's checker does; a test the compiler does not follow is UF1002, and a source the
+  conditions show is absent UF3004. A bound `value` that may be nullish on the elements whose
+  `value` some targets set as a property (`NULLISH_VALUE_ELEMENTS`) is UF1002.
 
 Every fix leaves exactly the diagnostics that had none once all are applied (the harness's L1),
 which the tests check for each fix, for each pair that can meet, and over random mixes.
