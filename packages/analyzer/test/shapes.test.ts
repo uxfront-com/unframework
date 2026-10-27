@@ -329,24 +329,6 @@ describe("a spread of a setup value whose type is imported", () => {
     }
   });
 
-  it.each([
-    [
-      'export type Size = "sm" | "md" | (string & {});',
-      "size: Size",
-      "<p title={props.size}>{props.size}</p>",
-    ],
-    ['export type Id = number & { __brand: "id" };', "id: Id", "<p>{props.id}</p>"],
-  ])("reports an imported branded member once: %s", async (types, member, jsx) => {
-    const name = member.split(": ")[1]!;
-    const source = [
-      `import type { ${name} } from "./types.ts";`,
-      `interface P { ${member} }`,
-      `export function A(props: P) { return ${jsx}; }`,
-    ].join("\n");
-    const { diagnostics } = await analyzeWith({ "types.ts": types, "A.uf.tsx": source });
-    expect(problems(source, diagnostics)).toEqual(["UF6002 P"]);
-  });
-
   it("reads an imported branded primitive as the base did", async () => {
     const source = [
       'import { ref } from "unframework";',
@@ -419,6 +401,27 @@ describe("a spread of a setup value whose type is imported", () => {
 });
 
 describe("the shape path's checks", () => {
+  it.each([
+    [
+      'export type Size = "sm" | "md" | (string & {});',
+      "size: Size",
+      "<p title={props.size}>{props.size}</p>",
+    ],
+    ['export type Id = number & { __brand: "id" };', "id: Id", "<p>{props.id}</p>"],
+  ])("reports an imported branded member once: %s", async (types, member, jsx) => {
+    const name = member.split(": ")[1]!;
+    const source = [
+      `import type { ${name} } from "./types.ts";`,
+      `interface P { ${member} }`,
+      `export function A(props: P) { return ${jsx}; }`,
+    ].join("\n");
+    const { diagnostics } = await analyzeWith({ "types.ts": types, "A.uf.tsx": source });
+    expect(problems(source, diagnostics)).toEqual(["UF6002 P"]);
+    expect(diagnostics[0]!.message).toBe(
+      "An intersection with a part the default type oracle cannot read as an object type in `types.ts` is not a type a prop can take.",
+    );
+  });
+
   const imported = (members: string) => ({
     "types.ts": `export interface P { label: string; ${members} }`,
     "A.uf.tsx":

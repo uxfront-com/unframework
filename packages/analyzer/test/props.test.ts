@@ -378,9 +378,25 @@ describe("props types", () => {
     const source = `${types}\nexport function A(props: P) { return ${jsx}; }`;
     const { diagnostics } = run(source);
     expect(problems(source, diagnostics)).toEqual([problem]);
-    expect(diagnostics[0]!.message).toContain(
-      "An intersection with a part that is not an object type",
+    expect(diagnostics[0]!.message).toBe(
+      "An intersection with a part the default type oracle cannot read as an object type is not a type a prop can take.",
     );
+  });
+
+  // Another member's unresolved type stops no member's own check.
+  it.each([
+    [
+      'import type { Foo } from "./missing.ts";\ninterface P { a: Foo; c: {} }',
+      ["UF6001 Foo", "UF6002 {}"],
+    ],
+    [
+      "interface X { y: string }\ninterface P { b: keyof X; c: {} }",
+      ["UF6002 keyof X", "UF6002 {}"],
+    ],
+    ['interface P { s: "a" | (string & {}); c: {} }', ["UF6002 string & {}", "UF6002 {}"]],
+  ])("reports a written `{}` beside another member's problem: %s", (types, expected) => {
+    const source = `${types}\nexport function A(props: P) { return <p />; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual(expected);
   });
 
   it("reports a problem of a type several members reach once, where it is written", () => {

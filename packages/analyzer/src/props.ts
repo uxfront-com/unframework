@@ -34,6 +34,7 @@ import {
 import type { ModuleTypes } from "./declarations.ts";
 import { checkDirectives, span } from "./expressions.ts";
 import type { ComponentFunction, PropBinding } from "./render.ts";
+import { visit as walkTypes } from "./shapes.ts";
 import type { Shapes } from "./shapes.ts";
 import { kindsFromShape } from "./types/from-shape.ts";
 import type { ShapeReading } from "./types/from-shape.ts";
@@ -290,6 +291,10 @@ function shapeMembers(
   const { file, source } = parsed;
   const here = (entry: { file: string; span: Span }) => (entry.file === file ? entry.span : at);
   const { properties: signatures, callables, intersections } = signaturesOf(parsed.program);
+  // The intersections whose non-object parts are reported: what the oracle merged of their
+  // object parts may be an empty object, which is not reported again.
+  const lost = new Set<AST.TSIntersectionType>();
+  let lostElsewhere = false;
   const textOf = (entry: UnresolvedType) => {
     if (entry.file === file) return source.slice(entry.span.start, entry.span.end);
     const node = shape.nodes.find(
@@ -344,11 +349,14 @@ function shapeMembers(
         } else if (entry.file === file && intersections.has(entry.span.start)) {
           // The oracle merges an intersection's object parts and reports each other part, such
           // as a brand's `string` in `string & {}`: the intersection is the construct.
-          problem(
-            "UF6002",
-            span(intersections.get(entry.span.start)!),
-            ...notAProp("An intersection with a part that is not an object type"),
-          );
+          const intersection = intersections.get(entry.span.start)!;
+          lost.add(intersection);
+          problem("UF6002", span(intersection), ...notAProp(INTERSECTION));
+        } else if (entry.file !== file && PRIMITIVE.test(textOf(entry))) {
+          // A primitive resolves on its own, so one another file leaves unresolved is an
+          // intersection's part there.
+          lostElsewhere = true;
+          problem("UF6002", at, ...notAProp(`${INTERSECTION}${where}`));
         } else {
           problem("UF6002", here(entry), ...needsChecker(`${text}${where}`));
         }
@@ -410,6 +418,34 @@ function shapeMembers(
   const own = ownDeclarations(annotation, types);
   const reading = shapeReading(parsed, types.table, at);
   const partial = shape.unresolved.length > 0;
+  const imports = typeImportsOf(parsed.program);
+  /**
+   * Whether a member's type reaches an intersection whose non-object part is reported: in this
+   * module's syntax, or, for a part another file writes, through an import or that file's member.
+   */
+  const leavesEmpty = (member: ShapeMember): boolean => {
+    if (member.file !== file) return lostElsewhere;
+    const type = signatures.get(member.span.start)?.typeAnnotation?.typeAnnotation;
+    if (!type || (!lost.size && !lostElsewhere)) return false;
+    let found = false;
+    const enter = (node: AST.Node): boolean => {
+      if (node.type === "TSIntersectionType" && lost.has(node)) found = true;
+      if (
+        lostElsewhere &&
+        node.type === "TSTypeReference" &&
+        node.typeName.type === "Identifier" &&
+        imports.has(node.typeName.name)
+      ) {
+        found = true;
+      }
+      return !found;
+    };
+    walkTypes(type, enter);
+    for (const name of closure(type, types.table)) {
+      walkTypes(types.table.declaration(name)!.node, enter);
+    }
+    return found;
+  };
   const written = (member: ShapeMember): Kinds | undefined => {
     const type =
       member.file === file
@@ -442,7 +478,7 @@ function shapeMembers(
     if (signature?.computed) {
       problem("UF6002", span(signature.key), ...needsChecker("A computed key"));
     }
-    checkShapeType(shape, member.type, where, problem, new Set(), file, partial);
+    checkShapeType(shape, member.type, where, problem, new Set(), file, leavesEmpty(member));
     checkExported(shape, member, at, file, problem);
     result.push({
       name: member.name,
@@ -489,6 +525,13 @@ function ownDeclarations(annotation: AST.TSType, types: ModuleTypes): Set<string
     type = declaration.node.typeAnnotation;
   }
 }
+
+/** What UF6002 calls an intersection the oracle reads only part of. */
+const INTERSECTION =
+  "An intersection with a part the default type oracle cannot read as an object type";
+
+/** A primitive keyword's text, which resolves on its own anywhere but in an intersection. */
+const PRIMITIVE = /^(?:string|number|boolean|bigint|symbol|null|undefined)$/;
 
 /** Code as a message quotes it: in a run of backticks longer than any the text holds. */
 function quoted(text: string): string {
@@ -940,9 +983,9 @@ function duplicates(annotation: AST.TSType, types: ModuleTypes, problem: Problem
  * Checks a member's resolved type as `checkType` checks one written in the module (ADR-0034),
  * reporting at `at`: what the type oracle could not resolve is reported where it met it. The
  * members of an object `file` writes are checked at their own spans, so a declaration that
- * several members reach reports its problem once, where it is written. In a `partial` shape an
- * empty object may be what is left of an intersection whose other parts are reported, so it is
- * not reported again.
+ * several members reach reports its problem once, where it is written. Where the member reaches
+ * an intersection whose other parts are reported (`leavesEmpty`), an empty object may be what the
+ * oracle merged of it, so it is not reported again.
  */
 function checkShapeType(
   shape: TypeShape,
@@ -951,7 +994,7 @@ function checkShapeType(
   problem: Problem,
   seen: Set<number>,
   file: string,
-  partial: boolean,
+  leavesEmpty: boolean,
 ): void {
   const node = shape.nodes[id]!;
   switch (node.kind) {
@@ -964,11 +1007,11 @@ function checkShapeType(
       return;
     case "union":
       for (const each of node.types) {
-        checkShapeType(shape, each, at, problem, seen, file, partial);
+        checkShapeType(shape, each, at, problem, seen, file, leavesEmpty);
       }
       return;
     case "array":
-      checkShapeType(shape, node.element, at, problem, seen, file, partial);
+      checkShapeType(shape, node.element, at, problem, seen, file, leavesEmpty);
       return;
     case "tuple":
       problem("UF6002", at, ...notAProp("A tuple type"));
@@ -976,12 +1019,12 @@ function checkShapeType(
     case "object":
       if (seen.has(id)) return;
       seen.add(id);
-      if (!node.declaration && !node.members.length && !partial) {
+      if (!node.declaration && !node.members.length && !leavesEmpty) {
         problem("UF6002", at, ...notAProp("The empty object type `{}`"));
       }
       for (const member of node.members) {
         const where = member.file === file ? (member.typeText?.span ?? member.span) : at;
-        checkShapeType(shape, member.type, where, problem, seen, file, partial);
+        checkShapeType(shape, member.type, where, problem, seen, file, leavesEmpty);
       }
       return;
     case "function":

@@ -149,7 +149,7 @@ function functions(program: AST.Program): AST.Function[] {
 }
 
 /** Walks a node's tree, entering each node's children when `enter` returns true. */
-function visit(node: unknown, enter: (node: AST.Node) => boolean): void {
+export function visit(node: unknown, enter: (node: AST.Node) => boolean): void {
   if (!node || typeof node !== "object") return;
   if (Array.isArray(node)) {
     for (const item of node) visit(item, enter);
