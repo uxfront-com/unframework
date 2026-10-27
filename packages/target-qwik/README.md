@@ -192,7 +192,8 @@ Tests and tooling use three Node and browser entries (plan §5.7, `Toolchain` in
 
 - **L3** runs the Rust optimizer from `@qwik.dev/optimizer` (the exact version
   `@qwik.dev/core` depends on, checked at start) over each file, for the client and the
-  server, with the `segment` entry strategy.
+  server, with the `segment` entry strategy, after a strict parse of the file as TSX, or as
+  TypeScript for a `.ts` module, which the optimizer would repair silently otherwise.
 - **L4** runs TypeScript 7 (tsgo) once over every file, through a temporary tsconfig in
   `<toolchainDir>/.uf-tmp/` that extends `<toolchainDir>/tsconfig.json`. In this repo the
   toolchain directory is `tests/toolchains/qwik`.

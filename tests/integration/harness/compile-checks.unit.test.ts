@@ -12,6 +12,7 @@ import {
   checkFixes,
   expectationProblems,
   formattingProblems,
+  moduleCopyProblems,
   nondeterminism,
   referenceProblems,
   stylesheetProblems,
@@ -313,5 +314,30 @@ describe("stylesheetProblems (ADR-0063)", () => {
       "vue/Card.uf.tsx.css is not valid CSS at offset 26: Invalid dangling combinator in selector",
       "vue/Other.uf.tsx.css is not valid CSS at offset 8: Unknown at rule: @unknown",
     ]);
+  });
+});
+
+describe("moduleCopyProblems (L2, ADR-0070)", () => {
+  const tokens = "export const SIZE = 8;\n";
+  const modules = [{ path: "tokens.ts", contents: tokens }];
+
+  it("passes a copy of a case's module that equals it, and a tree that holds none", () => {
+    const outputs = new Map([
+      ["Card.vue", "<template><p>Hi</p></template>\n"],
+      ["tokens.ts", tokens],
+    ]);
+    expect(moduleCopyProblems("vue", outputs, modules)).toEqual([]);
+    expect(moduleCopyProblems("vue", new Map([["Card.vue", ""]]), modules)).toEqual([]);
+  });
+
+  it("reports a copy that differs from its module, with the difference", () => {
+    const [problem, ...rest] = moduleCopyProblems(
+      "react",
+      new Map([["tokens.ts", "export const SIZE = 9;\n"]]),
+      modules,
+    );
+    expect(rest).toEqual([]);
+    expect(problem).toMatch(/^react\/tokens\.ts is not the case's tokens\.ts unchanged:\n/);
+    expect(problem).toMatch(/^\+ export const SIZE = 9;$/m);
   });
 });

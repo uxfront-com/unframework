@@ -93,17 +93,21 @@ function versionOf(name: string, from: NodeJS.Require): string {
   return String(manifest.version);
 }
 
-/** Parses a file strictly as TSX, and returns its syntax errors with 1-based positions. */
+/**
+ * Parses a file strictly as TSX, or a `.ts` module (a composable's, ADR-0069, or a shared one,
+ * ADR-0070) as TypeScript, and returns its syntax errors with 1-based positions.
+ */
 function syntaxErrors(file: ToolchainFile): ToolchainMessage[] {
-  const { errors } = parseSync(file.path, file.contents, { lang: "tsx", sourceType: "module" });
+  const lang = file.path.endsWith(".ts") ? "ts" : "tsx";
+  const { errors } = parseSync(file.path, file.contents, { lang, sourceType: "module" });
   return errors.map((error) => {
     const offset = error.labels[0]?.start ?? 0;
     const before = file.contents.slice(0, offset).split("\n");
     return {
-      message: `Not valid TSX: ${error.message}`,
+      message: `Not valid ${lang.toUpperCase()}: ${error.message}`,
       line: before.length,
       column: before.at(-1)!.length + 1,
-      code: "TSX_SYNTAX",
+      code: `${lang.toUpperCase()}_SYNTAX`,
     };
   });
 }

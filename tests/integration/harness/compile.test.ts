@@ -5,7 +5,7 @@
 // (`pnpm test:update`) this project owns and writes `__output__/**` and
 // `__expected__/diagnostics.json`, and deletes the shared expectations no case owns.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { basename, join, relative, sep } from "node:path";
 
 import { compile, TARGET_NAMES } from "@unframework/compiler";
 import type { CompileResult, CompilerPlugin } from "@unframework/compiler";
@@ -31,6 +31,7 @@ import {
   expectationProblems,
   formattingProblems,
   forTarget,
+  moduleCopyProblems,
   nondeterminism,
   referenceProblems,
   stylesheetProblems,
@@ -236,8 +237,8 @@ async function checkDiagnostics(
 
 /**
  * L2: each source's IR snapshot (schema-valid), the target's golden files (exactly the files of
- * every source's compile), diagnostics.txt for a case with errors, determinism, and formatting
- * idempotence.
+ * every source's compile, each copy of a case's `.ts` module unchanged), diagnostics.txt for a
+ * case with errors, determinism, and formatting idempotence.
  */
 async function checkOutputs(
   info: CaseInfo,
@@ -288,6 +289,16 @@ async function checkOutputs(
 
   const { files, problems: collisions } = caseOutputs(joined, target);
   problems.push(...collisions);
+  problems.push(
+    ...moduleCopyProblems(
+      target,
+      files,
+      info.modules.map((module) => ({
+        path: basename(module.source),
+        contents: readFileSync(module.source, "utf8"),
+      })),
+    ),
+  );
   settle(
     settleArtefactDirectory(join(output, target), files, {
       update: harness.update,

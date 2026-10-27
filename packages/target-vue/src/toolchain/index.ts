@@ -34,9 +34,17 @@ export const toolchain: Toolchain = {
   frameworkCompile,
   typecheck,
   // L5 (ADR-0042): oxlint's shared baseline over the script block, ESLint over the whole file.
+  // ESLint reads only the `.vue` files: a `.ts` module beside them, a shared module (ADR-0070)
+  // or a composable (ADR-0069), is oxlint's alone, which runs the baseline over it.
   lint: async (files, context) =>
     mergeLintResults(
-      await Promise.all([lintWithOxlint(files, context), lintWithEslint(files, context)]),
+      await Promise.all([
+        lintWithOxlint(files, context),
+        lintWithEslint(
+          files.filter((file) => file.endsWith(".vue")),
+          context,
+        ),
+      ]),
     ),
 };
 
