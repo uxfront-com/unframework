@@ -318,7 +318,7 @@ describe("props types", () => {
       "`Record<string, string>` needs a type checker",
     ],
     ["a: Date", "UF6001 Date", "`Date` is neither declared nor imported by this module"],
-    ["a: keyof X", "UF6002 keyof X", "`keyof` needs a type checker"],
+    ["a: keyof X", "UF6002 keyof X", "`keyof X` needs a type checker"],
   ])("reports the member %s", (member, problem, message) => {
     const source = `interface P { ${member} }\nexport function A(props: P) { return <p />; }`;
     const { diagnostics } = run(source);
@@ -462,6 +462,31 @@ describe("props types", () => {
     ["type P = () => void;", ["UF6004 P"]],
     ["type P = Missing;", ["UF6001 P"]],
   ])("reports %s as the shape gives it", (types, expected) => {
+    const source = `${types}\nexport function A(props: P) { return <p />; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual(expected);
+  });
+
+  // An alias the props type is built from is a part of its object, not a prop's type.
+  it.each([
+    ["type E = {};\ninterface P extends E { a: string }", []],
+    ["type E = {} & {};\ninterface P extends E { a: string }", []],
+    ["type E = {};\ntype P = E & { a: string };", []],
+    ["type E = {};\ntype P = { a: string } & E;", []],
+    ["type E = object;\ninterface P extends E { a: string }", ["UF6002 E"]],
+    ["type E = object;\ntype P = E & { a: string };", ["UF6002 E"]],
+    ["type P = {};", ["UF6002 {}"]],
+    ["type P = {} & {};", []],
+    // A generic's type argument is reported where it is written, at each use.
+    ["interface G<T> { v: T }\ninterface P { g: G<object> }", ["UF1002 <T>", "UF6002 G<object>"]],
+    [
+      "interface G<T> { v: T }\ninterface P { g: G<object>; h: G<{}> }",
+      ["UF1002 <T>", "UF6002 G<object>", "UF6002 G<{}>"],
+    ],
+    [
+      "type G<T> = Partial<{ v: T }>;\ninterface P { m: G<() => void> }",
+      ["UF1002 <T>", "UF1002 G<() => void>"],
+    ],
+  ])("reports %s as the base does", (types, expected) => {
     const source = `${types}\nexport function A(props: P) { return <p />; }`;
     expect(problems(source, run(source).diagnostics)).toEqual(expected);
   });

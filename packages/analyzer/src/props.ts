@@ -327,7 +327,7 @@ function shapeMembers(
   const scope =
     root.kind === "object"
       ? syntaxScope(annotation, types)
-      : { declarations: [], literals: [], signatures: new Set<number>() };
+      : { members: [], types: [], signatures: new Set<number>() };
   // A name the oracle could not resolve here is its to report: it knows what the name is.
   const unresolvedHere = new Set(
     shape.unresolved
@@ -342,24 +342,32 @@ function shapeMembers(
       const { start, end } = diagnostic.span;
       if (diagnostic.code === "UF6001" && unresolvedHere.has(`${start}:${end}`)) continue;
       checked.push(diagnostic.span);
-      // The syntax names a construct it does not know "This type"; the source text names it.
-      const [message, help] = diagnostic.message.startsWith("This type needs a type checker")
+      // The syntax names a construct it does not know "This type", and an operator by itself
+      // (`keyof`); the source text names it whole.
+      const [message, help] = /^(This type|`[a-z]+`) needs a type checker/.test(diagnostic.message)
         ? needsChecker(quoted(source.slice(diagnostic.span.start, diagnostic.span.end)))
         : [diagnostic.message, diagnostic.help];
       problem(diagnostic.code, diagnostic.span, message, help);
     }
   };
   const fresh: ModuleTypes = { ...types, reported: new Set() };
-  for (const literal of scope.literals) {
-    syntax((probe) => checkMembers(literal.members, fresh, probe, shaped));
+  for (const list of scope.members) {
+    syntax((probe) => checkMembers(list, fresh, probe, shaped));
   }
-  for (const { node } of scope.declarations) {
-    syntax((probe) =>
-      node.type === "TSInterfaceDeclaration"
-        ? checkMembers(node.body.body, fresh, probe, shaped)
-        : checkType(node.typeAnnotation, fresh, probe, shaped),
-    );
+  for (const type of scope.types) {
+    syntax((probe) => checkType(type, fresh, probe, shaped));
   }
+  /**
+   * Whether an intersection's part is a name reported where it is named: an alias this module
+   * declares, which the syntax did not check as a prop's type (that reports its problem itself).
+   */
+  const namedAlone = (part: AST.TSType) => {
+    if (part.type !== "TSTypeReference" || part.typeName.type !== "Identifier") return false;
+    const declaration = part.typeArguments
+      ? undefined
+      : types.table.declaration(part.typeName.name);
+    return declaration !== undefined && !reportedAt(declaration.span);
+  };
   /** Whether the syntax reported a problem in a span, or around it. */
   const reportedAt = (where: Span) =>
     checked.some(
@@ -402,9 +410,15 @@ function shapeMembers(
         // a prop (ADR-0034).
         if (entry.file === file && callables.has(entry.span.start)) {
           problem("UF1002", entry.span, FUNCTIONS);
-        } else if (entry.file === file && intersections.has(entry.span.start)) {
+        } else if (
+          entry.file === file &&
+          intersections
+            .get(entry.span.start)
+            ?.types.some((part) => part.start === entry.span.start && !namedAlone(part))
+        ) {
           // The oracle merges an intersection's object parts and reports each other part, such
-          // as a brand's `string` in `string & {}`: the intersection is the construct.
+          // as a brand's `string` in `string & {}`: the intersection is the construct. A named
+          // part is reported where it is named, as any other construct.
           const intersection = intersections.get(entry.span.start)!;
           lost.add(intersection);
           problem("UF6002", span(intersection), ...notAProp(INTERSECTION));
@@ -577,6 +591,25 @@ function shapeMembers(
     }
     return !imported;
   };
+  /**
+   * Where a problem in a nested member's type is reported: where this module writes it, but at
+   * the use where the type names a type parameter of the generic that writes it, which the use
+   * instantiates (`G<object>`), and at the use for another file's member.
+   */
+  const place: Place = (member, where) => {
+    if (member.file !== file) return where;
+    const parameters = types.declarations.flatMap(({ node }) =>
+      node.typeParameters && node.start <= member.span.start && member.span.end <= node.end
+        ? node.typeParameters.params.map((parameter) => parameter.name.name)
+        : [],
+    );
+    const text = member.typeText?.code ?? "";
+    const names = new Set(text.match(/[A-Za-z_$][\w$]*/g) ?? []);
+    if (parameters.some((name) => member.references.includes(name) || names.has(name))) {
+      return where;
+    }
+    return member.typeText?.span ?? member.span;
+  };
   const written = (member: ShapeMember): Kinds | undefined => {
     const type =
       member.file === file
@@ -611,7 +644,7 @@ function shapeMembers(
     }
     if (!local || !syntaxCovers(member)) {
       const skip = checkMember(member, where);
-      checkShapeType(shape, member.type, where, problem, new Set(), file, skip, checkMember);
+      checkShapeType(shape, member.type, where, problem, new Set(), place, skip, checkMember);
     }
     checkExported(shape, member, at, file, problem);
     result.push({
@@ -634,59 +667,116 @@ function shapeMembers(
 
 /** What the syntax checks of a props type (`shapeMembers`). */
 interface SyntaxScope {
-  /** The non-generic declarations it reaches outside type arguments. */
-  declarations: TypeDeclarationStatement[];
-  /** The outermost object types the annotation writes in place, outside type arguments. */
-  literals: AST.TSTypeLiteral[];
-  /** Where each member signature those check starts. */
+  /** The member lists whose members are props, or members of a prop's object type. */
+  members: (readonly AST.TSSignature[])[];
+  /** The aliased types a prop's type names, each checked as a prop's type. */
+  types: AST.TSType[];
+  /** Where each member signature the syntax checks starts. */
   signatures: Set<number>;
 }
 
 /**
- * What the syntax checks of a props type: the annotation and the declarations it reaches, but
- * the type arguments of a utility or a generic (`Array` aside) and a generic declaration, whose
- * members only the shape gives.
+ * What the syntax checks of a props type, as the base read it. The props type's own structure
+ * (its aliases, the parts of its intersections, the interfaces it extends) gives members: their
+ * object types are checked member by member, and what else they are is the shape's (a part that
+ * is no object) or the props type's as a whole (UF6004). A member's type is checked as a prop's
+ * type, and so is each alias it names. A utility's or a generic's type arguments (`Array`
+ * aside) and a generic declaration give members only the shape knows (an `Omit` drops some).
  */
 function syntaxScope(annotation: AST.TSType, types: ModuleTypes): SyntaxScope {
-  const scope: SyntaxScope = { declarations: [], literals: [], signatures: new Set() };
-  const seen = new Set<string>();
-  const reach = (name: string) => {
+  const scope: SyntaxScope = { members: [], types: [], signatures: new Set() };
+  const interfaces = new Set<string>();
+  const parts = new Set<string>();
+  const aliases = new Set<string>();
+  const declared = (name: string) => {
     const declaration = types.table.declaration(name);
-    if (!declaration || declaration.node.typeParameters || seen.has(name)) return;
-    seen.add(name);
-    scope.declarations.push(declaration);
-    walkTypes(declaration.node, enter);
+    return declaration && !declaration.node.typeParameters ? declaration : undefined;
   };
-  const enter = (node: AST.Node): boolean => {
-    switch (node.type) {
-      case "TSTypeReference": {
-        if (node.typeName.type !== "Identifier") return false;
-        const { name } = node.typeName;
-        if (node.typeArguments) return name === "Array" || name === "ReadonlyArray";
-        reach(name);
-        return false;
+  const mark = (list: readonly AST.TSSignature[]) => {
+    for (const member of list) scope.signatures.add(member.start);
+  };
+  /** A list of members, each a prop or a member of a prop's object type. */
+  const members = (list: readonly AST.TSSignature[]) => {
+    scope.members.push(list);
+    mark(list);
+    for (const member of list) {
+      if (member.type === "TSPropertySignature" && member.typeAnnotation) {
+        memberType(member.typeAnnotation.typeAnnotation);
       }
-      case "TSInterfaceHeritage":
-        if (!node.typeArguments && node.expression.type === "Identifier") {
-          reach(node.expression.name);
-        }
-        return false;
-      case "TSTypeLiteral":
-        for (const member of node.members) scope.signatures.add(member.start);
-        return true;
-      case "TSInterfaceBody":
-        for (const member of node.body) scope.signatures.add(member.start);
-        return true;
-      default:
-        return true;
     }
   };
-  walkTypes(annotation, (node) => {
-    if (node.type === "TSTypeLiteral") scope.literals.push(node);
-    return enter(node) && node.type !== "TSTypeLiteral";
-  });
-  // The literals' nested members are the syntax's too.
-  for (const literal of scope.literals) walkTypes(literal, enter);
+  /** An interface: its members, and the bases it extends, which build its object. */
+  const reachInterface = (node: AST.TSInterfaceDeclaration) => {
+    if (interfaces.has(node.id.name)) return;
+    interfaces.add(node.id.name);
+    members(node.body.body);
+    for (const heritage of node.extends) {
+      if (!heritage.typeArguments && heritage.expression.type === "Identifier") {
+        part(heritage.expression.name);
+      }
+    }
+  };
+  /**
+   * A declaration the props type, or an interface, is built from: `whole` where it is the props
+   * type itself, through its aliases.
+   */
+  const part = (name: string, whole = false) => {
+    const declaration = declared(name);
+    if (!declaration) return;
+    if (declaration.node.type === "TSInterfaceDeclaration") reachInterface(declaration.node);
+    else if (!parts.has(name)) {
+      parts.add(name);
+      structure(declaration.node.typeAnnotation, whole, true);
+    }
+  };
+  /**
+   * The props type's structure: what builds its object. An empty object type that is the props
+   * type itself (`whole`) through an alias (`aliased`) is checked as a type, as the base checked
+   * it; written in place, or as a part, it is an object with no members.
+   */
+  const structure = (type: AST.TSType, whole = false, aliased = false): void => {
+    switch (type.type) {
+      case "TSParenthesizedType":
+        structure(type.typeAnnotation, whole, aliased);
+        return;
+      case "TSIntersectionType":
+        for (const each of type.types) structure(each);
+        return;
+      case "TSTypeLiteral":
+        if (whole && aliased && !type.members.length) scope.types.push(type);
+        members(type.members);
+        return;
+      case "TSTypeReference":
+        if (type.typeName.type === "Identifier" && !type.typeArguments) {
+          part(type.typeName.name, whole);
+        }
+        return;
+      default:
+        return;
+    }
+  };
+  /** A prop's type: its object types' members are the syntax's, and each alias it names. */
+  const memberType = (type: AST.TSType) => {
+    walkTypes(type, (node) => {
+      if (node.type === "TSTypeLiteral") {
+        mark(node.members);
+        return true;
+      }
+      if (node.type !== "TSTypeReference") return true;
+      if (node.typeName.type !== "Identifier") return false;
+      const { name } = node.typeName;
+      if (node.typeArguments) return name === "Array" || name === "ReadonlyArray";
+      const declaration = declared(name);
+      if (declaration?.node.type === "TSInterfaceDeclaration") reachInterface(declaration.node);
+      else if (declaration && !aliases.has(name)) {
+        aliases.add(name);
+        scope.types.push(declaration.node.typeAnnotation);
+        memberType(declaration.node.typeAnnotation);
+      }
+      return false;
+    });
+  };
+  structure(annotation, true);
   return scope;
 }
 
@@ -717,6 +807,9 @@ function ownDeclarations(annotation: AST.TSType, types: ModuleTypes): Set<string
     type = declaration.node.typeAnnotation;
   }
 }
+
+/** Where a problem in a nested member's type is reported, given where its object is used. */
+type Place = (member: ShapeMember, where: Span) => Span;
 
 /**
  * Reports the empty objects a member's own type writes, and says whether the empty objects of its
@@ -1246,7 +1339,7 @@ function checkShapeType(
   at: Span,
   problem: Problem,
   seen: Set<number>,
-  file: string,
+  place: Place,
   leavesEmpty: boolean,
   checkMember: MemberCheck,
 ): void {
@@ -1261,11 +1354,11 @@ function checkShapeType(
       return;
     case "union":
       for (const each of node.types) {
-        checkShapeType(shape, each, at, problem, seen, file, leavesEmpty, checkMember);
+        checkShapeType(shape, each, at, problem, seen, place, leavesEmpty, checkMember);
       }
       return;
     case "array":
-      checkShapeType(shape, node.element, at, problem, seen, file, leavesEmpty, checkMember);
+      checkShapeType(shape, node.element, at, problem, seen, place, leavesEmpty, checkMember);
       return;
     case "tuple":
       problem("UF6002", at, ...notAProp("A tuple type"));
@@ -1277,9 +1370,9 @@ function checkShapeType(
         problem("UF6002", at, ...notAProp("The empty object type `{}`"));
       }
       for (const member of node.members) {
-        const where = member.file === file ? (member.typeText?.span ?? member.span) : at;
+        const where = place(member, at);
         const skip = checkMember(member, where);
-        checkShapeType(shape, member.type, where, problem, seen, file, skip, checkMember);
+        checkShapeType(shape, member.type, where, problem, seen, place, skip, checkMember);
       }
       return;
     case "function":
