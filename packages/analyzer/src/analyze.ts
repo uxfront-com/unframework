@@ -60,7 +60,7 @@ import {
   reportUnread,
 } from "./pass-through.ts";
 import type { PassThrough } from "./pass-through.ts";
-import { analyzeProps, shapeReading } from "./props.ts";
+import { analyzeProps, checkTypeParameters, shapeReading } from "./props.ts";
 import type { ComponentFunction, ComponentInfo, RenderContext, SetupBinding } from "./render.ts";
 import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
@@ -1273,6 +1273,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     );
   }
   if (fn.async) reporter.unsupported(name, "Async components are not supported yet.");
+  checkTypeParameters(fn, types, parsed, reporter);
   const props = analyzeProps(fn, types, shapes, parsed, reporter);
 
   // A stray `;` does nothing, so `return <p />;;` still ends with its return.

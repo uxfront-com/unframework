@@ -5,8 +5,8 @@
     {
       "name": "Count",
       "span": {
-        "start": 445,
-        "end": 533
+        "start": 508,
+        "end": 596
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "Fruit[]",
             "span": {
-              "start": 480,
-              "end": 487
+              "start": 543,
+              "end": 550
             }
           },
-          "binding": "items@462",
+          "binding": "items@525",
           "span": {
-            "start": 473,
-            "end": 487
+            "start": 536,
+            "end": 550
           }
         }
       ],
@@ -31,13 +31,13 @@
         "type": {
           "code": "{ items: Fruit[] }",
           "span": {
-            "start": 471,
-            "end": 489
+            "start": 534,
+            "end": 552
           }
         },
         "span": {
-          "start": 460,
-          "end": 489
+          "start": 523,
+          "end": 552
         }
       },
       "types": [
@@ -45,12 +45,12 @@
       ],
       "bindings": [
         {
-          "id": "items@462",
+          "id": "items@525",
           "name": "items",
           "kind": "prop",
           "span": {
-            "start": 462,
-            "end": 467
+            "start": 525,
+            "end": 530
           }
         }
       ],
@@ -65,37 +65,37 @@
             "value": {
               "code": "items.length",
               "span": {
-                "start": 506,
-                "end": 518
+                "start": 569,
+                "end": 581
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "items@462",
+                  "binding": "items@525",
                   "span": {
-                    "start": 506,
-                    "end": 511
+                    "start": 569,
+                    "end": 574
                   }
                 }
               ]
             },
             "span": {
-              "start": 505,
-              "end": 519
+              "start": 568,
+              "end": 582
             }
           },
           {
             "kind": "Text",
             "value": " fruits",
             "span": {
-              "start": 519,
-              "end": 526
+              "start": 582,
+              "end": 589
             }
           }
         ],
         "span": {
-          "start": 502,
-          "end": 530
+          "start": 565,
+          "end": 593
         }
       }
     }
@@ -107,8 +107,8 @@
       "exported": false,
       "code": "interface Fruit {\n  id: string;\n  name: string;\n  children: Fruit[];\n}",
       "span": {
-        "start": 373,
-        "end": 443
+        "start": 436,
+        "end": 506
       }
     }
   ],
@@ -152,14 +152,14 @@
           "imported": "default",
           "local": "Tree",
           "span": {
-            "start": 345,
-            "end": 349
+            "start": 408,
+            "end": 412
           }
         }
       ],
       "span": {
-        "start": 338,
-        "end": 371
+        "start": 401,
+        "end": 434
       }
     }
   ]

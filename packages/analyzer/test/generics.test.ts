@@ -14,7 +14,10 @@ export interface ListProps<T> {
   label: string;
 }
 
-export function List<T extends { id: string } = { id: string }>({ items, label }: ListProps<T>) {
+export function List<T extends { id: string } = { id: string; name: string }>({
+  items,
+  label,
+}: ListProps<T>) {
   const selected = defineModel<T>("selected");
   const emit = defineEmits<{ pick: [item: T] }>();
   const slots = defineSlots<{ item?(props: { item: T }): unknown }>();
@@ -41,10 +44,10 @@ describe("generic components", () => {
     const [parameter] = typeParameters!;
     expect(parameter!.name).toBe("T");
     expect(LIST.slice(parameter!.span.start, parameter!.span.end)).toBe(
-      "T extends { id: string } = { id: string }",
+      "T extends { id: string } = { id: string; name: string }",
     );
     expect(parameter!.constraint!.code).toBe("{ id: string }");
-    expect(parameter!.default!.code).toBe("{ id: string }");
+    expect(parameter!.default!.code).toBe("{ id: string; name: string }");
   });
 
   it("keeps the props of a declaration given its own type parameters as the component's own", () => {
@@ -62,6 +65,8 @@ describe("generic components", () => {
     "interface P<T> { a: T }\nexport function A(props: P<string>) { return <p>{props.a}</p>; }",
     "interface P<Item> { a: Item }\nexport function A<T>(props: P<T>) { return <p />; }",
     "interface P<T, U = string> { a: T; b?: U }\nexport function A<T>(props: P<T>) { return <p />; }",
+    // An argument named as the parameter, with type arguments of its own, is another type.
+    "type Box<X> = { v: X };\ninterface P<Box> { a: Box }\nexport function A(props: P<Box<string>>) { return <p />; }",
   ])("names the declaration of each prop of %j", (source) => {
     const { module, diagnostics } = run(source);
     expect(diagnostics).toEqual([]);
@@ -112,6 +117,53 @@ describe("generic components", () => {
   });
 });
 
+describe("type parameters", () => {
+  // The outputs copy what a constraint or a default names, as they copy the setup's types.
+  it.each([
+    "interface Item { id: string }\nexport function A<T extends Item>(props: { items: T[] }) { return <p>{props.items.length}</p>; }",
+    "interface Item { id: string }\nexport function A<T = Item>(props: { items: T[] }) { return <p>{props.items.length}</p>; }",
+  ])("declares the local types a constraint or a default names in %j", (source) => {
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    expect(only(module).types).toEqual(["Item"]);
+  });
+
+  it.each([
+    ["export function A<T extends Missing>(props: { v: T }) { return <p />; }", ["UF6001 Missing"]],
+    ["export function A<T = Missing>(props: { v: T }) { return <p />; }", ["UF6001 Missing"]],
+    [
+      'export function A<T extends "</script>">(props: { v: T }) { return <p />; }',
+      ["UF1002 </script"],
+    ],
+    ["export function A<T extends object>(props: { v: T }) { return <p />; }", ["UF6002 object"]],
+    [
+      "export function A<T, K extends keyof T>(props: { v: T; k: K }) { return <p />; }",
+      ["UF6002 keyof T"],
+    ],
+    [
+      "export function A<const T extends string>(props: { v: T }) { return <p />; }",
+      ["UF1002 const"],
+    ],
+    ["export function A<T, T>(props: { v: T }) { return <p />; }", ["UF1002 T"]],
+  ])("reports the type parameters of %j", (source, expected) => {
+    const { module, diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(expected);
+    expect(module?.components ?? []).toEqual([]);
+  });
+
+  it("accepts a constraint that names another type parameter", () => {
+    const source =
+      "export function A<T extends U, U extends string>(props: { v: T }) { return <p>{props.v}</p>; }";
+    expect(run(source).diagnostics).toEqual([]);
+  });
+
+  it("reports a type parameter named like a type of the module", () => {
+    const source =
+      "interface T { a: string }\nexport function A<T>(props: { items: T[] }) { return <p />; }";
+    expect(problems(source, run(source).diagnostics)).toContain("UF1002 T");
+  });
+});
+
 describe("generic instantiation (UF6006)", () => {
   it.each([
     [
@@ -127,7 +179,7 @@ describe("generic instantiation (UF6006)", () => {
     const { module, diagnostics } = run(source);
     expect(problems(source, diagnostics)).toEqual([`UF6006 ${at}`]);
     expect(diagnostics[0]!.message).toBe(
-      "A tag cannot take type arguments: a generic component infers them from the props its consumer passes, on every target.",
+      "A tag cannot take type arguments: no target's template writes them, and a generic component infers them from the props its consumer passes.",
     );
     expect(module?.components.some((each) => each.name === "A")).toBe(false);
     expect(applyAndRecheck(source, diagnostics)).not.toContain("<string>");
@@ -141,6 +193,13 @@ describe("generic instantiation (UF6006)", () => {
     expect(diagnostics[0]!.message).toBe(
       "`L` is generic, and cannot be a candidate of `<component is>`: no one type argument types the props of every candidate.",
     );
+  });
+
+  // As where `is` mixes tags and components, the element's content is not checked further.
+  it("stops at a generic candidate", () => {
+    const source =
+      "function L<T>(props: { items: T[] }) { return <p>{props.items.length}</p>; }\nfunction M(props: { items: string[] }) { return <p>{props.items.length}</p>; }\nexport function A(props: { on: boolean }) { return <component is={props.on ? L : M} items={nope} />; }";
+    expect(problems(source, run(source).diagnostics)).toEqual(["UF6006 L"]);
   });
 
   it("reads that an imported child is generic from its API", () => {

@@ -259,6 +259,72 @@ export function analyzeProps(
   return result;
 }
 
+/**
+ * Checks a generic component's type parameters (ADR-0068), which the outputs copy as written into
+ * each target's generic form: each named once and apart from the module's types, without
+ * `const`, and each constraint and default a type the props could take, safe to copy.
+ */
+export function checkTypeParameters(
+  fn: ComponentFunction,
+  types: ModuleTypes,
+  parsed: ParsedModule,
+  reporter: Reporter,
+): void {
+  const parameters = fn.typeParameters?.params ?? [];
+  if (!parameters.length) return;
+  const { source, comments } = parsed;
+  const scoped: ModuleTypes = {
+    ...types,
+    reported: new Set(),
+    parameters: new Set(parameters.map((each) => each.name.name)),
+  };
+  const shaped = new Set(typeImportsOf(parsed.program).keys());
+  const names = new Set<string>();
+  for (const parameter of parameters) {
+    const { name } = parameter.name;
+    if (names.has(name)) {
+      reporter.unsupported(
+        parameter.name,
+        `\`${name}\` is declared twice in the component's type parameters: TypeScript rejects the second.`,
+        { help: "Declare it once." },
+      );
+    } else if (types.table.declaration(name)) {
+      reporter.unsupported(
+        parameter.name,
+        `\`${name}\` names a type parameter and a type of this module: the compiler would read one as the other.`,
+        { help: "Rename the type parameter or the type." },
+      );
+    }
+    names.add(name);
+    if (parameter.const) {
+      reporter.unsupported(
+        { start: parameter.start, end: parameter.start + "const".length },
+        "A `const` type parameter is not supported: the targets' generic forms would infer it as a plain one.",
+        { help: "Remove `const`." },
+      );
+    }
+    for (const [type, what] of [
+      [parameter.constraint, "A type parameter's constraint"],
+      [parameter.default, "A type parameter's default"],
+    ] as const) {
+      if (!type) continue;
+      checkDirectives(span(type), comments, reporter);
+      checkCopiedText(span(type), source, reporter, what);
+      // Checked as a prop's type is, as the syntax reads it.
+      const probe = new Reporter(reporter.file);
+      checkType(type, scoped, probe, shaped);
+      for (const diagnostic of probe.diagnostics) {
+        const [message, help] = /^(This type|`[a-z]+`) needs a type checker/.test(
+          diagnostic.message,
+        )
+          ? needsChecker(quoted(source.slice(diagnostic.span.start, diagnostic.span.end)))
+          : [diagnostic.message, diagnostic.help];
+        report(types, reporter, diagnostic.code, diagnostic.span, message, help);
+      }
+    }
+  }
+}
+
 /** Reports a problem of a props type, and fails the component it was found for. */
 type Problem = (code: DiagnosticCode, at: Span, message: string, help?: string) => void;
 

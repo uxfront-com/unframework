@@ -99,7 +99,7 @@ export function lowerElement(
     reporter.report(
       "UF6006",
       typeArguments,
-      "A tag cannot take type arguments: a generic component infers them from the props its consumer passes, on every target.",
+      "A tag cannot take type arguments: no target's template writes them, and a generic component infers them from the props its consumer passes.",
       {
         help: "Remove the type arguments, and pass props whose types give them.",
         fixes: [

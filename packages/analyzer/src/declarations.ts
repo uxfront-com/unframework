@@ -95,10 +95,11 @@ export function collectTypes(
 
 /**
  * The names of the module's type declarations a component's code reaches besides its props'
- * annotation (ADR-0045): every type its body writes, in source order.
+ * annotation (ADR-0045): every type its type parameters' constraints and defaults (ADR-0068) and
+ * its body write, in source order. The outputs copy them as written.
  */
 export function setupTypes(fn: ComponentFunction, table: TypeTable): string[] {
-  return closure([fn.params.slice(1), fn.body], table);
+  return closure([fn.typeParameters, fn.params.slice(1), fn.body], table);
 }
 
 /**
