@@ -16,7 +16,7 @@ import {
   reservedPropsParameterName,
 } from "@unframework/ir";
 import type { Binding, DeclaredBy, Prop, PropsParameter, Span, TypeText } from "@unframework/ir";
-import { visitorKeys } from "@unframework/parser";
+import { parseModule, visitorKeys } from "@unframework/parser";
 import type { AST, ParsedModule } from "@unframework/parser";
 import type { ObjectNode, ShapeMember, TypeShape, UnresolvedType } from "@unframework/type-oracle";
 
@@ -352,12 +352,10 @@ function shapeMembers(
           const intersection = intersections.get(entry.span.start)!;
           lost.add(intersection);
           problem("UF6002", span(intersection), ...notAProp(INTERSECTION));
-        } else if (entry.file !== file && PRIMITIVE.test(textOf(entry))) {
-          // A primitive resolves on its own, so one another file leaves unresolved is an
-          // intersection's part there.
-          lostElsewhere = true;
-          problem("UF6002", at, ...notAProp(`${INTERSECTION}${where}`));
         } else {
+          // A primitive resolves on its own, so one another file leaves unresolved may be an
+          // intersection's part there, whose object parts the oracle merged.
+          if (entry.file !== file && PRIMITIVE.test(textOf(entry))) lostElsewhere = true;
           problem("UF6002", here(entry), ...needsChecker(`${text}${where}`));
         }
         break;
@@ -422,6 +420,7 @@ function shapeMembers(
   /**
    * Whether a member's type reaches an intersection whose non-object part is reported: in this
    * module's syntax, or, for a part another file writes, through an import or that file's member.
+   * An empty object such a member's shape holds may be what the oracle merged of it.
    */
   const leavesEmpty = (member: ShapeMember): boolean => {
     if (member.file !== file) return lostElsewhere;
@@ -445,6 +444,24 @@ function shapeMembers(
       walkTypes(types.table.declaration(name)!.node, enter);
     }
     return found;
+  };
+  /**
+   * Reports each empty object type a member's own type writes (UF6002), at its span in this
+   * module or at the annotation for another file's, where the shape cannot tell it from what an
+   * intersection leaves; one that is a part of an intersection is that intersection's. Returns
+   * whether the shape's empty objects for the member are reported already, or may be such
+   * remainders: then they are not reported again.
+   */
+  const checkMember: MemberCheck = (member, where) => {
+    const local = member.file === file;
+    const type = local
+      ? signatures.get(member.span.start)?.typeAnnotation?.typeAnnotation
+      : member.typeText && writtenType(member.typeText.code);
+    const empties = type ? emptyObjects(type) : [];
+    for (const empty of empties) {
+      problem("UF6002", local ? span(empty) : where, ...notAProp("The empty object type `{}`"));
+    }
+    return empties.length > 0 || leavesEmpty(member);
   };
   const written = (member: ShapeMember): Kinds | undefined => {
     const type =
@@ -478,7 +495,8 @@ function shapeMembers(
     if (signature?.computed) {
       problem("UF6002", span(signature.key), ...needsChecker("A computed key"));
     }
-    checkShapeType(shape, member.type, where, problem, new Set(), file, leavesEmpty(member));
+    const skip = checkMember(member, where);
+    checkShapeType(shape, member.type, where, problem, new Set(), file, skip, checkMember);
     checkExported(shape, member, at, file, problem);
     result.push({
       name: member.name,
@@ -526,11 +544,48 @@ function ownDeclarations(annotation: AST.TSType, types: ModuleTypes): Set<string
   }
 }
 
+/**
+ * Reports the empty objects a member's own type writes, and says whether the empty objects of its
+ * shape may be what an intersection leaves.
+ */
+type MemberCheck = (member: ShapeMember, where: Span) => boolean;
+
+/**
+ * The empty object types a type writes, `{}`, but those that are a part of an intersection, such
+ * as a brand's `string & {}`: the members of a type literal and the declarations a reference
+ * names are read as their own members.
+ */
+function emptyObjects(type: AST.TSType): AST.TSTypeLiteral[] {
+  const parts = new Set<AST.Node>();
+  const found: AST.TSTypeLiteral[] = [];
+  walkTypes(type, (node) => {
+    if (node.type === "TSIntersectionType") for (const part of node.types) parts.add(part);
+    if (node.type !== "TSTypeLiteral") return true;
+    if (!node.members.length && !parts.has(node)) found.push(node);
+    return false;
+  });
+  return found;
+}
+
+/** Another file's type, as a member's text writes it, parsed once. */
+const WRITTEN = new Map<string, AST.TSType | undefined>();
+
+function writtenType(code: string): AST.TSType | undefined {
+  if (!WRITTEN.has(code)) {
+    const [statement] = parseModule("type.ts", `type T = ${code};`).program.body;
+    WRITTEN.set(
+      code,
+      statement?.type === "TSTypeAliasDeclaration" ? statement.typeAnnotation : undefined,
+    );
+  }
+  return WRITTEN.get(code);
+}
+
 /** What UF6002 calls an intersection the oracle reads only part of. */
 const INTERSECTION =
   "An intersection with a part the default type oracle cannot read as an object type";
 
-/** A primitive keyword's text, which resolves on its own anywhere but in an intersection. */
+/** A primitive keyword's text, which resolves on its own. */
 const PRIMITIVE = /^(?:string|number|boolean|bigint|symbol|null|undefined)$/;
 
 /** Code as a message quotes it: in a run of backticks longer than any the text holds. */
@@ -983,9 +1038,10 @@ function duplicates(annotation: AST.TSType, types: ModuleTypes, problem: Problem
  * Checks a member's resolved type as `checkType` checks one written in the module (ADR-0034),
  * reporting at `at`: what the type oracle could not resolve is reported where it met it. The
  * members of an object `file` writes are checked at their own spans, so a declaration that
- * several members reach reports its problem once, where it is written. Where the member reaches
- * an intersection whose other parts are reported (`leavesEmpty`), an empty object may be what the
- * oracle merged of it, so it is not reported again.
+ * several members reach reports its problem once, where it is written. `checkMember` reports
+ * the empty objects each member writes, and says whether an empty object in its shape may be what
+ * an intersection whose other parts are reported leaves (`leavesEmpty`), which is not reported
+ * again.
  */
 function checkShapeType(
   shape: TypeShape,
@@ -995,6 +1051,7 @@ function checkShapeType(
   seen: Set<number>,
   file: string,
   leavesEmpty: boolean,
+  checkMember: MemberCheck,
 ): void {
   const node = shape.nodes[id]!;
   switch (node.kind) {
@@ -1007,11 +1064,11 @@ function checkShapeType(
       return;
     case "union":
       for (const each of node.types) {
-        checkShapeType(shape, each, at, problem, seen, file, leavesEmpty);
+        checkShapeType(shape, each, at, problem, seen, file, leavesEmpty, checkMember);
       }
       return;
     case "array":
-      checkShapeType(shape, node.element, at, problem, seen, file, leavesEmpty);
+      checkShapeType(shape, node.element, at, problem, seen, file, leavesEmpty, checkMember);
       return;
     case "tuple":
       problem("UF6002", at, ...notAProp("A tuple type"));
@@ -1024,7 +1081,8 @@ function checkShapeType(
       }
       for (const member of node.members) {
         const where = member.file === file ? (member.typeText?.span ?? member.span) : at;
-        checkShapeType(shape, member.type, where, problem, seen, file, leavesEmpty);
+        const skip = checkMember(member, where);
+        checkShapeType(shape, member.type, where, problem, seen, file, skip, checkMember);
       }
       return;
     case "function":

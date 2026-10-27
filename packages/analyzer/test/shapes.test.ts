@@ -401,6 +401,42 @@ describe("a spread of a setup value whose type is imported", () => {
 });
 
 describe("the shape path's checks", () => {
+  // A `{}` the user writes is reported beside an imported brand, which hides only what its own
+  // intersection leaves.
+  it.each([
+    ["interface P { s: Size; c: { e: {}; o: Other } }", ["UF6002 P", "UF6002 {}"]],
+    ["interface P { s: Size; c: Other | {} }", ["UF6002 P", "UF6002 {}"]],
+    ["interface P { s: Size; c: Empty }", ["UF6002 P", "UF6002 Empty"]],
+  ])("reports a written `{}` beside an imported brand: %s", async (props, expected) => {
+    const source = [
+      'import type { Empty, Other, Size } from "./types.ts";',
+      props,
+      "export function A(props: P) { return <p />; }",
+    ].join("\n");
+    const { diagnostics } = await analyzeWith({
+      "types.ts":
+        'export type Size = "sm" | "md" | (string & {});\nexport interface Other { x: string }\nexport interface Empty { e: {} }',
+      "A.uf.tsx": source,
+    });
+    expect(problems(source, diagnostics)).toEqual(expected);
+  });
+
+  it("reports a `{}` another file writes beside an imported brand, at the member that reaches it", async () => {
+    const source = [
+      'import type { Empty, Size } from "./types.ts";',
+      "interface P { s: Size; c: Empty }",
+      "export function A(props: P) { return <p />; }",
+    ].join("\n");
+    const { diagnostics } = await analyzeWith({
+      "types.ts": 'export type Size = "sm" | (string & {});\nexport interface Empty { e: {} }',
+      "A.uf.tsx": source,
+    });
+    expect(diagnostics.map(({ message }) => message.slice(0, 30))).toEqual([
+      "`string` in `types.ts` needs a",
+      "The empty object type `{}` is ",
+    ]);
+  });
+
   it.each([
     [
       'export type Size = "sm" | "md" | (string & {});',
@@ -417,9 +453,7 @@ describe("the shape path's checks", () => {
     ].join("\n");
     const { diagnostics } = await analyzeWith({ "types.ts": types, "A.uf.tsx": source });
     expect(problems(source, diagnostics)).toEqual(["UF6002 P"]);
-    expect(diagnostics[0]!.message).toBe(
-      "An intersection with a part the default type oracle cannot read as an object type in `types.ts` is not a type a prop can take.",
-    );
+    expect(diagnostics[0]!.message).toContain("in `types.ts` needs a type checker");
   });
 
   const imported = (members: string) => ({

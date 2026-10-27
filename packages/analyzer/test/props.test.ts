@@ -394,6 +394,15 @@ describe("props types", () => {
       ["UF6002 keyof X", "UF6002 {}"],
     ],
     ['interface P { s: "a" | (string & {}); c: {} }', ["UF6002 string & {}", "UF6002 {}"]],
+    [
+      'type Size = "sm" | (string & {});\ninterface P { s: string; c: Size | {} }',
+      ["UF6002 string & {}", "UF6002 {}"],
+    ],
+    [
+      "type B = string & {};\ninterface P { c: { b: B; e: {} } }",
+      ["UF6002 string & {}", "UF6002 {}"],
+    ],
+    ["interface P { c: {}[] }", ["UF6002 {}"]],
   ])("reports a written `{}` beside another member's problem: %s", (types, expected) => {
     const source = `${types}\nexport function A(props: P) { return <p />; }`;
     expect(problems(source, run(source).diagnostics)).toEqual(expected);
