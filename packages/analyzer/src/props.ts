@@ -356,10 +356,10 @@ function shapeMembers(
   const root = shape.nodes[shape.root]!;
   const members = root.kind === "object" ? root.members : [];
   // The members two declarations type differently, each with the declarations that write it.
-  const conflicting =
+  const { found: conflicting, complete } =
     root.kind === "object"
       ? overrides(annotation, shape, types, parsed)
-      : new Map<string, Set<string>>();
+      : { found: new Map<string, Set<string>>(), complete: false };
   for (const entry of shape.unresolved) {
     const text = quoted(textOf(entry));
     const where = entry.file === file ? "" : ` in \`${entry.file}\``;
@@ -400,8 +400,9 @@ function shapeMembers(
         );
         // A props member this module writes is judged by the parts it is written from
         // (`overrides`), which compares types by structure: the oracle calls two types the same
-        // only when it is sure, so an object written again in place is a conflict to it.
-        if (member && member.file === file) break;
+        // only when it is sure, so an object written again in place is a conflict to it. Where
+        // the syntax could not read a part, the oracle's conflict stands.
+        if (member && member.file === file && complete) break;
         if (member) {
           if (!conflicting.has(member.name)) {
             conflicting.set(member.name, declarers(shape, member.name));
@@ -499,10 +500,15 @@ interface PartMember {
   optional: boolean;
   /** The member's type in the shape. */
   type: number;
-  /** Whether `Required` takes `undefined` out of its type. */
+  /**
+   * Whether `Required` takes `undefined` out of its type: only the `undefined` that `?` added,
+   * so only from a member that was optional.
+   */
   required: boolean;
   /** The declaration that writes it, as a message names it. */
   by: string;
+  /** Where it is written: two parts that give one written member are one declaration of it. */
+  origin: string;
 }
 
 /**
@@ -513,16 +519,20 @@ interface PartMember {
  * each prop, so the catalogue holds the declarations to one, a narrowing override included. The
  * parts are read from the syntax this module writes, from the props annotation through its
  * aliases, interfaces, `extends` lists, intersections and utility types, each part's members from
- * the shape. A type another file builds is that file's, which TypeScript checks there; the oracle
- * reports its intersections' conflicts itself.
+ * the shape. One member written once and given twice, as in `Partial<L> & L`, is declared once,
+ * so it is not compared. A type another file builds is that file's, which TypeScript checks
+ * there; the oracle reports its intersections' conflicts itself. `complete` says whether the
+ * syntax read every part, which it cannot for a generic instantiation or a `Pick` whose keys are
+ * not literals.
  */
 function overrides(
   annotation: AST.TSType,
   shape: TypeShape,
   types: ModuleTypes,
   parsed: ParsedModule,
-): Map<string, Set<string>> {
+): { found: Map<string, Set<string>>; complete: boolean } {
   const found = new Map<string, Set<string>>();
+  let complete = true;
   const { file } = parsed;
   const imported = typeImportsOf(parsed.program);
   // Every member the shape holds, by where it is written in this module.
@@ -584,7 +594,11 @@ function overrides(
             key,
             name === "Readonly"
               ? member
-              : { ...member, optional: name === "Partial", required: name === "Required" },
+              : {
+                  ...member,
+                  optional: name === "Partial",
+                  required: name === "Required" && (member.optional || member.required),
+                },
           ]),
         );
       case "Pick":
@@ -605,7 +619,9 @@ function overrides(
       case "TSIntersectionType": {
         const merged = new Map<string, PartMember>();
         for (const part of type.types) {
-          for (const [key, member] of members(part, seen) ?? []) {
+          const read = members(part, seen);
+          if (!read) complete = false;
+          for (const [key, member] of read ?? []) {
             const first = merged.get(key);
             merged.set(
               key,
@@ -627,10 +643,13 @@ function overrides(
     left: Map<string, PartMember> | undefined,
     right: Map<string, PartMember> | undefined,
   ) => {
-    if (!left || !right) return;
+    if (!left || !right) {
+      complete = false;
+      return;
+    }
     for (const [name, member] of left) {
       const other = right.get(name);
-      if (!other || sameMember(shape, member, other)) continue;
+      if (!other || member.origin === other.origin || sameMember(shape, member, other)) continue;
       const by = found.get(name) ?? new Set<string>();
       by.add(member.by);
       by.add(other.by);
@@ -698,12 +717,18 @@ function overrides(
     }
   };
   build(annotation, new Set());
-  return found;
+  return { found, complete };
 }
 
 /** A member as a part of a props type gives it. */
 function partOf(member: ShapeMember): PartMember {
-  return { optional: member.optional, type: member.type, required: false, by: declarer(member) };
+  return {
+    optional: member.optional,
+    type: member.type,
+    required: false,
+    by: declarer(member),
+    origin: `${member.file}:${member.span.start}`,
+  };
 }
 
 /** The names a `Pick` or `Omit` takes: string literals, or a union of them. */

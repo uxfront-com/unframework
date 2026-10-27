@@ -472,3 +472,52 @@ describe("the parts UF6005 compares", () => {
     expect(only(module).name).toBe("C");
   });
 });
+
+describe("UF6005 through utility types", () => {
+  it.each([
+    [
+      "a `Pick` whose keys are an alias",
+      'interface L { a: string; b: number }\ntype K = "a";\ntype P = Pick<L, K> & { a: number };',
+    ],
+    [
+      "`Required` over a member that holds `undefined`, against one that does not",
+      "interface L { a: string | undefined }\ntype P = Required<L> & { a: string };",
+    ],
+    [
+      "two bases that type a member differently",
+      "interface A { a: string }\ninterface B { a: number }\ninterface P extends A, B {}",
+    ],
+  ])("reports %s (UF6005)", async (_, types) => {
+    const source = `${types}\nexport function C(props: P) { return <p />; }`;
+    const { module, diagnostics } = await analyzeWith({ "A.uf.tsx": source });
+    expect(problems(source, diagnostics)).toEqual(["UF6005 P"]);
+    expect(diagnostics[0]!.message).toContain(
+      "`a` is declared with different types or optionality",
+    );
+    expect(module?.components ?? []).toEqual([]);
+  });
+
+  it.each([
+    [
+      "`Required` keeping a written `undefined`",
+      "interface L { a: string | undefined }\ntype P = Required<L> & { a: string | undefined };",
+    ],
+    [
+      "an override of a member `Omit` leaves out",
+      'interface L { a: string; b: number }\ninterface P extends Omit<L, "a"> { a: number }',
+    ],
+    [
+      "an override of a member `Pick` leaves out",
+      'interface L { a: string; b: number }\ninterface P extends Pick<L, "b"> { a: number }',
+    ],
+    // One member written once is declared once, however a utility maps it (the owner's call).
+    ["`Partial<L> & L`", "interface L { a: string }\ntype P = Partial<L> & L;"],
+    ["`L & Partial<L>`", "interface L { a: string }\ntype P = L & Partial<L>;"],
+    ["`Required<L> & L`", "interface L { a?: string }\ntype P = Required<L> & L;"],
+  ])("accepts %s", async (_, types) => {
+    const source = `${types}\nexport function C(props: P) { return <p />; }`;
+    const { module, diagnostics } = await analyzeWith({ "A.uf.tsx": source });
+    expect(diagnostics).toEqual([]);
+    expect(only(module).name).toBe("C");
+  });
+});
