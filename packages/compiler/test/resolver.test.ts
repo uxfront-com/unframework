@@ -267,7 +267,9 @@ export default function Form() {
   });
 });
 
-describe("a template ref's type, read through the type oracle (UF3046)", () => {
+// UF3046 reads a template ref's type from the syntax, as before the type oracle: compiling with
+// the oracle changes nothing it reports.
+describe("a template ref's type, compiled with the type oracle (UF3046)", () => {
   const FIELD = `import { defineExpose, useTemplateRef } from "unframework";
 
 export default function Field({ label }: { label: string }) {
@@ -310,7 +312,7 @@ export default function Form() {
     return result.diagnostics.map(({ code }) => code);
   }
 
-  // A part the oracle cannot read in a member's own type leaves the member's name known.
+  // A member's own type names nothing UF3046 reads, whatever the oracle makes of it.
   it.each([
     ["", "{ focus(): Promise<void> }"],
     ["type Later = Promise<void>;", "{ focus(): Later; select(): Later }"],
@@ -324,12 +326,12 @@ export default function Form() {
     expect(await codesOf(declarations, type)).toEqual([]);
   });
 
-  // A part that may hide a member leaves the ref's members unknown.
+  // A type that is no object literal, or that may hold members it does not name.
   it.each([
     ["", "{ focus(): void; [name: string]: () => void }"],
     ["", "{ focus(): void } & Missing"],
+    ["interface Commands { [name: string]: () => void }", "{ focus(): void } & Commands"],
     ["", 'Pick<Missing, "focus">'],
-    ["interface H extends Missing { focus(): void }", "H"],
     ["type H = { focus(): void } & Missing;", "H"],
     ["", "{ focus(): void; clear(): void }"],
   ])("reports `%s %s`", async (declarations, type) => {
