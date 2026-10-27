@@ -45,7 +45,11 @@ checked as the declaration its likely fix writes (`analyze.ts`).
   type UF1002, and UF6001 (a type that cannot be resolved), UF6002 (a construct the default oracle
   cannot evaluate, or a member type props cannot take), UF6003 (a member's type names one its file
   does not export), UF6004 (a props type that is not one object type) and UF6005 (a member two
-  declarations type differently). Each top-level type declaration is reached by some component's
+  declarations type differently, or make optional in one and required in the other: an
+  interface's member over its base's, two bases', or two intersection parts', read from the syntax
+  this module writes through aliases and utility types; one member written once and given twice,
+  as in `Partial<L> & L`, is declared once. A type another file builds is checked by TypeScript in
+  that file, and the oracle reports its intersections' conflicts). Each top-level type declaration is reached by some component's
   props or setup, which the outputs copy as written, or exported on its own (`typeExports`); an
   export list may export a local type by its own name.
 - **Types from other modules** (`shapes.ts`, ADR-0067): `import type` (or a `type` specifier) from
