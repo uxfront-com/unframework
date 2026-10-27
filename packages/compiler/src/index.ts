@@ -1,5 +1,8 @@
 export { checkPassThrough, compile } from "./compile.ts";
 export { createFileResolver } from "./resolver.ts";
+// The harness and the unplugin build their file-backed oracle from it (ADR-0067).
+export { createSyntacticOracle } from "@unframework/type-oracle";
+export type { SyntacticOracleOptions, TypeOracle } from "@unframework/type-oracle";
 export type {
   FileResolverOptions,
   ResolvedStylesheet,

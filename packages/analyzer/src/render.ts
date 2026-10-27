@@ -5,6 +5,7 @@ import type { AuthoringApi } from "./authoring.ts";
 import type { Reporter } from "./context.ts";
 import type { PassThrough } from "./pass-through.ts";
 import type { Scopes } from "./scope.ts";
+import type { Shapes } from "./shapes.ts";
 import type { TypeTable } from "./types/from-type.ts";
 import type { Kinds } from "./types/kinds.ts";
 
@@ -144,6 +145,8 @@ export interface RenderContext {
   readonly reporter: Reporter;
   readonly scopes: Scopes;
   readonly types: TypeTable;
+  /** The shapes of the types the module writes where an API is declared (ADR-0067). */
+  readonly shapes: Shapes;
   /** The component's function: its parameters are the props. */
   readonly component: ComponentFunction;
   /** The props, by name: every member of the props type. */

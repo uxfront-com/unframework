@@ -36,9 +36,31 @@ checked as the declaration its likely fix writes (`analyze.ts`).
 
 - **Props** (`props.ts`, `declarations.ts`): the one parameter, destructured with static defaults
   or kept as one object read as `props.x`, typed by an object type literal or a local `interface`
-  or `type`. Member types keep to what every target's props can declare. Problems are UF2001 to
-  UF2003, and UF1002 for types that land in M5. Each top-level type declaration must be reached by
-  some component's props; the outputs copy it as written.
+  or `type`, read from the module's syntax, or by a type read from its shape through the type
+  oracle (ADR-0067): one imported from a relative `.ts`, a `.uf.tsx`, a `.uf.ts` or a package, an
+  `extends` chain, an intersection, or `Partial`, `Required`, `Pick`, `Omit` or `Readonly`. A
+  member another declaration writes records it in `Prop.declaredBy`; one another file writes takes
+  the props annotation's span and its declaring file's text. Member types keep to what every
+  target's props can declare, read from the shape too. Problems are UF2001 to UF2003, a function
+  type UF1002, and UF6001 (a type that cannot be resolved), UF6002 (a construct the default oracle
+  cannot evaluate, or a member type props cannot take), UF6003 (a member's type names one its file
+  does not export), UF6004 (a props type that is not one object type) and UF6005 (a member two
+  declarations type differently, or make optional in one and required in the other: an
+  interface's member over its base's, two bases', or two intersection parts', read from the syntax
+  this module writes through aliases and utility types; one member written once and given twice,
+  as in `Partial<L> & L`, is declared once. A type another file builds is checked by TypeScript in
+  that file, and the oracle reports its intersections' conflicts). Each top-level type declaration is reached by some component's
+  props or setup, which the outputs copy as written, or exported on its own (`typeExports`); an
+  export list may export a local type by its own name.
+- **Types from other modules** (`shapes.ts`, ADR-0067): `import type` (or a `type` specifier) from
+  any module but the authoring API and a framework is a `typeImports` entry, which every output
+  re-imports by name; `export type { … } from` is a `typeExports` re-export. The analyser is
+  synchronous, so `shapeQueries(parsed)` lists the types whose shapes it reads (each props
+  annotation, each type argument of `defineEmits`, `defineModel` and `defineSlots`, each
+  `InjectionKey<…>`'s argument, and each annotation or type argument in a function's body that
+  names an imported type), and `analyze(parsed, { shapes })` takes them, as the compiler's oracle
+  resolved them. Without `shapes` it reads the module's own declarations (`localShapes`), and an
+  imported type is UF6001. The shapes reach the API, setup and render contexts.
 - **The authoring API** (`authoring.ts`): named imports from `"unframework"`, recognised by the
   binding each declares (ADR-0006), as the package exports them (a test reads its `index.ts`).
   Anything else is UF2016.

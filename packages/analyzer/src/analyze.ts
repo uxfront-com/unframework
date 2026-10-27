@@ -1,13 +1,18 @@
 import type { Diagnostic, Fix } from "@unframework/diagnostics";
 import {
   createComponent,
+  createDeclaredTypeExport,
   createExport,
   createFragment,
   createImportedName,
   createInjectionKeyDeclaration,
   createModule,
   createModuleImport,
+  createNamedImport,
   createTypeDeclaration,
+  createTypeExportName,
+  createTypeImport,
+  createTypeReExport,
   createTypeText,
   isExportName,
   walk,
@@ -18,8 +23,11 @@ import type {
   InjectionKeyDeclaration,
   ModuleApi,
   ModuleImport,
+  NamedImport,
   PassThroughImport,
   TypeDeclaration,
+  TypeExport,
+  TypeImport,
   UfComponent,
   UfExport,
   UfModule,
@@ -56,6 +64,8 @@ import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
 import { checkDirective, declareSetup, isDirective, refTypeOf } from "./setup.ts";
 import type { InjectionKeyInfo } from "./setup.ts";
+import { ownShapes } from "./shapes.ts";
+import type { Shapes } from "./shapes.ts";
 import { scopeIdOf, STYLESHEET_SPECIFIER, stylesheetImport } from "./styles.ts";
 import type { LoweredSheet, StylesheetSource } from "./styles.ts";
 import { syntaxError } from "./syntax.ts";
@@ -94,6 +104,12 @@ export interface AnalyzeOptions {
    * framework, a `.uf.tsx` or relative module) never passes through.
    */
   passThrough?: readonly string[];
+  /**
+   * The shape of each type `shapeQueries` names, as the compiler's type oracle resolved it
+   * (ADR-0067): `undefined` for one it was not asked for. Without it, the analyser reads the
+   * module's own declarations only (`localShapes`), and an imported type is unresolved.
+   */
+  shapes?: Shapes;
 }
 
 /** A relative or absolute specifier: a file of the project, never a module a plugin registers. */
@@ -174,7 +190,10 @@ export function analyzeModule(
     ...findValueComponents(parsed.program),
   ].toSorted((a, b) => a.span.start - b.span.start);
   const componentStatements = new Set(candidates.map((candidate) => candidate.span.start));
-  const declarations = findTypeDeclarations(parsed.program);
+  const listed = listedTypeExports(parsed.program);
+  const declarations = findTypeDeclarations(parsed.program).map((declaration) =>
+    listed.has(declaration.name) ? { ...declaration, exported: true } : declaration,
+  );
   // The module's injection keys (ADR-0054): read before any import or component, since the
   // resolver gives a parent's keys to the children that inject them.
   const keyCandidates = findKeys(parsed.program);
@@ -185,9 +204,16 @@ export function analyzeModule(
   );
   const scopes = new Scopes(parsed.program);
   const authoring = authoringBindings(parsed.program);
+  const shapes = options.shapes ?? ownShapes(parsed);
   // Every component's API, read from its declarations before any is lowered: they render each
   // other, and themselves (ADR-0053).
-  const apiContext: ApiContext = { source: parsed.source, scopes, types: types.table, authoring };
+  const apiContext: ApiContext = {
+    source: parsed.source,
+    scopes,
+    types: types.table,
+    shapes,
+    authoring,
+  };
   const apis = new Map<Candidate, ComponentApi>();
   for (const candidate of candidates) {
     if (!candidate.value) apis.set(candidate, componentApi(candidate, apiContext));
@@ -233,6 +259,8 @@ export function analyzeModule(
     passThrough: { names: new Map(), read: new Set(), clashes: new Set() },
     passThroughPrefixes: options.passThrough ?? DEFAULT_PASS_THROUGH,
     passThroughImports: [],
+    typeImports: [],
+    typeExports: [],
   };
   const moduleMark = reporter.diagnostics.length;
   for (const statement of parsed.program.body) {
@@ -272,6 +300,7 @@ export function analyzeModule(
   const module: ComponentModule = {
     parsed,
     types,
+    shapes,
     scopes,
     authoring,
     reporter,
@@ -347,10 +376,35 @@ export function analyzeModule(
       imports,
       keyDeclarations,
       context.passThroughImports,
+      {
+        typeImports: context.typeImports,
+        typeExports: [
+          ...context.typeExports,
+          ...declaredTypeExports(types, parsed.source),
+        ].toSorted((a, b) => a.span.start - b.span.start),
+      },
     ),
     diagnostics: reporter.diagnostics,
     api,
   };
+}
+
+/**
+ * The types the module exports that no component reaches (ADR-0068): every output exports them
+ * as written, for its consumers' types.
+ */
+function declaredTypeExports(types: ModuleTypes, source: string): TypeExport[] {
+  return types.declarations
+    .filter(
+      (declaration) =>
+        declaration.exported &&
+        types.table.declaration(declaration.name) === declaration &&
+        !types.reached.has(declaration.name) &&
+        !types.setupReached.has(declaration.name),
+    )
+    .map(({ name, node }) =>
+      createDeclaredTypeExport(name, source.slice(node.start, node.end), spanOf(node)),
+    );
 }
 
 /**
@@ -482,6 +536,10 @@ interface ModuleContext {
   passThroughPrefixes: readonly string[];
   /** The module's imports that every output keeps as written, in source order (ADR-0064). */
   passThroughImports: PassThroughImport[];
+  /** The module's imports of types, which every output re-imports by name (ADR-0067). */
+  typeImports: TypeImport[];
+  /** The module's type re-exports, in source order (ADR-0068). */
+  typeExports: TypeExport[];
 }
 
 /** The local names a module exports as values in `export { name }` and `export default name`. */
@@ -581,23 +639,40 @@ function checkTopLevelStatement(
         );
         return;
       }
-      checkImport(statement, reporter);
+      checkImport(statement, context);
       return;
     case "ExportNamedDeclaration": {
-      // A type-only export list exports no value, only types for consumers' type checks (M5),
-      // and the targets' outputs export none on their own yet. (`export interface` and
-      // `export type X = …` declare a props type, above.)
-      if (statement.exportKind === "type") {
-        reporter.unsupported(statement, "Type-only exports are not supported yet.");
+      // A type re-export, which every output writes for its consumers' types (ADR-0068).
+      if (
+        statement.source &&
+        statement.specifiers.length &&
+        (statement.exportKind === "type" ||
+          statement.specifiers.every((specifier) => specifier.exportKind === "type"))
+      ) {
+        typeReExport(statement, statement.source.value, context);
         return;
       }
       if (statement.declaration || statement.source) break;
-      const typeOnly = statement.specifiers.filter((specifier) => specifier.exportKind === "type");
+      // A local type in an export list is exported as if its declaration were
+      // (`listedTypeExports`). A type-only export of anything else exports no value (TS1361).
+      const typeOnly = statement.specifiers.filter(
+        (specifier) =>
+          (statement.exportKind === "type" || specifier.exportKind === "type") &&
+          !isListedType(specifier, context),
+      );
+      if (statement.exportKind === "type") {
+        if (typeOnly.length) {
+          reporter.unsupported(statement, "Type-only exports are not supported yet.");
+        }
+        return;
+      }
       for (const specifier of typeOnly) {
         reporter.unsupported(specifier, "Type-only exports are not supported yet.");
       }
       // `export { Name }` of a component is recorded by findComponents.
-      const others = statement.specifiers.filter((specifier) => !typeOnly.includes(specifier));
+      const others = statement.specifiers.filter(
+        (specifier) => specifier.exportKind !== "type" && !typeOnly.includes(specifier),
+      );
       if (
         others.every(
           (specifier) =>
@@ -737,8 +812,8 @@ function occurrences(source: string, identifier: string): number {
 
 /**
  * An import of a component module (ADR-0053): each name it binds is a component the module
- * exports, by the API the resolver gave (UF1202 otherwise). A type-only import is M5's, as any
- * other module's types are.
+ * exports, by the API the resolver gave (UF1202 otherwise), or a type, which every output
+ * re-imports by name (ADR-0067).
  */
 function componentImport(statement: AST.ImportDeclaration, context: ModuleContext): void {
   const { reporter, resolved } = context;
@@ -762,15 +837,13 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
     return;
   }
   const names: ImportedName[] = [];
+  const types = statement.specifiers.filter(
+    (item): item is AST.ImportSpecifier =>
+      item.type === "ImportSpecifier" && item.importKind === "type",
+  );
+  if (types.length) typeImport(statement, types, context);
   for (const item of statement.specifiers) {
-    if (item.type === "ImportSpecifier" && item.importKind === "type") {
-      reporter.unsupported(
-        item,
-        "Importing types from other modules is not supported yet: types from other modules land in M5.",
-        { help: "Declare the type in this module." },
-      );
-      continue;
-    }
+    if (item.type === "ImportSpecifier" && item.importKind === "type") continue;
     if (item.type === "ImportNamespaceSpecifier") {
       reporter.unsupported(
         item,
@@ -1060,7 +1133,8 @@ function checkKey(
   );
 }
 
-function checkImport(statement: AST.ImportDeclaration, reporter: Reporter): void {
+function checkImport(statement: AST.ImportDeclaration, context: ModuleContext): void {
+  const { reporter } = context;
   const specifier = statement.source.value;
   const framework = frameworkOf(specifier);
   if (framework) {
@@ -1079,20 +1153,88 @@ function checkImport(statement: AST.ImportDeclaration, reporter: Reporter): void
     return;
   }
   if (statement.importKind === "type") {
-    reporter.unsupported(
-      statement,
-      "Importing types from other modules is not supported yet: types from other modules land in M5.",
-      { help: "Declare the props type in this module." },
-    );
+    typeImport(statement, statement.specifiers, context);
     return;
   }
   reporter.unsupported(statement, "Importing modules is not supported yet.");
+}
+
+/**
+ * An import of types from a relative `.ts`, a `.uf.tsx`, a `.uf.ts` or a package (ADR-0067):
+ * the analyser reads them through the type oracle's shapes, and every output re-imports them
+ * by name. A namespace import has no name to re-import.
+ */
+function typeImport(
+  statement: AST.ImportDeclaration,
+  specifiers: readonly AST.ImportDeclarationSpecifier[],
+  context: ModuleContext,
+): void {
+  const names: NamedImport[] = [];
+  for (const item of specifiers) {
+    if (item.type === "ImportNamespaceSpecifier") {
+      context.reporter.unsupported(item, "A namespace import of types is not supported.", {
+        help: `Import each type by its name, as in \`import type { ButtonProps } from "${statement.source.value}";\`.`,
+      });
+      continue;
+    }
+    const imported = item.type === "ImportDefaultSpecifier" ? "default" : exportName(item.imported);
+    names.push(createNamedImport(imported, item.local.name, spanOf(item)));
+  }
+  if (!names.length) return;
+  context.typeImports.push(createTypeImport(statement.source.value, names, spanOf(statement)));
+}
+
+/**
+ * Whether an export list's specifier exports a local type under its own name: it is exported as
+ * if `export` were written on its declaration, which the outputs copy (ADR-0068).
+ */
+function isListedType(specifier: AST.ExportSpecifier, context: ModuleContext): boolean {
+  const name = exportName(specifier.local);
+  return (
+    name === exportName(specifier.exported) &&
+    context.types.table.declaration(name) !== undefined &&
+    !context.candidates.some((candidate) => candidate.name === name)
+  );
+}
+
+/**
+ * The local types an export list exports under their own names (`export type { Tone }`): each
+ * is exported as if `export` were written on its declaration (ADR-0068).
+ */
+function listedTypeExports(program: AST.Program): Set<string> {
+  const names = new Set<string>();
+  for (const statement of program.body) {
+    if (statement.type !== "ExportNamedDeclaration" || statement.source) continue;
+    for (const specifier of statement.specifiers) {
+      const name = exportName(specifier.local);
+      if (
+        (statement.exportKind === "type" || specifier.exportKind === "type") &&
+        name === exportName(specifier.exported)
+      ) {
+        names.add(name);
+      }
+    }
+  }
+  return names;
+}
+
+/** `export type { Tone } from "./types"` (ADR-0068): every output re-exports the types. */
+function typeReExport(
+  statement: AST.ExportNamedDeclaration,
+  specifier: string,
+  context: ModuleContext,
+): void {
+  const names = statement.specifiers.map((item) =>
+    createTypeExportName(exportName(item.local), exportName(item.exported), spanOf(item)),
+  );
+  context.typeExports.push(createTypeReExport(specifier, names, spanOf(statement)));
 }
 
 /** What analysing a component needs to know about its module. */
 interface ComponentModule {
   parsed: ParsedModule;
   types: ModuleTypes;
+  shapes: Shapes;
   scopes: Scopes;
   /** The module's authoring imports, by the identifier that declares each (ADR-0006). */
   authoring: ReadonlyMap<object, AuthoringApi | undefined>;
@@ -1108,7 +1250,7 @@ interface ComponentModule {
 
 /** Checks a component's shape, its props and its setup, and lowers its returned JSX. */
 function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComponent | undefined {
-  const { parsed, types, scopes, authoring, reporter } = module;
+  const { parsed, types, shapes, scopes, authoring, reporter } = module;
   const mark = reporter.diagnostics.length;
   const fn = candidate.node;
   const name = fn.id ?? candidate.span;
@@ -1122,7 +1264,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
   if (fn.async) reporter.unsupported(name, "Async components are not supported yet.");
   if (fn.typeParameters)
     reporter.unsupported(fn.typeParameters, "Generic components are not supported yet.");
-  const props = analyzeProps(fn, types, parsed.source, parsed.comments, reporter);
+  const props = analyzeProps(fn, types, shapes, parsed, reporter);
 
   // A stray `;` does nothing, so `return <p />;;` still ends with its return.
   const block = fn.body?.type === "BlockStatement" ? fn.body : undefined;
@@ -1141,6 +1283,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     reporter,
     scopes,
     types: types.table,
+    shapes,
     comments: parsed.comments,
     authoring,
     component: fn,
@@ -1154,6 +1297,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     reporter,
     scopes,
     types: types.table,
+    shapes,
     component: fn,
     props: props.byName,
     propsByDeclaration: props.byDeclaration,

@@ -1,4 +1,4 @@
-import { analyze, componentImports, stylesheetImports } from "@unframework/analyzer";
+import { analyze, componentImports, shapeQueries, stylesheetImports } from "@unframework/analyzer";
 import type { StylesheetSource } from "@unframework/analyzer";
 import { formatOutput, scopeStylesheet } from "@unframework/codegen";
 import type { OutputFile, Target } from "@unframework/codegen";
@@ -7,6 +7,8 @@ import type { Diagnostic } from "@unframework/diagnostics";
 import { checkInvariants, validateModule } from "@unframework/ir";
 import type { IrValidationError, ModuleApi, UfComponent, UfModule } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
+import { createSyntacticOracle } from "@unframework/type-oracle";
+import type { TypeOracle, TypeShape } from "@unframework/type-oracle";
 
 import { checkCapabilities } from "./capabilities.ts";
 import { isSpanIn, pluginIrProblems } from "./plugin-ir.ts";
@@ -71,6 +73,16 @@ export interface CompileOptions {
    * authoring API, a framework, a `.uf.tsx` or relative module) never passes through.
    */
   passThrough?: readonly string[];
+  /**
+   * The type oracle the props, events, models, slots and injection keys' types are resolved
+   * through (plan §5.5, ADR-0067): `compile()` asks it for each type the analyser reads before it
+   * analyses, as it asks the resolver for each child's API. Its queries name files relative to its
+   * root, so `filename` is relative to that root too. Without it, `compile()` uses an in-process
+   * syntactic oracle over the one source, which reads no file: a type imported from another
+   * module is UF6001. An oracle that throws is UF9001 as well. It reads the source's own file
+   * too, so it must hold the text given here. The caller owns it, and disposes of it.
+   */
+  typeOracle?: TypeOracle;
 }
 
 /**
@@ -103,6 +115,12 @@ export interface CompileResult {
    * `<source>.css`, is no component's module, and is left out (ADR-0063).
    */
   owners: Record<string, Record<string, string>>;
+  /**
+   * What the compile read besides the source, sorted, each once (ADR-0071): the files the type
+   * oracle read or looked for, relative to its root, and the packages, as `pkg:<name>`, one that
+   * is not installed included. Never an absolute path (P8).
+   */
+  dependencies: string[];
 }
 
 /**
@@ -133,8 +151,23 @@ export async function compile(source: string, options: CompileOptions): Promise<
   let analysed: UfModule | undefined;
   /** Each stylesheet's file, by its specifier, as the resolver named it. */
   let sheetFiles = new Map<string, string>();
+  const dependencies = new Set<string>();
   try {
     const parsed = parseModule(file, source);
+    // Each type the analyser reads, resolved before it analyses: the analyser is synchronous,
+    // and the oracle is not (ADR-0067).
+    const oracle = options.typeOracle ?? sourceOracle(file, source);
+    const shapes = new Map<string, TypeShape>();
+    for (const query of shapeQueries(parsed)) {
+      try {
+        const shape = await oracle.resolveShape(query);
+        shapes.set(`${query.span.start}:${query.span.end}`, shape);
+        for (const dependency of shape.dependencies) dependencies.add(dependency);
+      } catch (error) {
+        const type = source.slice(query.span.start, query.span.end);
+        diagnostics.push(internal(file, error, `The type oracle failed on \`${type}\``));
+      }
+    }
     const imports = new Map<string, ModuleApi | undefined>();
     for (const specifier of options.resolve ? componentImports(parsed) : []) {
       try {
@@ -160,6 +193,7 @@ export async function compile(source: string, options: CompileOptions): Promise<
     const analysis = analyze(parsed, {
       imports,
       stylesheets,
+      shapes: (span) => shapes.get(`${span.start}:${span.end}`),
       ...(options.passThrough ? { passThrough: options.passThrough } : {}),
     });
     diagnostics.push(...analysis.diagnostics);
@@ -233,7 +267,20 @@ export async function compile(source: string, options: CompileOptions): Promise<
     diagnostics: sortDiagnostics(diagnostics),
     outputs,
     owners,
+    dependencies: [...dependencies].toSorted(),
   };
+}
+
+/**
+ * The type oracle `compile()` uses without one (ADR-0067): the syntactic adapter over the one
+ * source, at the root of a project that holds nothing else, so it reads no file and resolves
+ * the module's own types only.
+ */
+function sourceOracle(file: string, source: string): TypeOracle {
+  return createSyntacticOracle({
+    root: "",
+    readFile: async (path) => (path === `/${file}` ? source : undefined),
+  });
 }
 
 /**

@@ -77,6 +77,7 @@ import type {
 } from "./render.ts";
 import { setupBindingOf } from "./render.ts";
 import type { Scopes } from "./scope.ts";
+import type { Shapes } from "./shapes.ts";
 import type { TypeTable } from "./types/from-type.ts";
 import {
   FUNCTION,
@@ -95,6 +96,8 @@ export interface SetupContext {
   readonly reporter: Reporter;
   readonly scopes: Scopes;
   readonly types: TypeTable;
+  /** The shapes of the types the module writes where an API is declared (ADR-0067). */
+  readonly shapes: Shapes;
   readonly comments: readonly AST.Comment[];
   /** The module's authoring imports, by the identifier that declares each. */
   readonly authoring: ReadonlyMap<object, AuthoringApi | undefined>;

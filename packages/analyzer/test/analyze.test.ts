@@ -144,15 +144,30 @@ describe("diagnostics", () => {
     expect(diagnostics).toEqual([]);
   });
 
-  // Props types from other modules land with M5's type oracle (ADR-0034).
-  it("reports type-only imports from other modules as not supported yet", () => {
-    const source = 'import type { X } from "./types.ts";\nexport function A() { return <p />; }';
+  // Every output re-imports them by name (ADR-0067).
+  it("records type imports from other modules, by name", () => {
+    const source = [
+      'import type { X, Y as Z } from "./types.ts";',
+      'import type W from "pkg";',
+      "export function A() { return <p />; }",
+    ].join("\n");
     const { module, diagnostics } = run(source);
-    expect(module).toBeUndefined();
-    expect(codes(diagnostics)).toEqual(["UF1002"]);
-    expect(diagnostics[0]!.message).toBe(
-      "Importing types from other modules is not supported yet: types from other modules land in M5.",
-    );
+    expect(diagnostics).toEqual([]);
+    expect(
+      module!.typeImports!.map(({ specifier, names }) => [
+        specifier,
+        names.map(({ imported, local }) => `${imported} ${local}`),
+      ]),
+    ).toEqual([
+      ["./types.ts", ["X X", "Y Z"]],
+      ["pkg", ["default W"]],
+    ]);
+  });
+
+  it("reports a namespace import of types", () => {
+    const source = 'import type * as T from "./types.ts";\nexport function A() { return <p />; }';
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF1002 * as T"]);
   });
 
   // A stylesheet the resolver did not read is UF5005 (`styles.test.ts`).

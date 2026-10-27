@@ -337,6 +337,9 @@ importers:
       '@unframework/parser':
         specifier: workspace:*
         version: link:../parser
+      '@unframework/type-oracle':
+        specifier: workspace:*
+        version: link:../type-oracle
     devDependencies:
       '@angular/compiler':
         specifier: 'catalog:'
@@ -471,6 +474,9 @@ importers:
       '@unframework/target-vue':
         specifier: workspace:*
         version: link:../target-vue
+      '@unframework/type-oracle':
+        specifier: workspace:*
+        version: link:../type-oracle
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

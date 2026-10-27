@@ -45,7 +45,8 @@
     "@typescript-eslint/scope-manager": "catalog:",
     "@unframework/diagnostics": "workspace:*",
     "@unframework/ir": "workspace:*",
-    "@unframework/parser": "workspace:*"
+    "@unframework/parser": "workspace:*",
+    "@unframework/type-oracle": "workspace:*"
   },
   "devDependencies": {
     "@angular/compiler": "catalog:",

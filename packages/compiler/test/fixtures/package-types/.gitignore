@@ -1,0 +1,2 @@
+# The package the fixture project imports, committed as a package manager installs it.
+!node_modules

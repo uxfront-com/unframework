@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF6001",
+    "severity": "error",
+    "message": "`BadgeProp` is neither declared nor imported by this module: the compiler reads no global type in a props type.",
+    "file": "diagnostics/unresolved-type/Badge.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 42,
+      "offset": 242
+    },
+    "end": {
+      "line": 7,
+      "column": 51,
+      "offset": 251
+    },
+    "help": "Declare the type in this module, or import it from the module that declares it."
+  }
+]

@@ -1,5 +1,7 @@
 export { analyze, COMPONENT_SPECIFIER, componentImports } from "./analyze.ts";
 export type { AnalyzeOptions, AnalyzeResult } from "./analyze.ts";
+export { shapeQueries } from "./shapes.ts";
+export type { Shapes } from "./shapes.ts";
 export { DEFAULT_PASS_THROUGH } from "./pass-through.ts";
 export { scopeIdOf, stylesheetImports } from "./styles.ts";
 export type { StylesheetSource } from "./styles.ts";

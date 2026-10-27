@@ -65,14 +65,6 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
     "An internal compiler error: a case that triggers it is a compiler bug to fix, not to keep.",
   // M5's codes are catalogued before the analyser reports them (ADR-0067 to ADR-0070). Layer 6
   // of M5 reads props types through the type oracle.
-  UF6001:
-    "The analyser reads props types through the type oracle, and the case lands in layer 6 of M5.",
-  UF6002:
-    "The analyser reads props types through the type oracle, and the case lands in layer 6 of M5.",
-  UF6004:
-    "The analyser reads props types through the type oracle, and the case lands in layer 6 of M5.",
-  UF6005:
-    "The analyser reads props types through the type oracle, and the case lands in layer 6 of M5.",
   // Layer 9 of M5 accepts generic components.
   UF6006: "The analyser accepts generic components, and the case lands in layer 9 of M5.",
   // Layer 8 of M5 resolves child APIs and the corpus's types through the oracle.
