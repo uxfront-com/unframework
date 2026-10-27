@@ -9,7 +9,7 @@ import type { ApiEvent, ApiMember, ApiSlot, ComponentApi } from "@unframework/ir
 import type { AST } from "@unframework/parser";
 import { isComponentName, parseModule } from "@unframework/parser";
 import { printShape } from "@unframework/type-oracle";
-import type { ShapeMember, TypeShape, UnresolvedType } from "@unframework/type-oracle";
+import type { ObjectNode, ShapeMember, Span, TypeShape } from "@unframework/type-oracle";
 
 import type { AuthoringApi } from "./authoring.ts";
 import { spellsLiterals } from "./cross-component.ts";
@@ -129,27 +129,18 @@ export interface MembersContext {
  * The members of a type, read from its shape (ADR-0067): a type literal's, an interface's or an
  * alias's, with what `extends`, intersections and the utility types bring in, from this module or
  * from the files it imports. `undefined` when the type has no shape or is not an object, and, with
- * `complete`, when the oracle could not read which members it has: an index signature, a computed
- * key, or a base or utility argument it could not resolve. A part it could not read inside a
- * member's own signature, as `Promise<void>` in `focus(): Promise<void>`, leaves the member's
- * name known, and counts for nothing here.
+ * `complete`, when the oracle could not read which members it has (`opensMembers`).
  */
 export function typeMembers(
   type: AST.TSType,
   context: MembersContext,
   complete = false,
 ): readonly TypeMember[] | undefined {
-  const shape = context.shapes({ start: type.start, end: type.end });
+  const span = { start: type.start, end: type.end };
+  const shape = context.shapes(span);
   const root = shape?.nodes[shape.root];
   if (!shape || root?.kind !== "object") return undefined;
-  const inMember = (entry: UnresolvedType) =>
-    root.members.some(
-      (member) =>
-        member.file === entry.file &&
-        member.span.start <= entry.span.start &&
-        entry.span.end <= member.span.end,
-    );
-  if (complete && !shape.unresolved.every(inMember)) return undefined;
+  if (complete && opensMembers(shape, root, span, context)) return undefined;
   return root.members.flatMap((member) => {
     const text = memberText(member, shape, context);
     if (text === undefined) return [];
@@ -162,6 +153,154 @@ export function typeMembers(
     return signature ? [{ signature, source, shape, type: member.type }] : [];
   });
 }
+
+/**
+ * Whether a part the oracle could not read may hide a member of the object a type resolves to: an
+ * index signature, a computed key, or a base, an intersection's part or a utility's argument it
+ * could not resolve, written where the object's members are declared. A part reached through a
+ * member's own type (`focus(): Promise<void>`, an alias, a base's type argument, a parameter's
+ * interface, wherever it is declared) leaves every member's name known. Where the object is
+ * declared in another file, which this module cannot read, any part there that no member's type
+ * reaches counts.
+ */
+function opensMembers(
+  shape: TypeShape,
+  root: ObjectNode,
+  span: Span,
+  context: MembersContext,
+): boolean {
+  const reached = new Set<string>();
+  const seen = new Set<number>();
+  const visit = (id: number | undefined): void => {
+    if (id === undefined || seen.has(id)) return;
+    seen.add(id);
+    const node = shape.nodes[id];
+    if (!node) return;
+    if (node.kind === "opaque") reached.add(spanKey(node.file, node.span));
+    else if (node.kind === "union") node.types.forEach(visit);
+    else if (node.kind === "array") visit(node.element);
+    else if (node.kind === "tuple") for (const element of node.elements) visit(element.type);
+    else if (node.kind === "typeParameter") visit(node.constraint);
+    else if (node.kind === "function") {
+      for (const parameter of node.parameters) visit(parameter.type);
+      visit(node.returns);
+    } else if (node.kind === "object") {
+      for (const member of node.members) visit(member.type);
+      node.typeArguments?.forEach(visit);
+    }
+  };
+  for (const member of root.members) visit(member.type);
+  const open = shape.unresolved.filter((entry) => !reached.has(spanKey(entry.file, entry.span)));
+  if (!open.length) return false;
+  // The files the object's members are declared in; a part elsewhere is a member's type's.
+  const files = new Set([
+    context.file,
+    ...(root.declaration ? [root.declaration.file] : []),
+    ...root.members.map((member) => member.file),
+  ]);
+  const { declaring, memberTypes } = declaringSpans(root, span, context);
+  const within = (spans: readonly Span[], inner: Span) =>
+    spans.some((each) => each.start <= inner.start && inner.end <= each.end);
+  return open.some(
+    (entry) =>
+      files.has(entry.file) &&
+      (entry.file !== context.file ||
+        (within(declaring, entry.span) && !within(memberTypes, entry.span))),
+  );
+}
+
+/**
+ * The spans of this module that declare the object's members (`declaring`): the queried type, the
+ * object's own declaration, the declarations its members come from, and, through each, the bases,
+ * the parts of an intersection and the utilities' arguments it names, never a type a member's own
+ * signature names. And the spans of every member's own types (`memberTypes`): a property's
+ * annotation, and a method's parameters and return type.
+ */
+function declaringSpans(
+  root: ObjectNode,
+  span: Span,
+  context: MembersContext,
+): { declaring: Span[]; memberTypes: Span[] } {
+  const program = parseModule(context.file, context.source).program;
+  const memberTypes: Span[] = [];
+  const collect = (node: unknown): void => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      for (const item of node) collect(item);
+      return;
+    }
+    const typed = node as AST.Node;
+    if (typed.type === "TSPropertySignature" && typed.typeAnnotation) {
+      memberTypes.push({ start: typed.typeAnnotation.start, end: typed.typeAnnotation.end });
+    } else if (typed.type === "TSMethodSignature") {
+      for (const each of [...typed.params, typed.returnType]) {
+        if (each) memberTypes.push({ start: each.start, end: each.end });
+      }
+    }
+    for (const [key, child] of Object.entries(typed)) {
+      if (key !== "type" && typeof child === "object") collect(child);
+    }
+  };
+  collect(program);
+  const declarations = new Map<string, AST.TSInterfaceDeclaration | AST.TSTypeAliasDeclaration>();
+  for (const statement of program.body) {
+    const declaration =
+      statement.type === "ExportNamedDeclaration" && statement.declaration
+        ? statement.declaration
+        : statement;
+    if (
+      declaration.type === "TSInterfaceDeclaration" ||
+      declaration.type === "TSTypeAliasDeclaration"
+    ) {
+      declarations.set(declaration.id.name, declaration);
+    }
+  }
+  const spans: Span[] = [span];
+  const names = [
+    ...(root.declaration?.file === context.file ? [root.declaration.name] : []),
+    ...root.members.flatMap((member) =>
+      member.file === context.file && member.declaration ? [member.declaration.name] : [],
+    ),
+  ];
+  const done = new Set<string>();
+  const parts = (node: unknown): void => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      for (const item of node) parts(item);
+      return;
+    }
+    const typed = node as AST.Node;
+    // A member's signature names a member's type, not a part of the object.
+    if (typed.type === "TSPropertySignature" || typed.type === "TSMethodSignature") return;
+    if (typed.type === "TSTypeReference" && typed.typeName.type === "Identifier") {
+      names.push(typed.typeName.name);
+      // A utility's argument is a part; a generic base's argument is a member's type.
+      if (!UTILITIES.has(typed.typeName.name)) return;
+    }
+    for (const [key, child] of Object.entries(typed)) {
+      if (key !== "type" && typeof child === "object") parts(child);
+    }
+  };
+  while (names.length) {
+    const name = names.pop()!;
+    if (done.has(name)) continue;
+    done.add(name);
+    const declaration = declarations.get(name);
+    if (!declaration) continue;
+    spans.push({ start: declaration.start, end: declaration.end });
+    if (declaration.type === "TSInterfaceDeclaration") {
+      parts(declaration.extends);
+    } else {
+      parts(declaration.typeAnnotation);
+    }
+  }
+  return { declaring: spans, memberTypes };
+}
+
+/** The utility types whose argument is a part of the object they build (§5.5). */
+const UTILITIES: ReadonlySet<string> = new Set(["Partial", "Required", "Readonly", "Pick", "Omit"]);
+
+const spanKey = (file: string, span: Span) => `${file}:${span.start}:${span.end}`;
 
 /** A member's signature as text: the module's own, or rebuilt from what its shape holds. */
 function memberText(

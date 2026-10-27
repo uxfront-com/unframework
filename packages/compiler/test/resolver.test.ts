@@ -161,6 +161,29 @@ describe("createFileResolver with a type oracle (ADR-0067)", () => {
     expect(api!.components[0]!.props.map(({ name }) => name)).toContain("text");
   });
 
+  it("throws when its oracle throws, which compile() reports (UF9001)", async () => {
+    const readFile = (path: string) =>
+      Promise.resolve({ "/project/Chip.uf.tsx": CHIP, "/project/types.ts": TYPES }[path]);
+    const oracle = createSyntacticOracle({ root: "/project", readFile });
+    const resolve = createFileResolver({
+      root: "/project",
+      readFile,
+      typeOracle: { ...oracle, resolveShape: () => Promise.reject(new Error("checker gone")) },
+    });
+    const result = await compile(
+      'import Chip from "./Chip.uf.tsx";\n\nexport default function Form() {\n  return <Chip label="a" id="b" />;\n}\n',
+      {
+        filename: "Form.uf.tsx",
+        targets: ["vue"],
+        resolve,
+      },
+    );
+    expect(result.diagnostics.map(({ code, message }) => [code, message])).toContainEqual([
+      "UF9001",
+      'The resolver failed on "./Chip.uf.tsx": checker gone',
+    ]);
+  });
+
   it("gives an injection key's references (ADR-0054)", async () => {
     const { resolve } = memoryProject({
       "/project/keys.uf.tsx": `import type { InjectionKey } from "unframework";
@@ -241,5 +264,75 @@ export default function Form() {
         '"./sub/Field.uf.tsx" cannot be resolved: the compiler finds no component module there.',
       ],
     ]);
+  });
+});
+
+describe("a template ref's type, read through the type oracle (UF3046)", () => {
+  const FIELD = `import { defineExpose, useTemplateRef } from "unframework";
+
+export default function Field({ label }: { label: string }) {
+  const input = useTemplateRef<HTMLInputElement>();
+  async function focus() {
+    input.value?.focus();
+  }
+  function select() {
+    input.value?.select();
+  }
+  defineExpose({ focus, select });
+  return <input ref={input} aria-label={label} />;
+}
+`;
+  const TYPES = "export interface Options { [name: string]: unknown }\n";
+
+  /** The codes of a parent whose ref on `Field` is typed `type`, after `declarations`. */
+  async function codesOf(declarations: string, type: string): Promise<string[]> {
+    const source = `import { useTemplateRef } from "unframework";
+import Field from "./Field.uf.tsx";
+import type { Options } from "./types.ts";
+import type { Missing } from "./missing.ts";
+${declarations}
+export default function Form() {
+  const field = useTemplateRef<${type}>();
+  return <Field ref={field} label="Name" />;
+}
+`;
+    const { resolve, typeOracle } = memoryProject({
+      "/project/Field.uf.tsx": FIELD,
+      "/project/types.ts": TYPES,
+      "/project/Form.uf.tsx": source,
+    });
+    const result = await compile(source, {
+      filename: "Form.uf.tsx",
+      targets: ["vue"],
+      resolve,
+      typeOracle,
+    });
+    return result.diagnostics.map(({ code }) => code);
+  }
+
+  // A part the oracle cannot read in a member's own type leaves the member's name known.
+  it.each([
+    ["", "{ focus(): Promise<void> }"],
+    ["type Later = Promise<void>;", "{ focus(): Later; select(): Later }"],
+    ["type Later = Promise<void>;", "{ focus: () => Later }"],
+    ["interface Local { [name: string]: unknown }", "{ focus(options?: Local): void }"],
+    ["interface Pending { at: Promise<number> }", "{ focus(options?: Pending): void }"],
+    ["", "{ focus(): void; select(options?: Options): void }"],
+    ["interface B<T> { focus(): T }\ninterface H extends B<Promise<void>> {}", "H"],
+    ["interface H { focus(): void; select(other: H & Missing): void }", "H"],
+  ])("reads `%s %s` as the members it names", async (declarations, type) => {
+    expect(await codesOf(declarations, type)).toEqual([]);
+  });
+
+  // A part that may hide a member leaves the ref's members unknown.
+  it.each([
+    ["", "{ focus(): void; [name: string]: () => void }"],
+    ["", "{ focus(): void } & Missing"],
+    ["", 'Pick<Missing, "focus">'],
+    ["interface H extends Missing { focus(): void }", "H"],
+    ["type H = { focus(): void } & Missing;", "H"],
+    ["", "{ focus(): void; clear(): void }"],
+  ])("reports `%s %s`", async (declarations, type) => {
+    expect(await codesOf(declarations, type)).toEqual(["UF3046"]);
   });
 });
