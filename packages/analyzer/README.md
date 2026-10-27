@@ -77,9 +77,13 @@ checked as the declaration its likely fix writes (`analyze.ts`).
   a type import too. Both are module-level errors. The module records its value imports
   (`moduleImports`) and the constants its components read, with those they read in turn
   (`constants`). A constant's value reads the module's other constants, its value imports and
-  the pure globals; a `let`, a destructured or exported `const` and a `const` of two names are
-  UF1002. Qwik reads both kinds where they are declared, so a getter's function may read them
-  (UF2014).
+  the pure globals (UF3020), and outside a function only the constants declared before it
+  (UF2023). It is checked as setup code is: no JSX (UF3012), no chance, clock or locale (UF3019),
+  no `import.meta` or `import()` (UF1002), and no write of a module's value (UF2011), or change
+  of one in place (UF2004). A `let`, a destructured or exported `const` and a `const` of two
+  names are UF1002. Qwik reads both kinds where they are declared, so a getter's function may
+  read them (UF2014). A shared module's imports include its `import x = require("…")` and each
+  `import("…")` with a literal specifier.
 - **The authoring API** (`authoring.ts`): named imports from `"unframework"`, recognised by the
   binding each declares (ADR-0006), as the package exports them (a test reads its `index.ts`).
   Anything else is UF2016.

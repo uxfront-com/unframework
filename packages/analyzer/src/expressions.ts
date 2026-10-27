@@ -174,7 +174,7 @@ const GLOBALS: Readonly<Record<Mode, ReadonlySet<string>>> = {
 };
 
 /** Globals that make the rendering depend on time, chance or the machine (UF3019), and how. */
-const NONDETERMINISTIC_GLOBALS: ReadonlyMap<string, string> = new Map([
+export const NONDETERMINISTIC_GLOBALS: ReadonlyMap<string, string> = new Map([
   ["Date", "`Date` reads the clock"],
   ["Intl", "`Intl` formats by the machine's locale"],
   ["crypto", "`crypto` reads chance"],
@@ -183,7 +183,7 @@ const NONDETERMINISTIC_GLOBALS: ReadonlyMap<string, string> = new Map([
 ]);
 
 /** Methods that read the machine's locale, whatever their receiver (UF3019). */
-const LOCALE_METHODS: ReadonlySet<string> = new Set([
+export const LOCALE_METHODS: ReadonlySet<string> = new Set([
   "localeCompare",
   "toLocaleDateString",
   "toLocaleLowerCase",
@@ -196,7 +196,7 @@ const LOCALE_METHODS: ReadonlySet<string> = new Set([
  * Methods that change their receiver, whatever it is (UF3021), with the method that returns a
  * changed copy instead, where one exists (ES2023).
  */
-const MUTATING_METHODS: ReadonlyMap<string, string | undefined> = new Map([
+export const MUTATING_METHODS: ReadonlyMap<string, string | undefined> = new Map([
   ["copyWithin", undefined],
   ["fill", undefined],
   ["pop", undefined],
@@ -209,7 +209,7 @@ const MUTATING_METHODS: ReadonlyMap<string, string | undefined> = new Map([
 ]);
 
 /** `Object`'s functions that change their argument (UF3021). */
-const MUTATING_OBJECT_FUNCTIONS: ReadonlySet<string> = new Set([
+export const MUTATING_OBJECT_FUNCTIONS: ReadonlySet<string> = new Set([
   "assign",
   "defineProperties",
   "defineProperty",
@@ -368,7 +368,7 @@ interface Local {
 }
 
 /** Methods that change a `Map`, a `Set` or a `WeakMap`/`WeakSet` they are called on (UF2004). */
-const COLLECTION_METHODS: ReadonlySet<string> = new Set(["add", "clear", "delete", "set"]);
+export const COLLECTION_METHODS: ReadonlySet<string> = new Set(["add", "clear", "delete", "set"]);
 
 /** The array methods whose callback's first parameter is each item of the array. */
 const ITERATING_METHODS: ReadonlySet<string> = new Set([

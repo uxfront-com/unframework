@@ -143,25 +143,20 @@ export function createFileResolver(options: FileResolverOptions): Resolver {
       cached.api && { ...cached.api, file: relativePath(directoryOf(request.importer), child.path) }
     );
   };
-  /** A shared module's file: the specifier as written, or with `.ts` where it has no extension. */
-  const readModule = (request: ResolveRequest) =>
-    isSharedModuleSpecifier(request.specifier)
-      ? read(
-          request.specifier.endsWith(".ts")
-            ? request
-            : { ...request, specifier: `${request.specifier}.ts` },
-        )
-      : Promise.resolve(undefined);
+  const readModule = async (path: string | undefined) => {
+    const source = path === undefined ? undefined : await options.readFile(`${root}/${path}`);
+    return source === undefined ? undefined : { file: path!, source };
+  };
   return Object.assign(resolve, {
     stylesheet: async (request: ResolveRequest) => {
       const sheet = await read(request);
       return sheet && { file: sheet.path, source: sheet.source };
     },
     module: async (request: ResolveRequest): Promise<ResolvedModule | undefined> => {
-      const first = await readModule(request);
+      const first = await readModule(modulePath(request));
       if (!first) return undefined;
-      const files = [{ file: first.path, source: first.source }];
-      const seen = new Set([first.path]);
+      const files = [first];
+      const seen = new Set([first.file]);
       const resolved: ResolvedModule = { files };
       for (let index = 0; index < files.length; index++) {
         const { file, source } = files[index]!;
@@ -172,18 +167,30 @@ export function createFileResolver(options: FileResolverOptions): Resolver {
           }
           // A package is the module's own dependency, which no output tree copies.
           if (!specifier.startsWith("./") && !specifier.startsWith("../")) continue;
-          const next = await readModule({ specifier, importer: file });
+          const path = modulePath({ specifier, importer: file });
+          if (path !== undefined && seen.has(path)) continue;
+          const next = await readModule(path);
           if (!next) {
             resolved.unresolved ??= { specifier, file };
-          } else if (!seen.has(next.path)) {
-            seen.add(next.path);
-            files.push({ file: next.path, source: next.source });
+          } else {
+            seen.add(next.file);
+            files.push(next);
           }
         }
       }
       return resolved;
     },
   });
+}
+
+/** A shared module's file: the specifier as written, or with `.ts` where it has no extension. */
+function modulePath(request: ResolveRequest): string | undefined {
+  return isSharedModuleSpecifier(request.specifier)
+    ? joinPath(
+        directoryOf(request.importer),
+        request.specifier.endsWith(".ts") ? request.specifier : `${request.specifier}.ts`,
+      )
+    : undefined;
 }
 
 /**

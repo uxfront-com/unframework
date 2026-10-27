@@ -109,13 +109,68 @@ describe("module-level constants", () => {
 
   it("reports what a constant may not read: a global it cannot, and itself", () => {
     const source = [
-      "const NOW = Date.now();",
+      "const STORE = localStorage;",
       "const loop = (n: number): number => (n ? loop(n - 1) : 0);",
-      "export function A() { return <p>{NOW}{loop(1)}</p>; }",
+      "export function A() { return <p>{String(STORE)}{loop(1)}</p>; }",
     ].join("\n");
     const { module, diagnostics } = run(source);
     expect(module).toBeUndefined();
-    expect(problems(source, diagnostics)).toEqual(["UF3020 Date", "UF1002 loop"]);
+    expect(problems(source, diagnostics)).toEqual(["UF3020 localStorage", "UF1002 loop"]);
+  });
+
+  // The module computes its constants as it loads, on the server too, and no code changes them:
+  // each is checked as setup code is (ADR-0070).
+  it.each([
+    ["JSX (UF3012)", "const ICON = <svg />;", "{ICON}", "UF3012 <svg />"],
+    ["chance (UF3019)", "const SEED = Math.random();", "{SEED}", "UF3019 Math.random"],
+    ["the clock (UF3019)", "const NOW = Date.now();", "{NOW}", "UF3019 Date"],
+    [
+      "the locale (UF3019)",
+      "const fmt = (n: number) => n.toLocaleString();",
+      "{fmt(1)}",
+      "UF3019 toLocaleString",
+    ],
+    ["`import.meta` (UF1002)", "const M = import.meta.url;", "{M}", "UF1002 import.meta"],
+    [
+      "`import()` (UF1002)",
+      'const load = () => import("./x");',
+      "{String(load)}",
+      'UF1002 import("./x")',
+    ],
+    [
+      "a change in place of another constant (UF2004)",
+      "const LIST: number[] = [];\nconst add = (n: number) => { LIST.push(n); };",
+      "{add(1)}",
+      "UF2004 LIST.push(n)",
+    ],
+    [
+      "a write of another constant (UF2011)",
+      "const COUNT = 0;\nconst reset = () => { COUNT = 1; };",
+      "{reset()}",
+      "UF2011 COUNT = 1",
+    ],
+    [
+      "a read of a constant declared after it (UF2023)",
+      "const TOTAL = STEP + 1;\nconst STEP = 1;",
+      "{TOTAL}",
+      "UF2023 STEP",
+    ],
+  ])("reports a constant whose value holds %s", (_, before, read, problem) => {
+    const source = `${before}\nexport function A() { return <p>${read}</p>; }`;
+    const { module, diagnostics } = run(source);
+    expect(module).toBeUndefined();
+    expect(problems(source, diagnostics)).toEqual([problem]);
+  });
+
+  it("accepts a function that reads a constant declared after it, and changes its own values", () => {
+    const source = [
+      "const total = (items: number[]) => { const all: number[] = []; all.push(...items); return all.length + STEP; };",
+      "const STEP = 2;",
+      "export function A() { return <p>{total([1])}</p>; }",
+    ].join("\n");
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    expect(module!.constants!.map(({ name }) => name)).toEqual(["total", "STEP"]);
   });
 
   it("reports a write of a constant (UF2011), and a change in place (UF2004)", () => {
@@ -154,10 +209,12 @@ describe("imports of shared modules", () => {
         'import { a } from "./a.ts";',
         'export { b } from "pkg";',
         'export * from "react";',
-        "export const c = 1;",
+        'import R = require("vue");',
+        'export const c = () => import("./lazy");',
+        "export const d = (name: string) => import(name);",
       ].join("\n"),
     );
-    expect(moduleSpecifiers(shared)).toEqual(["./a.ts", "pkg", "react"]);
+    expect(moduleSpecifiers(shared)).toEqual(["./a.ts", "pkg", "react", "vue", "./lazy"]);
   });
 
   it("reads a shared module's values through `import` bindings, and re-imports its types", () => {

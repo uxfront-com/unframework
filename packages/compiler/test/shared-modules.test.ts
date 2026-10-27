@@ -54,11 +54,11 @@ describe("createFileResolver's `module`", () => {
         { file: "shared/tones.ts", source: TONES },
       ],
     });
+    // `base.ts` imports itself: a module already reached is not read again.
     expect(reads).toEqual([
       "/project/src/tokens.ts",
       "/project/src/base.ts",
       "/project/shared/tones.ts",
-      "/project/src/base.ts",
     ]);
   });
 
@@ -73,6 +73,48 @@ describe("createFileResolver's `module`", () => {
         unresolved: { specifier: "./gone.ts", file: "tokens.ts" },
       },
     );
+  });
+
+  it.each([
+    ["itself", { "/project/tokens.ts": 'export * from "unframework";\n' }, "tokens.ts"],
+    [
+      "through another module",
+      {
+        "/project/tokens.ts": 'import { a } from "./base";\nexport const b = a;\n',
+        "/project/base.ts": 'import { ref } from "unframework";\nexport const a = ref;\n',
+      },
+      "base.ts",
+    ],
+  ])("finds an import of `unframework` the module makes %s (UF1204)", async (_, files, file) => {
+    const { resolve } = memoryResolver(files);
+    expect(await resolve.module!({ specifier: "./tokens", importer: "A.uf.tsx" })).toMatchObject({
+      framework: { specifier: "unframework", file },
+    });
+  });
+
+  it.each([
+    ["`import()`", 'export const load = () => import("react");\n', "react"],
+    ["`import … = require()`", 'import R = require("vue");\nexport const r = R;\n', "vue"],
+  ])("finds a framework a module loads through %s (UF1204)", async (_, tokens, framework) => {
+    const { resolve } = memoryResolver({ "/project/tokens.ts": tokens });
+    expect(await resolve.module!({ specifier: "./tokens", importer: "A.uf.tsx" })).toMatchObject({
+      framework: { specifier: framework, file: "tokens.ts" },
+    });
+  });
+
+  it("follows a module a shared module imports with `import()`", async () => {
+    const TOKENS_LAZY = 'export const load = () => import("./other");\n';
+    const OTHER = "export const other = 1;\n";
+    const { resolve } = memoryResolver({
+      "/project/tokens.ts": TOKENS_LAZY,
+      "/project/other.ts": OTHER,
+    });
+    expect(await resolve.module!({ specifier: "./tokens", importer: "A.uf.tsx" })).toEqual({
+      files: [
+        { file: "tokens.ts", source: TOKENS_LAZY },
+        { file: "other.ts", source: OTHER },
+      ],
+    });
   });
 
   it("reads nothing that is missing, not relative or not a `.ts` module", async () => {
@@ -179,9 +221,43 @@ describe("compile() with shared modules", () => {
     const resolve = Object.assign(() => Promise.resolve(undefined), {
       module: () => Promise.reject(new Error("The disk is gone.")),
     });
-    const result = await compile(BADGE, { filename: "Badge.uf.tsx", targets: [], resolve });
-    expect(result.diagnostics.map(({ message }) => message)).toContain(
-      'The resolver failed on "./tokens": The disk is gone.',
-    );
+    const result = await compile(BADGE, { filename: "Badge.uf.tsx", targets: ["vue"], resolve });
+    expect(result.diagnostics.find(({ message }) => message.includes('"./tokens"'))).toMatchObject({
+      code: "UF9001",
+      message: 'The resolver failed on "./tokens": The disk is gone.',
+    });
+    expect(result.outputs.vue).toEqual([]);
+  });
+
+  // Angular names a component's file in kebab-case: `Badge` writes `badge.ts`.
+  it("reports a shared module that is a component's output file (UF1104), on that target", async () => {
+    const source = [
+      'import type { Tone } from "./badge.ts";',
+      "export default function Badge({ tone }: { tone: Tone }) {",
+      "  return <span class={tone}>Badge</span>;",
+      "}",
+    ].join("\n");
+    const { resolve, typeOracle } = memoryResolver({
+      "/project/src/Badge.uf.tsx": source,
+      "/project/src/badge.ts": TONES,
+    });
+    const result = await compile(source, {
+      filename: "src/Badge.uf.tsx",
+      targets: ["vue", "angular"],
+      resolve,
+      typeOracle,
+    });
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        code: "UF1104",
+        target: "angular",
+        span: { start: 26, end: 38 },
+        message:
+          "The shared module badge.ts and Badge's angular output, badge.ts, are one file: each output tree holds a copy of the module beside the components.",
+      }),
+    ]);
+    expect(result.outputs.vue!.map(({ path }) => path)).toEqual(["Badge.vue", "badge.ts"]);
+    expect(result.outputs.angular!.map(({ path }) => path)).toEqual(["badge.ts"]);
+    expect(result.outputs.angular![0]!.contents).not.toBe(TONES);
   });
 });

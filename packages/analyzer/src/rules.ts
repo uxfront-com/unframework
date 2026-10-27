@@ -128,10 +128,7 @@ class Rules {
       if (binding.kind === "moduleConst" || binding.kind === "import") this.#static.add(binding.id);
     }
     for (const item of setup.items) {
-      if (
-        item.kind === "Const" &&
-        item.value.refs.every((ref) => ref.kind !== "Binding" || this.#static.has(ref.binding))
-      ) {
+      if (item.kind === "Const" && !item.value.refs.some((ref) => ref.kind === "Binding")) {
         this.#static.add(item.binding);
       }
     }
@@ -264,7 +261,7 @@ class Rules {
           this.#reporter.report(
             "UF2014",
             ref.span,
-            `A getter calls \`${name}\`, which reads \`${this.#name(read)}\`: a getter calls only functions that read nothing but constants that read nothing themselves, which Qwik hoists with them out of the component, where its getter's closure can reach them.`,
+            `A getter calls \`${name}\`, which reads \`${this.#name(read)}\`: a getter calls only functions that read nothing but constants that read nothing themselves and the module's constants and imports, which Qwik hoists with them out of the component, where its getter's closure can reach them.`,
             {
               help: `Pass what \`${name}\` reads as its arguments (\`${name}(${this.#name(read)}${this.#kind(read) === "state" || this.#kind(read) === "derived" || this.#kind(read) === "model" ? ".value" : ""})\`), or compute it in the getter.`,
             },

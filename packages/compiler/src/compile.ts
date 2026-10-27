@@ -13,6 +13,7 @@ import type { Diagnostic } from "@unframework/diagnostics";
 import { checkInvariants, validateModule } from "@unframework/ir";
 import type { IrValidationError, ModuleApi, UfComponent, UfModule } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
+import type { AST } from "@unframework/parser";
 import { createSyntacticOracle } from "@unframework/type-oracle";
 import type { TypeOracle, TypeShape } from "@unframework/type-oracle";
 
@@ -165,8 +166,11 @@ export async function compile(source: string, options: CompileOptions): Promise<
   /** Each stylesheet's file, by its specifier, as the resolver named it. */
   let sheetFiles = new Map<string, string>();
   const dependencies = new Set<string>();
-  /** Each shared `.ts` module's text, by its path relative to the source (ADR-0070). */
-  const copies = new Map<string, string>();
+  /**
+   * Each shared `.ts` module's text, by its path relative to the source, with the specifier of
+   * the source's import that first reaches it (ADR-0070).
+   */
+  const copies = new Map<string, Copy>();
   try {
     const parsed = parseModule(file, source);
     // Each type the analyser reads, resolved before it analyses: the analyser is synchronous,
@@ -222,9 +226,18 @@ export async function compile(source: string, options: CompileOptions): Promise<
             ? { unresolved: { ...unresolved, file: fromSource(unresolved.file) } }
             : {}),
         });
+        const at = parsed.program.body.find(
+          (statement): statement is AST.ImportDeclaration =>
+            statement.type === "ImportDeclaration" && statement.source.value === specifier,
+        )!.source;
         for (const { file: path, source: text } of resolved.files) {
           dependencies.add(path);
-          copies.set(fromSource(path), text);
+          if (!copies.has(fromSource(path))) {
+            copies.set(fromSource(path), {
+              contents: text,
+              span: { start: at.start, end: at.end },
+            });
+          }
         }
       } catch (error) {
         modules.set(specifier, undefined);
@@ -333,6 +346,12 @@ function sourceOracle(file: string, source: string): TypeOracle {
   });
 }
 
+/** A shared module's copy (ADR-0070), and the specifier of the import that first reaches it. */
+interface Copy {
+  contents: string;
+  span: { start: number; end: number };
+}
+
 /**
  * Checks a target's capabilities, then emits, transforms and formats each component's files.
  * A styled component's files end with its scoped sheet, `<source>.css` (ADR-0063), which the
@@ -349,7 +368,7 @@ async function emitTarget(
   options: CompileOptions,
   diagnostics: Diagnostic[],
   sheets: ReadonlyMap<string, string>,
-  copies: ReadonlyMap<string, string>,
+  copies: ReadonlyMap<string, Copy>,
 ): Promise<{ files: OutputFile[]; owners: Record<string, string> }> {
   const file = options.filename;
   const sheetPath = `${file.slice(file.lastIndexOf("/") + 1)}.css`;
@@ -424,16 +443,17 @@ async function emitTarget(
       written.push(output);
     }
   }
-  for (const [path, contents] of written.length ? copies : []) {
+  for (const [path, { contents, span }] of written.length ? copies : []) {
     const owner = owners.get(path.toLowerCase());
     if (owner) {
       diagnostics.push(
-        internal(
+        createDiagnostic("UF1104", {
           file,
-          `${owner.path} (${owner.component}) and the shared module ${path} are one file on a case-insensitive file system`,
-          `The ${target.name} target wrote two files at one path`,
-          target.name,
-        ),
+          span,
+          message: `The shared module ${path} and ${owner.component}'s ${target.name} output, ${owner.path}, are one file: each output tree holds a copy of the module beside the components.`,
+          help: "Rename the shared module, or the component.",
+          target: target.name,
+        }),
       );
       continue;
     }

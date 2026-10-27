@@ -287,7 +287,8 @@ export function analyzeModule(
     if (componentStatements.has(statement.start) || keyCandidates.has(statement.start)) continue;
     checkTopLevelStatement(statement, context);
   }
-  // Lowered once every import is known: a constant may read one declared after it (ADR-0070).
+  // Lowered once every import is known: imports are hoisted, so a constant may read one
+  // written after it.
   const constants = context.constants.map((candidate) =>
     lowerConstant(candidate, { source: parsed.source, scopes, reporter, shared: context.shared }),
   );

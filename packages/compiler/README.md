@@ -34,7 +34,9 @@ every `.ts` module they reach, each once, noting the first framework or `unframe
 (UF1204) and the first relative import it cannot read (UF1202). A value import of a module it
 cannot read, or without a resolver, is UF1202. Each output tree beside a component's files holds a
 copy of every module the source reaches, unchanged, at its path relative to the source: neither
-the hooks nor formatting see it, and `owners` leaves it out.
+the hooks nor formatting see it, and `owners` leaves it out. A copy at a component's output file,
+such as `badge.ts` beside Angular's `Badge`, is UF1104 on that target, at the import that reaches
+it, and the copy is left out.
 After the `ir` hooks, `compile()` runs the codegen scoper once per sheet of the module the targets
 emit from; a selector it rejects (UF5004, in the sheet's file) withholds the module from every
 target, as an analyser error does. A styled component's files end, on every target, with its

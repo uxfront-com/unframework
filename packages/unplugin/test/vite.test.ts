@@ -4,7 +4,12 @@ import { pathToFileURL } from "node:url";
 
 import { defineTarget } from "@unframework/codegen";
 import type { Capabilities, CapabilityCell } from "@unframework/codegen";
-import { compile, createFileResolver, TARGET_NAMES } from "@unframework/compiler";
+import {
+  compile,
+  createFileResolver,
+  createSyntacticOracle,
+  TARGET_NAMES,
+} from "@unframework/compiler";
 import type { CompilerPlugin } from "@unframework/compiler";
 import { isRunnableDevEnvironment, optimizeDeps, resolveConfig } from "vite";
 import type { Plugin } from "vite";
@@ -711,6 +716,11 @@ describe("children (ADR-0053)", () => {
   });
 });
 
+/** Reads a project's file, as the compiler's file resolver and type oracle ask for it. */
+async function readFile(path: string): Promise<string> {
+  return readFileSync(path, "utf8");
+}
+
 describe("types read through the type oracle (ADR-0067)", () => {
   const TONES =
     'export type Tone = "info" | "warning";\nexport interface ChipProps { tone: Tone }\n';
@@ -718,6 +728,43 @@ describe("types read through the type oracle (ADR-0067)", () => {
     'import type { ChipProps } from "./tones.ts";\n\nexport default function Chip({ tone }: ChipProps) {\n  return <b class={tone}>{tone}</b>;\n}\n';
   const PANEL =
     'import Chip from "./Chip.uf.tsx";\n\nexport default function Panel() {\n  return <Chip tone="info" />;\n}\n';
+
+  // A shared module's copy is no component's output (ADR-0070): a target that joins a file's
+  // outputs keeps it out of the module, whose import of the module stays.
+  it("joins no shared module's copy into an Angular module", async () => {
+    const types = createProject({
+      "tones.ts":
+        'import { BASE } from "./base.ts";\n' + TONES + "export const sizes = { sm: BASE };\n",
+      "base.ts": "export const BASE = 4;\n",
+      "Chip.uf.tsx": CHIP,
+    });
+    try {
+      const server = await startServer(types.root, [...unframework({ target: "angular" })]);
+      try {
+        const id = `${join(types.root, "Chip.uf.tsx")}${ID_SUFFIXES.angular}`;
+        const code = codeOf(await server.client.pluginContainer.load(id));
+        const typeOracle = createSyntacticOracle({ root: types.root, readFile });
+        const compiled = await compile(CHIP, {
+          filename: "Chip.uf.tsx",
+          targets: ["angular"],
+          resolve: createFileResolver({ root: types.root, readFile, typeOracle }),
+          typeOracle,
+        });
+        await typeOracle.dispose();
+        expect(compiled.outputs.angular!.map(({ path }) => path)).toEqual([
+          "chip.ts",
+          "tones.ts",
+          "base.ts",
+        ]);
+        expect(code).toBe(compiled.outputs.angular![0]!.contents);
+        expect(code).not.toContain("BASE");
+      } finally {
+        await server.close();
+      }
+    } finally {
+      types.remove();
+    }
+  });
 
   it("compiles a component whose props type another module declares, and a parent of it", async () => {
     const types = createProject({ "tones.ts": TONES, "Chip.uf.tsx": CHIP, "Panel.uf.tsx": PANEL });
