@@ -79,8 +79,8 @@ export interface CompileOptions {
    * analyses, as it asks the resolver for each child's API. Its queries name files relative to its
    * root, so `filename` is relative to that root too. Without it, `compile()` uses an in-process
    * syntactic oracle over the one source, which reads no file: a type imported from another
-   * module is UF6001. An oracle that throws is UF9001 as well. The caller owns it, and disposes
-   * of it.
+   * module is UF6001. An oracle that throws is UF9001 as well. It reads the source's own file
+   * too, so it must hold the text given here. The caller owns it, and disposes of it.
    */
   typeOracle?: TypeOracle;
 }
@@ -117,8 +117,8 @@ export interface CompileResult {
   owners: Record<string, Record<string, string>>;
   /**
    * What the compile read besides the source, sorted, each once (ADR-0071): the files the type
-   * oracle read, relative to its root, and the packages, as `pkg:<name>`. Never an absolute path
-   * (P8).
+   * oracle read or looked for, relative to its root, and the packages, as `pkg:<name>`, one that
+   * is not installed included. Never an absolute path (P8).
    */
   dependencies: string[];
 }

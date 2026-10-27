@@ -2,7 +2,7 @@
   {
     "code": "UF6005",
     "severity": "error",
-    "message": "`label` is declared with different types by `Labelled` and `Counted`: the targets declare each prop once, with one type.",
+    "message": "`label` is declared with different types or optionality by `Labelled` and `Counted`: the targets declare each prop once, with one type.",
     "file": "diagnostics/conflicting-members/Badge.uf.tsx",
     "start": {
       "line": 11,

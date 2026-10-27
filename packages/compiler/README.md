@@ -40,8 +40,11 @@ files relative to its root, as `filename` is. Without it, `compile()` uses an in
 oracle over the one source, which reads no file, so an imported type is UF6001; an oracle that
 throws is UF9001. `createSyntacticOracle({ root, readFile })` is the type oracle's syntactic
 adapter, re-exported so a caller builds a file-backed one without another dependency; the caller
-disposes of its oracle. `CompileResult.dependencies` lists what the compile read through the
-oracle: files relative to its root, and packages as `pkg:<name>`, sorted (ADR-0071).
+disposes of its oracle. The oracle reads the source's own file too, so it must hold the text
+`compile()` is given: a caller that compiles an unsaved edit updates its oracle first.
+`CompileResult.dependencies` lists what the compile read or looked for through the oracle: files
+relative to its root, and packages as `pkg:<name>`, a package that is not installed included,
+sorted (ADR-0071).
 A capability that refines one the target cannot support (a listener's options and semantics, and
 `nextTick`, refine `interactivity`: codegen's `CAPABILITY_PREREQUISITES`) is not reported again, so
 Astro reports one inert listener once.
