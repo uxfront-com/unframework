@@ -289,6 +289,8 @@ function shapeMembers(
   };
   const { file, source } = parsed;
   const here = (entry: { file: string; span: Span }) => (entry.file === file ? entry.span : at);
+  const callables = new Set<number>();
+  const signatures = signaturesOf(parsed.program, callables);
   const textOf = (entry: UnresolvedType) => {
     if (entry.file === file) return source.slice(entry.span.start, entry.span.end);
     const node = shape.nodes.find(
@@ -336,7 +338,13 @@ function shapeMembers(
         );
         break;
       case "unsupported":
-        problem("UF6002", here(entry), ...needsChecker(`${text}${where}`));
+        // A call or construct signature this module writes is a function, which no oracle makes
+        // a prop (ADR-0034).
+        if (entry.file === file && callables.has(entry.span.start)) {
+          problem("UF1002", entry.span, FUNCTIONS);
+        } else {
+          problem("UF6002", here(entry), ...needsChecker(`${text}${where}`));
+        }
         break;
       case "conflict": {
         const member = members.find(
@@ -413,7 +421,13 @@ function shapeMembers(
       continue;
     }
     const where = local ? (member.typeText?.span ?? member.span) : at;
-    checkShapeType(shape, member.type, where, problem, new Set());
+    // The oracle reads a literal computed key (`["b"]: string`) as a name, and Vue's
+    // `compileScript` rejects any computed key in a props type.
+    const signature = local ? signatures.get(member.span.start) : undefined;
+    if (signature?.computed) {
+      problem("UF6002", span(signature.key), ...needsChecker("A computed key"));
+    }
+    checkShapeType(shape, member.type, where, problem, new Set(), file);
     checkExported(shape, member, at, file, problem);
     result.push({
       name: member.name,
@@ -907,7 +921,9 @@ function duplicates(annotation: AST.TSType, types: ModuleTypes, problem: Problem
 
 /**
  * Checks a member's resolved type as `checkType` checks one written in the module (ADR-0034),
- * reporting at `at`: what the type oracle could not resolve is reported where it met it.
+ * reporting at `at`: what the type oracle could not resolve is reported where it met it. The
+ * members of an object `file` writes are checked at their own spans, so a declaration that
+ * several members reach reports its problem once, where it is written.
  */
 function checkShapeType(
   shape: TypeShape,
@@ -915,6 +931,7 @@ function checkShapeType(
   at: Span,
   problem: Problem,
   seen: Set<number>,
+  file: string,
 ): void {
   const node = shape.nodes[id]!;
   switch (node.kind) {
@@ -926,10 +943,10 @@ function checkShapeType(
     case "literal":
       return;
     case "union":
-      for (const each of node.types) checkShapeType(shape, each, at, problem, seen);
+      for (const each of node.types) checkShapeType(shape, each, at, problem, seen, file);
       return;
     case "array":
-      checkShapeType(shape, node.element, at, problem, seen);
+      checkShapeType(shape, node.element, at, problem, seen, file);
       return;
     case "tuple":
       problem("UF6002", at, ...notAProp("A tuple type"));
@@ -940,7 +957,10 @@ function checkShapeType(
       if (!node.declaration && !node.members.length) {
         problem("UF6002", at, ...notAProp("The empty object type `{}`"));
       }
-      for (const member of node.members) checkShapeType(shape, member.type, at, problem, seen);
+      for (const member of node.members) {
+        const where = member.file === file ? (member.typeText?.span ?? member.span) : at;
+        checkShapeType(shape, member.type, where, problem, seen, file);
+      }
       return;
     case "function":
       problem("UF1002", at, FUNCTIONS);
@@ -1034,8 +1054,14 @@ export function shapeReading(parsed: ParsedModule, table: TypeTable, at: Span): 
   };
 }
 
-/** The module's property signatures, by where each starts: a member's key is read there. */
-function signaturesOf(program: AST.Program): Map<number, AST.TSPropertySignature> {
+/**
+ * The module's property signatures, by where each starts: a member's key is read there. With
+ * `callables`, where each call or construct signature starts, which is a function.
+ */
+function signaturesOf(
+  program: AST.Program,
+  callables?: Set<number>,
+): Map<number, AST.TSPropertySignature> {
   const found = new Map<number, AST.TSPropertySignature>();
   const visit = (node: unknown): void => {
     if (!node || typeof node !== "object") return;
@@ -1046,6 +1072,12 @@ function signaturesOf(program: AST.Program): Map<number, AST.TSPropertySignature
     const typed = node as AST.Node;
     if (typeof typed.type !== "string") return;
     if (typed.type === "TSPropertySignature") found.set(typed.start, typed);
+    if (
+      typed.type === "TSCallSignatureDeclaration" ||
+      typed.type === "TSConstructSignatureDeclaration"
+    ) {
+      callables?.add(typed.start);
+    }
     for (const key of visitorKeys[typed.type] ?? []) {
       visit((node as unknown as Record<string, unknown>)[key]);
     }

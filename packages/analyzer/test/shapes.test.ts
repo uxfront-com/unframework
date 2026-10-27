@@ -181,11 +181,12 @@ describe("props types read through the type oracle", () => {
     [
       "a member of another file whose type is a function",
       {
-        "types.ts": "export interface P { pick: () => void }",
+        "types.ts": "export interface P { onPick: () => void }",
         "A.uf.tsx":
           'import type { P } from "./types.ts";\nexport function A(props: P) { return <p />; }',
       },
-      "UF1002 P",
+      // A failing member stops no other member's checks: `onPick` is reserved too.
+      ["UF1002 P", "UF2003 P"],
       "Function types are not supported in props: a callback is an event, which a component declares with `defineEmits` (ADR-0047), and a render function is a slot (`defineSlots`).",
     ],
     [
@@ -213,7 +214,7 @@ describe("props types read through the type oracle", () => {
     ],
   ])("reports %s", async (_, files, problem, message) => {
     const { module, diagnostics } = await analyzeWith(files as Record<string, string>);
-    expect(problems(files["A.uf.tsx"], diagnostics)).toEqual([problem]);
+    expect(problems(files["A.uf.tsx"], diagnostics)).toEqual([problem].flat());
     expect(diagnostics[0]!.message).toBe(message);
     expect(module?.components ?? []).toEqual([]);
   });
@@ -300,6 +301,54 @@ describe("a spread of a setup value whose type is imported", () => {
       ["id", "title"],
       ["id", "title"],
     ]);
+  });
+
+  it("renders the keys a local interface inherits from an imported one", async () => {
+    const source = [
+      'import type { Base } from "./types.ts";',
+      "export interface Attrs extends Base { id: string }",
+      'export function A() { const attrs: Attrs = { id: "a", title: "b" }; return <p {...attrs}>x</p>; }',
+    ].join("\n");
+    const { module, diagnostics } = await analyzeWith({
+      "types.ts": "export interface Base { title: string }",
+      "A.uf.tsx": source,
+    });
+    expect(diagnostics).toEqual([]);
+    expect(JSON.stringify(only(module).render)).toMatch(/"keys":\[\{"name":"id".*"name":"title"/);
+  });
+
+  it.each([
+    [
+      "an unresolved base",
+      'import type { M } from "./missing.ts";\nexport interface Attrs extends M { id: string; title?: string }',
+    ],
+    ["an index signature", "export interface Attrs { id: string; [key: string]: string }"],
+    [
+      "an intersection with a `Record`",
+      "export type Attrs = { id: string } & Record<string, string>;",
+    ],
+  ])("reports a spread whose imported type holds %s (UF3048)", async (_, types) => {
+    const source = [
+      'import type { Attrs } from "./types.ts";',
+      'export function A() { const attrs: Attrs = { id: "a" }; return <p {...attrs}>x</p>; }',
+    ].join("\n");
+    const { diagnostics } = await analyzeWith({ "types.ts": types, "A.uf.tsx": source });
+    expect(problems(source, diagnostics)).toEqual(["UF3048 {...attrs}"]);
+    expect(diagnostics[0]!.message).toContain("does not resolve in full");
+  });
+
+  it("points a problem with an imported key at the annotation", async () => {
+    const source = [
+      'import type { Attrs } from "./types.ts";',
+      'export function A() { const attrs: Attrs = { key: "a" }; return <p {...attrs}>x</p>; }',
+    ].join("\n");
+    const { diagnostics } = await analyzeWith({
+      "types.ts": "export interface Attrs { key: string }",
+      "A.uf.tsx": source,
+    });
+    expect(problems(source, diagnostics)).toEqual(["UF3049 {...attrs}"]);
+    const [related] = diagnostics[0]!.related!;
+    expect(source.slice(related!.span.start, related!.span.end)).toBe("Attrs");
   });
 
   it("reports the keys as unknown without the shapes (UF3048)", () => {

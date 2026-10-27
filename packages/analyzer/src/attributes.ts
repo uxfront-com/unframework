@@ -575,8 +575,9 @@ const ASCII_WHITESPACE = /^[\t\n\f\r ]+$/;
 
 /**
  * Reads a spread (ADR-0039): an object literal is written as its attributes (UF3004); any other
- * value must be a prop or an item whose type the module declares, whose keys it renders exactly,
- * each checked as a bound attribute of the element, and read through `?.` where the value may be
+ * value must have a declared type whose keys are known, a prop's, a list item's or a setup
+ * value's written type, and it renders those keys exactly, each checked as a bound attribute of
+ * the element, and read through `?.` where the value may be
  * nullish (`./spread-source.ts`). A type that declares no keys, or a source that is absent
  * wherever the spread renders, renders nothing (UF3004, removed). `after` is where the source
  * before it ends.
@@ -599,24 +600,33 @@ function readSpread(
   }
   const mark = reporter.diagnostics.length;
   const checked = checkExpression(argument, render);
-  // A setup value's keys are its type's, which only a written type declares: an annotation, or
-  // `ref`'s type argument, read through the type oracle where it names an imported type
-  // (ADR-0045, ADR-0067, amending ADR-0039). An inferred type is the checker's alone.
-  const inferred = checked.clean
-    ? [...render.setup.bindings.values()].find(
-        (binding) =>
-          !binding.typed &&
-          checked.expression.refs.some(
-            (ref) => ref.kind === "Binding" && ref.binding === binding.id,
-          ),
+  // A setup value's keys are those of its written type, an annotation or `ref`'s type argument,
+  // read from its shape (ADR-0039, ADR-0045, ADR-0067), and known only when that type resolves
+  // in full: a key an unresolved part declares would never render.
+  const setupReads = checked.clean
+    ? [...render.setup.bindings.values()].filter((binding) =>
+        checked.expression.refs.some((ref) => ref.kind === "Binding" && ref.binding === binding.id),
       )
-    : undefined;
-  if (inferred) {
+    : [];
+  const unwritten = setupReads.find((binding) => !binding.typed);
+  if (unwritten) {
     reporter.unsupported(
       item,
-      `This spread reads \`${inferred.name}\`, a setup value whose type is inferred: a spread renders the keys a written type declares, and the compiler reads no inferred type.`,
+      `This spread reads \`${unwritten.name}\`, a setup value whose type is not written as an annotation or as \`ref\`'s type argument: a spread renders the keys such a type declares.`,
       {
-        help: "Annotate it with an object type (`const attrs: Attrs = …`), give `ref` one (`ref<Attrs>(…)`), or write the attributes.",
+        help: "Spread a value annotated with an object type (`const attrs: Attrs = …`) or held in `ref<Attrs>(…)`, or write the attributes.",
+      },
+    );
+    return { node: item, binds: true, attribute: undefined, keys: [] };
+  }
+  const partial = setupReads.find((binding) => !binding.typed!.complete);
+  if (partial) {
+    reporter.report(
+      "UF3048",
+      item,
+      `This spread's keys are not all known: the type of \`${partial.name}\` does not resolve in full, and a spread renders exactly the keys its type declares (ADR-0054).`,
+      {
+        help: "Give the value a type the compiler resolves (no index signature, and every type it reaches declared or imported), or write the attributes.",
       },
     );
     return { node: item, binds: true, attribute: undefined, keys: [] };

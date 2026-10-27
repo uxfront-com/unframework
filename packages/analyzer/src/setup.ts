@@ -100,10 +100,10 @@ export interface SetupContext {
   /** The shapes of the types the module writes where an API is declared (ADR-0067). */
   readonly shapes: Shapes;
   /**
-   * The kinds of a value a written type gives: a `const`'s or a `let`'s annotation, or `ref`'s
-   * type argument. One that names an imported type is read from its shape (ADR-0067).
+   * What a written type gives a value, a `const`'s or a `let`'s annotation, or `ref`'s type
+   * argument, read from its shape (ADR-0067): its kinds, and whether it resolves in full.
    */
-  typeKinds(type: AST.TSType): Kinds;
+  writtenType(type: AST.TSType): { kinds: Kinds; complete: boolean };
   readonly comments: readonly AST.Comment[];
   /** The module's authoring imports, by the identifier that declares each. */
   readonly authoring: ReadonlyMap<object, AuthoringApi | undefined>;
@@ -407,9 +407,10 @@ export function declareSetup(context: SetupContext): Setup {
           },
         );
       }
-      const kinds = id.typeAnnotation
-        ? context.typeKinds(id.typeAnnotation.typeAnnotation)
-        : UNKNOWN;
+      const written = id.typeAnnotation
+        ? context.writtenType(id.typeAnnotation.typeAnnotation)
+        : undefined;
+      const kinds = written?.kinds ?? UNKNOWN;
       // A `let` holds `undefined` until code assigns it: React's `useRef` and Qwik's `useSignal`
       // start it so, and type it so, whatever the annotation claims (`let started!: number`).
       const annotation = id.typeAnnotation?.typeAnnotation;
@@ -430,7 +431,7 @@ export function declareSetup(context: SetupContext): Setup {
         );
       }
       const binding = declare(id, "localVar", kinds);
-      if (id.typeAnnotation) binding.typed = true;
+      if (written) binding.typed = { complete: written.complete };
       declared.push({ kind: "let", statement, declarator, binding });
       return;
     }
@@ -447,9 +448,11 @@ export function declareSetup(context: SetupContext): Setup {
       );
       return;
     }
-    const kinds = id.typeAnnotation ? context.typeKinds(id.typeAnnotation.typeAnnotation) : UNKNOWN;
-    const binding = declare(id, "localConst", kinds);
-    if (id.typeAnnotation) binding.typed = true;
+    const written = id.typeAnnotation
+      ? context.writtenType(id.typeAnnotation.typeAnnotation)
+      : undefined;
+    const binding = declare(id, "localConst", written?.kinds ?? UNKNOWN);
+    if (written) binding.typed = { complete: written.complete };
     declared.push({ kind: "const", statement, declarator, binding });
   }
 
@@ -486,15 +489,16 @@ export function declareSetup(context: SetupContext): Setup {
             { help: "Give it a type argument: `const selected = ref<string>();`." },
           );
         }
-        const kinds = type
+        const written = type ? context.writtenType(type) : undefined;
+        const kinds = written
           ? call.arguments.length
-            ? context.typeKinds(type)
-            : union(context.typeKinds(type), UNDEFINED)
+            ? written.kinds
+            : union(written.kinds, UNDEFINED)
           : call.arguments.length
             ? UNKNOWN
             : UNDEFINED;
         const binding = declare(id, "state", kinds);
-        if (type) binding.typed = true;
+        if (written) binding.typed = { complete: written.complete };
         declared.push({ kind: "state", statement, call, binding });
         return;
       }

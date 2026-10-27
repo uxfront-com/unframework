@@ -872,6 +872,33 @@ describe("spreads", () => {
     expect(spreadsOf(module)).toEqual([expected]);
   });
 
+  // The keys an interface inherits are its type's too.
+  it.each([
+    ['const attrs: Attrs = { id: "a", title: "b" };', "{...attrs}", "...{attrs}[id title]"],
+    [
+      'const attrs = ref<Attrs>({ id: "a", title: "b" });',
+      "{...attrs.value}",
+      "...{attrs.value}[id title]",
+    ],
+    ['const attrs: Named = { id: "a", title: "b" };', "{...attrs}", "...{attrs}[id title]"],
+  ])("lowers every key of an `extends` chain in a spread of %s", (setup, spread, expected) => {
+    const { module, diagnostics } = component(`<p ${spread}>x</p>`, {
+      before: `${API}interface Base { title: string }\nexport interface Attrs extends Base { id: string }\nexport type Named = Attrs;\n`,
+      setup,
+    });
+    expect(diagnostics).toEqual([]);
+    expect(spreadsOf(module)).toEqual([expected]);
+  });
+
+  it("reports a spread of a setup value whose type does not resolve in full (UF3048)", () => {
+    const { source, diagnostics } = component("<p {...attrs}>x</p>", {
+      before: `${API}export interface Attrs { id: string; [key: string]: string }\n`,
+      setup: 'const attrs: Attrs = { id: "a" };',
+    });
+    expect(problems(source, diagnostics)).toEqual(["UF3048 {...attrs}"]);
+    expect(diagnostics[0]!.message).toContain("does not resolve in full");
+  });
+
   it("reads a list's item that may be absent through `?.`", () => {
     const { module, diagnostics } = component(
       "<ul>{rows.map((row, index) => <li key={index} {...row}>x</li>)}</ul>",

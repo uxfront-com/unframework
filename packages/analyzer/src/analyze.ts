@@ -64,7 +64,7 @@ import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
 import { checkDirective, declareSetup, isDirective, refTypeOf } from "./setup.ts";
 import type { InjectionKeyInfo } from "./setup.ts";
-import { namesImported, ownShapes, typeImportNames } from "./shapes.ts";
+import { ownShapes } from "./shapes.ts";
 import type { Shapes } from "./shapes.ts";
 import { scopeIdOf, STYLESHEET_SPECIFIER, stylesheetImport } from "./styles.ts";
 import type { LoweredSheet, StylesheetSource } from "./styles.ts";
@@ -1278,15 +1278,17 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
       : last?.type === "ReturnStatement"
         ? last.argument
         : undefined;
-  // A written type that names an imported type is one `shapeQueries` asks the oracle for; the
-  // module's own types read as they always have.
-  const imported = typeImportNames(parsed.program);
-  const typeKinds = (type: AST.TSType) => {
+  // A written type that reaches an imported type is one `shapeQueries` asks the oracle for; any
+  // other resolves in the module, which follows its `extends` and aliases as the oracle does.
+  const local = ownShapes(parsed);
+  const writtenType = (type: AST.TSType) => {
     const at = { start: type.start, end: type.end };
-    const shape = namesImported(type, imported) ? shapes(at) : undefined;
-    return shape
-      ? kindsFromShape(shape, shapeReading(parsed, types.table, at))
-      : types.table.kindsOf(type);
+    const shape = shapes(at) ?? local(at);
+    if (!shape) return { kinds: types.table.kindsOf(type), complete: false };
+    return {
+      kinds: kindsFromShape(shape, shapeReading(parsed, types.table, at)),
+      complete: !shape.unresolved.length,
+    };
   };
   // The setup (ADR-0045): every statement before the return, declared before any code is walked.
   const setup = declareSetup({
@@ -1295,7 +1297,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     scopes,
     types: types.table,
     shapes,
-    typeKinds,
+    writtenType,
     comments: parsed.comments,
     authoring,
     component: fn,

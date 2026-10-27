@@ -374,12 +374,14 @@ describe("the client code's subset", () => {
       "{...(on.value ? link : undefined)}",
     ],
   ])(
-    "reports a spread that reads a setup value whose type is inferred: %s (UF1002)",
+    "reports a spread that reads a setup value whose type is not written: %s (UF1002)",
     (setup, spread) => {
       const source = `${API}export interface Link { title: string }\nexport function A() { ${setup} return <a ${spread}>x</a>; }`;
       const { diagnostics } = run(source);
       expect(problems(source, diagnostics)).toEqual([`UF1002 ${spread}`]);
-      expect(diagnostics[0]!.message).toContain("whose type is inferred");
+      expect(diagnostics[0]!.message).toContain(
+        "whose type is not written as an annotation or as `ref`'s type argument",
+      );
     },
   );
 

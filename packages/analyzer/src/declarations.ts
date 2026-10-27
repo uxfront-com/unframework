@@ -140,7 +140,8 @@ export function closure(type: unknown, table: TypeTable): string[] {
 /**
  * Checks a top-level type declaration: declared once, generic-free, holding no text that would
  * end a script block or Astro's frontmatter, named apart from the types the outputs declare,
- * reached by some component's props or exported, and holding only types props can have.
+ * and reached by some component's props or setup, or exported. The members of a type the props
+ * reach are checked on their shapes (`props.ts`).
  */
 export function checkTypeDeclaration(
   declaration: TypeDeclarationStatement,

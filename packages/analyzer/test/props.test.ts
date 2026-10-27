@@ -350,6 +350,33 @@ describe("props types", () => {
     expect(prop!.type.code).toBe("string");
   });
 
+  it.each([
+    ['["b"]: string', 'UF6002 "b"', "A computed key needs a type checker"],
+    ["(): void", "UF1002 (): void;", "Function types are not supported in props"],
+    ["new (): P", "UF1002 new (): P;", "Function types are not supported in props"],
+  ])("reports the member %s of a local props type", (member, problem, message) => {
+    const source = `interface P { a: string; ${member}; }\nexport function A(props: P) { return <p />; }`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual([problem]);
+    expect(diagnostics[0]!.message).toContain(message);
+  });
+
+  it("reports a problem of a type several members reach once, where it is written", () => {
+    const source = [
+      "interface Item { run(): void }",
+      "interface Sub { x: any; f: () => void }",
+      "interface P { a: Item; b: Item; c: Sub; d?: Sub }",
+      "interface Q { e: Sub }",
+      "export function A(props: P) { return <p />; }",
+      "export function B(props: Q) { return <p />; }",
+    ].join("\n");
+    expect(problems(source, run(source).diagnostics)).toEqual([
+      "UF1002 run(): void",
+      "UF6002 any",
+      "UF1002 () => void",
+    ]);
+  });
+
   it("accepts a member typed by an intersection of object types, as an imported one is", () => {
     const source =
       "interface P { a: { b: string } & { c: string } }\nexport function A(props: P) { return <p />; }";

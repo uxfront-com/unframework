@@ -64,9 +64,10 @@ export interface SetupBinding {
   ref?: true;
   /**
    * Set where its type is written: a `const`'s or a `let`'s annotation, or `ref`'s type argument.
-   * A spread of its value then renders the keys that type declares (ADR-0039, ADR-0067).
+   * A spread of its value renders the keys that type declares (ADR-0039, ADR-0067), which it
+   * knows only when the type resolves in full (`complete`).
    */
-  typed?: true;
+  typed?: { complete: boolean };
   /**
    * What makes a local function's result depend on time, chance or the machine itself, outside
    * the globals its summary lists (`Math.random`, a locale method): UF3019 where a template, a
