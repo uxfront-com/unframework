@@ -5,14 +5,14 @@
 // `note ?? "none"`, `a ? "x" : "y"`), `.length`, the string, number and array methods whose
 // result the receiver fixes (`title.trim()`), the pure globals' (`Math.max(…)`), and reads of a
 // prop or of a member whose own type is known so. Otherwise none, and the class types the field
-// by a method that computes the initial value (./members.ts). There is no type oracle before M5
-// (plan §9).
+// by a method that computes the initial value (./members.ts). A target reads no type oracle:
+// shapes reach the analyser alone (ADR-0067).
 import { parseExpression } from "@unframework/codegen";
 import type { BindingId, Code, TypeDeclaration } from "@unframework/ir";
 
 import { bindingById } from "./plan.ts";
 import type { Plan } from "./plan.ts";
-import { arrayElement, withoutNullish, withoutUndefined } from "./types.ts";
+import { arrayElement, defaultedType, propType, withoutNullish } from "./types.ts";
 
 interface Node {
   type: string;
@@ -334,11 +334,12 @@ function bindingType(
   if (binding.kind === "prop") {
     const prop = component.props.find((each) => each.binding === id);
     if (prop === undefined) return undefined;
-    if (!prop.optional) return prop.type.code;
+    const type = propType(prop, component);
+    if (!prop.optional) return type;
     // The input's value: a default leaves `undefined` out (./members.ts `inputMember`).
     return prop.default === undefined
-      ? `${parenthesised(prop.type.code)} | undefined`
-      : withoutUndefined(prop.type.code, declarations);
+      ? `${parenthesised(type)} | undefined`
+      : defaultedType(prop, component, declarations);
   }
   const item = component.setup.find((each) => "binding" in each && each.binding === id);
   switch (item?.kind) {

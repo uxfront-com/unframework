@@ -5,7 +5,7 @@ import { createTypeDeclaration, span } from "@unframework/ir";
 import type { TypeDeclaration } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
-import { declaredTypes, withoutUndefined } from "../src/types.ts";
+import { atConstraints, declaredTypes, withoutUndefined } from "../src/types.ts";
 
 function declaration(name: string, code: string, exported = false): TypeDeclaration {
   return createTypeDeclaration(name, exported, code, span(0, code.length));
@@ -56,5 +56,50 @@ describe("declaredTypes", () => {
       declaration("Box", "interface Box<T> { value: T }", true),
     ];
     expect(names(declaredTypes(closure, []))).toEqual(["Box"]);
+  });
+});
+
+describe("atConstraints", () => {
+  const parameter = (name: string, constraint?: string) => ({
+    name,
+    ...(constraint === undefined ? {} : { constraint: { code: constraint, span: span(0, 0) } }),
+    span: span(0, 0),
+  });
+
+  it("reads each type parameter as its constraint, and one without as `any` (ADR-0068)", () => {
+    const parameters = [parameter("T", "{ value: string }"), parameter("U")];
+    expect(atConstraints("{ option: T; extra: U[] }", parameters)).toBe(
+      "{ option: { value: string }; extra: any[] }",
+    );
+  });
+
+  it("groups a constraint an operator or a suffix would bind into, and reads one through another", () => {
+    const parameters = [parameter("T", '"a" | "b"'), parameter("U", "T")];
+    expect(atConstraints("{ items: T[]; first: U }", parameters)).toBe(
+      '{ items: ("a" | "b")[]; first: ("a" | "b") }',
+    );
+  });
+
+  it("leaves a type without the parameters, and a reference with type arguments, as written", () => {
+    expect(atConstraints("{ item: T }", [])).toBe("{ item: T }");
+    expect(atConstraints("{ item: Box<T>; other: T.Member }", [parameter("Box")])).toBe(
+      "{ item: Box<T>; other: T.Member }",
+    );
+  });
+
+  it("leaves a name that a nested type declares for itself", () => {
+    const parameters = [parameter("T", "{ id: string }"), parameter("K")];
+    expect(atConstraints("{ render: <T>(x: T) => T; item: T }", parameters)).toBe(
+      "{ render: <T>(x: T) => T; item: { id: string } }",
+    );
+    expect(atConstraints("{ m<T>(x: T): void; n: new <T>() => T }", parameters)).toBe(
+      "{ m<T>(x: T): void; n: new <T>() => T }",
+    );
+    expect(atConstraints("{ [K in keyof T]: T[K] }", parameters)).toBe(
+      "{ [K in keyof { id: string }]: { id: string }[K] }",
+    );
+    expect(atConstraints("T extends Array<infer K> ? K : K", parameters)).toBe(
+      "{ id: string } extends Array<infer K> ? K : any",
+    );
   });
 });

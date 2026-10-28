@@ -1,3 +1,4 @@
+import type { FieldOptions } from "./types";
 import {
   Component,
   Directive,
@@ -58,10 +59,10 @@ export class ScopeAttributes implements OnInit {
   `,
 })
 export default class TextField {
-  readonly name = input.required<string>();
-  readonly label = input.required<string>();
-  readonly placeholder = input<string>();
-  readonly required = input<boolean>();
+  readonly name = input.required<TextFieldProps["name"]>();
+  readonly label = input.required<TextFieldProps["label"]>();
+  readonly placeholder = input<TextFieldProps["placeholder"]>();
+  readonly required = input<TextFieldProps["required"]>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;

@@ -3,7 +3,7 @@
 // the author wrote it; it is parsed only to find the names it refers to and the `undefined` an
 // input with a default leaves out of its value type.
 import { parseExpressionSource, parseStatementsSource } from "@unframework/codegen";
-import type { TypeDeclaration } from "@unframework/ir";
+import type { Prop, TypeDeclaration, TypeParameter, UfComponent } from "@unframework/ir";
 
 interface TypeNode {
   type: string;
@@ -110,11 +110,12 @@ function declarationReferences(declaration: TypeDeclaration): Set<string> {
 
 /**
  * The type declarations a component's file declares, in source order: every exported one of
- * its closure (`component.types`), which consumers type their props with (M5), and every other
- * one the output reads (`roots`: an input's or an output's type, the setup's annotations and
- * code) or a declared one refers to. An Angular component types each input by its member's
- * type, never by the props type itself, so a props interface the source does not export would be
- * declared and never used, which the L5 baseline rejects (`no-unused-vars`).
+ * its closure (`component.types`), which consumers type their props with (ADR-0068), and every
+ * other one the output reads (`roots`: an input's or an output's type, the setup's annotations
+ * and code) or a declared one refers to. An Angular component types each input by its member's
+ * type, so a props interface the source does not export would be declared and never used, which
+ * the L5 baseline rejects (`no-unused-vars`), unless an input reads a member from it by indexed
+ * access ({@link propType}).
  */
 export function declaredTypes(
   closure: readonly TypeDeclaration[],
@@ -211,4 +212,150 @@ export function arrayElement(code: string): string | undefined {
     }
   }
   return undefined;
+}
+
+/**
+ * The type an input is declared with (ADR-0067). A member the props type declares keeps its
+ * text as written. A member another declaration declares (an inherited, intersected, picked or
+ * imported one, `Prop.declaredBy`) is written in that file's names, which the component's module
+ * may not have, so it is read from the props type by indexed access, `ButtonProps["tone"]`: the
+ * output imports or declares the props type's names, and the utilities over it still apply.
+ */
+export function propType(prop: Prop, component: UfComponent): string {
+  const props = component.propsParameter?.type.code;
+  if (!prop.declaredBy || props === undefined) return prop.type.code;
+  const type = parseType(props);
+  const object =
+    type.type === "TSTypeReference" || type.type === "TSTypeLiteral"
+      ? props.trim()
+      : `(${props.trim()})`;
+  return `${object}[${JSON.stringify(prop.name)}]`;
+}
+
+/**
+ * The value type of an input with a default, which its transform never lets be `undefined`
+ * (ADR-0034): a member's own text without `undefined` ({@link withoutUndefined}), or an indexed
+ * access without it, `Exclude<ButtonProps["tone"], undefined>`, since an optional member's
+ * indexed access admits `undefined`.
+ */
+export function defaultedType(
+  prop: Prop,
+  component: UfComponent,
+  declarations: readonly TypeDeclaration[],
+): string {
+  const type = propType(prop, component);
+  return prop.declaredBy && type !== prop.type.code
+    ? `Exclude<${type}, undefined>`
+    : withoutUndefined(type, declarations);
+}
+
+/**
+ * A type with each of a component's type parameters read as its constraint: the type of a scoped
+ * slot's context, which a slot directive cannot infer, since ngtsc infers a component's type
+ * parameters from its inputs alone (`generic-slot-props`, UF4004, ADR-0068). A parameter without
+ * one reads as `any`, as ngtsc types a generic context it cannot infer
+ * (`TcbGenericContextBehavior.FallbackToAny`): as `unknown`, a fill could read none of its
+ * members. A constraint that names another parameter reads it the same way.
+ */
+export function atConstraints(code: string, parameters: readonly TypeParameter[]): string {
+  if (!parameters.length) return code;
+  const byName = new Map(parameters.map((parameter) => [parameter.name, parameter]));
+  const read = (text: string, seen: ReadonlySet<string>): string => {
+    const found: { start: number; end: number; name: string }[] = [];
+    const visit = (value: unknown, shadowed: ReadonlySet<string>): void => {
+      if (Array.isArray(value)) {
+        for (const item of value) visit(item, shadowed);
+        return;
+      }
+      if (!isTypeNode(value)) return;
+      const name = value.typeName as { type?: string; name?: unknown } | undefined;
+      if (
+        value.type === "TSTypeReference" &&
+        name?.type === "Identifier" &&
+        typeof name.name === "string" &&
+        byName.has(name.name) &&
+        !shadowed.has(name.name) &&
+        !value.typeArguments
+      ) {
+        found.push({ start: value.start, end: value.end, name: name.name });
+        return;
+      }
+      if (value.type === "TSConditionalType") {
+        // An `infer U` declares `U` in the extends clause and the true branch only.
+        const inferred = new Set([...shadowed, ...inferredNames(value.extendsType)]);
+        visit(value.checkType, shadowed);
+        visit(value.extendsType, inferred);
+        visit(value.trueType, inferred);
+        visit(value.falseType, shadowed);
+        return;
+      }
+      // A function, method or constructor type's own parameters, and a mapped type's key,
+      // shadow a component's parameter of the same name.
+      const own = [...declaredNames(value)];
+      const inner = own.length ? new Set([...shadowed, ...own]) : shadowed;
+      for (const [key, child] of Object.entries(value)) {
+        if (key !== "type" && typeof child === "object") visit(child, inner);
+      }
+    };
+    visit(parseType(text), new Set());
+    let result = text;
+    for (const { start, end, name } of found.toSorted((a, b) => b.start - a.start)) {
+      const constraint = byName.get(name)!.constraint?.code;
+      const replaced =
+        constraint === undefined || seen.has(name)
+          ? "any"
+          : grouped(read(constraint, new Set([...seen, name])));
+      result = `${result.slice(0, start - PREFIX.length)}${replaced}${result.slice(end - PREFIX.length)}`;
+    }
+    return result;
+  };
+  return read(code, new Set());
+}
+
+/** The type parameters a node declares for its own subtree: `<T>(x: T) => T`, `[K in …]`. */
+function declaredNames(node: TypeNode): string[] {
+  if (node.type === "TSMappedType") {
+    const key = node.key as { name?: unknown } | undefined;
+    return typeof key?.name === "string" ? [key.name] : [];
+  }
+  const declaration = node.typeParameters as
+    | { type?: string; params?: { name?: { name?: unknown } }[] }
+    | null
+    | undefined;
+  if (declaration?.type !== "TSTypeParameterDeclaration") return [];
+  return (declaration.params ?? [])
+    .map((parameter) => parameter.name?.name)
+    .filter((name): name is string => typeof name === "string");
+}
+
+/** The names a conditional type's extends clause declares with `infer`. */
+function inferredNames(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(inferredNames);
+  if (!isTypeNode(value)) return [];
+  if (value.type === "TSInferType") {
+    const name = (value.typeParameter as { name?: { name?: unknown } } | undefined)?.name?.name;
+    return typeof name === "string" ? [name] : [];
+  }
+  return Object.entries(value).flatMap(([key, child]) =>
+    key !== "type" && typeof child === "object" ? inferredNames(child) : [],
+  );
+}
+
+/** A type in parentheses where an operator or a suffix (`[]`, `[K]`) would bind into it. */
+function grouped(type: string): string {
+  const text = type.trim();
+  return enclosed(text) || !/[|&]|=>|\bextends\b|^(?:new|keyof|readonly|typeof|infer)\b/.test(text)
+    ? text
+    : `(${text})`;
+}
+
+/** Whether a type's text is one parenthesised type, `("a" | "b")`, which its parser drops. */
+function enclosed(text: string): boolean {
+  if (!text.startsWith("(")) return false;
+  let depth = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    if (text[index] === "(") depth += 1;
+    else if (text[index] === ")" && --depth === 0) return index === text.length - 1;
+  }
+  return false;
 }

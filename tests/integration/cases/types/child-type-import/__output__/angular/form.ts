@@ -1,4 +1,4 @@
-import Field from "./field";
+import Field, { type FieldProps } from "./field";
 import {
   Component,
   Directive,

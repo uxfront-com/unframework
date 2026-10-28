@@ -12,7 +12,7 @@ import {
 } from "@angular/core";
 
 /** What a template of `Options`'s `option` slot reads: the slot's props. */
-export type OptionsOptionContext = { option: T };
+export type OptionsOptionContext = { option: { value: string } };
 
 /** A template of `Options`'s `option` slot, its `let-` variables typed (ADR-0056). */
 @Directive({ selector: "ng-template[ufOptionsOption]" })
@@ -72,7 +72,7 @@ export class ScopeAttributes implements OnInit {
     <ng-content select="[ufOptionsOption]" />
   `,
 })
-export default class Options {
+export default class Options<T extends { value: string }> {
   readonly options = input.required<T[]>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();

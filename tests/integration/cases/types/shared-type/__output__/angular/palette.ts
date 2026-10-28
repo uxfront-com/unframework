@@ -1,4 +1,5 @@
 import Swatch from "./swatch";
+import type { Tone } from "./types";
 import {
   Component,
   Directive,
@@ -8,6 +9,8 @@ import {
   inject,
   input,
 } from "@angular/core";
+
+export type { Tone } from "./types";
 
 /** The scope attributes taken off each host, for the roots its component renders later. */
 const scopes = new WeakMap<Element, string[]>();

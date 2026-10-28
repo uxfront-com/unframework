@@ -1,3 +1,4 @@
+import type { Tone } from "./types";
 import {
   Component,
   Directive,

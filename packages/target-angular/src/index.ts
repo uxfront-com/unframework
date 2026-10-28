@@ -1,4 +1,5 @@
 import {
+  addTypeImports,
   angularDialect,
   codeNames,
   codeKind,
@@ -17,6 +18,7 @@ import {
   scopeRoots,
   sourceNames,
   typeDeclarationCode,
+  typeExportsCode,
   typeNames,
 } from "@unframework/codegen";
 import type {
@@ -27,7 +29,7 @@ import type {
   Target,
 } from "@unframework/codegen";
 import { codeOf, functionsOf, walk } from "@unframework/ir";
-import type { Span, UfComponent, UfModule } from "@unframework/ir";
+import type { Span, TypeText, UfComponent, UfModule } from "@unframework/ir";
 
 import {
   firstUse,
@@ -402,11 +404,13 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
       { accessibility: "protected", readonly: true },
     ),
   ];
+  const declaration = js.classDeclaration(className, [], [...members, ...(hostMember ?? [])], {
+    implements: interfaces,
+  });
+  declaration.typeParameters = typeParameters(component, placeholders);
   const statements = exportDeclaration(
     className,
-    js.classDeclaration(className, [], [...members, ...(hostMember ?? [])], {
-      implements: interfaces,
-    }),
+    declaration,
     exportsOf(component.name, module.exports),
   );
   const types = declaredTypes(closure, typeRoots(component, module));
@@ -438,17 +442,30 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ...(refObject === undefined ? [] : [refObjectCode(refObject)]),
     ...[...models.helpers, ...models.support].map(({ code }) => `${code}\n`),
     ...composition.slots.map((slot) =>
-      slotDirectiveCode(component.name, slot, imports.add("@angular/core", "Directive")),
+      slotDirectiveCode(
+        component.name,
+        slot,
+        imports.add("@angular/core", "Directive"),
+        component.typeParameters,
+      ),
     ),
     ...(scope ? [scopeDirectiveCode(scope, imports)] : []),
   ];
   if (models.helpers.some(({ code }) => code.includes("WritableSignal"))) {
     imports.add("@angular/core", "WritableSignal", { type: true });
   }
+  // The types it imports, by name, from where the source imports them, a child's from its
+  // output (`./field`), and in the main component's file the module's type exports, in source
+  // order among the types it declares (ADR-0067, ADR-0068).
+  addTypeImports(component, module, imports, kebabCase);
+  const typeCode = [
+    ...types.map((type) => ({ code: typeDeclarationCode(type), span: type.span })),
+    ...typeExportsCode(component, module, kebabCase),
+  ].toSorted((a, b) => a.span.start - b.span.start);
   const contents = placeholders.print(() =>
     [
       printProgram(js.program(imports.toDeclarations())),
-      ...types.map((declaration) => `${typeDeclarationCode(declaration)}\n`),
+      ...typeCode.map(({ code }) => `${code}\n`),
       ...(nextId === undefined ? [] : [`let ${nextId} = 0;\n`]),
       ...declarations,
       ...directives.map(
@@ -664,9 +681,11 @@ function providers(
 }
 
 /**
- * The names of the types the output reads: its inputs' and outputs' types, and every name the
- * setup's code, annotations and functions read (`ref<Item[]>`, `as Item`, `(item: Item)`). The
- * props type itself is never printed: an input is typed by its member.
+ * The names of the types the output reads: its inputs' and outputs' types, its type parameters'
+ * constraints and defaults, and every name the setup's code, annotations and functions read
+ * (`ref<Item[]>`, `as Item`, `(item: Item)`). An input is typed by its member, so the props type
+ * itself is printed only where another declaration declares a member, which an input reads from
+ * it by indexed access (`propType`).
  */
 function typeRoots(component: UfComponent, module: UfModule): Set<string> {
   const names = new Set<string>();
@@ -674,7 +693,17 @@ function typeRoots(component: UfComponent, module: UfModule): Set<string> {
     for (const name of found) names.add(name);
   };
   const declared = new Set(module.types.map(({ name }) => name));
-  for (const prop of component.props) add(typeNames(prop.type));
+  for (const prop of component.props) {
+    add(
+      typeNames(
+        prop.declaredBy && component.propsParameter ? component.propsParameter.type : prop.type,
+      ),
+    );
+  }
+  for (const parameter of component.typeParameters ?? []) {
+    if (parameter.constraint) add(typeNames(parameter.constraint));
+    if (parameter.default) add(typeNames(parameter.default));
+  }
   for (const event of component.emits?.events ?? []) {
     for (const parameter of event.parameters) add(typeNames(parameter.type));
   }
@@ -687,6 +716,31 @@ function typeRoots(component: UfComponent, module: UfModule): Set<string> {
     if (fn.returnType) add(typeNames(fn.returnType));
   }
   return new Set([...names].filter((name) => declared.has(name)));
+}
+
+/**
+ * A generic component's type parameters, `class List<T extends Item = Item>` (ADR-0068): a
+ * generic class, whose parameters ngtsc infers from a consumer's inputs, its constraints and
+ * defaults copied as written. `null` for a component without them.
+ */
+function typeParameters(
+  component: UfComponent,
+  placeholders: Placeholders,
+): ReturnType<typeof js.classDeclaration>["typeParameters"] {
+  if (!component.typeParameters?.length) return null;
+  const type = (text: TypeText | undefined) => (text ? placeholders.type(text.code) : null);
+  const params = component.typeParameters.map((parameter) => ({
+    type: "TSTypeParameter" as const,
+    name: js.bindingIdentifier(parameter.name),
+    constraint: type(parameter.constraint),
+    default: type(parameter.default),
+    in: false,
+    out: false,
+    const: false,
+    start: 0,
+    end: 0,
+  }));
+  return { type: "TSTypeParameterDeclaration", params, start: 0, end: 0 };
 }
 
 /**

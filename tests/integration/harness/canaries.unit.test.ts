@@ -1367,6 +1367,21 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
     expect(angular).toBe(
       "export default class A {\n  constructor() {\n    x();\n  }\n\n  readonly label = input.required<string>();\n}\n",
     );
+    // A generic component's class, whose constraint holds braces (ADR-0068).
+    expect(
+      injectScript(
+        {
+          path: "a.ts",
+          contents:
+            "export default class A<T extends { id: string }> implements OnInit {\n  readonly rows = input.required<T[]>();\n}\n",
+        },
+        "angular",
+        "x();",
+        "render",
+      ),
+    ).toBe(
+      "export default class A<T extends { id: string }> implements OnInit {\n  constructor() {\n    x();\n  }\n\n  readonly rows = input.required<T[]>();\n}\n",
+    );
     // The component's class, not a directive's declared before it (ADR-0047, ADR-0063).
     const directive =
       '@Directive({ selector: "[ufScope]" })\nexport class Scope {\n  constructor() {\n    y();\n  }\n}\n\n';

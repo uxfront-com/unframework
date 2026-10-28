@@ -1,3 +1,4 @@
+import type { BadgeProps } from "./types";
 import {
   Component,
   Directive,
@@ -49,8 +50,8 @@ export class ScopeAttributes implements OnInit {
   `,
 })
 export default class Badge {
-  readonly label = input.required<string>();
-  readonly tone = input<"info" | "danger", "info" | "danger" | undefined>("info", {
+  readonly label = input.required<BadgeProps["label"]>();
+  readonly tone = input<Exclude<BadgeProps["tone"], undefined>, BadgeProps["tone"]>("info", {
     transform: (value) => (value === undefined ? "info" : value),
   });
   readonly class = input<string>();

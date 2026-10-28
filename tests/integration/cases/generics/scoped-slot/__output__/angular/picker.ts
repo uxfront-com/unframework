@@ -16,7 +16,7 @@ export interface PickerProps<T> {
 }
 
 /** What a template of `Picker`'s `item` slot reads: the slot's props. */
-export type PickerItemContext = { item: T };
+export type PickerItemContext = { item: any };
 
 /** A template of `Picker`'s `item` slot, its `let-` variables typed (ADR-0056). */
 @Directive({ selector: "ng-template[ufPickerItem]" })
@@ -76,7 +76,7 @@ export class ScopeAttributes implements OnInit {
     <ng-content select="[ufPickerItem]" />
   `,
 })
-export default class Picker {
+export default class Picker<T> {
   readonly items = input.required<T[]>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();

@@ -14,14 +14,30 @@ options need; the component.
 
 - **Types.** The source's type declarations the output reads (its inputs' and outputs' types, the
   setup's annotations and code) and every exported one, copied as written and exported as the
-  source exports them. An input is typed by its member's type, never by the props type, so a
-  props type the source does not export is left out (it would be declared and never used).
+  source exports them. An input is typed by its member's type, so a props type the source does
+  not export is left out (it would be declared and never used), unless an input reads a member
+  from it (below).
+- **Imported types** (ADR-0067). The types the source imports, by name, where the output reads
+  them: from a `.ts` module or a package as written, `import type { BadgeProps } from "./types"`,
+  and from a child's output, `import Field, { type FieldProps } from "./field"`. The output of the
+  module's main component also writes the module's type exports, in source order among its
+  types (ADR-0068): `export type { Tone } from "./types"`, and an exported type no component
+  reaches.
 - **Inputs.** Every prop is a public signal input, whether the template reads it or not (a
   prop is the component's API, and Angular reports a value for an undeclared input):
   `input.required<T>()` when required, `input<T>()` when optional, and
   `input<T, T | undefined>(default, { transform })` with a default, whose transform is
   `(value) => (value === undefined ? default : value)`: an explicit `undefined` takes the
-  default, as JavaScript's destructuring does, and `null` stays a value.
+  default, as JavaScript's destructuring does, and `null` stays a value. A member another
+  declaration declares (inherited, intersected, picked or imported) is written in that file's
+  names, so its input reads it from the props type by indexed access (ADR-0067):
+  `input.required<BadgeProps["label"]>()`, and with a default
+  `input<Exclude<BadgeProps["tone"], undefined>, BadgeProps["tone"]>(…)`.
+- **Generic components** (ADR-0068). A generic component is a generic class,
+  `export default class List<T extends Item = Item>`, its constraints and defaults as written,
+  whose type parameters ngtsc infers from a consumer's inputs. A select's `v-model` of a state of
+  such a type takes the chosen value through the template's own cast,
+  `this.value.set($any(valueField.value))`, since a template writes no `as`.
 - **Outputs.** Every event `defineEmits` declares is a public `output()` of its name (ADR-0012),
   or, for a name angular-eslint's `no-output-native` knows as a native DOM event, `uf` and the name
   in PascalCase (`change` → `ufChange`, ADR-0056), which the native event bubbling out of the
@@ -118,7 +134,7 @@ annotation, or the type TypeScript gives the `let` where the value's text makes 
 `note ?? "none"` and `a ? "x" : "y"`, `.length`, the string, number and array methods whose
 result the receiver fixes, the pure globals' results, and reads of a prop or of a member whose
 type is known so); otherwise, as a last resort, a private method computes the value, and the field
-is typed by it (`ReturnType<typeof this.initialFound>`), since no type oracle exists before M5.
+is typed by it (`ReturnType<typeof this.initialFound>`), since a target reads no type oracle.
 
 A local function code passes as a value is an arrow field, declared before every other field of
 the setup: a field initialiser runs while the class constructs, in field order, and an initial
@@ -281,7 +297,8 @@ spreads; ADR-0065) and composition's cells that ADR-0056 decides: `named-slot`, 
 `contextual-root`, unsupported (UF4001, errors), `child-root-scope` and `sheet-order`,
 unsupported (UF4003 and UF4002, info), and `generic-slot-props`, unsupported (UF4004, info): slot
 directives cannot infer a component's type parameter, so a scoped slot's context takes its
-constraint (ADR-0068). Where an unsupported cell is reported, the
+constraint (ADR-0068), or `any` for a parameter without one, as ngtsc types a generic context it
+cannot infer. Where an unsupported cell is reported, the
 output still compiles: default-slot presence reads `true`, and the forwarded default slot
 re-projects `<ng-content />`.
 
