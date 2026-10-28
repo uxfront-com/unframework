@@ -102,6 +102,8 @@ class Rules {
   readonly #shared: ReadonlyMap<BindingId, SharedValue>;
   /** The functions client code hands on to run later (ADR-0048). */
   readonly #deferred: ReadonlySet<FunctionNode>;
+  /** A composable's callback arguments, which only client code calls (ADR-0069). */
+  readonly #callbacks: ReadonlySet<BindingId>;
 
   constructor(input: RulesInput) {
     this.#input = input;
@@ -126,6 +128,11 @@ class Rules {
       [...render.setup.bindings.values()].map((binding) => [binding.id, binding]),
     );
     this.#shared = new Map([...render.shared.values.values()].map((value) => [value.id, value]));
+    this.#callbacks = new Set(
+      [...props.byDeclaration.values()].flatMap(({ id, callback }) =>
+        callback && id !== undefined ? [id] : [],
+      ),
+    );
     // A module's constants and imports are static too: Qwik reads them where they are declared,
     // at the module's top level (ADR-0070).
     for (const binding of this.#component.bindings) {
@@ -209,6 +216,11 @@ class Rules {
     if (summary.readsLocalVar) return "it reads a setup `let`, which is not reactive";
     const global = [...summary.clientGlobals].find((name) => !NONDETERMINISTIC.has(name));
     if (global !== undefined) return `it reads \`${global}\`, which only client code may`;
+    // A composable's callback, which only client code calls (ADR-0069).
+    const callback = [...summary.reads].find((read) => this.#callbacks.has(read));
+    if (callback !== undefined) {
+      return `it calls the callback \`${this.#name(callback)}\`, which only client code calls`;
+    }
     // A function of the module it calls, which its summary counts as a read (ADR-0070).
     for (const read of summary.reads) {
       const shared = this.#shared.get(read);

@@ -20,6 +20,7 @@ import {
   walk,
 } from "@unframework/ir";
 import type {
+  Binding,
   ComponentApi,
   ImportedName,
   InjectionKeyDeclaration,
@@ -51,6 +52,8 @@ import { componentApi, withReferences } from "./api.ts";
 import type { ApiContext } from "./api.ts";
 import { authoringBindings, checkAuthoringImport } from "./authoring.ts";
 import type { AuthoringApi } from "./authoring.ts";
+import { analyzeComposable, COMPOSABLE_FILE, findComposables } from "./composables.ts";
+import type { AnalyzedComposable, ComposableCandidate } from "./composables.ts";
 import { Reporter } from "./context.ts";
 import { checkTypeDeclaration, closure, collectTypes, setupTypes } from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
@@ -77,6 +80,7 @@ import { scopeIdOf, STYLESHEET_SPECIFIER, stylesheetImport } from "./styles.ts";
 import type { LoweredSheet, StylesheetSource } from "./styles.ts";
 import { syntaxError } from "./syntax.ts";
 import { kindsFromShape } from "./types/from-shape.ts";
+import type { Kinds } from "./types/kinds.ts";
 
 /** The result of analysing one module. */
 export interface AnalyzeResult {
@@ -166,7 +170,10 @@ interface Candidate {
   value?: AST.VariableDeclaration;
 }
 
-/** Analyses a parsed `.uf.tsx` module and lowers its components into IR (passes P2 and P3). */
+/**
+ * Analyses a parsed `.uf.tsx` module and lowers its components into IR (passes P2 and P3), or a
+ * `.uf.ts` module and its composables (ADR-0069).
+ */
 export function analyze(parsed: ParsedModule, options: AnalyzeOptions = {}): AnalyzeResult {
   return analyzeModule(parsed, undefined, options);
 }
@@ -199,11 +206,24 @@ export function analyzeModule(
     return { module: undefined, diagnostics: reporter.diagnostics, api: undefined };
   }
 
-  const candidates: Candidate[] = [
-    ...findComponents(parsed.program),
-    ...findValueComponents(parsed.program),
-  ].toSorted((a, b) => a.span.start - b.span.start);
-  const componentStatements = new Set(candidates.map((candidate) => candidate.span.start));
+  // A `.uf.ts` module holds composables and no component (ADR-0069).
+  const composableModule = COMPOSABLE_FILE.test(parsed.file);
+  const candidates: Candidate[] = composableModule
+    ? []
+    : [...findComponents(parsed.program), ...findValueComponents(parsed.program)].toSorted(
+        (a, b) => a.span.start - b.span.start,
+      );
+  // Its top-level forms are the module's: an error in one drops every composable (UF2035).
+  const foundMark = reporter.diagnostics.length;
+  const found = composableModule
+    ? findComposables(parsed.program, exportedNames(parsed.program), reporter)
+    : undefined;
+  const foundErrors = reporter.hasErrorsSince(foundMark);
+  const composableCandidates = found?.candidates ?? [];
+  const componentStatements = new Set([
+    ...candidates.map((candidate) => candidate.span.start),
+    ...(found?.statements ?? []),
+  ]);
   const listed = listedTypeExports(parsed.program);
   const declarations = findTypeDeclarations(parsed.program).map((declaration) =>
     listed.has(declaration.name) ? { ...declaration, exported: true } : declaration,
@@ -227,6 +247,8 @@ export function analyzeModule(
   const types = collectTypes(declarations, candidates, [
     ...[...keyCandidates.values()].flatMap((candidate) => (candidate.type ? [candidate.type] : [])),
     ...constantTypes.values(),
+    // A composable's types are its setup's, its parameters' included (ADR-0069).
+    ...composableCandidates.map(({ node }) => [node.typeParameters, node.params, node.body]),
   ]);
   const scopes = new Scopes(parsed.program);
   const authoring = authoringBindings(parsed.program);
@@ -252,6 +274,15 @@ export function analyzeModule(
   const keyDeclarations: InjectionKeyDeclaration[] = [];
   const keys = new Map<object, InjectionKeyInfo>();
   for (const candidate of keyCandidates.values()) {
+    if (composableModule) {
+      // `provide` and `inject` are a component's, so a key stays in the module of the component
+      // that provides it (ADR-0054, ADR-0069).
+      reporter.unsupported(
+        candidate.id,
+        "An injection key is declared in the `.uf.tsx` module of the component that provides it, and a composable neither provides nor injects.",
+      );
+      continue;
+    }
     // A key reported here is still one `provide` and `inject` may name: their uses are checked
     // as its fix would leave them, and report nothing more (one code per misuse).
     const ref = refTypeOf(candidate.type);
@@ -295,6 +326,8 @@ export function analyzeModule(
     moduleImports: [],
     shared: { values: new Map(), failed: new Set() },
     constants: [],
+    composableModule,
+    composableImports: new Map(),
   };
   const moduleMark = reporter.diagnostics.length;
   for (const statement of parsed.program.body) {
@@ -312,6 +345,31 @@ export function analyzeModule(
   // A module-level error drops every component, but they are still checked: fixing it must
   // reveal nothing new (the harness's L1).
   const moduleErrors = keyErrors || reporter.hasErrorsSince(moduleMark);
+  if (composableModule) {
+    const errors = moduleErrors || foundErrors;
+    return composableResult(
+      composableCandidates,
+      errors,
+      constants,
+      constantTypes,
+      {
+        parsed,
+        types,
+        shapes,
+        scopes,
+        authoring,
+        reporter,
+        components: new Map(),
+        keys,
+        passThrough: context.passThrough,
+        shared: context.shared,
+        composableImports: context.composableImports,
+        called: new Set(),
+        writtenType: writtenTypeIn({ parsed, types, shapes, localShapes }),
+      },
+      context,
+    );
+  }
   // The module's one component owns its sheets (ADR-0063): its API carries their scope id, as
   // the one a parent reads through the resolver, and so does its own render of itself.
   const [sheetOwner] = candidates;
@@ -444,12 +502,125 @@ export function analyzeModule(
 }
 
 /**
+ * Lowers a `.uf.ts` module's composables, once its top-level statements are checked (ADR-0069):
+ * its IR holds them and no component, and its API what a caller reads of each.
+ */
+function composableResult(
+  candidates: readonly ComposableCandidate[],
+  moduleErrors: boolean,
+  constants: readonly ModuleConstant[],
+  constantTypes: ReadonlyMap<string, AST.VariableDeclarator>,
+  module: Parameters<typeof analyzeComposable>[2],
+  context: ModuleContext,
+): AnalyzeResult {
+  const { parsed, reporter, types } = module;
+  const mark = reporter.diagnostics.length;
+  const lowered: AnalyzedComposable[] = [];
+  for (const candidate of candidates) {
+    const result = analyzeComposable(
+      candidate,
+      typeParametersOf(candidate.node, parsed.source),
+      module,
+    );
+    if (result) lowered.push(result);
+  }
+  // A value import no composable calls names a type, or nothing a composable may read: either
+  // way its outputs would import a value the module never had (UF2035).
+  for (const [local, specifier] of module.composableImports) {
+    if (module.called.has(local)) continue;
+    reporter.report(
+      "UF2035",
+      specifier,
+      `\`${specifier.local.name}\` is imported as a value from a module of composables, which a composable never calls: a type is imported with \`type\`.`,
+      {
+        help: `Import it as a type: \`import { type ${specifier.local.name} } from "…";\`.`,
+        ...(specifier.type === "ImportSpecifier"
+          ? {
+              fixes: [
+                {
+                  title: "Import it as a type",
+                  confidence: "likely" as const,
+                  edits: [
+                    { span: { start: specifier.start, end: specifier.start }, text: "type " },
+                  ],
+                },
+              ],
+            }
+          : {}),
+      },
+    );
+  }
+  const api: ModuleApi = {
+    file: parsed.file,
+    components: [],
+    keys: [],
+    ...(lowered.length ? { composables: lowered.map(({ api }) => api) } : {}),
+  };
+  const uncalled =
+    !reporter.diagnostics.some(({ severity }) => severity === "error") &&
+    reportUnread(parsed.program.body, context.passThrough, reporter);
+  if (moduleErrors || uncalled || reporter.hasErrorsSince(mark)) {
+    return { module: undefined, diagnostics: reporter.diagnostics, api };
+  }
+  if (!candidates.length) {
+    reporter.report("UF2035", { start: 0, end: 0 }, "This file exports no composable.", {
+      help: "A module of composables exports functions named `use` and an upper-case letter, each returning a shorthand object.",
+    });
+    return { module: undefined, diagnostics: reporter.diagnostics, api };
+  }
+  if (lowered.length < candidates.length) {
+    return { module: undefined, diagnostics: reporter.diagnostics, api };
+  }
+  const composables = lowered.map(({ composable }) => composable);
+  const read = readConstants(constants, composables);
+  const used = new Set([
+    ...composables.flatMap((composable) => composable.types),
+    ...closure(
+      read.map(({ binding }) => constantTypes.get(binding)),
+      types.table,
+    ),
+  ]);
+  return {
+    module: createModule(
+      parsed.file,
+      [],
+      [],
+      types.declarations
+        .filter((declaration) => used.has(declaration.name))
+        .map((declaration) =>
+          createTypeDeclaration(
+            declaration.name,
+            declaration.exported,
+            parsed.source.slice(declaration.node.start, declaration.node.end),
+            spanOf(declaration.node),
+          ),
+        ),
+      [],
+      [],
+      context.passThroughImports,
+      {
+        typeImports: context.typeImports,
+        typeExports: [
+          ...context.typeExports,
+          ...declaredTypeExports(types, parsed.source),
+        ].toSorted((a, b) => a.span.start - b.span.start),
+        moduleImports: context.moduleImports,
+        constants: read,
+        composables,
+      },
+    ),
+    diagnostics: reporter.diagnostics,
+    api,
+  };
+}
+
+/**
  * The module's constants its components read, and those they read in turn, in source order
  * (ADR-0070): what every output declares.
  */
 function readConstants(
   constants: readonly ModuleConstant[],
-  components: readonly UfComponent[],
+  components: readonly { bindings: readonly Binding[] }[],
 ): ModuleConstant[] {
   const byId = new Map(constants.map((constant) => [constant.binding, constant]));
   const read = new Set<string>();
@@ -625,6 +796,10 @@ interface ModuleContext {
   shared: SharedValues;
   /** The module's top-level `const`s, in source order, lowered once every import is known. */
   constants: ConstantCandidate[];
+  /** Whether the module is a `.uf.ts` module of composables (ADR-0069). */
+  composableModule: boolean;
+  /** In a `.uf.ts` module, the names it imports from other `.uf.ts` modules (UF2035). */
+  composableImports: Map<object, AST.ImportDeclarationSpecifier>;
 }
 
 /** The local names a module exports as values in `export { name }` and `export default name`. */
@@ -715,6 +890,25 @@ function checkTopLevelStatement(
           context.passThrough.names,
           context.passThroughImports,
         );
+        return;
+      }
+      if (
+        context.composableModule &&
+        COMPOSABLE_FILE.test(statement.source.value) &&
+        statement.importKind !== "type"
+      ) {
+        // Its types are re-imported by name (ADR-0067); a composable that calls another is
+        // reported at the call (UF2035).
+        const types = statement.specifiers.filter(
+          (item): item is AST.ImportSpecifier =>
+            item.type === "ImportSpecifier" && item.importKind === "type",
+        );
+        if (types.length) typeImport(statement, types, context);
+        for (const specifier of statement.specifiers) {
+          if (!types.includes(specifier as AST.ImportSpecifier)) {
+            context.composableImports.set(specifier.local, specifier);
+          }
+        }
         return;
       }
       if (STYLESHEET_SPECIFIER.test(statement.source.value)) {
@@ -1476,6 +1670,27 @@ interface ComponentModule {
   observe?: SetupObserver;
 }
 
+/**
+ * What a written type gives a value (`SetupContext.writtenType`). A written type that reaches an
+ * imported type is one `shapeQueries` asks the oracle for; any other resolves in the module,
+ * which follows its `extends` and aliases as the oracle does.
+ */
+function writtenTypeIn(
+  module: Pick<ComponentModule, "parsed" | "types" | "shapes" | "localShapes">,
+): (type: AST.TSType) => { kinds: Kinds; complete: boolean } {
+  const { parsed, types, shapes } = module;
+  return (type) => {
+    const at = { start: type.start, end: type.end };
+    const shape = shapes(at) ?? module.localShapes(at);
+    // A shape that does not resolve in full keeps what it could not evaluate as an object (a
+    // branded `string & {}`), so its kinds are read as the module's own types give them, which
+    // leave such a type `unknown` (ADR-0035).
+    return shape && !shape.unresolved.length
+      ? { kinds: kindsFromShape(shape, shapeReading(parsed, types.table, at)), complete: true }
+      : { kinds: types.table.kindsOf(type), complete: false };
+  };
+}
+
 /** Checks a component's shape, its props and its setup, and lowers its returned JSX. */
 function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComponent | undefined {
   const { parsed, types, shapes, scopes, authoring, reporter } = module;
@@ -1504,18 +1719,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
       : last?.type === "ReturnStatement"
         ? last.argument
         : undefined;
-  // A written type that reaches an imported type is one `shapeQueries` asks the oracle for; any
-  // other resolves in the module, which follows its `extends` and aliases as the oracle does.
-  const writtenType = (type: AST.TSType) => {
-    const at = { start: type.start, end: type.end };
-    const shape = shapes(at) ?? module.localShapes(at);
-    // A shape that does not resolve in full keeps what it could not evaluate as an object (a
-    // branded `string & {}`), so its kinds are read as the module's own types give them, which
-    // leave such a type `unknown` (ADR-0035).
-    return shape && !shape.unresolved.length
-      ? { kinds: kindsFromShape(shape, shapeReading(parsed, types.table, at)), complete: true }
-      : { kinds: types.table.kindsOf(type), complete: false };
-  };
+  const writtenType = writtenTypeIn(module);
   // The setup (ADR-0045): every statement before the return, declared before any code is walked.
   const setup = declareSetup({
     source: parsed.source,
