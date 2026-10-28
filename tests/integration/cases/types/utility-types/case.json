@@ -1,0 +1,14 @@
+{
+  "description": "Props built with the five utility types from an imported interface.",
+  "ssr": {
+    "required-only": { "props": { "name": "email", "label": "Email" } },
+    "every-member": {
+      "props": {
+        "name": "email",
+        "label": "Email",
+        "placeholder": "you@example.com",
+        "required": true
+      }
+    }
+  }
+}

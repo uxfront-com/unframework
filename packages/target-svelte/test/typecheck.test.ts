@@ -12,6 +12,7 @@ import {
   packageDir,
   removeScratch,
   toolchainDir,
+  TYPES_LANE,
   writeScratch,
 } from "./helpers.ts";
 
@@ -57,7 +58,8 @@ describe("svelte typecheck", () => {
     expect(golden.length).toBeGreaterThan(0);
     // Each case in a directory of its own, where its sources' outputs import each other.
     const fresh: string[] = [];
-    for (const { modules } of corpus()) {
+    for (const { name, modules } of corpus()) {
+      if (TYPES_LANE.test(`${name}/`)) continue;
       const emitted: Record<string, string> = {};
       for (const module of modules) {
         for (const file of await emitFormatted(module)) emitted[file.path] = file.contents;

@@ -1,0 +1,7 @@
+{
+  "description": "A props interface imported from a `.ts` module, with an optional member and its default.",
+  "ssr": {
+    "default-tone": { "props": { "label": "New" } },
+    "danger": { "props": { "label": "Overdue", "tone": "danger" } }
+  }
+}

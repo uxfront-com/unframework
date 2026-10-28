@@ -3,7 +3,7 @@
 - **Status:** Proposed
 - **Date:** 2026-10-24
 - **Plan:** §4.2, §5.6 (layer 4), §6, §7.2 (L4), §9 M5; G2, P2, P4, P6; ADR-0033, ADR-0034,
-  ADR-0059, ADR-0067; amends ADR-0034 and ADR-0059
+  ADR-0050, ADR-0059, ADR-0067; amends ADR-0034, ADR-0050 and ADR-0059
 
 ## Context
 
@@ -82,8 +82,16 @@ green in its own lane: `types/imported-interface`, `types/extends-chain`, `types
 `types/exported-types`, `generics/list`, `generics/select`, `generics/scoped-slot`,
 `generics/constrained`, and `diagnostics/generic-slot-props`.
 
-**What it amends.** ADR-0034 accepts a generic component and a generic props declaration. ADR-0059
-gains the `type` kind and the generic-slot-props gap.
+- **A harness rule for the types lanes:** a case whose L3 is quarantined on a target whose browser
+  build type-checks its output (Angular's) gets the browser stand-in of ADR-0050, so its spec
+  loads; its tests run, every browser layer fails with the stand-in's cause and is quarantined,
+  and the summary excuses their scenarios there, until the L3 entry goes.
+- A diagnostics case its target has output for (UF4004 is a note) records its browser layers
+  `skip(no spec: …)` in the compile project: it has no spec, and its server render checks it.
+
+**What it amends.** ADR-0034 accepts a generic component and a generic props declaration. ADR-0050's
+stand-in also serves a case its target cannot compile yet. ADR-0059 gains the `type` kind and the
+generic-slot-props gap.
 
 ## Consequences
 

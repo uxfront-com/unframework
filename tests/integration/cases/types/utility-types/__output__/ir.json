@@ -1,0 +1,329 @@
+{
+  "irVersion": 1,
+  "file": "types/utility-types/TextField.uf.tsx",
+  "components": [
+    {
+      "name": "TextField",
+      "span": {
+        "start": 252,
+        "end": 474
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 326,
+              "end": 340
+            }
+          },
+          "binding": "name@288",
+          "declaredBy": {
+            "file": "types/utility-types/types.ts",
+            "declaration": "FieldOptions",
+            "span": {
+              "start": 123,
+              "end": 137
+            }
+          },
+          "span": {
+            "start": 326,
+            "end": 340
+          }
+        },
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 326,
+              "end": 340
+            }
+          },
+          "binding": "label@294",
+          "declaredBy": {
+            "file": "types/utility-types/types.ts",
+            "declaration": "FieldOptions",
+            "span": {
+              "start": 140,
+              "end": 155
+            }
+          },
+          "span": {
+            "start": 326,
+            "end": 340
+          }
+        },
+        {
+          "name": "placeholder",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 326,
+              "end": 340
+            }
+          },
+          "binding": "placeholder@301",
+          "declaredBy": {
+            "file": "types/utility-types/types.ts",
+            "declaration": "FieldOptions",
+            "span": {
+              "start": 158,
+              "end": 179
+            }
+          },
+          "span": {
+            "start": 326,
+            "end": 340
+          }
+        },
+        {
+          "name": "required",
+          "optional": true,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 326,
+              "end": 340
+            }
+          },
+          "binding": "required@314",
+          "declaredBy": {
+            "file": "types/utility-types/types.ts",
+            "declaration": "FieldOptions",
+            "span": {
+              "start": 182,
+              "end": 201
+            }
+          },
+          "span": {
+            "start": 326,
+            "end": 340
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "TextFieldProps",
+          "span": {
+            "start": 326,
+            "end": 340
+          }
+        },
+        "span": {
+          "start": 286,
+          "end": 340
+        }
+      },
+      "types": [
+        "TextFieldProps"
+      ],
+      "bindings": [
+        {
+          "id": "name@288",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 288,
+            "end": 292
+          }
+        },
+        {
+          "id": "label@294",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 294,
+            "end": 299
+          }
+        },
+        {
+          "id": "placeholder@301",
+          "name": "placeholder",
+          "kind": "prop",
+          "span": {
+            "start": 301,
+            "end": 312
+          }
+        },
+        {
+          "id": "required@314",
+          "name": "required",
+          "kind": "prop",
+          "span": {
+            "start": 314,
+            "end": 322
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "label",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 374,
+                "end": 379
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@294",
+                  "span": {
+                    "start": 374,
+                    "end": 379
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 373,
+              "end": 380
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "input",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "name",
+                "value": {
+                  "code": "name",
+                  "span": {
+                    "start": 400,
+                    "end": 404
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@288",
+                      "span": {
+                        "start": 400,
+                        "end": 404
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 394,
+                  "end": 405
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "placeholder",
+                "value": {
+                  "code": "placeholder",
+                  "span": {
+                    "start": 419,
+                    "end": 430
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "placeholder@301",
+                      "span": {
+                        "start": 419,
+                        "end": 430
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 406,
+                  "end": 431
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "required",
+                "value": {
+                  "code": "required",
+                  "span": {
+                    "start": 442,
+                    "end": 450
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "required@314",
+                      "span": {
+                        "start": 442,
+                        "end": 450
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 432,
+                  "end": 451
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 387,
+              "end": 454
+            }
+          }
+        ],
+        "span": {
+          "start": 359,
+          "end": 467
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "TextField",
+      "span": {
+        "start": 252,
+        "end": 474
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "TextFieldProps",
+      "exported": true,
+      "code": "type TextFieldProps = Required<Pick<FieldOptions, \"name\" | \"label\">> &\n  Readonly<Partial<Omit<FieldOptions, \"name\" | \"label\">>>;",
+      "span": {
+        "start": 121,
+        "end": 250
+      }
+    }
+  ],
+  "typeImports": [
+    {
+      "specifier": "./types",
+      "names": [
+        {
+          "imported": "FieldOptions",
+          "local": "FieldOptions",
+          "span": {
+            "start": 14,
+            "end": 26
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 44
+      }
+    }
+  ]
+}

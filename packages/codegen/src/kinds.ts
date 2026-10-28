@@ -154,6 +154,8 @@ class Kinds {
   readonly #module: UfModule;
   /** The declarations and bindings being read, against cycles. */
   readonly #reading = new Set<string>();
+  /** Set while a prop another file declares is read: its names are not the module's. */
+  #foreign = false;
 
   constructor(component: UfComponent, module: UfModule) {
     this.#component = component;
@@ -194,7 +196,9 @@ class Kinds {
 
   /** Whether a local `type` alias names only primitives: an interface is an object. */
   #alias(name: string): boolean {
-    const declaration = this.#module.types.find((each) => each.name === name);
+    const declaration = this.#foreign
+      ? undefined
+      : this.#module.types.find((each) => each.name === name);
     if (!declaration || this.#reading.has(name)) return false;
     const alias = /^type\s+[A-Za-z_$][\w$]*\s*=\s*([\s\S]*?);?\s*$/.exec(declaration.code);
     if (!alias) return false;
@@ -377,7 +381,16 @@ class Kinds {
       switch (binding.kind) {
         case "prop": {
           const prop = this.#component.props.find((each) => each.binding === binding.id);
-          return prop !== undefined && this.type(prop.type.code);
+          if (prop === undefined) return false;
+          // A member another file declares is written in that file's names (ADR-0067): none of
+          // the module's own aliases is the one it names.
+          if (!prop.declaredBy) return this.type(prop.type.code);
+          this.#foreign = true;
+          try {
+            return this.type(prop.type.code);
+          } finally {
+            this.#foreign = false;
+          }
         }
         case "state": {
           const item = this.#component.setup.find(

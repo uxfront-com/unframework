@@ -1,0 +1,7 @@
+{
+  "description": "Props that pick a member of a type a package declares.",
+  "ssr": {
+    "open": { "props": { "label": "Feed", "closed": false } },
+    "closed": { "props": { "label": "Feed", "closed": true } }
+  }
+}

@@ -510,10 +510,11 @@ export const CANARIES: readonly Canary[] = [
           component.render = createElement("div", [], [], component.render.span);
           // A loop variable is bound by its list, which is gone, and a setup binding by its
           // setup. The events stay declared: Angular's adapter binds each to its output, which
-          // must exist, and Vue's would pass an undeclared listener on to the root.
+          // must exist, and Vue's would pass an undeclared listener on to the root. So do the
+          // slots, whose declaration names its binding.
           component.setup = [];
           component.bindings = component.bindings.filter(
-            ({ kind }) => kind === "prop" || kind === "emit",
+            ({ kind }) => kind === "prop" || kind === "emit" || kind === "slots",
           );
         }
         return copy;
@@ -1249,13 +1250,20 @@ export function mismatchClosingTag(file: OutputFile): string {
 }
 
 /**
- * An output whose props and events a consumer sees as `any`: the type each target's checker
- * reads them from, the component's props parameter (React, Solid), its `$props()` (Svelte), its
- * `Props` (Astro), or the type arguments of `component$` (Qwik), `defineProps`, `defineModel`,
- * `defineEmits` and `defineSlots` (Vue), and `input`, `output` and `model` (Angular). An output
- * with none, a component without props or events, is left as it is.
+ * An output whose props, events and exported types a consumer sees as `any`: the type each
+ * target's checker reads the props and events from, the component's props parameter (React,
+ * Solid), its `$props()` (Svelte), its `Props` (Astro), or the type arguments of `component$`
+ * (Qwik), `defineProps`, `defineModel`, `defineEmits` and `defineSlots` (Vue), and `input`,
+ * `output` and `model` (Angular); and every exported `interface` and type alias, in any output
+ * file, a copied `.ts` module included, so a consumer's misuse of an exported type goes unmet
+ * too (ADR-0068). An output with none of them is left as it is.
  */
 function widenPublicTypes(file: OutputFile, target: string): string {
+  return anyExportedTypes(widenProps(file, target));
+}
+
+/** {@link widenPublicTypes}'s props and events. */
+function widenProps(file: OutputFile, target: string): string {
   const { contents } = file;
   switch (target) {
     case "react":
@@ -1307,6 +1315,80 @@ function widenPublicTypes(file: OutputFile, target: string): string {
     default:
       throw new Error(`${MARKER} L4: no public types to widen for the target ${target}.`);
   }
+}
+
+/**
+ * `contents` with each exported `interface` and type alias declared `any`, its type parameters
+ * kept, so every reference to it still checks: `export type ButtonProps = any;`,
+ * `export type ListProps<T> = any;`. A type re-export, `export type { Tone } from "./types"`,
+ * declares each name it exports `any` in its place: the `.ts` module it names is copied into the
+ * output tree beside the outputs, where no output hook reaches (ADR-0070).
+ */
+export function anyExportedTypes(contents: string): string {
+  contents = contents.replace(
+    /\bexport\s+type\s*\{([^}]*)\}\s*from\s*(["'])[^"']*\2;?/g,
+    (_, names: string) =>
+      names
+        .split(",")
+        .map((name) =>
+          name
+            .trim()
+            .split(/\s+as\s+/)
+            .at(-1)!,
+        )
+        .filter(Boolean)
+        .map((name) => `export type ${name} = any;`)
+        .join("\n"),
+  );
+  let result = "";
+  let from = 0;
+  for (const match of contents.matchAll(/\bexport\s+(interface|type)\s+([A-Za-z_$][\w$]*)/g)) {
+    if (match.index < from) continue;
+    let index = match.index + match[0].length;
+    while (/\s/.test(contents[index] ?? "")) index += 1;
+    let parameters = "";
+    if (contents[index] === "<") {
+      const close = matchingBracket(contents, index, "<", ">");
+      if (close === undefined) continue;
+      parameters = contents.slice(index, close + 1);
+      index = close + 1;
+    }
+    const end =
+      match[1] === "interface"
+        ? interfaceEnd(contents, index)
+        : statementEnd(contents, contents.indexOf("=", index));
+    if (end === undefined) continue;
+    result += `${contents.slice(from, match.index)}export type ${match[2]}${parameters} = any;`;
+    from = end + 1;
+  }
+  return result + contents.slice(from);
+}
+
+/** The index of the `}` that ends an interface whose header ends at `from`. */
+function interfaceEnd(contents: string, from: number): number | undefined {
+  const open = contents.indexOf("{", from);
+  return open === -1 ? undefined : matchingBracket(contents, open, "{", "}");
+}
+
+/** The index of the `;` that ends a type alias whose `=` is at `from`, outside any bracket. */
+function statementEnd(contents: string, from: number): number | undefined {
+  if (from === -1) return undefined;
+  let depth = 0;
+  for (let index = from + 1; index < contents.length; index += 1) {
+    const char = contents[index]!;
+    if (char === '"' || char === "'" || char === "`") {
+      const end = endOfString(contents, index);
+      if (end === undefined) return undefined;
+      index = end;
+    } else if ("{([<".includes(char)) {
+      depth += 1;
+    } else if ("})]".includes(char) || (char === ">" && contents[index - 1] !== "=")) {
+      depth -= 1;
+    } else if (char === ";" && depth === 0) {
+      return index;
+    }
+  }
+  return undefined;
 }
 
 /** `contents` with the type arguments after each match of `opening` (which ends at `<`) `any`. */

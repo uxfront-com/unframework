@@ -1,0 +1,14 @@
+{
+  "description": "A generic component's scoped slot, filled by a parent that reads its item type.",
+  "main": "Fruits.uf.tsx",
+  "ssr": {
+    "basket": {
+      "props": {
+        "fruits": [
+          { "name": "Apple", "count": 3 },
+          { "name": "Pear", "count": 1 }
+        ]
+      }
+    }
+  }
+}

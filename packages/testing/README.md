@@ -55,7 +55,11 @@ describeTargets("state/counter", () => {
   capability. Every test of a case the target has no output for (`test.provide.ufNoOutput`, by
   case id, with the errors it expects for the target; the harness gives its spec a stand-in for
   the component) is skipped there the same way, whatever it requires, with `no output: <the
-errors>` on every layer, and the summary excuses it on that target alone.
+errors>` on every layer, and the summary excuses it on that target alone. Every test of a case
+  the target cannot compile yet (`test.provide.ufStandIn`, by case id, with the cause; the
+  harness gives its spec a stand-in too, ADR-0068) runs, and the setup records L7, L8, L9, L10,
+  L11 and L13 as failed with the cause first (`recordStandIn`), and `standIn` on the test's
+  record, so the summary excuses its scenarios on that target alone while its cells still fail.
 - **`view.user`** acts as a person does, through Playwright's real input (ADR-0050). An action
   is the inputs a person gives apart in time, each dispatched alone (the `ufInput` command):
   `click(target, { position? })` moves the mouse onto the element (Playwright's hover, which
@@ -295,7 +299,8 @@ case)`); its projects run after the run's reference and before every other targe
   (case, target, layer) cell, over every test that records it.
 - **The parity matrix:** `ParityReporter` writes `parity-matrix.<run>.json` (version 5), with
   each project's cells and parity scenarios, and each test's, by its name without the target
-  (`testKey`): the scenarios it checked, or why it was skipped by capability (`tests`); and what
+  (`testKey`): the scenarios it checked, or why it was skipped by capability or ran against a
+  stand-in (`tests`); and what
   a test file recorded after its last test, the run's mode, its reference target and when it
   ended. It fails the run when a selected project collected no tests, when a test was skipped
   without recording why, when two tests of a case share a name, and, once a run has every record
@@ -313,12 +318,14 @@ case)`); its projects run after the run's reference and before every other targe
   run, and `since` restricts it to the runs that ended since a time. Judged like the missing
   cells, a target whose tests check other parity scenarios than the reference's, test by test,
   is a problem (every target runs the same spec), except for a test it skipped by capability or
-  for want of output. A skip on a live layer must name a capability the target lacks
-  (`requires <name>: …`, the name one of `SummaryExpectations.capabilities`) or a mechanical
-  cause: no output (`compile errors: no output` for the layers of a compile with errors, and
-  `no output: <the expected errors>` for a browser test of such a case), the live reference, a
+  for want of output, or ran against a stand-in. A skip on a live layer must name a capability
+  the target lacks (`requires <name>: …`, the name one of `SummaryExpectations.capabilities`) or
+  a mechanical cause: no output (`compile errors: no output` for the layers of a compile with
+  errors, and `no output: <the expected errors>` for a browser test of such a case), no spec (the
+  browser layers of a diagnostics case its target has output for), the live reference, a
   component that did not render (L6), no scripted interaction. The Markdown lists each test a
-  target skipped, by capability or for want of output, under its case's table.
+  target skipped, by capability or for want of output, or ran against a stand-in, under its
+  case's table.
 
 ## Normalisation (`@unframework/testing/normalize`)
 

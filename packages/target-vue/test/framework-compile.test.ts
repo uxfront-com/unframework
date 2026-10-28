@@ -1,9 +1,10 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
-import { corpus, emitFormatted, goldenFiles, toolchainDir } from "./helpers.ts";
+import { corpus, emitFormatted, goldenFiles, goldenModules, toolchainDir } from "./helpers.ts";
 import { M2_SHAPES } from "./lint-probes.ts";
 
 const context = { toolchainDir, root: toolchainDir };
@@ -23,26 +24,40 @@ afterEach(() => {
 describe("vue frameworkCompile", () => {
   // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output without a warning", async () => {
-    const paths = goldenFiles();
+    // With the `.ts` modules beside them, which compileScript reads for an imported props type.
+    const paths = [...goldenFiles(), ...goldenModules()].toSorted();
     expect(paths.length).toBeGreaterThan(0);
     const results = await toolchain.frameworkCompile(
       paths.map((path) => ({ path, contents: readFileSync(path, "utf8") })),
       context,
     );
-    expect([...results.keys()]).toEqual(paths);
+    expect([...results.keys()].toSorted()).toEqual(paths);
     for (const path of paths) expect(results.get(path), path).toEqual({ errors: [], warnings: [] });
   }, 60_000);
 
   // One test per case, so no test's time grows with the corpus. As one test over the 172 cases
   // M2 left, it took 0.4 s alone on a laptop and overran Vitest's 5 s default in CI's Unit tests.
-  it.each(corpus())("accepts what the target emits today for $name", async ({ name, module }) => {
-    for (const file of await emitFormatted(module)) {
-      expect(await compileOne(file.contents, `/virtual/${name}/${file.path}`), name).toEqual({
-        errors: [],
-        warnings: [],
-      });
-    }
-  });
+  it.each(corpus())(
+    "accepts what the target emits today for $name",
+    async ({ name, module, outputDir }) => {
+      // The `.ts` modules `compile()` copies beside the outputs (ADR-0070), which the target does
+      // not emit: compileScript reads them for an imported props type (ADR-0067).
+      const modules = (existsSync(outputDir) ? readdirSync(outputDir) : [])
+        .filter((file) => file.endsWith(".ts"))
+        .map((file) => ({
+          path: `/virtual/${name}/${file}`,
+          contents: readFileSync(join(outputDir, file), "utf8"),
+        }));
+      for (const file of await emitFormatted(module)) {
+        const path = `/virtual/${name}/${file.path}`;
+        const results = await toolchain.frameworkCompile(
+          [{ path, contents: file.contents }, ...modules],
+          context,
+        );
+        expect(results.get(path), name).toEqual({ errors: [], warnings: [] });
+      }
+    },
+  );
 
   it("accepts the shapes M2 emits (lint-probes.ts), for the DOM and the server", async () => {
     for (const [name, contents] of Object.entries(M2_SHAPES)) {

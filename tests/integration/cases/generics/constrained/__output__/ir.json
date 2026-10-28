@@ -1,0 +1,322 @@
+{
+  "irVersion": 1,
+  "file": "generics/constrained/Table.uf.tsx",
+  "components": [
+    {
+      "name": "Table",
+      "span": {
+        "start": 227,
+        "end": 605
+      },
+      "typeParameters": [
+        {
+          "name": "T",
+          "constraint": {
+            "code": "{ id: string; label: string }",
+            "span": {
+              "start": 267,
+              "end": 296
+            }
+          },
+          "span": {
+            "start": 257,
+            "end": 296
+          }
+        }
+      ],
+      "props": [
+        {
+          "name": "caption",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 203,
+              "end": 209
+            }
+          },
+          "binding": "caption@302",
+          "span": {
+            "start": 194,
+            "end": 210
+          }
+        },
+        {
+          "name": "rows",
+          "optional": false,
+          "type": {
+            "code": "T[]",
+            "span": {
+              "start": 219,
+              "end": 222
+            }
+          },
+          "binding": "rows@313",
+          "span": {
+            "start": 213,
+            "end": 223
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "TableProps<T>",
+          "span": {
+            "start": 322,
+            "end": 335
+          }
+        },
+        "span": {
+          "start": 298,
+          "end": 335
+        }
+      },
+      "types": [
+        "TableProps"
+      ],
+      "bindings": [
+        {
+          "id": "caption@302",
+          "name": "caption",
+          "kind": "prop",
+          "span": {
+            "start": 302,
+            "end": 309
+          }
+        },
+        {
+          "id": "rows@313",
+          "name": "rows",
+          "kind": "prop",
+          "span": {
+            "start": 313,
+            "end": 317
+          }
+        },
+        {
+          "id": "row@430",
+          "name": "row",
+          "kind": "loopVar",
+          "span": {
+            "start": 430,
+            "end": 433
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "table",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "caption",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "caption",
+                  "span": {
+                    "start": 378,
+                    "end": 385
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "caption@302",
+                      "span": {
+                        "start": 378,
+                        "end": 385
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 377,
+                  "end": 386
+                }
+              }
+            ],
+            "span": {
+              "start": 368,
+              "end": 396
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "tbody",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "rows",
+                  "span": {
+                    "start": 420,
+                    "end": 424
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "rows@313",
+                      "span": {
+                        "start": 420,
+                        "end": 424
+                      }
+                    }
+                  ]
+                },
+                "item": "row@430",
+                "key": {
+                  "code": "row.id",
+                  "span": {
+                    "start": 459,
+                    "end": 465
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "row@430",
+                      "span": {
+                        "start": 459,
+                        "end": 462
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "tr",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Element",
+                      "tag": "th",
+                      "attributes": [
+                        {
+                          "kind": "Static",
+                          "name": "scope",
+                          "value": "row",
+                          "span": {
+                            "start": 484,
+                            "end": 495
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "row.id",
+                            "span": {
+                              "start": 497,
+                              "end": 503
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "row@430",
+                                "span": {
+                                  "start": 497,
+                                  "end": 500
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 496,
+                            "end": 504
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 480,
+                        "end": 509
+                      }
+                    },
+                    {
+                      "kind": "Element",
+                      "tag": "td",
+                      "attributes": [],
+                      "children": [
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "row.label",
+                            "span": {
+                              "start": 527,
+                              "end": 536
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "row@430",
+                                "span": {
+                                  "start": 527,
+                                  "end": 530
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 526,
+                            "end": 537
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 522,
+                        "end": 542
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 450,
+                    "end": 558
+                  }
+                },
+                "span": {
+                  "start": 420,
+                  "end": 569
+                }
+              }
+            ],
+            "span": {
+              "start": 403,
+              "end": 585
+            }
+          }
+        ],
+        "span": {
+          "start": 354,
+          "end": 598
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Table",
+      "span": {
+        "start": 227,
+        "end": 605
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "TableProps",
+      "exported": true,
+      "code": "interface TableProps<T extends { id: string; label: string }> {\n  caption: string;\n  rows: T[];\n}",
+      "span": {
+        "start": 128,
+        "end": 225
+      }
+    }
+  ]
+}

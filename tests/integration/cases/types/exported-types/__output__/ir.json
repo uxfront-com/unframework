@@ -1,0 +1,214 @@
+{
+  "irVersion": 1,
+  "file": "types/exported-types/Button.uf.tsx",
+  "components": [
+    {
+      "name": "Button",
+      "span": {
+        "start": 294,
+        "end": 473
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 262,
+              "end": 268
+            }
+          },
+          "binding": "label@327",
+          "span": {
+            "start": 255,
+            "end": 269
+          }
+        },
+        {
+          "name": "tone",
+          "optional": true,
+          "type": {
+            "code": "ButtonTone",
+            "span": {
+              "start": 279,
+              "end": 289
+            }
+          },
+          "default": {
+            "code": "\"primary\"",
+            "span": {
+              "start": 341,
+              "end": 350
+            },
+            "refs": []
+          },
+          "binding": "tone@334",
+          "span": {
+            "start": 272,
+            "end": 290
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ButtonProps",
+          "span": {
+            "start": 354,
+            "end": 365
+          }
+        },
+        "span": {
+          "start": 325,
+          "end": 365
+        }
+      },
+      "types": [
+        "ButtonTone",
+        "ButtonProps"
+      ],
+      "bindings": [
+        {
+          "id": "label@327",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 327,
+            "end": 332
+          }
+        },
+        {
+          "id": "tone@334",
+          "name": "tone",
+          "kind": "prop",
+          "span": {
+            "start": 334,
+            "end": 338
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "button",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "type",
+            "value": "button",
+            "span": {
+              "start": 392,
+              "end": 405
+            }
+          },
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "`button button-${tone}`",
+                  "span": {
+                    "start": 413,
+                    "end": 436
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tone@334",
+                      "span": {
+                        "start": 430,
+                        "end": 434
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 413,
+                  "end": 436
+                }
+              }
+            ],
+            "span": {
+              "start": 406,
+              "end": 437
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 446,
+                "end": 451
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@327",
+                  "span": {
+                    "start": 446,
+                    "end": 451
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 445,
+              "end": 452
+            }
+          }
+        ],
+        "span": {
+          "start": 384,
+          "end": 466
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Button",
+      "span": {
+        "start": 294,
+        "end": 473
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ButtonTone",
+      "exported": true,
+      "code": "type ButtonTone = \"primary\" | \"secondary\";",
+      "span": {
+        "start": 133,
+        "end": 175
+      }
+    },
+    {
+      "name": "ButtonProps",
+      "exported": true,
+      "code": "interface ButtonProps {\n  label: string;\n  tone?: ButtonTone;\n}",
+      "span": {
+        "start": 229,
+        "end": 292
+      }
+    }
+  ],
+  "typeExports": [
+    {
+      "kind": "Declaration",
+      "name": "ButtonSize",
+      "code": "type ButtonSize = \"small\" | \"large\";",
+      "span": {
+        "start": 184,
+        "end": 220
+      }
+    }
+  ]
+}

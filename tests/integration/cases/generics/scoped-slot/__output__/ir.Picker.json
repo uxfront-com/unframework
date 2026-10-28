@@ -1,0 +1,244 @@
+{
+  "irVersion": 1,
+  "file": "generics/scoped-slot/Picker.uf.tsx",
+  "components": [
+    {
+      "name": "Picker",
+      "span": {
+        "start": 233,
+        "end": 503
+      },
+      "typeParameters": [
+        {
+          "name": "T",
+          "span": {
+            "start": 264,
+            "end": 265
+          }
+        }
+      ],
+      "props": [
+        {
+          "name": "items",
+          "optional": false,
+          "type": {
+            "code": "T[]",
+            "span": {
+              "start": 225,
+              "end": 228
+            }
+          },
+          "binding": "items@269",
+          "span": {
+            "start": 218,
+            "end": 229
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "PickerProps<T>",
+          "span": {
+            "start": 278,
+            "end": 292
+          }
+        },
+        "span": {
+          "start": 267,
+          "end": 292
+        }
+      },
+      "types": [
+        "PickerProps"
+      ],
+      "slots": {
+        "binding": "slots@304",
+        "type": {
+          "code": "{ item?(props: { item: T }): Element }",
+          "span": {
+            "start": 324,
+            "end": 362
+          }
+        },
+        "slots": [
+          {
+            "name": "item",
+            "optional": true,
+            "props": {
+              "code": "{ item: T }",
+              "span": {
+                "start": 339,
+                "end": 350
+              }
+            },
+            "references": [
+              "T"
+            ],
+            "span": {
+              "start": 326,
+              "end": 360
+            }
+          }
+        ],
+        "span": {
+          "start": 298,
+          "end": 366
+        }
+      },
+      "bindings": [
+        {
+          "id": "items@269",
+          "name": "items",
+          "kind": "prop",
+          "span": {
+            "start": 269,
+            "end": 274
+          }
+        },
+        {
+          "id": "slots@304",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 304,
+            "end": 309
+          }
+        },
+        {
+          "id": "item@405",
+          "name": "item",
+          "kind": "loopVar",
+          "span": {
+            "start": 405,
+            "end": 409
+          }
+        },
+        {
+          "id": "index@411",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 411,
+            "end": 416
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "ul",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "For",
+            "source": {
+              "code": "items",
+              "span": {
+                "start": 394,
+                "end": 399
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "items@269",
+                  "span": {
+                    "start": 394,
+                    "end": 399
+                  }
+                }
+              ]
+            },
+            "item": "item@405",
+            "index": "index@411",
+            "key": {
+              "code": "index",
+              "span": {
+                "start": 440,
+                "end": 445
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "index@411",
+                  "span": {
+                    "start": 440,
+                    "end": 445
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Element",
+              "tag": "li",
+              "attributes": [],
+              "children": [
+                {
+                  "kind": "SlotOutlet",
+                  "slot": "item",
+                  "props": {
+                    "code": "{ item }",
+                    "span": {
+                      "start": 461,
+                      "end": 469
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "item@405",
+                        "span": {
+                          "start": 463,
+                          "end": 467
+                        },
+                        "shorthand": true
+                      }
+                    ]
+                  },
+                  "fallback": [],
+                  "span": {
+                    "start": 447,
+                    "end": 471
+                  }
+                }
+              ],
+              "span": {
+                "start": 431,
+                "end": 476
+              }
+            },
+            "span": {
+              "start": 394,
+              "end": 485
+            }
+          }
+        ],
+        "span": {
+          "start": 382,
+          "end": 496
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Picker",
+      "span": {
+        "start": 233,
+        "end": 503
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "PickerProps",
+      "exported": true,
+      "code": "interface PickerProps<T> {\n  items: T[];\n}",
+      "span": {
+        "start": 189,
+        "end": 231
+      }
+    }
+  ]
+}

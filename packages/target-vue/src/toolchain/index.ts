@@ -1,3 +1,5 @@
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+
 import type { Toolchain } from "@unframework/codegen";
 import {
   lintWithEslint,
@@ -22,7 +24,7 @@ export const toolchain: Toolchain = {
     return {
       // By default plugin-vue turns static asset URLs in templates into imports (under a dev
       // server `src="/a.png"` renders as `/@fs/a.png`), which no other target does.
-      plugins: [vue({ template: { transformAssetUrls: false } })],
+      plugins: [vue({ template: { transformAssetUrls: false }, script: { fs: projectFs } })],
       resolve: { dedupe: ["vue"] },
       // The dependency scanner never sees compiled output, and plugin-vue adds nothing to the
       // optimizer: without this, the first run discovers `vue` late and reloads mid-test.
@@ -49,3 +51,15 @@ export const toolchain: Toolchain = {
 };
 
 export default toolchain;
+
+/**
+ * The files compileScript reads to resolve a type that `defineProps<X>()` imports (ADR-0067):
+ * the project's own, from the disk. plugin-vue passes none of its own, and compiler-sfc finds
+ * none through TypeScript 7, whose `typescript` module has no `sys`, so without it every
+ * imported props type fails to compile.
+ */
+const projectFs = {
+  fileExists: (path: string): boolean => existsSync(path) && statSync(path).isFile(),
+  readFile: (path: string): string | undefined => readFileSync(path, "utf8"),
+  realpath: (path: string): string => realpathSync(path),
+};

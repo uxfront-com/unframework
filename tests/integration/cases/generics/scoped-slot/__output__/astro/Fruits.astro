@@ -1,0 +1,31 @@
+---
+import Picker from "./Picker.astro";
+
+interface Fruit {
+  name: string;
+  count: number;
+}
+
+interface Props {
+  fruits: Fruit[];
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { fruits, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+---
+
+<Picker
+  items={fruits}
+  class:list={[className]}
+  style={style}
+  item={({ item }) => <span>{item.name} × {item.count}</span>}
+  {...scopeAttributes(Astro.props)}
+/>

@@ -1,0 +1,27 @@
+---
+export interface ListProps<T> {
+  label: string;
+  items: T[];
+  selected?: T;
+}
+
+interface Props extends ListProps<T> {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { label, items, selected, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+---
+
+<ul aria-label={label} class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
+  {items.map((item) => (
+    <li aria-current={item === selected ? "true" : undefined}>{String(item)}</li>
+  ))}
+</ul>

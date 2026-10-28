@@ -16,6 +16,7 @@ import {
   checkLayers,
   diffLines,
   NO_OUTPUT_SKIP,
+  NO_SPEC_SKIP,
   settleArtefact,
   settleArtefactDirectory,
 } from "@unframework/testing/node";
@@ -60,6 +61,12 @@ const NO_OUTPUT_LAYERS: readonly LayerName[] = [
   "L11",
   "L13",
 ];
+
+/**
+ * The layers only a browser project records, which none records for a case without a spec: a
+ * diagnostics case its target has output for (a capability's note, UF4004) skips them.
+ */
+const NO_SPEC_LAYERS: readonly LayerName[] = ["L7", "L8", "L9", "L10", "L11"];
 
 const validateIr = new Ajv({ allErrors: true, strict: true }).compile(irSchema);
 
@@ -147,6 +154,8 @@ describe("compile", () => {
           };
           if (hasErrors(caseDiagnostics(firsts(compiles)), target)) {
             for (const layer of NO_OUTPUT_LAYERS) checks[layer] = () => ({ skip: NO_OUTPUT_SKIP });
+          } else if (!info.spec) {
+            for (const layer of NO_SPEC_LAYERS) checks[layer] = () => ({ skip: NO_SPEC_SKIP });
           }
           await checkLayers(
             task,

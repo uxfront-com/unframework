@@ -344,6 +344,80 @@ export default function Card({ title, tags = ["a", "b"], meta = { author: "x", y
   });
 });
 
+describe("vue types and generics (ADR-0067, ADR-0068)", () => {
+  it("exports a type no component reaches and a re-export, among the copied types in source order", async () => {
+    const source = `
+export type Tone = "info" | "warn";
+export type Size = "small" | "large";
+export type { Item } from "./types";
+export default function Badge({ tone }: { tone: Tone }) {
+  return <span class={tone}>Badge</span>;
+}`;
+    const output = await emitSource(source);
+    expect(output.slice(0, output.indexOf("const"))).toBe(
+      [
+        '<script setup lang="ts">',
+        'export type Tone = "info" | "warn";',
+        "",
+        'export type Size = "small" | "large";',
+        "",
+        'export type { Item } from "./types";',
+        "",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("writes a generic component's type parameters on its script, single-quoted around a double quote", async () => {
+    const list = await emitSource(`
+export default function List<T extends { id: string }>({ items }: { items: T[] }) {
+  return <ul>{items.map((item) => <li key={item.id}>{item.id}</li>)}</ul>;
+}`);
+    expect(list).toContain('<script setup lang="ts" generic="T extends { id: string }">');
+    const picker = await emitSource(`
+export default function Picker<T extends "a" | "b" = "a">({ value }: { value: T }) {
+  return <p>{value}</p>;
+}`);
+    expect(picker).toContain(`<script setup lang="ts" generic='T extends "a" | "b" = "a"'>`);
+  });
+
+  it("imports the types it reads by name, and prints the members a package declares", async () => {
+    const module = lower(`
+export default function Status({ closed, label }: { closed: boolean; label: string }) {
+  return <p>{label}: {closed ? "closed" : "open"}</p>;
+}`);
+    // As the analyser lowers `Pick<SubscriptionLike, "closed"> & { label: string }` with
+    // `SubscriptionLike` imported from rxjs: `closed` is declared by the package.
+    const span = { start: 0, end: 0 };
+    module.typeImports = [
+      {
+        specifier: "rxjs",
+        names: [
+          { imported: "SubscriptionLike", local: "SubscriptionLike", span },
+          { imported: "Observer", local: "Observer", span },
+        ],
+        span,
+      },
+    ];
+    const component = module.components[0]!;
+    component.propsParameter!.type.code = 'Pick<SubscriptionLike, "closed"> & { label: string }';
+    component.props[0]!.declaredBy = {
+      file: "pkg:rxjs/dist/types/internal/types.d.ts",
+      declaration: "SubscriptionLike",
+      span,
+    };
+    const [file] = await emitFormatted(module);
+    expect(file!.contents).toContain(
+      [
+        '<script setup lang="ts">',
+        'import type { SubscriptionLike } from "rxjs";',
+        "",
+        "const { closed, label } = defineProps<{ closed: boolean; label: string }>();",
+      ].join("\n"),
+    );
+  });
+});
+
 describe("vue template", () => {
   it("prints conditionals on their element, or on a template around other content", async () => {
     const source = `

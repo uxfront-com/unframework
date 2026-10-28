@@ -21,14 +21,16 @@
   "rules": {
     // P7, D11: an output imports only its framework, and (from M3) the outputs beside it, and
     // (from M4) the `virtual:` modules a styling engine's plugin registers, which it keeps as
-    // written (plan §4.4, ADR-0064).
+    // written (plan §4.4, ADR-0064). A type import is erased, so a package's types are imported
+    // by name, as the source imports them (ADR-0067).
     "no-restricted-imports": [
       "error",
       {
         "patterns": [
           {
             "group": ["*", "!astro", "!astro/*", "!virtual:*", "!./**", "!../**"],
-            "message": "An output imports only its framework (P7)."
+            "message": "An output imports only its framework (P7).",
+            "allowTypeImports": true
           }
         ]
       }

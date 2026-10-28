@@ -7,6 +7,7 @@
 // template's listeners call where a handler cannot stay in the template (`listeners.ts`).
 import {
   addPassThroughImports,
+  addTypeImports,
   bindingOf,
   childImports,
   keyImports,
@@ -20,6 +21,7 @@ import {
   referencedBindings,
   rewriteCode,
   typeDeclarationCode,
+  typeExportsCode,
 } from "@unframework/codegen";
 import type { RewriteRules } from "@unframework/codegen";
 import { codeOf, expressionsOf, walk } from "@unframework/ir";
@@ -147,6 +149,9 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     module.keys?.length && keyOwner(module.components, module.exports) === component.name
       ? keyBlock(component, module, names)
       : undefined;
+  // The types it imports, by name, beside the types it copies (ADR-0067): a child's from its
+  // output, `./Field.vue`.
+  if (!keys) addTypeImports(component, module, imports, (name) => `${name}.vue`);
   // `<component is>` reads a candidate by its binding, under the alias of a built-in's name too.
   for (const binding of component.bindings) {
     const alias = binding.kind === "component" ? components.get(binding.name) : undefined;
@@ -211,18 +216,20 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     });
     statements.push({ code: `defineExpose({ ${exposed.join(", ")} });`, layout: "block" });
   }
-  if (statements.length === 0 && imports.size === 0) {
+  // The module's type exports, which consumers import by name (ADR-0068), exported from
+  // `<script setup>` as its own exported types are.
+  const types = keys ? [] : moduleTypes(component, module);
+  if (statements.length === 0 && imports.size === 0 && types.length === 0) {
     return { rewrite: template, listeners, components, ...(keys ? { keys } : {}) };
   }
   const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
-  const types = keys ? [] : componentTypes(component, module).map(typeDeclarationCode);
   const code = [
     ...(head ? [head] : []),
     ...types,
     ...(statements.length ? [laidOut(statements)] : []),
   ].join("\n\n");
   return {
-    block: `<script setup lang="ts">\n${escapeScriptEnd(code)}\n</script>`,
+    block: `<script setup lang="ts"${genericAttribute(component)}>\n${escapeScriptEnd(code)}\n</script>`,
     rewrite: template,
     listeners,
     components,
@@ -252,13 +259,66 @@ function keyBlock(component: UfComponent, module: UfModule, names: VueNames): st
     }
     return `export const ${key.name}: ${injectionKey}<${type}> = Symbol(${JSON.stringify(key.description)});`;
   });
-  const types = componentTypes(component, module).map(typeDeclarationCode);
+  addTypeImports(component, module, imports, (name) => `${name}.vue`);
   const code = [
     printProgram(js.program(imports.toDeclarations())).trim(),
-    ...types,
+    ...moduleTypes(component, module),
     declarations.join("\n"),
   ].join("\n\n");
   return `<script lang="ts">\n${escapeScriptEnd(code)}\n</script>`;
+}
+
+/**
+ * The types a component's output declares, in source order: those it reaches, copied as
+ * written, and in the output of the module's main component the module's type exports
+ * (ADR-0068).
+ */
+function moduleTypes(component: UfComponent, module: UfModule): string[] {
+  return [
+    ...componentTypes(component, module).map((declaration) => ({
+      code: typeDeclarationCode(declaration),
+      span: declaration.span,
+    })),
+    ...typeExportsCode(component, module, (name) => `${name}.vue`),
+  ]
+    .toSorted((a, b) => a.span.start - b.span.start)
+    .map(({ code }) => code);
+}
+
+/**
+ * The `generic` attribute of a generic component's `<script setup>` (ADR-0068),
+ * ` generic="T extends Item = Item"`, or nothing. Vue's SFC parser decodes no entity there, so
+ * an attribute whose text holds a double quote is single-quoted.
+ */
+function genericAttribute(component: UfComponent): string {
+  if (!component.typeParameters?.length) return "";
+  const text = component.typeParameters
+    .map(
+      (parameter) =>
+        `${parameter.name}${parameter.constraint ? ` extends ${parameter.constraint.code}` : ""}${
+          parameter.default ? ` = ${parameter.default.code}` : ""
+        }`,
+    )
+    .join(", ");
+  return text.includes('"') ? ` generic='${text}'` : ` generic="${text}"`;
+}
+
+/**
+ * The type `defineProps` takes (ADR-0067): the source's annotation, which compiler-sfc resolves
+ * through the output tree, its relative modules, `extends` chains, intersections and the five
+ * utility types among them. A member a package declares is the one exception: compiler-sfc
+ * resolves a package only through TypeScript's classic API, which TypeScript 7 has not, so the
+ * props are printed as a type literal of their members' types, as their files write them.
+ */
+function propsType(component: UfComponent, parameter: PropsParameter): string {
+  if (!component.props.some((prop) => prop.declaredBy?.file.startsWith("pkg:"))) {
+    return parameter.type.code;
+  }
+  const members = component.props.map(
+    (prop) =>
+      `${/^[A-Za-z_$][\w$]*$/.test(prop.name) ? prop.name : JSON.stringify(prop.name)}${prop.optional ? "?" : ""}: ${prop.type.code}`,
+  );
+  return `{ ${members.join("; ")} }`;
 }
 
 /**
@@ -524,7 +584,7 @@ function destructuredDeclaration(
   names: VueNames,
   read: ReadonlySet<BindingId>,
 ): string {
-  const macro = `defineProps<${parameter.type.code}>()`;
+  const macro = `defineProps<${propsType(component, parameter)}>()`;
   const isRead = (prop: Prop) => prop.binding !== undefined && read.has(prop.binding);
   if (!component.props.some(isRead)) return `${macro};`;
   const entries = component.props
@@ -550,7 +610,7 @@ function objectDeclaration(
   names: VueNames,
   read: ReadonlySet<BindingId>,
 ): string {
-  const macro = `defineProps<${parameter.type.code}>()`;
+  const macro = `defineProps<${propsType(component, parameter)}>()`;
   // In the object form, every prop is a binding, read as `props.label`.
   if (!component.props.some((prop) => prop.binding !== undefined && read.has(prop.binding))) {
     return `${macro};`;

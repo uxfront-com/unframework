@@ -223,7 +223,14 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   component's output keeps as written (a styling engine's, ADR-0064), and `addPassThroughImports`
   adds them to an `ImportSet`, which prints them after its sorted imports, in the IR's order; `componentTypes`
   and `typeDeclarationCode` copy the type declarations a component's props reach, exported as
-  the source does. `ImportSet` sorts imports and renames one that clashes with a name in its
+  the source does. `addTypeImports` adds the names of the module's `import type` declarations that
+  what a component's output prints reads (`liveTypeNames`), by the source's own names, from
+  `typeSpecifier`: a `.ts` module's or a package's as written, a `.uf.tsx` module's from the
+  output of its main component (`./Field.vue`, `./Field`); `typeExportsCode` writes the module's
+  type exports, an exported type no component reaches and a re-export, in the output of its main
+  component, each with its span so a target places it in source order (ADR-0067, ADR-0068). A
+  prop another file declares (`declaredBy`) is written in that file's names, so neither these nor
+  `liveTypes` and the kinds look its type up in the component's own module. `ImportSet` sorts imports and renames one that clashes with a name in its
   `NameScope`: a target reserves the source's names (`sourceNames`: the component, its types,
   bindings, every variable its expressions and setup code read or declare (`codeNames`), its
   functions' parameters, and the types its setup's annotations name (`typeNames`)) and claims its

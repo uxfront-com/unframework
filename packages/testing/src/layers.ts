@@ -73,10 +73,28 @@ export interface UfLayerMeta {
    * summary excuses its scenarios on that target alone.
    */
   skipped?: string;
+  /**
+   * Why the test ran against a stand-in for its case's component, which its target cannot compile
+   * yet (ADR-0068): the case's L3 is quarantined there, and the target's browser build
+   * type-checks its output, so the component's own module would fail the spec's import. Every
+   * browser layer is recorded as failed with this cause, and the summary excuses the test's
+   * scenarios on that target alone.
+   */
+  standIn?: string;
 }
+
+/** The layers a browser test records, which a test skipped by capability records as skipped. */
+export const BROWSER_LAYERS: readonly LayerName[] = ["L7", "L8", "L9", "L10", "L11", "L13"];
 
 /** The skip of the layers that need output, on a target a case has compile errors for. */
 export const NO_OUTPUT_SKIP = "compile errors: no output";
+
+/**
+ * The skip of the browser layers of a case without a spec, a diagnostics case, on a target it has
+ * output for: one whose only diagnostic is a note, as a capability's info (UF4004). No browser
+ * project loads it, and its server render checks the output instead.
+ */
+export const NO_SPEC_SKIP = "no spec: a diagnostics case renders in no browser";
 
 /** L13's skip in the server render of a component that did not render: L6 failed instead. */
 export const NOT_RENDERED_SKIP = "the component did not render (L6)";
@@ -244,6 +262,19 @@ export function recordLayer(
   const previous = meta.layers[layer];
   meta.layers[layer] = previous ? mergeOutcomes(previous, settled) : settled;
   return settled;
+}
+
+/**
+ * Records a test that runs against a stand-in for its case's component (ADR-0068): every browser
+ * layer fails with the stand-in's cause, and the test is marked so the summary excuses its
+ * scenarios. Not a skip: the test still runs, and a quarantine entry for each layer still needs
+ * it to fail, so the entries go stale once the target compiles the case.
+ */
+export function recordStandIn(task: LayerTask, subject: LayerSubject, cause: string): void {
+  for (const layer of BROWSER_LAYERS) {
+    recordLayer(task, subject, layer, { status: "fail", message: cause });
+  }
+  metaOf(task, subject).standIn = cause;
 }
 
 /**

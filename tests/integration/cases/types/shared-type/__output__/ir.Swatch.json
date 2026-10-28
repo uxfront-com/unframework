@@ -1,0 +1,158 @@
+{
+  "irVersion": 1,
+  "file": "types/shared-type/Swatch.uf.tsx",
+  "components": [
+    {
+      "name": "Swatch",
+      "span": {
+        "start": 38,
+        "end": 160
+      },
+      "props": [
+        {
+          "name": "tone",
+          "optional": false,
+          "type": {
+            "code": "Tone",
+            "span": {
+              "start": 87,
+              "end": 91
+            }
+          },
+          "binding": "tone@71",
+          "span": {
+            "start": 81,
+            "end": 91
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ tone: Tone }",
+          "span": {
+            "start": 79,
+            "end": 93
+          }
+        },
+        "span": {
+          "start": 69,
+          "end": 93
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "tone@71",
+          "name": "tone",
+          "kind": "prop",
+          "span": {
+            "start": 71,
+            "end": 75
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "`swatch swatch-${tone}`",
+                  "span": {
+                    "start": 119,
+                    "end": 142
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tone@71",
+                      "span": {
+                        "start": 136,
+                        "end": 140
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 119,
+                  "end": 142
+                }
+              }
+            ],
+            "span": {
+              "start": 112,
+              "end": 143
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "tone",
+              "span": {
+                "start": 145,
+                "end": 149
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tone@71",
+                  "span": {
+                    "start": 145,
+                    "end": 149
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 144,
+              "end": 150
+            }
+          }
+        ],
+        "span": {
+          "start": 106,
+          "end": 157
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Swatch",
+      "span": {
+        "start": 38,
+        "end": 160
+      }
+    }
+  ],
+  "types": [],
+  "typeImports": [
+    {
+      "specifier": "./types",
+      "names": [
+        {
+          "imported": "Tone",
+          "local": "Tone",
+          "span": {
+            "start": 14,
+            "end": 18
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 36
+      }
+    }
+  ]
+}
