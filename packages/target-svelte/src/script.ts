@@ -7,6 +7,7 @@
 // `computed` a `$derived`, a template ref a variable `bind:this` sets, and an event a callback
 // prop, `onchange` for `change` (ADR-0012, D8).
 import {
+  addTypeImports,
   bindingForms,
   childImports,
   componentTypes,
@@ -14,6 +15,7 @@ import {
   functionText,
   isPrimitiveState,
   keyImports,
+  ImportSet,
   keyOwner,
   NameScope,
   parseExpression,
@@ -26,6 +28,7 @@ import {
   scopeRoots,
   sourceNames,
   typeDeclarationCode,
+  typeExportsCode,
 } from "@unframework/codegen";
 import type { MarkupOptions, RewriteRules } from "@unframework/codegen";
 import { codeOf, expressionsOf, walk } from "@unframework/ir";
@@ -99,12 +102,17 @@ export interface InstanceScript {
 /** The modules a script imports from, in the order it prints them. */
 type Module = "svelte" | "svelte/elements" | "svelte/events";
 
-/** An import of a sibling output: a child component (its default export) or injection keys. */
+/**
+ * An import of a sibling output: a child component (its default export) or injection keys; or of
+ * the types a module exports, a `.ts` module's or a package's as written (ADR-0067).
+ */
 interface LocalImport {
   specifier: string;
   default?: string;
   /** Named imports, by local name: the name the sibling output exports, imported under each. */
   names: Map<string, string>;
+  /** Type imports, by local name, as `names`. */
+  types: Map<string, string>;
 }
 
 /**
@@ -170,31 +178,56 @@ class Names {
     entry.names.set(local, name);
   }
 
+  /** A type a module exports, under the source's local name (ADR-0067): `Tone as Mode`. */
+  importType(specifier: string, name: string, local: string): void {
+    const entry = this.#local(specifier);
+    if (entry.types.has(local)) return;
+    this.scope.reserve(local);
+    entry.types.set(local, name);
+  }
+
   #local(specifier: string): LocalImport {
     let entry = this.#locals.get(specifier);
-    if (!entry) this.#locals.set(specifier, (entry = { specifier, names: new Map() }));
+    if (!entry) {
+      this.#locals.set(specifier, (entry = { specifier, names: new Map(), types: new Map() }));
+    }
     return entry;
+  }
+
+  /** The sibling outputs and the type imports, sorted by specifier. */
+  #sortedLocals(): LocalImport[] {
+    return [...this.#locals.values()].toSorted((a, b) =>
+      a.specifier < b.specifier ? -1 : a.specifier > b.specifier ? 1 : 0,
+    );
   }
 
   /**
    * The import declarations: the sibling outputs sorted by specifier, as the other targets'
    * `ImportSet` sorts them, so the children's sheets load, and cascade, in Vue's order
-   * (ADR-0063); then Svelte's modules, each name sorted, a type-only import written
-   * `import type`; then the pass-through imports, in their order (ADR-0064).
+   * (ADR-0063), with the types imported from each, unless `types` is off; then Svelte's modules,
+   * each name sorted, a type-only import written `import type`; then the pass-through imports,
+   * in their order (ADR-0064).
    */
-  declarations(): string[] {
-    const sorted = [...this.#locals.values()].toSorted((a, b) =>
-      a.specifier < b.specifier ? -1 : a.specifier > b.specifier ? 1 : 0,
-    );
-    const locals = sorted.map(({ specifier, default: local, names }) => {
-      const named = names.size
-        ? `{ ${[...names]
-            .map(([alias, name]) => (name === alias ? name : `${name} as ${alias}`))
-            .toSorted()
-            .join(", ")} }`
-        : "";
-      const clause = [...(local === undefined ? [] : [local]), ...(named ? [named] : [])];
-      return `import ${clause.join(", ")} from ${JSON.stringify(specifier)};`;
+  declarations({ types: withTypes = true }: { types?: boolean } = {}): string[] {
+    const locals = this.#sortedLocals().flatMap((entry) => {
+      const named = [
+        ...[...entry.names].map(([local, name]) => importedAs(name, local)),
+        ...(withTypes
+          ? [...entry.types].map(([local, name]) => `type ${importedAs(name, local)}`)
+          : []),
+      ];
+      if (entry.default === undefined && !named.length) return [];
+      // A module that gives only types is imported `import type`, which a bundler drops whole.
+      if (entry.default === undefined && !entry.names.size) {
+        return [
+          `import type ${typeSpecifiers(entry.types)} from ${JSON.stringify(entry.specifier)};`,
+        ];
+      }
+      const clause = [
+        ...(entry.default === undefined ? [] : [entry.default]),
+        ...(named.length ? [`{ ${named.toSorted(byImportedName).join(", ")} }`] : []),
+      ];
+      return [`import ${clause.join(", ")} from ${JSON.stringify(entry.specifier)};`];
     });
     const modules = (["svelte", "svelte/elements", "svelte/events"] as const).flatMap((source) => {
       const names = this.#imports.get(source);
@@ -209,6 +242,56 @@ class Names {
     );
     return [...locals, ...modules, ...passThrough];
   }
+
+  /**
+   * The type imports alone, each module's `import type`, for the `<script module>` block that
+   * declares the types which read them (ADR-0068).
+   */
+  typeDeclarations(): string[] {
+    return this.#sortedLocals()
+      .filter((entry) => entry.types.size)
+      .map(
+        (entry) =>
+          `import type ${typeSpecifiers(entry.types)} from ${JSON.stringify(entry.specifier)};`,
+      );
+  }
+}
+
+/** `name`, or `name as local` when the source binds it under another name. */
+function importedAs(name: string, local: string): string {
+  return name === local ? name : `${name} as ${local}`;
+}
+
+/** Sorts import specifiers by the name imported, a `type` one among the others. */
+function byImportedName(a: string, b: string): number {
+  const [x, y] = [a.replace(/^type /, ""), b.replace(/^type /, "")];
+  return x < y ? -1 : x > y ? 1 : 0;
+}
+
+/** The specifiers of an `import type`, sorted: `{ FieldProps, Tone as Mode }`. */
+function typeSpecifiers(types: ReadonlyMap<string, string>): string {
+  return `{ ${[...types]
+    .map(([local, name]) => importedAs(name, local))
+    .toSorted(byImportedName)
+    .join(", ")} }`;
+}
+
+/**
+ * The `generics` attribute of a generic component's instance script (ADR-0068),
+ * ` generics="T extends Item = Item"`, or nothing. An attribute whose text holds a double quote
+ * is single-quoted.
+ */
+function genericsAttribute(component: UfComponent): string {
+  if (!component.typeParameters?.length) return "";
+  const text = component.typeParameters
+    .map(
+      (parameter) =>
+        `${parameter.name}${parameter.constraint ? ` extends ${parameter.constraint.code}` : ""}${
+          parameter.default ? ` = ${parameter.default.code}` : ""
+        }`,
+    )
+    .join(", ");
+  return text.includes('"') ? ` generics='${text}'` : ` generics="${text}"`;
 }
 
 /** Named import specifiers, sorted: `{ a, type B, c as d }`; `inline` marks the type ones. */
@@ -336,7 +419,23 @@ class ScriptWriter {
     const owner =
       this.#module.keys?.length &&
       keyOwner(this.#module.components, this.#module.exports) === component.name;
-    const types = componentTypes(component, this.#module).map(typeDeclarationCode);
+    // The types it copies, and in the output of the module's main component the module's type
+    // exports, in source order (ADR-0068). An output that exports a type declares them all in
+    // `<script module>`, whose names the instance script reads, so a consumer imports them from
+    // the component's file, `import type { ButtonProps } from "./Button.svelte"`.
+    const copied = componentTypes(component, this.#module);
+    const typeExports = typeExportsCode(component, this.#module, (name) => `${name}.svelte`);
+    const types = [
+      ...copied.map((declaration) => ({
+        code: typeDeclarationCode(declaration),
+        span: declaration.span,
+      })),
+      ...typeExports,
+    ]
+      .toSorted((a, b) => a.span.start - b.span.start)
+      .map(({ code }) => code);
+    const moduleScript =
+      Boolean(owner) || typeExports.length > 0 || copied.some(({ exported }) => exported);
     const helpers = [
       ...(once ? [onceHelper(once)] : []),
       ...(this.#refObject ? [refObjectHelper(this.#refObject)] : []),
@@ -350,14 +449,14 @@ class ScriptWriter {
     // component's style after its script.
     const file = this.#module.file;
     const imports = [
-      ...this.#names.declarations(),
+      ...this.#names.declarations({ types: !moduleScript }),
       ...(component.styles
         ? [`import ${JSON.stringify(`./${file.slice(file.lastIndexOf("/") + 1)}.css`)};`]
         : []),
     ];
     const pieces = [
       ...(imports.length ? [imports.map((line) => `${INDENT}${line}`).join("\n")] : []),
-      ...(owner ? [] : types.map((each) => indent(each, INDENT))),
+      ...(moduleScript ? [] : types.map((each) => indent(each, INDENT))),
       ...[...props, ...setup, ...dynamic, ...helpers].map((piece) => reindent(piece, INDENT)),
     ];
     const roots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
@@ -402,7 +501,7 @@ class ScriptWriter {
         ? { candidates: (child: ComponentNode) => composed.candidates.get(child) }
         : {}),
     };
-    const moduleBlock = owner ? this.#moduleScript(types) : undefined;
+    const moduleBlock = moduleScript ? this.#moduleScript(types, Boolean(owner)) : undefined;
     const result = (instance?: string): InstanceScript => ({
       ...(moduleBlock ? { module: moduleBlock } : {}),
       ...(instance ? { block: instance } : {}),
@@ -419,7 +518,9 @@ class ScriptWriter {
         : result();
     }
     const body = pieces.join("\n\n");
-    return result(`<script lang="ts">\n${escapeScriptEnd(body)}\n</script>`);
+    return result(
+      `<script lang="ts"${genericsAttribute(component)}>\n${escapeScriptEnd(body)}\n</script>`,
+    );
   }
 
   // --- Composition ---------------------------------------------------------------------------
@@ -443,6 +544,18 @@ class ScriptWriter {
       if (!names.length) this.#names.importPassThrough(specifier);
       for (const name of names) this.#names.importPassThrough(specifier, name);
     }
+    // The types it reads, by name, under the source's names (ADR-0067): a child's from its
+    // output, `./Field.svelte`. Codegen's helper picks them; the script writes its own imports.
+    const types = new ImportSet();
+    addTypeImports(component, this.#module, types, (name) => `${name}.svelte`);
+    for (const declaration of types.toDeclarations()) {
+      for (const specifier of declaration.specifiers) {
+        if (specifier.type !== "ImportSpecifier") continue;
+        const { imported, local } = specifier;
+        const name = imported.type === "Identifier" ? imported.name : imported.value;
+        this.#names.importType(declaration.source.value, name, local.name);
+      }
+    }
   }
 
   /** A key's value type as written, and the ref it holds: the module's own, or an imported one's. */
@@ -458,18 +571,26 @@ class ScriptWriter {
   }
 
   /**
-   * The `<script lang="ts" module>` block of the output that declares the module's injection keys
-   * (ADR-0054), beside the types the component copies: each a `Symbol`, which `setContext` and
-   * `getContext` take, typed with the value it holds (`symbol & { readonly __value: Theme }`).
-   * A consumer reads that type from the key it imports (`contextType`), so the output exports no
-   * name of its own that could clash with the module's or a component's.
+   * The `<script lang="ts" module>` block of the output that exports a type (ADR-0068) or declares
+   * the module's injection keys (ADR-0054): the type imports, the types, and each key a `Symbol`,
+   * which `setContext` and `getContext` take, typed with the value it holds
+   * (`symbol & { readonly __value: Theme }`). A consumer reads that type from the key it imports
+   * (`contextType`), so the output exports no name of its own that could clash with the module's
+   * or a component's.
    */
-  #moduleScript(types: readonly string[]): string {
-    const keys = this.#module.keys!.map(
-      (key) =>
-        `export const ${key.name} = Symbol(${JSON.stringify(key.description)}) as symbol & { readonly __value: ${contextValue(key.type.code, key.ref)} };`,
-    );
-    const body = [...types.map((each) => indent(each, INDENT)), indent(keys.join("\n"), INDENT)];
+  #moduleScript(types: readonly string[], owner: boolean): string {
+    const imports = this.#names.typeDeclarations();
+    const keys = owner
+      ? this.#module.keys!.map(
+          (key) =>
+            `export const ${key.name} = Symbol(${JSON.stringify(key.description)}) as symbol & { readonly __value: ${contextValue(key.type.code, key.ref)} };`,
+        )
+      : [];
+    const body = [
+      ...(imports.length ? [imports.map((line) => `${INDENT}${line}`).join("\n")] : []),
+      ...types.map((each) => indent(each, INDENT)),
+      ...(keys.length ? [indent(keys.join("\n"), INDENT)] : []),
+    ];
     return `<script lang="ts" module>\n${escapeScriptEnd(body.join("\n\n"))}\n</script>`;
   }
 

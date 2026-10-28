@@ -1,13 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { Snippet } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface Person {
     id: string;
     name: string;
   }
+</script>
+
+<script lang="ts">
+  import type { Snippet } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = {
     people: Person[];

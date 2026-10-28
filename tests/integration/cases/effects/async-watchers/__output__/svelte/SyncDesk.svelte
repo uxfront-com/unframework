@@ -1,9 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import { tick, untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   interface Waiting {
     resolve: (text: string) => void;
     reject: (error: Error) => void;
@@ -12,6 +9,11 @@
   export interface SyncDeskProps {
     files: string[];
   }
+</script>
+
+<script lang="ts">
+  import { tick, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = SyncDeskProps & {
     onchecked?: (email: string) => void;

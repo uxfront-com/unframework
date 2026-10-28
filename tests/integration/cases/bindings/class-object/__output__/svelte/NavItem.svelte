@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface NavItemProps {
     label: string;
     href: string;
@@ -10,6 +8,10 @@
     muted: boolean;
     danger?: boolean;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = NavItemProps & { class?: ClassValue; style?: string };
 

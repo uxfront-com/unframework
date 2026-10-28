@@ -1,14 +1,16 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface AuthorBylineProps {
     author: string;
     published: string;
     minutes: number;
     affiliation?: string;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = AuthorBylineProps & { class?: ClassValue; style?: string };
 

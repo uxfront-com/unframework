@@ -8,11 +8,13 @@ import { toolchain } from "../src/toolchain/index.ts";
 import {
   corpus,
   emitFormatted,
+  emitSource,
   goldenFiles,
+  integrationDir,
   packageDir,
   removeScratch,
+  sharedModules,
   toolchainDir,
-  TYPES_LANE,
   writeScratch,
 } from "./helpers.ts";
 
@@ -58,13 +60,16 @@ describe("svelte typecheck", () => {
     expect(golden.length).toBeGreaterThan(0);
     // Each case in a directory of its own, where its sources' outputs import each other.
     const fresh: string[] = [];
-    for (const { name, modules } of corpus()) {
-      if (TYPES_LANE.test(`${name}/`)) continue;
+    for (const { modules, outputDir } of corpus()) {
       const emitted: Record<string, string> = {};
       for (const module of modules) {
         for (const file of await emitFormatted(module)) emitted[file.path] = file.contents;
       }
-      fresh.push(...Object.values(writeScratch(emitted)));
+      // The case's `.ts` modules, which `compile()` copies into the output tree unchanged
+      // (ADR-0070), so the types an output imports from them resolve (ADR-0067); and the
+      // directory under the corpus, so a package's types resolve as its goldens' do.
+      const written = writeScratch({ ...sharedModules(outputDir), ...emitted }, integrationDir);
+      fresh.push(...Object.keys(emitted).map((name) => written[name]!));
     }
     const { "Broken.svelte": broken } = writeScratch({
       "Broken.svelte": [
@@ -96,6 +101,39 @@ describe("svelte typecheck", () => {
       { message: "Cannot find name 'greet'.", line: 7, column: 5, code: "TS2304" },
     ]);
   });
+
+  it(
+    "infers a generic whose constraint holds a double quote, from single-quoted generics",
+    checker,
+    async () => {
+      // ADR-0068: the `generics` attribute is single-quoted where its text holds a double quote.
+      const pick = await emitSource(
+        [
+          'export default function Pick<T extends "a" | "b">({ value }: { value: T }) {',
+          "  return <p>{value}</p>;",
+          "}",
+        ].join("\n"),
+        { format: true },
+      );
+      const paths = writeScratch({
+        [pick.path]: pick.contents,
+        "Use.svelte": [
+          '<script lang="ts">',
+          '  import Pick from "./Pick.svelte";',
+          "</script>",
+          "",
+          '<Pick value="a" />',
+          '<Pick value="c" />',
+          "",
+        ].join("\n"),
+      });
+      const results = await toolchain.typecheck(Object.values(paths), context);
+      expect(results.get(paths["Pick.svelte"]!)).toEqual([]);
+      expect(results.get(paths["Use.svelte"]!)?.map(({ code, line }) => ({ code, line }))).toEqual([
+        { code: "TS2322", line: 6 },
+      ]);
+    },
+  );
 
   it("leaves the Svelte compiler's warnings to L3", checker, async () => {
     const contents =

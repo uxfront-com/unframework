@@ -1,9 +1,11 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
+<script lang="ts" module>
+  export type Tone = "info" | "warning";
+</script>
+
 <script lang="ts">
   import type { ClassValue } from "svelte/elements";
-
-  export type Tone = "info" | "warning";
 
   type Props = { tone: Tone; class?: ClassValue; style?: string };
 

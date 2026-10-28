@@ -1,9 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface Contact {
     id: string;
     name: string;
@@ -12,6 +9,11 @@
   export interface ContactListProps {
     initial: Contact[];
   }
+</script>
+
+<script lang="ts">
+  import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ContactListProps & {
     onchoose?: (id: string, position: number) => void;

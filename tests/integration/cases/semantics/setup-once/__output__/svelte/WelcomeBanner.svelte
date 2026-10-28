@@ -1,12 +1,14 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface WelcomeBannerProps {
     name: string;
   }
+</script>
+
+<script lang="ts">
+  import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = WelcomeBannerProps & { class?: ClassValue; style?: string };
 

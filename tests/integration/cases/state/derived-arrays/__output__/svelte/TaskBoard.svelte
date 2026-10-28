@@ -1,9 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface Task {
     id: number;
     title: string;
@@ -20,6 +17,11 @@
   export interface TaskBoardProps {
     initial: Task[];
   }
+</script>
+
+<script lang="ts">
+  import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = TaskBoardProps & { class?: ClassValue; style?: string };
 

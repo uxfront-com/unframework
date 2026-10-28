@@ -15,7 +15,8 @@ import target from "../src/index.ts";
 
 export const packageDir: string = fileURLToPath(new URL("..", import.meta.url));
 export const repoRoot: string = join(packageDir, "../..");
-export const casesDir: string = join(repoRoot, "tests/integration/cases");
+export const integrationDir: string = join(repoRoot, "tests/integration");
+export const casesDir: string = join(integrationDir, "cases");
 /** Where svelte-check is installed, beside the toolchain's tsconfig. */
 export const toolchainDir: string = join(repoRoot, "tests/toolchains/svelte");
 
@@ -27,17 +28,24 @@ function filesUnder(directory: string): string[] {
     .toSorted();
 }
 
-/**
- * M5's types and generics cases (ADR-0067, ADR-0068), which Svelte emits from its types lane, layer
- * 21 of M5 (UXF-464): until then `harness/quarantine/svelte.ts` lists their failing cells, and the lane
- * brings them back here.
- */
-export const TYPES_LANE: RegExp = /(?:^|\/)(?:types|generics|diagnostics\/generic-slot-props)\//;
-
-/** The committed Svelte golden outputs of the integration corpus, but its types lane's. */
+/** The committed Svelte golden outputs of the integration corpus. */
 export function goldenFiles(): string[] {
-  return filesUnder(casesDir).filter(
-    (path) => /\/__output__\/svelte\/[^/]+\.svelte$/.test(path) && !TYPES_LANE.test(path),
+  return filesUnder(casesDir).filter((path) => /\/__output__\/svelte\/[^/]+\.svelte$/.test(path));
+}
+
+/**
+ * The `.ts` modules beside a case's golden Svelte outputs, by file name: the shared modules
+ * `compile()` copies into the output tree (ADR-0070), whose types an output imports (ADR-0067).
+ */
+export function sharedModules(outputDir: string): Record<string, string> {
+  let names: string[];
+  try {
+    names = readdirSync(outputDir).filter((name) => name.endsWith(".ts"));
+  } catch {
+    return {};
+  }
+  return Object.fromEntries(
+    names.map((name) => [name, readFileSync(join(outputDir, name), "utf8")]),
   );
 }
 
@@ -163,11 +171,11 @@ const scratch: string[] = [];
 
 /**
  * A fresh directory inside this package (gitignored `.uf-tmp/`), so files written there resolve
- * `svelte` like the package itself does. {@link removeScratch} deletes it.
+ * `svelte` like the package itself does, or inside `parent`. {@link removeScratch} deletes it.
  */
-export function scratchDir(): string {
-  mkdirSync(join(packageDir, ".uf-tmp"), { recursive: true });
-  const directory = mkdtempSync(join(packageDir, ".uf-tmp", "test-"));
+export function scratchDir(parent: string = packageDir): string {
+  mkdirSync(join(parent, ".uf-tmp"), { recursive: true });
+  const directory = mkdtempSync(join(parent, ".uf-tmp", "test-"));
   scratch.push(directory);
   return directory;
 }
@@ -177,9 +185,15 @@ export function removeScratch(): void {
   for (const directory of scratch.splice(0)) rmSync(directory, { recursive: true, force: true });
 }
 
-/** Writes files into a fresh scratch directory and returns their absolute paths by name. */
-export function writeScratch(files: Record<string, string>): Record<string, string> {
-  const directory = scratchDir();
+/**
+ * Writes files into a fresh scratch directory, inside `parent` if given, and returns their
+ * absolute paths by name.
+ */
+export function writeScratch(
+  files: Record<string, string>,
+  parent?: string,
+): Record<string, string> {
+  const directory = scratchDir(parent);
   return Object.fromEntries(
     Object.entries(files).map(([name, contents]) => {
       const path = join(directory, name);

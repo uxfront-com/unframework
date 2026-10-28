@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface MenuDish {
     id: string;
     name: string;
@@ -20,6 +18,10 @@
     courses: MenuCourse[];
     closed: boolean;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = MenuBoardProps & { class?: ClassValue; style?: string };
 

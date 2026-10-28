@@ -1,13 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface ListProps<T> {
     label: string;
     items: T[];
     selected?: T;
   }
+</script>
+
+<script lang="ts" generics="T">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ListProps<T> & { class?: ClassValue; style?: string };
 
