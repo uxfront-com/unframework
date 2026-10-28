@@ -23,6 +23,8 @@ export interface PropBinding {
   id: BindingId | undefined;
   /** Its kinds: the member's type, with `undefined` when optional without a default. */
   kinds: Kinds;
+  /** Set on a composable's callback argument, which only client code reads (ADR-0069). */
+  callback?: true;
 }
 
 /** A component a template may render (ADR-0053): its local name, and its API. */

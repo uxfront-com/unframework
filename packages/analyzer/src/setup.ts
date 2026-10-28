@@ -115,6 +115,11 @@ export interface SetupContext {
   readonly returned: AST.Expression | undefined;
   /** The injection keys the module declares or imports, by the identifier that declares each. */
   readonly keys: ReadonlyMap<object, InjectionKeyInfo>;
+  /**
+   * Set where the setup is a composable's body (ADR-0069): the APIs that need a component, such
+   * as `useId`, `provide` and the macros, are UF2035 there.
+   */
+  readonly composable?: true;
 }
 
 /** A component's setup, declared: its bindings, and what lowers its items. */
@@ -216,6 +221,22 @@ const BOUND_MACROS: ReadonlySet<AuthoringApi> = new Set([
 ]);
 
 /**
+ * The APIs a composable cannot call (ADR-0069): each needs the component it runs in, its id, its
+ * template, its API or its place in the tree.
+ */
+const COMPONENT_APIS: ReadonlySet<AuthoringApi> = new Set([
+  "useId",
+  "useTemplateRef",
+  "provide",
+  "inject",
+  "defineEmits",
+  "defineSlots",
+  "defineModel",
+  "defineExpose",
+  "defineOptions",
+]);
+
+/**
  * Declares a component's setup (ADR-0045): classifies each statement before the return, creates
  * the bindings, reads the events `defineEmits` declares, and finds the parameters that receive an
  * event; `lower` then walks the items' code.
@@ -310,6 +331,7 @@ export function declareSetup(context: SetupContext): Setup {
           continue;
         }
         const call = expression as AST.CallExpression;
+        if (needsComponent(call, api)) continue;
         if (api === "watch" || api === "watchEffect") declared.push({ kind: api, statement, call });
         else if (api === "onMounted" || api === "onUnmounted") {
           declared.push({
@@ -341,6 +363,24 @@ export function declareSetup(context: SetupContext): Setup {
       default:
         other(statement);
     }
+  }
+
+  /**
+   * A call in a composable of an API that needs a component (UF2035): reported where it is
+   * called. Returns whether it reported.
+   */
+  function needsComponent(call: AST.CallExpression, api: AuthoringApi): boolean {
+    if (!context.composable || !COMPONENT_APIS.has(api)) return false;
+    const name = (call.callee as AST.IdentifierReference).name;
+    reporter.report(
+      "UF2035",
+      call.callee,
+      `\`${name}\` needs the component it runs in, and a composable runs in whichever component calls it: it calls no \`useId\`, \`useTemplateRef\`, \`provide\`, \`inject\` or \`define*\` macro.`,
+      {
+        help: `Call \`${name}\` in the component, and pass what the composable needs from it as an argument.`,
+      },
+    );
+    return true;
   }
 
   /** A `const` or `let` at the top level of the body. */
@@ -382,6 +422,7 @@ export function declareSetup(context: SetupContext): Setup {
     const api = call ? apiOf(call.callee) : null;
     if (api === undefined) return;
     if (api !== null) {
+      if (needsComponent(call!, api)) return;
       macro(statement, declarator, call!, api);
       return;
     }
@@ -2163,7 +2204,24 @@ function unwatchable(
   if (node?.type === "Identifier") {
     const resolution = render.scopes.resolve(node);
     const binding = setupBindingOf(node, render);
-    if (resolution.kind === "parameter" && render.propsByDeclaration.has(resolution.declaration)) {
+    const prop =
+      resolution.kind === "parameter"
+        ? render.propsByDeclaration.get(resolution.declaration)
+        : undefined;
+    if (prop && render.bindings.some(({ id, kind }) => id === prop.id && kind === "argument")) {
+      // A composable's parameter (ADR-0069): a getter is watched through a call of it.
+      const annotation = (resolution as { declaration: AST.BindingIdentifier }).declaration
+        .typeAnnotation?.typeAnnotation;
+      const getter = annotation?.type === "TSFunctionType" && !annotation.params.length;
+      what = `\`${node.name}\` is ${getter ? "a getter the composable is passed, which a watcher calls in its own getter" : "an argument of the composable, which nothing can watch"}`;
+      if (getter) {
+        fix = {
+          title: `Watch \`() => ${node.name}()\``,
+          confidence: "safe",
+          edits: [{ span: span(node), text: `() => ${node.name}()` }],
+        };
+      }
+    } else if (prop) {
       what = `\`${node.name}\` is a prop's value, which nothing can watch`;
       fix = getterFix(node, text);
     } else if (binding?.kind === "templateRef") {
