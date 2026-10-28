@@ -1,4 +1,6 @@
+import type { Labelled } from "./types";
 import type { CSSProperties } from "react";
+import type { TimeInterval } from "rxjs";
 
 type StatusProps = TimeInterval<string> & Labelled;
 

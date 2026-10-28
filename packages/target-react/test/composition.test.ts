@@ -176,6 +176,23 @@ export function Pill({ on }: { on: boolean }) {
  * source passes L3, L4 and L5 as an output must, and the shape that once broke is pinned.
  */
 const PROBES: Readonly<Record<string, string>> = {
+  // A generic component (ADR-0068) whose event, model and scoped slot name its type parameter.
+  generic: `import { defineEmits, defineModel, defineSlots } from "unframework";
+import type { Element } from "unframework";
+export interface ChooserProps<T extends string> { options: readonly T[] }
+export default function Chooser<T extends string>({ options }: ChooserProps<T>) {
+  const emit = defineEmits<{ pick: [value: T] }>();
+  const value = defineModel<T>("value", { required: true });
+  const slots = defineSlots<{ option?(props: { option: T }): Element }>();
+  return (
+    <div>
+      <select v-model={value.value} onChange={() => emit("pick", value.value)}>
+        {options.map((option) => <option key={option} value={option}>{option}</option>)}
+      </select>
+      {options.map((option) => <span key={option}>{slots.option?.({ option })}</span>)}
+    </div>
+  );
+}`,
   // A root spread that may hold `class`, beside the root's fallthrough `class`.
   rootSpread: `export default function Box({ attrs, text }: { attrs: { class?: string; title?: string }; text: string }) {
   return <div {...attrs}>{text}</div>;
@@ -366,5 +383,35 @@ describe("react composition beyond the corpus", () => {
     expect(odd).toContain("case: caseProp,");
     expect(odd).toContain("new: newProp,");
     expect(odd).toContain("setTo(value: { to?: number; by: number }): void;");
+  });
+});
+
+describe("react types and generics", () => {
+  it("writes a generic component's type parameters on it and on the interfaces that name them", async () => {
+    const chooser = (await outputs(PROBES.generic!)).get("Chooser")!;
+    expect(chooser).toContain("export default function Chooser<T extends string>({");
+    expect(chooser).toContain("export interface ChooserEvents<T extends string> {");
+    expect(chooser).toContain("export interface ChooserModels<T extends string> {");
+    expect(chooser).toContain("export interface ChooserSlots<T extends string> {");
+    expect(chooser).toContain(
+      "}: ChooserProps<T> & ChooserEvents<T> & ChooserModels<T> & ChooserSlots<T> & ChooserAttributes) {",
+    );
+    // A control gives a string, which TypeScript cannot narrow to the type argument.
+    expect(chooser).toContain("valueRef.current = event.target.value as T;");
+    expect(chooser).not.toContain("interface ChooserAttributes<");
+  });
+
+  it("writes the module's type exports in source order among the types it copies", async () => {
+    const button = (
+      await outputs(`export type Tone = "primary" | "secondary";
+export type { Size } from "./sizes";
+export type Variant = "solid" | "ghost";
+export default function Button({ tone }: { tone: Tone }) {
+  return <button type="button" class={tone}>Save</button>;
+}`)
+    ).get("Button")!;
+    expect(button).toContain(
+      'export type Tone = "primary" | "secondary";\n\nexport type { Size } from "./sizes";\n\nexport type Variant = "solid" | "ghost";',
+    );
   });
 });

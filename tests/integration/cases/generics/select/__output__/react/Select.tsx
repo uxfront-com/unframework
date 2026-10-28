@@ -5,7 +5,7 @@ export interface SelectProps<T extends string> {
   options: readonly T[];
 }
 
-export interface SelectModels {
+export interface SelectModels<T extends string> {
   value: T;
   onValueChange?: (value: T) => void;
 }
@@ -15,7 +15,7 @@ export interface SelectAttributes {
   style?: CSSProperties;
 }
 
-export default function Select({
+export default function Select<T extends string>({
   label,
   options,
   value,
@@ -23,7 +23,7 @@ export default function Select({
   className,
   style,
   ...attributes
-}: SelectProps<T> & SelectModels & SelectAttributes) {
+}: SelectProps<T> & SelectModels<T> & SelectAttributes) {
   const [, setLocalValue] = useState({ value: value });
 
   return (
@@ -32,8 +32,8 @@ export default function Select({
       <select
         value={value}
         onChange={(event) => {
-          setLocalValue({ value: event.target.value });
-          onValueChange?.(event.target.value);
+          setLocalValue({ value: event.target.value as T });
+          onValueChange?.(event.target.value as T);
         }}
       >
         {options.map((option) => (

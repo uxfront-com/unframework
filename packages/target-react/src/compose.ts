@@ -13,6 +13,7 @@ import {
   jsxFillValue,
   pascalCase,
   rewriteExpression,
+  typeNames,
 } from "@unframework/codegen";
 import type { JsxContext } from "@unframework/codegen";
 import type {
@@ -250,7 +251,7 @@ export class ReactComposer {
         case "textarea":
         case "select":
           state = ["value", shown];
-          written = "EVENT.target.value";
+          written = `EVENT.target.value${this.#cast(binding)}`;
           break;
         default:
           return control satisfies never;
@@ -269,6 +270,22 @@ export class ReactComposer {
     }
     this.#parts.set(attribute, parts);
     return parts;
+  }
+
+  /**
+   * ` as T` where a state's or a model's declared type names a type parameter of a generic
+   * component (ADR-0068): the control's value is a `string`, which TypeScript cannot narrow to
+   * the type argument. Nothing otherwise.
+   */
+  #cast(binding: BindingId): string {
+    const { component } = this.#plan;
+    const item = component.setup.find(
+      (entry) => (entry.kind === "State" || entry.kind === "Model") && entry.binding === binding,
+    );
+    const type = item && "type" in item ? item.type : undefined;
+    if (!type || !component.typeParameters?.length) return "";
+    const read = typeNames(type);
+    return component.typeParameters.some(({ name }) => read.has(name)) ? ` as ${type.code}` : "";
   }
 
   /** Whether a state or a model may hold `null` or `undefined`, as its declaration says. */

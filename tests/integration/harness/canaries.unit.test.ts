@@ -1332,6 +1332,18 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
       "render",
     );
     expect(react).toContain("format: () => string }) {\n  x();\n  return <p>");
+    // A generic component's type parameters, whose constraint holds braces (ADR-0068).
+    const generic = injectScript(
+      {
+        path: "A.tsx",
+        contents:
+          "export default function A<T extends { id: string } = { id: string }>({ rows }: { rows: T[] }) {\n  return <p>{rows.length}</p>;\n}\n",
+      },
+      "react",
+      "x();",
+      "render",
+    );
+    expect(generic).toContain("{ rows: T[] }) {\n  x();\n  return <p>");
     const qwik = injectScript(
       {
         path: "A.tsx",

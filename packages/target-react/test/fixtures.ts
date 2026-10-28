@@ -131,22 +131,15 @@ export function lower(source: string, file = "Fixture.uf.tsx"): UfModule {
 }
 
 /**
- * M5's types and generics cases (ADR-0067, ADR-0068), which React emits from its types lane, layer
- * 16 of M5 (UXF-462): until then `harness/quarantine/react.ts` lists their failing cells, and the lane
- * brings them back here.
- */
-const TYPES_LANE = /(?:^|\/)(?:types|generics|diagnostics\/generic-slot-props)\//;
-
-/**
  * Every committed golden output of a target, read from the integration corpus, but the scoped
  * sheets (`<source>.css`), which no framework compiler or checker reads: the compile project
- * parses them instead (ADR-0063), and the cases of its types lane (`TYPES_LANE`).
+ * parses them instead (ADR-0063).
  */
 export function goldens(targetName: string): ToolchainFile[] {
   const pattern = new RegExp(`(?:^|/)__output__/${targetName}/[^/]+$`);
   return readdirSync(cases, { recursive: true })
     .map((entry) => String(entry).split("\\").join("/"))
-    .filter((entry) => pattern.test(entry) && !entry.endsWith(".css") && !TYPES_LANE.test(entry))
+    .filter((entry) => pattern.test(entry) && !entry.endsWith(".css"))
     .toSorted()
     .map((entry) => {
       const path = join(cases, entry);

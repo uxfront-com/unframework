@@ -10,6 +10,16 @@ component, written as a React developer would write it (plan §6):
   name that is `_` and more, and takes `_` before any other: `_props`, `__`): unused bindings
   fail L5. A component whose root is an element or a component, and that keeps fallthrough on,
   also takes `className` and `style` (see Composition below).
+- the types the source imports, by name, where the output reads them (ADR-0067): from a `.ts`
+  module or a package as written, `import type { BadgeProps } from "./types"`, and from a
+  child's output, `import Field, { type FieldProps } from "./Field"`. The output of the module's
+  main component also writes the module's type exports in source order among its types (ADR-0068):
+  `export type { Tone } from "./types"`, and an exported type no component reaches.
+- a generic component as a generic function component (ADR-0068),
+  `export default function List<T>({ items }: ListProps<T> & ListAttributes)`, its constraints
+  and defaults as written. The events', models' and slots' interfaces whose members name a type
+  parameter take them too (`ListSlots<T>`), and a form control's `v-model` of such a type casts
+  the control's string to it (`event.target.value as T`).
 - expressions as the source writes them, a ref's value read as React's (`count.value` is
   `count`); conditionals as ternary chains ending in `null` (never `&&`, which renders a `0`);
   lists as `.map((item, index) => <li key={…}>…)`, with the index only when something reads it;
