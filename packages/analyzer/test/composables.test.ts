@@ -1,3 +1,4 @@
+import { applyFixes } from "@unframework/diagnostics";
 import { describe, expect, it } from "vitest";
 
 // Composables (ADR-0069): the named `use*` exports of a `.uf.ts` module, each a setup under a
@@ -131,6 +132,87 @@ describe("a composable", () => {
     expect(api!.composables!.map(({ name, hasEffects }) => [name, hasEffects])).toEqual([
       ["useMediaQuery", true],
       ["useFlag", undefined],
+    ]);
+  });
+
+  it.each([
+    ["watch", "watch(n, () => {});"],
+    ["watchEffect", "watchEffect(() => {\n    void n.value;\n  });"],
+    ["onMounted", "onMounted(() => {});"],
+    ["onUnmounted", "onUnmounted(() => {});"],
+  ])("sets `hasEffects` for `%s` alone", (api, statement) => {
+    const { api: moduleApi, diagnostics } = composables([
+      `import { ${api}, ref } from "unframework";`,
+      "export function useA() {",
+      "  const n = ref(0);",
+      `  ${statement}`,
+      "  return { n };",
+      "}",
+    ]);
+    expect(diagnostics).toEqual([]);
+    expect(moduleApi!.composables![0]!.hasEffects).toBe(true);
+  });
+
+  it("marks a function that calls a callback as client code", () => {
+    const { api, diagnostics } = composables([
+      "export function useA(onPick: (value: number) => void) {",
+      "  function pick() {",
+      "    onPick(1);",
+      "  }",
+      "  return { pick };",
+      "}",
+    ]);
+    expect(diagnostics).toEqual([]);
+    expect(api!.composables![0]!.members).toEqual([
+      { name: "pick", kind: "function", client: true },
+    ]);
+  });
+
+  it("keeps each composable's own types, and the constants it reads", () => {
+    const { module, diagnostics } = composables([
+      'import { ref } from "unframework";',
+      "interface Item { id: string }",
+      "interface Tag { name: string }",
+      "const LIMIT = 3;",
+      "const UNREAD = 4;",
+      "export function useItems(items: Item[]) {",
+      "  const list = ref<Item[]>(items.slice(0, LIMIT));",
+      "  return { list };",
+      "}",
+      "export function useTags(tags: Tag[]) {",
+      "  const list = ref<Tag[]>(tags);",
+      "  return { list };",
+      "}",
+    ]);
+    expect(diagnostics).toEqual([]);
+    expect(module!.composables!.map(({ name, types }) => [name, types])).toEqual([
+      ["useItems", ["Item"]],
+      ["useTags", ["Tag"]],
+    ]);
+    expect(module!.types.map(({ name }) => name)).toEqual(["Item", "Tag"]);
+    expect(module!.constants!.map(({ name }) => name)).toEqual(["LIMIT"]);
+  });
+
+  it("re-imports the types it imports from a `.uf.ts` module, inline or whole", () => {
+    const { module, diagnostics } = composables([
+      'import { ref } from "unframework";',
+      'import { type Item } from "./useItem.uf.ts";',
+      'import type { Tag } from "./useTag.uf.ts";',
+      "export function useA(item: Item, tag: Tag) {",
+      "  const state = ref<Item>(item);",
+      "  const label = ref<Tag>(tag);",
+      "  return { state, label };",
+      "}",
+    ]);
+    expect(diagnostics).toEqual([]);
+    expect(
+      module!.typeImports!.map(({ specifier, names }) => [
+        specifier,
+        names.map(({ local }) => local),
+      ]),
+    ).toEqual([
+      ["./useItem.uf.ts", ["Item"]],
+      ["./useTag.uf.ts", ["Tag"]],
     ]);
   });
 
@@ -328,6 +410,17 @@ describe("UF2035", () => {
     expect(problems(source, diagnostics)).toEqual(["UF2035 count: n", "UF2035 ...{}"]);
   });
 
+  it("rejects a member returned twice, with a safe fix", () => {
+    const { source, diagnostics } = useA([], "return { n, n };");
+    expect(problems(source, diagnostics)).toEqual(["UF2035 n"]);
+    expect(applyFixes(source, diagnostics[0]!.fixes!)).toContain("return { n };");
+  });
+
+  it("rejects a returned setup `let`", () => {
+    const { source, diagnostics } = useA(["let timer = 0;"], "return { n, timer };");
+    expect(problems(source, diagnostics)).toEqual(["UF2035 timer"]);
+  });
+
   it("rejects a returned name that is not the setup's own", () => {
     const { source, diagnostics } = composables([
       "export function useA(start: number) {",
@@ -351,6 +444,68 @@ describe("UF2035", () => {
     ]);
   });
 
+  it("rejects a parameter name a target reserves, as a setup binding's (UF2003)", () => {
+    const { source, module, diagnostics } = composables([
+      "export function useA(ngValue: number, props: string) {",
+      "  return {};",
+      "}",
+    ]);
+    expect(problems(source, diagnostics)).toEqual(["UF2003 ngValue", "UF2003 props"]);
+    expect(module).toBeUndefined();
+  });
+
+  it("rejects a `this` parameter", () => {
+    const { source, diagnostics } = composables([
+      "export function useA(this: Window) {",
+      "  return {};",
+      "}",
+    ]);
+    expect(problems(source, diagnostics)).toEqual(["UF2035 this"]);
+  });
+
+  it("rejects a function type written through an alias or a union", () => {
+    const { source, diagnostics } = composables([
+      "type Get = () => number;",
+      "type OnPick = (value: number) => void;",
+      "export function useA(get: Get, pick: OnPick | undefined, both: number | (() => number)) {",
+      "  return {};",
+      "}",
+    ]);
+    expect(problems(source, diagnostics)).toEqual([
+      "UF2035 Get",
+      "UF2035 OnPick | undefined",
+      "UF2035 number | (() => number)",
+    ]);
+  });
+
+  it("rejects a function that calls a callback where an initial value or a getter calls it (UF2014)", () => {
+    const { source, diagnostics } = composables([
+      'import { computed, ref } from "unframework";',
+      "export function useA(onPick: (value: number) => number) {",
+      "  function pick() {",
+      "    return onPick(1);",
+      "  }",
+      "  const first = ref(pick());",
+      "  const next = computed(() => pick());",
+      "  return { first, next };",
+      "}",
+    ]);
+    expect(problems(source, diagnostics)).toEqual(["UF2014 pick", "UF2014 pick"]);
+  });
+
+  it("rejects a value import from a `.uf.ts` module that no composable calls, with a fix", () => {
+    const { source, diagnostics } = composables([
+      'import { ref } from "unframework";',
+      'import { Item } from "./useItem.uf.ts";',
+      "export function useA(item: Item) {",
+      "  const state = ref<Item>(item);",
+      "  return { state };",
+      "}",
+    ]);
+    expect(problems(source, diagnostics)).toEqual(["UF2035 Item"]);
+    expect(applyFixes(source, diagnostics[0]!.fixes!)).toContain("import { type Item }");
+  });
+
   it("rejects a callback read outside client code", () => {
     const { source, diagnostics } = composables([
       'import { computed } from "unframework";',
@@ -369,6 +524,22 @@ describe("UF2035", () => {
     expect(problems(misnamed.source, misnamed.diagnostics)).toEqual(["UF2035 toggle"]);
     const value = composables(["export const useA = () => {", "  return {};", "};"]);
     expect(problems(value.source, value.diagnostics)).toEqual(["UF2035 useA"]);
+  });
+
+  it("rejects a generator composable", () => {
+    const { source, diagnostics } = composables(["export function* useA() {", "  return {};", "}"]);
+    expect(problems(source, diagnostics)).toEqual(["UF2035 useA"]);
+  });
+
+  it("rejects an injection key in a `.uf.ts` module (UF1002)", () => {
+    const { source, diagnostics } = composables([
+      'import type { InjectionKey } from "unframework";',
+      'export const ThemeKey: InjectionKey<string> = Symbol("theme");',
+      "export function useA() {",
+      "  return {};",
+      "}",
+    ]);
+    expect(problems(source, diagnostics)).toEqual(["UF1002 ThemeKey: InjectionKey<string>"]);
   });
 
   it("rejects an asynchronous composable", () => {

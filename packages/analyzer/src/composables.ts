@@ -13,6 +13,7 @@ import {
   createReturnedMember,
   createTypeText,
   impurity,
+  reservedSetupName,
   summarize,
 } from "@unframework/ir";
 import type {
@@ -42,7 +43,7 @@ import { declareSetup } from "./setup.ts";
 import type { InjectionKeyInfo } from "./setup.ts";
 import type { Shapes } from "./shapes.ts";
 import type { SharedValues } from "./shared.ts";
-import { FUNCTION, union, UNDEFINED } from "./types/kinds.ts";
+import { FUNCTION, has, union, UNDEFINED } from "./types/kinds.ts";
 import type { Kinds } from "./types/kinds.ts";
 
 /** A module of composables is a `.uf.ts` file (D1, ADR-0005, ADR-0069). */
@@ -216,7 +217,9 @@ export interface ComposableModule {
   passThrough: PassThrough;
   shared: SharedValues;
   /** The names the module imports from other `.uf.ts` modules, by the identifier of each. */
-  composableImports: ReadonlySet<object>;
+  composableImports: ReadonlyMap<object, AST.ImportDeclarationSpecifier>;
+  /** The imported composables a composable calls, which `calledComposables` fills. */
+  called: Set<object>;
   /** What a written type gives a value (`SetupContext.writtenType`). */
   readonly writtenType: (type: AST.TSType) => { kinds: Kinds; complete: boolean };
 }
@@ -378,6 +381,27 @@ function composableParameters(
       );
       continue;
     }
+    const name = { start: parameter.start, end: parameter.start + parameter.name.length };
+    if (parameter.name === "this") {
+      reporter.report(
+        "UF2035",
+        name,
+        "A composable has no `this`: it is a plain function, which each target calls as one.",
+        { help: "Remove the `this` parameter, and pass what the body reads as an argument." },
+      );
+      continue;
+    }
+    // Its `argument` binding is a binding of the setup, which every target declares (UF2003).
+    const reserved = reservedSetupName(parameter.name);
+    if (reserved) {
+      reporter.report(
+        "UF2003",
+        name,
+        `\`${parameter.name}\` cannot name a composable's parameter: ${reserved}.`,
+        { help: "Rename it." },
+      );
+      continue;
+    }
     const annotation = parameter.typeAnnotation?.typeAnnotation;
     if (!annotation) {
       reporter.report(
@@ -389,14 +413,25 @@ function composableParameters(
       continue;
     }
     const kind = parameterKind(annotation);
+    const written = module.writtenType(annotation);
+    if (kind === "value" && has(written.kinds, "function")) {
+      // The kind decides each target's output (a getter is Qwik's `useComputed$`, a callback a
+      // QRL), so it is read from the annotation as written, never guessed through an alias.
+      reporter.report(
+        "UF2035",
+        annotation,
+        `\`${parameter.name}\`'s type may be a function, written through a name or a union: a composable's parameter writes a function type in place, which says whether it is a getter (\`() => T\`) or a callback.`,
+        {
+          help: `Write the function type in place, as in \`${parameter.name}: () => number\` or \`${parameter.name}?: (value: number) => void\`.`,
+        },
+      );
+      continue;
+    }
     // oxc's types leave `optional` out of a binding identifier, which a parameter sets.
     const optional = (parameter as { optional?: boolean }).optional === true;
     const at = { start: parameter.start, end: parameter.end };
-    const binding = createBinding(parameter.name, "argument", {
-      start: parameter.start,
-      end: parameter.start + parameter.name.length,
-    });
-    const kinds: Kinds = kind === "value" ? module.writtenType(annotation).kinds : FUNCTION;
+    const binding = createBinding(parameter.name, "argument", name);
+    const kinds: Kinds = kind === "value" ? written.kinds : FUNCTION;
     const read: PropBinding = {
       name: parameter.name,
       id: binding.id,
@@ -455,6 +490,7 @@ function calledComposables(
       (resolution.scope as AST.Node).type === "Program" &&
       COMPOSABLE_NAME.test(callee.name);
     if (!imported && !own) return;
+    if (imported) module.called.add(resolution.declaration);
     found = true;
     module.reporter.report(
       "UF2035",
@@ -493,6 +529,7 @@ function returnedMembers(
 ): Returned[] {
   const { reporter, scopes, setup } = render;
   const members: Returned[] = [];
+  const names = new Set<string>();
   for (const property of object.properties) {
     if (
       property.type !== "Property" ||
@@ -522,6 +559,33 @@ function returnedMembers(
       );
       continue;
     }
+    if (names.has(binding.name)) {
+      reporter.report(
+        "UF2035",
+        property,
+        `\`${binding.name}\` is returned twice: each member of a composable's result is named once, which every target returns by its name.`,
+        {
+          help: `Remove the second \`${binding.name}\`.`,
+          fixes: [
+            {
+              title: `Remove the second \`${binding.name}\``,
+              confidence: "safe",
+              edits: [
+                {
+                  span: {
+                    start: members.at(-1)?.member.span.end ?? property.start,
+                    end: property.end,
+                  },
+                  text: "",
+                },
+              ],
+            },
+          ],
+        },
+      );
+      continue;
+    }
+    names.add(binding.name);
     members.push({
       member: createReturnedMember(binding.name, binding.id, {
         start: property.start,
@@ -554,6 +618,10 @@ function composableApi(
     composable.setup,
   );
   const summaries = summarize(owner);
+  // A callback is called from client code (ADR-0069), so a function that reads one is too.
+  const callbacks = new Set(
+    composable.parameters.flatMap(({ kind, binding }) => (kind === "callback" ? [binding] : [])),
+  );
   const items = new Map(
     composable.setup.flatMap((item) => ("binding" in item ? [[item.binding, item] as const] : [])),
   );
@@ -562,7 +630,10 @@ function composableApi(
     const item = items.get(binding.id);
     if (item?.kind === "Function") {
       const summary = summaries.get(binding.id);
-      const pure = summary !== undefined && impurity(summary) === undefined;
+      const pure =
+        summary !== undefined &&
+        impurity(summary) === undefined &&
+        ![...summary.reads].some((read) => callbacks.has(read));
       return {
         name: binding.name,
         kind,

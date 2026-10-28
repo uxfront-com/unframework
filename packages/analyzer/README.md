@@ -3,8 +3,8 @@
 Passes P2 (analyse) and P3 (lower) of the Unframework compiler (plan §5.1):
 
 - `analyze(parsed)` checks a parsed `.uf.tsx` module and lowers each component's returned JSX into
-  the portable IR, or a `.uf.ts` module and its composables (ADR-0069). It reports every construct it cannot lower as a diagnostic, and never copies
-  code through unanalysed (P2). It never throws. A syntax error stops it. Any other module-level
+  the portable IR, or a `.uf.ts` module and its composables (ADR-0069). It reports every construct
+  it cannot lower as a diagnostic, and never copies code through unanalysed (P2). It never throws. A syntax error stops it. Any other module-level
   error (an import, a top-level declaration) drops every component, which are still checked, so
   that fixing it reveals nothing new; an error in a component drops that component only.
 - JSX text means what every JSX implementation agrees it means. Babel (Vue's and Solid's JSX)
@@ -29,7 +29,7 @@ Passes P2 (analyse) and P3 (lower) of the Unframework compiler (plan §5.1):
 
 Components with typed props, a setup, listeners and JSX (plan §9 M1 and M2, ADR-0034 to ADR-0040,
 ADR-0045 onwards), and the composition of M3's core lane (ADR-0053 to ADR-0055): components that
-render each other, slots, fallthrough and `defineExpose`. A module exports at least one component;
+render each other, slots, fallthrough and `defineExpose`. A `.uf.tsx` module exports at least one component;
 one it does not export is lowered too, and each output writes it as a sibling file. A component
 is a function declaration; one written as a value (`export const Card = (props) => …`) is UF1102,
 checked as the declaration its likely fix writes (`analyze.ts`).

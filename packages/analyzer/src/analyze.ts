@@ -327,7 +327,7 @@ export function analyzeModule(
     shared: { values: new Map(), failed: new Set() },
     constants: [],
     composableModule,
-    composableImports: new Set(),
+    composableImports: new Map(),
   };
   const moduleMark = reporter.diagnostics.length;
   for (const statement of parsed.program.body) {
@@ -364,6 +364,7 @@ export function analyzeModule(
         passThrough: context.passThrough,
         shared: context.shared,
         composableImports: context.composableImports,
+        called: new Set(),
         writtenType: writtenTypeIn({ parsed, types, shapes, localShapes }),
       },
       context,
@@ -513,6 +514,7 @@ function composableResult(
   context: ModuleContext,
 ): AnalyzeResult {
   const { parsed, reporter, types } = module;
+  const mark = reporter.diagnostics.length;
   const lowered: AnalyzedComposable[] = [];
   for (const candidate of candidates) {
     const result = analyzeComposable(
@@ -521,6 +523,32 @@ function composableResult(
       module,
     );
     if (result) lowered.push(result);
+  }
+  // A value import no composable calls names a type, or nothing a composable may read: either
+  // way its outputs would import a value the module never had (UF2035).
+  for (const [local, specifier] of module.composableImports) {
+    if (module.called.has(local)) continue;
+    reporter.report(
+      "UF2035",
+      specifier,
+      `\`${specifier.local.name}\` is imported as a value from a module of composables, which a composable never calls: a type is imported with \`type\`.`,
+      {
+        help: `Import it as a type: \`import { type ${specifier.local.name} } from "…";\`.`,
+        ...(specifier.type === "ImportSpecifier"
+          ? {
+              fixes: [
+                {
+                  title: "Import it as a type",
+                  confidence: "likely" as const,
+                  edits: [
+                    { span: { start: specifier.start, end: specifier.start }, text: "type " },
+                  ],
+                },
+              ],
+            }
+          : {}),
+      },
+    );
   }
   const api: ModuleApi = {
     file: parsed.file,
@@ -531,8 +559,9 @@ function composableResult(
   const uncalled =
     !reporter.diagnostics.some(({ severity }) => severity === "error") &&
     reportUnread(parsed.program.body, context.passThrough, reporter);
-  if (moduleErrors || uncalled)
+  if (moduleErrors || uncalled || reporter.hasErrorsSince(mark)) {
     return { module: undefined, diagnostics: reporter.diagnostics, api };
+  }
   if (!candidates.length) {
     reporter.report("UF2035", { start: 0, end: 0 }, "This file exports no composable.", {
       help: "A module of composables exports functions named `use` and an upper-case letter, each returning a shorthand object.",
@@ -770,7 +799,7 @@ interface ModuleContext {
   /** Whether the module is a `.uf.ts` module of composables (ADR-0069). */
   composableModule: boolean;
   /** In a `.uf.ts` module, the names it imports from other `.uf.ts` modules (UF2035). */
-  composableImports: Set<object>;
+  composableImports: Map<object, AST.ImportDeclarationSpecifier>;
 }
 
 /** The local names a module exports as values in `export { name }` and `export default name`. */
@@ -868,10 +897,16 @@ function checkTopLevelStatement(
         COMPOSABLE_FILE.test(statement.source.value) &&
         statement.importKind !== "type"
       ) {
-        // A composable that calls another is reported at the call (UF2035).
+        // Its types are re-imported by name (ADR-0067); a composable that calls another is
+        // reported at the call (UF2035).
+        const types = statement.specifiers.filter(
+          (item): item is AST.ImportSpecifier =>
+            item.type === "ImportSpecifier" && item.importKind === "type",
+        );
+        if (types.length) typeImport(statement, types, context);
         for (const specifier of statement.specifiers) {
-          if (specifier.type !== "ImportSpecifier" || specifier.importKind !== "type") {
-            context.composableImports.add(specifier.local);
+          if (!types.includes(specifier as AST.ImportSpecifier)) {
+            context.composableImports.set(specifier.local, specifier);
           }
         }
         return;
