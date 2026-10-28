@@ -242,14 +242,16 @@ class Rules {
     ];
     for (const { refs, where, getter } of sites) {
       for (const ref of refs) {
-        // A function of the module runs where it is called, as a local function does (ADR-0070).
-        const shared =
-          ref.kind === "Binding" && ref.call ? this.#shared.get(ref.binding) : undefined;
+        // A function of the module runs where it is called, as a local function does, and one it
+        // reads, or a value that holds it, may be called there (`XS.map(format)`, `O.d()`):
+        // ADR-0070.
+        const shared = ref.kind === "Binding" ? this.#shared.get(ref.binding) : undefined;
+        const use = ref.kind === "Binding" && ref.call ? "calls it" : "reads it, and may call it";
         if (ref.kind === "Binding" && shared?.nondeterministic) {
           this.#reporter.report(
             "UF3019",
             ref.span,
-            `\`${shared.name}\` ${shared.nondeterministic}, and ${where} calls it: ${where === "a template expression" ? "the server's render and the browser's" : "the server's setup and the browser's"} would differ.`,
+            `\`${shared.name}\` ${shared.nondeterministic}, and ${where} ${use}: ${where === "a template expression" ? "the server's render and the browser's" : "the server's setup and the browser's"} would differ.`,
             {
               help: "Pass the value in as a prop, or set it from client code (`onMounted`, a handler).",
             },
@@ -260,7 +262,7 @@ class Rules {
           this.#reporter.report(
             "UF2014",
             ref.span,
-            `${where === "a template expression" ? "A template expression" : where === "a getter" ? "A getter" : "An initial value"} calls \`${shared.name}\`, and it ${shared.clientOnly}: ${where === "a template expression" ? "rendering" : "the setup's pure code"} must not read what only client code may, and a framework runs it when it decides to.`,
+            `${where === "a template expression" ? "A template expression" : where === "a getter" ? "A getter" : "An initial value"} ${ref.kind === "Binding" && ref.call ? "calls" : "reads, and may call,"} \`${shared.name}\`, and it ${shared.clientOnly}: ${where === "a template expression" ? "rendering" : "the setup's pure code"} must not read what only client code may, and a framework runs it when it decides to.`,
             {
               help: "Call it from client code (a handler, a watcher's callback, a lifecycle hook), or compute the value without it.",
             },

@@ -365,6 +365,116 @@ describe("module-level constants", () => {
     expect(module).toBeDefined();
   });
 
+  // A parameter holds what its caller gives, and a method named like a copy may return what its
+  // receiver holds: neither launders a module's value (UF2004).
+  it.each([
+    [
+      "a parameter it defaults, then fills",
+      'const DEFAULTS = ["sm", "md"];\nconst withLarge = (sizes?: string[]) => { if (!sizes) sizes = []; sizes.push("lg"); return sizes; };\nconst X = withLarge(DEFAULTS);',
+      "{X.length}",
+      'UF2004 sizes.push("lg")',
+    ],
+    [
+      "a parameter it writes, then replaces",
+      "const T = { a: 1 };\nconst set = (o: { a: number }) => { o.a = 5; o = { a: 0 }; return o; };\nconst X = set(T);",
+      "{X.a}",
+      "UF2004 o.a = 5",
+    ],
+    [
+      "a callback's parameter it writes, then replaces",
+      "const LIST = [{ done: false }];\nconst X = () => { LIST.forEach((item) => { item.done = true; item = { done: false }; }); };",
+      "{String(X)}",
+      "UF2004 item.done = true",
+    ],
+    [
+      "a copying method of something that is no array",
+      "const TABLE = { a: 1 };\nconst O = { map: () => TABLE };\nconst X = () => { O.map().a = 2; };",
+      "{String(X)}",
+      "UF2004 O.map().a = 2",
+    ],
+  ])("reports a change in place through %s (UF2004)", (_, before, read, problem) => {
+    const source = `${before}\nexport function A() { return <p>${read}</p>; }`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual([problem]);
+  });
+
+  it("accepts a copy of an array parameter, or of a module's array, filled afterwards", () => {
+    const source = [
+      "const LIST = [1, 2];",
+      "const more = (xs: readonly number[]) => { const out = xs.map((x) => x * 2); out.push(0); return out; };",
+      "export function A() { return <p>{more(LIST).length}</p>; }",
+    ].join("\n");
+    expect(problems(source, run(source).diagnostics)).toEqual([]);
+    const filled = [
+      "const LIST = [1, 2];",
+      "const fill = () => { const copy = LIST.slice(); copy.push(3); return copy; };",
+      "export function A() { return <p>{fill().length}</p>; }",
+    ].join("\n");
+    expect(problems(filled, run(filled).diagnostics)).toEqual([]);
+  });
+
+  // A held arrow runs where a value calls it, through a member, as the module loads (UF2023).
+  it.each([
+    [
+      "a member of a constant",
+      "const O = { m: () => STEP };\nconst X = O.m();\nconst STEP = 1;",
+      "UF2023 O.m",
+    ],
+    [
+      "an optional call of one",
+      "const O = { m: () => STEP };\nconst X = O.m?.();\nconst STEP = 1;",
+      "UF2023 O.m",
+    ],
+    ["a member of a literal", "const X = ({ m: () => STEP }).m();\nconst STEP = 1;", "UF2023 STEP"],
+  ])(
+    "reports a later constant read through %s as the module loads (UF2023)",
+    (_, before, problem) => {
+      const source = `${before}\nexport function A() { return <p>{X}</p>; }`;
+      expect(problems(source, run(source).diagnostics)).toEqual([problem]);
+    },
+  );
+
+  // A module's function a template reads, or a value holding one, may be called there: it is
+  // judged as a call (UF2014, UF3019), as setup judges a local function (ADR-0045).
+  it.each([
+    ["passed to `map`", "", "{XS.map(fmt).join()}", "UF2014 fmt"],
+    ["held by a value", "const O = { fmt };\n", "{O.fmt(1)}", "UF2014 O"],
+    [
+      "chosen by a conditional",
+      "const other = (n: number) => String(n);\n",
+      "{(on ? fmt : other)(1)}",
+      "UF2014 fmt",
+    ],
+    ["called through `call`", "", "{fmt.call(null, 1)}", "UF2014 fmt"],
+  ])(
+    "reports a client-only module function %s in a template (UF2014)",
+    (_, extra, read, problem) => {
+      const source = [
+        "const XS = [1, 2];",
+        "const fmt = (n: number) => document.title + n;",
+        `${extra}export function A({ on }: { on: boolean }) { return <p>{String(on)}${read}</p>; }`,
+      ].join("\n");
+      expect(problems(source, run(source).diagnostics)).toEqual([problem]);
+    },
+  );
+
+  it("reports a client-only module function passed on as the module loads (UF2014), and the locale passed to `map` in a template (UF3019)", () => {
+    const load = [
+      "const d = (n: number) => document.title + n;",
+      "const T = [1].map(d);",
+      "export function A() { return <p>{T.length}</p>; }",
+    ].join("\n");
+    expect(problems(load, run(load).diagnostics)).toEqual(["UF2014 d"]);
+    const locale = [
+      "const PRICES = [1200, 99];",
+      "const fmt = (n: number) => n.toLocaleString();",
+      "export function A() { return <p>{PRICES.map(fmt).join()}</p>; }",
+    ].join("\n");
+    const { diagnostics } = run(locale);
+    expect(problems(locale, diagnostics)).toEqual(["UF3019 fmt"]);
+    expect(diagnostics[0]!.message).toContain("a template expression reads it, and may call it");
+  });
+
   it("counts a local type a constant writes as used, and declares it with the constant", () => {
     const source = [
       'type Tone = "info" | "danger";',

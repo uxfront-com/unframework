@@ -88,11 +88,13 @@ checked as the declaration its likely fix writes (`analyze.ts`).
 …`, whose body runs once called, or any other value, all of which runs as the module loads.
   - It reads the module's other constants, its value imports and the pure globals (UF3020). As
     the module loads it reads no constant declared after it, itself or through the functions it
-    calls (UF2023). An arrow runs then only where it is called in place or passed to a call; one
-    a value holds runs once called. A type it names (`typeof B`) reads nothing, and a local type
+    calls, a function passed to a call, or an arrow a value holds and calls through a member
+    (`O.m()`), included (UF2023). An arrow runs then only where it is called in place, passed to
+    a call or called through a member; one a value holds runs once called. A type it names (`typeof B`) reads nothing, and a local type
     it names is declared with it.
-  - It changes in place only a fresh value, one it builds itself: a literal, a `new`, a copy, or
-    a function's local that only ever holds one (a `reduce` accumulator too), so
+  - It changes in place only a fresh value, one it builds itself: a literal, a `new`, a copy of
+    an array, or a function's local that only ever holds one (a `reduce` accumulator too, but
+    never another parameter, which holds what its caller gives), so
     `Object.freeze({ … })` is plain. Anything else written, deleted or changed by a mutating
     method, through `as`, `!`, an alias or a pattern too, is UF2004. A function writes only its
     own locals (UF2011).
@@ -100,8 +102,9 @@ checked as the declaration its likely fix writes (`analyze.ts`).
     class, and calls no computed member (UF1002).
   - Chance, the clock and the locale are UF3019 as the module loads, and a global only client
     code may read (`console`, `document`, …) UF3020. In a function they mark the constant
-    `nondeterministic` or `clientOnly`, which a template, a getter or an initial value that calls
-    it, or a local function it reaches, reports (UF3019, UF2014), as setup does; client code may
+    `nondeterministic` or `clientOnly`, and a value that holds such a function carries it. A
+    template, a getter or an initial value that calls or reads one (`XS.map(format)`, `O.d()`),
+    or a local function it reaches, reports it (UF3019, UF2014), as setup does; client code may
     call it.
   - A `let`, a destructured or exported `const` and a `const` of two names are UF1002. Qwik
     reads both kinds where they are declared, so a getter's function may read them (UF2014).
