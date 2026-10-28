@@ -932,7 +932,10 @@ interface Walk {
   readonly summaries: ReadonlyMap<BindingId, FunctionSummary>;
   /** The item that declares each local function. */
   readonly functions: ReadonlyMap<BindingId, FunctionItem>;
-  /** The `const`s whose value reads no binding: all a getter's functions may read. */
+  /**
+   * The `const`s whose value reads no binding, and the module's constants and imports: all a
+   * getter's functions may read.
+   */
   readonly staticConsts: ReadonlySet<BindingId>;
   /** The components a component element may name, by local name, with what they declare. */
   readonly apis: ReadonlyMap<string, Declared>;
@@ -1062,13 +1065,7 @@ function setupWalk(
         item.kind === "Function" ? [[item.binding, item] as const] : [],
       ),
     ),
-    staticConsts: new Set(
-      component.setup.flatMap((item) =>
-        item.kind === "Const" && !item.value.refs.some((ref) => ref.kind === "Binding")
-          ? [item.binding]
-          : [],
-      ),
-    ),
+    staticConsts: staticConsts(component),
     apis,
     keys,
     passThrough,
@@ -2894,6 +2891,24 @@ function checkProvidedRef(code: Code, path: string, walk: Walk): void {
         "must be a `state`, `derived` or `model` binding by its name: a key of a ref takes the ref itself",
     });
   }
+}
+
+/**
+ * The constants a getter's function may read, which Qwik hoists out of the component: a setup
+ * `const` that reads no binding, and a module's constants and imports, which are declared at the
+ * module's top level already (ADR-0070).
+ */
+function staticConsts(component: UfComponent): Set<BindingId> {
+  return new Set([
+    ...component.bindings.flatMap(({ id, kind }) =>
+      kind === "moduleConst" || kind === "import" ? [id] : [],
+    ),
+    ...component.setup.flatMap((item) =>
+      item.kind === "Const" && !item.value.refs.some((ref) => ref.kind === "Binding")
+        ? [item.binding]
+        : [],
+    ),
+  ]);
 }
 
 /**

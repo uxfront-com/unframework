@@ -5,6 +5,7 @@ export { createSyntacticOracle } from "@unframework/type-oracle";
 export type { SyntacticOracleOptions, TypeOracle } from "@unframework/type-oracle";
 export type {
   FileResolverOptions,
+  ResolvedModule,
   ResolvedStylesheet,
   ResolveRequest,
   Resolver,

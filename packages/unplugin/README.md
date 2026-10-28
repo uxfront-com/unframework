@@ -76,7 +76,8 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   `Hello.tsx` for a `.uf.tsx` id). A file with several components emits one such file each:
   `.tsx` and `.ts` files are joined into one module (an import of a file of the join is left out,
   an import an earlier file already made is written once, and any other name two files declare
-  or export is an error). On a markup target the module id loads the file's main component (its
+  or export is an error). A shared `.ts` module's copy (ADR-0070) is no component's file, so no
+  join holds it: the output imports the module itself. On a markup target the module id loads the file's main component (its
   default export, or its only exported component), and each other component loads under a
   component id, `<abs>/X.uf.tsx.<output file>` (`/src/Card.uf.tsx.CardIcon.vue`, ADR-0053),
   which ends in the extension the framework's plugin claims.

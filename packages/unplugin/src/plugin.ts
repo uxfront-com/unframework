@@ -510,11 +510,13 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
           const owners = result.owners[target.name] ?? {};
           const main = mainComponent(result.ir);
           // A component id loads its component's file; a main id, the main component's files,
-          // or every component's on a target that joins them (ADR-0053).
+          // or every component's on a target that joins them (ADR-0053). A shared module's copy
+          // is no component's (ADR-0070): the output imports the module itself.
+          const owned = files.filter((file) => Object.hasOwn(owners, file.path));
           const loaded = component
             ? files.filter((file) => file.path === component.output)
             : joins
-              ? files
+              ? owned
               : files.filter((file) => owners[file.path] === main);
           if (component && !loaded.length) {
             return fail(
@@ -530,7 +532,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
             extension: component ? extname(component.output) : extension,
             files: loaded,
             exports: component ? [] : exports,
-            siblings: files.map((file) => file.path),
+            siblings: owned.map((file) => file.path),
           });
           if ("error" in assembly) return fail(assembly.error);
           compiled.set(id, assembly.code);

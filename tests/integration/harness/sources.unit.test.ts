@@ -135,6 +135,50 @@ describe("a case of two sources", () => {
   });
 });
 
+/** A source's compile that produced `files` for Vue, as each copies the module (ADR-0070). */
+function produced(name: string, files: Record<string, string>): SourceCompile {
+  return {
+    source: source(name),
+    text: "",
+    result: {
+      diagnostics: [],
+      outputs: { vue: Object.entries(files).map(([path, contents]) => ({ path, contents })) },
+    },
+  };
+}
+
+describe("a case whose sources import one shared module", () => {
+  it("joins the copies two sources produce with the same contents into one file", () => {
+    const { files, problems } = caseOutputs(
+      [
+        produced("Card", { "Card.vue": "card", "tokens.ts": "export const a = 1;\n" }),
+        produced("Form", { "Form.vue": "form", "tokens.ts": "export const a = 1;\n" }),
+      ],
+      "vue",
+    );
+    expect(problems).toEqual([]);
+    expect([...files]).toEqual([
+      ["Card.vue", "card"],
+      ["tokens.ts", "export const a = 1;\n"],
+      ["Form.vue", "form"],
+    ]);
+  });
+
+  it("refuses two files at one path that differ, or whose paths differ only in case", () => {
+    const { problems } = caseOutputs(
+      [
+        produced("Card", { "tokens.ts": "export const a = 1;\n" }),
+        produced("Form", { "tokens.ts": "export const a = 2;\n", "Tokens.ts": "x" }),
+      ],
+      "vue",
+    );
+    expect(problems).toEqual([
+      "forms/form/Card.uf.tsx and forms/form/Form.uf.tsx both produce vue/tokens.ts: the components of a case need names of their own on every target.",
+      "forms/form/Card.uf.tsx and forms/form/Form.uf.tsx both produce vue/Tokens.ts: the components of a case need names of their own on every target.",
+    ]);
+  });
+});
+
 describe("a case with a stylesheet", () => {
   // UF5002 and UF5004 point into the sheet (ADR-0063): its text joins the sources'.
   it("gives the text of a stylesheet a diagnostic points into", async () => {

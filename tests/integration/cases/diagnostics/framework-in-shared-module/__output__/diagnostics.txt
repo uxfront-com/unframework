@@ -1,0 +1,8 @@
+error[UF1204]: "./tokens.ts" reaches "palette.ts", which imports "react": a shared module is copied unchanged into every framework's output, so it imports no framework, and no `unframework`.
+ --> diagnostics/framework-in-shared-module/Badge.uf.tsx:3:23
+  |
+3 | import { tones } from "./tokens.ts";
+  |                       ^^^^^^^^^^^^^
+  |
+  = help: Keep the shared module to plain values, types and functions, and move what needs reactivity into a composable in a `.uf.ts` module.
+  = see: https://unframework.dev/diagnostics/UF1204

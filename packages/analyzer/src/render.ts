@@ -6,6 +6,7 @@ import type { Reporter } from "./context.ts";
 import type { PassThrough } from "./pass-through.ts";
 import type { Scopes } from "./scope.ts";
 import type { Shapes } from "./shapes.ts";
+import type { SharedValues } from "./shared.ts";
 import type { TypeTable } from "./types/from-type.ts";
 import type { Kinds } from "./types/kinds.ts";
 
@@ -191,6 +192,8 @@ export interface RenderContext {
   readonly passThrough: PassThrough;
   /** Set while a `class` part is checked: the one place a pass-through name is called. */
   readonly classPart?: true;
+  /** The values the module's imports of shared modules and its constants give (ADR-0070). */
+  readonly shared: SharedValues;
 }
 
 /** The setup binding an identifier reads, where the component's setup declares it. */

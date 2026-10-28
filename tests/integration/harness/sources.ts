@@ -46,7 +46,9 @@ export function caseDiagnostics(compiles: readonly SourceCompile[]): Diagnostic[
  * One target's output files of every source, by path in `__output__/<target>/`, and the paths
  * two sources both produce: each file is named by its component (ADR-0053), so two components
  * of a case may not share a name on any target. Paths that differ only in case collide too, as
- * UF1104's names do: a case-insensitive file system (macOS) holds one file for both.
+ * UF1104's names do: a case-insensitive file system (macOS) holds one file for both. Two sources
+ * that import one shared `.ts` module each copy it (ADR-0070): a path two sources produce with
+ * the same contents is one file.
  */
 export function caseOutputs(
   compiles: readonly SourceCompile[],
@@ -59,6 +61,7 @@ export function caseOutputs(
     for (const file of result.outputs[target] ?? []) {
       const key = file.path.toLowerCase();
       const other = producer.get(key);
+      if (other !== undefined && files.get(file.path) === file.contents) continue;
       if (other !== undefined) {
         problems.push(
           `${other} and ${source.filename} both produce ${target}/${file.path}: the components of a case need names of their own on every target.`,

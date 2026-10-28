@@ -28,6 +28,16 @@ type oracle over the same root (ADR-0067), and caches that by its contents and i
 cannot resolve is UF1202, and a resolver that throws UF9001. The resolver's `stylesheet` reads each
 stylesheet the source imports (ADR-0063), and `createFileResolver` also reads a child's sheets, for
 the scope id its API carries, and caches by their text too: a sheet it cannot read is UF5005.
+The resolver's `module` reads each shared `.ts` module the source imports (ADR-0070), a specifier
+without an extension naming its `.ts`, and `createFileResolver` follows its relative imports through
+every `.ts` module they reach, each once, noting the first framework or `unframework` import
+(UF1204) and the first relative import it cannot read (UF1202). A value import of a module it
+cannot read, or without a resolver, is UF1202. Each output tree beside a component's files holds a
+copy of every module the source reaches, unchanged, at its path relative to the source: neither
+the hooks nor formatting see it, and `owners` leaves it out. A copy named like a component's output
+file, without the extensions (an output imports `./CardIcon`, and `./card-icon` on Angular), is
+UF1104 at the import that reaches it, for the module's own components and every child it
+imports, and withholds the module from every target.
 After the `ir` hooks, `compile()` runs the codegen scoper once per sheet of the module the targets
 emit from; a selector it rejects (UF5004, in the sheet's file) withholds the module from every
 target, as an analyser error does. A styled component's files end, on every target, with its
@@ -46,7 +56,8 @@ disposes of its oracle. The oracle reads the source's own file too, so it must h
 `compile()` is given: a caller that compiles an unsaved edit updates its oracle first.
 `CompileResult.dependencies` lists what the compile read or looked for through the oracle: files
 relative to its root, and packages as `pkg:<name>`, a package that is not installed included,
-sorted (ADR-0071).
+sorted (ADR-0071). It also lists each shared `.ts` module the resolver read, named as `filename`
+is.
 A capability that refines one the target cannot support (a listener's options and semantics, and
 `nextTick`, refine `interactivity`: codegen's `CAPABILITY_PREREQUISITES`) is not reported again, so
 Astro reports one inert listener once.

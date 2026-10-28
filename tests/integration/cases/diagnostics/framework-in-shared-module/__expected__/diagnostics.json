@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF1204",
+    "severity": "error",
+    "message": "\"./tokens.ts\" reaches \"palette.ts\", which imports \"react\": a shared module is copied unchanged into every framework's output, so it imports no framework, and no `unframework`.",
+    "file": "diagnostics/framework-in-shared-module/Badge.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 23,
+      "offset": 217
+    },
+    "end": {
+      "line": 3,
+      "column": 36,
+      "offset": 230
+    },
+    "help": "Keep the shared module to plain values, types and functions, and move what needs reactivity into a composable in a `.uf.ts` module."
+  }
+]

@@ -74,6 +74,47 @@ checked as the declaration its likely fix writes (`analyze.ts`).
   names an imported type), and `analyze(parsed, { shapes })` takes them, as the compiler's oracle
   resolved them. Without `shapes` it reads the module's own declarations (`localShapes`), and an
   imported type is UF6001. The shapes reach the API, setup and render contexts.
+- **Shared modules and module-level values** (`shared.ts`, ADR-0070): a component reads values
+  from relative `.ts` modules and its module's top-level `const`s, each through a read-only
+  binding of its own (`import`, `moduleConst`), which a write (UF2011) or a change in place
+  (UF2004) never touches. `analyze(parsed, { modules })` takes each shared module the source
+  imports, by specifier (`sharedModuleImports(parsed)` lists them, values or types), as the
+  compiler's resolver read it: a value import of one it could not read, or of one that reaches a
+  file it could not read, is UF1202; one that imports a framework or `unframework`, itself or
+  through another `.ts` (`moduleSpecifiers(parsed)` lists what a module imports), is UF1204, for
+  a type import too. Both are module-level errors. The module records its value imports
+  (`moduleImports`) and the constants its components read, with those they read in turn
+  (`constants`). A constant is a plain value (`lowerConstants`): a function, `const f = (…) =>
+…`, whose body runs once called, or any other value, all of which runs as the module loads.
+  - It reads the module's other constants, its value imports and the pure globals (UF3020). As
+    the module loads it reads no constant declared after it, itself or through the functions it
+    calls, a function constant passed to a call (a table that holds functions is only read), or an
+    arrow a value holds and calls through a member (`O.m()`), included (UF2023). An arrow runs then only where it is called in place, passed to
+    a call or called through a member; one a value holds runs once called. A type it names (`typeof B`) reads nothing, and a local type
+    it names is declared with it.
+  - It changes in place only a fresh value, one it builds itself: a literal, a `new`, a copy
+    (`filter`, `map`, `slice`, … of anything but an object literal, whose own method may give
+    what it holds), or a function's local that only ever holds one (a `reduce` accumulator too,
+    but never another parameter, which holds what its caller gives). Freezing a value changes
+    nothing anyone reads, so `Object.freeze(…)` is plain. Anything else written, deleted or changed by a mutating
+    method, through `as`, `!`, an alias or a pattern too, is UF2004. A function writes only its
+    own locals (UF2011).
+  - It holds no JSX (UF3012), and no `this`, `import.meta`, `import()`, function expression or
+    class, and calls no computed member (UF1002).
+  - Chance, the clock and the locale are UF3019 as the module loads, and a global only client
+    code may read (`console`, `document`, …) UF3020. In a function they mark the constant
+    `nondeterministic` or `clientOnly`, and a value that holds such a function carries it (not
+    one that only reads it, as `Object.keys(TABLE)` does). A
+    template, a getter or an initial value that calls or reads one (`XS.map(format)`, `O.d()`),
+    or a local function it reaches, reports it (UF3019, UF2014), as setup does; client code may
+    call it.
+  - A `let`, a destructured or exported `const` and a `const` of two names are UF1002. Qwik
+    reads both kinds where they are declared, so a getter's function may read them (UF2014).
+
+  A shared module's imports include its `import x = require("…")` and each `import()` of a string
+  or a template without holes; `unfollowedImports(parsed)` lists what it loads that the compiler
+  cannot follow (any other `import()`, `import.meta.glob`), which is UF1202.
+
 - **The authoring API** (`authoring.ts`): named imports from `"unframework"`, recognised by the
   binding each declares (ADR-0006), as the package exports them (a test reads its `index.ts`).
   Anything else is UF2016.

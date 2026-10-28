@@ -38,6 +38,7 @@ import { closure } from "./declarations.ts";
 import type { PropsAnalysis } from "./props.ts";
 import type { RenderContext, SetupBinding } from "./render.ts";
 import type { ItemSource, Setup } from "./setup.ts";
+import type { SharedValue } from "./shared.ts";
 import { deferredFunctions, isLater, laterRegions, markLater } from "./suspension.ts";
 import type { FunctionNode } from "./suspension.ts";
 import { checkTypeQueries } from "./type-queries.ts";
@@ -97,6 +98,8 @@ class Rules {
   readonly #setup: ReadonlyMap<BindingId, SetupBinding>;
   /** The constants whose value reads no binding: what a getter's function may read (UF2014). */
   readonly #static = new Set<BindingId>();
+  /** The module's constants and value imports, by binding id (ADR-0070). */
+  readonly #shared: ReadonlyMap<BindingId, SharedValue>;
   /** The functions client code hands on to run later (ADR-0048). */
   readonly #deferred: ReadonlySet<FunctionNode>;
 
@@ -122,6 +125,12 @@ class Rules {
     this.#setup = new Map(
       [...render.setup.bindings.values()].map((binding) => [binding.id, binding]),
     );
+    this.#shared = new Map([...render.shared.values.values()].map((value) => [value.id, value]));
+    // A module's constants and imports are static too: Qwik reads them where they are declared,
+    // at the module's top level (ADR-0070).
+    for (const binding of this.#component.bindings) {
+      if (binding.kind === "moduleConst" || binding.kind === "import") this.#static.add(binding.id);
+    }
     for (const item of setup.items) {
       if (item.kind === "Const" && !item.value.refs.some((ref) => ref.kind === "Binding")) {
         this.#static.add(item.binding);
@@ -170,6 +179,11 @@ class Rules {
       const reason = this.#setup.get(reached)?.nondeterministic;
       if (reason) return reason;
     }
+    // A function of the module it calls, which its summary counts as a read (ADR-0070).
+    for (const read of summary.reads) {
+      const shared = this.#shared.get(read)?.nondeterministic;
+      if (shared) return `calls \`${this.#name(read)}\`, which ${shared}`;
+    }
     for (const global of summary.clientGlobals) {
       const reason = NONDETERMINISTIC.get(global);
       if (reason) return reason;
@@ -195,6 +209,11 @@ class Rules {
     if (summary.readsLocalVar) return "it reads a setup `let`, which is not reactive";
     const global = [...summary.clientGlobals].find((name) => !NONDETERMINISTIC.has(name));
     if (global !== undefined) return `it reads \`${global}\`, which only client code may`;
+    // A function of the module it calls, which its summary counts as a read (ADR-0070).
+    for (const read of summary.reads) {
+      const shared = this.#shared.get(read);
+      if (shared?.clientOnly) return `it calls \`${shared.name}\`, which ${shared.clientOnly}`;
+    }
     return undefined;
   }
 
@@ -223,6 +242,33 @@ class Rules {
     ];
     for (const { refs, where, getter } of sites) {
       for (const ref of refs) {
+        // A function of the module runs where it is called, as a local function does, and one it
+        // reads, or a value that holds it, may be called there (`XS.map(format)`, `O.d()`):
+        // ADR-0070.
+        const shared = ref.kind === "Binding" ? this.#shared.get(ref.binding) : undefined;
+        const use = ref.kind === "Binding" && ref.call ? "calls it" : "reads it, and may call it";
+        if (ref.kind === "Binding" && shared?.nondeterministic) {
+          this.#reporter.report(
+            "UF3019",
+            ref.span,
+            `\`${shared.name}\` ${shared.nondeterministic}, and ${where} ${use}: ${where === "a template expression" ? "the server's render and the browser's" : "the server's setup and the browser's"} would differ.`,
+            {
+              help: "Pass the value in as a prop, or set it from client code (`onMounted`, a handler).",
+            },
+          );
+          continue;
+        }
+        if (ref.kind === "Binding" && shared?.clientOnly) {
+          this.#reporter.report(
+            "UF2014",
+            ref.span,
+            `${where === "a template expression" ? "A template expression" : where === "a getter" ? "A getter" : "An initial value"} ${ref.kind === "Binding" && ref.call ? "calls" : "reads, and may call,"} \`${shared.name}\`, and it ${shared.clientOnly}: ${where === "a template expression" ? "rendering" : "the setup's pure code"} must not read what only client code may, and a framework runs it when it decides to.`,
+            {
+              help: "Call it from client code (a handler, a watcher's callback, a lifecycle hook), or compute the value without it.",
+            },
+          );
+          continue;
+        }
         if (ref.kind !== "Binding" || !ref.call || this.#kind(ref.binding) !== "localFn") continue;
         const summary = this.#summaries.get(ref.binding);
         if (!summary) continue;
@@ -256,7 +302,7 @@ class Rules {
           this.#reporter.report(
             "UF2014",
             ref.span,
-            `A getter calls \`${name}\`, which reads \`${this.#name(read)}\`: a getter calls only functions that read nothing but constants that read nothing themselves, which Qwik hoists with them out of the component, where its getter's closure can reach them.`,
+            `A getter calls \`${name}\`, which reads \`${this.#name(read)}\`: a getter calls only functions that read nothing but constants that read nothing themselves and the module's constants and imports, which Qwik hoists with them out of the component, where its getter's closure can reach them.`,
             {
               help: `Pass what \`${name}\` reads as its arguments (\`${name}(${this.#name(read)}${this.#kind(read) === "state" || this.#kind(read) === "derived" || this.#kind(read) === "model" ? ".value" : ""})\`), or compute it in the getter.`,
             },
