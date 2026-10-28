@@ -1,12 +1,12 @@
 ---
-export type StatusProps = Pick<SubscriptionLike, "closed"> & { label: string };
+type StatusProps = TimeInterval<string> & Labelled;
 
 interface Props extends StatusProps {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { closed, label, class: className, style } = Astro.props;
+const { value, interval, label, class: className, style } = Astro.props;
 
 /** The scope attributes of the styled parents that render this component, for its root. */
 function scopeAttributes(props: object): Record<string, ""> {
@@ -20,4 +20,4 @@ function scopeAttributes(props: object): Record<string, ""> {
   class:list={[className]}
   style={style}
   {...scopeAttributes(Astro.props)}
->{label}: {closed ? "closed" : "open"}</p>
+>{label}: {value} after {interval} ms</p>

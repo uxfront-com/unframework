@@ -137,15 +137,16 @@ const RELATIVE_OR_ABSOLUTE = /^(?:[./\\]|[A-Za-z]:)/;
 export const COMPONENT_SPECIFIER: RegExp = /\.uf\.tsx$/;
 
 /**
- * The specifiers of the `.uf.tsx` modules a parsed module imports as values, in source order,
- * each once: what `compile()` asks its resolver for before the module is analysed.
+ * The specifiers of the `.uf.tsx` modules a parsed module imports, values or types, in source
+ * order, each once: what `compile()` asks its resolver for before the module is analysed.
  */
 export function componentImports(parsed: ParsedModule): string[] {
   const found = new Set<string>();
   for (const statement of parsed.program.body) {
+    // A type-only import too: its outputs import the types from the output of the module's main
+    // component, which only the module's API names (ADR-0067).
     if (
       statement.type === "ImportDeclaration" &&
-      statement.importKind !== "type" &&
       COMPONENT_SPECIFIER.test(statement.source.value)
     ) {
       found.add(statement.source.value);
@@ -1261,6 +1262,11 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
     context.components.set(item.local, { name: item.local.name, api: component });
   }
   if (!names.length) return;
+  // A type-only import of the module before this one recorded it without names.
+  const typesOnly = context.imports.findIndex(
+    (entry) => entry.specifier === specifier && !entry.names.length,
+  );
+  if (typesOnly !== -1) context.imports.splice(typesOnly, 1);
   context.imports.push(
     createModuleImport(specifier, api.file, api, names, {
       start: statement.start,
@@ -1498,6 +1504,7 @@ function checkImport(statement: AST.ImportDeclaration, context: ModuleContext): 
   }
   if (statement.importKind === "type") {
     typeImport(statement, statement.specifiers, context);
+    if (COMPONENT_SPECIFIER.test(specifier)) typeOnlyModule(statement, context);
     return;
   }
   reporter.unsupported(statement, "Importing modules is not supported yet.");
@@ -1574,6 +1581,24 @@ function sharedImport(statement: AST.ImportDeclaration, context: ModuleContext):
   if (!names.length) return;
   context.moduleImports.push(
     createSharedModuleImport(specifier, module.file, names, spanOf(statement)),
+  );
+}
+
+/**
+ * A `.uf.tsx` module the source imports types from alone: recorded with its API and no names, so
+ * each output imports the types from the output of its main component, which the file's name
+ * does not give (ADR-0067). An unresolved one is left to the type oracle, which reports the types
+ * it cannot read (UF6001).
+ */
+function typeOnlyModule(statement: AST.ImportDeclaration, context: ModuleContext): void {
+  const specifier = statement.source.value;
+  const api = context.resolved.get(specifier);
+  if (!api || context.imports.some((entry) => entry.specifier === specifier)) return;
+  context.imports.push(
+    createModuleImport(specifier, api.file, api, [], {
+      start: statement.start,
+      end: statement.end,
+    }),
   );
 }
 

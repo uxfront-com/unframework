@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import type { SubscriptionLike } from "rxjs";
+import type { Labelled } from "./types";
+import type { TimeInterval } from "rxjs";
 
-export type StatusProps = Pick<SubscriptionLike, "closed"> & { label: string };
+type StatusProps = TimeInterval<string> & Labelled;
 
-const { closed, label } = defineProps<{ closed: boolean; label: string }>();
+const { value, interval, label } = defineProps<{
+  value: StatusProps["value"];
+  interval: StatusProps["interval"];
+  label: StatusProps["label"];
+}>();
 </script>
 
 <template>
-  <p>{{ label }}: {{ closed ? "closed" : "open" }}</p>
+  <p>{{ label }}: {{ value }} after {{ interval }} ms</p>
 </template>

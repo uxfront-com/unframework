@@ -3,5 +3,5 @@ import Status from "../../../../../integration/cases/types/package-types/__outpu
 </script>
 
 <template>
-  <Status label="Feed" :closed="false" />
+  <Status label="Feed" value="tick" :interval="250" />
 </template>

@@ -306,18 +306,25 @@ function genericAttribute(component: UfComponent): string {
 /**
  * The type `defineProps` takes (ADR-0067): the source's annotation, which compiler-sfc resolves
  * through the output tree, its relative modules, `extends` chains, intersections and the five
- * utility types among them. A member a package declares is the one exception: compiler-sfc
- * resolves a package only through TypeScript's classic API, which TypeScript 7 has not, so the
- * props are printed as a type literal of their members' types, as their files write them.
+ * utility types among them. A member a package declares is the exception: compiler-sfc resolves
+ * a package only through TypeScript's classic API, which TypeScript 7 has not. So the props are
+ * printed as a type literal of their keys, which is all compiler-sfc needs: a member the
+ * component's module writes keeps its text, and a member another file declares is read off the
+ * annotation, `(TimeInterval<string>)["value"]`, since its own text is in that file's names. The
+ * annotation's names are the ones the module imports, and a runtime type compiler-sfc cannot
+ * infer is `null`, which casts nothing, as on every other target (ADR-0034).
  */
 function propsType(component: UfComponent, parameter: PropsParameter): string {
   if (!component.props.some((prop) => prop.declaredBy?.file.startsWith("pkg:"))) {
     return parameter.type.code;
   }
-  const members = component.props.map(
-    (prop) =>
-      `${/^[A-Za-z_$][\w$]*$/.test(prop.name) ? prop.name : JSON.stringify(prop.name)}${prop.optional ? "?" : ""}: ${prop.type.code}`,
-  );
+  const members = component.props.map((prop) => {
+    const key = /^[A-Za-z_$][\w$]*$/.test(prop.name) ? prop.name : JSON.stringify(prop.name);
+    const type = prop.declaredBy
+      ? `(${parameter.type.code})[${JSON.stringify(prop.name)}]`
+      : prop.type.code;
+    return `${key}${prop.optional ? "?" : ""}: ${type}`;
+  });
   return `{ ${members.join("; ")} }`;
 }
 

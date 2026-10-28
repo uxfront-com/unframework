@@ -6,6 +6,7 @@ import {
   createElement,
   createExport,
   createFor,
+  createModuleImport,
   createInterpolation,
   createModule,
   createProp,
@@ -16,7 +17,7 @@ import {
   createTypeText,
   span,
 } from "@unframework/ir";
-import type { ElementNode } from "@unframework/ir";
+import type { ComponentApi, ElementNode, ModuleApi } from "@unframework/ir";
 import { transformWithOxc } from "vite";
 import { describe, expect, it } from "vitest";
 
@@ -392,6 +393,25 @@ describe("type declarations", () => {
 });
 
 describe("type imports and exports (ADR-0067, ADR-0068)", () => {
+  /** A `.uf.tsx` module's API, as the resolver gives it: its main component alone. */
+  const moduleApi = (file: string, name: string): ModuleApi => ({
+    file,
+    components: [
+      {
+        name,
+        export: "default",
+        props: [],
+        events: [],
+        models: [],
+        slots: [],
+        exposes: [],
+        inheritAttrs: true,
+        root: "element",
+      } satisfies ComponentApi,
+    ],
+    keys: [],
+  });
+
   /** A module whose main component, Badge, reads `Tone` and not `Hint`, which a member another file declares names. */
   function badgeModule() {
     const props = [
@@ -428,6 +448,16 @@ describe("type imports and exports (ADR-0067, ADR-0068)", () => {
         span: at,
       },
     ];
+    // Imported for its types alone: the analyser records its API, without names.
+    module.imports = [
+      createModuleImport(
+        "./Field.uf.tsx",
+        "Field.uf.tsx",
+        moduleApi("Field.uf.tsx", "Field"),
+        [],
+        at,
+      ),
+    ];
     module.typeExports = [
       { kind: "Declaration", name: "Sizes", code: "type Sizes = SizeName[];", span: span(40, 64) },
       {
@@ -457,17 +487,46 @@ describe("type imports and exports (ADR-0067, ADR-0068)", () => {
   it("writes the module's type exports in its main component's output, from each target's file", () => {
     const { module, badge } = badgeModule();
     expect(typeExportsCode(badge, module, (name) => `${name}.vue`)).toEqual([
-      { code: "export type Sizes = SizeName[];", span: span(40, 64) },
       { code: 'export type { FieldProps as Props } from "./Field.vue";', span: span(10, 30) },
+      { code: "export type Sizes = SizeName[];", span: span(40, 64) },
     ]);
+  });
+
+  it("re-exports from the main output an exported type only another component's output declares", () => {
+    const tone = createTypeDeclaration("Tone", true, 'type Tone = "info";', span(0, 19));
+    const badge = createComponent("Badge", createElement("p", [], [], at), at, [], undefined, [
+      "Tone",
+    ]);
+    const pair = createComponent("Pair", createElement("p", [], [], at), at);
+    const module = createModule(
+      "Pair.uf.tsx",
+      [badge, pair],
+      [createExport("default", "Pair", at)],
+      [tone],
+    );
+    expect(typeExportsCode(pair, module, (name) => `${name}.vue`)).toEqual([
+      { code: 'export type { Tone } from "./Badge.vue";', span: span(0, 19) },
+    ]);
+    // Badge declares it already; it writes no export of the module's.
+    expect(typeExportsCode(badge, module, (name) => `${name}.vue`)).toEqual([]);
   });
 
   it("imports a .uf.tsx module's types from its main component's output, and keeps any other specifier", () => {
     const module = createModule("Form.uf.tsx");
+    module.imports = [
+      createModuleImport(
+        "../shared/text-field.uf.tsx",
+        "../shared/text-field.uf.tsx",
+        moduleApi("../shared/text-field.uf.tsx", "TextField"),
+        [],
+        at,
+      ),
+    ];
     expect(typeSpecifier("./types", module, (name) => `${name}.vue`)).toBe("./types");
     expect(typeSpecifier("rxjs", module, (name) => `${name}.vue`)).toBe("rxjs");
-    expect(typeSpecifier("../shared/Field.uf.tsx", module, (name) => name.toLowerCase())).toBe(
-      "../shared/field",
+    // The main component's file, never the module's own name.
+    expect(typeSpecifier("../shared/text-field.uf.tsx", module, (name) => `${name}.vue`)).toBe(
+      "../shared/TextField.vue",
     );
   });
 });

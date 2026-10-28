@@ -1,5 +1,6 @@
 // The Angular quarantine (ADR-0057): Angular's known failures, each with its reason and issue. Only
 // entries whose target is "angular" belong here, so each target lane edits its own file.
+import { BROWSER_LAYERS } from "@unframework/testing/node";
 import type { LayerName, QuarantineEntry } from "@unframework/testing/node";
 
 // M5 (UXF-443)
@@ -7,7 +8,7 @@ import type { LayerName, QuarantineEntry } from "@unframework/testing/node";
  * The browser layers of a case whose L3 entry stands: its spec runs against a stand-in, which
  * fails each of them with that cause (`harness/no-output.ts`, ADR-0068).
  */
-const STAND_IN: readonly LayerName[] = ["L7", "L8", "L9", "L10", "L11", "L13"];
+const STAND_IN: readonly LayerName[] = BROWSER_LAYERS;
 
 /**
  * The types and generics cells that fail until Angular's types lane (layer 23 of M5) emits

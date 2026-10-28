@@ -381,14 +381,17 @@ export default function Picker<T extends "a" | "b" = "a">({ value }: { value: T 
     expect(picker).toContain(`<script setup lang="ts" generic='T extends "a" | "b" = "a"'>`);
   });
 
-  it("imports the types it reads by name, and prints the members a package declares", async () => {
+  it("reads the members other files declare off the annotation, and imports what it names", async () => {
+    // As the analyser lowers `Pick<SubscriptionLike, "closed"> & FieldOptions & { label: string }`:
+    // `closed` is declared by rxjs, and `tone` by `./types` in its own names (`tone?: Tone`).
     const module = lower(`
-export default function Status({ closed, label }: { closed: boolean; label: string }) {
-  return <p>{label}: {closed ? "closed" : "open"}</p>;
-}`);
-    // As the analyser lowers `Pick<SubscriptionLike, "closed"> & { label: string }` with
-    // `SubscriptionLike` imported from rxjs: `closed` is declared by the package.
+export default function Status({ closed, tone, label }: { closed: boolean; tone?: Tone; label: string }) {
+  return <p>{label}: {closed ? "closed" : "open"} {tone}</p>;
+}
+type Tone = string;`);
     const span = { start: 0, end: 0 };
+    module.types = [];
+    module.components[0]!.types = [];
     module.typeImports = [
       {
         specifier: "rxjs",
@@ -398,23 +401,35 @@ export default function Status({ closed, label }: { closed: boolean; label: stri
         ],
         span,
       },
+      {
+        specifier: "./types",
+        names: [{ imported: "FieldOptions", local: "FieldOptions", span }],
+        span,
+      },
     ];
     const component = module.components[0]!;
-    component.propsParameter!.type.code = 'Pick<SubscriptionLike, "closed"> & { label: string }';
-    component.props[0]!.declaredBy = {
+    component.propsParameter!.type.code =
+      'Pick<SubscriptionLike, "closed"> & FieldOptions & { label: string }';
+    const [closed, tone] = component.props;
+    closed!.declaredBy = {
       file: "pkg:rxjs/dist/types/internal/types.d.ts",
       declaration: "SubscriptionLike",
       span,
     };
+    tone!.declaredBy = { file: "types.ts", declaration: "FieldOptions", span };
     const [file] = await emitFormatted(module);
-    expect(file!.contents).toContain(
-      [
-        '<script setup lang="ts">',
-        'import type { SubscriptionLike } from "rxjs";',
-        "",
-        "const { closed, label } = defineProps<{ closed: boolean; label: string }>();",
-      ].join("\n"),
+    const script = file!.contents.slice(0, file!.contents.indexOf("</script>"));
+    // The annotation's names, and only those: `Tone` is the file's, and `Observer` unread.
+    expect(script).toContain('import type { FieldOptions } from "./types";');
+    expect(script).toContain('import type { SubscriptionLike } from "rxjs";');
+    expect(script).not.toMatch(/\bObserver\b|\bTone\b/);
+    expect(script).toContain(
+      'closed: (Pick<SubscriptionLike, "closed"> & FieldOptions & { label: string })["closed"];',
     );
+    expect(script).toContain(
+      'tone?: (Pick<SubscriptionLike, "closed"> & FieldOptions & { label: string })["tone"];',
+    );
+    expect(script).toContain("label: string;");
   });
 });
 

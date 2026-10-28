@@ -1,12 +1,12 @@
 import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
-export type StatusProps = Pick<SubscriptionLike, "closed"> & { label: string };
+type StatusProps = TimeInterval<string> & Labelled;
 
 export default component$<StatusProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ closed, label, class: className, style, ...attributes }) => {
+  ({ value, interval, label, class: className, style, ...attributes }) => {
     return (
       <p {...scopeAttributes(attributes)} class={className} style={style}>
-        {label}: {closed ? "closed" : "open"}
+        {label}: {value} after {interval} ms
       </p>
     );
   },

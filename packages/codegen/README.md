@@ -226,12 +226,14 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   the source does. `addTypeImports` adds the names of the module's `import type` declarations that
   what a component's output prints reads (`liveTypeNames`), by the source's own names, from
   `typeSpecifier`: a `.ts` module's or a package's as written, a `.uf.tsx` module's from the
-  output of its main component (`./Field.vue`, `./Field`); `typeExportsCode` writes the module's
-  type exports, an exported type no component reaches and a re-export, in the output of its main
-  component, each with its span so a target places it in source order (ADR-0067, ADR-0068). A
-  prop another file declares (`declaredBy`) is written in that file's names, so neither these nor
-  `liveTypes` and the kinds look its type up in the component's own module. `ImportSet` sorts imports and renames one that clashes with a name in its
-  `NameScope`: a target reserves the source's names (`sourceNames`: the component, its types,
+  output of its main component, which the module's import records with its API, a type-only one
+  included (`./TextField.vue` for `./text-field.uf.tsx`). `typeExportsCode` writes the module's
+  type exports in the output of its main component: an exported type no component reaches, a
+  re-export, and a re-export of an exported type only another component's output declares, each
+  with its span, so a target places it in source order (ADR-0067, ADR-0068). A prop another file
+  declares (`declaredBy`) is written in that file's names, so neither these nor `liveTypes` and
+  the kinds look its type up in the component's own module. `ImportSet` sorts imports and renames
+  one that clashes with a name in its `NameScope`: a target reserves the source's names (`sourceNames`: the component, its types,
   bindings, every variable its expressions and setup code read or declare (`codeNames`), its
   functions' parameters, and the types its setup's annotations name (`typeNames`)) and claims its
   own (`props`, `cx`, `Show`, `setCount`) from the same scope, so nothing it adds captures or

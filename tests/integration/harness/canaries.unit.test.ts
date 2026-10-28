@@ -881,7 +881,7 @@ describe("canaries", () => {
   it("widens an exported interface, a type alias and a type re-export, keeping type parameters", () => {
     const widened = anyExportedTypes(
       [
-        'import type { Item } from "./types";',
+        'import type { Item, Tone } from "./types";',
         'export type { Tone, Size as ButtonSize } from "./types";',
         "export interface ListProps<T extends { id: string } = Item> extends Base<T> {",
         "  items: T[];",

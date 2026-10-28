@@ -1,11 +1,11 @@
 import type { JSX } from "solid-js";
 
-export type StatusProps = Pick<SubscriptionLike, "closed"> & { label: string };
+type StatusProps = TimeInterval<string> & Labelled;
 
 export default function Status(props: StatusProps & { class?: string; style?: JSX.CSSProperties }) {
   return (
     <p class={props.class} style={props.style} {...scopeAttributes(props)}>
-      {props.label}: {props.closed ? "closed" : "open"}
+      {props.label}: {props.value} after {props.interval} ms
     </p>
   );
 }

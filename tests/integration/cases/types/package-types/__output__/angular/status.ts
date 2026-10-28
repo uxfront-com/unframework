@@ -8,8 +8,6 @@ import {
   input,
 } from "@angular/core";
 
-export type StatusProps = Pick<SubscriptionLike, "closed"> & { label: string };
-
 /** The scope attributes taken off each host, for the roots its component renders later. */
 const scopes = new WeakMap<Element, string[]>();
 
@@ -41,18 +39,20 @@ export class ScopeAttributes implements OnInit {
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
-    @let closed = this.closed();
+    @let value = this.value();
+    @let interval = this.interval();
     @let label = this.label();
     <p
       [class]="this.class()"
       [style]="this.style()"
       [ufScope]="this.host"
-    >{{ label }}: {{ closed ? "closed" : "open" }}</p>
+    >{{ label }}: {{ value }} after {{ interval }} ms</p>
   `,
 })
 export default class Status {
-  readonly closed = input.required<boolean>();
-  readonly label = input.required<string>();
+  readonly value = input.required<T>();
+  readonly interval = input.required<number>();
+  readonly label = input.required<Label>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;

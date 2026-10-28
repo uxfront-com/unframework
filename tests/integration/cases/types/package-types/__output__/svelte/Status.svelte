@@ -3,11 +3,11 @@
 <script lang="ts">
   import type { ClassValue } from "svelte/elements";
 
-  export type StatusProps = Pick<SubscriptionLike, "closed"> & { label: string };
+  type StatusProps = TimeInterval<string> & Labelled;
 
   type Props = StatusProps & { class?: ClassValue; style?: string };
 
-  let { closed, label, class: className, style, ...attributes }: Props = $props();
+  let { value, interval, label, class: className, style, ...attributes }: Props = $props();
 
   /** The scope attributes of the styled parents that render this component, for its root. */
   function scopeAttributes(props: object): Record<string, ""> {
@@ -21,4 +21,4 @@
   class={className}
   {style}
   {...scopeAttributes(attributes)}
->{label}: {closed ? "closed" : "open"}</p>
+>{label}: {value} after {interval} ms</p>

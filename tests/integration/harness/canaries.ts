@@ -53,7 +53,9 @@ import type { LayerName, ProjectKind } from "@unframework/testing/node";
 import { errorState, expectedDiagnostics, specTests } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
 import { consumerFixtures } from "./consumers.ts";
+import { standInCases } from "./no-output.ts";
 import { ROOT } from "./paths.ts";
+import { QUARANTINE } from "./quarantine.ts";
 import { REFERENCE } from "./targets.ts";
 
 /** What a sub-check's failure says: a pattern, or one built for the target of the cell. */
@@ -80,6 +82,12 @@ export interface CanaryCase {
   rerenders(target: string): boolean;
   /** Whether a source's committed IR has an element listener (an `Event` attribute) to unwire. */
   listens: boolean;
+  /**
+   * Whether the target's browser projects serve the case's spec a stand-in, since the target
+   * cannot compile the case yet (ADR-0068): the corrupted component never loads there, so its
+   * spec's import proves nothing, as a quarantined cell proves nothing. Absent: never.
+   */
+  standIn?(target: string): boolean;
   /** Whether a source's committed IR imports a stylesheet, so its compile emits a scoped sheet. */
   styled: boolean;
   /**
@@ -870,6 +878,7 @@ export function canaryCase(info: CaseInfo): CanaryCase {
     listens: irs.some(
       (ir) => existsSync(ir) && listens(JSON.parse(readFileSync(ir, "utf8")) as UfModule),
     ),
+    standIn: (target) => Object.hasOwn(standInCases([info], target, QUARANTINE), info.id),
     styled: irs.some(
       (ir) =>
         existsSync(ir) &&
@@ -1325,6 +1334,7 @@ function widenProps(file: OutputFile, target: string): string {
  * output tree beside the outputs, where no output hook reaches (ADR-0070).
  */
 export function anyExportedTypes(contents: string): string {
+  const reExported = new Set<string>();
   contents = contents.replace(
     /\bexport\s+type\s*\{([^}]*)\}\s*from\s*(["'])[^"']*\2;?/g,
     (_, names: string) =>
@@ -1337,8 +1347,24 @@ export function anyExportedTypes(contents: string): string {
             .at(-1)!,
         )
         .filter(Boolean)
-        .map((name) => `export type ${name} = any;`)
+        .map((name) => {
+          reExported.add(name);
+          return `export type ${name} = any;`;
+        })
         .join("\n"),
+  );
+  // A type import of a name the module re-exported now declares it twice (TS2440): the
+  // declaration replaces the import, and an import left with no name goes.
+  contents = contents.replace(
+    /^(\s*)import\s+type\s*\{([^}]*)\}\s*from\s*(["'][^"']*["']);?[ \t]*\n?/gm,
+    (whole, indent: string, names: string, from: string) => {
+      const kept = names
+        .split(",")
+        .map((name) => name.trim())
+        .filter((name) => name && !reExported.has(name.split(/\s+as\s+/).at(-1)!));
+      if (kept.length === names.split(",").filter((name) => name.trim()).length) return whole;
+      return kept.length ? `${indent}import type { ${kept.join(", ")} } from ${from};\n` : "";
+    },
   );
   let result = "";
   let from = 0;

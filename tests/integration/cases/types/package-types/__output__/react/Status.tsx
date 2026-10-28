@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-export type StatusProps = Pick<SubscriptionLike, "closed"> & { label: string };
+type StatusProps = TimeInterval<string> & Labelled;
 
 export interface StatusAttributes {
   className?: string;
@@ -8,7 +8,8 @@ export interface StatusAttributes {
 }
 
 export default function Status({
-  closed,
+  value,
+  interval,
   label,
   className,
   style,
@@ -16,7 +17,7 @@ export default function Status({
 }: StatusProps & StatusAttributes) {
   return (
     <p className={className} style={style} {...scopeAttributes(attributes)}>
-      {label}: {closed ? "closed" : "open"}
+      {label}: {value} after {interval} ms
     </p>
   );
 }

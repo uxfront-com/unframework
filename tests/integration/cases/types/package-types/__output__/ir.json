@@ -5,48 +5,80 @@
     {
       "name": "Status",
       "span": {
-        "start": 202,
-        "end": 345
+        "start": 270,
+        "end": 421
       },
       "props": [
         {
-          "name": "closed",
+          "name": "value",
           "optional": false,
           "type": {
-            "code": "boolean",
+            "code": "T",
             "span": {
-              "start": 252,
-              "end": 263
+              "start": 329,
+              "end": 340
             }
           },
-          "binding": "closed@235",
+          "binding": "value@303",
           "declaredBy": {
             "file": "pkg:rxjs/dist/types/internal/types.d.ts",
-            "declaration": "SubscriptionLike",
+            "declaration": "TimeInterval",
             "span": {
-              "start": 2216,
-              "end": 2241
+              "start": 1724,
+              "end": 1733
             }
           },
           "span": {
-            "start": 252,
-            "end": 263
+            "start": 329,
+            "end": 340
+          }
+        },
+        {
+          "name": "interval",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 329,
+              "end": 340
+            }
+          },
+          "binding": "interval@310",
+          "declaredBy": {
+            "file": "pkg:rxjs/dist/types/internal/types.d.ts",
+            "declaration": "TimeInterval",
+            "span": {
+              "start": 1958,
+              "end": 1975
+            }
+          },
+          "span": {
+            "start": 329,
+            "end": 340
           }
         },
         {
           "name": "label",
           "optional": false,
           "type": {
-            "code": "string",
+            "code": "Label",
             "span": {
-              "start": 191,
-              "end": 197
+              "start": 329,
+              "end": 340
             }
           },
-          "binding": "label@243",
+          "binding": "label@320",
+          "declaredBy": {
+            "file": "types/package-types/types.ts",
+            "declaration": "Labelled",
+            "span": {
+              "start": 169,
+              "end": 182
+            }
+          },
           "span": {
-            "start": 184,
-            "end": 197
+            "start": 329,
+            "end": 340
           }
         }
       ],
@@ -55,13 +87,13 @@
         "type": {
           "code": "StatusProps",
           "span": {
-            "start": 252,
-            "end": 263
+            "start": 329,
+            "end": 340
           }
         },
         "span": {
-          "start": 233,
-          "end": 263
+          "start": 301,
+          "end": 340
         }
       },
       "types": [
@@ -69,21 +101,30 @@
       ],
       "bindings": [
         {
-          "id": "closed@235",
-          "name": "closed",
+          "id": "value@303",
+          "name": "value",
           "kind": "prop",
           "span": {
-            "start": 235,
-            "end": 241
+            "start": 303,
+            "end": 308
           }
         },
         {
-          "id": "label@243",
+          "id": "interval@310",
+          "name": "interval",
+          "kind": "prop",
+          "span": {
+            "start": 310,
+            "end": 318
+          }
+        },
+        {
+          "id": "label@320",
           "name": "label",
           "kind": "prop",
           "span": {
-            "start": 243,
-            "end": 248
+            "start": 320,
+            "end": 325
           }
         }
       ],
@@ -98,61 +139,101 @@
             "value": {
               "code": "label",
               "span": {
-                "start": 293,
-                "end": 298
+                "start": 370,
+                "end": 375
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "label@243",
+                  "binding": "label@320",
                   "span": {
-                    "start": 293,
-                    "end": 298
+                    "start": 370,
+                    "end": 375
                   }
                 }
               ]
             },
             "span": {
-              "start": 292,
-              "end": 299
+              "start": 369,
+              "end": 376
             }
           },
           {
             "kind": "Text",
             "value": ": ",
             "span": {
-              "start": 299,
-              "end": 301
+              "start": 376,
+              "end": 378
             }
           },
           {
             "kind": "Interpolation",
             "value": {
-              "code": "closed ? \"closed\" : \"open\"",
+              "code": "value",
               "span": {
-                "start": 302,
-                "end": 328
+                "start": 379,
+                "end": 384
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "closed@235",
+                  "binding": "value@303",
                   "span": {
-                    "start": 302,
-                    "end": 308
+                    "start": 379,
+                    "end": 384
                   }
                 }
               ]
             },
             "span": {
-              "start": 301,
-              "end": 329
+              "start": 378,
+              "end": 385
+            }
+          },
+          {
+            "kind": "Text",
+            "value": " after ",
+            "span": {
+              "start": 385,
+              "end": 392
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "interval",
+              "span": {
+                "start": 393,
+                "end": 401
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "interval@310",
+                  "span": {
+                    "start": 393,
+                    "end": 401
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 392,
+              "end": 402
+            }
+          },
+          {
+            "kind": "Text",
+            "value": " ms",
+            "span": {
+              "start": 402,
+              "end": 410
             }
           }
         ],
         "span": {
-          "start": 282,
-          "end": 338
+          "start": 359,
+          "end": 414
         }
       }
     }
@@ -163,19 +244,19 @@
       "name": "default",
       "local": "Status",
       "span": {
-        "start": 202,
-        "end": 345
+        "start": 270,
+        "end": 421
       }
     }
   ],
   "types": [
     {
       "name": "StatusProps",
-      "exported": true,
-      "code": "type StatusProps = Pick<SubscriptionLike, \"closed\"> & { label: string };",
+      "exported": false,
+      "code": "type StatusProps = TimeInterval<string> & Labelled;",
       "span": {
-        "start": 128,
-        "end": 200
+        "start": 217,
+        "end": 268
       }
     }
   ],
@@ -184,17 +265,34 @@
       "specifier": "rxjs",
       "names": [
         {
-          "imported": "SubscriptionLike",
-          "local": "SubscriptionLike",
+          "imported": "TimeInterval",
+          "local": "TimeInterval",
           "span": {
             "start": 14,
-            "end": 30
+            "end": 26
           }
         }
       ],
       "span": {
         "start": 0,
-        "end": 45
+        "end": 41
+      }
+    },
+    {
+      "specifier": "./types",
+      "names": [
+        {
+          "imported": "Labelled",
+          "local": "Labelled",
+          "span": {
+            "start": 57,
+            "end": 65
+          }
+        }
+      ],
+      "span": {
+        "start": 43,
+        "end": 83
       }
     }
   ]

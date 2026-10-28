@@ -55,11 +55,11 @@ describeTargets("state/counter", () => {
   capability. Every test of a case the target has no output for (`test.provide.ufNoOutput`, by
   case id, with the errors it expects for the target; the harness gives its spec a stand-in for
   the component) is skipped there the same way, whatever it requires, with `no output: <the
-errors>` on every layer, and the summary excuses it on that target alone. Every test of a case
-  the target cannot compile yet (`test.provide.ufStandIn`, by case id, with the cause; the
-  harness gives its spec a stand-in too, ADR-0068) runs, and the setup records L7, L8, L9, L10,
-  L11 and L13 as failed with the cause first (`recordStandIn`), and `standIn` on the test's
-  record, so the summary excuses its scenarios on that target alone while its cells still fail.
+errors>` on every layer, and the summary excuses it on that target alone. A case the target
+  cannot compile yet gets a stand-in too (`test.provide.ufStandIn`, by case id, with the cause,
+  ADR-0068). Its tests are not skipped: the setup first records L7, L8, L9, L10, L11 and L13 as
+  failed with the cause (`recordStandIn`), and `standIn` on the test's record. The summary
+  excuses its scenarios on that target alone, and its cells still fail.
 - **`view.user`** acts as a person does, through Playwright's real input (ADR-0050). An action
   is the inputs a person gives apart in time, each dispatched alone (the `ufInput` command):
   `click(target, { position? })` moves the mouse onto the element (Playwright's hover, which
