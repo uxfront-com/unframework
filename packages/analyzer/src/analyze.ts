@@ -14,6 +14,7 @@ import {
   createTypeExportName,
   createTypeImport,
   createTypeReExport,
+  createTypeParameter,
   createTypeText,
   isExportName,
   walk,
@@ -31,6 +32,7 @@ import type {
   TypeDeclaration,
   TypeExport,
   TypeImport,
+  TypeParameter,
   UfComponent,
   UfExport,
   UfModule,
@@ -61,7 +63,7 @@ import {
   reportUnread,
 } from "./pass-through.ts";
 import type { PassThrough } from "./pass-through.ts";
-import { analyzeProps, shapeReading } from "./props.ts";
+import { analyzeProps, checkTypeParameters, shapeReading } from "./props.ts";
 import type { ComponentFunction, ComponentInfo, RenderContext, SetupBinding } from "./render.ts";
 import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
@@ -1488,8 +1490,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     );
   }
   if (fn.async) reporter.unsupported(name, "Async components are not supported yet.");
-  if (fn.typeParameters)
-    reporter.unsupported(fn.typeParameters, "Generic components are not supported yet.");
+  checkTypeParameters(fn, types, parsed, reporter);
   const props = analyzeProps(fn, types, shapes, parsed, reporter);
 
   // A stray `;` does nothing, so `return <p />;;` still ends with its return.
@@ -1621,10 +1622,28 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     setup.items,
     setup.emits,
     {
+      typeParameters: typeParametersOf(fn, parsed.source),
       ...(setup.slots ? { slots: setup.slots } : {}),
       ...(setup.exposes ? { exposes: setup.exposes } : {}),
       ...(setup.inheritAttrs ? {} : { inheritAttrs: false as const }),
     },
+  );
+}
+
+/**
+ * A generic component's type parameters (ADR-0068), `List<T extends Item = Item>`: each target
+ * writes its own generic form from them, and the consumer's props infer them.
+ */
+function typeParametersOf(fn: ComponentFunction, source: string): TypeParameter[] {
+  const text = (type: AST.TSType | null) =>
+    type ? createTypeText(source.slice(type.start, type.end), spanOf(type)) : undefined;
+  return (fn.typeParameters?.params ?? []).map((parameter) =>
+    createTypeParameter(
+      parameter.name.name,
+      spanOf(parameter),
+      text(parameter.constraint),
+      text(parameter.default),
+    ),
   );
 }
 

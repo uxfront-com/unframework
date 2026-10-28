@@ -1,0 +1,28 @@
+error[UF6006]: A tag cannot take type arguments: several targets' templates cannot write them, and a generic component infers them from the props its consumer passes.
+  --> diagnostics/generic-instantiation/Fruits.uf.tsx:21:12
+   |
+21 |       <Tree<Fruit> items={items} />
+   |            ^^^^^^^
+   |
+   = help: Remove the type arguments, and pass props whose types give them.
+   = fix (likely): Remove the type arguments
+   = see: https://unframework.dev/diagnostics/UF6006
+
+error[UF6006]: `Tree` is generic, and cannot be a candidate of `<component is>`: no one type argument types the props of every candidate.
+  --> diagnostics/generic-instantiation/Fruits.uf.tsx:22:40
+   |
+22 |       <component is={compact ? Count : Tree} items={items} />
+   |                                        ^^^^
+   |
+   = help: Render `Tree` by its own tag, which infers its type arguments from its props.
+   = see: https://unframework.dev/diagnostics/UF6006
+
+error[UF6006]: A tag cannot take type arguments: several targets' templates cannot write them, and a generic component infers them from the props its consumer passes.
+  --> diagnostics/generic-instantiation/Tree.uf.tsx:15:16
+   |
+15 |           <Tree<T> items={item.children} />
+   |                ^^^
+   |
+   = help: Remove the type arguments, and pass props whose types give them.
+   = fix (likely): Remove the type arguments
+   = see: https://unframework.dev/diagnostics/UF6006

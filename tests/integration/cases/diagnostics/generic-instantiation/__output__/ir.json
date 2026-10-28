@@ -1,0 +1,166 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/generic-instantiation/Fruits.uf.tsx",
+  "components": [
+    {
+      "name": "Count",
+      "span": {
+        "start": 508,
+        "end": 596
+      },
+      "props": [
+        {
+          "name": "items",
+          "optional": false,
+          "type": {
+            "code": "Fruit[]",
+            "span": {
+              "start": 543,
+              "end": 550
+            }
+          },
+          "binding": "items@525",
+          "span": {
+            "start": 536,
+            "end": 550
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ items: Fruit[] }",
+          "span": {
+            "start": 534,
+            "end": 552
+          }
+        },
+        "span": {
+          "start": 523,
+          "end": 552
+        }
+      },
+      "types": [
+        "Fruit"
+      ],
+      "bindings": [
+        {
+          "id": "items@525",
+          "name": "items",
+          "kind": "prop",
+          "span": {
+            "start": 525,
+            "end": 530
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "items.length",
+              "span": {
+                "start": 569,
+                "end": 581
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "items@525",
+                  "span": {
+                    "start": 569,
+                    "end": 574
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 568,
+              "end": 582
+            }
+          },
+          {
+            "kind": "Text",
+            "value": " fruits",
+            "span": {
+              "start": 582,
+              "end": 589
+            }
+          }
+        ],
+        "span": {
+          "start": 565,
+          "end": 593
+        }
+      }
+    }
+  ],
+  "exports": [],
+  "types": [
+    {
+      "name": "Fruit",
+      "exported": false,
+      "code": "interface Fruit {\n  id: string;\n  name: string;\n  children: Fruit[];\n}",
+      "span": {
+        "start": 436,
+        "end": 506
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./Tree.uf.tsx",
+      "file": "Tree.uf.tsx",
+      "api": {
+        "file": "Tree.uf.tsx",
+        "components": [
+          {
+            "name": "Tree",
+            "export": "default",
+            "props": [
+              {
+                "name": "items",
+                "optional": false,
+                "type": "T[]",
+                "references": [
+                  "T"
+                ]
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "typeParameters": [
+              "T"
+            ],
+            "rootTag": "ul"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Tree",
+          "span": {
+            "start": 408,
+            "end": 412
+          }
+        }
+      ],
+      "span": {
+        "start": 401,
+        "end": 434
+      }
+    }
+  ]
+}
