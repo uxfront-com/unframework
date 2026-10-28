@@ -210,6 +210,50 @@ describe("groupOrder", () => {
     expect(groupOrder("browser", "astro", live, "vue", ["react"])).toBe(2);
     expect(groupOrder("browser", "astro", check, "vue", ["react"])).toBe(0);
   });
+
+  const targets = ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"];
+
+  it("runs each browser project alone outside Chromium, in the order of the targets", () => {
+    for (const browser of ["firefox", "webkit"] as const) {
+      const engine: Pick<HarnessMode, "update" | "pixels" | "browser"> = {
+        ...live,
+        browser,
+      };
+      const order = (target: string) =>
+        groupOrder("browser", target, engine, "vue", ["react"], targets);
+      expect(order("vue")).toBe(1);
+      expect(order("react")).toBe(2);
+      expect(["svelte", "solid", "angular", "qwik", "astro"].map(order)).toEqual([3, 4, 5, 6, 7]);
+      expect(groupOrder("browser", "astro", engine, "vue", [], targets)).toBe(7);
+      expect(groupOrder("browser", "react", engine, "vue", [], targets)).toBe(2);
+      expect(groupOrder("browser", "svelte", engine, "vue", [], targets)).toBe(3);
+      // The node projects keep their groups, so they never share one with a browser project.
+      expect(groupOrder("ssr", "react", engine, "vue", ["react"], targets)).toBe(0);
+      expect(groupOrder("compile", undefined, engine, "vue", ["react"], targets)).toBe(0);
+    }
+  });
+
+  it("refuses a browser project outside the run's targets in Firefox or WebKit", () => {
+    const engine = { ...live, browser: "firefox" as const };
+    expect(() => groupOrder("browser", "astro", engine, "vue", [], ["vue", "react"])).toThrow(
+      /astro is not among the run's targets/,
+    );
+  });
+
+  it("gives Chromium the same groups as no engine, in every mode", () => {
+    for (const mode of [check, live, update]) {
+      const chromium = { ...mode, browser: "chromium" as const };
+      for (const kind of ["compile", "harness", "toolchain", "ssr", "browser"] as const) {
+        for (const target of [undefined, ...targets]) {
+          for (const named of [[], ["react"]]) {
+            expect(groupOrder(kind, target, chromium, "vue", named, targets)).toBe(
+              groupOrder(kind, target, mode, "vue", named),
+            );
+          }
+        }
+      }
+    }
+  });
 });
 
 /** An L10 quarantine entry of the reference, for one pixel mode or both. */

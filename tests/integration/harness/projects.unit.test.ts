@@ -5,6 +5,7 @@ import type { UserWorkspaceConfig } from "vitest/config";
 import { caseConfigs, listCases } from "./cases.ts";
 import { noOutputCases } from "./no-output.ts";
 import {
+  fileParallelism,
   harnessProjects,
   isSelected,
   noErrorBroadcast,
@@ -42,6 +43,13 @@ describe("selectTargets", () => {
 });
 
 describe("projects", () => {
+  it("runs spec files in parallel in Chromium only (ADR-0067)", () => {
+    expect(fileParallelism({})).toBe(true);
+    expect(fileParallelism({ browser: "chromium" })).toBe(true);
+    expect(fileParallelism({ browser: "firefox" })).toBe(false);
+    expect(fileParallelism({ browser: "webkit" })).toBe(false);
+  });
+
   it("names one compile and one harness project, and three projects per target", () => {
     expect(projectNames(["react", "vue"])).toEqual([
       "compile",

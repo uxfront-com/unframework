@@ -172,14 +172,21 @@ export type ProjectKind = "compile" | "harness" | "toolchain" | "ssr" | "browser
  *   reference everywhere else, and the other followers at 3;
  * - check with live pixels: the reference browser project 0, the other browser projects 1; the
  *   browser projects of the targets some case names at 1 alone, and the others at 2;
+ * - check with live pixels in Firefox or WebKit (ADR-0067): every browser project alone, the
+ *   reference at 1, then the targets some case names, then each other target in the order of
+ *   `targets`. Five followers at once in one engine ran the nightly's WebKit job out of memory.
+ *   Each of those projects also runs one file at a time (`fileParallelism: false`), so the
+ *   reference is not at 0: Vitest moves a project at 0 that runs one file at a time after every
+ *   other group, and refuses one there beside projects with another worker count;
  * - check with baselines (CI): everything 0, in parallel.
  */
 export function groupOrder(
   kind: ProjectKind,
   target: string | undefined,
-  mode: Pick<HarnessMode, "update" | "pixels">,
+  mode: Pick<HarnessMode, "update" | "pixels" | "browser">,
   reference: string,
   caseReferences: readonly string[] = [],
+  targets: readonly string[] = [],
 ): number {
   const isReference = target === reference;
   // A group for the targets some case names runs only where a case names one.
@@ -191,6 +198,20 @@ export function groupOrder(
     return namedByCase ? 2 : 2 + named;
   }
   if (mode.pixels === "live" && kind === "browser") {
+    if (mode.browser !== undefined && mode.browser !== "chromium") {
+      const order = [
+        reference,
+        ...caseReferences,
+        ...targets.filter((name) => name !== reference && !caseReferences.includes(name)),
+      ];
+      const index = target === undefined ? -1 : order.indexOf(target);
+      if (index === -1) {
+        throw new Error(
+          `[uf] groupOrder: the browser project of ${target ?? "no target"} is not among the run's targets (${order.join(", ")}).`,
+        );
+      }
+      return 1 + index;
+    }
     return isReference ? 0 : namedByCase ? 1 : 1 + named;
   }
   return 0;

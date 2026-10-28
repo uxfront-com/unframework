@@ -16,6 +16,7 @@ import "../commands.ts";
 import { normalizeDomWithIds } from "../dom/serialize.ts";
 import { formatError } from "../errors.ts";
 import { caseOfFile } from "../harness.ts";
+import type { HarnessContext } from "../harness.ts";
 import { recordLayer } from "../layers.ts";
 import { inlineHosts } from "../normalize/rules/aria-hosts.ts";
 import { isNormalizeTarget } from "../normalize/targets.ts";
@@ -254,7 +255,13 @@ async function mountWith(
   report(instance);
 
   const locator = page.getByTestId(testId);
-  const normalizeOptions = isNormalizeTarget(target) ? { target } : {};
+  // The engine too: Firefox serialises some prefixed properties under its own alias (ADR-0067).
+  // Outside the harness (this package's own tests) nothing provides it.
+  const engine = (inject("ufHarness") as HarnessContext | undefined)?.browser;
+  const normalizeOptions = {
+    ...(isNormalizeTarget(target) ? { target } : {}),
+    ...(engine ? { engine } : {}),
+  };
   // A target the normaliser does not know (a test stub) has no framework noise to remove.
   const dom = () => normalizeDomWithIds(container, normalizeOptions);
   const html = () => dom().html;

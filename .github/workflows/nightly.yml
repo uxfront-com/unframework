@@ -21,8 +21,9 @@ jobs:
     name: "Nightly: browser (${{ matrix.browser }})"
     runs-on: ubuntu-latest
     # One job runs all seven browser projects, because live L10 needs the reference's capture in
-    # the same run. ci.yml gives Chromium ten minutes per target; these engines are slower.
-    timeout-minutes: 45
+    # the same run. ci.yml gives Chromium ten minutes per target; these engines are slower, and
+    # run one browser project and one spec file at a time (ADR-0067), so the job gets two hours.
+    timeout-minutes: 120
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
     strategy:

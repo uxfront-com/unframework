@@ -1,9 +1,12 @@
 // The rules of `normalizeHtml` in their order, over a fragment that is already parsed: the live
 // DOM path (`normalizeDom`) parses once, checks the tree against the live one, then normalises.
+import { BROWSER_ENGINES } from "../harness.ts";
+import type { BrowserEngine } from "../harness.ts";
 import { printTree } from "./print.ts";
 import { unwrapAngularHosts } from "./rules/angular-hosts.ts";
 import { removeComments } from "./rules/comments.ts";
 import { removeReactDefaultStates, removeSettledValues } from "./rules/control-values.ts";
+import { renameEngineAliases } from "./rules/engine-aliases.ts";
 import { removeFrameworkAttributes } from "./rules/framework-attributes.ts";
 import { canonicalizeGeneratedIds } from "./rules/generated-ids.ts";
 import { canonicalizeClasses, sortAttributes } from "./rules/ordering.ts";
@@ -22,12 +25,21 @@ export interface NormalizeOptions {
    * is noise, so the reference's output is never rewritten by another framework's rules.
    */
   target?: NormalizeTarget;
+  /**
+   * The engine the live DOM was read in (`UF_BROWSER`, ADR-0067). The properties it serialises
+   * under its own alias take the name Chromium writes, and nothing else changes. Without an
+   * engine, or in Chromium, no property is renamed.
+   */
+  engine?: BrowserEngine;
 }
 
 /** Refuses a target the normaliser does not know, from an untyped caller. */
 export function checkOptions(options: NormalizeOptions): void {
   if (options.target !== undefined && !isNormalizeTarget(options.target)) {
     throw new TypeError(`normalizeHtml: unknown target ${JSON.stringify(options.target)}`);
+  }
+  if (options.engine !== undefined && !BROWSER_ENGINES.includes(options.engine)) {
+    throw new TypeError(`normalizeHtml: unknown engine ${JSON.stringify(options.engine)}`);
   }
 }
 
@@ -41,12 +53,13 @@ export function normalizeTree(
   ids?: Map<string, string>,
 ): string {
   checkOptions(options);
-  const { target } = options;
+  const { target, engine } = options;
   removeComments(root);
   removeQwikStyles(root, target);
   removeFrameworkAttributes(root, target);
   removeQwikTemplates(root, target);
   unwrapAngularHosts(root, target);
+  renameEngineAliases(root, engine);
   canonicalizeStyles(root);
   canonicalizeBooleanAttributes(root, target);
   canonicalizeClasses(root);

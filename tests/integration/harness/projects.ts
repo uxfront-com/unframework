@@ -128,6 +128,28 @@ export function harnessProjects(setup: HarnessSetup): TestProjectConfiguration[]
   ];
 }
 
+/**
+ * Whether a browser project runs its spec files in parallel: in Chromium, yes. In Firefox and
+ * WebKit, no (ADR-0067): their tester pages in one browser compete for the focus, so a page
+ * idle in one file sees the blur and focus events of another's, and five followers' pages
+ * at once ran the nightly's WebKit job out of memory.
+ */
+export function fileParallelism(mode: Pick<HarnessMode, "browser">): boolean {
+  return mode.browser === undefined || mode.browser === "chromium";
+}
+
+/**
+ * A project's `sequence.groupOrder`, from every target the run's browser projects cover: the
+ * run's targets, then the case references it adds (`referencesOnly`).
+ */
+function projectGroup(setup: HarnessSetup, kind: ProjectKind, target: string | undefined): number {
+  const targets = [
+    ...setup.targets,
+    ...Object.keys(setup.referencesOnly ?? {}).filter((name) => !setup.targets.includes(name)),
+  ];
+  return groupOrder(kind, target, setup.mode, REFERENCE, caseReferences(setup.harness), targets);
+}
+
 function nodeProject(
   setup: HarnessSetup,
   name: string,
@@ -145,7 +167,7 @@ function nodeProject(
       include,
       provide: { ...(target ? { target } : {}), ufHarness: setup.harness },
       sequence: {
-        groupOrder: groupOrder(kind, target, setup.mode, REFERENCE, caseReferences(setup.harness)),
+        groupOrder: projectGroup(setup, kind, target),
       },
       ...test,
     },
@@ -260,7 +282,7 @@ const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework)
         ...(setup.referencesOnly?.[target] ? { ufOnly: [...setup.referencesOnly[target]] } : {}),
       },
       sequence: {
-        groupOrder: groupOrder("ssr", target, setup.mode, REFERENCE, caseReferences(setup.harness)),
+        groupOrder: projectGroup(setup, "ssr", target),
       },
     }),
   } as UserWorkspaceConfig;
@@ -335,15 +357,9 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
           ufCapabilities: builtinTargets[target as TargetName].capabilities,
           ufNoOutput: noOutput,
         },
-        sequence: {
-          groupOrder: groupOrder(
-            "browser",
-            target,
-            setup.mode,
-            REFERENCE,
-            caseReferences(setup.harness),
-          ),
-        },
+        sequence: { groupOrder: projectGroup(setup, "browser", target) },
+        // Outside Chromium, parallel tester pages in one engine take the focus from each other.
+        ...(fileParallelism(setup.mode) ? {} : { fileParallelism: false }),
         browser: {
           ...parityBrowser({
             name,

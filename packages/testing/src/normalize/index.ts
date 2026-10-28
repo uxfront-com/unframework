@@ -27,7 +27,9 @@ export type { NormalizeTarget } from "./targets.ts";
  *    are Qwik's `q:template` elements (2b, `removeQwikTemplates`) and its `<style q:style>`
  *    elements (2c, `removeQwikStyles`, which runs first: it finds them by that attribute);
  * 3. Angular's `uf-*` host elements with `display: contents` are unwrapped
- *    (`unwrapAngularHosts`);
+ *    (`unwrapAngularHosts`), and with an `engine`, the properties that engine serialises under
+ *    its own alias take Chromium's name (3b, `renameEngineAliases`: Firefox's
+ *    `-moz-box-orient`, ADR-0067);
  * 4. style declarations (4a, `canonicalizeStyles`), boolean attributes (4b,
  *    `canonicalizeBooleanAttributes`) and class tokens (4c, `canonicalizeClasses`) get one
  *    canonical form, and a `class` or `style` that holds nothing goes; the markup of a control's
