@@ -80,15 +80,21 @@ checked as the declaration its likely fix writes (`analyze.ts`).
 …`, whose body runs once called, or any other value, all of which runs as the module loads.
   - It reads the module's other constants, its value imports and the pure globals (UF3020). As
     the module loads it reads no constant declared after it, itself or through the functions it
-    calls (UF2023). A type it names (`typeof B`) reads nothing.
-  - Nothing in it changes a value in place, whatever the receiver: no member is written or
-    deleted, through `as`, `!` or a pattern too, and no mutating method is called (UF2004). A
-    function writes only its own locals (UF2011).
+    calls (UF2023). An arrow runs then only where it is called in place or passed to a call; one
+    a value holds runs once called. A type it names (`typeof B`) reads nothing, and a local type
+    it names is declared with it.
+  - It changes in place only a fresh value, one it builds itself: a literal, a `new`, a copy, or
+    a function's local that only ever holds one (a `reduce` accumulator too), so
+    `Object.freeze({ … })` is plain. Anything else written, deleted or changed by a mutating
+    method, through `as`, `!`, an alias or a pattern too, is UF2004. A function writes only its
+    own locals (UF2011).
   - It holds no JSX (UF3012), and no `this`, `import.meta`, `import()`, function expression or
     class, and calls no computed member (UF1002).
-  - Chance, the clock and the locale are UF3019 as the module loads. In a function they mark the
-    constant `nondeterministic`, which a template, a getter or an initial value that calls it, or
-    a local function it reaches, reports, as setup does; client code may call it.
+  - Chance, the clock and the locale are UF3019 as the module loads, and a global only client
+    code may read (`console`, `document`, …) UF3020. In a function they mark the constant
+    `nondeterministic` or `clientOnly`, which a template, a getter or an initial value that calls
+    it, or a local function it reaches, reports (UF3019, UF2014), as setup does; client code may
+    call it.
   - A `let`, a destructured or exported `const` and a `const` of two names are UF1002. Qwik
     reads both kinds where they are declared, so a getter's function may read them (UF2014).
 

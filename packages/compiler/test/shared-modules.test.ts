@@ -284,6 +284,23 @@ describe("compile() with shared modules", () => {
       "The shared module CardIcon.ts is named like CardIcon's output file, which an output imports without its extension (`CardIcon`, and `card-icon` on Angular): each output tree holds the module's copy beside the components.",
     ],
     [
+      "a component, in kebab-case as Angular names it",
+      {
+        "/project/Card.uf.tsx": [
+          'import type { Tone } from "./card-icon.ts";',
+          "function CardIcon({ tone }: { tone: Tone }) {",
+          "  return <i class={tone} />;",
+          "}",
+          "export default function Card() {",
+          '  return <div><CardIcon tone="info" /></div>;',
+          "}",
+        ].join("\n"),
+        "/project/card-icon.ts": TONES,
+      },
+      "Card.uf.tsx",
+      "The shared module card-icon.ts is named like CardIcon's output file, which an output imports without its extension (`CardIcon`, and `card-icon` on Angular): each output tree holds the module's copy beside the components.",
+    ],
+    [
       "an imported child",
       {
         "/project/Panel.uf.tsx": [

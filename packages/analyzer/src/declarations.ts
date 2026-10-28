@@ -46,17 +46,17 @@ export interface ModuleTypes {
 
 /**
  * Reads the module's type declarations, and what the candidates' props annotations and setup
- * code, and the module's injection keys, reach.
+ * code, and the module's injection keys and top-level `const`s, reach.
  */
 export function collectTypes(
   declarations: readonly TypeDeclarationStatement[],
   candidates: readonly { node: ComponentFunction }[],
-  keys: readonly AST.TSType[] = [],
+  keys: readonly unknown[] = [],
 ): ModuleTypes {
   const table = new TypeTable(declarations);
   const reached = new Set<string>();
-  // An injection key's type is copied as the setup's types are, into the output that declares
-  // the key (ADR-0054).
+  // An injection key's type, and what a module's constant writes of types, are copied as the
+  // setup's types are, into the output that declares them (ADR-0054, ADR-0070).
   const setupReached = new Set<string>(closure(keys, table));
   let ownProps = false;
   const foreignProps: AST.TSType[] = [];

@@ -209,11 +209,23 @@ export function analyzeModule(
   // The module's injection keys (ADR-0054): read before any import or component, since the
   // resolver gives a parent's keys to the children that inject them.
   const keyCandidates = findKeys(parsed.program);
-  const types = collectTypes(
-    declarations,
-    candidates,
-    [...keyCandidates.values()].flatMap((candidate) => (candidate.type ? [candidate.type] : [])),
+  // What each top-level `const` writes of types, in its annotation and its value: copied as the
+  // setup's types are, into the outputs that declare the constant (ADR-0070).
+  const constantTypes = new Map<string, AST.VariableDeclarator>(
+    parsed.program.body.flatMap((statement) =>
+      statement.type === "VariableDeclaration" && !keyCandidates.has(statement.start)
+        ? statement.declarations.flatMap((declarator) =>
+            declarator.id.type === "Identifier"
+              ? [[`${declarator.id.name}@${declarator.id.start}`, declarator] as const]
+              : [],
+          )
+        : [],
+    ),
   );
+  const types = collectTypes(declarations, candidates, [
+    ...[...keyCandidates.values()].flatMap((candidate) => (candidate.type ? [candidate.type] : [])),
+    ...constantTypes.values(),
+  ]);
   const scopes = new Scopes(parsed.program);
   const authoring = authoringBindings(parsed.program);
   const shapes = options.shapes ?? ownShapes(parsed);
@@ -398,12 +410,19 @@ export function analyzeModule(
     return { module: undefined, diagnostics: reporter.diagnostics, api };
   }
   exports.sort((a, b) => a.span.start - b.span.start);
+  const read = readConstants(constants, lowered);
+  const readTypes = new Set(
+    closure(
+      read.map(({ binding }) => constantTypes.get(binding)),
+      types.table,
+    ),
+  );
   return {
     module: createModule(
       parsed.file,
       lowered,
       exports.filter((entry) => kept.has(entry.local)),
-      moduleTypes(lowered, types, parsed.source),
+      moduleTypes(lowered, types, parsed.source, readTypes),
       imports,
       keyDeclarations,
       context.passThroughImports,
@@ -414,7 +433,7 @@ export function analyzeModule(
           ...declaredTypeExports(types, parsed.source),
         ].toSorted((a, b) => a.span.start - b.span.start),
         moduleImports: context.moduleImports,
-        constants: readConstants(constants, lowered),
+        constants: read,
       },
     ),
     diagnostics: reporter.diagnostics,
@@ -494,8 +513,9 @@ function moduleTypes(
   components: readonly UfComponent[],
   types: ModuleTypes,
   source: string,
+  constants: ReadonlySet<string>,
 ): TypeDeclaration[] {
-  const used = new Set(components.flatMap((component) => component.types));
+  const used = new Set([...components.flatMap((component) => component.types), ...constants]);
   return types.declarations
     .filter((declaration) => used.has(declaration.name))
     .map((declaration) =>

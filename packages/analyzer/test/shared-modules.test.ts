@@ -314,6 +314,110 @@ describe("module-level constants", () => {
     );
   });
 
+  // A fresh value is one the code builds itself, which no one else holds: it may change, as
+  // setup's may (UF2004, ADR-0045). ADR-0070 names frozen objects.
+  it.each([
+    ["a frozen object", "const SIZES = Object.freeze({ sm: 1, lg: 2 });", "{SIZES.sm}"],
+    [
+      "a helper that pushes to its own array",
+      'const cx = (...parts: string[]) => { const out: string[] = []; for (const p of parts) if (p) out.push(p); return out.join(" "); };',
+      '{cx("a", "b")}',
+    ],
+    [
+      "a helper that writes its own object's members",
+      "const pick = (keys: string[]) => { const o: Record<string, number> = {}; for (const k of keys) o[k] = 1; return o; };",
+      '{Object.keys(pick(["a"])).length}',
+    ],
+    [
+      "a helper that fills its own map",
+      "const index = (keys: string[]) => { const m = new Map<string, number>(); keys.forEach((k, i) => m.set(k, i)); return m.size; };",
+      '{index(["a"])}',
+    ],
+    [
+      "a `reduce` callback's accumulator",
+      "const evens = (xs: number[]) => xs.reduce<number[]>((acc, x) => { if (x % 2 === 0) acc.push(x); return acc; }, []);",
+      "{evens([1, 2]).length}",
+    ],
+    [
+      "a sorted copy, as the module loads",
+      "const SORTED = [...[3, 1, 2]].sort((a, b) => a - b);",
+      "{SORTED[0]}",
+    ],
+    [
+      "a filled new array, as the module loads",
+      "const ZEROS = new Array(3).fill(0);",
+      "{ZEROS.length}",
+    ],
+    [
+      "an assigned new object, as the module loads",
+      "const MERGED = Object.assign({}, { a: 1 });",
+      "{MERGED.a}",
+    ],
+    [
+      "a function a value holds, reading a later constant",
+      "const formatters = { upper: (v: string) => up(v) };\nconst up = (v: string) => v.toUpperCase();",
+      '{formatters.upper("a")}',
+    ],
+  ])("accepts %s", (_, before, read) => {
+    const source = `${before}\nexport function A() { return <p>${read}</p>; }`;
+    const { module, diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual([]);
+    expect(module).toBeDefined();
+  });
+
+  it("counts a local type a constant writes as used, and declares it with the constant", () => {
+    const source = [
+      'type Tone = "info" | "danger";',
+      'const LABELS: Record<Tone, string> = { info: "Info", danger: "Danger" };',
+      "export function A() { return <p>{LABELS.info}</p>; }",
+    ].join("\n");
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    expect(module!.types.map(({ name }) => name)).toEqual(["Tone"]);
+  });
+
+  // A global only client code may read, in a module's function, waits for its call, as a local
+  // function's does (UF2014, ADR-0045).
+  it("accepts a module function that reads client globals and only client code calls", () => {
+    const source = [
+      'import { ref } from "unframework";',
+      "const log = (m: string) => { console.log(m); };",
+      "const later = (f: () => void) => setTimeout(f, 10);",
+      "const title = () => document.title;",
+      'const saved = () => localStorage.getItem("k");',
+      'const load = () => fetch("/x");',
+      "const copy = (t: string) => navigator.clipboard.writeText(t);",
+      "export function A() {",
+      '  const text = ref("");',
+      '  function save() { log(title()); later(() => {}); text.value = saved() ?? ""; void load(); void copy(text.value); }',
+      '  return <button type="button" onClick={save}>{text.value}</button>;',
+      "}",
+    ].join("\n");
+    expect(problems(source, run(source).diagnostics)).toEqual([]);
+  });
+
+  it("reports a module function that reads client globals where render calls it, or the module as it loads (UF2014)", () => {
+    const source = [
+      "const title = () => document.title;",
+      "const indirect = () => title();",
+      "const AT_LOAD = indirect();",
+      "export function A() {",
+      "  function shown() { return indirect(); }",
+      "  return <p>{title()}{shown()}{AT_LOAD}</p>;",
+      "}",
+    ].join("\n");
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual([
+      "UF2014 indirect",
+      "UF2014 title",
+      "UF2014 shown",
+    ]);
+    expect(diagnostics[1]!.message).toBe(
+      "A template expression calls `title`, and it reads `document`, which only client code may: rendering must not read what only client code may, and a framework runs it when it decides to.",
+    );
+    expect(diagnostics[2]!.message).toContain("it calls `indirect`, which reads `document`");
+  });
+
   // A function's body runs where it is called, as a local function's does (UF3019, ADR-0045).
   it("reports chance, the clock and the locale in a module's function only where render calls it", () => {
     const handler = [

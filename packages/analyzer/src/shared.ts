@@ -4,6 +4,7 @@
 // resolver before analysis; the analyser checks the import, and lowers each read into a binding.
 import {
   bindingId,
+  CLIENT_GLOBALS,
   createBindingReference,
   createCode,
   createGlobalReference,
@@ -156,6 +157,11 @@ export interface SharedValue {
    * function's is (`rules.ts`), since its body runs where they call it.
    */
   nondeterministic?: string;
+  /**
+   * What a function constant reads that only client code may (`console`, `document`, …), itself
+   * or through the module's functions it calls: its callers' to report (UF2014), likewise.
+   */
+  clientOnly?: string;
 }
 
 /** What the module declares at its top level for its components to read (ADR-0070). */
@@ -192,15 +198,20 @@ export interface ConstantContext {
  *
  * - A value reads only the module's other constants, the values it imports from shared modules
  *   and the pure globals (UF3020), each a reference of its code. As the module loads, it reads
- *   no constant declared after it, itself or through the functions it calls (UF2023).
- * - Nothing in it changes a value in place (UF2004): no member is written or deleted, and no
- *   mutating method is called, whatever the receiver. A function writes only its own locals
- *   (UF2011).
+ *   no constant declared after it, itself or through the functions it calls (UF2023). An arrow
+ *   function runs as the module loads only where it is called in place, or passed to a call;
+ *   one a value holds (`{ upper: (v) => … }`) runs once called.
+ * - Nothing in it changes a value in place (UF2004) but a fresh one, which it builds itself: a
+ *   literal, a `new`, a copy (`map`, `slice`, `toSorted`, `Array.from`, `Object.entries`, …),
+ *   or a function's local that only ever holds one (a `reduce` callback's accumulator too). So
+ *   `Object.freeze({ … })` and a helper that pushes to its own array are plain. A function writes
+ *   only its own locals (UF2011).
  * - It holds no JSX (UF3012), and no `this`, `import.meta`, `import()`, function expression or
  *   class (UF1002). A computed member it calls, or reads off `Math`, is named (UF1002).
- * - What reads chance, the clock or the locale is UF3019 as the module loads. In a function it
- *   marks the constant `nondeterministic`, which a template, a getter or an initial value that
- *   calls it reports, as setup does (`rules.ts`).
+ * - What reads chance, the clock or the locale is UF3019 as the module loads, and a global only
+ *   client code may read UF3020. In a function they mark the constant `nondeterministic` or
+ *   `clientOnly`, which a template, a getter or an initial value that calls it reports (UF3019,
+ *   UF2014), as setup does (`rules.ts`); client code may call it.
  */
 export function lowerConstants(
   candidates: readonly ConstantCandidate[],
@@ -215,6 +226,8 @@ export function lowerConstants(
   const loadReads: { caller: SharedValue; read: SharedValue; at: AST.Node }[] = [];
   /** Each function constant's own nondeterminism: called later, it is its callers' to report. */
   const reasons = new Map<BindingId, string>();
+  /** Each function constant's first read of a global only client code may read, likewise. */
+  const clientReads = new Map<BindingId, string>();
   const lowered = candidates.map(({ statement, declarator }) => {
     const { id, init } = declarator;
     const own = shared.values.get(id)!;
@@ -222,6 +235,48 @@ export function lowerConstants(
     const refs: CodeReference[] = [];
     const read = new Set<SharedValue>();
     reads.set(own.id, read);
+    const assigned = assignedValues(init, scopes);
+    /** Whether a value is fresh: built here, so no one else holds it, and it may change. */
+    const fresh = (node: AST.Node, visiting = new Set<object>()): boolean => {
+      const inner = unwrapped(node);
+      switch (inner.type) {
+        case "ObjectExpression":
+        case "ArrayExpression":
+        case "NewExpression":
+          return true;
+        case "CallExpression": {
+          const callee = unwrapped(inner.callee);
+          if (callee.type === "Identifier") return isGlobal(callee, "structuredClone");
+          if (callee.type !== "MemberExpression") return false;
+          const name = memberName(callee);
+          if (name === undefined) return false;
+          const object = unwrapped(callee.object);
+          if (isGlobal(object, "Array")) return name === "from" || name === "of";
+          if (isGlobal(object, "Object")) return FRESH_OBJECT_FUNCTIONS.has(name);
+          return FRESH_METHODS.has(name);
+        }
+        case "Identifier": {
+          if (!scopes.isReference(inner)) return false;
+          const resolution = scopes.resolve(inner as AST.IdentifierReference);
+          if (resolution.kind !== "variable" && resolution.kind !== "parameter") return false;
+          const values = assigned.get(resolution.declaration);
+          if (!values?.length) return false;
+          // A name met again on the way holds nothing new there.
+          if (visiting.has(resolution.declaration)) return true;
+          visiting.add(resolution.declaration);
+          const all = values.every((value) => value !== null && fresh(value, visiting));
+          visiting.delete(resolution.declaration);
+          return all;
+        }
+        default:
+          return false;
+      }
+    };
+    /** Whether a member it writes belongs to a fresh value: `out[key] = …` on `const out = {}`. */
+    const freshMember = (node: AST.Node) => {
+      const inner = unwrapped(node);
+      return inner.type === "MemberExpression" && fresh(inner.object);
+    };
     /** `reason` is "`Date` reads the clock": what, then how, as setup's walk words it. */
     const nondeterminism = (node: AST.Node, reason: string) => {
       if (deferred) {
@@ -280,7 +335,15 @@ export function lowerConstants(
           target(inner.argument, at, how);
           return;
         default:
-          inPlace(at, how);
+          if (!freshMember(inner)) inPlace(at, how);
+      }
+    };
+    /** A call's arguments: an arrow passed on may run now, as the call runs (UF2023). */
+    const walkArguments = (args: readonly AST.Node[], load: boolean) => {
+      for (const argument of args) {
+        const inner = unwrapped(argument);
+        if (inner.type === "ArrowFunctionExpression") walkChildren(inner, load);
+        else walk(argument, load);
       }
     };
     const walk = (node: unknown, load: boolean): void => {
@@ -312,8 +375,13 @@ export function lowerConstants(
           reporter.unsupported(typed, UNSUPPORTED[typed.type]!(id.name));
           return;
         case "ArrowFunctionExpression":
-          // The value's own function runs when it is called; any other runs as the module loads.
-          walkChildren(typed, typed === init ? false : load);
+          // Held, not called: it runs once called. A call's argument and a function called in
+          // place are walked where they are (`walkArguments`).
+          walkChildren(typed, false);
+          return;
+        case "NewExpression":
+          walk(typed.callee, load);
+          walkArguments(typed.arguments, load);
           return;
         case "AssignmentExpression":
           target(typed.left, typed, "An assignment changes");
@@ -337,7 +405,9 @@ export function lowerConstants(
           walk(typed.body, load);
           return;
         case "UnaryExpression":
-          if (typed.operator === "delete") inPlace(typed, "`delete` changes");
+          if (typed.operator === "delete" && !freshMember(typed.argument)) {
+            inPlace(typed, "`delete` changes");
+          }
           break;
         case "CallExpression": {
           const callee = unwrapped(typed.callee);
@@ -352,12 +422,15 @@ export function lowerConstants(
                 );
               }
             } else if (MUTATING_METHODS.has(name) || COLLECTION_METHODS.has(name)) {
-              inPlace(typed, `\`${name}\` changes`);
+              if (!fresh(callee.object)) inPlace(typed, `\`${name}\` changes`);
             } else if (
               MUTATING_OBJECT_FUNCTIONS.has(name) &&
               isGlobal(unwrapped(callee.object), "Object")
             ) {
-              inPlace(typed, `\`Object.${name}\` changes`);
+              const [changed] = typed.arguments;
+              if (!changed || changed.type === "SpreadElement" || !fresh(changed)) {
+                inPlace(typed, `\`Object.${name}\` changes`);
+              }
             }
           } else if (callee.type === "Identifier" && load && scopes.isReference(callee)) {
             const value = moduleValue(callee as AST.IdentifierReference);
@@ -367,10 +440,12 @@ export function lowerConstants(
           } else if (callee.type === "ArrowFunctionExpression") {
             // Called where it is written: its body runs now.
             walkChildren(callee, load);
-            walk(typed.arguments, load);
+            walkArguments(typed.arguments, load);
             return;
           }
-          break;
+          walk(typed.callee, load);
+          walkArguments(typed.arguments, load);
+          return;
         }
         case "MemberExpression": {
           const name = memberName(typed);
@@ -439,6 +514,11 @@ export function lowerConstants(
             refs.push(createGlobalReference(node.name, at));
           } else if (reason) {
             nondeterminism(node, reason);
+          } else if (deferred && CLIENT_GLOBALS.has(node.name)) {
+            // Its body runs where it is called: only client code may call it (UF2014).
+            if (!clientReads.has(own.id)) {
+              clientReads.set(own.id, `reads \`${node.name}\`, which only client code may`);
+            }
           } else {
             reporter.report(
               "UF3020",
@@ -533,6 +613,19 @@ export function lowerConstants(
         { help: `Declare \`${later.name}\` before \`${caller.name}\`.` },
       );
     }
+    const client = [callee, ...reached(callee)]
+      .map((value) => clientReads.get(value.id))
+      .find((each) => each !== undefined);
+    if (client) {
+      reporter.report(
+        "UF2014",
+        at,
+        `\`${callee.name}\` ${client}, and the module calls it as it loads, computing \`${caller.name}\`, on the server too: only client code may call it.`,
+        {
+          help: "Call it from a component's client code (a handler, a watcher's callback, a lifecycle hook), or compute the value without it.",
+        },
+      );
+    }
     const reason = [callee, ...reached(callee)]
       .map((value) => reasons.get(value.id))
       .find((each) => each !== undefined);
@@ -549,10 +642,11 @@ export function lowerConstants(
   // functions it calls, is its callers' to report (`rules.ts`), as a local function's is.
   for (const value of shared.values.values()) {
     if (value.kind !== "moduleConst") continue;
-    const reason = [value, ...reached(value)]
-      .map((each) => reasons.get(each.id))
-      .find((each) => each !== undefined);
+    const all = [value, ...reached(value)];
+    const reason = all.map((each) => reasons.get(each.id)).find((each) => each !== undefined);
     if (reason) value.nondeterministic = reason;
+    const client = all.map((each) => clientReads.get(each.id)).find((each) => each !== undefined);
+    if (client) value.clientOnly = client;
   }
   return lowered;
 
@@ -572,6 +666,157 @@ export function lowerConstants(
       scopes.resolve(node as AST.IdentifierReference).kind === "global"
     );
   }
+}
+
+/** Methods whose result is a new array or string, which no one else holds. */
+const FRESH_METHODS: ReadonlySet<string> = new Set([
+  "concat",
+  "filter",
+  "flat",
+  "flatMap",
+  "map",
+  "slice",
+  "toReversed",
+  "toSorted",
+  "toSpliced",
+  "with",
+]);
+
+/** `Object`'s functions whose result is a new array or object. */
+const FRESH_OBJECT_FUNCTIONS: ReadonlySet<string> = new Set([
+  "entries",
+  "fromEntries",
+  "keys",
+  "values",
+]);
+
+/**
+ * The values each name a constant's value declares is given, by its declaration: each `=` and
+ * logical assignment's value and its initialiser, and a `reduce` callback accumulator's initial
+ * value and what the callback returns. `null` stands for a value of no known origin: a loop's
+ * variable, a destructured name, a compound assignment's result.
+ */
+function assignedValues(init: AST.Node, scopes: Scopes): Map<object, (AST.Node | null)[]> {
+  const values = new Map<object, (AST.Node | null)[]>();
+  const add = (declaration: object, value: AST.Node | null) => {
+    const list = values.get(declaration) ?? [];
+    list.push(value);
+    values.set(declaration, list);
+  };
+  /** Every name a pattern binds or writes, as of no known origin. */
+  const unknown = (pattern: AST.Node): void => {
+    const inner = unwrapped(pattern);
+    switch (inner.type) {
+      case "Identifier": {
+        const resolution = scopes.isReference(inner)
+          ? scopes.resolve(inner as AST.IdentifierReference)
+          : undefined;
+        add(resolution && "declaration" in resolution ? resolution.declaration : inner, null);
+        return;
+      }
+      case "ObjectPattern":
+        for (const property of inner.properties) {
+          unknown(property.type === "RestElement" ? property.argument : property.value);
+        }
+        return;
+      case "ArrayPattern":
+        for (const element of inner.elements) if (element) unknown(element);
+        return;
+      case "AssignmentPattern":
+        unknown(inner.left);
+        return;
+      case "RestElement":
+        unknown(inner.argument);
+        return;
+      default:
+    }
+  };
+  const visit = (node: unknown): void => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    const typed = node as AST.Node;
+    if (typeof typed.type !== "string") return;
+    switch (typed.type) {
+      case "ForInStatement":
+      case "ForOfStatement":
+        if (typed.left.type === "VariableDeclaration") {
+          for (const declarator of typed.left.declarations) unknown(declarator.id);
+        } else {
+          unknown(typed.left);
+        }
+        break;
+      case "VariableDeclarator":
+        if (typed.id.type === "Identifier") {
+          if (typed.init) add(typed.id, typed.init);
+        } else {
+          unknown(typed.id);
+        }
+        break;
+      case "AssignmentExpression": {
+        const left = unwrapped(typed.left);
+        if (left.type === "Identifier") {
+          const resolution = scopes.resolve(left as AST.IdentifierReference);
+          if ("declaration" in resolution) {
+            add(
+              resolution.declaration,
+              ["=", "??=", "||=", "&&="].includes(typed.operator) ? typed.right : null,
+            );
+          }
+        } else if (left.type !== "MemberExpression") {
+          unknown(left);
+        }
+        break;
+      }
+      case "CallExpression": {
+        const callee = unwrapped(typed.callee);
+        const [callback, initial] = typed.arguments;
+        const fn = callback && unwrapped(callback);
+        if (
+          callee.type === "MemberExpression" &&
+          ["reduce", "reduceRight"].includes(memberName(callee) ?? "") &&
+          fn?.type === "ArrowFunctionExpression" &&
+          fn.params[0]?.type === "Identifier"
+        ) {
+          const accumulator = fn.params[0];
+          add(accumulator, initial && initial.type !== "SpreadElement" ? initial : null);
+          for (const returned of returnedValues(fn)) add(accumulator, returned);
+        }
+        break;
+      }
+      default:
+    }
+    for (const key of visitorKeys[typed.type] ?? []) {
+      visit((typed as unknown as Record<string, unknown>)[key]);
+    }
+  };
+  visit(init);
+  return values;
+}
+
+/** What an arrow function returns: its expression body, or each `return`'s value in its body. */
+function returnedValues(fn: AST.ArrowFunctionExpression): AST.Node[] {
+  if (fn.body.type !== "BlockStatement") return [fn.body];
+  const found: AST.Node[] = [];
+  const visit = (node: unknown): void => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    const typed = node as AST.Node;
+    if (typeof typed.type !== "string") return;
+    // A nested function's `return` is its own.
+    if (typed.type === "ArrowFunctionExpression" || typed.type === "FunctionExpression") return;
+    if (typed.type === "ReturnStatement" && typed.argument) found.push(typed.argument);
+    for (const key of visitorKeys[typed.type] ?? []) {
+      visit((typed as unknown as Record<string, unknown>)[key]);
+    }
+  };
+  visit(fn.body.body);
+  return found;
 }
 
 /** The TypeScript nodes that wrap an expression, which is read: any other is a type. */
