@@ -3,8 +3,8 @@
 Passes P2 (analyse) and P3 (lower) of the Unframework compiler (plan §5.1):
 
 - `analyze(parsed)` checks a parsed `.uf.tsx` module and lowers each component's returned JSX into
-  the portable IR. It reports every construct it cannot lower as a diagnostic, and never copies
-  code through unanalysed (P2). It never throws. A syntax error stops it. Any other module-level
+  the portable IR, or a `.uf.ts` module and its composables (ADR-0069). It reports every construct
+  it cannot lower as a diagnostic, and never copies code through unanalysed (P2). It never throws. A syntax error stops it. Any other module-level
   error (an import, a top-level declaration) drops every component, which are still checked, so
   that fixing it reveals nothing new; an error in a component drops that component only.
 - JSX text means what every JSX implementation agrees it means. Babel (Vue's and Solid's JSX)
@@ -29,7 +29,7 @@ Passes P2 (analyse) and P3 (lower) of the Unframework compiler (plan §5.1):
 
 Components with typed props, a setup, listeners and JSX (plan §9 M1 and M2, ADR-0034 to ADR-0040,
 ADR-0045 onwards), and the composition of M3's core lane (ADR-0053 to ADR-0055): components that
-render each other, slots, fallthrough and `defineExpose`. A module exports at least one component;
+render each other, slots, fallthrough and `defineExpose`. A `.uf.tsx` module exports at least one component;
 one it does not export is lowered too, and each output writes it as a sibling file. A component
 is a function declaration; one written as a value (`export const Card = (props) => …`) is UF1102,
 checked as the declaration its likely fix writes (`analyze.ts`).
@@ -114,6 +114,29 @@ checked as the declaration its likely fix writes (`analyze.ts`).
   A shared module's imports include its `import x = require("…")` and each `import()` of a string
   or a template without holes; `unfollowedImports(parsed)` lists what it loads that the compiler
   cannot follow (any other `import()`, `import.meta.glob`), which is UF1202.
+
+- **Composables** (`composables.ts`, ADR-0069): a `.uf.ts` module holds no component, and each
+  named export `use[A-Z]…`, a function declaration, is a composable, lowered into
+  `UfModule.composables`. Its body is a setup under a component's rules (`declareSetup`), with
+  parameters in place of props and a returned object in place of JSX.
+  - Each parameter is a name with a type, an `argument` binding read as a destructured prop is.
+    Its type gives its kind: a function type without parameters is a getter, any other function
+    type a callback, which only client code reads, and anything else a value.
+  - The last statement returns a shorthand object of the setup's state, derived values, local
+    functions and constants.
+  - The module's API lists a `ComposableApi` per composable: each parameter's kind and type, each
+    member's kind and its type where the source writes one, whether a returned function is
+    `async`, and `pure` or `client` by its summary, and `hasEffects` where the setup holds a
+    watcher or a lifecycle hook. A composable with an error is left out of it.
+  - UF2035 rejects a call of `useId`, `useTemplateRef`, `provide`, `inject` or a `define*` macro,
+    a call of another composable (one the module declares, or imports from a `.uf.ts`), a default
+    export, an export named otherwise, a `use*` function the module does not export or writes as
+    a value, an `async` or generator function, a parameter without a type, with a default value or
+    written as a pattern, a callback read outside client code, a return of any other shape, and a
+    module that exports no composable. An injection key in a `.uf.ts` module is UF1002: it stays
+    in the `.uf.tsx` module that provides it (ADR-0054).
+  - The call site, `const { on, toggle } = useToggle(false)`, and `compile()`'s handling of a
+    `.uf.ts` source come later.
 
 - **The authoring API** (`authoring.ts`): named imports from `"unframework"`, recognised by the
   binding each declares (ADR-0006), as the package exports them (a test reads its `index.ts`).

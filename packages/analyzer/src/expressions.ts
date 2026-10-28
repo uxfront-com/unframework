@@ -930,8 +930,29 @@ class Walk {
           }
           const prop = context.propsByDeclaration.get(resolution.declaration);
           if (prop?.id === undefined) return UNKNOWN;
+          if (prop.callback && this.#mode !== "client") {
+            context.reporter.report(
+              "UF2035",
+              node,
+              `\`${node.name}\` is a callback the composable is passed, read in ${this.#mode === "render" ? "a template expression" : "a getter or an initial value"}: a callback is called from client code, a handler, a watcher's callback or a lifecycle hook.`,
+              {
+                help: "Call it from client code, or type the parameter as a getter, `() => T`, to read it as it changes.",
+              },
+            );
+            return UNKNOWN;
+          }
           const narrowed = render ? [] : this.#narrowingRule(node, { kind: "prop", prop }, true);
-          this.refs.push(createBindingReference(prop.id, span(node), shorthand, false, narrowed));
+          // Only a prop's or a ref's value's read narrows in the IR: a composable's parameter is a
+          // plain local on every target, read as TypeScript narrows it.
+          this.refs.push(
+            createBindingReference(
+              prop.id,
+              span(node),
+              shorthand,
+              false,
+              prop.argument ? [] : narrowed,
+            ),
+          );
           return this.#narrowed(node, prop.kinds);
         }
         const loop = context.loopVariables.get(resolution.declaration);
