@@ -1,0 +1,23 @@
+---
+interface Props {
+  options: T[];
+  option?: (props: { option: T }) => unknown;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { options, option: option_1, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+---
+
+<ul class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
+  {options.map((option) => (
+    <li>{option_1?.({ option })}</li>
+  ))}
+</ul>

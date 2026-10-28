@@ -5,7 +5,14 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { vueEventInterface } from "../src/listeners.ts";
 import { toolchain } from "../src/toolchain/index.ts";
-import { goldenFiles, removeScratch, toolchainDir, writeScratch } from "./helpers.ts";
+import {
+  emitFormatted,
+  goldenFiles,
+  lower,
+  removeScratch,
+  toolchainDir,
+  writeScratch,
+} from "./helpers.ts";
 import { M2_SHAPES } from "./lint-probes.ts";
 
 const context = { toolchainDir, root: toolchainDir };
@@ -18,6 +25,48 @@ const checker = { timeout: 60_000 };
 afterAll(removeScratch);
 
 describe("vue typecheck", () => {
+  it(
+    "exports every type the module exports from its main output, one a local component declares too",
+    checker,
+    async () => {
+      // ADR-0068: `Tone` is declared in Badge's output, which only Badge reaches, and a consumer
+      // imports it from the module's main output.
+      const module = lower(
+        [
+          'export type Tone = "info" | "danger";',
+          "function Badge({ tone }: { tone: Tone }) {",
+          "  return <span class={tone}>{tone}</span>;",
+          "}",
+          "export default function Pair() {",
+          '  return <p><Badge tone="info" /></p>;',
+          "}",
+        ].join("\n"),
+        "Pair.uf.tsx",
+      );
+      const outputs = Object.fromEntries(
+        (await emitFormatted(module)).map((file) => [file.path, file.contents]),
+      );
+      expect(outputs["Pair.vue"]).toContain('export type { Tone } from "./Badge.vue";');
+      const paths = writeScratch({
+        ...outputs,
+        "Use.vue": [
+          '<script setup lang="ts">',
+          'import Pair, { type Tone } from "./Pair.vue";',
+          "",
+          'const tone: Tone = "danger";',
+          "</script>",
+          "",
+          "<template>",
+          '  <Pair :data-tone="tone" />',
+          "</template>",
+          "",
+        ].join("\n"),
+      });
+      const results = await toolchain.typecheck(Object.values(paths), context);
+      for (const path of Object.values(paths)) expect(results.get(path), path).toEqual([]);
+    },
+  );
+
   it("checks the corpus and an injected error in one run, by file", checker, async () => {
     const golden = goldenFiles();
     expect(golden.length).toBeGreaterThan(0);

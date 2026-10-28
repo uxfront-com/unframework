@@ -1,0 +1,324 @@
+{
+  "irVersion": 1,
+  "file": "generics/list/List.uf.tsx",
+  "components": [
+    {
+      "name": "List",
+      "span": {
+        "start": 174,
+        "end": 469
+      },
+      "typeParameters": [
+        {
+          "name": "T",
+          "span": {
+            "start": 203,
+            "end": 204
+          }
+        }
+      ],
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 133,
+              "end": 139
+            }
+          },
+          "binding": "label@208",
+          "span": {
+            "start": 126,
+            "end": 140
+          }
+        },
+        {
+          "name": "items",
+          "optional": false,
+          "type": {
+            "code": "T[]",
+            "span": {
+              "start": 150,
+              "end": 153
+            }
+          },
+          "binding": "items@215",
+          "span": {
+            "start": 143,
+            "end": 154
+          }
+        },
+        {
+          "name": "selected",
+          "optional": true,
+          "type": {
+            "code": "T",
+            "span": {
+              "start": 168,
+              "end": 169
+            }
+          },
+          "binding": "selected@222",
+          "span": {
+            "start": 157,
+            "end": 170
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ListProps<T>",
+          "span": {
+            "start": 234,
+            "end": 246
+          }
+        },
+        "span": {
+          "start": 206,
+          "end": 246
+        }
+      },
+      "types": [
+        "ListProps"
+      ],
+      "bindings": [
+        {
+          "id": "label@208",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 208,
+            "end": 213
+          }
+        },
+        {
+          "id": "items@215",
+          "name": "items",
+          "kind": "prop",
+          "span": {
+            "start": 215,
+            "end": 220
+          }
+        },
+        {
+          "id": "selected@222",
+          "name": "selected",
+          "kind": "prop",
+          "span": {
+            "start": 222,
+            "end": 230
+          }
+        },
+        {
+          "id": "item@307",
+          "name": "item",
+          "kind": "loopVar",
+          "span": {
+            "start": 307,
+            "end": 311
+          }
+        },
+        {
+          "id": "index@313",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 313,
+            "end": 318
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "ul",
+        "attributes": [
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 281,
+                "end": 286
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@208",
+                  "span": {
+                    "start": 281,
+                    "end": 286
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 269,
+              "end": 287
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "For",
+            "source": {
+              "code": "items",
+              "span": {
+                "start": 296,
+                "end": 301
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "items@215",
+                  "span": {
+                    "start": 296,
+                    "end": 301
+                  }
+                }
+              ]
+            },
+            "item": "item@307",
+            "index": "index@313",
+            "key": {
+              "code": "index",
+              "span": {
+                "start": 342,
+                "end": 347
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "index@313",
+                  "span": {
+                    "start": 342,
+                    "end": 347
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Element",
+              "tag": "li",
+              "attributes": [
+                {
+                  "kind": "Bound",
+                  "name": "aria-current",
+                  "value": {
+                    "code": "item === selected ? \"true\" : undefined",
+                    "span": {
+                      "start": 363,
+                      "end": 401
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "item@307",
+                        "span": {
+                          "start": 363,
+                          "end": 367
+                        }
+                      },
+                      {
+                        "kind": "Binding",
+                        "binding": "selected@222",
+                        "span": {
+                          "start": 372,
+                          "end": 380
+                        }
+                      },
+                      {
+                        "kind": "Global",
+                        "name": "undefined",
+                        "span": {
+                          "start": 392,
+                          "end": 401
+                        }
+                      }
+                    ]
+                  },
+                  "span": {
+                    "start": 349,
+                    "end": 402
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "kind": "Interpolation",
+                  "value": {
+                    "code": "String(item)",
+                    "span": {
+                      "start": 415,
+                      "end": 427
+                    },
+                    "refs": [
+                      {
+                        "kind": "Global",
+                        "name": "String",
+                        "span": {
+                          "start": 415,
+                          "end": 421
+                        }
+                      },
+                      {
+                        "kind": "Binding",
+                        "binding": "item@307",
+                        "span": {
+                          "start": 422,
+                          "end": 426
+                        }
+                      }
+                    ]
+                  },
+                  "span": {
+                    "start": 414,
+                    "end": 428
+                  }
+                }
+              ],
+              "span": {
+                "start": 333,
+                "end": 442
+              }
+            },
+            "span": {
+              "start": 296,
+              "end": 451
+            }
+          }
+        ],
+        "span": {
+          "start": 265,
+          "end": 462
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "List",
+      "span": {
+        "start": 174,
+        "end": 469
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ListProps",
+      "exported": true,
+      "code": "interface ListProps<T> {\n  label: string;\n  items: T[];\n  selected?: T;\n}",
+      "span": {
+        "start": 99,
+        "end": 172
+      }
+    }
+  ]
+}

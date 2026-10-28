@@ -1,0 +1,14 @@
+{
+  "description": "A generic component whose type parameter has a constraint, with items that hold more than it.",
+  "ssr": {
+    "people": {
+      "props": {
+        "caption": "People",
+        "rows": [
+          { "id": "ada", "label": "Ada Lovelace", "born": 1815 },
+          { "id": "grace", "label": "Grace Hopper", "born": 1906 }
+        ]
+      }
+    }
+  }
+}

@@ -27,7 +27,15 @@ export type { ComponentModule } from "./js/print.ts";
 export { Placeholders } from "./js/placeholders.ts";
 export { isAlwaysNullish, nullishText, syntacticNullishness, textTemplate } from "./js/text.ts";
 export type { Nullishness, TextPart } from "./js/text.ts";
-export { componentTypes, exportDeclaration, exportsOf, typeDeclarationCode } from "./exports.ts";
+export {
+  addTypeImports,
+  componentTypes,
+  exportDeclaration,
+  exportsOf,
+  typeDeclarationCode,
+  typeExportsCode,
+  typeSpecifier,
+} from "./exports.ts";
 export {
   bindingOf,
   codeKind,
@@ -53,7 +61,7 @@ export {
   parseStatementsSource,
 } from "./parse.ts";
 export type { CodeKind, ExpressionComment, ParsedExpression, ParsedStatements } from "./parse.ts";
-export { liveBindings, liveTypes, referencedBindings } from "./references.ts";
+export { liveBindings, liveTypeNames, liveTypes, referencedBindings } from "./references.ts";
 export type { LiveOptions, ReferencedOptions } from "./references.ts";
 export {
   functionBodyText,

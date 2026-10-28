@@ -1,0 +1,4 @@
+{
+  "description": "A generic component's model, bound by a parent to a state of a literal union.",
+  "main": "SizeForm.uf.tsx"
+}

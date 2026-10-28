@@ -4,7 +4,9 @@ import {
   createBinding,
   createComponent,
   createElement,
+  createExport,
   createFor,
+  createModuleImport,
   createInterpolation,
   createModule,
   createProp,
@@ -15,11 +17,12 @@ import {
   createTypeText,
   span,
 } from "@unframework/ir";
-import type { ElementNode } from "@unframework/ir";
+import type { ComponentApi, ElementNode, ModuleApi } from "@unframework/ir";
 import { transformWithOxc } from "vite";
 import { describe, expect, it } from "vitest";
 
 import {
+  addTypeImports,
   componentTypes,
   exportDeclaration,
   formatOutput,
@@ -40,6 +43,8 @@ import {
   printProgram,
   sourceNames,
   typeDeclarationCode,
+  typeExportsCode,
+  typeSpecifier,
 } from "../src/index.ts";
 import type { JsxDialect } from "../src/index.ts";
 import { expressionAt } from "./expressions.ts";
@@ -384,6 +389,145 @@ describe("type declarations", () => {
       'type Tone = "info" | "warn";',
       "export interface BadgeProps {\n  /** Shown. */\n  tone: Tone;\n}",
     ]);
+  });
+});
+
+describe("type imports and exports (ADR-0067, ADR-0068)", () => {
+  /** A `.uf.tsx` module's API, as the resolver gives it: its main component alone. */
+  const moduleApi = (file: string, name: string): ModuleApi => ({
+    file,
+    components: [
+      {
+        name,
+        export: "default",
+        props: [],
+        events: [],
+        models: [],
+        slots: [],
+        exposes: [],
+        inheritAttrs: true,
+        root: "element",
+      } satisfies ComponentApi,
+    ],
+    keys: [],
+  });
+
+  /** A module whose main component, Badge, reads `Tone` and not `Hint`, which a member another file declares names. */
+  function badgeModule() {
+    const props = [
+      createProp("tone", false, createTypeText("Tone", at), at),
+      createProp("hint", true, createTypeText("Hint", at), at, undefined, undefined, {
+        file: "types.ts",
+        declaration: "Base",
+        span: at,
+      }),
+    ];
+    const badge = createComponent("Badge", createElement("p", [], [], at), at, props);
+    badge.propsParameter = createPropsParameter(
+      "object",
+      createTypeText("BadgeProps", at),
+      at,
+      "props",
+    );
+    const other = createComponent("Other", createElement("p", [], [], at), at);
+    const module = createModule(
+      "Badge.uf.tsx",
+      [badge, other],
+      [createExport("default", "Badge", at)],
+      [],
+    );
+    module.typeImports = [
+      {
+        specifier: "./types",
+        names: [
+          { imported: "BadgeProps", local: "BadgeProps", span: at },
+          { imported: "Tone", local: "Tone", span: at },
+          { imported: "Hint", local: "Hint", span: at },
+          { imported: "Size", local: "SizeName", span: at },
+        ],
+        span: at,
+      },
+    ];
+    // Imported for its types alone: the analyser records its API, without names.
+    module.imports = [
+      createModuleImport(
+        "./Field.uf.tsx",
+        "Field.uf.tsx",
+        moduleApi("Field.uf.tsx", "Field"),
+        [],
+        at,
+      ),
+    ];
+    module.typeExports = [
+      { kind: "Declaration", name: "Sizes", code: "type Sizes = SizeName[];", span: span(40, 64) },
+      {
+        kind: "ReExport",
+        specifier: "./Field.uf.tsx",
+        names: [{ imported: "FieldProps", exported: "Props", span: at }],
+        span: span(10, 30),
+      },
+    ];
+    return { module, badge, other };
+  }
+
+  it("imports the names the output reads, as the source binds them, and none a foreign member names", () => {
+    const { module, badge, other } = badgeModule();
+    const imports = new ImportSet();
+    addTypeImports(badge, module, imports, (name) => `${name}.vue`);
+    expect(printProgram(js.program(imports.toDeclarations())).trim()).toBe(
+      'import type { BadgeProps, Size as SizeName, Tone } from "./types";',
+    );
+    // Another component of the module reads none, and writes none of its exports.
+    const others = new ImportSet();
+    addTypeImports(other, module, others, (name) => `${name}.vue`);
+    expect(others.size).toBe(0);
+    expect(typeExportsCode(other, module, (name) => `${name}.vue`)).toEqual([]);
+  });
+
+  it("writes the module's type exports in its main component's output, from each target's file", () => {
+    const { module, badge } = badgeModule();
+    expect(typeExportsCode(badge, module, (name) => `${name}.vue`)).toEqual([
+      { code: 'export type { FieldProps as Props } from "./Field.vue";', span: span(10, 30) },
+      { code: "export type Sizes = SizeName[];", span: span(40, 64) },
+    ]);
+  });
+
+  it("re-exports from the main output an exported type only another component's output declares", () => {
+    const tone = createTypeDeclaration("Tone", true, 'type Tone = "info";', span(0, 19));
+    const badge = createComponent("Badge", createElement("p", [], [], at), at, [], undefined, [
+      "Tone",
+    ]);
+    const pair = createComponent("Pair", createElement("p", [], [], at), at);
+    const module = createModule(
+      "Pair.uf.tsx",
+      [badge, pair],
+      [createExport("default", "Pair", at)],
+      [tone],
+    );
+    expect(typeExportsCode(pair, module, (name) => `${name}.vue`)).toEqual([
+      { code: 'export type { Tone } from "./Badge.vue";', span: span(0, 19) },
+    ]);
+    // Badge declares it already; it writes no export of the module's.
+    expect(typeExportsCode(badge, module, (name) => `${name}.vue`)).toEqual([]);
+  });
+
+  it("imports a .uf.tsx module's types from its main component's output, and keeps any other specifier", () => {
+    const module = createModule("Form.uf.tsx");
+    module.imports = [
+      createModuleImport(
+        "../shared/text-field.uf.tsx",
+        "../shared/text-field.uf.tsx",
+        moduleApi("../shared/text-field.uf.tsx", "TextField"),
+        [],
+        at,
+      ),
+    ];
+    expect(typeSpecifier("./types", module, (name) => `${name}.vue`)).toBe("./types");
+    expect(typeSpecifier("rxjs", module, (name) => `${name}.vue`)).toBe("rxjs");
+    // The main component's file, never the module's own name.
+    expect(typeSpecifier("../shared/text-field.uf.tsx", module, (name) => `${name}.vue`)).toBe(
+      "../shared/TextField.vue",
+    );
   });
 });
 

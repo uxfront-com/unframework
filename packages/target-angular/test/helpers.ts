@@ -49,9 +49,11 @@ function filesUnder(directory: string): string[] {
     .toSorted();
 }
 
-/** The committed Angular golden outputs of the integration corpus. */
+/** The committed Angular golden outputs of the integration corpus, but its types lane's. */
 export function goldenFiles(): string[] {
-  return filesUnder(casesDir).filter((path) => /\/__output__\/angular\/[^/]+\.ts$/.test(path));
+  return filesUnder(casesDir).filter(
+    (path) => /\/__output__\/angular\/[^/]+\.ts$/.test(path) && !TYPES_LANE.test(path),
+  );
 }
 
 /**
@@ -73,7 +75,8 @@ export function corpusSources(): { name: string; file: string; source: string }[
         !name.startsWith("diagnostics/") &&
         !COMPOSITION.test(name) &&
         !STYLED_COMPOSITION.test(name) &&
-        !BINDING_COMPOSITION.test(name),
+        !BINDING_COMPOSITION.test(name) &&
+        !TYPES_LANE.test(`${name}/`),
     );
 }
 
@@ -91,6 +94,13 @@ const STYLED_COMPOSITION =
  * toolchain project checks their Angular outputs.
  */
 const BINDING_COMPOSITION = /^bindings\/(?:style-expression|style-spread)$/;
+
+/**
+ * M5's types and generics cases (ADR-0067, ADR-0068), which Angular emits from its types lane, layer
+ * 23 of M5 (UXF-465): until then `harness/quarantine/angular.ts` lists their failing cells, and the lane
+ * brings them back here.
+ */
+const TYPES_LANE = /(?:^|\/)(?:types|generics|diagnostics\/generic-slot-props)\//;
 
 /**
  * The areas of M3's composition cases, which Angular reports (UF1002) until its M3 lane

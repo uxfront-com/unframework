@@ -26,6 +26,7 @@ import {
 } from "../scripts/canaries.ts";
 import {
   addRootAttribute,
+  anyExportedTypes,
   CANARIES,
   canaryCase,
   dropFirstRule,
@@ -774,8 +775,9 @@ describe("canaries", () => {
 
   it("L4-consumer types each target's props `any` where its consumers' checker reads them", async () => {
     const result = await compileWith("L4-consumer");
+    // The exported types are widened too, as the test of `types/exported-types` proves.
     const lines = (target: string) =>
-      result.outputs[target]![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line));
+      result.outputs[target]![0]!.contents.split("\n").filter(widenedProps);
     expect(lines("react")).toEqual(["}: any) {"]);
     expect(result.outputs.react![0]!.contents).toMatch(
       /^export default function TaskList\(\{\n[\s\S]*?\n\}: any\) \{$/m,
@@ -810,7 +812,7 @@ describe("canaries", () => {
         targets: [target],
         plugins: canaryPlugins("L4-consumer", target),
       });
-      return outputs[target]![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line));
+      return outputs[target]![0]!.contents.split("\n").filter(widenedProps);
     };
     expect(await lines("react")).toEqual(["}: any) {"]);
     const { outputs: react } = await compile(readFileSync(info.source, "utf8"), {
@@ -856,6 +858,47 @@ describe("canaries", () => {
     expect(outputs.vue![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line))).toEqual([
       "const { label } = defineProps<Record<string, any>>();",
       'const value = defineModel<any>("value", { default: 0 });',
+    ]);
+  });
+
+  it("L4-consumer types a module's exported types `any`, on a case whose consumers misuse one", async () => {
+    // The type directives of `types/exported-types` (ADR-0068): the props type and a type no
+    // component reaches, each declared `any` where the source declares it.
+    const info = listCases().find(({ id }) => id === "types/exported-types")!;
+    const { outputs } = await compile(readFileSync(info.source, "utf8"), {
+      filename: info.filename,
+      targets: ["vue"],
+      plugins: canaryPlugins("L4-consumer", "vue"),
+    });
+    expect(outputs.vue![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line))).toEqual([
+      "export type ButtonTone = any;",
+      "export type ButtonSize = any;",
+      "export type ButtonProps = any;",
+      'const { label, tone = "primary" } = defineProps<Record<string, any>>();',
+    ]);
+  });
+
+  it("widens an exported interface, a type alias and a type re-export, keeping type parameters", () => {
+    const widened = anyExportedTypes(
+      [
+        'import type { Item, Tone } from "./types";',
+        'export type { Tone, Size as ButtonSize } from "./types";',
+        "export interface ListProps<T extends { id: string } = Item> extends Base<T> {",
+        "  items: T[];",
+        "  pick?: (item: T) => void;",
+        "}",
+        'export type Picked = Pick<Item, "id" | "label"> &',
+        "  Readonly<{ select: () => void }>;",
+        "type Local = string;",
+      ].join("\n"),
+    );
+    expect(widened.split("\n")).toEqual([
+      'import type { Item } from "./types";',
+      "export type Tone = any;",
+      "export type ButtonSize = any;",
+      "export type ListProps<T extends { id: string } = Item> = any;",
+      "export type Picked = any;",
+      "type Local = string;",
     ]);
   });
 
@@ -1448,3 +1491,8 @@ describe("every canary on the corpus", () => {
     },
   );
 });
+
+/** A line the L4-consumer canary widened that is not an exported type's declaration. */
+function widenedProps(line: string): boolean {
+  return /\bany\b/.test(line) && !/^\s*export type [\w$]+(?:<.*>)? = any;$/.test(line);
+}

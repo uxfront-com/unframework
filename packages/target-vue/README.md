@@ -14,10 +14,20 @@ setup as written, `.value` included (ADR-0045 to ADR-0049). In order:
 
 1. **The imports** from `vue` (`ref`, `shallowRef`, `computed`, `watch`, `watchPostEffect`,
    `onMounted`, `onUnmounted`, `useTemplateRef`, `useId`, `nextTick`), each under a name no
-   source name takes.
+   source name takes, and the source's `import type` names the script reads, by name
+   (ADR-0067): from a `.ts` module or a package as written, `import type { BadgeProps } from
+"./types"`, and from a child's output, `import Field, { type FieldProps } from "./Field.vue"`.
 2. **The type declarations** the component reaches (its props, its events and its setup code),
-   copied as written.
-3. **`defineProps<P>()`** with the source's annotation.
+   copied as written, and in the output of the module's main component its other type exports,
+   an exported type no component reaches and a re-export (`export type { Tone } from "./types"`),
+   all in source order (ADR-0068).
+3. **`defineProps<P>()`** with the source's annotation, which compiler-sfc resolves through the
+   output tree: relative modules, `extends` chains, intersections and the five utility types.
+   A member a package declares is the exception: compiler-sfc resolves a package only through
+   TypeScript's classic API, which TypeScript 7 lacks, so the props are printed as a type literal
+   of their members, `defineProps<{ closed: boolean; label: string }>()` (ADR-0067). A generic
+   component's block takes its type parameters, `<script setup lang="ts" generic="T extends
+Item">` (ADR-0068).
    - Destructured props use Vue 3.5's reactive destructure:
      `const { label, tone = "info", count = undefined } = defineProps<BadgeProps>();`. Every
      optional prop gets a default, the source's or `undefined`, for two reasons. Without a
@@ -152,8 +162,9 @@ Models, context and `<component is>` (ADR-0054) are Vue's own as well:
 
 For tests and tooling (the target's main entry never loads it):
 
-- **`@unframework/target-vue/toolchain`**: `@vitejs/plugin-vue` for Vite. Static asset URLs stay
-  plain strings, as on every other target. The checks:
+- **`@unframework/target-vue/toolchain`**: `@vitejs/plugin-vue` for Vite, given the disk as
+  `script.fs`, without which compileScript resolves no imported props type (ADR-0067). Static
+  asset URLs stay plain strings, as on every other target. The checks:
   - L3 runs `@vue/compiler-sfc` the way plugin-vue does, for the DOM and for SSR, and reports
     every error and warning with its position. It refuses `NODE_ENV=production`, which silences
     them. `compileScript` reads the files it was given, so `defineProps<X>()` resolves an `X`

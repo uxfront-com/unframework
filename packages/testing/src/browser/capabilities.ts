@@ -65,6 +65,19 @@ export function noOutputReason(
 }
 
 /**
+ * Why a test of a case its target cannot compile yet runs against a stand-in, or nothing: the
+ * case's L3 is quarantined on the target, whose browser build type-checks its output, so the
+ * project gives its spec a stand-in that loads (ADR-0068). The test is not skipped: every browser
+ * layer fails with this cause.
+ */
+export function standInCause(
+  caseId: string,
+  cases: Readonly<Record<string, string>> | undefined = inject("ufStandIn"),
+): string | undefined {
+  return cases && Object.hasOwn(cases, caseId) ? cases[caseId] : undefined;
+}
+
+/**
  * Refuses what only a target that runs client code can do: a user's action, or reading the
  * events a component emitted. A test that does either declares `requires: ["interactivity"]`,
  * and is skipped where it cannot run, rather than clicking inert HTML and failing later.

@@ -1,0 +1,207 @@
+{
+  "irVersion": 1,
+  "file": "types/imported-interface/Badge.uf.tsx",
+  "components": [
+    {
+      "name": "Badge",
+      "span": {
+        "start": 44,
+        "end": 176
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 100,
+              "end": 110
+            }
+          },
+          "binding": "label@76",
+          "declaredBy": {
+            "file": "types/imported-interface/types.ts",
+            "declaration": "BadgeProps",
+            "span": {
+              "start": 161,
+              "end": 175
+            }
+          },
+          "span": {
+            "start": 100,
+            "end": 110
+          }
+        },
+        {
+          "name": "tone",
+          "optional": true,
+          "type": {
+            "code": "\"info\" | \"danger\"",
+            "span": {
+              "start": 100,
+              "end": 110
+            }
+          },
+          "default": {
+            "code": "\"info\"",
+            "span": {
+              "start": 90,
+              "end": 96
+            },
+            "refs": []
+          },
+          "binding": "tone@83",
+          "declaredBy": {
+            "file": "types/imported-interface/types.ts",
+            "declaration": "BadgeProps",
+            "span": {
+              "start": 178,
+              "end": 203
+            }
+          },
+          "span": {
+            "start": 100,
+            "end": 110
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "BadgeProps",
+          "span": {
+            "start": 100,
+            "end": 110
+          }
+        },
+        "span": {
+          "start": 74,
+          "end": 110
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "label@76",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 76,
+            "end": 81
+          }
+        },
+        {
+          "id": "tone@83",
+          "name": "tone",
+          "kind": "prop",
+          "span": {
+            "start": 83,
+            "end": 87
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "`badge badge-${tone}`",
+                  "span": {
+                    "start": 136,
+                    "end": 157
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tone@83",
+                      "span": {
+                        "start": 151,
+                        "end": 155
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 136,
+                  "end": 157
+                }
+              }
+            ],
+            "span": {
+              "start": 129,
+              "end": 158
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 160,
+                "end": 165
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@76",
+                  "span": {
+                    "start": 160,
+                    "end": 165
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 159,
+              "end": 166
+            }
+          }
+        ],
+        "span": {
+          "start": 123,
+          "end": 173
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Badge",
+      "span": {
+        "start": 44,
+        "end": 176
+      }
+    }
+  ],
+  "types": [],
+  "typeImports": [
+    {
+      "specifier": "./types",
+      "names": [
+        {
+          "imported": "BadgeProps",
+          "local": "BadgeProps",
+          "span": {
+            "start": 14,
+            "end": 24
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 42
+      }
+    }
+  ]
+}

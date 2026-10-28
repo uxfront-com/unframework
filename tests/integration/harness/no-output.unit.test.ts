@@ -1,14 +1,31 @@
 // The browser projects' stand-ins (no-output.ts), on a corpus of their own: which cases a target
-// has no output for, the import a stand-in replaces, and what the stand-in does.
+// has no output for or cannot compile yet, the import a stand-in replaces, what the stand-in
+// does, and what a test run against one records and how the summary judges it (ADR-0068).
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+import {
+  BROWSER_LAYERS,
+  buildPartialMatrix,
+  recordLayer,
+  recordStandIn,
+  summarise,
+} from "@unframework/testing/node";
+import type { LayerTask, QuarantineEntry, UfLayerMeta } from "@unframework/testing/node";
 import type { Plugin } from "vite";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { listCases } from "./cases.ts";
-import { NO_OUTPUT_PREFIX, noOutputCases, noOutputPlugin, standIn } from "./no-output.ts";
+import {
+  NO_OUTPUT_PREFIX,
+  noOutputCases,
+  noOutputPlugin,
+  standIn,
+  standInCases,
+  standInReasons,
+} from "./no-output.ts";
+import { QUARANTINE } from "./quarantine.ts";
 
 let corpus: string | undefined;
 afterEach(() => {
@@ -109,7 +126,7 @@ describe("noOutputPlugin", () => {
   it("resolves a spec's import of such a component to a stand-in that loads, and nothing else", () => {
     const dir = corpusOfFour();
     const cases = listCases(dir);
-    const plugin = noOutputPlugin(cases, noOutputCases(cases, "qwik"));
+    const plugin = noOutputPlugin(cases, standInReasons(noOutputCases(cases, "qwik"), {}));
     const importer = join(dir, "events/declared/declared.test.ts");
     expect(plugin.enforce).toBe("pre");
     expect(resolveWith(plugin, "./Box.uf.tsx", importer)).toBe(
@@ -143,5 +160,153 @@ describe("noOutputPlugin", () => {
       `data:text/javascript,${encodeURIComponent(standIn(reason))}`
     )) as { default: () => unknown };
     expect(() => module.default()).toThrow(reason);
+  });
+});
+
+/** An L3 entry for a case on a target, as a target's quarantine file holds it. */
+const l3 = (caseId: string, target: string): QuarantineEntry => ({
+  case: caseId,
+  target,
+  layer: "L3",
+  reason: "imports no type yet",
+  issue: "UXF-0",
+});
+
+describe("standInCases", () => {
+  it("gives a case with an Angular L3 entry the stand-in on Angular, and none once it is gone", () => {
+    const cases = listCases(corpusOfFour());
+    const found = standInCases(cases, "angular", [l3("basics/clean", "angular")]);
+    expect(found).toEqual({
+      "basics/clean":
+        "angular cannot compile this case yet, so its spec runs against a stand-in: its L3 is quarantined for UXF-0 (imports no type yet), and its browser build type-checks the output.",
+    });
+    expect(standInCases(cases, "angular", [])).toEqual({});
+    // Another layer's entry, or another target's, leaves the case's own output.
+    expect(
+      standInCases(cases, "angular", [
+        { ...l3("basics/clean", "angular"), layer: "L4" },
+        l3("basics/clean", "react"),
+      ]),
+    ).toEqual({});
+  });
+
+  it("gives none on a target whose browser build erases the types (React)", () => {
+    const cases = listCases(corpusOfFour());
+    expect(standInCases(cases, "react", [l3("basics/clean", "react")])).toEqual({});
+  });
+
+  it("leaves out a case without a spec, which no browser project loads", () => {
+    const cases = listCases(corpusOfFour());
+    expect(standInCases(cases, "angular", [l3("diagnostics/broken", "angular")])).toEqual({});
+  });
+
+  it("serves its stand-in with its own cause, never the no-output message", () => {
+    const dir = corpusOfFour();
+    const cases = listCases(dir);
+    const standIns = standInCases(cases, "angular", [l3("basics/clean", "angular")]);
+    const plugin = noOutputPlugin(cases, standInReasons(noOutputCases(cases, "angular"), standIns));
+    expect(resolveWith(plugin, "./Box.uf.tsx", join(dir, "basics/clean/clean.test.ts"))).toBe(
+      `${NO_OUTPUT_PREFIX}basics/clean`,
+    );
+    expect(loadWith(plugin, `${NO_OUTPUT_PREFIX}basics/clean`)).toBe(
+      standIn(standIns["basics/clean"]!),
+    );
+  });
+
+  it("stands in for the corpus's cases whose Angular L3 entry stands", () => {
+    const ids = Object.keys(standInCases(listCases(), "angular", QUARANTINE)).sort();
+    const quarantined = [
+      ...new Set(
+        QUARANTINE.filter((entry) => entry.target === "angular" && entry.layer === "L3").map(
+          (entry) => entry.case,
+        ),
+      ),
+    ].filter((id) => listCases().find((info) => info.id === id)?.spec);
+    expect(ids).toEqual(quarantined.sort());
+    // Each has an Angular entry for every browser layer it fails, and only those.
+    for (const id of ids) {
+      expect(
+        QUARANTINE.filter((entry) => entry.case === id && entry.target === "angular")
+          .map((entry) => entry.layer)
+          .filter((layer) => BROWSER_LAYERS.includes(layer)),
+        id,
+      ).toEqual(BROWSER_LAYERS);
+    }
+  });
+});
+
+describe("a test run against a stand-in", () => {
+  const cause = "angular cannot compile this case yet (fixture).";
+  const subject = (quarantine: readonly QuarantineEntry[] = []) => ({
+    case: "basics/clean",
+    target: "angular",
+    quarantine,
+  });
+
+  it("records every browser layer as failed with the stand-in's cause, and skips none", () => {
+    const task: LayerTask = { meta: {} };
+    recordStandIn(task, subject(), cause);
+    expect(task.meta.uf).toEqual({
+      case: "basics/clean",
+      target: "angular",
+      layers: Object.fromEntries(
+        BROWSER_LAYERS.map((layer) => [layer, { status: "fail", message: cause }]),
+      ),
+      standIn: cause,
+    });
+    expect(task.meta.uf?.skipped).toBeUndefined();
+  });
+
+  it("is quarantined layer by layer, and a later pass keeps the cell failed", () => {
+    const entries = BROWSER_LAYERS.map((layer) => ({ ...l3("basics/clean", "angular"), layer }));
+    const task: LayerTask = { meta: {} };
+    recordStandIn(task, subject(entries), cause);
+    // The console is clean, and the mount's error is L8's: neither hides the stand-in's failure.
+    recordLayer(task, subject(entries), "L13", { status: "pass" });
+    for (const layer of BROWSER_LAYERS) {
+      expect(task.meta.uf?.layers[layer], layer).toEqual({ status: "quarantined", issue: "UXF-0" });
+    }
+  });
+
+  it("is excused from scenario parity with the reference, and its cells still fail", () => {
+    const reference: UfLayerMeta = {
+      case: "basics/clean",
+      target: "vue",
+      layers: { L7: { status: "pass" } },
+      scenarios: ["initial"],
+      test: "basics/clean > renders",
+    };
+    const task: LayerTask = { meta: {} };
+    recordStandIn(task, subject(), cause);
+    const ours: UfLayerMeta = { ...task.meta.uf!, test: "basics/clean > renders" };
+    const matrix = buildPartialMatrix({
+      run: "all",
+      projects: ["browser:vue", "browser:angular"],
+      records: [
+        { project: "browser:vue", record: reference },
+        { project: "browser:angular", record: ours },
+      ],
+      finishedAt: "2026-10-28T00:00:00.000Z",
+      mode: { update: false, pixels: "baseline", canary: null },
+      filtered: null,
+      shard: null,
+      empty: [],
+      quarantine: [],
+      reference: "vue",
+    });
+    const result = summarise([matrix], {
+      projects: ["browser:vue", "browser:angular"],
+      cases: ["basics/clean"],
+      targets: ["vue", "angular"],
+      liveLayers: ["L7"],
+      notLiveReason: "not live (fixture)",
+    });
+    expect(result.matrix.tests["basics/clean"]?.angular).toEqual({
+      "basics/clean > renders": { scenarios: [], standIn: cause },
+    });
+    // No scenario problem: only its cells, which its quarantine entries cover in the corpus.
+    expect(result.problems).toEqual(
+      BROWSER_LAYERS.map((layer) => `basics/clean › angular › ${layer}: fail: ${cause}`),
+    );
   });
 });

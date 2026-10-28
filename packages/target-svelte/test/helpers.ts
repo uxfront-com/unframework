@@ -27,9 +27,18 @@ function filesUnder(directory: string): string[] {
     .toSorted();
 }
 
-/** The committed Svelte golden outputs of the integration corpus. */
+/**
+ * M5's types and generics cases (ADR-0067, ADR-0068), which Svelte emits from its types lane, layer
+ * 21 of M5 (UXF-464): until then `harness/quarantine/svelte.ts` lists their failing cells, and the lane
+ * brings them back here.
+ */
+export const TYPES_LANE: RegExp = /(?:^|\/)(?:types|generics|diagnostics\/generic-slot-props)\//;
+
+/** The committed Svelte golden outputs of the integration corpus, but its types lane's. */
 export function goldenFiles(): string[] {
-  return filesUnder(casesDir).filter((path) => /\/__output__\/svelte\/[^/]+\.svelte$/.test(path));
+  return filesUnder(casesDir).filter(
+    (path) => /\/__output__\/svelte\/[^/]+\.svelte$/.test(path) && !TYPES_LANE.test(path),
+  );
 }
 
 /**

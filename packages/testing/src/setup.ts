@@ -6,7 +6,9 @@
 //   logged after the last test is recorded on the file and fails it;
 // - capabilities: a test that requires one its target does not support is skipped before it
 //   runs, and every layer it would have recorded says why (ADR-0050); so is every test of a
-//   case the target has no output for, with the case's expected errors;
+//   case the target has no output for, with the case's expected errors; a test of a case the
+//   target cannot compile yet runs against a stand-in, and every browser layer fails with that
+//   cause (ADR-0068);
 // - navigation: a form submission or a link the component does not prevent is prevented, and
 //   fails the test, rather than taking the whole spec file's frame away;
 // - cleanup: whatever a test mounted is unmounted inside the capture window, so unmount warnings
@@ -22,7 +24,7 @@ import { commands, userEvent } from "vitest/browser";
 
 import "./commands.ts";
 import { judgeTest } from "./browser/behaviour.ts";
-import { noOutputReason, requiredSkip } from "./browser/capabilities.ts";
+import { noOutputReason, requiredSkip, standInCause } from "./browser/capabilities.ts";
 import { restoreClock } from "./browser/clock.ts";
 import {
   beginTestConsole,
@@ -40,15 +42,12 @@ import { releaseKeys } from "./browser/user.ts";
 import { cleanup } from "./browser/view.ts";
 import { caseOfFile } from "./harness.ts";
 import type { ColorScheme } from "./harness.ts";
-import { recordLayer } from "./layers.ts";
-import type { LayerName, LayerSubject } from "./layers.ts";
+import { BROWSER_LAYERS, recordLayer, recordStandIn } from "./layers.ts";
+import type { LayerSubject } from "./layers.ts";
 
 installConsoleCapture();
 boundElementTimeout();
 installNavigationGuard();
-
-/** The layers a browser test records, which a test skipped by capability records as skipped. */
-const BROWSER_LAYERS: readonly LayerName[] = ["L7", "L8", "L9", "L10", "L11", "L13"];
 
 // The first parameter is the file's fixtures, a destructuring pattern (see the afterAll below).
 // oxlint-disable-next-line no-empty-pattern
@@ -77,7 +76,15 @@ beforeEach(({ task, skip }) => {
   // nothing: each of its tests is skipped there, whatever it requires, with the errors the case
   // expects.
   const reason = noOutputReason(subject.case) ?? (requires ? requiredSkip(requires) : undefined);
-  if (reason === undefined) return;
+  if (reason === undefined) {
+    // A case the target cannot compile yet has a stand-in for its component too, which throws
+    // when the spec mounts it, before `expectParity` records L7, L9, L10 or L11: every browser
+    // layer fails here with the stand-in's cause, the test still runs, and its quarantine
+    // entries hold only while it fails (ADR-0068).
+    const cause = standInCause(subject.case);
+    if (cause !== undefined) recordStandIn(task, subject, cause);
+    return;
+  }
   // Recorded before skipping: the parity reporter fails a skip that records no reason, and the
   // summary excuses this test's scenarios on this target alone (`meta.uf.skipped`).
   for (const layer of BROWSER_LAYERS) recordLayer(task, subject, layer, { status: "skip", reason });

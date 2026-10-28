@@ -1,7 +1,12 @@
 import type * as AST from "@oxc-project/types";
-import type { TypeDeclaration, UfComponent, UfExport, UfModule } from "@unframework/ir";
+import type { Span, TypeDeclaration, UfComponent, UfExport, UfModule } from "@unframework/ir";
 
+import { keyOwner } from "./imports.ts";
+import type { ImportSet } from "./imports.ts";
 import { exportDefault, exportList, exportNamed, variableDeclaration } from "./js/builders.ts";
+import { parseStatementsSource } from "./parse.ts";
+import { liveTypeNames } from "./references.ts";
+import { collectNames } from "./rewrite.ts";
 
 /**
  * Declares a component with the source's export shape. A lone default export or a lone export
@@ -55,9 +60,102 @@ export function componentTypes(component: UfComponent, module: UfModule): TypeDe
 
 /**
  * A type declaration as the source writes it, exported when the source exports it: the
- * outputs keep the export, which consumers type their props with (M5). Copied as text, never
- * re-printed: oxc-codegen drops comments, and a member's doc comment is part of the type.
+ * outputs keep the export, which consumers type their props with (ADR-0068). Copied as text,
+ * never re-printed: oxc-codegen drops comments, and a member's doc comment is part of the type.
  */
 export function typeDeclarationCode(declaration: TypeDeclaration): string {
   return declaration.exported ? `export ${declaration.code}` : declaration.code;
+}
+
+/**
+ * The specifier an output imports a module's types from (ADR-0067): a `.uf.tsx` module's are
+ * exported by the output of its main component (`keyOwner` of the API the module's import
+ * records, a type-only one included), `file(name)` naming a component's output file as for
+ * `childImports`; any other specifier, a `.ts` module's or a package's, is kept as written,
+ * since every output tree holds the `.ts` modules unchanged (ADR-0070). A `.uf.tsx` module with
+ * no API here was not resolved, which fails the compile before any output.
+ */
+export function typeSpecifier(
+  specifier: string,
+  module: UfModule,
+  file: (name: string) => string,
+): string {
+  if (!specifier.endsWith(".uf.tsx")) return specifier;
+  const entry = module.imports?.find((each) => each.specifier === specifier);
+  const owner = entry && keyOwner(entry.api.components);
+  if (!entry || owner === undefined) return specifier;
+  const directory = entry.file.includes("/")
+    ? entry.file.slice(0, entry.file.lastIndexOf("/") + 1)
+    : "";
+  const path = `${directory}${file(owner)}`;
+  return path.startsWith("../") ? path : `./${path}`;
+}
+
+/**
+ * Adds the `import type` names a component's output reads (ADR-0067): each name of the module's
+ * type imports that what the output prints reads (`liveTypeNames`), under the source's own
+ * local name, from `typeSpecifier`. The output of the module's main component also writes the
+ * module's type exports (`typeExports`), and reads what their declarations name.
+ */
+export function addTypeImports(
+  component: UfComponent,
+  module: UfModule,
+  imports: ImportSet,
+  file: (name: string) => string,
+): void {
+  if (!module.typeImports?.length) return;
+  const read = liveTypeNames(component, module, { client: true });
+  if (keyOwner(module.components, module.exports) === component.name) {
+    for (const entry of module.typeExports ?? []) {
+      if (entry.kind !== "Declaration") continue;
+      const [statement] = parseStatementsSource(entry.code).statements;
+      collectNames(statement, read);
+    }
+  }
+  for (const entry of module.typeImports) {
+    for (const name of entry.names) {
+      if (!read.has(name.local)) continue;
+      imports.add(typeSpecifier(entry.specifier, module, file), name.imported, {
+        type: true,
+        local: name.local,
+        exact: true,
+      });
+    }
+  }
+}
+
+/**
+ * The module's type exports, as the output of its main component writes them (ADR-0068): an
+ * exported type no component reaches as written, a re-export from `typeSpecifier`, and a
+ * re-export of an exported type only another component's output declares, each with its span,
+ * so a target can place it in source order among the types it copies. Every other component's
+ * output writes none.
+ */
+export function typeExportsCode(
+  component: UfComponent,
+  module: UfModule,
+  file: (name: string) => string,
+): { code: string; span: Span }[] {
+  if (keyOwner(module.components, module.exports) !== component.name) return [];
+  const exports = (module.typeExports ?? []).map((entry) => {
+    if (entry.kind === "Declaration") return { code: `export ${entry.code}`, span: entry.span };
+    const names = entry.names.map(({ imported, exported }) =>
+      imported === exported ? imported : `${imported} as ${exported}`,
+    );
+    const specifier = JSON.stringify(typeSpecifier(entry.specifier, module, file));
+    return { code: `export type { ${names.join(", ")} } from ${specifier};`, span: entry.span };
+  });
+  // An exported type only another component of the module reaches is declared in that
+  // component's output: the main output re-exports it, so a consumer finds every exported type
+  // where it imports the module's (ADR-0068).
+  for (const declaration of module.types) {
+    if (!declaration.exported || component.types.includes(declaration.name)) continue;
+    const sibling = module.components.find((each) => each.types.includes(declaration.name));
+    if (!sibling) continue;
+    exports.push({
+      code: `export type { ${declaration.name} } from ${JSON.stringify(`./${file(sibling.name)}`)};`,
+      span: declaration.span,
+    });
+  }
+  return exports.toSorted((a, b) => a.span.start - b.span.start);
 }

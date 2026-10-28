@@ -192,6 +192,35 @@ describe("props types across files and packages", () => {
     }
   });
 
+  it("imports types alone from a `.uf.tsx` module's main output, which its file name does not give", async () => {
+    // The resolver reads the module, so each output names its main component's file, never the
+    // module's own name (ADR-0067).
+    const files: Record<string, string> = {
+      "text-field.uf.tsx": [
+        "export interface TextFieldProps { label: string }",
+        "export default function TextField({ label }: TextFieldProps) { return <span>{label}</span>; }",
+      ].join("\n"),
+      "Form.uf.tsx": [
+        'import type { TextFieldProps } from "./text-field.uf.tsx";',
+        "export default function Form({ label }: TextFieldProps) { return <p>{label}</p>; }",
+      ].join("\n"),
+    };
+    const read = async (path: string) => files[path.slice("/project/".length)];
+    const result = await compile(files["Form.uf.tsx"]!, {
+      filename: "Form.uf.tsx",
+      targets: ["vue"],
+      typeOracle: createSyntacticOracle({ root: "/project", readFile: read }),
+      resolve: createFileResolver({ root: "/project", readFile: read }),
+    });
+    expect(result.diagnostics).toEqual([]);
+    expect(result.ir!.imports).toEqual([
+      expect.objectContaining({ specifier: "./text-field.uf.tsx", names: [] }),
+    ]);
+    expect(result.outputs.vue![0]!.contents).toContain(
+      'import type { TextFieldProps } from "./TextField.vue";',
+    );
+  });
+
   it.each([
     [
       "Partial<ButtonProps>",

@@ -232,7 +232,9 @@ Generate each of these with its command. The formatter and the linter skip them 
   emit a small inline helper and declare it `emulated`. The one exception is a module a Vite
   plugin registers, whatever the engine: an import under a `passThrough` prefix (`virtual:` by
   default) reaches every output as written, and that plugin resolves it (§4.4, ADR-0004,
-  ADR-0064). Its module may import the engine's own runtime, such as `@styleframe/runtime`.
+  ADR-0064). Its module may import the engine's own runtime, such as `@styleframe/runtime`. A
+  type import is erased, so an output imports the types the source imports by name, a package's
+  included (ADR-0067).
 - **The IR is plain JSON (P5).** Every node carries a span. Add a field only when a consumer reads
   it. Keep `checkInvariants` true (ADR-0032).
 

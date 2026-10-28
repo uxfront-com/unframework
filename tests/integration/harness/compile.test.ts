@@ -13,9 +13,11 @@ import { formatDiagnostics, toJsonDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic, JsonDiagnostic } from "@unframework/diagnostics";
 import { irSchema } from "@unframework/ir";
 import {
+  BROWSER_LAYERS,
   checkLayers,
   diffLines,
   NO_OUTPUT_SKIP,
+  NO_SPEC_SKIP,
   settleArtefact,
   settleArtefactDirectory,
 } from "@unframework/testing/node";
@@ -60,6 +62,13 @@ const NO_OUTPUT_LAYERS: readonly LayerName[] = [
   "L11",
   "L13",
 ];
+
+/**
+ * The layers only a browser project records, which none records for a diagnostics case, which has
+ * no spec: one its target has output for (a capability's note, UF4004) skips them. L13 is the
+ * server render's too.
+ */
+const NO_SPEC_LAYERS: readonly LayerName[] = BROWSER_LAYERS.filter((layer) => layer !== "L13");
 
 const validateIr = new Ajv({ allErrors: true, strict: true }).compile(irSchema);
 
@@ -147,6 +156,9 @@ describe("compile", () => {
           };
           if (hasErrors(caseDiagnostics(firsts(compiles)), target)) {
             for (const layer of NO_OUTPUT_LAYERS) checks[layer] = () => ({ skip: NO_OUTPUT_SKIP });
+          } else if (!info.spec && info.id.startsWith("diagnostics/")) {
+            // Only a diagnostics case: a feature case without a spec stays a missing cell.
+            for (const layer of NO_SPEC_LAYERS) checks[layer] = () => ({ skip: NO_SPEC_SKIP });
           }
           await checkLayers(
             task,

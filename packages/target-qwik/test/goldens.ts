@@ -25,12 +25,20 @@ function expectsErrors(golden: string): boolean {
 }
 
 /**
+ * M5's types and generics cases (ADR-0067, ADR-0068), which Qwik emits from its types lane, layer
+ * 25 of M5 (UXF-466): until then `harness/quarantine/qwik.ts` lists their failing cells, and the lane
+ * brings them back here.
+ */
+const TYPES_LANE = /(?:^|\/)(?:types|generics|diagnostics\/generic-slot-props)\//;
+
+/**
  * The absolute paths of the goldens matching `pattern` (from the repository's root), sorted, but
- * the scoped sheets (`<source>.css`), which the compile project parses instead (ADR-0063).
+ * the scoped sheets (`<source>.css`), which the compile project parses instead (ADR-0063), and
+ * the cases of its types lane (`TYPES_LANE`).
  */
 export function goldens(pattern: string): string[] {
   return globSync(pattern, { cwd: repo })
     .toSorted()
     .map((file) => join(repo, file))
-    .filter((file) => !file.endsWith(".css") && !expectsErrors(file));
+    .filter((file) => !file.endsWith(".css") && !expectsErrors(file) && !TYPES_LANE.test(file));
 }

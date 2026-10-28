@@ -1,0 +1,9 @@
+- table "People":
+  - caption: People
+  - rowgroup:
+    - row "ada Ada Lovelace":
+      - rowheader "ada"
+      - cell "Ada Lovelace"
+    - row "grace Grace Hopper":
+      - rowheader "grace"
+      - cell "Grace Hopper"

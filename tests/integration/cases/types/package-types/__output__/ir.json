@@ -1,0 +1,299 @@
+{
+  "irVersion": 1,
+  "file": "types/package-types/Status.uf.tsx",
+  "components": [
+    {
+      "name": "Status",
+      "span": {
+        "start": 270,
+        "end": 421
+      },
+      "props": [
+        {
+          "name": "value",
+          "optional": false,
+          "type": {
+            "code": "T",
+            "span": {
+              "start": 329,
+              "end": 340
+            }
+          },
+          "binding": "value@303",
+          "declaredBy": {
+            "file": "pkg:rxjs/dist/types/internal/types.d.ts",
+            "declaration": "TimeInterval",
+            "span": {
+              "start": 1724,
+              "end": 1733
+            }
+          },
+          "span": {
+            "start": 329,
+            "end": 340
+          }
+        },
+        {
+          "name": "interval",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 329,
+              "end": 340
+            }
+          },
+          "binding": "interval@310",
+          "declaredBy": {
+            "file": "pkg:rxjs/dist/types/internal/types.d.ts",
+            "declaration": "TimeInterval",
+            "span": {
+              "start": 1958,
+              "end": 1975
+            }
+          },
+          "span": {
+            "start": 329,
+            "end": 340
+          }
+        },
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "Label",
+            "span": {
+              "start": 329,
+              "end": 340
+            }
+          },
+          "binding": "label@320",
+          "declaredBy": {
+            "file": "types/package-types/types.ts",
+            "declaration": "Labelled",
+            "span": {
+              "start": 169,
+              "end": 182
+            }
+          },
+          "span": {
+            "start": 329,
+            "end": 340
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "StatusProps",
+          "span": {
+            "start": 329,
+            "end": 340
+          }
+        },
+        "span": {
+          "start": 301,
+          "end": 340
+        }
+      },
+      "types": [
+        "StatusProps"
+      ],
+      "bindings": [
+        {
+          "id": "value@303",
+          "name": "value",
+          "kind": "prop",
+          "span": {
+            "start": 303,
+            "end": 308
+          }
+        },
+        {
+          "id": "interval@310",
+          "name": "interval",
+          "kind": "prop",
+          "span": {
+            "start": 310,
+            "end": 318
+          }
+        },
+        {
+          "id": "label@320",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 320,
+            "end": 325
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 370,
+                "end": 375
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@320",
+                  "span": {
+                    "start": 370,
+                    "end": 375
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 369,
+              "end": 376
+            }
+          },
+          {
+            "kind": "Text",
+            "value": ": ",
+            "span": {
+              "start": 376,
+              "end": 378
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "value",
+              "span": {
+                "start": 379,
+                "end": 384
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "value@303",
+                  "span": {
+                    "start": 379,
+                    "end": 384
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 378,
+              "end": 385
+            }
+          },
+          {
+            "kind": "Text",
+            "value": " after ",
+            "span": {
+              "start": 385,
+              "end": 392
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "interval",
+              "span": {
+                "start": 393,
+                "end": 401
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "interval@310",
+                  "span": {
+                    "start": 393,
+                    "end": 401
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 392,
+              "end": 402
+            }
+          },
+          {
+            "kind": "Text",
+            "value": " ms",
+            "span": {
+              "start": 402,
+              "end": 410
+            }
+          }
+        ],
+        "span": {
+          "start": 359,
+          "end": 414
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Status",
+      "span": {
+        "start": 270,
+        "end": 421
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "StatusProps",
+      "exported": false,
+      "code": "type StatusProps = TimeInterval<string> & Labelled;",
+      "span": {
+        "start": 217,
+        "end": 268
+      }
+    }
+  ],
+  "typeImports": [
+    {
+      "specifier": "rxjs",
+      "names": [
+        {
+          "imported": "TimeInterval",
+          "local": "TimeInterval",
+          "span": {
+            "start": 14,
+            "end": 26
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 41
+      }
+    },
+    {
+      "specifier": "./types",
+      "names": [
+        {
+          "imported": "Labelled",
+          "local": "Labelled",
+          "span": {
+            "start": 57,
+            "end": 65
+          }
+        }
+      ],
+      "span": {
+        "start": 43,
+        "end": 83
+      }
+    }
+  ]
+}

@@ -285,8 +285,9 @@ type re-exported from a case's `.ts` module, its line there (`types.ts:2`). A ki
 check is declared in `CONSUMER_GAPS`, with its reason, and a directive of that kind fails; so is a
 finer part of one, a slot without props (`named-slot`) or a slot whose props name a type parameter
 of its component (`generic-slot-props`), which leaves the target's other slots checked. The
-`L4-consumer` canary types every output's props, events and slots `any`, so every directive must
-go unmet. `../toolchains/README.md` has the layout and the notes per checker.
+`L4-consumer` canary types every output's props, events and slots `any`, and declares every
+exported `interface` and type alias, and each name of a type re-export, `any`, so every directive
+must go unmet. `../toolchains/README.md` has the layout and the notes per checker.
 
 Each test records its layers in its task meta: `expectParity` records L7, L9, L10 and L11
 without throwing, so the assertions after it always run, and the setup's `afterEach` records L8
@@ -301,8 +302,11 @@ reference's capture from the same run, nothing is written, and the matrices go t
 into `parity-matrix.<engine>.json` and `.md`. The nightly workflow runs both engines; a
 difference there is an issue, never a quarantine entry. A cell is `pass`, `fail`,
 `skip(reason)` or `quarantined(issue)`; a skip on a live layer names a capability the target
-lacks (`requires interactivity: …`) or a mechanical cause (no output, the live reference, a
-component that did not render, no scripted interaction). A project that collects no tests fails, and when every
+lacks (`requires interactivity: …`) or a mechanical cause (no output, no spec, the live
+reference, a component that did not render, no scripted interaction). A diagnostics case has no
+spec: where its target has output (its only diagnostic is a capability's note, as UF4004), the
+compile project records its browser layers `skip(no spec: …)`, and its server render checks the
+output. A project that collects no tests fails, and when every
 project ran, a missing cell fails. A project ran when an unfiltered run, or every shard of one
 (`--shard 1/n` to `n/n`, of the same projects and nothing else filtered), ran it; a file or
 test-name filter, or a missing shard, makes a partial run. In CI the summary is the parity job,
@@ -321,7 +325,13 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   compiled declares (the unplugin reports every compile; `ufComponentEvents`), never to a committed IR an
   update run has not written yet. A module that fails to compile fails its own spec's import
   only: the browser projects send Vite's error to no page, whose overlay would cover the page
-  every later spec clicks in.
+  every later spec clicks in. Such a spec records no cell, so a case its target cannot compile
+  yet gets a stand-in instead (ADR-0068): where the target's quarantine holds an L3 entry for
+  the case and its browser build type-checks its output (Angular's, through ngtsc), the spec
+  loads the stand-in, its tests run, and the setup records every browser layer as failed with
+  the stand-in's cause. The case's quarantine lists those browser cells, and the summary excuses
+  the tests' scenarios on that target. Once the L3 entry goes, the spec loads the real output,
+  and a browser entry that then passes is stale.
 - **Only pixels and geometry are Linux's.** `pnpm test:baselines` runs the reference alone and
   fails when a DOM, ARIA tree, trace or server HTML expectation reads otherwise in the container
   than in the repository: those are written by `pnpm test:update` wherever it runs, and must not
@@ -423,7 +433,7 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   builds it for production with no licence key (`scripts/styleframe-build.ts`), and a
   configuration flagged as Pro fails the same build.
 - `harness/no-output.ts`: the browser projects' stand-ins for the components a target has no
-  output for.
+  output for, or cannot compile yet.
 - `harness/canaries.ts`, `canary-verdict.ts`, `load-failures.ts`: the canaries, how
   `pnpm test:canaries` judges each run, and the specs a canary run could not load.
 - `@unframework/testing`: `describeTargets`, `mount`, `expectParity`, the normaliser, the write

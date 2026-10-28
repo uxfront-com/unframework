@@ -247,15 +247,39 @@ export function liveTypes(
   module: UfModule,
   options: LiveOptions,
 ): TypeDeclaration[] {
+  const { declared, reached } = reachTypes(component, module, options);
+  return [...declared.values()].filter((declaration) => reached.has(declaration.name));
+}
+
+/**
+ * Every type name what a component's output prints reads, as {@link liveTypes} walks it: the
+ * names of the declarations it copies, and the names they and the component's own annotations
+ * read, such as the types it imports (ADR-0067), which a target imports only where they are read.
+ */
+export function liveTypeNames(
+  component: UfComponent,
+  module: UfModule,
+  options: LiveOptions,
+): Set<string> {
+  return reachTypes(component, module, options).names;
+}
+
+function reachTypes(
+  component: UfComponent,
+  module: UfModule,
+  options: LiveOptions,
+): { declared: Map<string, TypeDeclaration>; reached: Set<string>; names: Set<string> } {
   const declared = new Map(
     module.types
       .filter((declaration) => component.types.includes(declaration.name))
       .map((declaration) => [declaration.name, declaration]),
   );
   const reached = new Set<string>();
+  const names = new Set<string>();
   const pending: string[] = [];
-  const reach = (names: Iterable<string>) => {
-    for (const name of names) {
+  const reach = (found: Iterable<string>) => {
+    for (const name of found) {
+      names.add(name);
       if (!declared.has(name) || reached.has(name)) continue;
       reached.add(name);
       pending.push(name);
@@ -271,7 +295,13 @@ export function liveTypes(
     code(written.body);
   };
   if (component.propsParameter) type(component.propsParameter.type);
-  for (const prop of component.props) type(prop.type);
+  // A member another file declares is written in that file's names (ADR-0067), which the
+  // component's module does not declare or import.
+  for (const prop of component.props) if (!prop.declaredBy) type(prop.type);
+  for (const parameter of component.typeParameters ?? []) {
+    type(parameter.constraint);
+    type(parameter.default);
+  }
   // A slot's props are its public type, as a prop's is (ADR-0054).
   for (const slot of component.slots?.slots ?? []) type(slot.props);
   for (const declaration of declared.values()) {
@@ -346,12 +376,12 @@ export function liveTypes(
   }
   for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
     const [statement] = parseStatementsSource(declared.get(name)!.code).statements;
-    const names = new Set<string>();
-    collectNames(statement, names);
-    names.delete(name);
-    reach(names);
+    const found = new Set<string>();
+    collectNames(statement, found);
+    found.delete(name);
+    reach(found);
   }
-  return [...declared.values()].filter((declaration) => reached.has(declaration.name));
+  return { declared, reached, names };
 }
 
 /** Adds to `found` the bindings code references: read, called, written or emitted through. */

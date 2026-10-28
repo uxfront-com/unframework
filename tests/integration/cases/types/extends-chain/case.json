@@ -1,0 +1,7 @@
+{
+  "description": "A props interface that extends another, which extends a third in another module.",
+  "ssr": {
+    "enabled": { "props": { "id": "save", "label": "Save" } },
+    "disabled": { "props": { "id": "delete", "label": "Delete", "disabled": true } }
+  }
+}

@@ -31,7 +31,6 @@ function lanesBut(
 
 // M5's contract lands before what lowers and emits it (ADR-0067 to ADR-0070): each entry names
 // the layer of M5 whose case removes it.
-const TYPES = "The types and generics cases land in layer 14 of M5.";
 const COMPOSABLES =
   "No case uses a composable or a module value until every target emits them: the composable and module cases land in layer 38 of M5 (ADR-0069).";
 
@@ -69,8 +68,6 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
   // Layer 8 of M5 resolves child APIs and the corpus's types through the oracle.
   // Layer 10 of M5 imports shared modules.
   // Layer 14 of M5 emits cross-file types and generics on Vue.
-  UF4004:
-    "The capability check reports it at a generic scoped slot, and the case lands with the generics cases in layer 14 of M5.",
   // Layer 32 of M5 builds the project graph.
   UF1205: "The project graph reports an import cycle, and the case lands in layer 32 of M5.",
   // Layer 38 of M5 lands the composable cases.
@@ -103,8 +100,6 @@ export const EXEMPT_CAPABILITIES: Readonly<
   context: lanesBut("astro"),
   "reactive-context": lanesBut("astro"),
   "dynamic-component": lanesBut(),
-  "generic-components": TYPES,
-  "generic-slot-props": TYPES,
   composables: COMPOSABLES,
   "composable-effect-order": COMPOSABLES,
 };
