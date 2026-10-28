@@ -65,6 +65,7 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@unframework/compiler": "workspace:*",
     "@uxfront/typescript-config": "catalog:",
     "@vue/runtime-dom": "3.5.43",
     "tsdown": "catalog:",

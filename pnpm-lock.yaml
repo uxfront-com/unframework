@@ -976,6 +976,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.0
+      '@unframework/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@uxfront/typescript-config':
         specifier: 'catalog:'
         version: 0.1.0
