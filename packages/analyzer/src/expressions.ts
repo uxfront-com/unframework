@@ -942,7 +942,17 @@ class Walk {
             return UNKNOWN;
           }
           const narrowed = render ? [] : this.#narrowingRule(node, { kind: "prop", prop }, true);
-          this.refs.push(createBindingReference(prop.id, span(node), shorthand, false, narrowed));
+          // Only a prop's or a ref's value's read narrows in the IR: a composable's parameter is a
+          // plain local on every target, read as TypeScript narrows it.
+          this.refs.push(
+            createBindingReference(
+              prop.id,
+              span(node),
+              shorthand,
+              false,
+              prop.argument ? [] : narrowed,
+            ),
+          );
           return this.#narrowed(node, prop.kinds);
         }
         const loop = context.loopVariables.get(resolution.declaration);

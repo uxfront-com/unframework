@@ -43,6 +43,7 @@ import { declareSetup } from "./setup.ts";
 import type { InjectionKeyInfo } from "./setup.ts";
 import type { Shapes } from "./shapes.ts";
 import type { SharedValues } from "./shared.ts";
+import type { TypeTable } from "./types/from-type.ts";
 import { FUNCTION, has, union, UNDEFINED } from "./types/kinds.ts";
 import type { Kinds } from "./types/kinds.ts";
 
@@ -414,13 +415,16 @@ function composableParameters(
     }
     const kind = parameterKind(annotation);
     const written = module.writtenType(annotation);
-    if (kind === "value" && has(written.kinds, "function")) {
+    if (
+      kind === "value" &&
+      (has(written.kinds, "function") || functionLike(annotation, module.types.table))
+    ) {
       // The kind decides each target's output (a getter is Qwik's `useComputed$`, a callback a
       // QRL), so it is read from the annotation as written, never guessed through an alias.
       reporter.report(
         "UF2035",
         annotation,
-        `\`${parameter.name}\`'s type may be a function, written through a name or a union: a composable's parameter writes a function type in place, which says whether it is a getter (\`() => T\`) or a callback.`,
+        `\`${parameter.name}\`'s type may be a function, written other than as a function type in place (through a name, a union, \`Function\` or a call signature): a composable's parameter writes a function type in place, which says whether it is a getter (\`() => T\`) or a callback.`,
         {
           help: `Write the function type in place, as in \`${parameter.name}: () => number\` or \`${parameter.name}?: (value: number) => void\`.`,
         },
@@ -436,6 +440,7 @@ function composableParameters(
       name: parameter.name,
       id: binding.id,
       kinds: optional ? union(kinds, UNDEFINED) : kinds,
+      argument: true,
       ...(kind === "callback" ? { callback: true as const } : {}),
     };
     bindings.push(binding);
@@ -465,6 +470,62 @@ function composableParameters(
 function parameterKind(annotation: AST.TSType): ComposableParameterKind {
   if (annotation.type !== "TSFunctionType") return "value";
   return annotation.params.length ? "callback" : "getter";
+}
+
+/**
+ * Whether a type may be a function in a spelling other than a function type written in place:
+ * `Function`, a call or construct signature, a constructor type, or one of these through the
+ * module's aliases and interfaces, a union or an intersection (UF2035).
+ */
+function functionLike(type: AST.TSType, table: TypeTable, seen = new Set<string>()): boolean {
+  switch (type.type) {
+    case "TSFunctionType":
+    case "TSConstructorType":
+      return true;
+    case "TSTypeLiteral":
+      return type.members.some(isSignature);
+    case "TSUnionType":
+    case "TSIntersectionType":
+      return type.types.some((each) => functionLike(each, table, seen));
+    case "TSTypeReference": {
+      if (type.typeName.type !== "Identifier") return false;
+      const { name } = type.typeName;
+      if (name === "Function" || name === "CallableFunction" || name === "NewableFunction") {
+        return true;
+      }
+      const declaration = table.declaration(name)?.node;
+      if (!declaration || seen.has(name)) return false;
+      seen.add(name);
+      return declaration.type === "TSTypeAliasDeclaration"
+        ? functionLike(declaration.typeAnnotation, table, seen)
+        : declaration.type === "TSInterfaceDeclaration" &&
+            (declaration.body.body.some(isSignature) ||
+              declaration.extends.some(
+                (heritage) =>
+                  heritage.expression.type === "Identifier" &&
+                  functionLike(
+                    {
+                      type: "TSTypeReference",
+                      typeName: heritage.expression,
+                      start: heritage.start,
+                      end: heritage.end,
+                    } as AST.TSTypeReference,
+                    table,
+                    seen,
+                  ),
+              ));
+    }
+    default:
+      return false;
+  }
+}
+
+/** A call or construct signature, which makes an object type a function's. */
+function isSignature(member: AST.TSSignature): boolean {
+  return (
+    member.type === "TSCallSignatureDeclaration" ||
+    member.type === "TSConstructSignatureDeclaration"
+  );
 }
 
 /**
@@ -530,7 +591,7 @@ function returnedMembers(
   const { reporter, scopes, setup } = render;
   const members: Returned[] = [];
   const names = new Set<string>();
-  for (const property of object.properties) {
+  for (const [index, property] of object.properties.entries()) {
     if (
       property.type !== "Property" ||
       !property.shorthand ||
@@ -573,7 +634,7 @@ function returnedMembers(
               edits: [
                 {
                   span: {
-                    start: members.at(-1)?.member.span.end ?? property.start,
+                    start: object.properties[index - 1]!.end,
                     end: property.end,
                   },
                   text: "",

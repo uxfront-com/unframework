@@ -2213,12 +2213,14 @@ function unwatchable(
       const annotation = (resolution as { declaration: AST.BindingIdentifier }).declaration
         .typeAnnotation?.typeAnnotation;
       const getter = annotation?.type === "TSFunctionType" && !annotation.params.length;
+      // An optional getter is called only where it is given.
+      const call = has(prop.kinds, "undefined") ? "?.()" : "()";
       what = `\`${node.name}\` is ${getter ? "a getter the composable is passed, which a watcher calls in its own getter" : "an argument of the composable, which nothing can watch"}`;
       if (getter) {
         fix = {
-          title: `Watch \`() => ${node.name}()\``,
+          title: `Watch \`() => ${node.name}${call}\``,
           confidence: "safe",
-          edits: [{ span: span(node), text: `() => ${node.name}()` }],
+          edits: [{ span: span(node), text: `() => ${node.name}${call}` }],
         };
       }
     } else if (prop) {

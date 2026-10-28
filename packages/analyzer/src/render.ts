@@ -23,6 +23,8 @@ export interface PropBinding {
   id: BindingId | undefined;
   /** Its kinds: the member's type, with `undefined` when optional without a default. */
   kinds: Kinds;
+  /** Set on a composable's parameter (ADR-0069), a plain local on every target: no read narrows. */
+  argument?: true;
   /** Set on a composable's callback argument, which only client code reads (ADR-0069). */
   callback?: true;
 }

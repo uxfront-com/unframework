@@ -283,6 +283,61 @@ describe("a composable", () => {
     ]);
   });
 
+  it("watches an optional getter through an optional call of it", () => {
+    const { source, diagnostics } = composables([
+      'import { ref, watch } from "unframework";',
+      "export function useSeen(value?: () => number) {",
+      "  const seen = ref(0);",
+      "  watch(value, () => {",
+      "    seen.value++;",
+      "  });",
+      "  return { seen };",
+      "}",
+    ]);
+    expect(problems(source, diagnostics)).toEqual(["UF2020 value"]);
+    const fixed = applyFixes(source, diagnostics[0]!.fixes!);
+    expect(fixed).toContain("watch(() => value?.(), () => {");
+    expect(run(fixed, "useSeen.uf.ts").diagnostics).toEqual([]);
+  });
+
+  it.each([
+    [
+      "a callback tested before its call",
+      "(v: number) => void",
+      "function pick() {\n    if (p) p(1);\n  }",
+      "pick",
+    ],
+    [
+      "a value tested against `undefined`",
+      "number",
+      "const v = ref(p !== undefined ? p : 0);",
+      "v",
+    ],
+    [
+      "a getter tested in a derived value",
+      "() => number",
+      "const v = computed(() => (p ? p() : 0));",
+      "v",
+    ],
+    [
+      "a getter tested in a watcher's getter",
+      "() => number",
+      "const v = ref(0);\n  watch(() => (p ? p() : 0), () => {\n    v.value++;\n  });",
+      "v",
+    ],
+  ])("reads an optional parameter as TypeScript narrows it: %s", (_, type, setup, returned) => {
+    const { module, diagnostics } = composables([
+      'import { computed, ref, watch } from "unframework";',
+      `export function useA(p?: ${type}) {`,
+      `  ${setup}`,
+      `  return { ${returned} };`,
+      "}",
+    ]);
+    expect(diagnostics).toEqual([]);
+    // No read of a parameter narrows in the IR (`run` checks the invariants).
+    expect(JSON.stringify(module!.composables)).not.toContain('"narrowed"');
+  });
+
   it("leaves a `.uf.tsx` module's analysis as it was", () => {
     const { module, diagnostics } = run(
       [
@@ -416,6 +471,21 @@ describe("UF2035", () => {
     expect(applyFixes(source, diagnostics[0]!.fixes!)).toContain("return { n };");
   });
 
+  it("removes only the repeated member, whatever stands between", () => {
+    const between = useA(["const m = ref(2);"], "return { n, count: m, n };");
+    expect(problems(between.source, between.diagnostics)).toEqual(["UF2035 count: m", "UF2035 n"]);
+    expect(applyFixes(between.source, between.diagnostics[1]!.fixes!)).toContain(
+      "return { n, count: m };",
+    );
+    const thrice = useA([], "return { n, n, n };");
+    expect(
+      applyFixes(
+        thrice.source,
+        thrice.diagnostics.flatMap(({ fixes }) => fixes!),
+      ),
+    ).toContain("return { n };");
+  });
+
   it("rejects a returned setup `let`", () => {
     const { source, diagnostics } = useA(["let timer = 0;"], "return { n, timer };");
     expect(problems(source, diagnostics)).toEqual(["UF2035 timer"]);
@@ -461,6 +531,24 @@ describe("UF2035", () => {
       "}",
     ]);
     expect(problems(source, diagnostics)).toEqual(["UF2035 this"]);
+  });
+
+  it("rejects `Function` and a call signature, in place or through an alias or an interface", () => {
+    const { source, diagnostics } = composables([
+      "type Any = Function;",
+      "interface OnPick { (value: number): void }",
+      "interface Picker extends OnPick { label: string }",
+      "export function useA(a: Function, b: { (value: number): void }, c: Any, d: OnPick, e: Picker) {",
+      "  return {};",
+      "}",
+    ]);
+    expect(problems(source, diagnostics)).toEqual([
+      "UF2035 Function",
+      "UF2035 { (value: number): void }",
+      "UF2035 Any",
+      "UF2035 OnPick",
+      "UF2035 Picker",
+    ]);
   });
 
   it("rejects a function type written through an alias or a union", () => {
