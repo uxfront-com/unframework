@@ -90,16 +90,18 @@ compiler (layer 2) and the content mapper (layer 3, M5). Each row below is pinne
 | Elements           | Unknown attributes and tags; wrong value types (`disabled`, `tabindex`, `class`, declared `aria-*`), including through a spread; unknown CSS properties in `style`; unknown or non-function events and event options; the event object's type (`onClick` gets a `PointerEvent`, `onKeydown` a `KeyboardEvent`, and `onCancel`, `onClose` and `onCommand`, which the package types on every element, an `Event`); children of void elements; `ref` of the wrong element type, or a string; `<component>` without `is`, or with an unknown tag; a slot object on an element; a list's `key` that is not a string or a number (ADR-0036).                                          |
 | Props              | A default that does not fit its member's type (`({ size = 42 }: { size?: "sm" })`): the props are the component's signature (ADR-0034).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | React names        | `className`, `htmlFor`, `onKeyDown`, `onDoubleClick`. The compiler reports them too, as UF3004 (`non-canonical-attribute`), with a fix to `class`, `for`, `onKeydown` and `onDblclick`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| Components         | Wrong, misspelt or missing signature props, including literal unions; undeclared attributes other than `class` and `style` (`id`); a non-function or lowercase `on*` handler; a slot object mixed with other children; a slot function returning something that is not a child; a string `ref`; a component returning anything but JSX or `null`. An explicit `onX` prop keeps its declared payload type.                                                                                                                                                                                                                                                                       |
+| Components         | Wrong, misspelt or missing signature props, including literal unions; undeclared attributes other than `class` and `style` (`id`); a non-function or lowercase `on*` handler; a slot object mixed with other children; a slot function returning something that is not a child; a string `ref`; a component returning anything but JSX or `null`. An explicit `onX` prop keeps its declared payload type. A generic component's props, checked against the `T` they infer, its constraint, or an explicit type argument (ADR-0068). Props types imported from another module: a missing member of an `extends` chain, a literal union, a member `Omit` removed (ADR-0067).      |
 | Authoring API      | Unknown emit names, wrong or extra payloads, a payload that is not a tuple, using `emit`'s result; un-parameterised or call-signature `defineEmits`; `defineModel()` without a name, a wrong model value or default, a model without `default` or `required` read as always set; writing a computed, a writable computed; wrong slot props, undeclared slots; unknown or mistyped `defineOptions`; a non-object `defineExpose`; wrong `provide` values, string keys, an unchecked `inject`; a watched value of the wrong type, `previous` with `immediate`, watching a plain value; a keyed `useTemplateRef`, a template ref read without a null check; `JSX` used as a global. |
+| Composables        | A wrong argument, a value for a getter parameter, an unknown returned member, an extra argument to a returned function, writing a returned computed (ADR-0069).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Outside the subset | `reactive`, `toRefs`, a setup that returns a render function, `<component is>` over an open set of strings (plan §4.6).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ## What they deliberately do not catch
 
 Each of these is pinned as clean code in [`probes/allowed/blind-spots.uf.tsx`](probes/allowed/blind-spots.uf.tsx)
-(and [`framework-import.uf.tsx`](probes/allowed/framework-import.uf.tsx)), with the layer that catches
-it. If a change starts catching one, the suite fails: move the probe to `caught/` and update both
-tables.
+(and [`framework-import.uf.tsx`](probes/allowed/framework-import.uf.tsx),
+[`generic-components.uf.tsx`](probes/allowed/generic-components.uf.tsx) and
+[`composables.uf.tsx`](probes/allowed/composables.uf.tsx)), with the layer that catches it. If a
+change starts catching one, the suite fails: move the probe to `caught/` and update both tables.
 
 The compiler's checks land with their features (plan §9). Props and static JSX (M1), and the
 setup, listeners and template refs (M2), have their own codes (UF2001 to UF3034, many with a fix);
@@ -108,8 +110,8 @@ the constructs of later milestones are rejected as not supported yet (UF1002).
 | Not caught by the types                                                                                                               | Caught by                                                             |
 | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Event payload types on components                                                                                                     | the content mapper (layer 3), the type-checked outputs (layer 4)      |
-| Unknown or misspelt events; children for a component without a default slot; undeclared slot keys                                     | the compiler (UF3xxx)                                                 |
-| Model names and model types (`v-model:opne`, `v-model:open={42}`); slot-prop typos                                                    | the compiler (names), the content mapper (types)                      |
+| Unknown or misspelt events; children for a component without a default slot; undeclared slot keys                                     | the compiler (UF3036, UF3038)                                         |
+| Model names and model types (`v-model:opne`, `v-model:open={42}`); slot-prop typos                                                    | the compiler (names, UF3037), the content mapper (types)              |
 | Misspelt hyphenated names (`aria-hiddenn`, `v-modl`, `v-model_trimm`): TypeScript never checks an undeclared hyphenated JSX attribute | the compiler                                                          |
 | `v-model` on an element without a value, or on a non-assignable expression                                                            | the compiler                                                          |
 | Values outside the upstream's open string unions (`type`, `autocomplete`)                                                             | nothing, by design: the upstream declares them open                   |
@@ -124,6 +126,8 @@ the constructs of later milestones are rejected as not supported yet (UF1002).
 | A conditional root (`return show ? <p /> : null`)                                                                                     | the compiler (UF1102), with a fix that wraps it in a fragment         |
 | A stylesheet that is missing, owned by another component, or imported as a CSS module                                                 | the compiler (plan §4.4)                                              |
 | An import from `react`, `vue` or another framework, when it is installed                                                              | the compiler (plan §4.6)                                              |
+| Explicit type arguments on a generic component (`<Select<User> …>`): the props infer `T`                                              | the compiler (UF6006)                                                 |
+| Writing a ref a composable returns (`on.value = false`)                                                                               | the compiler (UF2036)                                                 |
 
 Undeclared global attributes on components (`<Counter id="x" />`) are an error for now; whether layer 1
 should let them fall through is still open (spike 6).
@@ -153,9 +157,10 @@ The repo's formatter and linter skip the vendored file (the root `oxfmt.config.t
 ## The probes
 
 [`probes/`](probes) is a type-checked tree with the authoring settings: `fixtures/` (components the
-probes use), `caught/` (one `@ts-expect-error TSxxxx why` per mistake) and `allowed/` (legitimate
-code and the blind spots, which must check clean). `pnpm --filter unframework test` runs
-[`scripts/run-probes.ts`](scripts/run-probes.ts) over it in three steps:
+probes use, and the types and composables they import), `caught/` (one `@ts-expect-error TSxxxx
+why` per mistake) and `allowed/` (legitimate code and the blind spots, which must check clean).
+`pnpm --filter unframework test` runs [`scripts/run-probes.ts`](scripts/run-probes.ts) over it in
+three steps:
 
 1. **Layout:** every directive in `caught/` names its code, each file there pins at least one, and
    nothing else holds a directive or a `@ts-ignore`.
@@ -164,6 +169,11 @@ code and the blind spots, which must check clean). `pnpm --filter unframework te
 3. **Pin:** a copy with every directive disabled must report exactly one error on each directive's
    next line, with the named code, and nothing on any other line. A directive hides every error on
    its line from the gate, so this is what catches a second error beside a pinned one.
+
+Another test compiles `allowed/blind-spots.uf.tsx` with its fixtures, and checks that each
+component-API blind spot the compiler catches reports the code its comment names: UF3036 for the
+unknown event, UF3038 for the unexpected children and the undeclared slot key, and UF3037 for the
+unknown model.
 
 The tests also run the suite against the built package, so the published types pin exactly what the
 sources do. To check another TypeScript (a nightly, say): `pnpm --filter unframework probes
