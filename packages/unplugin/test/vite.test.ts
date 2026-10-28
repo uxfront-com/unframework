@@ -15,7 +15,7 @@ import { isRunnableDevEnvironment, optimizeDeps, resolveConfig } from "vite";
 import type { Plugin } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { ID_SUFFIXES, unframeworkUnplugin } from "../src/index.ts";
+import { ID_SUFFIXES, SCAN_ID_PREFIX, unframeworkUnplugin } from "../src/index.ts";
 import type { CompileEvent } from "../src/index.ts";
 import unframework from "../src/vite.ts";
 import { apiOf, codeOf, createProject, fakeVue, HELLO, startServer } from "./fixtures.ts";
@@ -712,6 +712,131 @@ describe("children (ADR-0053)", () => {
       }
     } finally {
       children.remove();
+    }
+  });
+});
+
+describe("composables (ADR-0069)", () => {
+  const TOGGLE = [
+    'import { ref } from "unframework";',
+    "export function useToggle(initial: boolean) {",
+    "  const on = ref(initial);",
+    "  function toggle() {",
+    "    on.value = !on.value;",
+    "  }",
+    "  return { on, toggle };",
+    "}",
+    "",
+  ].join("\n");
+  const SWITCH = [
+    'import { useToggle } from "./useToggle.uf.ts";',
+    "export default function Switch() {",
+    "  const { on, toggle } = useToggle(false);",
+    "  return <button onClick={() => toggle()}>{on.value ? 'On' : 'Off'}</button>;",
+    "}",
+    "",
+  ].join("\n");
+  const files = {
+    "useToggle.uf.ts": TOGGLE,
+    "Switch.uf.tsx": SWITCH,
+    "main.ts": 'import { useToggle } from "./useToggle.uf.ts";\nexport default useToggle;\n',
+  };
+
+  /** A third-party target that emits each composable as `<name>.ts`. */
+  const scripted = () =>
+    defineTarget({
+      ...htmlTarget(),
+      emitComposable: (composable) => [
+        {
+          path: `${composable.name}.ts`,
+          contents: `export function ${composable.name}() {\n  return {};\n}\n`,
+        },
+      ],
+    });
+
+  it("resolves an import of a `.uf.ts` file to its target's id, and maps the id back", async () => {
+    const composables = createProject(files);
+    try {
+      const server = await startServer(composables.root, unframework({ target: "svelte" }));
+      try {
+        const { client } = server;
+        const main = join(composables.root, "main.ts");
+        const id = `${join(composables.root, "useToggle.uf.ts")}.svelte.ts`;
+        for (const specifier of ["./useToggle.uf.ts", "./useToggle.uf"]) {
+          expect(await client.pluginContainer.resolveId(specifier, main), specifier).toMatchObject({
+            id,
+          });
+        }
+        expect(await client.pluginContainer.resolveId(id)).toMatchObject({ id });
+        expect(await client.pluginContainer.resolveId(`${id}?x`)).toMatchObject({ id: `${id}?x` });
+        // The watch edge from its own module answers with the real file.
+        expect(await client.pluginContainer.resolveId("./useToggle.uf.ts", id)).toMatchObject({
+          id: join(composables.root, "useToggle.uf.ts"),
+        });
+        const scanning = { scan: true } as Parameters<typeof client.pluginContainer.resolveId>[2];
+        expect(
+          await client.pluginContainer.resolveId("./useToggle.uf.ts", main, scanning),
+        ).toMatchObject({ id: `${SCAN_ID_PREFIX}${join(composables.root, "useToggle.uf.ts")}` });
+      } finally {
+        await server.close();
+      }
+    } finally {
+      composables.remove();
+    }
+  });
+
+  it("fails a module of composables loudly on a target without `emitComposable`", async () => {
+    const composables = createProject(files);
+    try {
+      const server = await startServer(composables.root, unframework({ target: "angular" }));
+      try {
+        const id = `${join(composables.root, "useToggle.uf.ts")}.ts`;
+        await expect(server.client.pluginContainer.load(id)).rejects.toThrow(
+          "error[UF1002] (angular): The angular target does not emit a composable yet",
+        );
+      } finally {
+        await server.close();
+      }
+    } finally {
+      composables.remove();
+    }
+  });
+
+  it("loads what `emitComposable` emits, and resolves a caller's import of it to the module", async () => {
+    const composables = createProject(files);
+    try {
+      const target = scripted();
+      const server = await startServer(
+        composables.root,
+        unframework({ target, extension: ".html" }),
+      );
+      try {
+        const { client } = server;
+        const id = join(composables.root, "useToggle.uf.ts");
+        expect(
+          await client.pluginContainer.resolveId(
+            "./useToggle.uf.ts",
+            join(composables.root, "main.ts"),
+          ),
+        ).toMatchObject({ id });
+        expect(codeOf(await client.pluginContainer.load(id))).toBe(
+          "export function useToggle() {\n  return {};\n}\n",
+        );
+        expect(apiOf(server.server).getCompiled(id)).toBe(
+          "export function useToggle() {\n  return {};\n}\n",
+        );
+        // A caller's output imports the composable's output, which the module's id loads.
+        const caller = `${join(composables.root, "Switch.uf.tsx")}.html`;
+        await client.pluginContainer.load(caller);
+        expect(await client.pluginContainer.resolveId("./useToggle", caller)).toMatchObject({ id });
+        expect(await client.pluginContainer.resolveId("./useToggle.ts", caller)).toMatchObject({
+          id,
+        });
+      } finally {
+        await server.close();
+      }
+    } finally {
+      composables.remove();
     }
   });
 });

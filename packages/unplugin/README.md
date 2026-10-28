@@ -104,13 +104,30 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   may come from another file or a package, and a child's API from its types' shapes. The oracle
   follows the source's imports, so it may read a TypeScript file outside the root.
 
+- **Composables** (ADR-0069). A `.uf.ts` file loads under its absolute path plus the suffix the
+  framework's plugin claims for a TypeScript module (`COMPOSABLE_ID_SUFFIXES`):
+
+  | Target                   | Module id of `useToggle.uf.ts`   | Claimed by                                                    |
+  | ------------------------ | -------------------------------- | ------------------------------------------------------------- |
+  | React, Vue, Solid, Astro | `/abs/useToggle.uf.ts`           | Vite's own TypeScript transform                               |
+  | Qwik                     | `/abs/useToggle.uf.ts`           | Qwik's optimizer                                              |
+  | Svelte                   | `/abs/useToggle.uf.ts.svelte.ts` | vite-plugin-svelte, which compiles runes in `.svelte.ts` only |
+  | Angular                  | `/abs/useToggle.uf.ts.ts`        | `ngtscVirtual`                                                |
+
+  A third-party target's composables load under the `.uf.ts` id. The id loads every composable
+  the target's `emitComposable` emitted for the file, joined into one module. An output's relative
+  import of a composable's output (`./useToggle`, `./useToggle.svelte.ts`, `./use-toggle`) is
+  looked up in the importer's compile, as a child's is, and resolves to the module's id. A target
+  without `emitComposable` fails the module with UF1002 until its composables lane lands.
+  `composableIdSuffix`, `composableId` and `parseComposableId` build and take these ids apart.
+
 How `resolveId` answers:
 
 - **An import of a `.uf.tsx` file** resolves through Vite (so aliases work), then gets the suffix.
   What decides is the file the specifier resolves to, so the forms TypeScript accepts for it,
   `./Hello.uf` (`moduleResolution: "bundler"`) and `./Hello.uf.js` or `./Hello.uf.jsx`
-  (`"nodenext"`), compile like `./Hello.uf.tsx`, and a `./Hello.uf` that resolves to a `.uf.ts`
-  file is left alone. A query stays on the id (`./Hello.uf.tsx?container` loads
+  (`"nodenext"`), compile like `./Hello.uf.tsx`. An import of a `.uf.ts` file, or a `./X.uf` that
+  resolves to one, gets the composables' suffix. A query stays on the id (`./Hello.uf.tsx?container` loads
   `/abs/Hello.uf.tsx.astro?container`), except Vite's `?raw`, `?url`, `?worker` and
   `?sharedworker`, which mean the authored file.
 - **A module id coming back** maps to the absolute id with its query: an absolute id from a plugin,

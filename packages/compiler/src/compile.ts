@@ -19,7 +19,7 @@ import type { TypeOracle, TypeShape } from "@unframework/type-oracle";
 
 import { checkCapabilities } from "./capabilities.ts";
 import { isSpanIn, pluginIrProblems } from "./plugin-ir.ts";
-import { directoryOf, relativePath, stylesheetSource } from "./resolver.ts";
+import { directoryOf, joinPath, relativePath, stylesheetSource } from "./resolver.ts";
 import type { Resolver } from "./resolver.ts";
 import { resolveTarget } from "./targets.ts";
 import type { TargetName } from "./targets.ts";
@@ -123,22 +123,25 @@ export interface CompileResult {
    */
   outputs: Record<string, OutputFile[]>;
   /**
-   * The component each output file is written for, by target name, then by the file's path:
-   * the unplugin loads a file's components under ids of their own (ADR-0053). The scoped sheet,
-   * `<source>.css`, is no component's module, and is left out (ADR-0063).
+   * The component each output file is written for, by target name, then by the file's path, or
+   * the composable for a `.uf.ts` source's: the unplugin loads a file's components under ids of
+   * their own (ADR-0053). The scoped sheet, `<source>.css`, is no component's module, and is left
+   * out (ADR-0063).
    */
   owners: Record<string, Record<string, string>>;
   /**
    * What the compile read besides the source, sorted, each once (ADR-0071): the files the type
    * oracle read or looked for, relative to its root, the shared `.ts` modules the resolver read,
-   * named as `filename` is, and the packages, as `pkg:<name>`, one that is not installed included.
-   * Never an absolute path (P8).
+   * named as `filename` is, the `.uf.ts` modules whose composables the source imports, named so
+   * too (ADR-0069), and the packages, as `pkg:<name>`, one that is not installed included. Never
+   * an absolute path (P8).
    */
   dependencies: string[];
 }
 
 /**
- * Compiles one `.uf.tsx` source to every selected target. A pure function of the source and
+ * Compiles one `.uf.tsx` source, or a `.uf.ts` module of composables (ADR-0069), to every
+ * selected target. A pure function of the source and
  * the options: the same input and versions give byte-identical output (P8). It throws only
  * for invalid options (an unknown target name, two targets with one name, an invalid
  * `passThrough` prefix); every other
@@ -190,7 +193,15 @@ export async function compile(source: string, options: CompileOptions): Promise<
     const imports = new Map<string, ModuleApi | undefined>();
     for (const specifier of options.resolve ? componentImports(parsed) : []) {
       try {
-        imports.set(specifier, await options.resolve!({ specifier, importer: file }));
+        const api = await options.resolve!({ specifier, importer: file });
+        imports.set(specifier, api);
+        // A caller's output depends on its composables' APIs, which the project graph watches
+        // (ADR-0069, ADR-0071).
+        const composable =
+          api && COMPOSABLE_SPECIFIER.test(specifier)
+            ? joinPath(directoryOf(file), `./${api.file}`)
+            : undefined;
+        if (composable !== undefined) dependencies.add(composable);
       } catch (error) {
         imports.set(specifier, undefined);
         diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
@@ -338,6 +349,9 @@ export async function compile(source: string, options: CompileOptions): Promise<
   };
 }
 
+/** An import of a `.uf.ts` module's composables (ADR-0069). */
+const COMPOSABLE_SPECIFIER = /\.uf\.ts$/;
+
 /**
  * The type oracle `compile()` uses without one (ADR-0067): the syntactic adapter over the one
  * source, at the root of a project that holds nothing else, so it reads no file and resolves
@@ -484,6 +498,64 @@ async function emitTarget(
         continue;
       }
       owners.set(key, { path: output.path, component: component.name });
+      written.push(output);
+    }
+  }
+  // A `.uf.ts` module's composables, each one module (ADR-0069). The `output` hooks are a
+  // component's, so they see none of it.
+  for (const composable of module.composables ?? []) {
+    if (!target.emitComposable) {
+      diagnostics.push(
+        createDiagnostic("UF1002", {
+          file,
+          span: composable.span,
+          message: `The ${target.name} target does not emit a composable yet: it lands with this target's composables lane.`,
+          target: target.name,
+        }),
+      );
+      continue;
+    }
+    let files: OutputFile[];
+    try {
+      const emitted = readFiles(
+        target.emitComposable(composable, {
+          module,
+          options: options.targetOptions?.[target.name],
+          report: (diagnostic) => diagnostics.push(reported(diagnostic, source, file, target.name)),
+        }),
+      );
+      if ("problem" in emitted) throw new TypeError(`emitComposable returned ${emitted.problem}`);
+      files = emitted.files;
+    } catch (error) {
+      const what = `The ${target.name} target failed on ${composable.name}`;
+      diagnostics.push(internal(file, error, what, target.name));
+      continue;
+    }
+    if (options.format !== false) {
+      const formatted = await Promise.all(files.map((output) => formatOutput(output)));
+      files = formatted.map((outcome) => {
+        if (outcome.error) {
+          const what = `The ${target.name} target emitted ${outcome.file.path}, which does not parse`;
+          diagnostics.push(internal(file, outcome.error, what, target.name));
+        }
+        return outcome.file;
+      });
+    }
+    for (const output of files) {
+      const key = output.path.toLowerCase();
+      const owner = owners.get(key);
+      if (owner) {
+        diagnostics.push(
+          internal(
+            file,
+            `${owner.path} (${owner.component}) and ${output.path} (${composable.name}) are one file on a case-insensitive file system`,
+            `The ${target.name} target wrote two files at one path`,
+            target.name,
+          ),
+        );
+        continue;
+      }
+      owners.set(key, { path: output.path, component: composable.name });
       written.push(output);
     }
   }

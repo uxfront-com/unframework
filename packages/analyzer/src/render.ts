@@ -1,4 +1,12 @@
-import type { Binding, BindingId, BindingKind, ComponentApi, Slots } from "@unframework/ir";
+import type {
+  Binding,
+  BindingId,
+  BindingKind,
+  ComponentApi,
+  ComposableApi,
+  ComposableMemberApi,
+  Slots,
+} from "@unframework/ir";
 import type { AST } from "@unframework/parser";
 
 import type { AuthoringApi } from "./authoring.ts";
@@ -79,6 +87,11 @@ export interface SetupBinding {
    * getter or an initial value calls it. Set as its body is walked.
    */
   nondeterministic?: string;
+  /**
+   * What a `used*` binding destructures from a composable's result (ADR-0069): its kind, and a
+   * function's flags, which say where it may be called.
+   */
+  member?: ComposableMemberApi;
 }
 
 /**
@@ -148,6 +161,11 @@ export interface SetupScope {
   readonly events: ReadonlyMap<string, EventPayload> | undefined;
   /** The parameter of each setup function that receives an event, by the function. */
   readonly eventParameters: ReadonlyMap<SetupFunction, EventParameter>;
+  /**
+   * The composables the module imports, by the identifier that declares each (ADR-0069):
+   * `undefined` for one its import reported.
+   */
+  readonly composables: ReadonlyMap<object, ComposableApi | undefined>;
 }
 
 /** What lowering a component's returned JSX needs to know about the component and module. */

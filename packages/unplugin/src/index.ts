@@ -1,7 +1,11 @@
 export {
+  COMPOSABLE_ID_SUFFIXES,
+  composableId,
+  composableIdSuffix,
   ID_SUFFIXES,
   idSuffix,
   moduleId,
+  parseComposableId,
   parseModuleId,
   SCAN_ID_PREFIX,
   SOURCE_EXTENSION,

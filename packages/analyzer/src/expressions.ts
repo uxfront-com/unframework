@@ -1096,7 +1096,10 @@ class Walk {
       case "derived":
       case "templateRef":
       case "model":
-      case "context": {
+      case "context":
+      // A ref a composable returns is read as the caller's own (ADR-0069).
+      case "usedState":
+      case "usedDerived": {
         // An injected value that is no ref is read as it is, as a constant is.
         if (!isRef(binding)) {
           this.refs.push(createBindingReference(binding.id, span(node), shorthand));
@@ -1135,9 +1138,11 @@ class Walk {
         this.refs.push(createBindingReference(binding.id, span(node), shorthand));
         return binding.kinds;
       case "localConst":
+      case "usedConst":
         this.refs.push(createBindingReference(binding.id, span(node), shorthand));
         return binding.kinds;
       case "localFn":
+      case "usedFn":
         if (this.#mode !== "client" || position !== "argument") {
           this.#functionValue(node, binding);
           return FUNCTION;
@@ -1150,14 +1155,10 @@ class Walk {
       // Composition's bindings (ADR-0055) the setup never declares.
       case "slotScope":
       case "component":
-      // What a module or a composable gives (ADR-0069, ADR-0070): not declared yet.
+      // What a module or a composable gives (ADR-0069, ADR-0070), which the setup never declares.
       case "moduleConst":
       case "import":
       case "argument":
-      case "usedState":
-      case "usedDerived":
-      case "usedFn":
-      case "usedConst":
         return UNKNOWN;
       default:
         return unreachable(binding.kind);
@@ -1235,6 +1236,16 @@ class Walk {
     const value = this.#context.shared.values.get(declaration);
     if (value) return this.#sharedRead(node, value, shorthand);
     if (this.#context.shared.failed.has(declaration)) return UNKNOWN;
+    if (this.#context.setup.composables.has(declaration)) {
+      // One its import reported says nothing more.
+      if (this.#context.setup.composables.get(declaration)) {
+        this.#unsupported(
+          node,
+          `\`${node.name}\` is a composable, which the component calls once, at the top level of its body, and destructures: \`const { … } = ${node.name}(…)\` (ADR-0069).`,
+        );
+      }
+      return UNKNOWN;
+    }
     if (!authoring.has(declaration)) {
       this.#unsupported(
         node,
@@ -2682,6 +2693,13 @@ class Walk {
           this.#passEvent(node, binding);
           this.#arguments(node.arguments, [], "now", { name: binding.name, arrayMethod: false });
           return binding.kinds;
+        }
+        // A function a composable returns: where it may be called, its flags say (ADR-0069).
+        if (binding?.kind === "usedFn") {
+          this.refs.push(createBindingReference(binding.id, span(callee), false, true));
+          this.#arguments(node.arguments, [], "now", { name: binding.name, arrayMethod: false });
+          // The API holds no function's result type.
+          return UNKNOWN;
         }
       }
     }
@@ -4897,6 +4915,22 @@ class Walk {
     };
   }
 
+  /**
+   * A write of a ref a composable returns (UF2036): its caller only reads it, since on some
+   * targets the caller holds the value its render reads, apart from the composable's state.
+   */
+  #resultWrite(node: { start: number; end: number }, binding: SetupBinding): Target {
+    this.#context.reporter.report(
+      "UF2036",
+      node,
+      `\`${binding.name}\` is ${WHAT[binding.kind]}, which its caller reads and never writes: the composable changes its own state.`,
+      {
+        help: "Return a function from the composable that changes it, and call that: `toggle()`.",
+      },
+    );
+    return { kind: "invalid" };
+  }
+
   /** What an assignment writes, reporting what may not be written (UF2011, UF2001). */
   #target(node: AST.AssignmentTarget | AST.SimpleAssignmentTarget): Target {
     const context = this.#context;
@@ -4917,6 +4951,9 @@ class Walk {
           if (!binding) return { kind: "invalid" };
           if (binding.kind === "localVar") return { kind: "binding", binding };
           if (binding.kind === "context") return this.#contextWrite(node, binding);
+          if (binding.kind === "usedState" || binding.kind === "usedDerived") {
+            return this.#resultWrite(node, binding);
+          }
           return isRef(binding)
             ? invalid(
                 node,
@@ -4990,6 +5027,9 @@ class Walk {
           ) {
             if (isWritableRef(binding)) return { kind: "binding", binding };
             if (binding.kind === "context") return this.#contextWrite(node, binding);
+            if (binding.kind === "usedState" || binding.kind === "usedDerived") {
+              return this.#resultWrite(node, binding);
+            }
             return invalid(
               node,
               binding.kind === "derived"
@@ -5490,6 +5530,8 @@ export function isRef(binding: SetupBinding): boolean {
     binding.kind === "derived" ||
     binding.kind === "templateRef" ||
     binding.kind === "model" ||
+    binding.kind === "usedState" ||
+    binding.kind === "usedDerived" ||
     (binding.kind === "context" && binding.ref === true)
   );
 }
