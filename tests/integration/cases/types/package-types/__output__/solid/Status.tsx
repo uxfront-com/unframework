@@ -1,3 +1,5 @@
+import type { Labelled } from "./types";
+import type { TimeInterval } from "rxjs";
 import type { JSX } from "solid-js";
 
 type StatusProps = TimeInterval<string> & Labelled;

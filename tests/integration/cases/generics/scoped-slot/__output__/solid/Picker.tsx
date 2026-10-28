@@ -4,12 +4,12 @@ export interface PickerProps<T> {
   items: T[];
 }
 
-export interface PickerSlots {
+export interface PickerSlots<T> {
   item?: (props: { item: T }) => JSX.Element;
 }
 
-export default function Picker(
-  props: PickerProps<T> & PickerSlots & { class?: string; style?: JSX.CSSProperties },
+export default function Picker<T>(
+  props: PickerProps<T> & PickerSlots<T> & { class?: string; style?: JSX.CSSProperties },
 ) {
   return (
     <ul class={props.class} style={props.style} {...scopeAttributes(props)}>

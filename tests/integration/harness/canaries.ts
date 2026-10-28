@@ -1611,9 +1611,16 @@ function componentBodyStart(contents: string): number | undefined {
     if (close === undefined) return undefined;
     return endAt(contents, close + 1, /^\s*=>\s*\{/);
   }
-  const component = /\bfunction\s+[A-Z][\w$]*\s*\(/.exec(contents);
+  // A generic component's type parameters come before its parameters (ADR-0068).
+  const component = /\bfunction\s+[A-Z][\w$]*\s*(?=[<(])/.exec(contents);
   if (!component) return undefined;
-  const close = matchingBracket(contents, component.index + component[0].length - 1, "(", ")");
+  let index = component.index + component[0].length;
+  if (contents[index] === "<") {
+    const parameters = matchingBracket(contents, index, "<", ">");
+    if (parameters === undefined || contents[parameters + 1] !== "(") return undefined;
+    index = parameters + 1;
+  }
+  const close = matchingBracket(contents, index, "(", ")");
   if (close === undefined) return undefined;
   return endAt(contents, close + 1, /^[^{]*\{/);
 }

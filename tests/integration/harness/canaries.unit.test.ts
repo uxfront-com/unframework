@@ -1434,6 +1434,16 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
         contents: "@Component({\n  template: `<p>a</p>`,\n})\nexport default class A {}\n// </b>\n",
       }),
     ).toBe("@Component({\n  template: `<p>a</span>`,\n})\nexport default class A {}\n// </b>\n");
+    // A generic component's type parameters, a constraint's arrow among them (ADR-0068).
+    expect(
+      mismatchClosingTag({
+        path: "List.tsx",
+        contents:
+          "export default function List<T extends { on: () => void }>(props: { items: T[] }) {\n  return <ul>{props.items.length}</ul>;\n}\n",
+      }),
+    ).toBe(
+      "export default function List<T extends { on: () => void }>(props: { items: T[] }) {\n  return <ul>{props.items.length}</span>;\n}\n",
+    );
   });
 });
 

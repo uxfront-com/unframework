@@ -1248,4 +1248,43 @@ describe("solid attributes", () => {
       '<circle cx="4" cy="4" r="3" stroke-width={props.width} />',
     );
   });
+
+  it("writes a generic component as a generic function, and its interfaces over what they read", async () => {
+    // ADR-0068: the events' interface reads `T`, the models' none, so only it is generic.
+    const output = await emitSource(
+      [
+        'import { defineEmits, defineModel } from "unframework";',
+        "",
+        "export interface PickProps<T extends { id: string }, U = string> {",
+        "  items: T[];",
+        "  note?: U;",
+        "}",
+        "",
+        "export default function Pick<T extends { id: string }, U = string>({ items }: PickProps<T, U>) {",
+        "  const emit = defineEmits<{ pick: [item: T] }>();",
+        '  const open = defineModel<boolean>("open");',
+        "  return (",
+        "    <ul>",
+        "      {items.map((item) => (",
+        '        <li key={item.id}><button type="button" onClick={() => emit("pick", item)}>{String(open.value)}</button></li>',
+        "      ))}",
+        "    </ul>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(output).toContain(
+      "export interface PickEvents<T extends { id: string }> {\n  onPick?: (item: T) => void;\n}",
+    );
+    expect(output).toContain("export interface PickModels {");
+    expect(output).toContain(
+      [
+        "export default function Pick<T extends { id: string }, U = string>(",
+        "  props: PickProps<T, U> &",
+        "    PickEvents<T> &",
+        "    PickModels & { class?: string; style?: JSX.CSSProperties },",
+      ].join("\n"),
+    );
+  });
 });

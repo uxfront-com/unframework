@@ -1,3 +1,4 @@
+import type { FieldOptions } from "./types";
 import type { JSX } from "solid-js";
 
 export type TextFieldProps = Required<Pick<FieldOptions, "name" | "label">> &
