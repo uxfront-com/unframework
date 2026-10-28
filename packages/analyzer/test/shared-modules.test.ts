@@ -413,6 +413,48 @@ describe("module-level constants", () => {
     expect(problems(filled, run(filled).diagnostics)).toEqual([]);
   });
 
+  // A copying method gives a new value whatever its receiver, but an object literal's own method
+  // (`O.map`), which may give what the object holds (UF2004, ADR-0070).
+  it.each([
+    [
+      "of a parameter's member",
+      "type Item = { id: number; on: boolean };\nconst active = (g: { items: Item[] }) => g.items.filter((i) => i.on).sort((a, b) => a.id - b.id);",
+      "{active({ items: [] }).length}",
+    ],
+    [
+      "of a destructured parameter",
+      "type Item = { id: number; on: boolean };\nconst active = ({ items }: { items: Item[] }) => items.filter((i) => i.on).sort((a, b) => a.id - b.id);",
+      "{active({ items: [] }).length}",
+    ],
+    [
+      "of a module table's member, as the module loads",
+      "const NAV = { links: [{ id: 2 }, { id: 1 }] };\nconst SORTED = NAV.links.filter((l) => l.id > 0).sort((a, b) => a.id - b.id);",
+      "{SORTED.length}",
+    ],
+  ])("accepts filter, then sort, %s", (_, before, read) => {
+    const source = `${before}\nexport function A() { return <p>${read}</p>; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual([]);
+  });
+
+  // A value passed to a call as the module loads is read, not called, unless it is a function:
+  // the arrows a table holds still run once called (ADR-0070).
+  it("accepts a table of functions passed to a call as the module loads", () => {
+    const source = [
+      "const FORMATTERS = { upper: (v: string) => up(v) };",
+      "const NAMES = Object.keys(FORMATTERS);",
+      "const FROZEN = Object.freeze(FORMATTERS);",
+      "const up = (v: string) => v.toUpperCase();",
+      "const date = (n: number) => n.toLocaleString();",
+      "const FMT = { date };",
+      "const KEYS = Object.keys(FMT);",
+      "const copy = () => document.title;",
+      "const ACTIONS = { copy };",
+      "const LABELS = Object.keys(ACTIONS);",
+      "export function A() { return <p>{NAMES.join()}{String(FROZEN)}{KEYS.join()}{LABELS.join()}</p>; }",
+    ].join("\n");
+    expect(problems(source, run(source).diagnostics)).toEqual([]);
+  });
+
   // A held arrow runs where a value calls it, through a member, as the module loads (UF2023).
   it.each([
     [

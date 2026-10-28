@@ -264,43 +264,32 @@ export function lowerConstants(
     const loadCallees = new Set<object>();
     /** The held arrows being walked, innermost last: what each reads, `O.m()` follows. */
     const arrows: AST.Node[] = [];
-    /** Whether a value is an array: a literal, a copy, or a name typed or given only arrays. */
-    const isArray = (node: AST.Node, visiting = new Set<object>()): boolean => {
+    /**
+     * The object literal a value is, where it is known: a literal, a name whose value is one (a
+     * module's constant, a local given one alone), or a static member of one (`O.inner`).
+     */
+    const objectOf = (
+      node: AST.Node,
+      visiting = new Set<object>(),
+    ): AST.ObjectExpression | undefined => {
       const inner = unwrapped(node);
-      switch (inner.type) {
-        case "ArrayExpression":
-          return true;
-        case "NewExpression":
-          return isGlobal(unwrapped(inner.callee), "Array");
-        case "CallExpression": {
-          const callee = unwrapped(inner.callee);
-          if (callee.type !== "MemberExpression") return false;
-          const name = memberName(callee);
-          const object = unwrapped(callee.object);
-          if (isGlobal(object, "Array")) return name === "from" || name === "of";
-          if (isGlobal(object, "Object"))
-            return name === "keys" || name === "values" || name === "entries";
-          return name !== undefined && FRESH_METHODS.has(name) && isArray(object, visiting);
-        }
-        case "Identifier": {
-          if (!scopes.isReference(inner)) return false;
-          const resolution = scopes.resolve(inner as AST.IdentifierReference);
-          if (resolution.kind !== "variable" && resolution.kind !== "parameter") return false;
-          const declaration = resolution.declaration as AST.BindingIdentifier;
-          if (arrayType(declaration.typeAnnotation?.typeAnnotation)) return true;
-          if (resolution.kind === "parameter" || visiting.has(declaration)) return false;
-          visiting.add(declaration);
-          const module = inits.get(declaration);
-          const values = module ? [module] : (assigned.get(declaration) ?? []);
-          const all =
-            values.length > 0 &&
-            values.every((value) => value !== null && isArray(value, visiting));
-          visiting.delete(declaration);
-          return all;
-        }
-        default:
-          return false;
+      if (inner.type === "ObjectExpression") return inner;
+      if (inner.type === "MemberExpression") {
+        const name = memberName(inner);
+        const holder = name === undefined ? undefined : objectOf(inner.object, visiting);
+        const member = holder && propertyValue(holder, name!);
+        return member ? objectOf(member, visiting) : undefined;
       }
+      if (inner.type !== "Identifier" || !scopes.isReference(inner)) return undefined;
+      const resolution = scopes.resolve(inner as AST.IdentifierReference);
+      if (resolution.kind !== "variable" || visiting.has(resolution.declaration)) return undefined;
+      visiting.add(resolution.declaration);
+      const module = inits.get(resolution.declaration);
+      const values = module ? [module] : (assigned.get(resolution.declaration) ?? []);
+      const [only] = values;
+      const found = values.length === 1 && only ? objectOf(only, visiting) : undefined;
+      visiting.delete(resolution.declaration);
+      return found;
     };
     /** Whether a value is fresh: built here, so no one else holds it, and it may change. */
     const fresh = (node: AST.Node, visiting = new Set<object>()): boolean => {
@@ -319,8 +308,9 @@ export function lowerConstants(
           const object = unwrapped(callee.object);
           if (isGlobal(object, "Array")) return name === "from" || name === "of";
           if (isGlobal(object, "Object")) return FRESH_OBJECT_FUNCTIONS.has(name);
-          // A copy only where the receiver is an array: `O.map()` may give what `O` holds.
-          return FRESH_METHODS.has(name) && isArray(object);
+          // A copy, but where the receiver is an object literal, whose method may give what it
+          // holds: `O.map()` with `O = { map: () => TABLE }`.
+          return FRESH_METHODS.has(name) && objectOf(object) === undefined;
         }
         case "Identifier": {
           if (!scopes.isReference(inner)) return false;
@@ -410,15 +400,28 @@ export function lowerConstants(
           if (!freshMember(inner)) inPlace(at, how);
       }
     };
-    /** A call's arguments: an arrow passed on may run now, as the call runs (UF2023). */
-    const walkArguments = (args: readonly AST.Node[], load: boolean) => {
+    /** How many arguments are being walked whose call only reads them (`Object.keys(T)`). */
+    let readOnly = 0;
+    /**
+     * A call's arguments: an arrow passed on may run now, as the call runs (UF2023). Where the
+     * call's result cannot hold an argument (`readOnly`), the value reads it, and holds nothing.
+     */
+    const walkArguments = (args: readonly AST.Node[], load: boolean, onlyRead = false) => {
+      if (onlyRead) readOnly++;
       for (const argument of args) {
         const inner = unwrapped(argument);
         if (inner.type === "ArrowFunctionExpression") runsNow.add(inner);
-        // A function passed by name may be called as the call runs: `[1].map(format)`.
-        if (load && inner.type === "Identifier") calledAtLoad(inner as AST.IdentifierReference);
+        // A function passed by name may be called as the call runs: `[1].map(format)`. A value
+        // that holds functions is only read (`Object.keys(FORMATTERS)`).
+        if (load && inner.type === "Identifier" && scopes.isReference(inner)) {
+          const value = moduleValue(inner as AST.IdentifierReference);
+          if (value && initOf.get(value)?.type === "ArrowFunctionExpression") {
+            calledAtLoad(inner as AST.IdentifierReference);
+          }
+        }
         walk(argument, load);
       }
+      if (onlyRead) readOnly--;
     };
     /** Notes a module function a value calls, or passes on, as the module loads. */
     const calledAtLoad = (node: AST.IdentifierReference) => {
@@ -514,6 +517,8 @@ export function lowerConstants(
               if (!fresh(callee.object)) inPlace(typed, `\`${name}\` changes`);
             } else if (
               MUTATING_OBJECT_FUNCTIONS.has(name) &&
+              // Freezing a read-only value changes nothing anyone reads (ADR-0070).
+              name !== "freeze" &&
               isGlobal(unwrapped(callee.object), "Object")
             ) {
               const [changed] = typed.arguments;
@@ -529,7 +534,7 @@ export function lowerConstants(
           }
           if (load && callee.type === "MemberExpression") memberCalledAtLoad(callee);
           walk(typed.callee, load);
-          walkArguments(typed.arguments, load);
+          walkArguments(typed.arguments, load, readsArguments(callee));
           return;
         }
         case "MemberExpression": {
@@ -669,7 +674,7 @@ export function lowerConstants(
               read.add(value);
               for (const arrow of arrows) arrowReads.get(arrow)!.add(value);
               // What a value calls as it loads is computed then; anything else it holds.
-              if (!(load && loadCallees.has(node))) holds.add(value);
+              if (!(load && (loadCallees.has(node) || readOnly > 0))) holds.add(value);
               if (load) loadReads.push({ caller: own, read: value, at: node });
             }
           } else if (!shared.failed.has(resolution.declaration)) {
@@ -798,6 +803,21 @@ export function lowerConstants(
       : undefined;
   }
 
+  /** Whether a call's result can hold none of its arguments: a key list, a string, a test. */
+  function readsArguments(callee: AST.Node): boolean {
+    if (callee.type === "Identifier") {
+      return ["String", "Number", "Boolean"].some((name) => isGlobal(callee, name));
+    }
+    if (callee.type !== "MemberExpression") return false;
+    const name = memberName(callee);
+    const object = unwrapped(callee.object);
+    return (
+      (isGlobal(object, "Object") && (name === "keys" || name === "getOwnPropertyNames")) ||
+      (isGlobal(object, "JSON") && name === "stringify") ||
+      (isGlobal(object, "Array") && name === "isArray")
+    );
+  }
+
   function isGlobal(node: AST.Node, name: string): boolean {
     return (
       node.type === "Identifier" &&
@@ -817,29 +837,6 @@ function propertyValue(object: AST.ObjectExpression, name: string): AST.Node | u
     if (key === name) return unwrapped(property.value);
   }
   return undefined;
-}
-
-/** Whether a written type is an array's: `T[]`, `readonly T[]`, `Array<T>`, or a union of them. */
-function arrayType(type: AST.TSType | undefined): boolean {
-  if (!type) return false;
-  switch (type.type) {
-    case "TSArrayType":
-    case "TSTupleType":
-      return true;
-    case "TSTypeOperator":
-      return type.operator === "readonly" && arrayType(type.typeAnnotation);
-    case "TSTypeReference":
-      return (
-        type.typeName.type === "Identifier" &&
-        (type.typeName.name === "Array" || type.typeName.name === "ReadonlyArray")
-      );
-    case "TSUnionType": {
-      const members = type.types.filter((member) => member.type !== "TSUndefinedKeyword");
-      return members.length > 0 && members.every(arrayType);
-    }
-    default:
-      return false;
-  }
 }
 
 /** Methods whose result is a new array or string, which no one else holds. */
