@@ -1287,4 +1287,54 @@ describe("solid attributes", () => {
       ].join("\n"),
     );
   });
+
+  it("declares every type parameter a chain of constraints reaches", async () => {
+    // ADR-0068: `T`'s constraint names `U`, whose constraint names `V`.
+    const output = await emitSource(
+      [
+        'import { defineSlots } from "unframework";',
+        'import type { Element } from "unframework";',
+        "",
+        "export default function Chain<T extends U, U extends V, V extends string>({ items }: { items: T[] }) {",
+        "  const slots = defineSlots<{ item?(props: { item: T }): Element }>();",
+        "  return <ul>{items.map((item) => <li key={item}>{slots.item?.({ item })}</li>)}</ul>;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(output).toContain(
+      "export interface ChainSlots<T extends U, U extends V, V extends string> {",
+    );
+    expect(output).toContain("ChainSlots<T, U, V>");
+  });
+
+  it("keeps a generic component's code that names its type parameters inside it", async () => {
+    // ADR-0068: `T` is in scope only inside the generic function; `shout` names none and is hoisted.
+    const output = await emitSource(
+      [
+        "export default function Labels<T extends { id: string }>({ items }: { items: T[] }) {",
+        "  function label(item: T): string {",
+        "    return item.id.toUpperCase();",
+        "  }",
+        "  const none: T[] = [];",
+        "  function shout(text: string): string {",
+        "    return `${text}!`;",
+        "  }",
+        "  return (",
+        "    <ul>",
+        "      {items.map((item) => (",
+        "        <li key={item.id}>{shout(label(item))}</li>",
+        "      ))}",
+        "      {none.length}",
+        "    </ul>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    const start = output.indexOf("export default function Labels<T extends { id: string }>(");
+    expect(start).toBeGreaterThan(output.indexOf("function shout(text: string): string {"));
+    expect(output.indexOf("function label(item: T): string {")).toBeGreaterThan(start);
+    expect(output.indexOf("const none: T[] = [];")).toBeGreaterThan(start);
+  });
 });

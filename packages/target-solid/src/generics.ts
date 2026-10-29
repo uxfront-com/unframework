@@ -3,9 +3,17 @@
 // pass. The interfaces the output declares beside the props type (its events', models' and
 // slots') take the type parameters their members read, `PickerSlots<T>`, so a scoped slot's fill
 // is typed with the consumer's `T` (`generic-slot-props`, native).
-import { js, typeNames } from "@unframework/codegen";
+import { codeNames, js, typeNames } from "@unframework/codegen";
 import type { Placeholders } from "@unframework/codegen";
-import type { BindingId, Span, TypeDeclaration, TypeParameter, UfComponent } from "@unframework/ir";
+import type {
+  BindingId,
+  ConstItem,
+  FunctionItem,
+  Span,
+  TypeDeclaration,
+  TypeParameter,
+  UfComponent,
+} from "@unframework/ir";
 
 type TypeParameterDeclaration = NonNullable<
   ReturnType<typeof js.functionDeclaration>["typeParameters"]
@@ -56,12 +64,20 @@ export function generatedInterface(
   span: Span,
 ): GeneratedInterface {
   const read = typeNames(`{\n${members.join("\n")}\n}`);
-  // A parameter's constraint or default may name an earlier one (`U extends T`), which the
-  // interface then declares too.
-  for (const parameter of (component.typeParameters ?? []).toReversed()) {
-    if (!read.has(parameter.name)) continue;
-    for (const text of [parameter.constraint, parameter.default]) {
-      if (text) for (const each of typeNames(text)) read.add(each);
+  // A parameter's constraint or default may name another (`T extends U, U extends V`), which the
+  // interface then declares too, and so on until no name is added.
+  for (let added = true; added;) {
+    added = false;
+    for (const parameter of component.typeParameters ?? []) {
+      if (!read.has(parameter.name)) continue;
+      for (const text of [parameter.constraint, parameter.default]) {
+        if (!text) continue;
+        for (const each of typeNames(text)) {
+          if (read.has(each)) continue;
+          read.add(each);
+          added = true;
+        }
+      }
     }
   }
   const parameters = (component.typeParameters ?? []).filter((each) => read.has(each.name));
@@ -87,6 +103,32 @@ export function genericModelType(component: UfComponent, binding: BindingId): st
   if (model?.kind !== "Model" || !model.type) return undefined;
   const read = typeNames(model.type);
   return component.typeParameters?.some(({ name }) => read.has(name)) ? model.type.code : undefined;
+}
+
+/**
+ * Whether a setup constant or function names one of the component's type parameters
+ * (`function label(item: T)`, `const none: T[] = []`): it stays inside the generic function,
+ * where `T` is in scope, never hoisted to the module.
+ */
+export function namesTypeParameter(
+  component: UfComponent,
+  item: ConstItem | FunctionItem,
+): boolean {
+  if (!component.typeParameters?.length) return false;
+  const names = new Set<string>();
+  const add = (found: Iterable<string>) => {
+    for (const name of found) names.add(name);
+  };
+  if (item.kind === "Const") {
+    if (item.type) add(typeNames(item.type));
+    add(codeNames(item.value.code));
+  } else {
+    const fn = item.function;
+    for (const parameter of fn.parameters) if (parameter.type) add(typeNames(parameter.type));
+    if (fn.returnType) add(typeNames(fn.returnType));
+    add(codeNames(fn.body.code, fn.expression ? "expression" : "statements"));
+  }
+  return component.typeParameters.some(({ name }) => names.has(name));
 }
 
 /** `T extends Item = Item`, as written. */

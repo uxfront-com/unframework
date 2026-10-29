@@ -39,6 +39,7 @@ import type {
 
 import { assertedCode, assertedFunction, assertedWhole } from "./asserted.ts";
 import type { SolidComposition } from "./composition.ts";
+import { namesTypeParameter } from "./generics.ts";
 import {
   NEXT_TICK_HELPER,
   nextTickHelperCode,
@@ -664,11 +665,18 @@ function itemText(item: SetupItem, code: SolidCode, bindingOf: (id: BindingId) =
  * The constants and functions that capture nothing of the component (ADR-0045): their code reads no
  * binding but other such constants and functions, so they move to module scope, where
  * `unicorn/consistent-function-scoping` (L5) wants a function that captures nothing. An id is
- * per instance, never hoisted.
+ * per instance, never hoisted, and so is one that names a type parameter of a generic component.
  */
 function hoistable(component: UfComponent): Set<BindingId> {
   const candidates = new Map<BindingId, Code[]>();
   for (const item of component.setup) {
+    // A generic component's type parameters are in scope only inside its function (ADR-0068).
+    if (
+      (item.kind === "Const" || item.kind === "Function") &&
+      namesTypeParameter(component, item)
+    ) {
+      continue;
+    }
     if (item.kind === "Const") candidates.set(item.binding, [item.value]);
     if (item.kind === "Function") {
       const fn = item.function;
