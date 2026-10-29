@@ -811,6 +811,97 @@ const typed: Record<string, { source: string[]; types: string }> = {
       "}",
     ],
   },
+  // Kept setup code that names an imported `Props`.
+  setupProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import { computed } from "unframework";',
+      'import type { Props } from "./types";',
+      "",
+      "export default function Card({ item }: { item?: Props }) {",
+      '  const fallback: Props = { label: "none" };',
+      "  const shown = computed(() => item ?? fallback);",
+      "  return <span>{shown.value.label}</span>;",
+      "}",
+    ],
+  },
+  // Kept setup code that names the source's own `Props`, which a model extends on Astro.
+  setupLocalProps: {
+    types: "export {};\n",
+    source: [
+      'import { defineModel } from "unframework";',
+      "",
+      "interface Props { label: string }",
+      "",
+      "export default function Card({ label }: Props) {",
+      '  const open = defineModel<boolean>("open", { required: true });',
+      '  const next: Props = { label: "x" };',
+      "  return <span>{label} {next.label} {String(open.value)}</span>;",
+      "}",
+    ],
+  },
+  // An injection key of an imported `Props`, whose value type Astro exports under the key's name.
+  keyProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import { provide } from "unframework";',
+      'import type { InjectionKey } from "unframework";',
+      'import type { Props } from "./types";',
+      "",
+      'export const ItemKey: InjectionKey<Props> = Symbol("uf.item");',
+      "",
+      "export default function Card({ item }: { item: Props }) {",
+      "  provide(ItemKey, item);",
+      "  return <span>{item.label}</span>;",
+      "}",
+    ],
+  },
+  // A conditional type that infers a `Props` of its own, beside an imported `Props`.
+  inferProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import { computed } from "unframework";',
+      'import type { Props } from "./types";',
+      "",
+      "type Unbox<B> = B extends { value: infer Props } ? Props : never;",
+      "",
+      "export default function Card({ item }: { item: Props }) {",
+      "  const size = computed((): Unbox<{ value: number }> => item.label.length);",
+      "  return <span>{size.value.toFixed(1)}</span>;",
+      "}",
+    ],
+  },
+  // A type parameter named `Props`, beside an imported `Props`.
+  parameterProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import type { Props } from "./types";',
+      "",
+      "export interface Box<Props> { value: Props }",
+      "",
+      "export default function Card({ item, box }: { item: Props; box: Box<number> }) {",
+      "  return <span>{item.label} {box.value.toFixed(1)}</span>;",
+      "}",
+    ],
+  },
+  // A chain of constraints, each naming the next parameter.
+  constraintChain: {
+    types: "export {};\n",
+    source: [
+      'import { ref } from "unframework";',
+      "",
+      "export interface ListProps<T, U, V> {",
+      "  items: T[];",
+      "  u: U;",
+      "  v: V;",
+      "}",
+      "",
+      "export default function List<T extends U, U extends V, V>({ items, u, v }: ListProps<T, U, V>) {",
+      "  const picked = ref<T | undefined>(items[0]);",
+      "  return <p>{String(picked.value)} {String(u)} {String(v)}</p>;",
+      "}",
+    ],
+  },
   // An intersection of parenthesised types.
   parenthesised: {
     types: "export interface Base { label: string }\n",
@@ -861,6 +952,16 @@ describe("imported types through the type oracle (ADR-0067)", () => {
       ),
     );
     expect(await emittedTyped("importedPropsUnread")).toContain("export type Props = OwnProps;");
+  });
+
+  it("keeps a `Props` that a scope declares, and renames an injection key's", async () => {
+    expect(await emittedTyped("parameterProps")).toContain(
+      "export interface Box<Props> { value: Props }",
+    );
+    expect(await emittedTyped("inferProps")).toContain(
+      "type Unbox<B> = B extends { value: infer Props } ? Props : never;",
+    );
+    expect(await emittedTyped("keyProps")).toContain("export type ItemKey = OwnProps;");
   });
 
   it("claims `OwnProps` apart from an imported `OwnProps`", async () => {

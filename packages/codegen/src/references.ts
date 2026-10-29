@@ -235,11 +235,11 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
 /**
  * The type declarations a component's output declares (`component.types`, in source order), as
  * far as what it prints reaches them: its props' and models' types, the annotations and code of
- * the setup items in `liveBindings(component, options)`, and with `client` its events' payloads and its
- * listeners', watchers', effects' and hooks' code; then, transitively, the declarations those
- * declarations name. A declaration the source exports is always kept: consumers may import it.
- * Astro, whose handlers are inert, copies only these, so a type only dropped code used is not
- * left unused (L5). `includeKeys: false` leaves out what only a list's key reaches, as
+ * the setup items in `liveBindings(component, options)`, and with `client` its events' payloads
+ * and its listeners', watchers', effects' and hooks' code; then, transitively, the declarations
+ * those declarations name. A declaration the source exports is always kept: consumers may
+ * import it. Astro, whose handlers are inert, copies only these, so a type only dropped code
+ * used is not left unused (L5). `includeKeys: false` leaves out what only a list's key reaches, as
  * {@link liveBindings} does.
  */
 export function liveTypes(

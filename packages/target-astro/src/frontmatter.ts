@@ -126,8 +126,11 @@ export function frontmatterOf(
       ? spelling.scope.claim("OwnProps")
       : undefined;
   // The source's `Props` under the name it takes beside Astro's (`interface Props extends
-  // OwnProps`), in every type the output prints.
-  const own = (type: string) => (ownProps ? renameTypeReferences(type, "Props", ownProps) : type);
+  // OwnProps`), in every type and statement the output prints.
+  const rename = (kind: "type" | "statements") => (code: string) =>
+    ownProps ? renameTypeReferences(code, "Props", ownProps, kind) : code;
+  const own = rename("type");
+  const ownCode = rename("statements");
   const extras = propsExtras(component, render, own);
   addTypeImports(component, module, imports, (name) => `${name}.astro`, {
     live: SERVER,
@@ -139,12 +142,12 @@ export function frontmatterOf(
       exported && parameter && declaration.name === "Props" && !declaration.exported
         ? `export ${declaration.code}`
         : typeDeclarationCode(declaration);
-    code = own(code);
+    code = ownCode(code);
     if (ownProps && declaration.name === "Props") code = code.replace(/\bProps\b/, ownProps);
     return { code, span: declaration.span };
   });
   const typeExports = typeExportsCode(component, module, (name) => `${name}.astro`).map(
-    ({ code, span }) => ({ code: own(code), span }),
+    ({ code, span }) => ({ code: ownCode(code), span }),
   );
   for (const { code } of [...declared, ...typeExports].toSorted(
     (a, b) => a.span.start - b.span.start,
@@ -152,7 +155,7 @@ export function frontmatterOf(
     sections.push([code]);
   }
   for (const statement of keyTypes(component, module, new Set(types.map(({ name }) => name)))) {
-    sections.push([statement]);
+    sections.push([ownCode(statement)]);
   }
   const alias = propsDeclaration(
     parameter && own(parameter.type.code),
@@ -163,13 +166,15 @@ export function frontmatterOf(
   if (alias !== undefined) {
     sections.push([exported || sourceProps?.exported ? `export ${alias}` : alias]);
   }
-  const scoped = typeParameterAliases(component, [...reads, ...setup.helpers, ...setup.statements]);
+  const helpers = setup.helpers.map(ownCode);
+  const statements = setup.statements.map(ownCode);
+  const scoped = typeParameterAliases(component, [...reads, ...helpers, ...statements]);
   if (scoped.length) sections.push(scoped);
   if (reads.length) sections.push(reads);
-  for (const helper of setup.helpers) sections.push([helper]);
+  for (const helper of helpers) sections.push([helper]);
   if (scope) sections.push([scopeAttributesHelper(scope)]);
   if (styleObject) sections.push([styleObjectHelper(styleObject)]);
-  if (setup.statements.length) sections.push(setup.statements);
+  if (statements.length) sections.push(statements);
   // Each hoisted `<component is>` once, though a branch per set of forwarded slots repeats it.
   const constants = new Map<string, string>();
   for (const [node, { name, hoisted }] of render.dynamics) {
@@ -249,9 +254,8 @@ function propsExtras(
   }
   for (const slot of component.slots?.slots ?? []) {
     if (slot.props) {
-      members.push(
-        `${renderPropName(slot.name, ownProps(component))}?: (props: ${own(slot.props.code)}) => unknown`,
-      );
+      const name = renderPropName(slot.name, ownProps(component));
+      members.push(`${name}?: (props: ${own(slot.props.code)}) => unknown`);
     }
   }
   if (render.fallthrough) {
@@ -473,14 +477,20 @@ function unwrapped(annotation: string): { type: string; kind: string | undefined
 }
 
 /**
- * A type's or a declaration's code with each reference to the type `from` renamed `to`, its
- * members' keys and the names it declares left as written: `Props & { a: Props["a"] }` reads
- * `OwnProps & { a: OwnProps["a"] }`.
+ * A type's code, or statements' (a declaration, the kept setup), with each reference to the type
+ * `from` renamed `to`, its members' keys and the names it declares left as written:
+ * `Props & { a: Props["a"] }` reads `OwnProps & { a: OwnProps["a"] }`. A scope that declares a
+ * type parameter of that name (`interface Box<Props>`, `[Props in Keys]`, the true branch of a
+ * conditional type that infers `Props`) reads its own, and keeps it.
  */
-function renameTypeReferences(code: string, from: string, to: string): string {
-  const declaration = /^\s*(?:export\s+)?(?:interface|type)\s/.test(code);
-  const prefix = declaration ? "" : "type T = ";
-  const source = declaration ? code : `${prefix}${code};`;
+function renameTypeReferences(
+  code: string,
+  from: string,
+  to: string,
+  kind: "type" | "statements",
+): string {
+  const prefix = kind === "type" ? "type T = " : "";
+  const source = kind === "type" ? `${prefix}${code};` : code;
   const starts: number[] = [];
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
@@ -489,6 +499,13 @@ function renameTypeReferences(code: string, from: string, to: string): string {
     }
     if (!node || typeof node !== "object") return;
     const record = node as Record<string, unknown>;
+    if (declaresTypeParameter(record, from)) return;
+    // `B extends { value: infer Props } ? Props : never`: only the false branch reads the outer one.
+    if (record.type === "TSConditionalType" && infers(record.extendsType, from)) {
+      visit(record.checkType);
+      visit(record.falseType);
+      return;
+    }
     const reference =
       record.type === "TSTypeReference"
         ? record.typeName
@@ -507,7 +524,31 @@ function renameTypeReferences(code: string, from: string, to: string): string {
   for (const start of starts.toSorted((a, b) => b - a)) {
     renamed = `${renamed.slice(0, start)}${to}${renamed.slice(start + from.length)}`;
   }
-  return declaration ? renamed : renamed.slice(prefix.length, -1);
+  return kind === "type" ? renamed.slice(prefix.length, -1) : renamed;
+}
+
+/** Whether a type infers a type parameter named `name` (`infer Props`) outside a nested one. */
+function infers(node: unknown, name: string): boolean {
+  if (Array.isArray(node)) return node.some((each) => infers(each, name));
+  if (!node || typeof node !== "object") return false;
+  const record = node as Record<string, unknown>;
+  if (record.type === "TSConditionalType") return infers(record.checkType, name);
+  if (record.type === "TSInferType") {
+    const parameter = record.typeParameter as { name?: { name?: string } } | undefined;
+    if (parameter?.name?.name === name) return true;
+  }
+  return Object.entries(record).some(([key, value]) => key !== "parent" && infers(value, name));
+}
+
+/** Whether a node declares a type parameter named `name`: `<Props>`, or `[Props in Keys]`. */
+function declaresTypeParameter(node: Record<string, unknown>, name: string): boolean {
+  const declaration = node.typeParameters as { params?: { name?: { name?: string } }[] } | null;
+  if (declaration?.params?.some((parameter) => parameter.name?.name === name)) return true;
+  if (node.type !== "TSMappedType") return false;
+  const key = (node.key ?? (node.typeParameter as { name?: unknown } | undefined)?.name) as
+    | { name?: string }
+    | undefined;
+  return key?.name === name;
 }
 
 /**
@@ -515,16 +556,24 @@ function renameTypeReferences(code: string, from: string, to: string): string {
  * frontmatter's top level, `type T = Item;`, or `unknown` without one: Astro declares `Props`'
  * type parameters on the component's render function alone, which the frontmatter and the markup
  * are outside. The markup names none: a template expression has no TypeScript syntax (UF1002). A
- * constraint that names another parameter (`U extends T`) declares that one too.
+ * constraint that names another parameter (`U extends T`) declares that one too, and so on along
+ * the chain.
  */
 function typeParameterAliases(component: UfComponent, code: readonly string[]): string[] {
   const parameters = component.typeParameters ?? [];
   if (!parameters.length) return [];
   const named = new Set<string>();
   for (const each of code) for (const name of codeNames(each, "statements")) named.add(name);
-  for (const parameter of parameters.toReversed()) {
-    if (!named.has(parameter.name) || !parameter.constraint) continue;
-    for (const name of typeNames(parameter.constraint)) named.add(name);
+  const constraints = new Map(parameters.map(({ name, constraint }) => [name, constraint]));
+  const pending = [...named];
+  for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
+    const constraint = constraints.get(name);
+    if (!constraint) continue;
+    for (const next of typeNames(constraint)) {
+      if (named.has(next)) continue;
+      named.add(next);
+      pending.push(next);
+    }
   }
   return parameters
     .filter(({ name }) => named.has(name))
