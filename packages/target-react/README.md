@@ -17,9 +17,11 @@ component, written as a React developer would write it (plan §6):
   `export type { Tone } from "./types"`, and an exported type no component reaches.
 - a generic component as a generic function component (ADR-0068),
   `export default function List<T>({ items }: ListProps<T> & ListAttributes)`, its constraints
-  and defaults as written. The events', models' and slots' interfaces whose members name a type
-  parameter take them too (`ListSlots<T>`), and a form control's `v-model` of such a type casts
-  the control's string to it (`event.target.value as T`).
+  and defaults as written. The events', models', slots' and handle's interfaces take the type
+  parameters their members name, with those their constraints name (`ListSlots<T>`), and setup
+  code a type parameter types stays inside the component. A form control's `v-model` of such a
+  type casts the control's string to it (`event.target.value as T`, or `as typeof chosen` where
+  the state's type is inferred).
 - expressions as the source writes them, a ref's value read as React's (`count.value` is
   `count`); conditionals as ternary chains ending in `null` (never `&&`, which renders a `0`);
   lists as `.map((item, index) => <li key={…}>…)`, with the index only when something reads it;

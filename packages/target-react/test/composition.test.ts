@@ -176,6 +176,48 @@ export function Pill({ on }: { on: boolean }) {
  * source passes L3, L4 and L5 as an output must, and the shape that once broke is pinned.
  */
 const PROBES: Readonly<Record<string, string>> = {
+  // Setup code a generic component's type parameter types, which stays inside the component.
+  genericSetup: `export interface ListProps<T> { label: string; items: T[] }
+export default function List<T>({ label, items }: ListProps<T>) {
+  const empty: T[] = [];
+  function describe(item: T): string {
+    return String(item);
+  }
+  return <ul aria-label={label}>{(items.length ? items : empty).map((item, index) => <li key={index}>{describe(item)}</li>)}</ul>;
+}`,
+  // A handle that a type parameter types (ADR-0054, ADR-0068).
+  genericExpose: `import { defineExpose, ref } from "unframework";
+export default function Picker<T>({ items }: { items: T[] }) {
+  const picked = ref<string>("");
+  function choose(item: T): void {
+    picked.value = String(item);
+  }
+  defineExpose({ choose });
+  return <p>{items.length} {picked.value}</p>;
+}`,
+  // An interface whose members name one of two type parameters declares only that one.
+  genericSubset: `import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+export default function Pair<T, U extends string = "x">({ items, tag }: { items: T[]; tag: U }) {
+  const slots = defineSlots<{ item?(props: { item: T }): Element }>();
+  return <ul data-tag={tag}>{items.map((item, index) => <li key={index}>{slots.item?.({ item })}</li>)}</ul>;
+}`,
+  // A field bound to state whose type is inferred from a value of the type parameter.
+  genericInferred: `import { ref } from "unframework";
+export default function Pick<T extends string>({ initial }: { initial: T }) {
+  const chosen = ref(initial);
+  return <input v-model={chosen.value} />;
+}`,
+  // A multiple select bound to a model of the type parameter's array.
+  genericMultiple: `import { defineModel } from "unframework";
+export default function Multi<T extends string>({ options }: { options: readonly T[] }) {
+  const value = defineModel<T[]>("value", { required: true });
+  return (
+    <select multiple v-model={value.value}>
+      {options.map((option) => <option key={option} value={option}>{option}</option>)}
+    </select>
+  );
+}`,
   // A generic component (ADR-0068) whose event, model and scoped slot name its type parameter.
   generic: `import { defineEmits, defineModel, defineSlots } from "unframework";
 import type { Element } from "unframework";
@@ -399,6 +441,98 @@ describe("react types and generics", () => {
     // A control gives a string, which TypeScript cannot narrow to the type argument.
     expect(chooser).toContain("valueRef.current = event.target.value as T;");
     expect(chooser).not.toContain("interface ChooserAttributes<");
+  });
+
+  it("keeps setup code that a type parameter types inside the component", async () => {
+    const list = (await outputs(PROBES.genericSetup!)).get("List")!;
+    const start = list.indexOf("export default function List<T>(");
+    // A setup `const` the component keeps is a `useState` snapshot, read once per instance.
+    expect(list.indexOf("const [empty] = useState<T[]>([]);")).toBeGreaterThan(start);
+    expect(list.indexOf("function describe(item: T): string {")).toBeGreaterThan(start);
+  });
+
+  it("gives a handle that a type parameter types the parameter, where the ref is typed too", async () => {
+    const picker = (await outputs(PROBES.genericExpose!)).get("Picker")!;
+    expect(picker).toContain("export interface PickerHandle<T> {");
+    expect(picker).toContain("export interface PickerAttributes<T> {");
+    expect(picker).toContain("ref?: Ref<PickerHandle<T>>;");
+    expect(picker).toContain("}: { items: T[] } & PickerAttributes<T>) {");
+  });
+
+  it("declares on an interface only the type parameters its members name", async () => {
+    const pair = (await outputs(PROBES.genericSubset!)).get("Pair")!;
+    expect(pair).toContain("export interface PairSlots<T> {");
+    expect(pair).toContain("& PairSlots<T> &");
+  });
+
+  it("closes an interface's type parameters over the constraints that name others", async () => {
+    const pick = (
+      await outputs(`import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+export default function Pick<T, U extends T = T>({ items, chosen }: { items: T[]; chosen: U }) {
+  const slots = defineSlots<{ pick?(props: { chosen: U }): Element }>();
+  return <p data-n={items.length}>{slots.pick?.({ chosen })}</p>;
+}`)
+    ).get("Pick")!;
+    expect(pick).toContain("export interface PickSlots<T, U extends T = T> {");
+    expect(pick).toContain("& PickSlots<T, U> &");
+  });
+
+  it("casts a field's value to state whose type a type parameter's value infers", async () => {
+    const pick = (await outputs(PROBES.genericInferred!)).get("Pick")!;
+    expect(pick).toContain("setChosen(event.target.value as typeof chosen)");
+  });
+
+  it("casts a multiple select's values to a model of the type parameter's array", async () => {
+    const multi = (await outputs(PROBES.genericMultiple!)).get("Multi")!;
+    expect(multi).toContain(
+      "Array.from(event.target.selectedOptions, (option) => option.value) as T[]",
+    );
+  });
+
+  it("names its own interfaces apart from the types the module imports and exports", async () => {
+    const exported = (
+      await outputs(`import { defineEmits } from "unframework";
+export type CardAttributes = "unused";
+export type { CardEvents } from "./types";
+export default function Card({ title }: { title: string }) {
+  const emit = defineEmits<{ open: [] }>();
+  return <button type="button" onClick={() => emit("open")}>{title}</button>;
+}`)
+    ).get("Card")!;
+    expect(exported).toContain('export type CardAttributes = "unused";');
+    expect(exported).toContain('export type { CardEvents } from "./types";');
+    expect(exported).not.toMatch(/interface CardEvents\b/);
+    expect(exported).not.toMatch(/interface CardAttributes\b/);
+    // A type import the resolver records, which only a local type declaration reads.
+    const { module } = analyze(
+      parseModule(
+        "Fixture.uf.tsx",
+        `import { defineEmits } from "unframework";
+export default function Card({ title }: { title: string }) {
+  const emit = defineEmits<{ open: [] }>();
+  return <button type="button" onClick={() => emit("open")}>{title}</button>;
+}`,
+      ),
+    );
+    const span = { start: 0, end: 0 };
+    const withImport = {
+      ...module!,
+      typeImports: [
+        {
+          specifier: "./types",
+          names: [{ imported: "CardEvents", local: "CardEvents", span }],
+          span,
+        },
+      ],
+    };
+    const [file] = target.emit(withImport.components[0]!, {
+      module: withImport,
+      options: undefined,
+      report: () => {},
+    });
+    const imported = file!.contents;
+    expect(imported).not.toMatch(/interface CardEvents\b/);
   });
 
   it("writes the module's type exports in source order among the types it copies", async () => {

@@ -561,6 +561,7 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
         const parameters = fn ? parametersOf(fn) : "";
         return `${name}${fn ? exposedType(fn, parameters) : "(): void"};`;
       }),
+      generic.expose?.declared,
     );
   }
   if (interfaces.attributes) {
@@ -568,8 +569,12 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
     if (composition.fallthrough) {
       members.push("className?: string;", `style?: ${type("CSSProperties")};`);
     }
-    if (composition.expose) members.push(`ref?: ${type("Ref")}<${composition.expose.handle}>;`);
-    declare(interfaces.attributes, members);
+    if (composition.expose) {
+      const handle = `${composition.expose.handle}${generic.expose?.passed ?? ""}`;
+      members.push(`ref?: ${type("Ref")}<${handle}>;`);
+    }
+    // The handle is the attributes' one member a type parameter may type.
+    declare(interfaces.attributes, members, generic.expose?.declared);
   }
   return declarations;
 }
@@ -677,34 +682,52 @@ function eventsInterface(plan: ReactPlan): TypeDeclaration[] {
 }
 
 /**
- * The type parameters of the interfaces the output declares for its events, models and slots
- * (ADR-0068): where a generic component's members name one of its type parameters, the interface
- * takes them all, declared as the component declares them (`<T extends string>`) and passed by
- * name (`<T>`).
+ * The type parameters of the interfaces the output declares for its events, models, slots and
+ * handle (ADR-0068): those of a generic component's that the members name, with those their
+ * constraints and defaults name in turn, in the component's order, declared as the component
+ * declares them (`<T extends string>`) and passed by name (`<T>`). An interface that names none
+ * takes none.
  */
 function interfaceParameters(
   plan: ReactPlan,
-): Partial<Record<"events" | "models" | "slots", { declared: string; passed: string }>> {
+): Partial<Record<"events" | "models" | "slots" | "expose", { declared: string; passed: string }>> {
   const { component, composition } = plan;
   const parameters = component.typeParameters ?? [];
   if (!parameters.length) return {};
-  const written = {
-    declared: `<${parameters.map(typeParameterText).join(", ")}>`,
-    passed: `<${parameters.map(({ name }) => name).join(", ")}>`,
+  const written = (texts: readonly (TypeText | undefined)[]) => {
+    const named = new Set<string>();
+    const read = (text: TypeText | undefined) => {
+      if (text) for (const name of typeNames(text)) named.add(name);
+    };
+    texts.forEach(read);
+    let kept: TypeParameter[] = [];
+    while (true) {
+      const next = parameters.filter(({ name }) => named.has(name));
+      if (next.length === kept.length) break;
+      kept = next;
+      for (const parameter of kept) {
+        read(parameter.constraint);
+        read(parameter.default);
+      }
+    }
+    if (!kept.length) return undefined;
+    return {
+      declared: `<${kept.map(typeParameterText).join(", ")}>`,
+      passed: `<${kept.map(({ name }) => name).join(", ")}>`,
+    };
   };
-  const names = (texts: readonly (TypeText | undefined)[]) =>
-    texts.some((text) => {
-      const read = text ? typeNames(text) : new Set<string>();
-      return parameters.some(({ name }) => read.has(name));
-    })
-      ? written
-      : undefined;
+  const exposed = component.exposes?.functions.flatMap((id) => {
+    const item = component.setup.find((entry) => entry.kind === "Function" && entry.binding === id);
+    if (item?.kind !== "Function") return [];
+    return [...item.function.parameters.map(({ type }) => type), item.function.returnType];
+  });
   return {
-    events: names(
+    events: written(
       component.emits?.events.flatMap((event) => event.parameters.map(({ type }) => type)) ?? [],
     ),
-    models: names([...composition.models.values()].map(({ item }) => item.type)),
-    slots: names(component.slots?.slots.map((slot) => slot.props) ?? []),
+    models: written([...composition.models.values()].map(({ item }) => item.type)),
+    slots: written(component.slots?.slots.map((slot) => slot.props) ?? []),
+    expose: written(composition.expose ? (exposed ?? []) : []),
   };
 }
 
@@ -735,7 +758,7 @@ function propsParameters(
     plan.eventsInterface && `${plan.eventsInterface}${generic.events?.passed ?? ""}`,
     models && `${models}${generic.models?.passed ?? ""}`,
     slots && `${slots}${generic.slots?.passed ?? ""}`,
-    attributes,
+    attributes && `${attributes}${generic.expose?.passed ?? ""}`,
   ]
     .filter((part) => part !== undefined)
     .join(" & ");

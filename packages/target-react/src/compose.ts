@@ -245,13 +245,13 @@ export class ReactComposer {
           break;
         case "select-multiple":
           state = ["value", read];
-          written = "Array.from(EVENT.target.selectedOptions, (option) => option.value)";
+          written = `Array.from(EVENT.target.selectedOptions, (option) => option.value)${this.#cast(binding, read)}`;
           break;
         case "text":
         case "textarea":
         case "select":
           state = ["value", shown];
-          written = `EVENT.target.value${this.#cast(binding)}`;
+          written = `EVENT.target.value${this.#cast(binding, read)}`;
           break;
         default:
           return control satisfies never;
@@ -275,17 +275,19 @@ export class ReactComposer {
   /**
    * ` as T` where a state's or a model's declared type names a type parameter of a generic
    * component (ADR-0068): the control's value is a `string`, which TypeScript cannot narrow to
-   * the type argument. Nothing otherwise.
+   * the type argument. Without a declared type, its type may be inferred from one (`ref(initial)`),
+   * so it is cast to the type of what it reads, ` as typeof chosen`. Nothing otherwise.
    */
-  #cast(binding: BindingId): string {
+  #cast(binding: BindingId, read: string): string {
     const { component } = this.#plan;
+    if (!component.typeParameters?.length) return "";
     const item = component.setup.find(
       (entry) => (entry.kind === "State" || entry.kind === "Model") && entry.binding === binding,
     );
     const type = item && "type" in item ? item.type : undefined;
-    if (!type || !component.typeParameters?.length) return "";
-    const read = typeNames(type);
-    return component.typeParameters.some(({ name }) => read.has(name)) ? ` as ${type.code}` : "";
+    if (!type) return /^[\w$]+$/.test(read) ? ` as typeof ${read}` : "";
+    const names = typeNames(type);
+    return component.typeParameters.some(({ name }) => names.has(name)) ? ` as ${type.code}` : "";
   }
 
   /** Whether a state or a model may hold `null` or `undefined`, as its declaration says. */
