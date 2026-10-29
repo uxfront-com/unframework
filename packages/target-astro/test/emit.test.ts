@@ -908,6 +908,15 @@ const typed: Record<string, { source: string[]; types: string }> = {
       "}",
     ],
   },
+  // A type parameter only another's default names.
+  genericDefaultOnly: {
+    types: "export {};\n",
+    source: [
+      "export default function List<T, U = T>({ u }: { u: U }) {",
+      "  return <p>{String(u)}</p>;",
+      "}",
+    ],
+  },
   genericUnnamedInline: {
     types: "export {};\n",
     source: [
@@ -1141,6 +1150,7 @@ describe("imported types through the type oracle (ADR-0067)", () => {
     expect(await emittedTyped("genericBoundOnly")).toContain(
       "interface Props<U, T extends U = U> {",
     );
+    expect(await emittedTyped("genericDefaultOnly")).toContain("interface Props<T, U = T> {");
   });
 
   it("declares no type parameter that only a nested scope declares for itself", async () => {
