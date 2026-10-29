@@ -1,3 +1,4 @@
+import type { Tone } from "./types";
 import type { JSX } from "solid-js";
 
 export default function Swatch(

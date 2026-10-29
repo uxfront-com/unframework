@@ -1,5 +1,8 @@
 import Swatch from "./Swatch";
+import type { Tone } from "./types";
 import type { JSX } from "solid-js";
+
+export type { Tone } from "./types";
 
 export default function Palette(
   props: { tone: Tone } & { class?: string; style?: JSX.CSSProperties },

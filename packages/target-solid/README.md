@@ -54,6 +54,17 @@ export default function Counter(
   keeps its own name (`card.title`). A prop no expression reads takes no default, and a props object nothing
   reads is `_props` (an object form's name that is `_` and more is kept): unused bindings fail
   L5.
+- The source's `import type` names the output reads, by name (ADR-0067): from a `.ts` module or a
+  package as written, `import type { BadgeProps } from "./types"`, and from a child's output,
+  `import Field, { type FieldProps } from "./Field"`. The output of the module's main component
+  also writes the module's other type exports, an exported type no component reaches and a
+  re-export (`export type { Tone } from "./types"`), among the copied types in source order
+  (ADR-0068).
+- A generic component is a generic function, `function List<T>(props: ListProps<T>)`, whose
+  consumers' JSX infers `T` (ADR-0068). The interfaces the output declares for its events, models
+  and slots take the type parameters their members read (`PickerSlots<T>`), so a scoped slot's
+  fill is typed with the consumer's `T`, and a `<select>` bound to a model of `T` writes the
+  chosen value as `T`.
 - Expressions exactly as the source writes them, with each prop read through `props`.
   Conditionals are Solid's control flow, which test truthiness as the IR does (`0` renders
   nothing): `<Show when={c} fallback={…}>`, `<Show when={!c}>` when only the else branch

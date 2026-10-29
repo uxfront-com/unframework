@@ -5,13 +5,13 @@ export interface SelectProps<T extends string> {
   options: readonly T[];
 }
 
-export interface SelectModels {
+export interface SelectModels<T extends string> {
   value: T;
   onValueChange?: (value: T) => void;
 }
 
-export default function Select(
-  props: SelectProps<T> & SelectModels & { class?: string; style?: JSX.CSSProperties },
+export default function Select<T extends string>(
+  props: SelectProps<T> & SelectModels<T> & { class?: string; style?: JSX.CSSProperties },
 ) {
   const value = () => props.value;
 
@@ -23,7 +23,7 @@ export default function Select(
     <label class={props.class} style={props.style} {...scopeAttributes(props)}>
       {props.label}{" "}
       <select
-        onChange={(event) => setValue(event.currentTarget.value)}
+        onChange={(event) => setValue(event.currentTarget.value as T)}
         ref={(select) => selectOptions(select, value)}
       >
         <For each={props.options}>

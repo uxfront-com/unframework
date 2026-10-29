@@ -2,6 +2,8 @@ import { type JSX, mergeProps } from "solid-js";
 
 export type ButtonTone = "primary" | "secondary";
 
+export type ButtonSize = "small" | "large";
+
 export interface ButtonProps {
   label: string;
   tone?: ButtonTone;

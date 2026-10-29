@@ -6,7 +6,9 @@ export interface ListProps<T> {
   selected?: T;
 }
 
-export default function List(props: ListProps<T> & { class?: string; style?: JSX.CSSProperties }) {
+export default function List<T>(
+  props: ListProps<T> & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
     <ul
       aria-label={props.label}

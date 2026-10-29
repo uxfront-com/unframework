@@ -1,3 +1,4 @@
+import type { BadgeProps } from "./types";
 import { type JSX, mergeProps } from "solid-js";
 
 export default function Badge(
