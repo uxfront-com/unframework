@@ -297,9 +297,9 @@ function genericsAttribute(component: UfComponent): string {
 }
 
 /**
- * Type text with the same meaning and no `'`: each string literal double-quoted, and a `'` in a
- * literal or a comment written `\u0027`, which a literal reads as the same character. Template
- * literal types never reach a target (UF6002).
+ * Type text with the same meaning and no `'`: each string literal double-quoted, a template
+ * literal kept in backticks, and a `'` in either or in a comment written `\u0027`, which a literal
+ * reads as the same character. A template literal with holes never reaches a target (UF6002).
  */
 function withoutSingleQuotes(text: string): string {
   let written = "";
@@ -313,9 +313,9 @@ function withoutSingleQuotes(text: string): string {
         const stop = end === -1 ? text.length : end + close.length;
         written += text.slice(index, stop).replaceAll("'", "\\u0027");
         index = stop - 1;
-      } else if (char === "'" || char === '"') {
+      } else if (char === "'" || char === '"' || char === "`") {
         quote = char;
-        written += '"';
+        written += char === "`" ? char : '"';
       } else {
         written += char;
       }
@@ -324,9 +324,12 @@ function withoutSingleQuotes(text: string): string {
       written += next === "'" ? "\\u0027" : `\\${next}`;
     } else if (char === quote) {
       quote = undefined;
-      written += '"';
+      written += char === "`" ? char : '"';
+    } else if (char === "'") {
+      written += "\\u0027";
     } else {
-      written += char === "'" ? "\\u0027" : char === '"' ? '\\"' : char;
+      // A `"` ends no literal but a double-quoted one, which ended above.
+      written += char === '"' && quote === "'" ? '\\"' : char;
     }
   }
   return written;

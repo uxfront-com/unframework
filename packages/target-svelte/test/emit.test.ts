@@ -1031,12 +1031,15 @@ describe("svelte types and generics", () => {
   });
 
   // A `'` in a single-quoted attribute would end it: every string literal is written
-  // double-quoted, and a `'` inside one as `\u0027`, the same type. A template literal type is
-  // UF6002 before the target.
+  // double-quoted, a template literal kept in backticks, and a `'` inside either as `\u0027`, the
+  // same type. A template literal with holes is UF6002 before the target.
   it.each([
     [`T extends "a" | 'b'`, `T extends "a" | "b"`],
     [`T extends "don't" | "do"`, `T extends "don\\u0027t" | "do"`],
     [`T extends { k?: 'say "hi"' }`, `T extends { k?: "say \\"hi\\"" }`],
+    ["T extends `don't`", "T extends `don\\u0027t`"],
+    ['T extends `don\'t` | "b"', 'T extends `don\\u0027t` | "b"'],
+    ["T extends `say \"hi\"` | 'b'", 'T extends `say "hi"` | "b"'],
   ])(
     "writes generics with both quote kinds, %s, so Svelte compiles them",
     async (written, attribute) => {
@@ -1047,7 +1050,9 @@ describe("svelte types and generics", () => {
           "}",
         ].join("\n"),
       );
-      expect(contents).toContain(`<script lang="ts" generics='${attribute}'>`);
+      // Single-quoted where the text holds a `"`, as no `'` is left in it.
+      const quote = attribute.includes('"') ? "'" : '"';
+      expect(contents).toContain(`<script lang="ts" generics=${quote}${attribute}${quote}>`);
       const { js } = compile(contents, { filename: "Pick.svelte", generate: "server" });
       expect(js.code).toContain("value");
     },

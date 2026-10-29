@@ -44,9 +44,10 @@ instance script when it takes props or has a setup, and its markup (plan §6):
   a consumer imports them from the component's file:
   `import type { BadgeProps } from "./Badge.svelte"`. A generic component writes its type
   parameters in the instance script's `generics`, `<script lang="ts" generics="T extends string">`.
-  An attribute cannot hold its own quote, so every string literal in them is double-quoted, a `'`
-  inside one written `\u0027`, the same type, and the attribute is single-quoted where they hold a
-  literal: `generics='T extends "don\u0027t" | "b"'`. A scoped slot's props that name a type
+  An attribute cannot hold its own quote, so every string literal in them is double-quoted, a
+  template literal stays in backticks, a `'` inside either is written `\u0027`, the same type, and
+  the attribute is single-quoted where the text holds a `"`:
+  `generics='T extends "don\u0027t" | "b"'`. A scoped slot's props that name a type
   parameter are `Snippet<[{ item: T }]>`; both cells are native.
 - **Setup** (ADR-0045 to ADR-0049), in source order after `$props()`, with what it imports from
   `svelte` and `svelte/events` (each name claimed beside the source's):

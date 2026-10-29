@@ -110,7 +110,7 @@ describe("svelte typecheck", () => {
       // and a `'` in a literal is `\u0027`, which names the same type.
       const pick = await emitSource(
         [
-          `export default function Pick<T extends "don't" | 'b'>({ value }: { value: T }) {`,
+          "export default function Pick<T extends \"don't\" | 'b' | `it's`>({ value }: { value: T }) {",
           "  return <p>{value}</p>;",
           "}",
         ].join("\n"),
@@ -125,6 +125,7 @@ describe("svelte typecheck", () => {
           "",
           `<Pick value="don't" />`,
           '<Pick value="b" />',
+          `<Pick value="it's" />`,
           '<Pick value="c" />',
           "",
         ].join("\n"),
@@ -132,7 +133,7 @@ describe("svelte typecheck", () => {
       const results = await toolchain.typecheck(Object.values(paths), context);
       expect(results.get(paths["Pick.svelte"]!)).toEqual([]);
       expect(results.get(paths["Use.svelte"]!)?.map(({ code, line }) => ({ code, line }))).toEqual([
-        { code: "TS2322", line: 7 },
+        { code: "TS2322", line: 8 },
       ]);
     },
   );
