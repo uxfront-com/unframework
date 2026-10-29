@@ -13,6 +13,7 @@ import type { ElementNode, UfModule } from "@unframework/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import target from "../src/index.ts";
+import { toolchain } from "../src/toolchain/index.ts";
 import { createHost, strictOptions } from "../src/toolchain/ngtsc.ts";
 import { loadCompiler } from "../src/toolchain/tools.ts";
 import {
@@ -317,6 +318,14 @@ function classBody(contents: string): string[] {
   return body ? body[1]!.split("\n").map((line) => line.trim()) : [];
 }
 
+/** The messages of Angular's L3 check (ngtsc) on an emitted file, alone in a scratch directory. */
+async function l3Errors(file: { path: string; contents: string }): Promise<string[]> {
+  const path = join(scratchDir(), file.path);
+  const results = await toolchain.frameworkCompile([{ path, contents: file.contents }], context);
+  const { errors, warnings } = results.get(path)!;
+  return [...errors, ...warnings].map(({ code, message }) => `${code}: ${message}`);
+}
+
 /** The lines of an emitted file's template, without their indentation, formatted or not. */
 function templateLines(contents: string): string[] {
   return /template: `([\s\S]*)`,?\n/
@@ -569,6 +578,160 @@ export default function Field({ value }: input) {
       "readonly style = input_1<Record<string, string | null | undefined>>();",
       HOST,
     ]);
+  });
+});
+
+describe("cross-file types and generics (ADR-0067, ADR-0068)", () => {
+  it("reads a member another declaration declares from the props type, by indexed access", async () => {
+    const file = await formatted(`
+interface Labelled {
+  label: string;
+  tone?: "info" | "danger";
+}
+
+interface BadgeProps extends Labelled {
+  size?: "s" | "l";
+}
+
+export default function Badge({ label, tone = "info", size }: BadgeProps) {
+  return <span class={\`badge-\${tone} badge-\${size}\`}>{label}</span>;
+}
+`);
+    const body = classBody(file.contents);
+    expect(body).toContain('readonly label = input.required<BadgeProps["label"]>();');
+    expect(body).toContain(
+      'readonly tone = input<Exclude<BadgeProps["tone"], undefined>, BadgeProps["tone"]>("info", {',
+    );
+    // A member the props type declares keeps its text.
+    expect(body).toContain('readonly size = input<"s" | "l">();');
+    // The props type is declared, since the inputs read it, with what it extends.
+    expect([...file.contents.matchAll(/^interface (\w+)/gm)].map((match) => match[1])).toEqual([
+      "Labelled",
+      "BadgeProps",
+    ]);
+  });
+
+  it("leaves the nullish out of a member read by indexed access, as `??` and `!` do", async () => {
+    const file = await formatted(`
+interface Labelled {
+  note?: string;
+}
+
+interface Marked {
+  mark: string | null;
+}
+
+export default function Badge({ label, note, mark }: Labelled & Marked & { label: string }) {
+  let shown = note ?? "none";
+  let first = mark!;
+  function shout() {
+    shown = shown.toUpperCase();
+    first = first.trim();
+  }
+  return <button type="button" onClick={shout}>{label}</button>;
+}
+`);
+    // An inline props type is read in parentheses, so the access applies to all of it.
+    expect(file.contents).toContain(
+      'readonly note = input<(Labelled & Marked & { label: string })["note"]>();',
+    );
+    expect(file.contents).toContain(
+      'private shown!: NonNullable<(Labelled & Marked & { label: string })["note"]> | string;',
+    );
+    expect(file.contents).toContain(
+      'private first!: NonNullable<(Labelled & Marked & { label: string })["mark"]>;',
+    );
+    expect(await l3Errors(file)).toEqual([]);
+  });
+
+  it("declares the types a type parameter's constraint and default name, and nothing else does", async () => {
+    const file = await formatted(`
+interface Item {
+  id: string;
+}
+
+interface Fallback {
+  id: string;
+  label: string;
+}
+
+export default function List<T extends Item = Fallback>({ items }: { items: T[] }) {
+  return <ul>{items.map((item) => <li key={item.id}>{item.id}</li>)}</ul>;
+}
+`);
+    expect(file.contents).toContain("export default class List<T extends Item = Fallback> {");
+    expect([...file.contents.matchAll(/^interface (\w+)/gm)].map((match) => match[1])).toEqual([
+      "Item",
+      "Fallback",
+    ]);
+    expect(await l3Errors(file)).toEqual([]);
+  });
+
+  it("declares a generic component's class with its type parameters as written", async () => {
+    const file = await formatted(`
+export interface TableProps<T extends { id: string }> {
+  rows: T[];
+}
+
+export default function Table<T extends { id: string }>({ rows }: TableProps<T>) {
+  return <ul>{rows.map((row) => <li key={row.id}>{row.id}</li>)}</ul>;
+}
+`);
+    expect(file.contents).toContain("export default class Table<T extends { id: string }> {");
+    expect(file.contents).toContain("readonly rows = input.required<T[]>();");
+  });
+
+  it("types a generic slot's context at the constraints, which its directive cannot infer", async () => {
+    const file = await formatted(`
+import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+
+export default function Options<T extends { value: string }, U>({ options, extra }: { options: T[]; extra: U }) {
+  const slots = defineSlots<{ option?(props: { option: T; extra: U }): Element }>();
+  return <ul>{options.map((option) => <li key={option.value}>{slots.option?.({ option, extra })}</li>)}</ul>;
+}
+`);
+    expect(file.contents).toContain(
+      "export type OptionsOptionContext = { option: { value: string }; extra: any };",
+    );
+    expect(file.contents).toContain(
+      "export default class Options<T extends { value: string }, U> {",
+    );
+  });
+
+  it("writes a select's choice into a model of a type parameter through the template's cast", async () => {
+    const file = await formatted(`
+import { defineModel } from "unframework";
+
+export default function Select<T extends string>({ options }: { options: readonly T[] }) {
+  const value = defineModel<T>("value", { required: true });
+  return (
+    <select v-model={value.value}>
+      {options.map((option) => <option key={option} value={option}>{option}</option>)}
+    </select>
+  );
+}
+`);
+    expect(file.contents).toContain('(change)="this.value.set($any(valueField.value))"');
+  });
+
+  it("exports a type no component reaches, in source order among the declared ones", async () => {
+    const file = await formatted(`
+export type Tone = "primary" | "secondary";
+
+export type Size = "small" | "large";
+
+export interface ButtonProps {
+  tone?: Tone;
+}
+
+export default function Button({ tone = "primary" }: ButtonProps) {
+  return <button type="button" class={tone}>Save</button>;
+}
+`);
+    expect(
+      [...file.contents.matchAll(/^export (?:interface|type) (\w+)/gm)].map((m) => m[1]),
+    ).toEqual(["Tone", "Size", "ButtonProps"]);
   });
 });
 

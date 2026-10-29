@@ -55,14 +55,14 @@ export class ScopeAttributes implements OnInit {
       [ufScope]="this.host"
     >{{ label }}&ngsp;<select
       #valueField
-      (change)="this.value.set(valueField.value)"
+      (change)="this.value.set($any(valueField.value))"
     >@for (option of options; track option) {<option
       [attr.value]="option"
       [selected]="this.value() === option" [defaultSelected]="onServer && this.value() === option"
     >{{ option }}</option>}</select></label>
   `,
 })
-export default class Select {
+export default class Select<T extends string> {
   readonly label = input.required<string>();
   readonly options = input.required<readonly T[]>();
   readonly class = input<string>();

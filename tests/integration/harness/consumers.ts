@@ -52,6 +52,10 @@ export type ConsumerGap = ConsumerKind | "named-slot" | "generic-slot-props" | "
  * table). A directive that names one fails: a gap is declared, never filled with a weaker check.
  */
 export const CONSUMER_GAPS: Readonly<Record<string, Partial<Record<ConsumerGap, string>>>> = {
+  angular: {
+    "generic-slot-props":
+      "Angular infers a component's type parameter from its inputs alone, so a slot directive's context takes the parameter's constraint, or `any` without one (UF4004, ADR-0068)",
+  },
   astro: {
     event: "Astro has no events: its `interactivity` cell is unsupported",
     "named-slot": "Astro does not type a named slot without props, which renders through `<slot>`",

@@ -1,3 +1,4 @@
+import type { ButtonProps } from "./types";
 import {
   Component,
   Directive,
@@ -53,11 +54,12 @@ export class ScopeAttributes implements OnInit {
   `,
 })
 export default class Button {
-  readonly disabled = input<boolean, boolean | undefined>(false, {
-    transform: (value) => (value === undefined ? false : value),
-  });
-  readonly label = input.required<string>();
-  readonly id = input.required<string>();
+  readonly disabled = input<Exclude<ButtonProps["disabled"], undefined>, ButtonProps["disabled"]>(
+    false,
+    { transform: (value) => (value === undefined ? false : value) },
+  );
+  readonly label = input.required<ButtonProps["label"]>();
+  readonly id = input.required<ButtonProps["id"]>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;

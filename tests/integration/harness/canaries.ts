@@ -1554,12 +1554,10 @@ export function injectScript(
     const existing = insertAfter(component, /\bconstructor\s*\([^)]*\)\s*\{/, `\n    ${statement}`);
     if (existing !== undefined) return `${before}${existing}`;
     // The class's members follow: a constructor before them still runs once per render.
-    const added = insertAfter(
-      component,
-      /export\s+(?:default\s+)?class\s+\w+[^{]*\{/,
-      `\n  constructor() {\n    ${statement}\n  }\n`,
-    );
-    return added === undefined ? fail("component class") : `${before}${added}`;
+    const start = classBodyStart(component);
+    return start === undefined
+      ? fail("component class")
+      : `${before}${component.slice(0, start)}\n  constructor() {\n    ${statement}\n  }\n${component.slice(start)}`;
   }
   const body = componentBodyStart(contents);
   if (body === undefined) {
@@ -1616,6 +1614,23 @@ function componentBodyStart(contents: string): number | undefined {
   const close = matchingBracket(contents, open, "(", ")");
   if (close === undefined) return undefined;
   return endAt(contents, close + 1, /^[^{]*\{/);
+}
+
+/**
+ * Where the body of the first exported class starts, after its `{` (Angular). The type
+ * parameters of a generic component's class are read to their matching bracket: a constraint may
+ * hold braces of its own (`class Table<T extends { id: string }>`, ADR-0068).
+ */
+function classBodyStart(contents: string): number | undefined {
+  const declaration = /export\s+(?:default\s+)?class\s+[\w$]+\s*/.exec(contents);
+  if (!declaration) return undefined;
+  let index = declaration.index + declaration[0].length;
+  if (contents[index] === "<") {
+    const parameters = matchingBracket(contents, index, "<", ">");
+    if (parameters === undefined) return undefined;
+    index = parameters + 1;
+  }
+  return endAt(contents, index, /^[^{]*\{/);
 }
 
 /**

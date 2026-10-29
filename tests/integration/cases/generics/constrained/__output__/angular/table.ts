@@ -59,7 +59,7 @@ export class ScopeAttributes implements OnInit {
     </table>
   `,
 })
-export default class Table {
+export default class Table<T extends { id: string; label: string }> {
   readonly caption = input.required<string>();
   readonly rows = input.required<T[]>();
   readonly class = input<string>();

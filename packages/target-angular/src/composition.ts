@@ -12,10 +12,12 @@ import type {
   SlotDeclaration,
   SlotFill,
   Span,
+  TypeParameter,
   UfComponent,
 } from "@unframework/ir";
 
 import type { Plan } from "./plan.ts";
+import { atConstraints } from "./types.ts";
 
 /** A slot of the component's own that a directive selects: a named one, or one with props. */
 export interface SlotDirective {
@@ -255,12 +257,14 @@ export function childEvent(plan: Plan, local: string, event: string): ApiEvent {
 /**
  * A slot directive's code (ADR-0056): the selector its consumers' `<ng-template>` names and, for
  * a scoped slot, the context guard that types their `let-` variables as the slot's props, by
- * name and whole (`$implicit`).
+ * name and whole (`$implicit`). A directive cannot infer its component's type parameters, so
+ * the props read each one as its constraint (`generic-slot-props`, UF4004, ADR-0068).
  */
 export function slotDirectiveCode(
   component: string,
   directive: SlotDirective,
   decorator: string,
+  typeParameters: readonly TypeParameter[] = [],
 ): string {
   const { slot, className, exported, attribute, context } = directive;
   const selector = `@${decorator}({ selector: "ng-template[${attribute}]" })`;
@@ -270,7 +274,7 @@ export function slotDirectiveCode(
     ...(context
       ? [
           `/** What a template of \`${component}\`'s \`${slot.name}\` slot reads: the slot's props. */`,
-          `export type ${context} = ${slot.props!.code}${aliases(slot.props!.code)};`,
+          `export type ${context} = ${atConstraints(`${slot.props!.code}${aliases(slot.props!.code)}`, typeParameters)};`,
           "",
         ]
       : []),

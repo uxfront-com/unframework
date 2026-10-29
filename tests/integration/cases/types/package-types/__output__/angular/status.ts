@@ -1,3 +1,4 @@
+import type { Labelled } from "./types";
 import {
   Component,
   Directive,
@@ -7,6 +8,9 @@ import {
   inject,
   input,
 } from "@angular/core";
+import type { TimeInterval } from "rxjs";
+
+type StatusProps = TimeInterval<string> & Labelled;
 
 /** The scope attributes taken off each host, for the roots its component renders later. */
 const scopes = new WeakMap<Element, string[]>();
@@ -50,9 +54,9 @@ export class ScopeAttributes implements OnInit {
   `,
 })
 export default class Status {
-  readonly value = input.required<T>();
-  readonly interval = input.required<number>();
-  readonly label = input.required<Label>();
+  readonly value = input.required<StatusProps["value"]>();
+  readonly interval = input.required<StatusProps["interval"]>();
+  readonly label = input.required<StatusProps["label"]>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;

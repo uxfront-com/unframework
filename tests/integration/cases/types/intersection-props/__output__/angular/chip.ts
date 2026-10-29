@@ -1,3 +1,4 @@
+import type { Sized, Toned } from "./types";
 import {
   Component,
   Directive,
@@ -7,6 +8,8 @@ import {
   inject,
   input,
 } from "@angular/core";
+
+type ChipProps = Sized & Toned & { label: string };
 
 /** The scope attributes taken off each host, for the roots its component renders later. */
 const scopes = new WeakMap<Element, string[]>();
@@ -50,8 +53,8 @@ export class ScopeAttributes implements OnInit {
   `,
 })
 export default class Chip {
-  readonly size = input.required<"small" | "large">();
-  readonly tone = input<"neutral" | "accent", "neutral" | "accent" | undefined>("neutral", {
+  readonly size = input.required<ChipProps["size"]>();
+  readonly tone = input<Exclude<ChipProps["tone"], undefined>, ChipProps["tone"]>("neutral", {
     transform: (value) => (value === undefined ? "neutral" : value),
   });
   readonly label = input.required<string>();

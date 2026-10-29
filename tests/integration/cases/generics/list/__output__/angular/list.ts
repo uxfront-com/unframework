@@ -60,7 +60,7 @@ export class ScopeAttributes implements OnInit {
     </ul>
   `,
 })
-export default class List {
+export default class List<T> {
   readonly label = input.required<string>();
   readonly items = input.required<T[]>();
   readonly selected = input<T>();

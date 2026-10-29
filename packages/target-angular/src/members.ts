@@ -18,7 +18,7 @@ import {
   rewriteCode,
 } from "@unframework/codegen";
 import type { Placeholders, RewriteRules } from "@unframework/codegen";
-import type { Code, Prop, TypeDeclaration } from "@unframework/ir";
+import type { Code, Prop, TypeDeclaration, UfComponent } from "@unframework/ir";
 
 import { keyOf } from "./composition.ts";
 import type { SlotDirective } from "./composition.ts";
@@ -31,7 +31,7 @@ import { bindingById, formOf, slotQuery, unreachable } from "./plan.ts";
 import type { Plan } from "./plan.ts";
 import { outputType, tidied } from "./rules.ts";
 import { parenthesised, valueType } from "./seeded.ts";
-import { withoutUndefined } from "./types.ts";
+import { defaultedType, propType } from "./types.ts";
 
 type Member = ReturnType<typeof js.propertyDefinition> | ReturnType<typeof js.methodDefinition>;
 
@@ -102,7 +102,7 @@ export function classMembers(context: MemberContext): {
         ? ("protected" as const)
         : ("private" as const);
   const members: Member[] = component.props.map((prop) =>
-    inputMember(prop, core("input"), placeholders, context.declarations),
+    inputMember(prop, component, core("input"), placeholders, context.declarations),
   );
   if (context.fallthrough) {
     // The consumer's `class` and `style`, which the root merges (ADR-0056): inputs, so a static
@@ -653,11 +653,13 @@ function statements(
 }
 
 /**
- * A prop as a signal input, typed by its member's type as written:
+ * A prop as a signal input, typed by its member's type as written, or read from the props type
+ * where another declaration declares it (`propType`, ADR-0067):
  * - required: `readonly label = input.required<string>();`
  * - optional without a default: `readonly count = input<number>();`, whose value is
  *   `number | undefined` (Angular's own spelling of an optional input);
- * - with a default: `readonly tone = input<Tone, Tone | undefined>("info", { transform })`, whose
+ * - with a default: `readonly tone = input<Tone, Tone | undefined>("info", { transform })`, or
+ *   `input<Exclude<ButtonProps["tone"], undefined>, ButtonProps["tone"]>` by indexed access, whose
  *   transform turns `undefined` into the default. A destructured default applies to an absent
  *   prop and to an explicit `undefined` alike, while Angular's initial value covers only the
  *   first (`setInput(name, undefined)` sets `undefined`). `null` is a value, as in JavaScript,
@@ -665,20 +667,22 @@ function statements(
  */
 function inputMember(
   prop: Prop,
+  component: UfComponent,
   input: string,
   placeholders: Placeholders,
   declarations: readonly TypeDeclaration[],
 ): Member {
   const callee = js.identifier(input);
-  const { type, default: initial } = prop;
+  const { default: initial } = prop;
+  const type = propType(prop, component);
   if (!prop.optional) {
     const required = js.memberExpression(callee, "required");
-    return readonlyField(prop, js.callExpression(required, [], [placeholders.type(type.code)]));
+    return readonlyField(prop, js.callExpression(required, [], [placeholders.type(type)]));
   }
   if (initial === undefined) {
-    return readonlyField(prop, js.callExpression(callee, [], [placeholders.type(type.code)]));
+    return readonlyField(prop, js.callExpression(callee, [], [placeholders.type(type)]));
   }
-  const value = withoutUndefined(type.code, declarations);
+  const value = defaultedType(prop, component, declarations);
   const transform = js.arrowFunction(
     [js.bindingIdentifier("value")],
     js.conditionalExpression(
@@ -694,7 +698,10 @@ function inputMember(
       [placeholders.expression(initial.code), js.objectExpression([["transform", transform]])],
       [
         placeholders.type(value),
-        js.unionType([placeholders.type(value), js.keywordType("undefined")]),
+        // An indexed access of an optional member admits `undefined` already.
+        prop.declaredBy && type !== prop.type.code
+          ? placeholders.type(type)
+          : js.unionType([placeholders.type(value), js.keywordType("undefined")]),
       ],
     ),
   );
