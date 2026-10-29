@@ -94,11 +94,12 @@ export function genericModelType(component: UfComponent, binding: BindingId): st
 }
 
 /**
- * The setup constants and functions that stay inside the generic arrow, where `T` is in scope
- * (`const empty: T[] = []`): a constant whose code names one of the component's type parameters,
- * and a function that names one its parameters' types don't, which no call could infer. Any other
- * function typed by `T` moves to module scope with its own type parameters
- * ({@link moduleTypeParameters}), so a getter's `$` scope can still call it (ADR-0045).
+ * The setup constants and functions that stay inside the generic arrow, where `T` is in scope:
+ * a constant whose code names one of the component's type parameters (`const empty: T[] = []`),
+ * which has no type parameters of its own, and a function that names one its parameters' types
+ * don't (`function blank(): T[]`), whose calls could not infer it. Any other function typed by
+ * `T` moves to module scope with its own ({@link moduleTypeParameters}), so a getter's `$` scope
+ * can call it (ADR-0045).
  */
 export function typedByParameters(component: UfComponent): Set<BindingId> {
   const found = new Set<BindingId>();
@@ -120,10 +121,15 @@ export function typedByParameters(component: UfComponent): Set<BindingId> {
 
 /**
  * The type parameters a setup function that moves to module scope declares, `<T extends Item>`:
- * the component's that its code names, closed over their constraints and defaults, or `""`.
+ * the component's that its code names, closed over their constraints and defaults, or `""`. An
+ * arrow's lone `<T>` is written `<T,>`, which TSX would otherwise read as a tag.
  */
-export function moduleTypeParameters(component: UfComponent, fn: FunctionCode): string {
-  return parametersText(namedParameters(component, functionTypeNames(component, fn)), true);
+export function moduleTypeParameters(
+  component: UfComponent,
+  fn: FunctionCode,
+  arrow: boolean,
+): string {
+  return parametersText(namedParameters(component, functionTypeNames(component, fn)), arrow);
 }
 
 /** Every name a function's parameter types, return type and body read. */
@@ -149,19 +155,25 @@ function parameterTypeNames(fn: FunctionCode): Set<string> {
  */
 function namedParameters(component: UfComponent, read: Set<string>): TypeParameter[] {
   const names = new Set(read);
-  for (const parameter of (component.typeParameters ?? []).toReversed()) {
-    if (!names.has(parameter.name)) continue;
-    for (const text of [parameter.constraint, parameter.default]) {
-      if (text) for (const each of typeNames(text)) names.add(each);
+  const parameters = component.typeParameters ?? [];
+  // To a fixed point: a constraint may name a later parameter too (`A extends Box<B>, B extends
+  // Box<C>, C`).
+  for (let size = -1; size !== names.size;) {
+    size = names.size;
+    for (const parameter of parameters) {
+      if (!names.has(parameter.name)) continue;
+      for (const text of [parameter.constraint, parameter.default]) {
+        if (text) for (const each of typeNames(text)) names.add(each);
+      }
     }
   }
-  return (component.typeParameters ?? []).filter((each) => names.has(each.name));
+  return parameters.filter((each) => names.has(each.name));
 }
 
-/** `<T extends Item = Item>`, or `""`; `<T,>` where TSX would read a lone `<T>` as a tag. */
-function parametersText(parameters: readonly TypeParameter[], tsx = false): string {
+/** `<T extends Item = Item>`, or `""`; `<T,>` for an arrow, which TSX would read as a tag. */
+function parametersText(parameters: readonly TypeParameter[], arrow = false): string {
   if (!parameters.length) return "";
-  const lone = tsx && parameters.length === 1 && !parameters[0]!.constraint;
+  const lone = arrow && parameters.length === 1 && !parameters[0]!.constraint;
   return `<${parameters.map(parameterText).join(", ")}${lone ? "," : ""}>`;
 }
 

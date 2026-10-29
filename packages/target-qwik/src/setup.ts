@@ -247,8 +247,7 @@ function moduleCode(plan: SetupPlan, item: SetupItem): string | undefined {
     if (plan.functionCode(item.binding) === null) return "";
     const declared = functionDeclaration(plan, item, "pure");
     // A function typed by the component's `T` takes its own (src/generics.ts, ADR-0068).
-    const parameters = moduleTypeParameters(plan.component, item.function);
-    if (!parameters) return declared;
+    // Its parameters follow the declaration's `function name` or the arrow's `const name = `.
     const { name } = plan.functions.get(item.binding)!.binding;
     const head = [
       `async function ${name}`,
@@ -256,6 +255,11 @@ function moduleCode(plan: SetupPlan, item: SetupItem): string | undefined {
       `const ${name} = async `,
       `const ${name} = `,
     ].find((each) => declared.startsWith(each))!;
+    const parameters = moduleTypeParameters(
+      plan.component,
+      item.function,
+      head.startsWith("const"),
+    );
     return `${head}${parameters}${declared.slice(head.length)}`;
   }
   return undefined;

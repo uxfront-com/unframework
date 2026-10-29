@@ -33,12 +33,15 @@ export default component$<BadgeProps>(({ label, tone = "info" }) => {
 - A generic component is a generic arrow in `component$`, whose parameter carries the props type:
   `component$(<T,>({ items }: ListProps<T>) => …)`. TypeScript makes the component it returns
   generic too, so a consumer's JSX infers `T` from the props it passes, with no cast (ADR-0068).
-  The arrow takes `_props` where it reads no prop. The interfaces the output declares for its
-  events, models and slots take the type parameters their members read (`PickerSlots<T>`), so a
-  scoped slot's fill is typed with the consumer's `T`; a setup constant that names a type
-  parameter stays in the arrow, where `T` is in scope, and a function moves to module scope with
-  its own (`function label<T>(item: T)`), so a getter's `$` scope can call it; and a form control bound to a model or a state of
-  `T` writes its value as `T` (`element.value as T`).
+  The arrow takes `_props` where it reads no prop.
+  - The interfaces the output declares for its events, models and slots take the type parameters
+    their members read (`PickerSlots<T>`). A scoped slot's fill is typed with the consumer's `T`.
+  - A setup constant that names a type parameter stays in the arrow, where `T` is in scope. A
+    function whose parameters' types name every `T` it reads moves to module scope with its own
+    (`function label<T>(item: T)`), so a getter's `$` scope can call it, and each call infers
+    `T`. Any other stays in the arrow, and a getter that calls it is UF2014.
+  - A form control bound to a model or a state of `T` writes its value as `T`
+    (`element.value as T`).
 - The export shape follows the source: a default export, a same-named `export const`, or an
   export list for aliases and several exports of one component.
 - Expressions exactly as the source writes them; conditionals as ternary chains ending in

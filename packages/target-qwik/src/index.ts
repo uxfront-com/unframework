@@ -44,6 +44,7 @@ import type {
   FragmentNode,
   ModelAttribute,
   RenderNode,
+  Span,
   TypeDeclaration,
   UfComponent,
   UfModule,
@@ -273,6 +274,19 @@ export const qwik: Target = defineTarget({
     const componentFn = imports.add("@qwik.dev/core", "component$");
     const names = new OutputNames(imports);
     const plan = planSetup(component, module, names);
+    // A getter is a `$` scope, which calls only functions at module scope (ADR-0045). Some of a
+    // generic component's stay in the arrow (src/generics.ts): a getter that calls one is
+    // reported, never emitted as code the optimizer rejects (P2).
+    const trapped = trappedGetterCalls(component, plan);
+    for (const { name, span } of trapped) {
+      context.report({
+        code: "UF2014",
+        severity: "error",
+        message: `On Qwik, \`${name}\` stays inside the generic \`${component.name}\`, so this getter, a \`$\` scope, cannot call it: it names a type parameter its parameters' types don't, or reads a constant whose type names one. Type its parameters with the type parameter, or do its work in the getter itself.`,
+        span,
+      });
+    }
+    if (trapped.length) return [];
     const scope = scopePlan(component, names);
     const listeners = new Listeners(plan);
     // The dialect reads the namespaces of the tree it prints, which is the render tree with
@@ -740,6 +754,30 @@ function moduleTypes(component: UfComponent, module: UfModule): TypeDeclaration[
   }));
   return [...componentTypes(component, module), ...exports].toSorted(
     (a, b) => a.span.start - b.span.start,
+  );
+}
+
+/**
+ * The calls a getter (a `computed`'s, a watcher's source) makes of a setup function that does not
+ * move to module scope, each with the function's name and the call's span.
+ */
+function trappedGetterCalls(
+  component: UfComponent,
+  plan: SetupPlan,
+): { name: string; span: Span }[] {
+  const getters = component.setup.flatMap((item) =>
+    item.kind === "Derived"
+      ? [item.getter]
+      : item.kind === "Watch"
+        ? item.sources.flatMap((source) => (source.kind === "Getter" ? [source.getter] : []))
+        : [],
+  );
+  return getters.flatMap((getter) =>
+    getter.body.refs.flatMap((reference) => {
+      if (reference.kind !== "Binding") return [];
+      const fn = plan.functions.get(reference.binding);
+      return fn && fn.form !== "module" ? [{ name: fn.binding.name, span: reference.span }] : [];
+    }),
   );
 }
 

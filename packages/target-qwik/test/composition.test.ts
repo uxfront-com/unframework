@@ -544,8 +544,10 @@ export default function Pick<T extends { id: string }, U extends string = "x">({
 export default function Multi<T extends string>({ options }: { options: readonly T[] }) {
   const picked = ref<T[]>([]);
   const text = defineModel<T>("text", { required: true });
+  const trimmed = defineModel<T>("trimmed", { required: true });
   return (
     <div>
+      <input v-model_trim={trimmed.value} />
       <output>{picked.value.join(",")}</output>
       <select multiple v-model={picked.value}>
         {options.map((option) => (
@@ -559,6 +561,104 @@ export default function Multi<T extends string>({ options }: { options: readonly
   const unread = `export default function Unread<T>(props: { items: T[] }) {
   return <p>none</p>;
 }`;
+  // Functions whose parameters' types name `T`, in each declared form: they move to module scope
+  // with their own `T`, so a getter may call them, and each call infers it.
+  const hoisted = `import { computed, ref } from "unframework";
+
+export default function Hoisted<T>({ items }: { items: T[] }) {
+  const last = ref("");
+  function size(list: T[]): number {
+    return list.length;
+  }
+  const show = (item: T) => String(item);
+  const settle = async (item: T) => [item];
+  async function keep(item: T): Promise<T[]> {
+    return [item];
+  }
+  const total = computed(() => size(items) + 1);
+  async function pick(item: T) {
+    last.value = String((await settle(item)).length + (await keep(item)).length);
+  }
+  return (
+    <ul data-total={total.value} data-last={last.value}>
+      {items.map((item, index) => (
+        <li key={index}>
+          <button type="button" onClick={() => pick(item)}>{show(item)}</button>
+        </li>
+      ))}
+    </ul>
+  );
+}`;
+  // A forward chain of constraints (`A extends Box<B>, B extends Box<C>, C`): each interface and
+  // hoisted function declares all three.
+  const chain = `import { defineEmits } from "unframework";
+
+interface Box<V> {
+  value: V;
+}
+
+export interface ChainProps<A extends Box<B>, B extends Box<C>, C> {
+  items: A[];
+  extra?: B;
+  last?: C;
+}
+
+export default function Chain<A extends Box<B>, B extends Box<C>, C>({ items }: ChainProps<A, B, C>) {
+  const emit = defineEmits<{ pick: [item: A] }>();
+  function label(item: A): string {
+    return String(item.value);
+  }
+  return (
+    <ul>
+      {items.map((item, index) => (
+        <li key={index}>
+          <button type="button" onClick={() => emit("pick", item)}>{label(item)}</button>
+        </li>
+      ))}
+    </ul>
+  );
+}`;
+  // The same chain in the other order: a single pass in declared order misses a parameter here,
+  // as a reversed one does in `chain`.
+  const reversedChain = chain
+    .replaceAll("A extends Box<B>, B extends Box<C>, C", "C, B extends Box<C>, A extends Box<B>")
+    .replaceAll("ChainProps<A, B, C>", "ChainProps<C, B, A>");
+  // A function whose `T` only its return type names, which reads nothing of the component.
+  const first = `import { defineEmits } from "unframework";
+
+export default function First<T>({ items }: { items: T[] }) {
+  const emit = defineEmits<{ pick: [item: T] }>();
+  function none(): T | undefined {
+    return undefined;
+  }
+  function pick() {
+    const found = none();
+    if (found !== undefined) emit("pick", found);
+  }
+  return <button type="button" data-count={items.length} onClick={pick}>Pick</button>;
+}`;
+  // Types the module imports and re-exports keep their names: the interfaces take others.
+  const named = `import { defineEmits, defineSlots } from "unframework";
+import type { Element } from "unframework";
+import type { ListEvents } from "./types";
+
+export type { ListSlots } from "./types";
+
+export default function List<T>({ items }: { items: T[] }) {
+  const emit = defineEmits<{ pick: [item: T] }>();
+  const slots = defineSlots<{ item?(props: { item: T }): Element }>();
+  const seen: ListEvents = [];
+  return (
+    <ul data-seen={seen.length}>
+      {items.map((item, index) => (
+        <li key={index}>
+          <button type="button" onClick={() => emit("pick", item)}>{slots.item?.({ item })}</button>
+        </li>
+      ))}
+    </ul>
+  );
+}`;
+  const types = 'export type ListEvents = string[];\nexport type ListSlots = "item";\n';
 
   it("writes a generic arrow, and its interfaces over the parameters they read", async () => {
     const contents = await emitSource(pick);
@@ -584,18 +684,89 @@ export default function Multi<T extends string>({ options }: { options: readonly
     const contents = await emitSource(multi);
     expect(contents).toContain("picked.value = selectedValues(element) as T[]");
     expect(contents).toContain("setText(element.value as T)");
+    // A modifier reads the control through `modelText`, whose value is cast the same way.
+    expect(contents).toContain("setTrimmed(modelText.read(element, { trim: true }) as T)");
+  });
+
+  it("moves a function typed by `T` to module scope with its own `T`, in each declared form", async () => {
+    const contents = await emitSource(hoisted);
+    expect(contents).toMatch(/^function size<T>\(list: T\[\]\): number \{$/m);
+    // An arrow's lone `<T>` takes a comma, or TSX reads it as a tag.
+    expect(contents).toMatch(/^const show = <T,>\(item: T\) => String\(item\);$/m);
+    expect(contents).toMatch(/^const settle = async <T,>\(item: T\) => \[item\];$/m);
+    expect(contents).toMatch(/^async function keep<T>\(item: T\): Promise<T\[\]> \{$/m);
+    expect(contents).toContain("useComputed$(() => size(items) + 1)");
+  });
+
+  it("closes a parameter's constraints over the parameters they name, in either order", async () => {
+    // The closure runs to a fixed point.
+    const reversed = await emitSource(reversedChain);
+    expect(reversed).toContain(
+      "export interface ChainEvents<C, B extends Box<C>, A extends Box<B>> {",
+    );
+    const contents = await emitSource(chain);
+    expect(contents).toContain(
+      "export interface ChainEvents<A extends Box<B>, B extends Box<C>, C> {",
+    );
+    expect(contents).toMatch(
+      /^function label<A extends Box<B>, B extends Box<C>, C>\(item: A\): string \{$/m,
+    );
+  });
+
+  it("names its interfaces apart from the types the module imports and re-exports", async () => {
+    const contents = await emitSource(named);
+    expect(contents).toContain("export interface ListEvents_1<T> {");
+    expect(contents).toContain("export interface ListSlots_1<T> {");
+    expect(contents).toContain('import type { ListEvents } from "./types";');
+    expect(contents).toContain('export type { ListSlots } from "./types";');
+  });
+
+  it("reports a getter that calls a function kept in the generic arrow (UF2014)", () => {
+    // `count` reads a constant typed by `T`, which can't leave the arrow, so neither can it; no
+    // call of `blank` could infer the `T` its return type names, so it stays too.
+    const module = lower(`import { computed } from "unframework";
+
+export default function Kept<T>({ items }: { items: T[] }) {
+  const nothing: T[] = [];
+  function count() {
+    return nothing.length;
+  }
+  function blank(): T[] {
+    return [];
+  }
+  const total = computed(() => count() + blank().length + items.length);
+  return <p>{total.value}</p>;
+}`);
+    const reported: { code: string; message: string }[] = [];
+    const files = target.emit(module.components[0]!, {
+      module,
+      options: undefined,
+      report: (diagnostic) => void reported.push(diagnostic),
+    });
+    expect(files).toEqual([]);
+    expect(reported.map(({ code }) => code)).toEqual(["UF2014", "UF2014"]);
+    expect(reported[0]!.message).toContain("`count` stays inside the generic `Kept`");
+    expect(reported[1]!.message).toContain("`blank` stays inside the generic `Kept`");
+  });
+
+  it("keeps a function no call could infer `T` for in the arrow, where its callers check", async () => {
+    // A call with no contextual type would infer `unknown` from a module-scope `none<T>()`.
+    const contents = await emitSource(first);
+    expect(contents).not.toMatch(/^function none/m);
+    expect(contents).toContain("  const none = $((): T | undefined => {");
   });
 
   it(
     "emits generic components the optimizer, the checker and lint accept (L3, L4, L5)",
     async () => {
-      for (const source of [pick, multi, unread]) {
+      const sources = [pick, multi, unread, hoisted, chain, reversedChain, named, first];
+      for (const source of sources) {
         const contents = await emitSource(source);
         const file = { path: "/virtual/Generic.tsx", contents };
         const result = (await toolchain.frameworkCompile([file], context)).get(file.path);
         expect(result).toEqual({ errors: [], warnings: [] });
       }
-      await expectCheckedClean([pick, multi, unread]);
+      await expectCheckedClean(sources, { "types.ts": types });
     },
     CHECKED,
   );
@@ -811,10 +982,15 @@ function lines(code: string): string {
  * output: neither the target nor oxfmt may report anything, and no checker message, for these
  * files or any other path, may remain.
  */
-async function expectCheckedClean(sources: readonly string[]): Promise<void> {
+async function expectCheckedClean(
+  sources: readonly string[],
+  modules: Readonly<Record<string, string>> = {},
+): Promise<void> {
   const paths: string[] = [];
   for (const source of sources) {
     const dir = mkdtempSync(join(scratch, "checked-"));
+    // The `.ts` modules a source imports, beside its outputs as in an output tree (ADR-0070).
+    for (const [name, code] of Object.entries(modules)) writeFileSync(join(dir, name), code);
     const module = lower(source);
     const reported: unknown[] = [];
     for (const component of module.components) {
