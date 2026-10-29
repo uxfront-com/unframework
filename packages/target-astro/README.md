@@ -6,11 +6,21 @@ render: what the server render reaches of the setup, and the markup. It emits on
 per component (ADR-0034, ADR-0046):
 
 - **A frontmatter** at the very top when it declares anything (`src/frontmatter.ts`):
+  - the source's `import type` names the server render reads, by name (ADR-0067): from a `.ts`
+    module or a package as written, `import type { BadgeProps } from "./types";`, and from a
+    child's output, `import Field, { type FieldProps } from "./Field.astro";`. An imported
+    `Props` is renamed on import, `import type { Props as OwnProps } from "./types";`, as a
+    declared one is;
   - the type declarations the props and the kept setup reach (`liveTypes`), copied as written,
-    and every one the source exports (exported then);
+    and every one the source exports (exported then). The output of the module's main component
+    also writes the module's other type exports, an exported type no component reaches and a
+    re-export (`export type { Tone } from "./types";`), among them in source order (ADR-0068);
   - `Props`, which Astro types `Astro.props` and the component's callers by:
     `type Props = BadgeProps;` for a named props type, `interface Props { … }` holding an inline
-    object type's members, nothing more when the props type is named `Props` already;
+    object type's members, nothing more when the props type is named `Props` already. A generic
+    component's `Props` declares its type parameters as the source writes them,
+    `interface Props<T> extends ListProps<T>`, and Astro infers `T` from a consumer's props
+    (ADR-0068);
   - the props the server render reads (the markup and the kept setup), destructured in the
     source's order with their defaults: `const { label, tone = "info" } = Astro.props;`. Astro
     prints no list keys, so a prop only a key reads is left out, and so is a prop only client code

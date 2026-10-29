@@ -1,0 +1,6 @@
+---
+import Select from "../../../../../integration/cases/generics/select/__output__/astro/Select.astro";
+---
+
+<!-- @uf-expect TS2322 Select.model:value -->
+<Select value={1} label="Size" options={["s", "m"]} />

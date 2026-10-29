@@ -501,12 +501,15 @@ describe("props: the frontmatter (ADR-0034)", () => {
     const [other, list] = emitSource(unread);
     expect(other!.contents).toContain("interface Note { text: string }");
     expect(other!.contents).not.toContain("Item");
-    // Astro prints no keys: a prop or an index only a key reads is left out.
+    // Astro prints no keys: a prop or an index only a key reads is left out. The main output
+    // re-exports the type only its sibling declares (ADR-0068).
     expect(list).toEqual({
       path: "List.astro",
       contents: lines(
         "---",
         "interface Item { id: string; label: string }",
+        "",
+        'export type { OtherProps } from "./Other.astro";',
         "",
         "export interface ListProps { items: Item[]; title?: string; extra?: number; prefix: string }",
         "",
@@ -621,6 +624,103 @@ describe("props: the frontmatter (ADR-0034)", () => {
         "  style={style}",
         "  {...scopeAttributes(Astro.props)}",
         '>{message} {tags.join(", ")} {author.name}</p>',
+      ),
+    );
+  });
+});
+
+describe("types and generics (ADR-0067, ADR-0068)", () => {
+  it("declares a generic component's type parameters on `Props`, as the source writes them", () => {
+    // An inline props type, and a named one: Astro infers `T` from a consumer's props.
+    expect(
+      emitted(
+        [
+          'export default function Tags<T extends string = "a">({ items }: { items: T[] }) {',
+          "  return <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>;",
+          "}",
+          "",
+        ].join("\n"),
+      ),
+    ).toContain(
+      'interface Props<T extends string = "a"> { items: T[]\n  class?: string;\n  style?: Record<string, string | number | undefined>;\n}',
+    );
+    const picker = [
+      'import { defineOptions, defineSlots } from "unframework";',
+      'import type { Element } from "unframework";',
+      "",
+      "export interface PickerProps<T> {",
+      "  items: T[];",
+      "}",
+      "",
+      "export default function Picker<T>({ items }: PickerProps<T>) {",
+      "  defineOptions({ inheritAttrs: false });",
+      "  const slots = defineSlots<{ item?(props: { item: T }): Element }>();",
+      "  return <ul>{items.map((item, index) => <li key={index}>{slots.item?.({ item })}</li>)}</ul>;",
+      "}",
+      "",
+    ].join("\n");
+    expect(emitted(picker)).toContain(
+      "interface Props<T> extends PickerProps<T> {\n  item?: (props: { item: T }) => unknown;\n}",
+    );
+    // Without a member beside the source's, `Props` is an alias that takes them too.
+    expect(
+      emitted(
+        [
+          'import { defineOptions } from "unframework";',
+          "",
+          "export interface ListProps<T> {",
+          "  items: T[];",
+          "}",
+          "",
+          "export default function List<T>({ items }: ListProps<T>) {",
+          "  defineOptions({ inheritAttrs: false });",
+          "  return <ul>{items.map((item, index) => <li key={index}>{String(item)}</li>)}</ul>;",
+          "}",
+          "",
+        ].join("\n"),
+      ),
+    ).toContain("type Props<T> = ListProps<T>;");
+  });
+
+  it("writes an exported type no component reaches in source order among the copied types", () => {
+    const output = emitted(
+      [
+        'import { defineOptions } from "unframework";',
+        "",
+        'export type ButtonTone = "primary" | "secondary";',
+        "",
+        'export type ButtonSize = "small" | "large";',
+        "",
+        "export interface ButtonProps {",
+        "  label: string;",
+        "  tone?: ButtonTone;",
+        "}",
+        "",
+        "export default function Button({ label }: ButtonProps) {",
+        "  defineOptions({ inheritAttrs: false });",
+        '  return <button type="button">{label}</button>;',
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(output).toBe(
+      lines(
+        "---",
+        'export type ButtonTone = "primary" | "secondary";',
+        "",
+        'export type ButtonSize = "small" | "large";',
+        "",
+        "export interface ButtonProps {",
+        "  label: string;",
+        "  tone?: ButtonTone;",
+        "}",
+        "",
+        "type Props = ButtonProps;",
+        "",
+        "const { label } = Astro.props;",
+        "---",
+        "",
+        '<button type="button">{label}</button>',
       ),
     );
   });
@@ -822,9 +922,11 @@ describe("the M1 output through the toolchain", { timeout: 60_000 }, () => {
       mkdirSync(directory, { recursive: true });
       const files: { path: string; contents: string }[] = [];
       for (const [name, source] of Object.entries(sources)) {
+        // A directory per source, where its outputs import each other by their own names.
+        mkdirSync(join(directory, name), { recursive: true });
         for (const file of emitSource(source)) {
           const contents = format ? (await formatOutput(file)).file.contents : file.contents;
-          const path = join(directory, `${name}-${file.path}`);
+          const path = join(directory, name, file.path);
           writeFileSync(path, contents);
           files.push({ path, contents });
         }

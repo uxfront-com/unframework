@@ -4,7 +4,7 @@ export interface SelectProps<T extends string> {
   options: readonly T[];
 }
 
-interface Props extends SelectProps<T> {
+interface Props<T extends string> extends SelectProps<T> {
   value: T;
   class?: string;
   style?: Record<string, string | number | undefined>;

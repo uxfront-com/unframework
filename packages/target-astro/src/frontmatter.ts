@@ -4,6 +4,7 @@
 // render reads from `Astro.props` (its models, render props and fallthrough included), the
 // setup's values (`./setup.ts`), and each `<component is>` as a constant.
 import {
+  addTypeImports,
   js,
   keyImports,
   keyOwner,
@@ -12,11 +13,19 @@ import {
   printProgram,
   rewriteExpression,
   typeDeclarationCode,
+  typeExportsCode,
   typeNames,
 } from "@unframework/codegen";
 import type { ChildImport, ImportSet } from "@unframework/codegen";
 import { expressionsOf, walk } from "@unframework/ir";
-import type { BindingId, InjectItem, ModelItem, UfComponent, UfModule } from "@unframework/ir";
+import type {
+  BindingId,
+  InjectItem,
+  ModelItem,
+  TypeParameter,
+  UfComponent,
+  UfModule,
+} from "@unframework/ir";
 
 import { isRenderProp, ownProps } from "./composition.ts";
 import type { AstroRender } from "./composition.ts";
@@ -75,6 +84,13 @@ export function childTags(
  * so its references stay as written. Only the types the printed code reaches are declared
  * (`liveTypes`), and those the source exports.
  *
+ * The types the source imports are imported by name, those the printed code reaches (ADR-0067):
+ * from a `.ts` module or a package as written, and from a child's output, `./Field.astro`. The
+ * output of the module's main component also writes the module's other type exports, among the
+ * copied types in source order (ADR-0068). A generic component's `Props` takes its type
+ * parameters, `interface Props<T> extends ListProps<T>`, which Astro infers from a consumer's
+ * props (ADR-0068).
+ *
  * A component whose file does not name `Astro` exports `Props`, as Astro's docs allow: nothing in
  * the file reads it then, and astro-eslint-parser counts Astro's own read of `Props` only in a
  * file that names `Astro`, so the linter would report it unused (L5). Exported, it is still what
@@ -94,24 +110,40 @@ export function frontmatterOf(
   const exported = !reads.length && !setup.readsAstro && !markupNamesAstro;
   const extras = propsExtras(component, render);
   const ownProps =
-    extras.length && parameter?.type.code.trim() === "Props"
+    extras.length && parameter && typeHead(parameter.type.code) === "Props"
       ? spelling.scope.claim("OwnProps")
       : undefined;
+  // An imported `Props` is renamed on import as a declared one is renamed.
+  addTypeImports(component, module, imports, (name) => `${name}.astro`, {
+    live: SERVER,
+    local: (name) => (ownProps && name === "Props" ? ownProps : name),
+  });
   const sections: string[][] = [];
   const types = liveTypes(component, module, SERVER);
-  for (const declaration of types) {
+  const declared = types.map((declaration) => {
     let code =
       exported && parameter && declaration.name === "Props" && !declaration.exported
         ? `export ${declaration.code}`
         : typeDeclarationCode(declaration);
     // The source's `Props` is extended under another name (`interface Props extends OwnProps`).
     if (ownProps && declaration.name === "Props") code = code.replace(/\bProps\b/, ownProps);
+    return { code, span: declaration.span };
+  });
+  const typeExports = typeExportsCode(component, module, (name) => `${name}.astro`);
+  for (const { code } of [...declared, ...typeExports].toSorted(
+    (a, b) => a.span.start - b.span.start,
+  )) {
     sections.push([code]);
   }
   for (const statement of keyTypes(component, module, new Set(types.map(({ name }) => name)))) {
     sections.push([statement]);
   }
-  const alias = propsDeclaration(parameter?.type.code, extras, ownProps);
+  const alias = propsDeclaration(
+    parameter?.type.code,
+    extras,
+    ownProps,
+    typeParametersCode(component.typeParameters),
+  );
   if (alias !== undefined) sections.push([exported ? `export ${alias}` : alias]);
   if (reads.length) sections.push(reads);
   for (const helper of setup.helpers) sections.push([helper]);
@@ -373,12 +405,14 @@ function declarationNames(code: string): Set<string> {
  * `Props` for a props type annotation and the members a consumer passes beside it: an alias of a
  * reference, an interface holding an inline object type's members, an interface extending the
  * reference, or nothing when the reference is `Props` itself and nothing extends it. The analyser
- * accepts only those two forms, parenthesised or not.
+ * accepts only those two forms, parenthesised or not. A generic component's `Props` declares its
+ * type parameters (`generics`, `<T>`), which its members read.
  */
 function propsDeclaration(
   annotation: string | undefined,
   extras: readonly string[],
   ownProps: string | undefined,
+  generics: string,
 ): string | undefined {
   // Each member on a line of its own, after the source's members as written: a line break ends
   // a member, and a comment the source ends its last member with.
@@ -388,11 +422,30 @@ function propsDeclaration(
   while (type.startsWith("(") && type.endsWith(")")) type = type.slice(1, -1).trim();
   if (type.startsWith("{")) {
     return extras.length
-      ? `interface Props ${type.slice(0, -1).trimEnd()}${members}\n}`
-      : `interface Props ${type}`;
+      ? `interface Props${generics} ${type.slice(0, -1).trimEnd()}${members}\n}`
+      : `interface Props${generics} ${type}`;
   }
-  if (!extras.length) return type === "Props" ? undefined : `type Props = ${type};`;
-  return `interface Props extends ${ownProps ?? type} {${members}\n}`;
+  if (!extras.length) {
+    return typeHead(type) === "Props" ? undefined : `type Props${generics} = ${type};`;
+  }
+  // `Props<T>` extends `OwnProps<T>`, with the source's type arguments.
+  const base = ownProps ? `${ownProps}${type.slice("Props".length)}` : type;
+  return `interface Props${generics} extends ${base} {${members}\n}`;
+}
+
+/** The name a type reference starts with: `Props` for `Props` and `Props<T>`. */
+function typeHead(type: string): string | undefined {
+  return /^\(*\s*([A-Za-z_$][\w$]*)\s*(?:<|\)|$)/.exec(type.trim())?.[1];
+}
+
+/** A component's type parameters as the source writes them, `<T extends Item = Item>`, or none. */
+function typeParametersCode(parameters: readonly TypeParameter[] | undefined): string {
+  if (!parameters?.length) return "";
+  const written = parameters.map(({ name, constraint, default: fallback }) => {
+    const bound = constraint ? ` extends ${constraint.code}` : "";
+    return `${name}${bound}${fallback ? ` = ${fallback.code}` : ""}`;
+  });
+  return `<${written.join(", ")}>`;
 }
 
 function bindingStart(component: UfComponent, id: BindingId): number {

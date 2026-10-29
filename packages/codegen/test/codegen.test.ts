@@ -484,6 +484,18 @@ describe("type imports and exports (ADR-0067, ADR-0068)", () => {
     expect(typeExportsCode(other, module, (name) => `${name}.vue`)).toEqual([]);
   });
 
+  it("imports a name under the local the target gives it", () => {
+    // Astro declares its own `Props`, so it imports one the source names so under another name.
+    const { module, badge } = badgeModule();
+    const imports = new ImportSet();
+    addTypeImports(badge, module, imports, (name) => `${name}.astro`, {
+      local: (name) => (name === "Tone" ? "OwnTone" : name),
+    });
+    expect(printProgram(js.program(imports.toDeclarations())).trim()).toBe(
+      'import type { BadgeProps, Size as SizeName, Tone as OwnTone } from "./types";',
+    );
+  });
+
   it("writes the module's type exports in its main component's output, from each target's file", () => {
     const { module, badge } = badgeModule();
     expect(typeExportsCode(badge, module, (name) => `${name}.vue`)).toEqual([

@@ -5,7 +5,7 @@ export interface ListProps<T> {
   selected?: T;
 }
 
-interface Props extends ListProps<T> {
+interface Props<T> extends ListProps<T> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }

@@ -6,6 +6,7 @@ import type { ImportSet } from "./imports.ts";
 import { exportDefault, exportList, exportNamed, variableDeclaration } from "./js/builders.ts";
 import { parseStatementsSource } from "./parse.ts";
 import { liveTypeNames } from "./references.ts";
+import type { LiveOptions } from "./references.ts";
 import { collectNames } from "./rewrite.ts";
 
 /**
@@ -95,16 +96,23 @@ export function typeSpecifier(
  * Adds the `import type` names a component's output reads (ADR-0067): each name of the module's
  * type imports that what the output prints reads (`liveTypeNames`), under the source's own
  * local name, from `typeSpecifier`. The output of the module's main component also writes the
- * module's type exports (`typeExports`), and reads what their declarations name.
+ * module's type exports (`typeExports`), and reads what their declarations name. `live` says
+ * what the output prints, its client code by default: Astro, which drops it, passes the
+ * server's. `local` names an import in the output, the source's own name by default: Astro
+ * renames one named `Props`, which it declares itself.
  */
 export function addTypeImports(
   component: UfComponent,
   module: UfModule,
   imports: ImportSet,
   file: (name: string) => string,
+  {
+    live = { client: true },
+    local = (name) => name,
+  }: { live?: LiveOptions; local?: (name: string) => string } = {},
 ): void {
   if (!module.typeImports?.length) return;
-  const read = liveTypeNames(component, module, { client: true });
+  const read = liveTypeNames(component, module, live);
   if (keyOwner(module.components, module.exports) === component.name) {
     for (const entry of module.typeExports ?? []) {
       if (entry.kind !== "Declaration") continue;
@@ -117,7 +125,7 @@ export function addTypeImports(
       if (!read.has(name.local)) continue;
       imports.add(typeSpecifier(entry.specifier, module, file), name.imported, {
         type: true,
-        local: name.local,
+        local: local(name.local),
         exact: true,
       });
     }
