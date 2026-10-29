@@ -106,8 +106,8 @@ export async function astroTypecheck(
     // AstroCheck lints only the files it is given, unlike tsgo, vue-tsc, svelte-check and ngtsc,
     // which report every file of the program: an error inside a module an output imports is
     // not reported here. The modules outputs import beside Astro are other outputs, each linted
-    // as a file of its own, and `.ts` modules copied unchanged from the sources (ADR-0067,
-    // ADR-0070), which `tests/integration/tsconfig.cases.json` checks.
+    // as a file of its own, `.ts` modules copied unchanged from the sources (ADR-0067,
+    // ADR-0070), which `tests/integration/tsconfig.cases.json` checks, and packages' types.
     const result = await checker.lint({ fileNames: [...files] });
     if (result.status !== "completed" || result.fileChecked !== files.length) {
       throw new Error(

@@ -5,6 +5,7 @@
 // setup's values (`./setup.ts`), and each `<component is>` as a constant.
 import {
   addTypeImports,
+  codeNames,
   js,
   keyImports,
   keyOwner,
@@ -85,11 +86,15 @@ export function childTags(
  * (`liveTypes`), and those the source exports.
  *
  * The types the source imports are imported by name, those the printed code reaches (ADR-0067):
- * from a `.ts` module or a package as written, and from a child's output, `./Field.astro`. The
- * output of the module's main component also writes the module's other type exports, among the
- * copied types in source order (ADR-0068). A generic component's `Props` takes its type
- * parameters, `interface Props<T> extends ListProps<T>`, which Astro infers from a consumer's
- * props (ADR-0068).
+ * from a `.ts` module or a package as written, and from a child's output, `./Field.astro`. An
+ * imported `Props` is imported as `OwnProps`, and every reference to it is renamed, since Astro
+ * declares its own `Props`. The output of the module's main component also writes the module's
+ * other type exports, among the copied types in source order (ADR-0068), and exports its `Props`
+ * when the source exports its own. A generic component's `Props` takes its type parameters,
+ * `interface Props<T> extends ListProps<T>`, which Astro infers from a consumer's props
+ * (ADR-0068). Astro declares them on the component's render function alone, so where the kept
+ * setup names one, the frontmatter declares it as its constraint,
+ * `type T = Item;` (`unknown` without one), as Angular's slot context takes a constraint.
  *
  * A component whose file does not name `Astro` exports `Props`, as Astro's docs allow: nothing in
  * the file reads it then, and astro-eslint-parser counts Astro's own read of `Props` only in a
@@ -108,28 +113,39 @@ export function frontmatterOf(
   );
   const reads = propsRead(component, live, spelling, render);
   const exported = !reads.length && !setup.readsAstro && !markupNamesAstro;
-  const extras = propsExtras(component, render);
+  // The type imports keep the source's names, which Astro's own names never take, but `Props`.
+  const imported = (module.typeImports ?? []).flatMap(({ names }) =>
+    names.map(({ local }) => local),
+  );
+  for (const name of imported) if (name !== "Props") spelling.scope.reserve(name);
+  const types = liveTypes(component, module, SERVER);
+  const sourceProps = types.find(({ name }) => name === "Props");
   const ownProps =
-    extras.length && parameter && typeHead(parameter.type.code) === "Props"
+    imported.includes("Props") ||
+    (sourceProps && propsExtras(component, render, (type) => type).length)
       ? spelling.scope.claim("OwnProps")
       : undefined;
-  // An imported `Props` is renamed on import as a declared one is renamed.
+  // The source's `Props` under the name it takes beside Astro's (`interface Props extends
+  // OwnProps`), in every type the output prints.
+  const own = (type: string) => (ownProps ? renameTypeReferences(type, "Props", ownProps) : type);
+  const extras = propsExtras(component, render, own);
   addTypeImports(component, module, imports, (name) => `${name}.astro`, {
     live: SERVER,
     local: (name) => (ownProps && name === "Props" ? ownProps : name),
   });
   const sections: string[][] = [];
-  const types = liveTypes(component, module, SERVER);
   const declared = types.map((declaration) => {
     let code =
       exported && parameter && declaration.name === "Props" && !declaration.exported
         ? `export ${declaration.code}`
         : typeDeclarationCode(declaration);
-    // The source's `Props` is extended under another name (`interface Props extends OwnProps`).
+    code = own(code);
     if (ownProps && declaration.name === "Props") code = code.replace(/\bProps\b/, ownProps);
     return { code, span: declaration.span };
   });
-  const typeExports = typeExportsCode(component, module, (name) => `${name}.astro`);
+  const typeExports = typeExportsCode(component, module, (name) => `${name}.astro`).map(
+    ({ code, span }) => ({ code: own(code), span }),
+  );
   for (const { code } of [...declared, ...typeExports].toSorted(
     (a, b) => a.span.start - b.span.start,
   )) {
@@ -139,12 +155,16 @@ export function frontmatterOf(
     sections.push([statement]);
   }
   const alias = propsDeclaration(
-    parameter?.type.code,
+    parameter && own(parameter.type.code),
     extras,
-    ownProps,
     typeParametersCode(component.typeParameters),
   );
-  if (alias !== undefined) sections.push([exported ? `export ${alias}` : alias]);
+  // Exported where the source exports its own `Props` too, under the same name (ADR-0068).
+  if (alias !== undefined) {
+    sections.push([exported || sourceProps?.exported ? `export ${alias}` : alias]);
+  }
+  const scoped = typeParameterAliases(component, [...reads, ...setup.helpers, ...setup.statements]);
+  if (scoped.length) sections.push(scoped);
   if (reads.length) sections.push(reads);
   for (const helper of setup.helpers) sections.push([helper]);
   if (scope) sections.push([scopeAttributesHelper(scope)]);
@@ -215,17 +235,22 @@ function scopeAttributesHelper(name: string): string {
  * scoped slot as a render prop, and the `class` and `style` that fall through to the root. A
  * consumer's style is an object, which the root spreads after its own declarations.
  */
-function propsExtras(component: UfComponent, render: AstroRender): string[] {
+function propsExtras(
+  component: UfComponent,
+  render: AstroRender,
+  own: (type: string) => string,
+): string[] {
   const members: string[] = [];
   for (const item of component.setup) {
     if (item.kind === "Model") {
-      members.push(`${item.name}${item.required ? "" : "?"}: ${item.type?.code ?? "unknown"}`);
+      const type = item.type ? own(item.type.code) : "unknown";
+      members.push(`${item.name}${item.required ? "" : "?"}: ${type}`);
     }
   }
   for (const slot of component.slots?.slots ?? []) {
     if (slot.props) {
       members.push(
-        `${renderPropName(slot.name, ownProps(component))}?: (props: ${slot.props.code}) => unknown`,
+        `${renderPropName(slot.name, ownProps(component))}?: (props: ${own(slot.props.code)}) => unknown`,
       );
     }
   }
@@ -402,40 +427,108 @@ function declarationNames(code: string): Set<string> {
 }
 
 /**
- * `Props` for a props type annotation and the members a consumer passes beside it: an alias of a
- * reference, an interface holding an inline object type's members, an interface extending the
- * reference, or nothing when the reference is `Props` itself and nothing extends it. The analyser
- * accepts only those two forms, parenthesised or not. A generic component's `Props` declares its
- * type parameters (`generics`, `<T>`), which its members read.
+ * `Props` for a props type annotation and the members a consumer passes beside it: an alias of the
+ * annotation, an interface holding an inline object type's members, an interface extending a
+ * reference, an intersection with the members for any other type (`Base & { n: number }`), which
+ * an interface cannot extend, or nothing when the reference is `Props` itself and nothing extends
+ * it. A generic component's `Props` declares its type parameters (`generics`, `<T>`), which its
+ * members read.
  */
 function propsDeclaration(
   annotation: string | undefined,
   extras: readonly string[],
-  ownProps: string | undefined,
   generics: string,
 ): string | undefined {
   // Each member on a line of its own, after the source's members as written: a line break ends
   // a member, and a comment the source ends its last member with.
   const members = extras.map((member) => `\n  ${member};`).join("");
   if (annotation === undefined) return extras.length ? `interface Props {${members}\n}` : undefined;
-  let type = annotation.trim();
-  while (type.startsWith("(") && type.endsWith(")")) type = type.slice(1, -1).trim();
-  if (type.startsWith("{")) {
+  const { type, kind } = unwrapped(annotation);
+  if (kind === "TSTypeLiteral") {
     return extras.length
       ? `interface Props${generics} ${type.slice(0, -1).trimEnd()}${members}\n}`
       : `interface Props${generics} ${type}`;
   }
-  if (!extras.length) {
-    return typeHead(type) === "Props" ? undefined : `type Props${generics} = ${type};`;
+  if (!extras.length) return type === "Props" ? undefined : `type Props${generics} = ${type};`;
+  if (kind === "TSTypeReference") {
+    return `interface Props${generics} extends ${type} {${members}\n}`;
   }
-  // `Props<T>` extends `OwnProps<T>`, with the source's type arguments.
-  const base = ownProps ? `${ownProps}${type.slice("Props".length)}` : type;
-  return `interface Props${generics} extends ${base} {${members}\n}`;
+  const operand = kind === "TSIntersectionType" ? type : `(${type})`;
+  return `type Props${generics} = ${operand} & {${members}\n};`;
 }
 
-/** The name a type reference starts with: `Props` for `Props` and `Props<T>`. */
-function typeHead(type: string): string | undefined {
-  return /^\(*\s*([A-Za-z_$][\w$]*)\s*(?:<|\)|$)/.exec(type.trim())?.[1];
+/**
+ * A type's code without the parentheses that enclose the whole of it, and its AST node's kind:
+ * `({ a: string })` is the type literal `{ a: string }`, and `(A) & (B)` stays as written.
+ */
+function unwrapped(annotation: string): { type: string; kind: string | undefined } {
+  const prefix = "type T = ";
+  const source = `${prefix}${annotation.trim()};`;
+  const [statement] = parseStatementsSource(source).statements;
+  if (statement?.type !== "TSTypeAliasDeclaration")
+    return { type: annotation.trim(), kind: undefined };
+  let node = statement.typeAnnotation;
+  while (node.type === "TSParenthesizedType") node = node.typeAnnotation;
+  return { type: source.slice(node.start, node.end), kind: node.type };
+}
+
+/**
+ * A type's or a declaration's code with each reference to the type `from` renamed `to`, its
+ * members' keys and the names it declares left as written: `Props & { a: Props["a"] }` reads
+ * `OwnProps & { a: OwnProps["a"] }`.
+ */
+function renameTypeReferences(code: string, from: string, to: string): string {
+  const declaration = /^\s*(?:export\s+)?(?:interface|type)\s/.test(code);
+  const prefix = declaration ? "" : "type T = ";
+  const source = declaration ? code : `${prefix}${code};`;
+  const starts: number[] = [];
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (const each of node) visit(each);
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    const record = node as Record<string, unknown>;
+    const reference =
+      record.type === "TSTypeReference"
+        ? record.typeName
+        : record.type === "TSInterfaceHeritage"
+          ? record.expression
+          : undefined;
+    let head = reference as Record<string, unknown> | undefined;
+    while (head?.type === "TSQualifiedName" || head?.type === "MemberExpression") {
+      head = (head.left ?? head.object) as Record<string, unknown>;
+    }
+    if (head?.type === "Identifier" && head.name === from) starts.push(head.start as number);
+    for (const [key, value] of Object.entries(record)) if (key !== "parent") visit(value);
+  };
+  visit(parseStatementsSource(source).statements);
+  let renamed = source;
+  for (const start of starts.toSorted((a, b) => b - a)) {
+    renamed = `${renamed.slice(0, start)}${to}${renamed.slice(start + from.length)}`;
+  }
+  return declaration ? renamed : renamed.slice(prefix.length, -1);
+}
+
+/**
+ * The type parameters the kept setup's code names, each declared as its constraint at the
+ * frontmatter's top level, `type T = Item;`, or `unknown` without one: Astro declares `Props`'
+ * type parameters on the component's render function alone, which the frontmatter and the markup
+ * are outside. The markup names none: a template expression has no TypeScript syntax (UF1002). A
+ * constraint that names another parameter (`U extends T`) declares that one too.
+ */
+function typeParameterAliases(component: UfComponent, code: readonly string[]): string[] {
+  const parameters = component.typeParameters ?? [];
+  if (!parameters.length) return [];
+  const named = new Set<string>();
+  for (const each of code) for (const name of codeNames(each, "statements")) named.add(name);
+  for (const parameter of parameters.toReversed()) {
+    if (!named.has(parameter.name) || !parameter.constraint) continue;
+    for (const name of typeNames(parameter.constraint)) named.add(name);
+  }
+  return parameters
+    .filter(({ name }) => named.has(name))
+    .map(({ name, constraint }) => `type ${name} = ${constraint?.code ?? "unknown"};`);
 }
 
 /** A component's type parameters as the source writes them, `<T extends Item = Item>`, or none. */

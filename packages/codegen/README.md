@@ -227,12 +227,13 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   what a component's output prints reads (`liveTypeNames`), by the source's own names, from
   `typeSpecifier`: a `.ts` module's or a package's as written, a `.uf.tsx` module's from the
   output of its main component, which the module's import records with its API, a type-only one
-  included (`./TextField.vue` for `./text-field.uf.tsx`). Its options say what counts as printed
-  (`live`, client code by default, the server's alone for Astro) and the local name an import
-  takes (`local`, the source's by default: Astro renames an imported `Props`). `typeExportsCode` writes the module's
-  type exports in the output of its main component: an exported type no component reaches, a
-  re-export, and a re-export of an exported type only another component's output declares, each
-  with its span, so a target places it in source order (ADR-0067, ADR-0068). A prop another file
+  included (`./TextField.vue` for `./text-field.uf.tsx`). Its options say what counts as
+  printed (`live`, client code by default, the server's alone for Astro) and the local name an
+  import takes (`local`, the source's by default: Astro renames an imported `Props`).
+  `typeExportsCode` writes the module's type exports in the output of its main component: an
+  exported type no component reaches, a re-export, and a re-export of an exported type only
+  another component's output declares, each with its span, so a target places it in source
+  order (ADR-0067, ADR-0068). A prop another file
   declares (`declaredBy`) is written in that file's names, so neither these nor `liveTypes` and
   the kinds look its type up in the component's own module. `ImportSet` sorts imports and renames
   one that clashes with a name in its `NameScope`: a target reserves the source's names (`sourceNames`: the component, its types,
