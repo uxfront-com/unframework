@@ -10,7 +10,7 @@ export interface TableAttributes {
   style?: CSSProperties;
 }
 
-export default function Table({
+export default function Table<T extends { id: string; label: string }>({
   caption,
   rows,
   className,

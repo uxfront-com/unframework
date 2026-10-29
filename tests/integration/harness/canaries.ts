@@ -1590,8 +1590,9 @@ export function withQwikImports(file: OutputFile, names: readonly string[]): str
 
 /**
  * Where a JSX component's body starts, just after its `{`: Qwik's `component$<Props>((…) => {`,
- * or the first PascalCase `function Name(…) {` (React and Solid). The parameters are read to
- * their matching parenthesis: a destructured default or a type may hold parentheses of its own.
+ * or the first PascalCase `function Name(…) {` or `function Name<T>(…) {` (React and Solid). The
+ * type parameters and the parameters are read to their matching bracket: a constraint, a
+ * destructured default or a type may hold brackets of its own.
  */
 function componentBodyStart(contents: string): number | undefined {
   // Not the import's `component$`: the call's, with its type argument or its parenthesis.
@@ -1611,9 +1612,17 @@ function componentBodyStart(contents: string): number | undefined {
     if (close === undefined) return undefined;
     return endAt(contents, close + 1, /^\s*=>\s*\{/);
   }
-  const component = /\bfunction\s+[A-Z][\w$]*\s*\(/.exec(contents);
+  const component = /\bfunction\s+[A-Z][\w$]*\s*(?=[<(])/.exec(contents);
   if (!component) return undefined;
-  const close = matchingBracket(contents, component.index + component[0].length - 1, "(", ")");
+  let index = component.index + component[0].length;
+  // A generic component's type parameters (ADR-0068): a constraint may hold brackets of its own.
+  if (contents[index] === "<") {
+    const parameters = matchingBracket(contents, index, "<", ">");
+    if (parameters === undefined) return undefined;
+    index = endAt(contents, parameters + 1, /^\s*/)!;
+  }
+  if (contents[index] !== "(") return undefined;
+  const close = matchingBracket(contents, index, "(", ")");
   if (close === undefined) return undefined;
   return endAt(contents, close + 1, /^[^{]*\{/);
 }

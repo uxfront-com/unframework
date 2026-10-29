@@ -1,3 +1,4 @@
+import type { FieldOptions } from "./types";
 import type { CSSProperties } from "react";
 
 export type TextFieldProps = Required<Pick<FieldOptions, "name" | "label">> &
