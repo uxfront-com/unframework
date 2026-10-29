@@ -1017,6 +1017,20 @@ describe("svelte types and generics", () => {
     );
   });
 
+  it("formats generics that hold a `>`, which Svelte compiles", async () => {
+    const { contents } = await emitSource(
+      [
+        "export default function Pick<T extends Array<string>>({ value }: { value: T }) {",
+        "  return <p>{value.length}</p>;",
+        "}",
+      ].join("\n"),
+      { format: true },
+    );
+    expect(contents).toContain('<script lang="ts" generics="T extends Array<string>">');
+    const { js } = compile(contents, { filename: "Pick.svelte", generate: "server" });
+    expect(js.code).toContain("value");
+  });
+
   it("single-quotes generics that hold a double quote, which Svelte compiles", async () => {
     const { contents } = await emitSource(
       [
@@ -1032,7 +1046,7 @@ describe("svelte types and generics", () => {
 
   // A `'` in a single-quoted attribute would end it: every string literal is written
   // double-quoted, a template literal kept in backticks, and a `'` inside either as `\u0027`, the
-  // same type. A template literal with holes is UF6002 before the target.
+  // same type. A hole is code again.
   it.each([
     [`T extends "a" | 'b'`, `T extends "a" | "b"`],
     [`T extends "don't" | "do"`, `T extends "don\\u0027t" | "do"`],
@@ -1040,6 +1054,7 @@ describe("svelte types and generics", () => {
     ["T extends `don't`", "T extends `don\\u0027t`"],
     ['T extends `don\'t` | "b"', 'T extends `don\\u0027t` | "b"'],
     ["T extends `say \"hi\"` | 'b'", 'T extends `say "hi"` | "b"'],
+    ["T extends string = Uppercase<`a${'x'}`>", 'T extends string = Uppercase<`a${"x"}`>'],
   ])(
     "writes generics with both quote kinds, %s, so Svelte compiles them",
     async (written, attribute) => {

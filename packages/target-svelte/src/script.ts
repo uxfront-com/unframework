@@ -299,37 +299,59 @@ function genericsAttribute(component: UfComponent): string {
 /**
  * Type text with the same meaning and no `'`: each string literal double-quoted, a template
  * literal kept in backticks, and a `'` in either or in a comment written `\u0027`, which a literal
- * reads as the same character. A template literal with holes never reaches a target (UF6002).
+ * reads as the same character. A template literal's hole is code again, read the same way, so
+ * `` `a${'x'}` `` is `` `a${"x"}` ``.
  */
 function withoutSingleQuotes(text: string): string {
   let written = "";
-  let quote: string | undefined;
+  // The template literals and holes the text is inside, innermost last: "`" for a literal's
+  // text, a number for a hole's code, counting the braces open inside it.
+  const nested: ("`" | number)[] = [];
   for (let index = 0; index < text.length; index++) {
     const char = text[index]!;
-    if (quote === undefined) {
-      if (text.startsWith("//", index) || text.startsWith("/*", index)) {
-        const close = text.startsWith("//", index) ? "\n" : "*/";
-        const end = text.indexOf(close, index + 2);
-        const stop = end === -1 ? text.length : end + close.length;
-        written += text.slice(index, stop).replaceAll("'", "\\u0027");
-        index = stop - 1;
-      } else if (char === "'" || char === '"' || char === "`") {
-        quote = char;
-        written += char === "`" ? char : '"';
-      } else {
+    const inside = nested.at(-1);
+    if (inside === "`") {
+      if (char === "\\") {
+        const next = text[++index] ?? "";
+        written += next === "'" ? "\\u0027" : `\\${next}`;
+      } else if (char === "`") {
+        nested.pop();
         written += char;
+      } else if (text.startsWith("${", index)) {
+        nested.push(0);
+        written += "${";
+        index++;
+      } else {
+        written += char === "'" ? "\\u0027" : char;
       }
-    } else if (char === "\\") {
-      const next = text[++index] ?? "";
-      written += next === "'" ? "\\u0027" : `\\${next}`;
-    } else if (char === quote) {
-      quote = undefined;
-      written += char === "`" ? char : '"';
-    } else if (char === "'") {
-      written += "\\u0027";
+    } else if (text.startsWith("//", index) || text.startsWith("/*", index)) {
+      const close = text.startsWith("//", index) ? "\n" : "*/";
+      const end = text.indexOf(close, index + 2);
+      const stop = end === -1 ? text.length : end + close.length;
+      written += text.slice(index, stop).replaceAll("'", "\\u0027");
+      index = stop - 1;
+    } else if (char === "'" || char === '"') {
+      // A string literal, to its closing quote, double-quoted.
+      written += '"';
+      for (index++; index < text.length && text[index] !== char; index++) {
+        const each = text[index]!;
+        if (each === "\\") {
+          const next = text[++index] ?? "";
+          written += next === "'" ? "\\u0027" : `\\${next}`;
+        } else {
+          written += each === "'" ? "\\u0027" : each === '"' ? '\\"' : each;
+        }
+      }
+      written += '"';
+    } else if (char === "`") {
+      nested.push("`");
+      written += char;
+    } else if (typeof inside === "number" && (char === "{" || char === "}")) {
+      if (char === "}" && inside === 0) nested.pop();
+      else nested[nested.length - 1] = inside + (char === "{" ? 1 : -1);
+      written += char;
     } else {
-      // A `"` ends no literal but a double-quoted one, which ended above.
-      written += char === '"' && quote === "'" ? '\\"' : char;
+      written += char;
     }
   }
   return written;
