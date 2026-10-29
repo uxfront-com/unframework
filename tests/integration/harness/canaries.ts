@@ -1590,8 +1590,8 @@ export function withQwikImports(file: OutputFile, names: readonly string[]): str
 /**
  * Where a JSX component's body starts, just after its `{`: Qwik's `component$<Props>((…) => {`,
  * or the first PascalCase `function Name(…) {` or generic `function Name<…>(…) {` (React and
- * Solid). The parameters are read to their matching parenthesis: a destructured default or a
- * type may hold parentheses of its own.
+ * Solid). The type parameters and the parameters are read to their matching bracket: a
+ * constraint, a destructured default or a type may hold brackets of its own.
  */
 function componentBodyStart(contents: string): number | undefined {
   // Not the import's `component$`: the call's, with its type argument or its parenthesis.
@@ -1627,8 +1627,11 @@ function componentParameters(contents: string): number | undefined {
   if (!component) return undefined;
   const index = component.index + component[0].length;
   if (contents[index] !== "<") return index;
+  // A constraint may hold brackets of its own.
   const parameters = matchingBracket(contents, index, "<", ">");
-  return parameters !== undefined && contents[parameters + 1] === "(" ? parameters + 1 : undefined;
+  if (parameters === undefined) return undefined;
+  const open = endAt(contents, parameters + 1, /^\s*/)!;
+  return contents[open] === "(" ? open : undefined;
 }
 
 /** The end of `pattern` (anchored with `^`) matched at `index`, or `undefined`. */

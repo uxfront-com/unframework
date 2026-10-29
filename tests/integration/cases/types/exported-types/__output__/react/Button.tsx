@@ -2,6 +2,8 @@ import type { CSSProperties } from "react";
 
 export type ButtonTone = "primary" | "secondary";
 
+export type ButtonSize = "small" | "large";
+
 export interface ButtonProps {
   label: string;
   tone?: ButtonTone;

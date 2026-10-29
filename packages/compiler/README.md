@@ -56,8 +56,17 @@ disposes of its oracle. The oracle reads the source's own file too, so it must h
 `compile()` is given: a caller that compiles an unsaved edit updates its oracle first.
 `CompileResult.dependencies` lists what the compile read or looked for through the oracle: files
 relative to its root, and packages as `pkg:<name>`, a package that is not installed included,
-sorted (ADR-0071). It also lists each shared `.ts` module the resolver read, named as `filename`
-is.
+sorted (ADR-0071). It also lists each shared `.ts` module the resolver read, and each `.uf.ts`
+module whose composables the source imports, named as `filename` is.
+
+**Composables** (ADR-0069). The resolver gives a `.uf.ts` module's API too: its `composables`,
+each with its parameters' kinds and its members' kinds and flags, which a caller's `Use` item is
+lowered by, so a caller's output never depends on a composable's body. `compile()` also takes a
+`.uf.ts` source: its IR holds the module's composables and no component, and each target emits
+each composable with its `emitComposable`, formatted as a component's files are, with `owners`
+naming the composable. The `output` hooks see none of it. `emitComposable` is optional until each
+target's composables lane lands: a target without it reports UF1002 at the composable, for that
+target, and emits nothing for it.
 A capability that refines one the target cannot support (a listener's options and semantics, and
 `nextTick`, refine `interactivity`: codegen's `CAPABILITY_PREREQUISITES`) is not reported again, so
 Astro reports one inert listener once.

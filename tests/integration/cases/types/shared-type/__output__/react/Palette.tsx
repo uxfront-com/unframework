@@ -1,5 +1,8 @@
 import Swatch from "./Swatch";
+import type { Tone } from "./types";
 import type { CSSProperties } from "react";
+
+export type { Tone } from "./types";
 
 export interface PaletteAttributes {
   className?: string;

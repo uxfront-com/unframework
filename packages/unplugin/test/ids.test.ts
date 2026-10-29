@@ -2,7 +2,16 @@ import { defineTarget } from "@unframework/codegen";
 import { builtinTargets, TARGET_NAMES } from "@unframework/compiler";
 import { describe, expect, it } from "vitest";
 
-import { moduleIdCandidates, moduleIdFilter, specifierFilter } from "../src/ids.ts";
+import {
+  COMPOSABLE_ID_SUFFIXES,
+  composableFilter,
+  composableId,
+  composableIdSuffix,
+  moduleIdCandidates,
+  moduleIdFilter,
+  parseComposableId,
+  specifierFilter,
+} from "../src/ids.ts";
 import { ID_SUFFIXES, idSuffix, moduleId, parseModuleId, SCAN_ID_PREFIX } from "../src/index.ts";
 
 const html = defineTarget({
@@ -101,6 +110,57 @@ describe("idSuffix", () => {
     for (const extension of ["vue", ".vue?x", "./vue", ".v ue", "."]) {
       expect(() => idSuffix(html, extension), extension).toThrow("is not a file extension");
     }
+  });
+});
+
+describe("the ids of modules of composables (ADR-0069)", () => {
+  it("name the suffix each framework's plugin claims for a TypeScript module", () => {
+    expect(COMPOSABLE_ID_SUFFIXES).toEqual({
+      react: "",
+      vue: "",
+      svelte: ".svelte.ts",
+      solid: "",
+      angular: ".ts",
+      qwik: "",
+      astro: "",
+    });
+    expect(Object.keys(COMPOSABLE_ID_SUFFIXES).toSorted()).toEqual(TARGET_NAMES.toSorted());
+    expect(composableIdSuffix("svelte")).toBe(".svelte.ts");
+    expect(composableIdSuffix(builtinTargets.angular)).toBe(".ts");
+    // A third-party target's composables load as plain TypeScript modules.
+    expect(composableIdSuffix(html)).toBe("");
+  });
+
+  it("round-trip a file, a suffix and a query", () => {
+    expect(composableId("/p/useToggle.uf.ts", ".svelte.ts")).toBe("/p/useToggle.uf.ts.svelte.ts");
+    expect(parseComposableId("/p/useToggle.uf.ts.svelte.ts?x", ".svelte.ts")).toEqual({
+      file: "/p/useToggle.uf.ts",
+      query: "?x",
+    });
+    expect(parseComposableId("/p/useToggle.uf.ts", "")).toEqual({
+      file: "/p/useToggle.uf.ts",
+      query: "",
+    });
+    expect(parseComposableId("/p/useToggle.uf.ts", ".ts")).toBeUndefined();
+    expect(parseComposableId("/p/Hello.uf.tsx", "")).toBeUndefined();
+    expect(parseComposableId("/p/Hello.uf.tsx.ts", ".ts")).toBeUndefined();
+  });
+
+  it("match a `.uf.ts` specifier and the ids coming back, never a component's", () => {
+    const svelte = composableFilter(".svelte.ts");
+    for (const id of ["./useToggle.uf.ts", "/p/useToggle.uf.ts.svelte.ts", "./useToggle.uf.ts?x"]) {
+      expect(svelte.test(id), id).toBe(true);
+    }
+    for (const id of [
+      "./Hello.uf.tsx",
+      "/p/Hello.uf.tsx.svelte",
+      "./useToggle.ts",
+      "./x.uf.ts.ts",
+    ]) {
+      expect(svelte.test(id), id).toBe(false);
+    }
+    expect(composableFilter("").test("/p/useToggle.uf.ts")).toBe(true);
+    expect(composableFilter("").test("/p/useToggle.uf.ts.ts")).toBe(false);
   });
 });
 

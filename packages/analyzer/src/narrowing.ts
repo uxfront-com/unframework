@@ -1011,6 +1011,8 @@ function isRefRoot(root: object, render: RenderContext): boolean {
     case "derived":
     case "templateRef":
     case "model":
+    case "usedState":
+    case "usedDerived":
       return true;
     case "context":
       return binding.ref === true;

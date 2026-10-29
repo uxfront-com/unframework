@@ -135,8 +135,18 @@ checked as the declaration its likely fix writes (`analyze.ts`).
     written as a pattern, a callback read outside client code, a return of any other shape, and a
     module that exports no composable. An injection key in a `.uf.ts` module is UF1002: it stays
     in the `.uf.tsx` module that provides it (ADR-0054).
-  - The call site, `const { on, toggle } = useToggle(false)`, and `compile()`'s handling of a
-    `.uf.ts` source come later.
+  - **The call site.** A component imports a `.uf.ts` module's composables by name, and calls
+    each at the top level of its setup as `const { on, toggle } = useToggle(false)`, which lowers
+    to a `Use` item. Each argument is read as its parameter's kind says. A value is read once,
+    as an initial value is, a getter is an arrow written in place and read as a `computed`'s
+    getter, and a callback is an arrow written in place and read as client code. Each destructured member is a `used*` binding of
+    the member's kind (`usedState`, `usedDerived`, `usedFn`, `usedConst`), and the item copies
+    the API's `hasEffects`. A write of a returned ref is UF2036, a reactive read passed to a value
+    parameter is UF2007 (a warning), and a template, a getter or an initial value that calls a
+    returned function the API doesn't mark `pure`, itself or through a local function, is
+    UF2014. A call that isn't destructured by a top-level `const`, explicit type arguments, a
+    wrong number of arguments, a getter or a callback not written in place, and a member the
+    composable doesn't return are UF1002.
 
 - **The authoring API** (`authoring.ts`): named imports from `"unframework"`, recognised by the
   binding each declares (ADR-0006), as the package exports them (a test reads its `index.ts`).
@@ -151,9 +161,10 @@ checked as the declaration its likely fix writes (`analyze.ts`).
     their types reference (`references`), and a prop typed by an alias of a union of literals
     holds them (`literals`).
   - `analyze(parsed, { imports })` takes the API of each `.uf.tsx` module the source imports,
-    by specifier (`componentImports(parsed)` lists them): an import the resolver gave nothing
-    for, or a name the module does not export, is UF1202, and the module records each one it
-    lowers (`ModuleImport`).
+    and of each `.uf.ts` module whose composables a `.uf.tsx` imports (ADR-0069), by specifier
+    (`componentImports(parsed)` lists them, and a `.uf.ts` module asks for none): an import the
+    resolver gave nothing for, or a name the module does not export, is UF1202, and the module
+    records each one it lowers (`ModuleImport`).
   - A PascalCase tag names an imported component, one of the module's own, or the component
     itself (UF3047 otherwise, with a likely fix to a close name). Its attributes are props, the
     listeners of the events it declares (`onClear`, a local function or an arrow whose parameters

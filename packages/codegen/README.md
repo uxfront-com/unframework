@@ -3,8 +3,11 @@
 The target kit (plan §5.8): everything a target needs to emit idiomatic code, and nothing
 framework-specific.
 
-- **`defineTarget`** and the `Target` interface: `name`, `framework`, a capability matrix and
-  `emit(component, context)`. The matrix has a cell for every name in `CAPABILITY_NAMES`: one per
+- **`defineTarget`** and the `Target` interface: `name`, `framework`, a capability matrix,
+  `emit(component, context)`, and `emitComposable(composable, context)`, which emits a `.uf.ts`
+  module's composable as its own module (ADR-0069). `emitComposable` is optional until each
+  target's composables lane lands: `compile()` reports UF1002 for a composable of a target
+  without it. The matrix has a cell for every name in `CAPABILITY_NAMES`: one per
   IR node and attribute kind (`element`, `text`, `interpolation`, `conditional`, `list`,
   `static-attribute`, `bound-attribute`, `class-binding`, `style-binding`, `attribute-spread`),
   plus `props`, a root `fragment`, `svg`, `listbox`, `interactivity` (listeners, template refs,

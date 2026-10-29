@@ -11,7 +11,7 @@ export interface Located {
 }
 
 const SUPPORTED_SUBSET =
-  'This version of the compiler lowers exported components with typed props, a setup (state, derived values, watchers, lifecycle hooks, local functions and constants, `defineEmits`, template refs and ids), element listeners, JSX (expressions, conditionals, lists, class and style bindings, spreads with known keys and SVG) and composition: child components from this module and other `.uf.tsx` modules, slots, models, fallthrough, `defineExpose`, `provide` and `inject`, and `<component is>`. A component\'s sibling stylesheet (`import "./Card.css"`) is scoped to it. Imports of types and other modules land in M5.';
+  'This version of the compiler lowers exported components with typed props, a setup (state, derived values, watchers, lifecycle hooks, local functions and constants, `defineEmits`, template refs and ids), element listeners, JSX (expressions, conditionals, lists, class and style bindings, spreads with known keys and SVG) and composition: child components from this module and other `.uf.tsx` modules, slots, models, fallthrough, `defineExpose`, `provide` and `inject`, and `<component is>`. A component\'s sibling stylesheet (`import "./Card.css"`) is scoped to it. A component imports types from any module, values from shared `.ts` modules, and composables from `.uf.ts` modules, which it calls at the top level of its setup.';
 
 /** Collects the diagnostics of one file. */
 export class Reporter {

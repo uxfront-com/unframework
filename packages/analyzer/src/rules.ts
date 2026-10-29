@@ -226,6 +226,13 @@ class Rules {
       const shared = this.#shared.get(read);
       if (shared?.clientOnly) return `it calls \`${shared.name}\`, which ${shared.clientOnly}`;
     }
+    // A function a composable returns, whose flags say what it does (ADR-0069).
+    for (const read of summary.reads) {
+      if (this.#kind(read) !== "usedFn") continue;
+      const member = this.#setup.get(read)?.member;
+      if (member?.pure) continue;
+      return `it calls \`${this.#name(read)}\`, which its composable returns, and which ${member?.async ? "is asynchronous" : "writes, emits or awaits"}`;
+    }
     return undefined;
   }
 
@@ -277,6 +284,21 @@ class Rules {
             `${where === "a template expression" ? "A template expression" : where === "a getter" ? "A getter" : "An initial value"} ${ref.kind === "Binding" && ref.call ? "calls" : "reads, and may call,"} \`${shared.name}\`, and it ${shared.clientOnly}: ${where === "a template expression" ? "rendering" : "the setup's pure code"} must not read what only client code may, and a framework runs it when it decides to.`,
             {
               help: "Call it from client code (a handler, a watcher's callback, a lifecycle hook), or compute the value without it.",
+            },
+          );
+          continue;
+        }
+        if (ref.kind === "Binding" && ref.call && this.#kind(ref.binding) === "usedFn") {
+          // Its flags say what it does: a caller never reads the composable's body (ADR-0069).
+          const member = this.#setup.get(ref.binding)?.member;
+          if (member?.pure) continue;
+          const name = this.#name(ref.binding);
+          this.#reporter.report(
+            "UF2014",
+            ref.span,
+            `${where === "a template expression" ? "A template expression" : where === "a getter" ? "A getter" : "An initial value"} calls \`${name}\`, which its composable returns, and it ${member?.async ? "is asynchronous" : "writes, emits or awaits"}: ${where === "a template expression" ? "rendering" : "the setup's pure code"} must not change or read what only client code may, and a framework runs it when it decides to.`,
+            {
+              help: "Call it from client code (a handler, a watcher's callback, a lifecycle hook), or return a pure function from the composable.",
             },
           );
           continue;
@@ -589,6 +611,13 @@ class Rules {
         case "Inject":
           if (item.fallback) codes.push(item.fallback);
           break;
+        // A value is evaluated as the setup runs, and a getter may be read at once (ADR-0069).
+        case "Use":
+          for (const argument of item.arguments) {
+            if (argument.kind === "Value") codes.push(argument.value);
+            else if (argument.kind === "Getter") codes.push(argument.getter.body);
+          }
+          break;
         default:
           break;
       }
@@ -805,6 +834,33 @@ class Rules {
               ? `the computed value \`${name}\``
               : `\`${name}\`, which keeps its own first value,`,
       );
+    }
+    // A composable's value parameter is read once too, when the call runs (ADR-0069): a reactive
+    // read passed to one keeps its first value.
+    for (const item of this.#component.setup) {
+      if (item.kind !== "Use") continue;
+      for (const argument of item.arguments) {
+        if (argument.kind !== "Value") continue;
+        const read = [...summarizeCode(argument.value, this.#component).reads].find(
+          (id) => this.#kind(id) === "prop" || this.#refValue(id) || once.has(id),
+        );
+        if (read === undefined) continue;
+        const name = this.#name(read);
+        const what =
+          this.#kind(read) === "prop"
+            ? `the prop \`${name}\``
+            : this.#refValue(read)
+              ? `\`${name}\`'s value`
+              : `\`${name}\`, which keeps its own first value`;
+        this.#reporter.report(
+          "UF2007",
+          argument.span,
+          `\`${item.composable}\` reads this argument once, when the setup runs, and it reads ${what}: the composable keeps that value when it changes later.`,
+          {
+            help: `Make the parameter a getter (\`() => T\`) and pass \`() => ${argument.value.code}\` to follow it, or keep the snapshot on purpose.`,
+          },
+        );
+      }
     }
     // Where `computed` must be imported, one fix imports it: with several, none is offered, so
     // that each fix stays whole on its own.
@@ -1141,7 +1197,15 @@ function refValue(
   input: RulesInput,
 ): boolean {
   const kind = bindings.get(id)?.kind;
-  if (kind === "state" || kind === "derived" || kind === "model") return true;
+  if (
+    kind === "state" ||
+    kind === "derived" ||
+    kind === "model" ||
+    kind === "usedState" ||
+    kind === "usedDerived"
+  ) {
+    return true;
+  }
   return (
     kind === "context" &&
     [...input.render.setup.bindings.values()].some((each) => each.id === id && each.ref === true)

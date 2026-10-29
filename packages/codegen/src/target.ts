@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { Diagnostic, DiagnosticCode } from "@unframework/diagnostics";
-import type { UfComponent, UfModule } from "@unframework/ir";
+import type { UfComponent, UfComposable, UfModule } from "@unframework/ir";
 
 /**
  * The features a target declares support for. Each name maps to IR features (node and
@@ -297,7 +297,7 @@ export interface OutputFile {
 
 /** What a target's `emit` receives besides the component. */
 export interface EmitContext {
-  /** The module the component belongs to. */
+  /** The module the component or the composable belongs to. */
   module: UfModule;
   /** The target's validated options. */
   options: unknown;
@@ -316,6 +316,12 @@ export interface Target {
   readonly options?: StandardSchemaV1;
   /** Emits one component as one or more files. Never throws: report problems instead. */
   emit(component: UfComponent, context: EmitContext): OutputFile[];
+  /**
+   * Emits one composable of a `.uf.ts` module as its module, in the target's idiom (ADR-0069).
+   * Never throws: report problems instead. Optional until the target's composables lane lands:
+   * `compile()` reports UF1002 for a composable of a target without it.
+   */
+  emitComposable?(composable: UfComposable, context: EmitContext): OutputFile[];
 }
 
 /** Declares a target, checking its shape at compile time. */

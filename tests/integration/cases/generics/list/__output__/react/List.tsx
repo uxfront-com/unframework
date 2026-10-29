@@ -11,7 +11,7 @@ export interface ListAttributes {
   style?: CSSProperties;
 }
 
-export default function List({
+export default function List<T>({
   label,
   items,
   selected,
