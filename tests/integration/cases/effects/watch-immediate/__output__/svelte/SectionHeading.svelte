@@ -1,12 +1,14 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import { onMount, untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface SectionHeadingProps {
     title: string;
   }
+</script>
+
+<script lang="ts">
+  import { onMount, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = SectionHeadingProps & {
     onchange?: (title: string, previous?: string) => void;

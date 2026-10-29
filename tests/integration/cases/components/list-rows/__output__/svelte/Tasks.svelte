@@ -1,15 +1,17 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import Row from "./Row.svelte";
-  import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface Task {
     id: number;
     name: string;
     done: boolean;
   }
+</script>
+
+<script lang="ts">
+  import Row from "./Row.svelte";
+  import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = { initial: Task[]; class?: ClassValue; style?: string };
 

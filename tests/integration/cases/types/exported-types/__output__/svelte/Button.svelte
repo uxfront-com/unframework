@@ -1,14 +1,18 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export type ButtonTone = "primary" | "secondary";
+
+  export type ButtonSize = "small" | "large";
 
   export interface ButtonProps {
     label: string;
     tone?: ButtonTone;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ButtonProps & { class?: ClassValue; style?: string };
 

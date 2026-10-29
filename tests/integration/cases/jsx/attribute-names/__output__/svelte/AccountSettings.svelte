@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface AccountSettingsProps {
     charset: string;
     bioId: string;
@@ -12,6 +10,10 @@
     seatColumns: number;
     helpOrder: number;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = AccountSettingsProps & { class?: ClassValue; style?: string };
 

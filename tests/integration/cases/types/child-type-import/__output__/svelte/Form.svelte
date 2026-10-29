@@ -1,7 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import Field from "./Field.svelte";
+  import Field, { type FieldProps } from "./Field.svelte";
   import type { ClassValue } from "svelte/elements";
 
   type Props = { field: FieldProps; class?: ClassValue; style?: string };

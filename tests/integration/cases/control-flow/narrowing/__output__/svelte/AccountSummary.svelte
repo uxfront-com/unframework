@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   interface Team {
     name: string;
   }
@@ -28,6 +26,10 @@
     plan: Plan;
     seats: (Seat | null)[];
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = AccountSummaryProps & { class?: ClassValue; style?: string };
 

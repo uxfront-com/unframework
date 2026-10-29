@@ -84,9 +84,12 @@ function formatErrors(errors: readonly { message: string }[]): string {
  * A `<script>` block whose code is TypeScript, starting a line (the top level of a `.vue` or
  * `.svelte` file: printed markup never starts a line with `<script`, as the analyser rejects
  * the element and text escapes `<`). Its code runs to the first `</script`, where Vue's and
- * Svelte's parsers end it too; the targets write `<\/script` inside copied literals.
+ * Svelte's parsers end it too; the targets write `<\/script` inside copied literals. A quoted
+ * attribute value may hold a `>`, as a generic component's does (`generics="T extends
+ * Array<string>"`, ADR-0068), which ends no tag.
  */
-const SCRIPT_BLOCK = /^<script\b[^>]*\blang="ts"[^>]*>/gm;
+const SCRIPT_BLOCK =
+  /^<script\b(?:[^>"']|"[^"]*"|'[^']*')*?\blang="ts"(?:[^>"']|"[^"]*"|'[^']*')*>/gm;
 const SCRIPT_END = /<\/script/i;
 
 /** Astro's frontmatter fence: `---` alone on a line. */

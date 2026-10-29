@@ -1,13 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface StatusPillProps {
     status: "active" | "paused" | "archived";
     size?: "small" | "large";
     level?: 1 | 2 | 3;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = StatusPillProps & { class?: ClassValue; style?: string };
 

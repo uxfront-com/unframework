@@ -1,12 +1,14 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import { onMount, tick, untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface MailboxProps {
     folder: string;
   }
+</script>
+
+<script lang="ts">
+  import { onMount, tick, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = MailboxProps & {
     onloaded?: (name: string, unread: number) => void;

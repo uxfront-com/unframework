@@ -1,12 +1,14 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { Snippet } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface PickerProps<T> {
     items: T[];
   }
+</script>
+
+<script lang="ts" generics="T">
+  import type { Snippet } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = PickerProps<T> & {
     item?: Snippet<[{ item: T }]>;

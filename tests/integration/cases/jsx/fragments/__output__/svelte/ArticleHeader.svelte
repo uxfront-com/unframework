@@ -1,13 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
+<script lang="ts" module>
   export interface ArticleHeaderProps {
     title: string;
     subtitle?: string;
     draft: boolean;
     tags: string[];
   }
+</script>
 
+<script lang="ts">
   let { title, subtitle, draft, tags }: ArticleHeaderProps = $props();
 </script>
 

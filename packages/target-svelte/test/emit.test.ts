@@ -18,6 +18,7 @@ import target from "../src/index.ts";
 import { indent } from "../src/script.ts";
 import { renderToString } from "../src/toolchain/server.ts";
 import {
+  compileSources,
   corpus,
   emitFormatted,
   emitSource,
@@ -56,6 +57,10 @@ const svelteFile = (...blocks: string[]) => `${[OPTIONS, ...blocks].join("\n\n")
 
 /** A `<script lang="ts">` block holding these lines. */
 const script = (...lines: string[]) => `<script lang="ts">\n${lines.join("\n")}\n</script>`;
+
+/** A `<script lang="ts" module>` block holding these lines. */
+const moduleScript = (...lines: string[]) =>
+  `<script lang="ts" module>\n${lines.join("\n")}\n</script>`;
 
 /** The lines that end the script of a component whose root takes its styled parents' scope. */
 const SCOPE_HELPER = [
@@ -198,9 +203,8 @@ describe("svelte props", () => {
     // `count` and `hidden` are read by no expression: declared, they would be unused variables.
     expect((await emitSource(SHAPES.destructured)).contents).toBe(
       svelteFile(
-        script(
-          '  import type { ClassValue } from "svelte/elements";',
-          "",
+        // An output that exports a type declares its types in `<script module>` (ADR-0068).
+        moduleScript(
           '  type Tone = "info" | "warn";',
           "",
           "  export interface BadgeProps {",
@@ -209,6 +213,9 @@ describe("svelte props", () => {
           "    count?: number;",
           "    hidden?: boolean;",
           "  }",
+        ),
+        script(
+          '  import type { ClassValue } from "svelte/elements";',
           "",
           "  type Props = BadgeProps & {",
           "    class?: ClassValue;",
@@ -522,12 +529,11 @@ describe("svelte markup", () => {
 });
 
 /** The script block of a source's output, without its tags. */
+/** The instance script's code, after a `<script module>` block if the output has one. */
 async function scriptOf(source: string): Promise<string> {
   const { contents } = await emitSource(source);
-  return contents.slice(
-    contents.indexOf('<script lang="ts">\n') + 19,
-    contents.indexOf("\n</script>"),
-  );
+  const start = contents.indexOf('<script lang="ts">\n') + 19;
+  return contents.slice(start, contents.indexOf("\n</script>", start));
 }
 
 // ADR-0045 to ADR-0049: the setup in source order, as runes; listeners, template refs and ids. The
@@ -943,4 +949,127 @@ describe("svelte composition", () => {
     const { "Field.svelte": field } = await caseOutputs("fallthrough/inherit-attrs-false");
     expect(field).not.toContain("className");
   });
+});
+
+// ADR-0067, ADR-0068: types imported by name, a module's type exports in `<script module>`, and
+// generic components, from the corpus's IR.
+describe("svelte types and generics", () => {
+  it("imports a type by name: a child's from its output, beside the child", async () => {
+    const { "Form.svelte": form } = await caseOutputs("types/child-type-import");
+    expect(form).toContain('import Field, { type FieldProps } from "./Field.svelte";');
+    const { "Status.svelte": status } = await caseOutputs("types/package-types");
+    expect(status).toContain('import type { TimeInterval } from "rxjs";');
+    expect(status).toContain('import type { Labelled } from "./types";');
+  });
+
+  it("imports a type under the source's own local name", async () => {
+    const { "Form.svelte": form } = await compileSources({
+      "Field.uf.tsx": [
+        "export interface FieldProps {",
+        "  name: string;",
+        "}",
+        "export default function Field({ name }: FieldProps) {",
+        "  return <input name={name} />;",
+        "}",
+      ].join("\n"),
+      "Form.uf.tsx": [
+        'import Field from "./Field.uf.tsx";',
+        'import type { FieldProps as Settings } from "./Field.uf.tsx";',
+        "export default function Form({ field }: { field: Settings }) {",
+        "  return <form><Field name={field.name} /></form>;",
+        "}",
+      ].join("\n"),
+    });
+    expect(form).toContain('import Field, { type FieldProps as Settings } from "./Field.svelte";');
+    expect(form).toContain("field: Settings;");
+  });
+
+  it("exports the module's types from <script module>, with the imports they read", async () => {
+    const { "Button.svelte": button } = await caseOutputs("types/exported-types");
+    expect(button).toContain(
+      [
+        '<script lang="ts" module>',
+        '  export type ButtonTone = "primary" | "secondary";',
+        "",
+        '  export type ButtonSize = "small" | "large";',
+      ].join("\n"),
+    );
+    const { "Palette.svelte": palette } = await caseOutputs("types/shared-type");
+    expect(palette).toContain(
+      [
+        '<script lang="ts" module>',
+        '  import type { Tone } from "./types";',
+        "",
+        '  export type { Tone } from "./types";',
+        "</script>",
+      ].join("\n"),
+    );
+    expect(palette!.split('import type { Tone } from "./types";')).toHaveLength(2);
+  });
+
+  it("writes a generic component's type parameters in the instance script's generics", async () => {
+    const { "Picker.svelte": picker } = await caseOutputs("generics/scoped-slot");
+    expect(picker).toContain('<script lang="ts" generics="T">');
+    expect(picker).toContain("item?: Snippet<[{ item: T }]>;");
+    const { "Table.svelte": table } = await caseOutputs("generics/constrained");
+    expect(table).toContain(
+      '<script lang="ts" generics="T extends { id: string; label: string }">',
+    );
+  });
+
+  it("formats generics that hold a `>`, which Svelte compiles", async () => {
+    const { contents } = await emitSource(
+      [
+        "export default function Pick<T extends Array<string>>({ value }: { value: T }) {",
+        "  return <p>{value.length}</p>;",
+        "}",
+      ].join("\n"),
+      { format: true },
+    );
+    expect(contents).toContain('<script lang="ts" generics="T extends Array<string>">');
+    const { js } = compile(contents, { filename: "Pick.svelte", generate: "server" });
+    expect(js.code).toContain("value");
+  });
+
+  it("single-quotes generics that hold a double quote, which Svelte compiles", async () => {
+    const { contents } = await emitSource(
+      [
+        'export default function Pick<T extends "a" | "b">({ value }: { value: T }) {',
+        "  return <p>{value}</p>;",
+        "}",
+      ].join("\n"),
+    );
+    expect(contents).toContain(`<script lang="ts" generics='T extends "a" | "b"'>`);
+    const { js } = compile(contents, { filename: "Pick.svelte", generate: "server" });
+    expect(js.code).toContain("value");
+  });
+
+  // A `'` in a single-quoted attribute would end it: every string literal is written
+  // double-quoted, a template literal kept in backticks, and a `'` inside either as `\u0027`, the
+  // same type. A hole is code again.
+  it.each([
+    [`T extends "a" | 'b'`, `T extends "a" | "b"`],
+    [`T extends "don't" | "do"`, `T extends "don\\u0027t" | "do"`],
+    [`T extends { k?: 'say "hi"' }`, `T extends { k?: "say \\"hi\\"" }`],
+    ["T extends `don't`", "T extends `don\\u0027t`"],
+    ['T extends `don\'t` | "b"', 'T extends `don\\u0027t` | "b"'],
+    ["T extends `say \"hi\"` | 'b'", 'T extends `say "hi"` | "b"'],
+    ["T extends string = Uppercase<`a${'x'}`>", 'T extends string = Uppercase<`a${"x"}`>'],
+  ])(
+    "writes generics with both quote kinds, %s, so Svelte compiles them",
+    async (written, attribute) => {
+      const { contents } = await emitSource(
+        [
+          `export default function Pick<${written}>({ value }: { value: T }) {`,
+          "  return <p>{value}</p>;",
+          "}",
+        ].join("\n"),
+      );
+      // Single-quoted where the text holds a `"`, as no `'` is left in it.
+      const quote = attribute.includes('"') ? "'" : '"';
+      expect(contents).toContain(`<script lang="ts" generics=${quote}${attribute}${quote}>`);
+      const { js } = compile(contents, { filename: "Pick.svelte", generate: "server" });
+      expect(js.code).toContain("value");
+    },
+  );
 });

@@ -1,6 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ButtonProps } from "./types";
   import type { ClassValue } from "svelte/elements";
 
   type Props = ButtonProps & { class?: ClassValue; style?: string };

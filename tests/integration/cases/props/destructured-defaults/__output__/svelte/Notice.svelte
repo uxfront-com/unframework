@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface NoticeProps {
     message: string;
     title?: string;
@@ -12,6 +10,10 @@
     tags?: string[];
     author?: { name: string };
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = NoticeProps & { class?: ClassValue; style?: string };
 

@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { Labelled } from "./types";
+  import type { TimeInterval } from "rxjs";
   import type { ClassValue } from "svelte/elements";
 
   type StatusProps = TimeInterval<string> & Labelled;

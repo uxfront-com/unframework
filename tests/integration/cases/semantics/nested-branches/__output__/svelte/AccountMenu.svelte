@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   interface User {
     name: string;
   }
@@ -10,6 +8,10 @@
   export interface AccountMenuProps {
     owner?: User;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = AccountMenuProps & {
     ongreeted?: (name: string) => void;

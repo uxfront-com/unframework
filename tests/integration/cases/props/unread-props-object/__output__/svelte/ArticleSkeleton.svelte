@@ -1,13 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface ArticleSkeletonProps {
     title: string;
     summary?: string;
     minutes?: number;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ArticleSkeletonProps & { class?: ClassValue; style?: string };
 

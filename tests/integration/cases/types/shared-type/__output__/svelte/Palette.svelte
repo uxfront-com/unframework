@@ -1,5 +1,11 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
+<script lang="ts" module>
+  import type { Tone } from "./types";
+
+  export type { Tone } from "./types";
+</script>
+
 <script lang="ts">
   import Swatch from "./Swatch.svelte";
   import type { ClassValue } from "svelte/elements";
