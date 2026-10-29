@@ -278,20 +278,58 @@ function typeSpecifiers(types: ReadonlyMap<string, string>): string {
 
 /**
  * The `generics` attribute of a generic component's instance script (ADR-0068),
- * ` generics="T extends Item = Item"`, or nothing. An attribute whose text holds a double quote
- * is single-quoted.
+ * ` generics="T extends Item = Item"`, or nothing. An attribute cannot hold its own quote, so the
+ * text holds no `'` (`withoutSingleQuotes`), and is single-quoted where it holds a `"`.
  */
 function genericsAttribute(component: UfComponent): string {
   if (!component.typeParameters?.length) return "";
-  const text = component.typeParameters
-    .map(
-      (parameter) =>
-        `${parameter.name}${parameter.constraint ? ` extends ${parameter.constraint.code}` : ""}${
-          parameter.default ? ` = ${parameter.default.code}` : ""
-        }`,
-    )
-    .join(", ");
+  const text = withoutSingleQuotes(
+    component.typeParameters
+      .map(
+        (parameter) =>
+          `${parameter.name}${parameter.constraint ? ` extends ${parameter.constraint.code}` : ""}${
+            parameter.default ? ` = ${parameter.default.code}` : ""
+          }`,
+      )
+      .join(", "),
+  );
   return text.includes('"') ? ` generics='${text}'` : ` generics="${text}"`;
+}
+
+/**
+ * Type text with the same meaning and no `'`: each string literal double-quoted, and a `'` in a
+ * literal or a comment written `\u0027`, which a literal reads as the same character. Template
+ * literal types never reach a target (UF6002).
+ */
+function withoutSingleQuotes(text: string): string {
+  let written = "";
+  let quote: string | undefined;
+  for (let index = 0; index < text.length; index++) {
+    const char = text[index]!;
+    if (quote === undefined) {
+      if (text.startsWith("//", index) || text.startsWith("/*", index)) {
+        const close = text.startsWith("//", index) ? "\n" : "*/";
+        const end = text.indexOf(close, index + 2);
+        const stop = end === -1 ? text.length : end + close.length;
+        written += text.slice(index, stop).replaceAll("'", "\\u0027");
+        index = stop - 1;
+      } else if (char === "'" || char === '"') {
+        quote = char;
+        written += '"';
+      } else {
+        written += char;
+      }
+    } else if (char === "\\") {
+      const next = text[++index] ?? "";
+      written += next === "'" ? "\\u0027" : `\\${next}`;
+    } else if (char === quote) {
+      quote = undefined;
+      written += '"';
+    } else {
+      written += char === "'" ? "\\u0027" : char === '"' ? '\\"' : char;
+    }
+  }
+  return written;
 }
 
 /** Named import specifiers, sorted: `{ a, type B, c as d }`; `inline` marks the type ones. */

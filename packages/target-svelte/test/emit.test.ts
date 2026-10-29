@@ -18,6 +18,7 @@ import target from "../src/index.ts";
 import { indent } from "../src/script.ts";
 import { renderToString } from "../src/toolchain/server.ts";
 import {
+  compileSources,
   corpus,
   emitFormatted,
   emitSource,
@@ -961,6 +962,28 @@ describe("svelte types and generics", () => {
     expect(status).toContain('import type { Labelled } from "./types";');
   });
 
+  it("imports a type under the source's own local name", async () => {
+    const { "Form.svelte": form } = await compileSources({
+      "Field.uf.tsx": [
+        "export interface FieldProps {",
+        "  name: string;",
+        "}",
+        "export default function Field({ name }: FieldProps) {",
+        "  return <input name={name} />;",
+        "}",
+      ].join("\n"),
+      "Form.uf.tsx": [
+        'import Field from "./Field.uf.tsx";',
+        'import type { FieldProps as Settings } from "./Field.uf.tsx";',
+        "export default function Form({ field }: { field: Settings }) {",
+        "  return <form><Field name={field.name} /></form>;",
+        "}",
+      ].join("\n"),
+    });
+    expect(form).toContain('import Field, { type FieldProps as Settings } from "./Field.svelte";');
+    expect(form).toContain("field: Settings;");
+  });
+
   it("exports the module's types from <script module>, with the imports they read", async () => {
     const { "Button.svelte": button } = await caseOutputs("types/exported-types");
     expect(button).toContain(
@@ -1006,4 +1029,27 @@ describe("svelte types and generics", () => {
     const { js } = compile(contents, { filename: "Pick.svelte", generate: "server" });
     expect(js.code).toContain("value");
   });
+
+  // A `'` in a single-quoted attribute would end it: every string literal is written
+  // double-quoted, and a `'` inside one as `\u0027`, the same type. A template literal type is
+  // UF6002 before the target.
+  it.each([
+    [`T extends "a" | 'b'`, `T extends "a" | "b"`],
+    [`T extends "don't" | "do"`, `T extends "don\\u0027t" | "do"`],
+    [`T extends { k?: 'say "hi"' }`, `T extends { k?: "say \\"hi\\"" }`],
+  ])(
+    "writes generics with both quote kinds, %s, so Svelte compiles them",
+    async (written, attribute) => {
+      const { contents } = await emitSource(
+        [
+          `export default function Pick<${written}>({ value }: { value: T }) {`,
+          "  return <p>{value}</p>;",
+          "}",
+        ].join("\n"),
+      );
+      expect(contents).toContain(`<script lang="ts" generics='${attribute}'>`);
+      const { js } = compile(contents, { filename: "Pick.svelte", generate: "server" });
+      expect(js.code).toContain("value");
+    },
+  );
 });

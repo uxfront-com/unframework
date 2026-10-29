@@ -9,7 +9,7 @@ import type { UfModule } from "@unframework/ir";
 // The analyzer is no dependency of a target (plan §5.2): tests reach it from its source, as the
 // render-parity kit does, to lower source snippets as `compile()` would.
 import { analyze } from "../../analyzer/src/index.ts";
-import { compile, createFileResolver } from "../../compiler/src/index.ts";
+import { compile, createFileResolver, createSyntacticOracle } from "../../compiler/src/index.ts";
 import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
 
@@ -132,21 +132,22 @@ export async function emitSource(
 
 /**
  * What this target emits for several sources that import each other, as `compile()` does with
- * a file resolver over them (ADR-0053): every output file by its name. Fails on any error.
+ * a file resolver and a file-backed type oracle over them (ADR-0053, ADR-0067): every output file
+ * by its name. Fails on any error.
  */
 export async function compileSources(
   sources: Record<string, string>,
 ): Promise<Record<string, string>> {
-  const resolve = createFileResolver({
-    root: "/case",
-    readFile: async (path) => sources[path.slice(6)],
-  });
+  const readFile = async (path: string) => sources[path.slice(6)];
+  const typeOracle = createSyntacticOracle({ root: "/case", readFile });
+  const resolve = createFileResolver({ root: "/case", readFile, typeOracle });
   const files: Record<string, string> = {};
   for (const [filename, source] of Object.entries(sources)) {
     const { diagnostics, outputs } = await compile(source, {
       filename,
       targets: [target],
       resolve,
+      typeOracle,
     });
     const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
     if (errors.length)
