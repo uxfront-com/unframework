@@ -97,9 +97,10 @@ export function genericModelType(component: UfComponent, binding: BindingId): st
  * The setup constants and functions that stay inside the generic arrow, where `T` is in scope:
  * a constant whose code names one of the component's type parameters (`const empty: T[] = []`),
  * which has no type parameters of its own, and a function that names one its parameters' types
- * don't (`function blank(): T[]`), whose calls could not infer it. Any other function typed by
- * `T` moves to module scope with its own ({@link moduleTypeParameters}), so a getter's `$` scope
- * can call it (ADR-0045).
+ * don't (`function blank(): T[]`), whose calls could not infer it; a getter that calls one
+ * declares it inside itself (./setup.ts `getterSource`). Any other function typed by `T` moves to
+ * module scope with its own ({@link moduleTypeParameters}), so a getter's `$` scope can call it
+ * (ADR-0045).
  */
 export function typedByParameters(component: UfComponent): Set<BindingId> {
   const found = new Set<BindingId>();
@@ -173,7 +174,8 @@ function namedParameters(component: UfComponent, read: Set<string>): TypeParamet
 /** `<T extends Item = Item>`, or `""`; `<T,>` for an arrow, which TSX would read as a tag. */
 function parametersText(parameters: readonly TypeParameter[], arrow = false): string {
   if (!parameters.length) return "";
-  const lone = arrow && parameters.length === 1 && !parameters[0]!.constraint;
+  const [only] = parameters;
+  const lone = arrow && parameters.length === 1 && !only!.constraint && !only!.default;
   return `<${parameters.map(parameterText).join(", ")}${lone ? "," : ""}>`;
 }
 

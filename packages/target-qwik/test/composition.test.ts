@@ -623,6 +623,63 @@ export default function Chain<A extends Box<B>, B extends Box<C>, C>({ items }: 
   const reversedChain = chain
     .replaceAll("A extends Box<B>, B extends Box<C>, C", "C, B extends Box<C>, A extends Box<B>")
     .replaceAll("ChainProps<A, B, C>", "ChainProps<C, B, A>");
+  // Functions kept in the generic arrow, which getters call: a `computed`'s, and a watcher's
+  // sources, alone and in an array.
+  const kept = `import { computed, ref, watch } from "unframework";
+
+export default function Kept<T>({ items }: { items: T[] }) {
+  const nothing: T[] = [];
+  const last = ref("");
+  function count() {
+    return nothing.length;
+  }
+  function blank(): T[] {
+    return [];
+  }
+  function wrap() {
+    return blank().length;
+  }
+  function deep(): T[] {
+    return [];
+  }
+  function shallow() {
+    return deep().length;
+  }
+  function inner(): T[] {
+    return [];
+  }
+  function outer() {
+    return inner().length;
+  }
+  function guard(value: unknown): void {
+    if (value === nothing) throw new Error("empty");
+  }
+  function check(value: unknown): asserts value is T[] {
+    if (!Array.isArray(value)) throw new Error("not a list");
+  }
+  const total = computed(() => count() + blank().length + items.length);
+  const deepest = computed(() => shallow());
+  const checked = computed(() => {
+    const value: unknown = items;
+    guard(value);
+    check(value);
+    return value.length + inner().length;
+  });
+  watch(
+    () => wrap() + items.length,
+    (size) => {
+      last.value = String(size);
+    },
+  );
+  watch([() => count(), () => items.length], ([counted, length]) => {
+    last.value = String(counted + length);
+  });
+  return (
+    <p data-last={last.value} data-blank={blank().length} data-outer={outer()}>
+      {total.value} {checked.value} {deepest.value}
+    </p>
+  );
+}`;
   // A function whose `T` only its return type names, which reads nothing of the component.
   const first = `import { defineEmits } from "unframework";
 
@@ -721,32 +778,56 @@ export default function List<T>({ items }: { items: T[] }) {
     expect(contents).toContain('export type { ListSlots } from "./types";');
   });
 
-  it("reports a getter that calls a function kept in the generic arrow (UF2014)", () => {
-    // `count` reads a constant typed by `T`, which can't leave the arrow, so neither can it; no
-    // call of `blank` could infer the `T` its return type names, so it stays too.
-    const module = lower(`import { computed } from "unframework";
-
-export default function Kept<T>({ items }: { items: T[] }) {
-  const nothing: T[] = [];
-  function count() {
-    return nothing.length;
-  }
-  function blank(): T[] {
-    return [];
-  }
-  const total = computed(() => count() + blank().length + items.length);
-  return <p>{total.value}</p>;
-}`);
-    const reported: { code: string; message: string }[] = [];
-    const files = target.emit(module.components[0]!, {
-      module,
-      options: undefined,
-      report: (diagnostic) => void reported.push(diagnostic),
-    });
-    expect(files).toEqual([]);
-    expect(reported.map(({ code }) => code)).toEqual(["UF2014", "UF2014"]);
-    expect(reported[0]!.message).toContain("`count` stays inside the generic `Kept`");
-    expect(reported[1]!.message).toContain("`blank` stays inside the generic `Kept`");
+  it("declares a function kept in the generic arrow inside each getter that calls it", async () => {
+    const contents = await emitSource(kept);
+    // `blank` names a `T` no call could infer, `count` reads a constant typed by `T`, and `wrap`
+    // calls `blank`: each stays in the arrow, and a getter's `$` scope can't capture a function.
+    expect(contents).not.toMatch(/^(?:function|const) (?:blank|count|wrap)\b/m);
+    expect(lines(contents)).toContain(
+      lines(`const total = useComputed$(() => {
+        function count() {
+          return nothing.length;
+        }
+        function blank(): T[] {
+          return [];
+        }
+        return count() + blank().length + items.length;
+      });`),
+    );
+    // `wrap` declares the `blank` it calls in itself.
+    expect(lines(contents)).toContain(
+      lines(`function wrap() {
+          function blank(): T[] {
+            return [];
+          }
+          return blank().length;
+        }`),
+    );
+    // A watcher's getter source, alone or among an array's, does the same.
+    expect(lines(contents)).toContain(
+      lines(`const sizeSource = useComputed$(() => {
+        function wrap() {`),
+    );
+    expect(contents.match(/function count\(\) \{/g)).toHaveLength(2);
+    // A statement call and an assertion stay calls, declared in the getter: an assertion's
+    // narrowing needs its call by name (TS2776).
+    expect(lines(contents)).toContain(
+      lines(`guard(value);
+        check(value);
+        return value.length + inner().length;`),
+    );
+    expect(contents).toMatch(
+      /useComputed\$\(\(\) => \{\n(?:.*\n)*? {4}function check\(value: unknown\): asserts value is T\[\] \{/,
+    );
+    // `outer`, which the template calls, calls `inner`: the arrow declares both, and the getter
+    // that calls `inner` its own.
+    expect(contents.match(/function inner\(\): T\[\] \{/g)).toHaveLength(2);
+    // `deep`, which only `shallow` calls, which only a getter calls, is declared only there.
+    expect(contents.match(/function deep\(\): T\[\] \{/g)).toHaveLength(1);
+    // The template calls `blank` too, so the arrow declares it as well.
+    expect(contents).toMatch(
+      /=> \{\n {2}const nothing: T\[\] = \[\];\n(?:.*\n)*? {2}function blank\(\): T\[\] \{/,
+    );
   });
 
   it("keeps a function no call could infer `T` for in the arrow, where its callers check", async () => {
@@ -759,7 +840,7 @@ export default function Kept<T>({ items }: { items: T[] }) {
   it(
     "emits generic components the optimizer, the checker and lint accept (L3, L4, L5)",
     async () => {
-      const sources = [pick, multi, unread, hoisted, chain, reversedChain, named, first];
+      const sources = [pick, multi, unread, hoisted, chain, reversedChain, named, first, kept];
       for (const source of sources) {
         const contents = await emitSource(source);
         const file = { path: "/virtual/Generic.tsx", contents };

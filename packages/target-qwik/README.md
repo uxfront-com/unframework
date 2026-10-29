@@ -38,8 +38,11 @@ export default component$<BadgeProps>(({ label, tone = "info" }) => {
     their members read (`PickerSlots<T>`). A scoped slot's fill is typed with the consumer's `T`.
   - A setup constant that names a type parameter stays in the arrow, where `T` is in scope. A
     function whose parameters' types name every `T` it reads moves to module scope with its own
-    (`function label<T>(item: T)`), so a getter's `$` scope can call it, and each call infers
-    `T`. Any other stays in the arrow, and a getter that calls it is UF2014.
+    (`function label<T>(item: T)`), and each call infers `T`. Any other function stays in the
+    arrow: one that names a `T` no call could infer (`function blank(): T[]`), one that reads such
+    a constant, and one that calls either. A getter's `$` scope can't call a function in the
+    arrow, so a getter that calls one declares it inside itself:
+    `useComputed$(() => { function blank(): T[] { … } return blank().length; })`.
   - A form control bound to a model or a state of `T` writes its value as `T`
     (`element.value as T`).
 - The export shape follows the source: a default export, a same-named `export const`, or an
