@@ -856,6 +856,37 @@ const typed: Record<string, { source: string[]; types: string }> = {
       "}",
     ],
   },
+  // Injection keys whose value types only the keys name: an imported type, and a `Props`.
+  keyOnlyTypes: {
+    types:
+      'export interface Theme { tone: "light" | "dark" }\n\nexport interface Props { label: string }\n',
+    source: [
+      'import { provide } from "unframework";',
+      'import type { InjectionKey } from "unframework";',
+      'import type { Props, Theme } from "./types";',
+      "",
+      'export const ThemeKey: InjectionKey<Theme> = Symbol("uf.theme");',
+      'export const ItemKey: InjectionKey<Props> = Symbol("uf.item");',
+      "",
+      "export default function Card() {",
+      '  provide(ThemeKey, { tone: "dark" });',
+      '  provide(ItemKey, { label: "x" });',
+      "  return <p>x</p>;",
+      "}",
+    ],
+  },
+  // A generic component without props, whose model is of its type parameter.
+  genericWithoutProps: {
+    types: "export {};\n",
+    source: [
+      'import { defineModel } from "unframework";',
+      "",
+      "export default function Card<T>() {",
+      '  const value = defineModel<T>("value");',
+      "  return <p>{String(value.value)}</p>;",
+      "}",
+    ],
+  },
   // A conditional type that infers a `Props` of its own, beside an imported `Props`.
   inferProps: {
     types: "export interface Props { label: string }\n",
@@ -868,6 +899,60 @@ const typed: Record<string, { source: string[]; types: string }> = {
       "export default function Card({ item }: { item: Props }) {",
       "  const size = computed((): Unbox<{ value: number }> => item.label.length);",
       "  return <span>{size.value.toFixed(1)}</span>;",
+      "}",
+    ],
+  },
+  // A mapped type whose key is named `Props`, beside an imported `Props`.
+  mappedProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import type { Props } from "./types";',
+      "",
+      'type Flags = { [Props in "a" | "b"]: Props };',
+      "",
+      "export default function Card({ item }: { item: Props }) {",
+      '  const flags: Flags = { a: "a", b: "b" };',
+      "  return <span>{item.label} {flags.a}</span>;",
+      "}",
+    ],
+  },
+  // A type parameter constrained by an imported `Props`, which the kept setup names.
+  constraintProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import { ref } from "unframework";',
+      'import type { Props } from "./types";',
+      "",
+      "export default function List<T extends Props>({ items }: { items: T[] }) {",
+      "  const picked = ref<T | undefined>(items[0]);",
+      "  return <p>{picked.value?.label}</p>;",
+      "}",
+    ],
+  },
+  // A type parameter whose default is an imported `Props`.
+  defaultProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import type { Props } from "./types";',
+      "",
+      "export default function List<T = Props>({ items }: { items: T[] }) {",
+      "  return <p>{items.length}</p>;",
+      "}",
+    ],
+  },
+  // A nested generic function in the kept setup, which declares a `T` of its own.
+  nestedGeneric: {
+    types: "export {};\n",
+    source: [
+      'import { computed } from "unframework";',
+      "",
+      "export interface ListProps<T> {",
+      "  items: T[];",
+      "}",
+      "",
+      "export default function List<T>({ items }: ListProps<T>) {",
+      "  const n = computed(() => [items.length].map(<T extends number>(x: T) => x + 1)[0]);",
+      "  return <p>{n.value}</p>;",
       "}",
     ],
   },
@@ -962,6 +1047,12 @@ describe("imported types through the type oracle (ADR-0067)", () => {
       "type Unbox<B> = B extends { value: infer Props } ? Props : never;",
     );
     expect(await emittedTyped("keyProps")).toContain("export type ItemKey = OwnProps;");
+    const keys = await emittedTyped("keyOnlyTypes");
+    expect(keys).toContain('import type { Props as OwnProps, Theme } from "./types";');
+    expect(keys).toContain("export type ItemKey = OwnProps;");
+    expect(await emittedTyped("mappedProps")).toContain(
+      'type Flags = { [Props in "a" | "b"]: Props };',
+    );
   });
 
   it("claims `OwnProps` apart from an imported `OwnProps`", async () => {
@@ -1001,6 +1092,22 @@ describe("imported types through the type oracle (ADR-0067)", () => {
     );
     expect(output).toContain("export interface OwnProps { label: string }");
     expect(output).toContain("export interface Props extends OwnProps {");
+  });
+
+  it("names an imported `Props` in a type parameter's constraint and default", async () => {
+    const constrained = await emittedTyped("constraintProps");
+    expect(constrained).toContain("interface Props<T extends OwnProps> {");
+    expect(constrained).toContain("type T = OwnProps;");
+    expect(await emittedTyped("defaultProps")).toContain("interface Props<T = OwnProps> {");
+    expect(await emittedTyped("genericWithoutProps")).toContain(
+      "interface Props<T> {\n  value?: T;",
+    );
+  });
+
+  it("declares no type parameter that only a nested scope declares for itself", async () => {
+    const list = await emittedTyped("nestedGeneric");
+    expect(list).toContain("<T extends number>(x: T) => x + 1");
+    expect(list).not.toContain("type T =");
   });
 
   it("declares the type parameters the kept setup names as their constraints", async () => {

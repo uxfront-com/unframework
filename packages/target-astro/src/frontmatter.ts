@@ -5,7 +5,6 @@
 // setup's values (`./setup.ts`), and each `<component is>` as a constant.
 import {
   addTypeImports,
-  codeNames,
   js,
   keyImports,
   keyOwner,
@@ -16,6 +15,7 @@ import {
   typeDeclarationCode,
   typeExportsCode,
   typeNames,
+  typeSpecifier,
 } from "@unframework/codegen";
 import type { ChildImport, ImportSet } from "@unframework/codegen";
 import { expressionsOf, walk } from "@unframework/ir";
@@ -132,10 +132,8 @@ export function frontmatterOf(
   const own = rename("type");
   const ownCode = rename("statements");
   const extras = propsExtras(component, render, own);
-  addTypeImports(component, module, imports, (name) => `${name}.astro`, {
-    live: SERVER,
-    local: (name) => (ownProps && name === "Props" ? ownProps : name),
-  });
+  const local = (name: string) => (ownProps && name === "Props" ? ownProps : name);
+  addTypeImports(component, module, imports, (name) => `${name}.astro`, { live: SERVER, local });
   const sections: string[][] = [];
   const declared = types.map((declaration) => {
     let code =
@@ -154,13 +152,13 @@ export function frontmatterOf(
   )) {
     sections.push([code]);
   }
-  for (const statement of keyTypes(component, module, new Set(types.map(({ name }) => name)))) {
-    sections.push([ownCode(statement)]);
-  }
+  const keys = keyTypes(component, module, new Set(types.map(({ name }) => name))).map(ownCode);
+  for (const statement of keys) sections.push([statement]);
+  keyTypeImports(module, keys, imports, local);
   const alias = propsDeclaration(
     parameter && own(parameter.type.code),
     extras,
-    typeParametersCode(component.typeParameters),
+    typeParametersCode(component.typeParameters, own),
   );
   // Exported where the source exports its own `Props` too, under the same name (ADR-0068).
   if (alias !== undefined) {
@@ -168,7 +166,7 @@ export function frontmatterOf(
   }
   const helpers = setup.helpers.map(ownCode);
   const statements = setup.statements.map(ownCode);
-  const scoped = typeParameterAliases(component, [...reads, ...helpers, ...statements]);
+  const scoped = typeParameterAliases(component, [...reads, ...helpers, ...statements], own);
   if (scoped.length) sections.push(scoped);
   if (reads.length) sections.push(reads);
   for (const helper of helpers) sections.push([helper]);
@@ -356,6 +354,35 @@ function injectedType(
 }
 
 /**
+ * Imports the types the injection keys' value types name (`keys`, as `keyTypes` writes them),
+ * which `addTypeImports` reads only from what a component prints: `export type ThemeKey = Theme;`
+ * imports `Theme` where the source does (ADR-0054, ADR-0067). `local` names each import as the
+ * output does.
+ */
+function keyTypeImports(
+  module: UfModule,
+  keys: readonly string[],
+  imports: ImportSet,
+  local: (name: string) => string,
+): void {
+  if (!keys.length || !module.typeImports?.length) return;
+  const read = new Set<string>();
+  for (const statement of keys) {
+    forEachFreeTypeReference(parseStatementsSource(statement).statements, ({ name }) => {
+      read.add(name);
+    });
+  }
+  for (const entry of module.typeImports) {
+    for (const name of entry.names) {
+      const named = local(name.local);
+      if (!read.has(named)) continue;
+      const specifier = typeSpecifier(entry.specifier, module, (each) => `${each}.astro`);
+      imports.add(specifier, name.imported, { type: true, local: named, exact: true });
+    }
+  }
+}
+
+/**
  * The value type of each injection key the module declares, exported by the output of its main
  * component under the key's name (`export type ThemeKey = Theme;`), for the components that
  * inject it (ADR-0054): Astro drops the key itself, and the type, written where the source wrote
@@ -446,7 +473,9 @@ function propsDeclaration(
   // Each member on a line of its own, after the source's members as written: a line break ends
   // a member, and a comment the source ends its last member with.
   const members = extras.map((member) => `\n  ${member};`).join("");
-  if (annotation === undefined) return extras.length ? `interface Props {${members}\n}` : undefined;
+  if (annotation === undefined) {
+    return extras.length ? `interface Props${generics} {${members}\n}` : undefined;
+  }
   const { type, kind } = unwrapped(annotation);
   if (kind === "TSTypeLiteral") {
     return extras.length
@@ -492,18 +521,41 @@ function renameTypeReferences(
   const prefix = kind === "type" ? "type T = " : "";
   const source = kind === "type" ? `${prefix}${code};` : code;
   const starts: number[] = [];
-  const visit = (node: unknown): void => {
+  forEachFreeTypeReference(parseStatementsSource(source).statements, ({ name, start }) => {
+    if (name === from) starts.push(start);
+  });
+  let renamed = source;
+  for (const start of starts.toSorted((a, b) => b - a)) {
+    renamed = `${renamed.slice(0, start)}${to}${renamed.slice(start + from.length)}`;
+  }
+  return kind === "type" ? renamed.slice(prefix.length, -1) : renamed;
+}
+
+/**
+ * Calls `found` with the head of each type reference in an AST that no scope around it declares
+ * as a type parameter: `Item` in `Map<string, Item>`, and in `interface Box<T> { value: T }` none.
+ * A scope is a node's type parameters (`<T>`), a mapped type's key (`[K in Keys]`), and the
+ * `infer`s of a conditional type, which its extends clause and true branch read.
+ */
+function forEachFreeTypeReference(
+  root: unknown,
+  found: (head: { name: string; start: number }) => void,
+): void {
+  const visit = (node: unknown, bound: ReadonlySet<string>): void => {
     if (Array.isArray(node)) {
-      for (const each of node) visit(each);
+      for (const each of node) visit(each, bound);
       return;
     }
     if (!node || typeof node !== "object") return;
     const record = node as Record<string, unknown>;
-    if (declaresTypeParameter(record, from)) return;
-    // `B extends { value: infer Props } ? Props : never`: only the false branch reads the outer one.
-    if (record.type === "TSConditionalType" && infers(record.extendsType, from)) {
-      visit(record.checkType);
-      visit(record.falseType);
+    const declared = declaredTypeParameters(record);
+    const inner = declared.length ? new Set([...bound, ...declared]) : bound;
+    if (record.type === "TSConditionalType") {
+      const inferring = new Set([...inner, ...inferred(record.extendsType)]);
+      visit(record.checkType, inner);
+      visit(record.extendsType, inferring);
+      visit(record.trueType, inferring);
+      visit(record.falseType, inner);
       return;
     }
     const reference =
@@ -516,39 +568,41 @@ function renameTypeReferences(
     while (head?.type === "TSQualifiedName" || head?.type === "MemberExpression") {
       head = (head.left ?? head.object) as Record<string, unknown>;
     }
-    if (head?.type === "Identifier" && head.name === from) starts.push(head.start as number);
-    for (const [key, value] of Object.entries(record)) if (key !== "parent") visit(value);
+    if (head?.type === "Identifier" && !inner.has(head.name as string)) {
+      found({ name: head.name as string, start: head.start as number });
+    }
+    for (const [key, value] of Object.entries(record)) if (key !== "parent") visit(value, inner);
   };
-  visit(parseStatementsSource(source).statements);
-  let renamed = source;
-  for (const start of starts.toSorted((a, b) => b - a)) {
-    renamed = `${renamed.slice(0, start)}${to}${renamed.slice(start + from.length)}`;
-  }
-  return kind === "type" ? renamed.slice(prefix.length, -1) : renamed;
+  visit(root, new Set());
 }
 
-/** Whether a type infers a type parameter named `name` (`infer Props`) outside a nested one. */
-function infers(node: unknown, name: string): boolean {
-  if (Array.isArray(node)) return node.some((each) => infers(each, name));
-  if (!node || typeof node !== "object") return false;
-  const record = node as Record<string, unknown>;
-  if (record.type === "TSConditionalType") return infers(record.checkType, name);
-  if (record.type === "TSInferType") {
-    const parameter = record.typeParameter as { name?: { name?: string } } | undefined;
-    if (parameter?.name?.name === name) return true;
-  }
-  return Object.entries(record).some(([key, value]) => key !== "parent" && infers(value, name));
-}
-
-/** Whether a node declares a type parameter named `name`: `<Props>`, or `[Props in Keys]`. */
-function declaresTypeParameter(node: Record<string, unknown>, name: string): boolean {
+/** The type parameters a node declares: its own (`<T>`), or a mapped type's key (`[K in Keys]`). */
+function declaredTypeParameters(node: Record<string, unknown>): string[] {
   const declaration = node.typeParameters as { params?: { name?: { name?: string } }[] } | null;
-  if (declaration?.params?.some((parameter) => parameter.name?.name === name)) return true;
-  if (node.type !== "TSMappedType") return false;
-  const key = (node.key ?? (node.typeParameter as { name?: unknown } | undefined)?.name) as
-    | { name?: string }
-    | undefined;
-  return key?.name === name;
+  const names = (declaration?.params ?? []).flatMap(({ name }) => (name?.name ? [name.name] : []));
+  if (node.type === "TSMappedType") {
+    const key = (node.key ?? (node.typeParameter as { name?: unknown } | undefined)?.name) as
+      | { name?: string }
+      | undefined;
+    if (key?.name) names.push(key.name);
+  }
+  return names;
+}
+
+/** The names a conditional type's extends clause infers (`infer Props`), but a nested one's. */
+function inferred(node: unknown): string[] {
+  if (Array.isArray(node)) return node.flatMap(inferred);
+  if (!node || typeof node !== "object") return [];
+  const record = node as Record<string, unknown>;
+  if (record.type === "TSConditionalType") return inferred(record.checkType);
+  const own =
+    record.type === "TSInferType"
+      ? [(record.typeParameter as { name?: { name?: string } } | undefined)?.name?.name]
+      : [];
+  return [
+    ...own.filter((name): name is string => name !== undefined),
+    ...Object.entries(record).flatMap(([key, value]) => (key === "parent" ? [] : inferred(value))),
+  ];
 }
 
 /**
@@ -556,14 +610,21 @@ function declaresTypeParameter(node: Record<string, unknown>, name: string): boo
  * frontmatter's top level, `type T = Item;`, or `unknown` without one: Astro declares `Props`'
  * type parameters on the component's render function alone, which the frontmatter and the markup
  * are outside. The markup names none: a template expression has no TypeScript syntax (UF1002). A
+ * reference a nested scope declares for itself (`<T extends number>(x: T) => …`) is not one. A
  * constraint that names another parameter (`U extends T`) declares that one too, and so on along
- * the chain.
+ * the chain. `own` names an imported `Props` as the output does.
  */
-function typeParameterAliases(component: UfComponent, code: readonly string[]): string[] {
+function typeParameterAliases(
+  component: UfComponent,
+  code: readonly string[],
+  own: (type: string) => string,
+): string[] {
   const parameters = component.typeParameters ?? [];
   if (!parameters.length) return [];
   const named = new Set<string>();
-  for (const each of code) for (const name of codeNames(each, "statements")) named.add(name);
+  for (const each of code) {
+    forEachFreeTypeReference(parseStatementsSource(each).statements, ({ name }) => named.add(name));
+  }
   const constraints = new Map(parameters.map(({ name, constraint }) => [name, constraint]));
   const pending = [...named];
   for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
@@ -577,15 +638,23 @@ function typeParameterAliases(component: UfComponent, code: readonly string[]): 
   }
   return parameters
     .filter(({ name }) => named.has(name))
-    .map(({ name, constraint }) => `type ${name} = ${constraint?.code ?? "unknown"};`);
+    .map(
+      ({ name, constraint }) => `type ${name} = ${constraint ? own(constraint.code) : "unknown"};`,
+    );
 }
 
-/** A component's type parameters as the source writes them, `<T extends Item = Item>`, or none. */
-function typeParametersCode(parameters: readonly TypeParameter[] | undefined): string {
+/**
+ * A component's type parameters as the source writes them, `<T extends Item = Item>`, or none,
+ * with each constraint and default named as the output names its types (`own`).
+ */
+function typeParametersCode(
+  parameters: readonly TypeParameter[] | undefined,
+  own: (type: string) => string,
+): string {
   if (!parameters?.length) return "";
   const written = parameters.map(({ name, constraint, default: fallback }) => {
-    const bound = constraint ? ` extends ${constraint.code}` : "";
-    return `${name}${bound}${fallback ? ` = ${fallback.code}` : ""}`;
+    const bound = constraint ? ` extends ${own(constraint.code)}` : "";
+    return `${name}${bound}${fallback ? ` = ${own(fallback.code)}` : ""}`;
   });
   return `<${written.join(", ")}>`;
 }

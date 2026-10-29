@@ -6,8 +6,8 @@ render: what the server render reaches of the setup, and the markup. It emits on
 per component (ADR-0034, ADR-0046):
 
 - **A frontmatter** at the very top when it declares anything (`src/frontmatter.ts`):
-  - the source's `import type` names the server render reads, by name (ADR-0067): from a `.ts`
-    module or a package as written, `import type { BadgeProps } from "./types";`, and from a
+  - the source's `import type` names the server render reads, and those an injection key's value
+    type names, by name (ADR-0067): from a `.ts` module or a package as written, `import type { BadgeProps } from "./types";`, and from a
     child's output, `import Field, { type FieldProps } from "./Field.astro";`. An imported
     `Props` is imported as `OwnProps`, `import type { Props as OwnProps } from "./types";`, and
     every type the output prints names it so, since Astro declares its own `Props`. No name of
