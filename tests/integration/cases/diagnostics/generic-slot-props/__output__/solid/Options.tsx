@@ -1,11 +1,11 @@
 import { For, type JSX } from "solid-js";
 
-export interface OptionsSlots {
+export interface OptionsSlots<T extends { value: string }> {
   option?: (props: { option: T }) => JSX.Element;
 }
 
-export default function Options(
-  props: { options: T[] } & OptionsSlots & { class?: string; style?: JSX.CSSProperties },
+export default function Options<T extends { value: string }>(
+  props: { options: T[] } & OptionsSlots<T> & { class?: string; style?: JSX.CSSProperties },
 ) {
   return (
     <ul class={props.class} style={props.style} {...scopeAttributes(props)}>

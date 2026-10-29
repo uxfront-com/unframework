@@ -1,3 +1,4 @@
+import type { Sized, Toned } from "./types";
 import { type JSX, mergeProps } from "solid-js";
 
 type ChipProps = Sized & Toned & { label: string };

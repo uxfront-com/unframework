@@ -1,14 +1,16 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface ReviewSummaryProps {
     steps: string[];
     score: number;
     sku: string;
     product: string;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ReviewSummaryProps & { class?: ClassValue; style?: string };
 

@@ -5,7 +5,7 @@ export interface TableProps<T extends { id: string; label: string }> {
   rows: T[];
 }
 
-export default function Table(
+export default function Table<T extends { id: string; label: string }>(
   props: TableProps<T> & { class?: string; style?: JSX.CSSProperties },
 ) {
   return (

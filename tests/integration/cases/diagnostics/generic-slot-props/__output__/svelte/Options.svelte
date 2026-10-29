@@ -1,6 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
+<script lang="ts" generics="T extends { value: string }">
   import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 

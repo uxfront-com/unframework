@@ -1277,9 +1277,8 @@ function widenProps(file: OutputFile, target: string): string {
   switch (target) {
     case "react":
     case "solid": {
-      const component = /\bfunction\s+[A-Z][\w$]*\s*\(/.exec(contents);
-      if (!component) return contents;
-      const open = component.index + component[0].length - 1;
+      const open = componentParameters(contents);
+      if (open === undefined) return contents;
       const close = matchingBracket(contents, open, "(", ")");
       if (close === undefined) return contents;
       // The parameter: a destructuring pattern or a name, then its annotation.
@@ -1588,8 +1587,9 @@ export function withQwikImports(file: OutputFile, names: readonly string[]): str
 
 /**
  * Where a JSX component's body starts, just after its `{`: Qwik's `component$<Props>((…) => {`,
- * or the first PascalCase `function Name(…) {` (React and Solid). The parameters are read to
- * their matching parenthesis: a destructured default or a type may hold parentheses of its own.
+ * or the first PascalCase `function Name(…) {` or generic `function Name<…>(…) {` (React and
+ * Solid). The type parameters and the parameters are read to their matching bracket: a
+ * constraint, a destructured default or a type may hold brackets of its own.
  */
 function componentBodyStart(contents: string): number | undefined {
   // Not the import's `component$`: the call's, with its type argument or its parenthesis.
@@ -1609,9 +1609,9 @@ function componentBodyStart(contents: string): number | undefined {
     if (close === undefined) return undefined;
     return endAt(contents, close + 1, /^\s*=>\s*\{/);
   }
-  const component = /\bfunction\s+[A-Z][\w$]*\s*\(/.exec(contents);
-  if (!component) return undefined;
-  const close = matchingBracket(contents, component.index + component[0].length - 1, "(", ")");
+  const open = componentParameters(contents);
+  if (open === undefined) return undefined;
+  const close = matchingBracket(contents, open, "(", ")");
   if (close === undefined) return undefined;
   return endAt(contents, close + 1, /^[^{]*\{/);
 }
@@ -1631,6 +1631,22 @@ function classBodyStart(contents: string): number | undefined {
     index = parameters + 1;
   }
   return endAt(contents, index, /^[^{]*\{/);
+}
+
+/**
+ * The index of the `(` that opens the first PascalCase function's parameters (React and Solid),
+ * past a generic component's type parameters, `function List<T>(` (ADR-0068).
+ */
+function componentParameters(contents: string): number | undefined {
+  const component = /\bfunction\s+[A-Z][\w$]*\s*(?=[<(])/.exec(contents);
+  if (!component) return undefined;
+  const index = component.index + component[0].length;
+  if (contents[index] !== "<") return index;
+  // A constraint may hold brackets of its own.
+  const parameters = matchingBracket(contents, index, "<", ">");
+  if (parameters === undefined) return undefined;
+  const open = endAt(contents, parameters + 1, /^\s*/)!;
+  return contents[open] === "(" ? open : undefined;
 }
 
 /** The end of `pattern` (anchored with `^`) matched at `index`, or `undefined`. */

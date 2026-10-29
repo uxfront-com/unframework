@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 
-export interface OptionsSlots {
+export interface OptionsSlots<T extends { value: string }> {
   renderOption?: (props: { option: T }) => ReactNode;
 }
 
@@ -9,13 +9,13 @@ export interface OptionsAttributes {
   style?: CSSProperties;
 }
 
-export default function Options({
+export default function Options<T extends { value: string }>({
   options,
   renderOption,
   className,
   style,
   ...attributes
-}: { options: T[] } & OptionsSlots & OptionsAttributes) {
+}: { options: T[] } & OptionsSlots<T> & OptionsAttributes) {
   return (
     <ul className={className} style={style} {...scopeAttributes(attributes)}>
       {options.map((option) => (

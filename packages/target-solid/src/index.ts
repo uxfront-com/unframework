@@ -1,5 +1,6 @@
 import {
   addPassThroughImports,
+  addTypeImports,
   componentTypes,
   composableUse,
   defineTarget,
@@ -14,11 +15,13 @@ import {
   Placeholders,
   printComponentModule,
   sourceNames,
+  typeExportsCode,
 } from "@unframework/codegen";
 import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework/codegen";
-import type { UfComponent } from "@unframework/ir";
+import type { TypeDeclaration, UfComponent, UfModule } from "@unframework/ir";
 
 import { SolidComposition } from "./composition.ts";
+import { typeParameterDeclaration } from "./generics.ts";
 import { NEXT_TICK_HELPER, WATCHER_HELPER } from "./helpers.ts";
 import { CLASS_HELPER, SCOPE_HELPER, solidJsx, STYLE_HELPER } from "./jsx.ts";
 import { solidListeners } from "./listeners.ts";
@@ -181,6 +184,8 @@ export const solid: Target = defineTarget({
     const imports = new ImportSet(scope);
     // The imports that pass through, which the render reads as written (ADR-0064).
     addPassThroughImports(component, context.module, imports);
+    // The types it imports, by name (ADR-0067): a child's from its output, `./Field`.
+    addTypeImports(component, context.module, imports, (name) => name);
     const placeholders = new Placeholders();
     const composition = new SolidComposition(component, context.module, imports);
     const props = solidProps(component, imports, placeholders, {
@@ -225,6 +230,8 @@ export const solid: Target = defineTarget({
       ...(exposed ? [placeholders.statements(`${exposed}\n`)] : []),
       js.returnStatement(rendered(component, code, narrowings.types, jsx)),
     ]);
+    // A generic component is a generic function, `function List<T>(…)` (ADR-0068).
+    fn.typeParameters = typeParameterDeclaration(component, placeholders);
     const statements = exportDeclaration(
       component.name,
       fn,
@@ -243,7 +250,11 @@ export const solid: Target = defineTarget({
         path: `${component.name}.tsx`,
         contents: printComponentModule(
           {
-            types: [...types, ...(props.events ? [props.events] : []), ...composition.types],
+            types: [
+              ...moduleTypes(component, context.module, types),
+              ...(props.events ? [props.events] : []),
+              ...composition.types,
+            ],
             body: [...keys, ...setup.hoisted, ...statements],
             helpers: [...helpers(), ...code.helpers()],
             // Collected last: the helpers import what they call.
@@ -291,6 +302,25 @@ function rendered(
     );
   }
   return wrapped;
+}
+
+/**
+ * The types an output declares, in source order: those it reaches, copied as written, and in
+ * the output of the module's main component the module's type exports (ADR-0068), each a
+ * statement of its own, `export type { Tone } from "./types";`, that the module prints as it is.
+ */
+function moduleTypes(
+  component: UfComponent,
+  module: UfModule,
+  types: readonly TypeDeclaration[],
+): TypeDeclaration[] {
+  const exports = typeExportsCode(component, module, (name) => name).map(({ code, span }) => ({
+    name: "",
+    exported: false,
+    code,
+    span,
+  }));
+  return [...types, ...exports].toSorted((a, b) => a.span.start - b.span.start);
 }
 
 /**

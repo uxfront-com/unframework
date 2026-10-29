@@ -1,13 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface OrderStatusProps {
     status: "pending" | "shipped" | "delivered" | "cancelled";
     carrier?: string;
     eta?: string;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = OrderStatusProps & { class?: ClassValue; style?: string };
 

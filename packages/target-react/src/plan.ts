@@ -9,11 +9,13 @@
 import {
   addPassThroughImports,
   codeKind,
+  codeNames,
   moduleHelperName,
   ImportSet,
   parseCodeSource,
   pascalCase,
   sourceNames,
+  typeNames,
 } from "@unframework/codegen";
 import {
   codeOf,
@@ -37,6 +39,7 @@ import type {
   RefAttribute,
   RenderNode,
   Span,
+  TypeText,
   UfComponent,
   UfModule,
 } from "@unframework/ir";
@@ -889,9 +892,29 @@ function eventParameterModes(
 /**
  * The names the output must leave alone: the source's (`sourceNames`), but for the DOM event
  * types that only the annotations React rewrites name (`KeyboardEvent` in `(event:
- * KeyboardEvent)` on a synthetic listener), which the output imports from `react` instead.
+ * KeyboardEvent)` on a synthetic listener), which the output imports from `react` instead; and
+ * the types the output imports and exports by the source's names (ADR-0067, ADR-0068), so the
+ * interfaces React declares (`CardEvents`) never take one.
  */
 function reservedNames(
+  component: UfComponent,
+  module: UfModule,
+  listeners: ReadonlyMap<EventAttribute, { mode: ListenerMode }>,
+  eventModes: ReadonlyMap<BindingId, ReadonlySet<ListenerMode>>,
+): Set<string> {
+  const names = sourceAndEventNames(component, module, listeners, eventModes);
+  for (const entry of module.typeImports ?? []) {
+    for (const name of entry.names) names.add(name.local);
+  }
+  for (const entry of module.typeExports ?? []) {
+    if (entry.kind === "Declaration") names.add(entry.name);
+    else for (const name of entry.names) names.add(name.exported);
+  }
+  return names;
+}
+
+/** The source's names, but for the DOM event types React rewrites (`reservedNames`). */
+function sourceAndEventNames(
   component: UfComponent,
   module: UfModule,
   listeners: ReadonlyMap<EventAttribute, { mode: ListenerMode }>,
@@ -958,21 +981,38 @@ function reservedNames(
 /**
  * The `localConst` and `localFn` bindings that capture nothing of the component: their code reads
  * only globals, its own names and other such bindings, and writes, emits and calls `nextTick`
- * (a hook's result on React) not at all. An `Id` is the instance's, so never.
+ * (a hook's result on React) not at all. An `Id` is the instance's, so never, and neither is a
+ * binding whose types or code name a type parameter of a generic component, which exists only
+ * inside it (ADR-0068).
  */
 function hoistable(
   component: UfComponent,
   kindOf: (id: BindingId) => Binding["kind"] | undefined,
 ): Set<BindingId> {
   const code = new Map<BindingId, Code[]>();
+  const parameters = new Set(component.typeParameters?.map(({ name }) => name));
+  const typed = new Set<BindingId>();
+  const names = (types: readonly (TypeText | undefined)[], pieces: readonly Code[]) => {
+    const found = new Set<string>();
+    for (const type of types) if (type) for (const name of typeNames(type)) found.add(name);
+    for (const piece of pieces) {
+      for (const name of codeNames(piece.code, codeKind(piece, component))) found.add(name);
+    }
+    return [...found].some((name) => parameters.has(name));
+  };
   for (const item of component.setup) {
-    if (item.kind === "Const") code.set(item.binding, [item.value]);
-    else if (item.kind === "Function") {
+    if (item.kind === "Const") {
+      code.set(item.binding, [item.value]);
+      if (parameters.size && names([item.type], [item.value])) typed.add(item.binding);
+    } else if (item.kind === "Function") {
       const fn = item.function;
-      code.set(item.binding, [
+      const pieces = [
         fn.body,
         ...fn.parameters.flatMap((parameter) => (parameter.default ? [parameter.default] : [])),
-      ]);
+      ];
+      code.set(item.binding, pieces);
+      const types = [...fn.parameters.map((parameter) => parameter.type), fn.returnType];
+      if (parameters.size && names(types, pieces)) typed.add(item.binding);
     }
   }
   const verdicts = new Map<BindingId, boolean>();
@@ -984,6 +1024,7 @@ function hoistable(
     const pieces = code.get(id);
     const free =
       pieces !== undefined &&
+      !typed.has(id) &&
       pieces.every((piece) =>
         piece.refs.every((reference) => {
           switch (reference.kind) {

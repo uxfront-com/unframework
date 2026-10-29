@@ -1,6 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { Sized, Toned } from "./types";
   import type { ClassValue } from "svelte/elements";
 
   type ChipProps = Sized & Toned & { label: string };

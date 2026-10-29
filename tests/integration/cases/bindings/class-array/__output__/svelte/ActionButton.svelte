@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface ActionButtonProps {
     label: string;
     size: "small" | "medium" | "large";
@@ -10,6 +8,10 @@
     busy?: boolean;
     badge: number;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ActionButtonProps & { class?: ClassValue; style?: string };
 

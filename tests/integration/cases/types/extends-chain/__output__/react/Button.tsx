@@ -1,3 +1,4 @@
+import type { ButtonProps } from "./types";
 import type { CSSProperties } from "react";
 
 export interface ButtonAttributes {

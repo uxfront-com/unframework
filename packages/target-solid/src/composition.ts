@@ -31,6 +31,8 @@ import type {
   UfModule,
 } from "@unframework/ir";
 
+import { generatedInterface } from "./generics.ts";
+import type { GeneratedInterface } from "./generics.ts";
 import { eventProp } from "./props.ts";
 
 /** What a component's composition adds to its output. */
@@ -40,6 +42,8 @@ export class SolidComposition {
   readonly #imports: ImportSet;
   /** The interfaces the props parameter takes beside its own type: the models', the slots'. */
   readonly types: TypeDeclaration[] = [];
+  /** How the props parameter names each of `types`: `PickerSlots<T>` (src/generics.ts). */
+  readonly #references: string[] = [];
   /** The inline type the props parameter takes for fallthrough and `ref`, or none. */
   readonly inline: string | undefined;
   /**
@@ -86,7 +90,7 @@ export class SolidComposition {
           `  ${eventProp(`${model.name}Change`)}?: (value: ${type}) => void;`,
         ];
       });
-      this.types.push(declaration(name, members, model0Span(models)));
+      this.#declare(generatedInterface(component, name, members, model0Span(models)));
     }
     const { slots } = component;
     if (slots) {
@@ -98,7 +102,7 @@ export class SolidComposition {
           : `${jsx()}.Element`;
         return `  ${propertyKey(prop)}${slot.optional ? "?" : ""}: ${type};`;
       });
-      this.types.push(declaration(name, members, slots.span));
+      this.#declare(generatedInterface(component, name, members, slots.span));
     }
     this.fallthrough = fallthroughRoot(component);
     this.scopeRoots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
@@ -163,7 +167,12 @@ export class SolidComposition {
 
   /** The type texts the props parameter takes beside the props type and the events. */
   parameterTypes(): string[] {
-    return [...this.types.map((type) => type.name), ...(this.inline ? [this.inline] : [])];
+    return [...this.#references, ...(this.inline ? [this.inline] : [])];
+  }
+
+  #declare({ declaration, reference }: GeneratedInterface): void {
+    this.types.push(declaration);
+    this.#references.push(reference);
   }
 
   /** Whether the output reads the props object for composition. */
@@ -251,16 +260,6 @@ export class SolidComposition {
 /** Where the first model is declared. */
 function model0Span(models: readonly ModelItem[]): Span {
   return models[0]!.span;
-}
-
-/** An exported interface of members, which the props parameter's type takes. */
-function declaration(name: string, members: readonly string[], span: Span): TypeDeclaration {
-  return {
-    name,
-    exported: true,
-    code: `interface ${name} {\n${members.join("\n")}\n}`,
-    span,
-  };
 }
 
 /** A property's key: as it is when it is an identifier, quoted otherwise. */

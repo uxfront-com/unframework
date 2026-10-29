@@ -1,10 +1,14 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
+<script lang="ts" module>
+  import type { FieldOptions } from "./types";
 
   export type TextFieldProps = Required<Pick<FieldOptions, "name" | "label">> &
     Readonly<Partial<Omit<FieldOptions, "name" | "label">>>;
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = TextFieldProps & { class?: ClassValue; style?: string };
 

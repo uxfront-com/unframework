@@ -1,12 +1,14 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface SelectProps<T extends string> {
     label: string;
     options: readonly T[];
   }
+</script>
+
+<script lang="ts" generics="T extends string">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = SelectProps<T> & { value: T; class?: ClassValue; style?: string };
 

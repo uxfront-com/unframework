@@ -1,9 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import { onMount } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface Member {
     id: number;
     name: string;
@@ -22,6 +19,11 @@
     inviter?: Inviter;
     members: Member[];
   }
+</script>
+
+<script lang="ts">
+  import { onMount } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = TeamInviteProps & {
     onselect?: (member: Member) => void;

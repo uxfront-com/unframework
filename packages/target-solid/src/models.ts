@@ -25,6 +25,7 @@ import { js, jsxBinding, jsxExpression } from "@unframework/codegen";
 import type { ImportSet, JsxContext } from "@unframework/codegen";
 import type { ElementNode, ModelAttribute, UfComponent } from "@unframework/ir";
 
+import { genericModelType } from "./generics.ts";
 import { unmarkedOptions } from "./render.ts";
 import type { SolidCode } from "./setup.ts";
 
@@ -173,10 +174,17 @@ export function modelAttribute(
       return [prop("value", text(value())), prop("onInput", listener(set(target("value"))))];
     case "textarea":
       return [...textarea(value), prop("onInput", listener(set(target("value"))))];
-    case "select":
+    case "select": {
       // Each option is `selected` where it holds the state's value (src/render.ts): Solid's
-      // server writes a `<select>`'s `value` as an attribute.
-      return [prop("onChange", listener(set(target("value")))), ...selection()];
+      // server writes a `<select>`'s `value` as an attribute. A model of a generic component's
+      // type parameter (`defineModel<T>`) takes the chosen option's value as `T`: it is one of
+      // the options, which the consumer's `T` types (ADR-0068).
+      const generic = genericModelType(context.component, ref.binding);
+      const chosen = generic
+        ? js.asExpression(target("value"), context.placeholders.type(generic))
+        : target("value");
+      return [prop("onChange", listener(set(chosen))), ...selection()];
+    }
     case "checkbox":
       return [prop("checked", value()), prop("onChange", listener(set(target("checked"))))];
     case "radio":

@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface Contributor {
     login: string;
     name: string;
@@ -13,6 +11,10 @@
     caption: string;
     contributors: Contributor[];
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ContributorTableProps & { class?: ClassValue; style?: string };
 

@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   interface FieldAttributes {
     name: string;
     placeholder?: string;
@@ -24,6 +22,10 @@
     field: FieldAttributes;
     hint?: HintAttributes;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = TextFieldProps & { class?: ClassValue; style?: string };
 

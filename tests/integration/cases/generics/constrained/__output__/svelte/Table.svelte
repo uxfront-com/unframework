@@ -1,12 +1,14 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface TableProps<T extends { id: string; label: string }> {
     caption: string;
     rows: T[];
   }
+</script>
+
+<script lang="ts" generics="T extends { id: string; label: string }">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = TableProps<T> & { class?: ClassValue; style?: string };
 

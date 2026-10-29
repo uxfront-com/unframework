@@ -1,4 +1,4 @@
-import Field from "./Field";
+import Field, { type FieldProps } from "./Field";
 import type { JSX } from "solid-js";
 
 export default function Form(

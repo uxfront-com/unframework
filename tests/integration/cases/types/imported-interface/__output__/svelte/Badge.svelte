@@ -1,6 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { BadgeProps } from "./types";
   import type { ClassValue } from "svelte/elements";
 
   type Props = BadgeProps & { class?: ClassValue; style?: string };

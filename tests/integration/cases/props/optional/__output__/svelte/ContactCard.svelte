@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface ContactCardProps {
     name: string;
     jobTitle?: string;
@@ -10,6 +8,10 @@
     pronouns?: string;
     phone?: string | null;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ContactCardProps & { class?: ClassValue; style?: string };
 

@@ -1332,6 +1332,18 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
       "render",
     );
     expect(react).toContain("format: () => string }) {\n  x();\n  return <p>");
+    // A generic component's type parameters, whose constraint holds braces (ADR-0068).
+    const generic = injectScript(
+      {
+        path: "A.tsx",
+        contents:
+          "export default function A<T extends { id: string } = { id: string }>({ rows }: { rows: T[] }) {\n  return <p>{rows.length}</p>;\n}\n",
+      },
+      "react",
+      "x();",
+      "render",
+    );
+    expect(generic).toContain("{ rows: T[] }) {\n  x();\n  return <p>");
     const qwik = injectScript(
       {
         path: "A.tsx",
@@ -1449,6 +1461,16 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
         contents: "@Component({\n  template: `<p>a</p>`,\n})\nexport default class A {}\n// </b>\n",
       }),
     ).toBe("@Component({\n  template: `<p>a</span>`,\n})\nexport default class A {}\n// </b>\n");
+    // A generic component's type parameters, a constraint's arrow among them (ADR-0068).
+    expect(
+      mismatchClosingTag({
+        path: "List.tsx",
+        contents:
+          "export default function List<T extends { on: () => void }>(props: { items: T[] }) {\n  return <ul>{props.items.length}</ul>;\n}\n",
+      }),
+    ).toBe(
+      "export default function List<T extends { on: () => void }>(props: { items: T[] }) {\n  return <ul>{props.items.length}</span>;\n}\n",
+    );
   });
 });
 

@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface FileInfo {
     path: string;
     size: number;
@@ -12,6 +10,10 @@
     path: string;
     size: number;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = FileRowProps & {
     onrefresh?: () => void;

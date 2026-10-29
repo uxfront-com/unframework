@@ -4,18 +4,20 @@ The Svelte 5 target of the Unframework compiler: runes-mode components. Every co
 declares `<svelte:options runes={true} preserveWhitespace={false} />`, so one without runes never
 compiles in legacy mode and the markup's layout holds whatever the consumer's whitespace option.
 
-A component is that line, an instance script when it takes props or has a setup, and its markup
-(plan §6):
+A component is that line, a module script when it exports a type or declares injection keys, an
+instance script when it takes props or has a setup, and its markup (plan §6):
 
 ```svelte
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
+<script lang="ts" module>
   export interface BadgeProps {
     label: string;
     tone?: "info" | "warn";
   }
+</script>
 
+<script lang="ts">
   let { label, tone = "info" }: BadgeProps = $props();
 </script>
 
@@ -32,6 +34,21 @@ A component is that line, an instance script when it takes props or has a setup,
   (`$`-prefixed) is named `props`. Script lines are indented, but for lines inside a multi-line
   literal, which the target finds by parsing the code. `</script` in copied code is written
   `<\/script`, as a guard: the analyser rejects it.
+- **Types** (ADR-0067, ADR-0068). The types a component reads from another file are imported by
+  name, under the source's names: a `.ts` module's or a package's from the specifier as written,
+  `import type { Tone } from "./types"`, and a child's from its output, beside the child,
+  `import Field, { type FieldProps } from "./Field.svelte"`. The output of the module's main
+  component also writes the module's type exports: an exported type no component reaches, and a
+  re-export, `export type { Tone } from "./types"`. An output that exports a type declares the
+  types it copies and imports in `<script lang="ts" module>`, which the instance script reads, so
+  a consumer imports them from the component's file:
+  `import type { BadgeProps } from "./Badge.svelte"`. A generic component writes its type
+  parameters in the instance script's `generics`, `<script lang="ts" generics="T extends string">`.
+  An attribute cannot hold its own quote, so every string literal in them is double-quoted, a
+  template literal stays in backticks, a `'` inside either is written `\u0027`, the same type, and
+  the attribute is single-quoted where the text holds a `"`:
+  `generics='T extends "don\u0027t" | "b"'`. A scoped slot's props that name a type
+  parameter are `Snippet<[{ item: T }]>`; both cells are native.
 - **Setup** (ADR-0045 to ADR-0049), in source order after `$props()`, with what it imports from
   `svelte` and `svelte/events` (each name claimed beside the source's):
 

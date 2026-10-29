@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface InboxMessage {
     id: string;
     subject: string;
@@ -13,6 +11,10 @@
     archived?: InboxMessage[];
     emptyText?: string;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = MessageListProps & { class?: ClassValue; style?: string };
 
