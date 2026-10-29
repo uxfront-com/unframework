@@ -99,7 +99,7 @@ const BINDING_COMPOSITION = /^bindings\/(?:style-expression|style-spread)$/;
  * copies the modules into the output tree, which `lower` does not. The corpus's toolchain project
  * checks their Angular outputs.
  */
-const TYPE_MODULES = /^types\/|^generics\/(?:scoped-slot|select)$/;
+const TYPE_MODULES = /^types\/(?!exported-types$)|^generics\/(?:scoped-slot|select)$/;
 
 /**
  * The areas of M3's composition cases, which Angular reports (UF1002) until its M3 lane

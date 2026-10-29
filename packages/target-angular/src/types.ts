@@ -139,7 +139,8 @@ export function declaredTypes(
 /**
  * A type without `undefined`: the value type of an input with a default, which the input's
  * transform never lets through (ADR-0034). A union's `undefined` members are left out as
- * written; a reference to a local alias that admits `undefined` becomes `Exclude<…, undefined>`.
+ * written; a reference to a local alias that admits `undefined`, or an indexed access, becomes
+ * `Exclude<…, undefined>`.
  */
 export function withoutUndefined(code: string, declarations: readonly TypeDeclaration[]): string {
   return without(code, declarations, false);
@@ -147,7 +148,8 @@ export function withoutUndefined(code: string, declarations: readonly TypeDeclar
 
 /**
  * A type without `undefined` and `null`, as `??` and `!` leave it: a union's nullish members are
- * left out as written; a reference to a local alias that admits either becomes `NonNullable<…>`.
+ * left out as written; a reference to a local alias that admits either, or an indexed access,
+ * becomes `NonNullable<…>`.
  */
 export function withoutNullish(code: string, declarations: readonly TypeDeclaration[]): string {
   return without(code, declarations, true);
@@ -165,6 +167,10 @@ function without(code: string, declarations: readonly TypeDeclaration[], nullish
   const admits = (type: TypeNode, seen: ReadonlySet<string>): boolean => {
     if (left(type)) return true;
     switch (type.type) {
+      // An indexed access, a member read from the props type (`BadgeProps["note"]`, `propType`)
+      // or one the author writes (`Item["id"]`): opaque here, so it may admit either.
+      case "TSIndexedAccessType":
+        return true;
       case "TSUnionType":
         return (type.types as TypeNode[]).some((member) => admits(member, seen));
       case "TSTypeReference": {

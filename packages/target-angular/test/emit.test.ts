@@ -13,6 +13,7 @@ import type { ElementNode, UfModule } from "@unframework/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import target from "../src/index.ts";
+import { toolchain } from "../src/toolchain/index.ts";
 import { createHost, strictOptions } from "../src/toolchain/ngtsc.ts";
 import { loadCompiler } from "../src/toolchain/tools.ts";
 import {
@@ -317,6 +318,14 @@ function classBody(contents: string): string[] {
   return body ? body[1]!.split("\n").map((line) => line.trim()) : [];
 }
 
+/** The messages of Angular's L3 check (ngtsc) on an emitted file, alone in a scratch directory. */
+async function l3Errors(file: { path: string; contents: string }): Promise<string[]> {
+  const path = join(scratchDir(), file.path);
+  const results = await toolchain.frameworkCompile([{ path, contents: file.contents }], context);
+  const { errors, warnings } = results.get(path)!;
+  return [...errors, ...warnings].map(({ code, message }) => `${code}: ${message}`);
+}
+
 /** The lines of an emitted file's template, without their indentation, formatted or not. */
 function templateLines(contents: string): string[] {
   return /template: `([\s\S]*)`,?\n/
@@ -600,6 +609,62 @@ export default function Badge({ label, tone = "info", size }: BadgeProps) {
       "Labelled",
       "BadgeProps",
     ]);
+  });
+
+  it("leaves the nullish out of a member read by indexed access, as `??` and `!` do", async () => {
+    const file = await formatted(`
+interface Labelled {
+  note?: string;
+}
+
+interface Marked {
+  mark: string | null;
+}
+
+export default function Badge({ label, note, mark }: Labelled & Marked & { label: string }) {
+  let shown = note ?? "none";
+  let first = mark!;
+  function shout() {
+    shown = shown.toUpperCase();
+    first = first.trim();
+  }
+  return <button type="button" onClick={shout}>{label}</button>;
+}
+`);
+    // An inline props type is read in parentheses, so the access applies to all of it.
+    expect(file.contents).toContain(
+      'readonly note = input<(Labelled & Marked & { label: string })["note"]>();',
+    );
+    expect(file.contents).toContain(
+      'private shown!: NonNullable<(Labelled & Marked & { label: string })["note"]> | string;',
+    );
+    expect(file.contents).toContain(
+      'private first!: NonNullable<(Labelled & Marked & { label: string })["mark"]>;',
+    );
+    expect(await l3Errors(file)).toEqual([]);
+  });
+
+  it("declares the types a type parameter's constraint and default name, and nothing else does", async () => {
+    const file = await formatted(`
+interface Item {
+  id: string;
+}
+
+interface Fallback {
+  id: string;
+  label: string;
+}
+
+export default function List<T extends Item = Fallback>({ items }: { items: T[] }) {
+  return <ul>{items.map((item) => <li key={item.id}>{item.id}</li>)}</ul>;
+}
+`);
+    expect(file.contents).toContain("export default class List<T extends Item = Fallback> {");
+    expect([...file.contents.matchAll(/^interface (\w+)/gm)].map((match) => match[1])).toEqual([
+      "Item",
+      "Fallback",
+    ]);
+    expect(await l3Errors(file)).toEqual([]);
   });
 
   it("declares a generic component's class with its type parameters as written", async () => {
