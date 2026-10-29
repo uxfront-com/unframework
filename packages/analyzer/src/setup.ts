@@ -2418,10 +2418,15 @@ function unwatchable(
       fix = getterFix(node, text);
     } else if (binding?.kind === "templateRef") {
       what = `\`${node.name}\` is a template ref, which is never a reactive dependency on every target`;
-    } else if (binding?.kind === "model" || (binding?.kind === "context" && binding.ref)) {
-      // A watcher's ref sources are state and computed values (ADR-0048): a model or an injected
-      // ref is watched through a getter of its value.
-      what = `\`${node.name}\` is ${binding.kind === "model" ? "a model" : "an injected ref"}, which a watcher reads through a getter`;
+    } else if (
+      binding?.kind === "model" ||
+      binding?.kind === "usedState" ||
+      binding?.kind === "usedDerived" ||
+      (binding?.kind === "context" && binding.ref)
+    ) {
+      // A watcher's ref sources are state and computed values (ADR-0048): a model, an injected
+      // ref or a ref a composable returns (ADR-0069) is watched through a getter of its value.
+      what = `\`${node.name}\` is ${refName(binding.kind)}, which a watcher reads through a getter`;
       fix = {
         title: `Watch \`() => ${node.name}.value\``,
         confidence: "safe",
@@ -2447,15 +2452,19 @@ function unwatchable(
         edits: [{ span: span(node), text: binding.name }],
       };
     } else if (
-      (binding?.kind === "model" || (binding?.kind === "context" && binding.ref)) &&
+      (binding?.kind === "model" ||
+        binding?.kind === "usedState" ||
+        binding?.kind === "usedDerived" ||
+        (binding?.kind === "context" && binding.ref)) &&
       !node.computed &&
       !node.optional &&
       node.property.type === "Identifier" &&
       node.property.name === "value" &&
       node.object.start === node.start
     ) {
-      // A model or an injected ref is watched through a getter of its value (ADR-0048).
-      what = `\`${binding.name}.value\` is ${binding.kind === "model" ? "a model's" : "an injected ref's"} value as the setup runs, which nothing can watch`;
+      // A model, an injected ref or a ref a composable returns is watched through a getter of its
+      // value (ADR-0048, ADR-0069).
+      what = `\`${binding.name}.value\` is ${binding.kind === "model" ? "a model's value" : binding.kind === "context" ? "an injected ref's value" : "the value of a ref its composable returns"} as the setup runs, which nothing can watch`;
       fix = {
         title: `Watch \`() => ${binding.name}.value\``,
         confidence: "safe",
@@ -2484,6 +2493,15 @@ function unwatchable(
       ...(fix ? { fixes: [fix] } : {}),
     },
   );
+}
+
+/** What a ref a watcher reads through a getter is, for UF2020's messages. */
+function refName(kind: "model" | "context" | "usedState" | "usedDerived"): string {
+  return kind === "model"
+    ? "a model"
+    : kind === "context"
+      ? "an injected ref"
+      : "a ref its composable returns";
 }
 
 /** UF2020's safe fix for a prop's value: a getter that reads it. */

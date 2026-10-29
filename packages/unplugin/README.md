@@ -169,7 +169,9 @@ query (`?container`) loads the component, even on a cold server.
 An import whose specifier does not name the file never reaches `resolveId`: a package's `exports`
 entry or a tsconfig path that maps to a `.uf.tsx`. On React, Solid and Qwik the resolved id is the
 module id, so it compiles anyway. On the other targets the authored file would load as plain TSX,
-so `load` fails it with the fix: import it with a specifier that ends in `.uf.tsx`. Packages that
+so `load` fails it with the fix: import it with a specifier that ends in `.uf.tsx`. A `.uf.ts`
+file mapped that way loads as its composables where its id is the file itself, and fails the same
+way on Svelte and Angular, whose ids have a suffix. Packages that
 ship `.uf.tsx` sources (consumed through `exports` maps and Vite's dependency optimizer, which
 bundles `node_modules` before any plugin runs) are M6's to support.
 

@@ -785,6 +785,42 @@ describe("composables (ADR-0069)", () => {
     }
   });
 
+  it("leaves Vite's file queries to the authored `.uf.ts`, and fails it loudly as itself", async () => {
+    const composables = createProject(files);
+    try {
+      for (const name of ["svelte", "angular", "vue"] as const) {
+        const server = await startServer(composables.root, unframework({ target: name }));
+        try {
+          const { client } = server;
+          const main = join(composables.root, "main.ts");
+          const authored = join(composables.root, "useToggle.uf.ts");
+          for (const query of ["?raw", "?url"]) {
+            const resolved = await client.pluginContainer.resolveId(
+              `./useToggle.uf.ts${query}`,
+              main,
+            );
+            expect(resolved?.id, `${name} ${query}`).toBe(`${authored}${query}`);
+            // Vite's own plugins answer, with the authored file's text or its URL.
+            expect(
+              codeOf(await client.pluginContainer.load(resolved!.id)),
+              `${name} ${query}`,
+            ).toMatch(/^export default "/);
+          }
+          // On a target whose composable ids have a suffix, the authored file is never one.
+          if (name !== "vue") {
+            await expect(client.pluginContainer.load(authored), name).rejects.toThrow(
+              `useToggle.uf.ts reached Vite as itself, which would load it as plain TypeScript rather than as its ${name} composables`,
+            );
+          }
+        } finally {
+          await server.close();
+        }
+      }
+    } finally {
+      composables.remove();
+    }
+  });
+
   it("fails a module of composables loudly on a target without `emitComposable`", async () => {
     const composables = createProject(files);
     try {

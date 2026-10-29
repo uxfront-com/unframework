@@ -1206,12 +1206,14 @@ class Walk {
    */
   #functionValue(node: AST.IdentifierReference, binding: SetupBinding): void {
     const { name } = binding;
+    // A local function, or one a composable returns (ADR-0069).
+    const what = WHAT[binding.kind];
     this.#context.reporter.report(
       "UF2022",
       node,
       this.#mode === "client"
-        ? `\`${name}\` is a local function used as a value: client code calls a local function, or passes it as a call's argument (\`setTimeout(${name}, 100)\`).`
-        : `\`${name}\` is a local function used as a value in ${this.#mode === "render" ? "a template expression" : "a getter or an initial value"}, which only calls it: the targets write a local function their own way (a method, a QRL), which they cannot pass around there.`,
+        ? `\`${name}\` is ${what} used as a value: client code calls a local function, or passes it as a call's argument (\`setTimeout(${name}, 100)\`).`
+        : `\`${name}\` is ${what} used as a value in ${this.#mode === "render" ? "a template expression" : "a getter or an initial value"}, which only calls it: the targets write a local function their own way (a method, a QRL), which they cannot pass around there.`,
       {
         help:
           this.#mode === "client"

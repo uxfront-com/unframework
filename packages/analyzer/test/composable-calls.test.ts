@@ -1,3 +1,4 @@
+import { applyFixes } from "@unframework/diagnostics";
 import type { ModuleApi } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
 import { describe, expect, it } from "vitest";
@@ -138,6 +139,72 @@ describe("a composable's call", () => {
         "<p>{on.value ? toggle() : label}</p>",
       ).reported,
     ).toEqual(["UF2014 toggle"]);
+  });
+
+  it("reports a call of a returned function that isn't pure through a local function (UF2014)", () => {
+    const through = ["function shown() {", "  toggle();", "  return 1;", "}"];
+    expect(
+      caller(["const { toggle } = useToggle(false, () => label);", ...through], "<p>{shown()}</p>")
+        .reported,
+    ).toEqual(["UF2014 shown"]);
+    expect(
+      caller(
+        ["const { toggle } = useToggle(false, () => label);", ...through, "const n = shown();"],
+        "<p>{n}</p>",
+      ).reported,
+    ).toEqual(["UF2014 shown"]);
+    // A value argument is an initial value, read as the setup runs.
+    expect(
+      caller([
+        "const { toggle } = useToggle(false, () => label);",
+        ...through,
+        "const { on } = useToggle(shown() > 0, () => label);",
+      ]).reported,
+    ).toEqual(["UF2014 shown"]);
+    const pure = ["function shown() {", "  return isOn() ? 1 : 0;", "}"];
+    expect(
+      caller(["const { isOn } = useToggle(false, () => label);", ...pure], "<p>{shown()}</p>")
+        .reported,
+    ).toEqual([]);
+  });
+
+  it("watches a returned ref through a getter of its value (UF2020, with a safe fix)", () => {
+    const source = [
+      'import { watch } from "unframework";',
+      'import { useToggle } from "./useToggle.uf.ts";',
+      "export default function Toggle({ label }: { label: string }) {",
+      "  const { on } = useToggle(false, () => label);",
+      "  watch(on, (value) => console.log(value));",
+      "  watch(on.value, (value) => console.log(value));",
+      "  return <p>{on.value ? label : 'off'}</p>;",
+      "}",
+    ].join("\n");
+    const { diagnostics } = run(source, "Toggle.uf.tsx", {
+      imports: new Map([["./useToggle.uf.ts", toggleApi()]]),
+    });
+    expect(problems(source, diagnostics)).toEqual(["UF2020 on", "UF2020 on.value"]);
+    expect(diagnostics.map(({ message }) => message.split(":")[0])).toEqual([
+      "`on` is a ref its composable returns, which a watcher reads through a getter",
+      "`on.value` is the value of a ref its composable returns as the setup runs, which nothing can watch",
+    ]);
+    const fixed = applyFixes(
+      source,
+      diagnostics.flatMap(({ fixes }) => fixes ?? []),
+    );
+    expect(fixed).toContain("watch(() => on.value, (value) => console.log(value));");
+    expect(
+      run(fixed, "Toggle.uf.tsx", { imports: new Map([["./useToggle.uf.ts", toggleApi()]]) })
+        .diagnostics,
+    ).toEqual([]);
+  });
+
+  it("names a returned function used as a value as one (UF2022)", () => {
+    const { diagnostics, reported } = caller(
+      ["const { toggle } = useToggle(false, () => label);", "const t = toggle;"],
+      "<p />",
+    );
+    expect(reported).toEqual(["UF2022 toggle"]);
+    expect(diagnostics[0]!.message).toMatch(/^`toggle` is a function a composable returns used/);
   });
 
   it("reports a write of a returned ref (UF2036)", () => {

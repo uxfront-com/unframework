@@ -319,8 +319,15 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
    * component's module id, and an optimizer plugin that refuses `.uf.tsx` files; until then this
    * is the loud failure.
    */
-  const bypassed = (file: string) =>
-    `${filenameOf(file)} reached Vite as itself, which would load it as plain TSX rather than as its ${target.name} component: the import that resolved to it does not name the file (a package's \`exports\` entry or a tsconfig path, say), so this plugin never saw it. Import it with a specifier that ends in ${SOURCE_EXTENSION}, such as "./${basename(file)}"; a package that ships ${SOURCE_EXTENSION} sources must export them under subpaths that do.`;
+  const bypassed = (file: string) => {
+    // A module of composables loads under an id of its own on Svelte and Angular (ADR-0069).
+    const composables = file.endsWith(COMPOSABLE_EXTENSION);
+    const extension = composables ? COMPOSABLE_EXTENSION : SOURCE_EXTENSION;
+    const what = composables
+      ? `plain TypeScript rather than as its ${target.name} composables`
+      : `plain TSX rather than as its ${target.name} component`;
+    return `${filenameOf(file)} reached Vite as itself, which would load it as ${what}: the import that resolved to it does not name the file (a package's \`exports\` entry or a tsconfig path, say), so this plugin never saw it. Import it with a specifier that ends in ${extension}, such as "./${basename(file)}"; a package that ships ${extension} sources must export them under subpaths that do.`;
+  };
 
   /** The current compile of an authored file, read from disk. */
   const compiledFile = async (file: string) =>
@@ -572,7 +579,8 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
           const component = componentRequest(id);
           const request = component ?? parseModuleId(id, suffix);
           if (!request) {
-            const authored = parseModuleId(id, "")!;
+            // An authored `.uf.tsx`, or a `.uf.ts` on a target whose composable ids have a suffix.
+            const authored = (parseModuleId(id, "") ?? parseComposableId(id, ""))!;
             if (VITE_FILE_QUERY.test(authored.query)) return null;
             return this.error(bypassed(authored.file));
           }

@@ -226,6 +226,13 @@ class Rules {
       const shared = this.#shared.get(read);
       if (shared?.clientOnly) return `it calls \`${shared.name}\`, which ${shared.clientOnly}`;
     }
+    // A function a composable returns, whose flags say what it does (ADR-0069).
+    for (const read of summary.reads) {
+      if (this.#kind(read) !== "usedFn") continue;
+      const member = this.#setup.get(read)?.member;
+      if (member?.pure) continue;
+      return `it calls \`${this.#name(read)}\`, which its composable returns, and which ${member?.async ? "is asynchronous" : "writes, emits or awaits"}`;
+    }
     return undefined;
   }
 
@@ -844,7 +851,7 @@ class Rules {
             ? `the prop \`${name}\``
             : this.#refValue(read)
               ? `\`${name}\`'s value`
-              : `\`${name}\`, which keeps its own first value,`;
+              : `\`${name}\`, which keeps its own first value`;
         this.#reporter.report(
           "UF2007",
           argument.span,
