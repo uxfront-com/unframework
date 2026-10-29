@@ -10,6 +10,7 @@ import type { Fix } from "@unframework/diagnostics";
 import {
   createBinding,
   createBindingReference,
+  createCallbackArgument,
   createCode,
   createConstItem,
   createDerivedItem,
@@ -19,6 +20,7 @@ import {
   createExposes,
   createExpression,
   createFunctionItem,
+  createGetterArgument,
   createGetterSource,
   createIdItem,
   createInjectItem,
@@ -31,6 +33,9 @@ import {
   createStateItem,
   createTemplateRefItem,
   createTypeText,
+  createUsedMember,
+  createUseItem,
+  createValueArgument,
   createVariableItem,
   createWatchEffectItem,
   createWatchItem,
@@ -44,6 +49,8 @@ import {
 import type {
   Binding,
   Code,
+  ComposableApi,
+  ComposableMemberApi,
   Emits,
   EventDeclaration,
   Exposes,
@@ -51,7 +58,9 @@ import type {
   SetupItem,
   SlotDeclaration,
   Slots,
+  Span,
   TypeText,
+  UseArgument,
   WatchSource,
 } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
@@ -120,6 +129,11 @@ export interface SetupContext {
    * as `useId`, `provide` and the macros, are UF2035 there.
    */
   readonly composable?: true;
+  /**
+   * The composables the module imports, by the identifier that declares each, with the API the
+   * resolver gave (ADR-0069): `undefined` for one its import reported.
+   */
+  readonly composables?: ReadonlyMap<object, ComposableApi | undefined>;
 }
 
 /** A component's setup, declared: its bindings, and what lowers its items. */
@@ -188,7 +202,21 @@ type Declared =
       binding: SetupBinding;
       key: InjectionKeyInfo;
     }
-  | { kind: "provide"; statement: AST.Statement; call: AST.CallExpression; key: InjectionKeyInfo };
+  | { kind: "provide"; statement: AST.Statement; call: AST.CallExpression; key: InjectionKeyInfo }
+  | {
+      kind: "use";
+      statement: AST.VariableDeclaration;
+      call: AST.CallExpression;
+      /** The composable's local name. */
+      name: string;
+      api: ComposableApi;
+      members: { member: string; binding: SetupBinding; span: Span }[];
+    };
+
+/** The binding kind of each kind of member a composable returns (ADR-0069). */
+const USED_KINDS: Readonly<
+  Record<ComposableMemberApi["kind"], "usedState" | "usedDerived" | "usedFn" | "usedConst">
+> = { state: "usedState", derived: "usedDerived", function: "usedFn", constant: "usedConst" };
 
 /** What `defineModel`'s options object holds, once checked (UF2028). */
 interface ModelOptions {
@@ -314,6 +342,16 @@ export function declareSetup(context: SetupContext): Setup {
     return context.authoring.get(resolution.declaration);
   };
 
+  /** The composable a callee is, `undefined` for one its import reported, or `null`. */
+  const composableOf = (callee: AST.Expression | AST.Super): ComposableApi | undefined | null => {
+    if (callee.type !== "Identifier") return null;
+    const resolution = context.scopes.resolve(callee);
+    if (resolution.kind !== "import" || !context.composables?.has(resolution.declaration)) {
+      return null;
+    }
+    return context.composables.get(resolution.declaration);
+  };
+
   for (const statement of statements) {
     checkCopiedText(span(statement), source, reporter, "Setup code");
     checkDirectives(span(statement), comments, reporter);
@@ -324,6 +362,15 @@ export function declareSetup(context: SetupContext): Setup {
     switch (statement.type) {
       case "ExpressionStatement": {
         const { expression } = statement;
+        const composable =
+          expression.type === "CallExpression" ? composableOf(expression.callee) : null;
+        if (composable !== null) {
+          if (composable) {
+            const call = expression as AST.CallExpression;
+            undestructured(call, composable, call);
+          }
+          continue;
+        }
         const api = expression.type === "CallExpression" ? apiOf(expression.callee) : null;
         if (api === undefined) continue;
         if (api === null) {
@@ -419,6 +466,11 @@ export function declareSetup(context: SetupContext): Setup {
     const declarator = statement.declarations[0]!;
     const { id, init } = declarator;
     const call = init?.type === "CallExpression" ? init : undefined;
+    const composable = call ? composableOf(call.callee) : null;
+    if (composable !== null) {
+      if (composable) use(statement, declarator, call!, composable);
+      return;
+    }
     const api = call ? apiOf(call.callee) : null;
     if (api === undefined) return;
     if (api !== null) {
@@ -495,6 +547,98 @@ export function declareSetup(context: SetupContext): Setup {
     const binding = declare(id, "localConst", written?.kinds ?? UNKNOWN);
     if (written) binding.typed = { complete: written.complete };
     declared.push({ kind: "const", statement, declarator, binding });
+  }
+
+  /**
+   * `const { on, toggle } = useToggle(false)` (ADR-0069): a composable's call at the top level of
+   * the setup, its result destructured into a binding per member, of the member's kind.
+   */
+  function use(
+    statement: AST.VariableDeclaration,
+    declarator: AST.VariableDeclarator,
+    call: AST.CallExpression,
+    api: ComposableApi,
+  ): void {
+    const { id } = declarator;
+    if (statement.kind !== "const" || id.type !== "ObjectPattern") {
+      undestructured(call, api, id.type === "ObjectPattern" ? statement : id);
+      return;
+    }
+    const name = (call.callee as AST.IdentifierReference).name;
+    let valid = true;
+    if (call.typeArguments) {
+      reporter.unsupported(
+        call.typeArguments,
+        `\`${name}\`'s type arguments are inferred from its arguments: a component's call of a composable writes none.`,
+        { help: "Remove the type arguments, and annotate the value an argument passes instead." },
+      );
+      valid = false;
+    }
+    const spread = call.arguments.find((argument) => argument.type === "SpreadElement");
+    const required = api.parameters.filter(({ optional }) => !optional).length;
+    const count = call.arguments.length;
+    if (spread || count < required || count > api.parameters.length) {
+      reporter.unsupported(
+        spread ?? call,
+        `\`${name}\` takes ${required === api.parameters.length ? `${required}` : `${required} to ${api.parameters.length}`} argument${api.parameters.length === 1 ? "" : "s"}, none spread: each target passes each argument as its parameter's kind reads it.`,
+        {
+          help: `Pass ${api.parameters.map((parameter) => `\`${parameter.name}\``).join(", ") || "nothing"}.`,
+        },
+      );
+      valid = false;
+    }
+    const members: { member: string; binding: SetupBinding; span: Span }[] = [];
+    for (const property of id.properties) {
+      if (
+        property.type !== "Property" ||
+        property.computed ||
+        property.key.type !== "Identifier" ||
+        property.value.type !== "Identifier"
+      ) {
+        reporter.unsupported(
+          property,
+          `Each member of \`${name}\`'s result is destructured by its name, \`on\` or \`on: open\`, with no default and no rest: each target returns the composable's members by their names.`,
+        );
+        valid = false;
+        continue;
+      }
+      const member = property.key.name;
+      const found = api.members.find((entry) => entry.name === member);
+      if (!found || members.some((entry) => entry.member === member)) {
+        reporter.unsupported(
+          property.key,
+          found
+            ? `\`${member}\` is destructured twice from \`${name}\`'s result: each member is bound once.`
+            : `\`${name}\` returns no member named \`${member}\`: it returns ${api.members.map((entry) => `\`${entry.name}\``).join(", ") || "nothing"}.`,
+        );
+        valid = false;
+        continue;
+      }
+      const binding = declare(
+        property.value as AST.BindingIdentifier,
+        USED_KINDS[found.kind],
+        found.kind === "function" ? FUNCTION : UNKNOWN,
+      );
+      binding.member = found;
+      members.push({ member, binding, span: span(property) });
+    }
+    if (valid) declared.push({ kind: "use", statement, call, name, api, members });
+  }
+
+  /** A composable's call whose result is not destructured by a top-level \`const\`. */
+  function undestructured(
+    call: AST.CallExpression,
+    api: ComposableApi,
+    at: { start: number; end: number },
+  ): void {
+    const name = (call.callee as AST.IdentifierReference).name;
+    reporter.unsupported(
+      at,
+      `\`${name}(…)\`'s result is destructured by a \`const\` at the top level of the component's body: a component reads what a composable returns by the names of its members.`,
+      {
+        help: `Write \`const { ${api.members.map((member) => member.name).join(", ")} } = ${name}(…);\`.`,
+      },
+    );
   }
 
   /** The kinds a local function's annotated return type gives, before its body is walked. */
@@ -1656,6 +1800,7 @@ export function declareSetup(context: SetupContext): Setup {
   const scope: SetupScope = {
     bindings,
     authoring: context.authoring,
+    composables: context.composables ?? new Map(),
     get events() {
       return events;
     },
@@ -1849,6 +1994,51 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
     case "provide": {
       const code = contextValue(item.call.arguments[1] as AST.Expression, item.key, render);
       return code && createProvideItem(item.key.name, code, at);
+    }
+    case "use": {
+      // Each argument as its parameter's kind reads it (ADR-0069): a value once, as an initial
+      // value is; a getter as a `computed`'s; a callback as client code.
+      const args: UseArgument[] = [];
+      let valid = true;
+      for (const [index, node] of item.call.arguments.entries()) {
+        const parameter = item.api.parameters[index]!;
+        const argument = node as AST.Expression;
+        if (parameter.kind === "value") {
+          args.push(createValueArgument(checkCode(argument, render).code, span(argument)));
+          continue;
+        }
+        if (argument.type !== "ArrowFunctionExpression") {
+          render.reporter.unsupported(
+            argument,
+            parameter.kind === "getter"
+              ? `\`${parameter.name}\` is a getter, written in place as an arrow function without parameters: the targets write it into their own reactive read (Qwik's \`useComputed$\`).`
+              : `\`${parameter.name}\` is a callback, written in place as an arrow function: the targets write it into their own client code (Qwik's QRL).`,
+            {
+              help: `Write it in place: \`${parameter.kind === "getter" ? "() => …" : "(value) => { … }"}\`.`,
+            },
+          );
+          valid = false;
+          continue;
+        }
+        const lowered = lowerFunction(argument, render, {
+          role: parameter.kind === "getter" ? "getter" : "function",
+        });
+        args.push(
+          parameter.kind === "getter"
+            ? createGetterArgument(lowered.function, span(argument))
+            : createCallbackArgument(lowered.function, span(argument)),
+        );
+      }
+      if (!valid) return undefined;
+      return createUseItem(
+        item.name,
+        args,
+        item.members.map(({ member, binding, span: at }) =>
+          createUsedMember(member, binding.id, at),
+        ),
+        at,
+        item.api.hasEffects === true,
+      );
     }
     case "lifecycle": {
       const [hook, ...extra] = item.call.arguments;
@@ -2228,10 +2418,15 @@ function unwatchable(
       fix = getterFix(node, text);
     } else if (binding?.kind === "templateRef") {
       what = `\`${node.name}\` is a template ref, which is never a reactive dependency on every target`;
-    } else if (binding?.kind === "model" || (binding?.kind === "context" && binding.ref)) {
-      // A watcher's ref sources are state and computed values (ADR-0048): a model or an injected
-      // ref is watched through a getter of its value.
-      what = `\`${node.name}\` is ${binding.kind === "model" ? "a model" : "an injected ref"}, which a watcher reads through a getter`;
+    } else if (
+      binding?.kind === "model" ||
+      binding?.kind === "usedState" ||
+      binding?.kind === "usedDerived" ||
+      (binding?.kind === "context" && binding.ref)
+    ) {
+      // A watcher's ref sources are state and computed values (ADR-0048): a model, an injected
+      // ref or a ref a composable returns (ADR-0069) is watched through a getter of its value.
+      what = `\`${node.name}\` is ${refName(binding.kind)}, which a watcher reads through a getter`;
       fix = {
         title: `Watch \`() => ${node.name}.value\``,
         confidence: "safe",
@@ -2257,15 +2452,19 @@ function unwatchable(
         edits: [{ span: span(node), text: binding.name }],
       };
     } else if (
-      (binding?.kind === "model" || (binding?.kind === "context" && binding.ref)) &&
+      (binding?.kind === "model" ||
+        binding?.kind === "usedState" ||
+        binding?.kind === "usedDerived" ||
+        (binding?.kind === "context" && binding.ref)) &&
       !node.computed &&
       !node.optional &&
       node.property.type === "Identifier" &&
       node.property.name === "value" &&
       node.object.start === node.start
     ) {
-      // A model or an injected ref is watched through a getter of its value (ADR-0048).
-      what = `\`${binding.name}.value\` is ${binding.kind === "model" ? "a model's" : "an injected ref's"} value as the setup runs, which nothing can watch`;
+      // A model, an injected ref or a ref a composable returns is watched through a getter of its
+      // value (ADR-0048, ADR-0069).
+      what = `\`${binding.name}.value\` is ${binding.kind === "model" ? "a model's value" : binding.kind === "context" ? "an injected ref's value" : "the value of a ref its composable returns"} as the setup runs, which nothing can watch`;
       fix = {
         title: `Watch \`() => ${binding.name}.value\``,
         confidence: "safe",
@@ -2294,6 +2493,15 @@ function unwatchable(
       ...(fix ? { fixes: [fix] } : {}),
     },
   );
+}
+
+/** What a ref a watcher reads through a getter is, for UF2020's messages. */
+function refName(kind: "model" | "context" | "usedState" | "usedDerived"): string {
+  return kind === "model"
+    ? "a model"
+    : kind === "context"
+      ? "an injected ref"
+      : "a ref its composable returns";
 }
 
 /** UF2020's safe fix for a prop's value: a getter that reads it. */

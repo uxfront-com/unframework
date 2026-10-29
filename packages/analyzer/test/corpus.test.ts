@@ -1,7 +1,9 @@
 // The corpus (tests/integration/cases) as the analyser reads it: each diagnostics case triggers
 // exactly the code it is named after, and every other case compiles without an error, with the
 // warnings its golden diagnostics hold. The harness's L1 checks the same through the compiler;
-// this keeps the analyser's own suite from accepting a rule that misfires on a valid source.
+// this keeps the analyser's own suite from accepting a rule that misfires on a valid source. The
+// fixture cases (test/fixtures/cases) are read the same way, and prove what no corpus case
+// exercises yet: a case's `.uf.ts` modules (ADR-0069).
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
@@ -29,15 +31,19 @@ import {
 import type { SharedModule, Shapes, StylesheetSource } from "../src/index.ts";
 
 const CASES = new URL("../../../tests/integration/cases/", import.meta.url).pathname;
+const FIXTURES = new URL("./fixtures/cases/", import.meta.url).pathname;
 
-/** The case sources under a directory, relative to the cases' root, sorted. */
-function sources(directory: string): string[] {
+/**
+ * The case sources under a directory, relative to `root`, sorted: its `.uf.tsx` sources, and its
+ * modules of composables, which a diagnostics case may report in (ADR-0069).
+ */
+function sources(root: string, directory = root): string[] {
   const found: string[] = [];
   for (const name of readdirSync(directory)) {
     if (name.startsWith("__") || name.startsWith(".")) continue;
     const path = join(directory, name);
-    if (statSync(path).isDirectory()) found.push(...sources(path));
-    else if (name.endsWith(".uf.tsx")) found.push(relative(CASES, path));
+    if (statSync(path).isDirectory()) found.push(...sources(root, path));
+    else if (name.endsWith(".uf.tsx") || name.endsWith(".uf.ts")) found.push(relative(root, path));
   }
   return found.toSorted();
 }
@@ -69,9 +75,9 @@ const codesByName = new Map([...catalogue.values()].map((entry) => [entry.name, 
  * reads the case's own files, its second `.uf.tsx` and its `.ts` type modules among them, and the
  * packages they import, so each case stays self-contained.
  */
-function caseOracle(directory: string): TypeOracle {
-  const root = CASES.replace(/\/+$/, "");
-  const dir = join(CASES, directory);
+function caseOracle(cases: string, directory: string): TypeOracle {
+  const root = cases.replace(/\/+$/, "");
+  const dir = join(cases, directory);
   return createSyntacticOracle({
     root,
     readFile: async (path) => {
@@ -93,10 +99,10 @@ async function shapesOf(parsed: ParsedModule, oracle: TypeOracle): Promise<Shape
   return (span) => shapes.get(`${span.start}:${span.end}`);
 }
 
-/** A file of a case, or `undefined` where there is none. */
-function caseFile(file: string): string | undefined {
+/** A file of a case under `root`, or `undefined` where there is none. */
+function caseFile(root: string, file: string): string | undefined {
   try {
-    return readFileSync(join(CASES, file), "utf8");
+    return readFileSync(join(root, file), "utf8");
   } catch {
     return undefined;
   }
@@ -114,15 +120,19 @@ function fileOf(from: string, written: string): string | undefined {
  * (ADR-0070): the first framework import and the first unreadable relative import of the modules
  * it reaches, each named relative to the importer's directory.
  */
-function sharedModule(directory: string, specifier: string): SharedModule | undefined {
+function sharedModule(
+  root: string,
+  directory: string,
+  specifier: string,
+): SharedModule | undefined {
   const first = fileOf(directory, specifier);
-  if (first === undefined || caseFile(first) === undefined) return undefined;
+  if (first === undefined || caseFile(root, first) === undefined) return undefined;
   const local = (file: string) => relative(directory, file).split(sep).join("/");
   const module: SharedModule = { file: local(first) };
   const files = [first];
   for (let index = 0; index < files.length; index++) {
     const file = files[index]!;
-    const parsed = parseModule(file, caseFile(file)!);
+    const parsed = parseModule(file, caseFile(root, file)!);
     const [unfollowed] = unfollowedImports(parsed);
     if (unfollowed !== undefined)
       module.unresolved ??= { specifier: unfollowed, file: local(file) };
@@ -131,7 +141,7 @@ function sharedModule(directory: string, specifier: string): SharedModule | unde
         module.framework ??= { specifier: imported, file: local(file) };
       } else if (imported.startsWith("./") || imported.startsWith("../")) {
         const next = fileOf(dirname(file), imported);
-        if (next === undefined || caseFile(next) === undefined) {
+        if (next === undefined || caseFile(root, next) === undefined) {
           module.unresolved ??= { specifier: imported, file: local(file) };
         } else if (!files.includes(next)) {
           files.push(next);
@@ -143,22 +153,23 @@ function sharedModule(directory: string, specifier: string): SharedModule | unde
 }
 
 /**
- * A case source analysed as `compile()` analyses it: with the shapes of its types and the APIs
- * of the files it imports in its case, each read through the case's oracle, as the compiler's
- * file resolver gives them (ADR-0053, ADR-0067), the shared `.ts` modules it imports (ADR-0070),
- * and the stylesheets beside it (ADR-0063), whose use of `:slotted()` only the codegen scoper
- * reads: no case here needs it.
+ * A case source under `root` analysed as `compile()` analyses it: with the shapes of its types
+ * and the APIs of the files it imports in its case, its children's and its composables' (ADR-0069),
+ * each read through the case's oracle, as the compiler's file resolver gives them (ADR-0053,
+ * ADR-0067), the shared `.ts` modules it imports (ADR-0070), and the stylesheets beside it
+ * (ADR-0063), whose use of `:slotted()` only the codegen scoper reads: no case here needs it. A
+ * `.uf.ts` source is analysed as a module of composables.
  */
-async function analyzeCase(file: string) {
-  const parsed = parseModule(file, readFileSync(join(CASES, file), "utf8"));
+async function analyzeCase(file: string, root = CASES) {
+  const parsed = parseModule(file, readFileSync(join(root, file), "utf8"));
   const directory = file.slice(0, file.lastIndexOf("/"));
-  const oracle = caseOracle(directory);
+  const oracle = caseOracle(root, directory);
   const imports = new Map<string, ModuleApi | undefined>();
   for (const specifier of componentImports(parsed)) {
     const child = join(directory, specifier);
     let source: string;
     try {
-      source = readFileSync(join(CASES, child), "utf8");
+      source = readFileSync(join(root, child), "utf8");
     } catch {
       imports.set(specifier, undefined);
       continue;
@@ -171,22 +182,28 @@ async function analyzeCase(file: string) {
   for (const specifier of stylesheetImports(parsed)) {
     const sheet = join(directory, specifier);
     try {
-      const source = readFileSync(join(CASES, sheet), "utf8");
+      const source = readFileSync(join(root, sheet), "utf8");
       stylesheets.set(specifier, { file: sheet, source, slotted: false });
     } catch {
       stylesheets.set(specifier, undefined);
     }
   }
   const modules = new Map(
-    sharedModuleImports(parsed).map((specifier) => [specifier, sharedModule(directory, specifier)]),
+    sharedModuleImports(parsed).map((specifier) => [
+      specifier,
+      sharedModule(root, directory, specifier),
+    ]),
   );
   const shapes = await shapesOf(parsed, oracle);
   await oracle.dispose();
   return analyze(parsed, { imports, modules, stylesheets, shapes });
 }
 
-describe("the corpus", () => {
-  const all = sources(CASES);
+describe.each([
+  ["the corpus", CASES],
+  ["the fixture cases", FIXTURES],
+])("%s", (_, root) => {
+  const all = sources(root);
 
   // A case of several sources triggers its code in one of them, as the harness joins them
   // (ADR-0057): a child the source imports may be valid.
@@ -202,7 +219,7 @@ describe("the corpus", () => {
     const code = NAMED_OTHERWISE[name] ?? codesByName.get(name);
     expect(code, `no code is named ${name}`).toBeDefined();
     const files = all.filter((file) => file.startsWith(`${id}/`));
-    const diagnostics = (await Promise.all(files.map(analyzeCase))).flatMap(
+    const diagnostics = (await Promise.all(files.map((file) => analyzeCase(file, root)))).flatMap(
       (result) => result.diagnostics,
     );
     if (AFTER_ANALYSIS.has(name)) {
@@ -216,7 +233,7 @@ describe("the corpus", () => {
   it.each(all.filter((file) => !file.startsWith("diagnostics/")))(
     "%s compiles with no error, and only its own warnings",
     async (file) => {
-      const { module, diagnostics } = await analyzeCase(file);
+      const { module, diagnostics } = await analyzeCase(file, root);
       expect(module).toBeDefined();
       expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual(WARNINGS[file] ?? []);
     },

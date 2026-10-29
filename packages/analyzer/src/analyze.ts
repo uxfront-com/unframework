@@ -22,6 +22,7 @@ import {
 import type {
   Binding,
   ComponentApi,
+  ComposableApi,
   ImportedName,
   InjectionKeyDeclaration,
   ModuleApi,
@@ -137,19 +138,24 @@ const RELATIVE_OR_ABSOLUTE = /^(?:[./\\]|[A-Za-z]:)/;
 export const COMPONENT_SPECIFIER: RegExp = /\.uf\.tsx$/;
 
 /**
- * The specifiers of the `.uf.tsx` modules a parsed module imports, values or types, in source
- * order, each once: what `compile()` asks its resolver for before the module is analysed.
+ * The specifiers of the `.uf.tsx` modules a parsed module imports, values or types, and of the
+ * `.uf.ts` modules whose composables a `.uf.tsx` module imports (ADR-0069), in source order, each
+ * once: what `compile()` asks its resolver for before the module is analysed.
  */
 export function componentImports(parsed: ParsedModule): string[] {
   const found = new Set<string>();
+  // A composable calls no other composable (UF2035), so a `.uf.ts` module resolves none.
+  const component = !COMPOSABLE_FILE.test(parsed.file);
   for (const statement of parsed.program.body) {
+    if (statement.type !== "ImportDeclaration") continue;
+    const specifier = statement.source.value;
     // A type-only import too: its outputs import the types from the output of the module's main
     // component, which only the module's API names (ADR-0067).
     if (
-      statement.type === "ImportDeclaration" &&
-      COMPONENT_SPECIFIER.test(statement.source.value)
+      COMPONENT_SPECIFIER.test(specifier) ||
+      (component && COMPOSABLE_FILE.test(specifier) && statement.importKind !== "type")
     ) {
-      found.add(statement.source.value);
+      found.add(specifier);
     }
   }
   return [...found];
@@ -329,6 +335,7 @@ export function analyzeModule(
     constants: [],
     composableModule,
     composableImports: new Map(),
+    composables: new Map(),
   };
   const moduleMark = reporter.diagnostics.length;
   for (const statement of parsed.program.body) {
@@ -411,6 +418,7 @@ export function analyzeModule(
     keys,
     passThrough: context.passThrough,
     shared: context.shared,
+    composables: context.composables,
     ...(observe ? { observe } : {}),
   };
   const lowered: UfComponent[] = [];
@@ -801,6 +809,11 @@ interface ModuleContext {
   composableModule: boolean;
   /** In a `.uf.ts` module, the names it imports from other `.uf.ts` modules (UF2035). */
   composableImports: Map<object, AST.ImportDeclarationSpecifier>;
+  /**
+   * In a `.uf.tsx` module, the composables it imports, by the identifier that declares each, with
+   * the API the resolver gave (ADR-0069): `undefined` for one reported where it is imported.
+   */
+  composables: Map<object, ComposableApi | undefined>;
 }
 
 /** The local names a module exports as values in `export { name }` and `export default name`. */
@@ -891,6 +904,14 @@ function checkTopLevelStatement(
           context.passThrough.names,
           context.passThroughImports,
         );
+        return;
+      }
+      if (
+        !context.composableModule &&
+        COMPOSABLE_FILE.test(statement.source.value) &&
+        statement.importKind !== "type"
+      ) {
+        composableImport(statement, context);
         return;
       }
       if (
@@ -1267,6 +1288,78 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
     (entry) => entry.specifier === specifier && !entry.names.length,
   );
   if (typesOnly !== -1) context.imports.splice(typesOnly, 1);
+  context.imports.push(
+    createModuleImport(specifier, api.file, api, names, {
+      start: statement.start,
+      end: statement.end,
+    }),
+  );
+}
+
+/**
+ * An import of a `.uf.ts` module's composables (ADR-0069): each name it binds is a composable the
+ * module exports, by the API the resolver gave (UF1202 otherwise), which the setup calls, or a
+ * type, which every output re-imports by name (ADR-0067).
+ */
+function composableImport(statement: AST.ImportDeclaration, context: ModuleContext): void {
+  const { reporter, resolved } = context;
+  const specifier = statement.source.value;
+  const api = resolved.get(specifier);
+  const values = statement.specifiers.filter(
+    (item) => !(item.type === "ImportSpecifier" && item.importKind === "type"),
+  );
+  const types = statement.specifiers.filter(
+    (item): item is AST.ImportSpecifier =>
+      item.type === "ImportSpecifier" && item.importKind === "type",
+  );
+  if (!api) {
+    for (const item of values) context.composables.set(item.local, undefined);
+    reporter.report(
+      "UF1202",
+      statement.source,
+      `"${specifier}" cannot be resolved: the compiler finds no module of composables there.`,
+      {
+        help: "Import a `.uf.ts` file of the project by its relative path, as in `./useToggle.uf.ts`.",
+      },
+    );
+    return;
+  }
+  if (types.length) typeImport(statement, types, context);
+  const names: ImportedName[] = [];
+  for (const item of values) {
+    if (item.type !== "ImportSpecifier") {
+      context.composables.set(item.local, undefined);
+      reporter.unsupported(
+        item,
+        "A module of composables exports each composable by its name, and nothing else: it is imported by name.",
+        {
+          help: `Import each composable by its name, as in \`import { useToggle } from "${specifier}";\`.`,
+        },
+      );
+      continue;
+    }
+    const imported = exportName(item.imported);
+    const composable = api.composables?.find((entry) => entry.name === imported);
+    if (!composable) {
+      const exported = (api.composables ?? []).map((entry) => `\`${entry.name}\``);
+      context.composables.set(item.local, undefined);
+      reporter.report(
+        "UF1202",
+        item,
+        `"${specifier}" exports no composable named \`${imported}\`: it exports ${exported.join(", ") || "no composable"}.`,
+        { help: "Import a composable the module exports." },
+      );
+      continue;
+    }
+    names.push(
+      createImportedName("Composable", imported, item.local.name, {
+        start: item.start,
+        end: item.end,
+      }),
+    );
+    context.composables.set(item.local, composable);
+  }
+  if (!names.length) return;
   context.imports.push(
     createModuleImport(specifier, api.file, api, names, {
       start: statement.start,
@@ -1692,6 +1785,8 @@ interface ComponentModule {
   passThrough: PassThrough;
   /** The values the module's components may read (ADR-0070). */
   shared: SharedValues;
+  /** The composables the module imports, by the identifier that declares each (ADR-0069). */
+  composables: ReadonlyMap<object, ComposableApi | undefined>;
   observe?: SetupObserver;
 }
 
@@ -1760,6 +1855,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     statements: body.slice(0, -1),
     returned: returned ?? undefined,
     keys: module.keys,
+    composables: module.composables,
   });
   const render: RenderContext = {
     source: parsed.source,

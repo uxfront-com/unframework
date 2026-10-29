@@ -219,7 +219,7 @@ export function directoryOf(path: string): string {
  * `specifier` joined to `directory`, normalised with forward slashes, or `undefined` when it is
  * not relative. A `..` that leaves the root stays (`../b`), and one after it adds another.
  */
-function joinPath(directory: string, specifier: string): string | undefined {
+export function joinPath(directory: string, specifier: string): string | undefined {
   if (!specifier.startsWith("./") && !specifier.startsWith("../")) return undefined;
   const parts = directory ? directory.split("/") : [];
   for (const part of specifier.split("/")) {
