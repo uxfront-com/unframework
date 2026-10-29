@@ -7,8 +7,9 @@ per component (ADR-0034, ADR-0046):
 
 - **A frontmatter** at the very top when it declares anything (`src/frontmatter.ts`):
   - the source's `import type` names the server render reads, and those an injection key's value
-    type names, by name (ADR-0067): from a `.ts` module or a package as written, `import type { BadgeProps } from "./types";`, and from a
-    child's output, `import Field, { type FieldProps } from "./Field.astro";`. An imported
+    type names, by name (ADR-0067): from a `.ts` module or a package as written,
+    `import type { BadgeProps } from "./types";`, and from a child's output,
+    `import Field, { type FieldProps } from "./Field.astro";`. An imported
     `Props` is imported as `OwnProps`, `import type { Props as OwnProps } from "./types";`, and
     every type the output prints names it so, since Astro declares its own `Props`. No name of
     Astro's own takes a type import's name;
@@ -20,11 +21,12 @@ per component (ADR-0034, ADR-0046):
     `type Props = BadgeProps;` for a named props type, `interface Props { … }` holding an inline
     object type's members, `type Props = Base & { n: number } & { … }` for a type an interface
     cannot extend, nothing more when the props type is named `Props` already. A source that
-    exports its `Props` gets Astro's exported too. A generic component's `Props` declares its
-    type parameters as the source writes them, `interface Props<T> extends ListProps<T>`, and
-    Astro infers `T` from a consumer's props (ADR-0068). Astro declares them on the component's
-    render function alone, so a parameter the kept setup names is declared at the top of the
-    frontmatter as its constraint, `type T = Item;`, or `unknown`;
+    exports its `Props` gets Astro's exported too. A generic component's `Props` declares the
+    type parameters its members name, and those their bounds name, as the source writes them,
+    `interface Props<T> extends ListProps<T>`, and Astro infers `T` from a consumer's props
+    (ADR-0068). One no member names is left out: nothing could infer it. Astro declares them on
+    the component's render function alone, so a parameter the kept setup names is declared at
+    the top of the frontmatter as its constraint, `type T = Item;`, or `unknown`;
   - the props the server render reads (the markup and the kept setup), destructured in the
     source's order with their defaults: `const { label, tone = "info" } = Astro.props;`. Astro
     prints no list keys, so a prop only a key reads is left out, and so is a prop only client code

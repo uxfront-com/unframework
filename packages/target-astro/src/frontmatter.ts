@@ -155,10 +155,15 @@ export function frontmatterOf(
   const keys = keyTypes(component, module, new Set(types.map(({ name }) => name))).map(ownCode);
   for (const statement of keys) sections.push([statement]);
   keyTypeImports(module, keys, imports, local);
+  const annotation = parameter && own(parameter.type.code);
   const alias = propsDeclaration(
-    parameter && own(parameter.type.code),
+    annotation,
     extras,
-    typeParametersCode(component.typeParameters, own),
+    typeParametersCode(
+      component.typeParameters,
+      own,
+      propsTypeParameters(component, annotation, extras),
+    ),
   );
   // Exported where the source exports its own `Props` too, under the same name (ADR-0068).
   if (alias !== undefined) {
@@ -625,17 +630,7 @@ function typeParameterAliases(
   for (const each of code) {
     forEachFreeTypeReference(parseStatementsSource(each).statements, ({ name }) => named.add(name));
   }
-  const constraints = new Map(parameters.map(({ name, constraint }) => [name, constraint]));
-  const pending = [...named];
-  for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
-    const constraint = constraints.get(name);
-    if (!constraint) continue;
-    for (const next of typeNames(constraint)) {
-      if (named.has(next)) continue;
-      named.add(next);
-      pending.push(next);
-    }
-  }
+  reachBounds(parameters, named, { defaults: false });
   return parameters
     .filter(({ name }) => named.has(name))
     .map(
@@ -644,15 +639,68 @@ function typeParameterAliases(
 }
 
 /**
- * A component's type parameters as the source writes them, `<T extends Item = Item>`, or none,
- * with each constraint and default named as the output names its types (`own`).
+ * Adds to `named` each type parameter that the constraint of one in it names (`U extends T`), and
+ * with `defaults` its default too (`U = T`), along the whole chain.
+ */
+function reachBounds(
+  parameters: readonly TypeParameter[],
+  named: Set<string>,
+  { defaults }: { defaults: boolean },
+): void {
+  const byName = new Map(parameters.map((parameter) => [parameter.name, parameter]));
+  const pending = [...named];
+  for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
+    const parameter = byName.get(name);
+    if (!parameter) continue;
+    for (const bound of [parameter.constraint, defaults ? parameter.default : undefined]) {
+      if (!bound) continue;
+      const { statements } = parseStatementsSource(`type T = ${bound.code};`);
+      forEachFreeTypeReference(statements, ({ name: next }) => {
+        if (named.has(next)) return;
+        named.add(next);
+        pending.push(next);
+      });
+    }
+  }
+}
+
+/**
+ * The type parameters `Props` declares: those its printed members name (the annotation's, and
+ * the models', render props' and fallthrough's beside it), and those their constraints and
+ * defaults name in turn. One no member names is left out, which nothing could infer and the
+ * linter would report unused (L5).
+ */
+function propsTypeParameters(
+  component: UfComponent,
+  annotation: string | undefined,
+  extras: readonly string[],
+): Set<string> {
+  const named = new Set<string>();
+  const parameters = component.typeParameters ?? [];
+  if (!parameters.length) return named;
+  const types = [annotation, extras.length ? `{ ${extras.join("; ")} }` : undefined];
+  for (const type of types) {
+    if (type === undefined) continue;
+    const { statements } = parseStatementsSource(`type T = ${type};`);
+    forEachFreeTypeReference(statements, ({ name }) => named.add(name));
+  }
+  reachBounds(parameters, named, { defaults: true });
+  return named;
+}
+
+/**
+ * A component's type parameters that `used` holds, as the source writes them,
+ * `<T extends Item = Item>`, or none, with each constraint and default named as the output names
+ * its types (`own`).
  */
 function typeParametersCode(
   parameters: readonly TypeParameter[] | undefined,
   own: (type: string) => string,
+  used: ReadonlySet<string>,
 ): string {
-  if (!parameters?.length) return "";
-  const written = parameters.map(({ name, constraint, default: fallback }) => {
+  const kept = (parameters ?? []).filter(({ name }) => used.has(name));
+  if (!kept.length) return "";
+  const written = kept.map(({ name, constraint, default: fallback }) => {
     const bound = constraint ? ` extends ${own(constraint.code)}` : "";
     return `${name}${bound}${fallback ? ` = ${own(fallback.code)}` : ""}`;
   });

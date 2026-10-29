@@ -887,6 +887,35 @@ const typed: Record<string, { source: string[]; types: string }> = {
       "}",
     ],
   },
+  // Generic components whose props name no type parameter: none, and an inline literal.
+  genericUnnamedWithoutProps: {
+    types: "export {};\n",
+    source: [
+      'import { ref } from "unframework";',
+      "",
+      "export default function Card<T>() {",
+      "  const value = ref<T | undefined>(undefined);",
+      "  return <p>{String(value.value)}</p>;",
+      "}",
+    ],
+  },
+  // A type parameter only another's constraint and default name, which `Props` declares too.
+  genericBoundOnly: {
+    types: "export {};\n",
+    source: [
+      "export default function List<U, T extends U = U>({ items }: { items: T[] }) {",
+      "  return <p>{items.length}</p>;",
+      "}",
+    ],
+  },
+  genericUnnamedInline: {
+    types: "export {};\n",
+    source: [
+      "export default function List<T>({ n }: { n: number }) {",
+      "  return <p>{n}</p>;",
+      "}",
+    ],
+  },
   // A conditional type that infers a `Props` of its own, beside an imported `Props`.
   inferProps: {
     types: "export interface Props { label: string }\n",
@@ -1101,6 +1130,16 @@ describe("imported types through the type oracle (ADR-0067)", () => {
     expect(await emittedTyped("defaultProps")).toContain("interface Props<T = OwnProps> {");
     expect(await emittedTyped("genericWithoutProps")).toContain(
       "interface Props<T> {\n  value?: T;",
+    );
+  });
+
+  it("declares on `Props` only the type parameters its members name", async () => {
+    const card = await emittedTyped("genericUnnamedWithoutProps");
+    expect(card).toContain("interface Props {");
+    expect(card).toContain("type T = unknown;");
+    expect(await emittedTyped("genericUnnamedInline")).toContain("interface Props { n: number");
+    expect(await emittedTyped("genericBoundOnly")).toContain(
+      "interface Props<U, T extends U = U> {",
     );
   });
 
