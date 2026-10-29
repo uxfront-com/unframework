@@ -44,6 +44,7 @@ import type {
 } from "@unframework/ir";
 
 import { qwikEventProp } from "./events.ts";
+import { genericModelType } from "./generics.ts";
 import { unreachable } from "./plan.ts";
 import type { OutputNames, SetupPlan } from "./plan.ts";
 import { printFunction } from "./setup.ts";
@@ -527,6 +528,11 @@ export function modelListener(
   plan: SetupPlan,
 ): { event: string; handler: string } {
   const write = (value: string) => modelWrite(attribute.value, value, plan);
+  // A model or state of a generic component's type parameter takes the control's value as its
+  // type (src/generics.ts).
+  const reference = attribute.value.refs.find((each) => each.kind === "Binding");
+  const generic = reference && genericModelType(plan.component, reference.binding);
+  const typed = (value: string) => (generic ? `${value} as ${generic}` : value);
   const listener = (event: string, value: string, parameters = "_, element") => ({
     event,
     handler: `(${parameters}) => ${write(value)}`,
@@ -538,8 +544,8 @@ export function modelListener(
       const event = attribute.lazy ? "change" : "input";
       const options = modelTextOptions(attribute);
       return options
-        ? listener(event, `${plan.names.once("modelText")}.read(element, ${options})`)
-        : listener(event, "element.value");
+        ? listener(event, typed(`${plan.names.once("modelText")}.read(element, ${options})`))
+        : listener(event, typed("element.value"));
     }
     case "checkbox":
       return listener("change", "element.checked");
@@ -551,9 +557,9 @@ export function modelListener(
     case "radio":
       return listener("change", controlValue(element, context), "");
     case "select":
-      return listener("change", "element.value");
+      return listener("change", typed("element.value"));
     case "select-multiple":
-      return listener("change", `${plan.names.once("selectedValues")}(element)`);
+      return listener("change", typed(`${plan.names.once("selectedValues")}(element)`));
     default:
       return unreachable(attribute.control);
   }

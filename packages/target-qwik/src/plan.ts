@@ -27,6 +27,7 @@ import type {
 import { fillExpressions, planComposition } from "./composition.ts";
 import type { CompositionPlan } from "./composition.ts";
 import { qwikEventProp } from "./events.ts";
+import { typedByParameters } from "./generics.ts";
 import { elementParameter, handlerOnlyFunctions, splitHandler, usedFunctions } from "./handlers.ts";
 import type { SplitHandler } from "./handlers.ts";
 import { callSites, spliceable } from "./inline.ts";
@@ -1041,7 +1042,10 @@ function functionRefs(fn: FunctionCode): CodeReference[] {
  */
 function hoistable(component: UfComponent): Set<BindingId> {
   const candidates = new Map<BindingId, readonly CodeReference[]>();
+  // Code typed by a type parameter stays in the generic arrow, where `T` is (ADR-0068).
+  const typed = typedByParameters(component);
   for (const item of component.setup) {
+    if ((item.kind === "Const" || item.kind === "Function") && typed.has(item.binding)) continue;
     if (item.kind === "Const") candidates.set(item.binding, item.value.refs);
     else if (item.kind === "Function") candidates.set(item.binding, functionRefs(item.function));
   }

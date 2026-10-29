@@ -1,4 +1,6 @@
+import type { Labelled } from "./types";
 import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
+import type { TimeInterval } from "rxjs";
 
 type StatusProps = TimeInterval<string> & Labelled;
 

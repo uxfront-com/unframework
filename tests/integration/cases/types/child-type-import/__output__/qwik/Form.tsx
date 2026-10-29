@@ -1,4 +1,4 @@
-import Field from "./Field";
+import Field, { type FieldProps } from "./Field";
 import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export default component$<{ field: FieldProps } & { class?: ClassList; style?: CSSProperties }>(

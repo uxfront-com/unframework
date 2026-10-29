@@ -10,21 +10,27 @@ export interface PickerProps<T> {
   items: T[];
 }
 
-export interface PickerSlots {
+export interface PickerSlots<T> {
   item$?: QRL<(props: { item: T }) => JSXOutput>;
 }
 
-export default component$<
-  PickerProps<T> & PickerSlots & { class?: ClassList; style?: CSSProperties }
->(({ items, item$, class: className, style, ...attributes }) => {
-  return (
-    <ul {...scopeAttributes(attributes)} class={className} style={style}>
-      {items.map((item, index) => (
-        <li key={index}>{item$?.({ item })}</li>
-      ))}
-    </ul>
-  );
-});
+export default component$(
+  <T,>({
+    items,
+    item$,
+    class: className,
+    style,
+    ...attributes
+  }: PickerProps<T> & PickerSlots<T> & { class?: ClassList; style?: CSSProperties }) => {
+    return (
+      <ul {...scopeAttributes(attributes)} class={className} style={style}>
+        {items.map((item, index) => (
+          <li key={index}>{item$?.({ item })}</li>
+        ))}
+      </ul>
+    );
+  },
+);
 
 /** The scope attributes of the styled parents that render this component, for its root. */
 function scopeAttributes(props: object): Record<string, ""> {

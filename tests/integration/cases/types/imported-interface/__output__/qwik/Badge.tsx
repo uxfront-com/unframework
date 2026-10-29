@@ -1,3 +1,4 @@
+import type { BadgeProps } from "./types";
 import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export default component$<BadgeProps & { class?: ClassList; style?: CSSProperties }>(

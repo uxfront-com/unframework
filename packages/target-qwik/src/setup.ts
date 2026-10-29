@@ -36,6 +36,7 @@ import type {
 import { summarizeTracked } from "@unframework/ir";
 
 import { awaitQrlCalls, passElement } from "./calls.ts";
+import { moduleTypeParameters } from "./generics.ts";
 import { inlineCalls, localDeclaration } from "./inline.ts";
 import type { InlineFunction, Inliner } from "./inline.ts";
 import {
@@ -244,7 +245,18 @@ function moduleCode(plan: SetupPlan, item: SetupItem): string | undefined {
   if (item.kind === "Function" && plan.functions.get(item.binding)?.form === "module") {
     // A function whose whole body moved to its listeners (./handlers.ts) is not declared.
     if (plan.functionCode(item.binding) === null) return "";
-    return functionDeclaration(plan, item, "pure");
+    const declared = functionDeclaration(plan, item, "pure");
+    // A function typed by the component's `T` takes its own (src/generics.ts, ADR-0068).
+    const parameters = moduleTypeParameters(plan.component, item.function);
+    if (!parameters) return declared;
+    const { name } = plan.functions.get(item.binding)!.binding;
+    const head = [
+      `async function ${name}`,
+      `function ${name}`,
+      `const ${name} = async `,
+      `const ${name} = `,
+    ].find((each) => declared.startsWith(each))!;
+    return `${head}${parameters}${declared.slice(head.length)}`;
   }
   return undefined;
 }

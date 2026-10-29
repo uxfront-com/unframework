@@ -502,6 +502,105 @@ function Rows() {
   );
 });
 
+describe("qwik target: generic components", () => {
+  // ADR-0068: a generic arrow in `component$`, which TypeScript makes a generic component, and
+  // the interfaces beside it over the type parameters their members read.
+  const pick = `import { computed, defineEmits, defineExpose, defineModel, defineSlots } from "unframework";
+import type { Element } from "unframework";
+
+export type PickEvents = "taken";
+
+export interface PickProps<T extends { id: string }, U extends string = "x"> {
+  items: T[];
+  note?: U;
+}
+
+export default function Pick<T extends { id: string }, U extends string = "x">({ items, note }: PickProps<T, U>) {
+  const emit = defineEmits<{ pick: [item: T] }>();
+  const first = computed(() => (items[0] ? label(items[0]) : ""));
+  const open = defineModel<boolean>("open");
+  const slots = defineSlots<{ item?(props: { item: T }): Element }>();
+  const empty: T[] = [];
+  function label(item: T): string {
+    return item.id;
+  }
+  function choose(item: T) {
+    emit("pick", item);
+  }
+  defineExpose({ choose });
+  return (
+    <ul data-note={note} data-open={String(open.value)} data-first={first.value}>
+      {(items.length ? items : empty).map((item) => (
+        <li key={item.id}>
+          <button type="button" onClick={() => choose(item)}>{label(item)}</button>
+          {slots.item?.({ item })}
+        </li>
+      ))}
+    </ul>
+  );
+}`;
+  const multi = `import { defineModel, ref } from "unframework";
+
+export default function Multi<T extends string>({ options }: { options: readonly T[] }) {
+  const picked = ref<T[]>([]);
+  const text = defineModel<T>("text", { required: true });
+  return (
+    <div>
+      <output>{picked.value.join(",")}</output>
+      <select multiple v-model={picked.value}>
+        {options.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+      <input v-model={text.value} />
+    </div>
+  );
+}`;
+  const unread = `export default function Unread<T>(props: { items: T[] }) {
+  return <p>none</p>;
+}`;
+
+  it("writes a generic arrow, and its interfaces over the parameters they read", async () => {
+    const contents = await emitSource(pick);
+    expect(contents).toContain(
+      "export interface PickEvents_1<T extends { id: string }> {\n  onPick$?: QRL<(item: T) => void>;\n}",
+    );
+    expect(contents).toContain("export interface PickModels {");
+    expect(contents).toContain("export interface PickSlots<T extends { id: string }> {");
+    expect(contents).toMatch(
+      /export default component\$\(\n {2}<T extends \{ id: string \}, U extends string = "x">\(\{/,
+    );
+    // `PickEvents` is the source's own exported type (ADR-0068): the interface takes another name.
+    expect(contents).toContain(
+      "}: PickProps<T, U> &\n    PickEvents_1<T> &\n    PickModels &\n    PickSlots<T> & { ref?: Signal<object | undefined> }) => {",
+    );
+    // A constant `T` types stays in the arrow, where `T` is in scope; a function `T` types moves
+    // to module scope with its own `T`, so the computed's `$` scope can call it.
+    expect(contents).toMatch(/=> \{\n(?:.*\n)*? {4}const empty: T\[\] = \[\];/);
+    expect(contents).toMatch(/^function label<T extends \{ id: string \}>\(item: T\): string \{$/m);
+  });
+
+  it("writes a control's value as the type of the generic state or model it binds", async () => {
+    const contents = await emitSource(multi);
+    expect(contents).toContain("picked.value = selectedValues(element) as T[]");
+    expect(contents).toContain("setText(element.value as T)");
+  });
+
+  it(
+    "emits generic components the optimizer, the checker and lint accept (L3, L4, L5)",
+    async () => {
+      for (const source of [pick, multi, unread]) {
+        const contents = await emitSource(source);
+        const file = { path: "/virtual/Generic.tsx", contents };
+        const result = (await toolchain.frameworkCompile([file], context)).get(file.path);
+        expect(result).toEqual({ errors: [], warnings: [] });
+      }
+      await expectCheckedClean([pick, multi, unread]);
+    },
+    CHECKED,
+  );
+});
+
 describe("qwik target: options read as the DOM reads them", () => {
   const pick = `import { ref } from "unframework";
 

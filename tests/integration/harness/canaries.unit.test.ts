@@ -878,6 +878,28 @@ describe("canaries", () => {
     ]);
   });
 
+  it("finds a generic Qwik component's body and types its props `any`", async () => {
+    // Qwik's generic arrow (ADR-0068): its props type is the parameter's, not a type argument.
+    const info = listCases().find(({ id }) => id === "generics/list")!;
+    const { outputs } = await compile(readFileSync(info.source, "utf8"), {
+      filename: info.filename,
+      targets: ["qwik"],
+      plugins: canaryPlugins("L4-consumer", "qwik"),
+    });
+    expect(outputs.qwik![0]!.contents.split("\n").filter(widenedProps)).toEqual([
+      "  <T,>({ label, items, selected, class: className, style, ...attributes }: any) => {",
+    ]);
+    expect(
+      mismatchClosingTag({
+        path: "List.tsx",
+        contents:
+          "export default component$(\n  <T extends { on: () => void }>({ items }: { items: T[] }) => {\n    return <ul>{items.length}</ul>;\n  },\n);\n",
+      }),
+    ).toBe(
+      "export default component$(\n  <T extends { on: () => void }>({ items }: { items: T[] }) => {\n    return <ul>{items.length}</span>;\n  },\n);\n",
+    );
+  });
+
   it("widens an exported interface, a type alias and a type re-export, keeping type parameters", () => {
     const widened = anyExportedTypes(
       [

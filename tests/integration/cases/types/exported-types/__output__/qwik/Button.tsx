@@ -2,6 +2,8 @@ import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export type ButtonTone = "primary" | "secondary";
 
+export type ButtonSize = "small" | "large";
+
 export interface ButtonProps {
   label: string;
   tone?: ButtonTone;
