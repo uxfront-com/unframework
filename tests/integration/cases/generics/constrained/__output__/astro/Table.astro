@@ -4,7 +4,7 @@ export interface TableProps<T extends { id: string; label: string }> {
   rows: T[];
 }
 
-interface Props extends TableProps<T> {
+interface Props<T extends { id: string; label: string }> extends TableProps<T> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }

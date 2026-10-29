@@ -1,0 +1,8 @@
+---
+import Picker from "../../../../../integration/cases/generics/scoped-slot/__output__/astro/Picker.astro";
+
+const fruits = [{ name: "Apple", count: 3 }];
+---
+
+<!-- @uf-expect TS2339 Picker.slot:item -->
+<Picker items={fruits} item={({ item }) => <b>{item.weight}</b>} />

@@ -1,0 +1,7 @@
+---
+import Picker from "../../../../../integration/cases/generics/scoped-slot/__output__/astro/Picker.astro";
+
+const fruits = [{ name: "Apple", count: 3 }];
+---
+
+<Picker items={fruits} item={({ item }) => <b>{item.name} × {item.count}</b>} />

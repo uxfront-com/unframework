@@ -3,7 +3,7 @@ export interface PickerProps<T> {
   items: T[];
 }
 
-interface Props extends PickerProps<T> {
+interface Props<T> extends PickerProps<T> {
   item?: (props: { item: T }) => unknown;
   class?: string;
   style?: Record<string, string | number | undefined>;

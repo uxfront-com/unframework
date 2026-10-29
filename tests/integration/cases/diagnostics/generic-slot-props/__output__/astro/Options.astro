@@ -1,5 +1,5 @@
 ---
-interface Props {
+interface Props<T extends { value: string }> {
   options: T[];
   option?: (props: { option: T }) => unknown;
   class?: string;

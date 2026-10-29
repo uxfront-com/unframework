@@ -28,7 +28,7 @@ import { astroFrameworkCompile } from "../src/toolchain/compile.ts";
 import { toolchain } from "../src/toolchain/index.ts";
 import { renderToString } from "../src/toolchain/server.ts";
 import { loadAstroComponent, scratchDirectory } from "./astro.ts";
-import { compiled, emitSource, emitted, SCOPE_HELPER } from "./source.ts";
+import { compiled, emitSource, emitted, emittedWithTypes, SCOPE_HELPER } from "./source.ts";
 import { integrationRoot, toolchainDir } from "./workspace.ts";
 
 const at = { start: 0, end: 0 };
@@ -501,12 +501,15 @@ describe("props: the frontmatter (ADR-0034)", () => {
     const [other, list] = emitSource(unread);
     expect(other!.contents).toContain("interface Note { text: string }");
     expect(other!.contents).not.toContain("Item");
-    // Astro prints no keys: a prop or an index only a key reads is left out.
+    // Astro prints no keys: a prop or an index only a key reads is left out. The main output
+    // re-exports the type only its sibling declares (ADR-0068).
     expect(list).toEqual({
       path: "List.astro",
       contents: lines(
         "---",
         "interface Item { id: string; label: string }",
+        "",
+        'export type { OtherProps } from "./Other.astro";',
         "",
         "export interface ListProps { items: Item[]; title?: string; extra?: number; prefix: string }",
         "",
@@ -624,6 +627,603 @@ describe("props: the frontmatter (ADR-0034)", () => {
       ),
     );
   });
+});
+
+describe("types and generics (ADR-0067, ADR-0068)", () => {
+  it("declares a generic component's type parameters on `Props`, as the source writes them", () => {
+    // An inline props type, and a named one: Astro infers `T` from a consumer's props.
+    expect(
+      emitted(
+        [
+          'export default function Tags<T extends string = "a">({ items }: { items: T[] }) {',
+          "  return <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>;",
+          "}",
+          "",
+        ].join("\n"),
+      ),
+    ).toContain(
+      'interface Props<T extends string = "a"> { items: T[]\n  class?: string;\n  style?: Record<string, string | number | undefined>;\n}',
+    );
+    const picker = [
+      'import { defineOptions, defineSlots } from "unframework";',
+      'import type { Element } from "unframework";',
+      "",
+      "export interface PickerProps<T> {",
+      "  items: T[];",
+      "}",
+      "",
+      "export default function Picker<T>({ items }: PickerProps<T>) {",
+      "  defineOptions({ inheritAttrs: false });",
+      "  const slots = defineSlots<{ item?(props: { item: T }): Element }>();",
+      "  return <ul>{items.map((item, index) => <li key={index}>{slots.item?.({ item })}</li>)}</ul>;",
+      "}",
+      "",
+    ].join("\n");
+    expect(emitted(picker)).toContain(
+      "interface Props<T> extends PickerProps<T> {\n  item?: (props: { item: T }) => unknown;\n}",
+    );
+    // Without a member beside the source's, `Props` is an alias that takes them too.
+    expect(
+      emitted(
+        [
+          'import { defineOptions } from "unframework";',
+          "",
+          "export interface ListProps<T> {",
+          "  items: T[];",
+          "}",
+          "",
+          "export default function List<T>({ items }: ListProps<T>) {",
+          "  defineOptions({ inheritAttrs: false });",
+          "  return <ul>{items.map((item, index) => <li key={index}>{String(item)}</li>)}</ul>;",
+          "}",
+          "",
+        ].join("\n"),
+      ),
+    ).toContain("type Props<T> = ListProps<T>;");
+  });
+
+  it("writes an exported type no component reaches in source order among the copied types", () => {
+    const output = emitted(
+      [
+        'import { defineOptions } from "unframework";',
+        "",
+        'export type ButtonTone = "primary" | "secondary";',
+        "",
+        'export type ButtonSize = "small" | "large";',
+        "",
+        "export interface ButtonProps {",
+        "  label: string;",
+        "  tone?: ButtonTone;",
+        "}",
+        "",
+        "export default function Button({ label }: ButtonProps) {",
+        "  defineOptions({ inheritAttrs: false });",
+        '  return <button type="button">{label}</button>;',
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(output).toBe(
+      lines(
+        "---",
+        'export type ButtonTone = "primary" | "secondary";',
+        "",
+        'export type ButtonSize = "small" | "large";',
+        "",
+        "export interface ButtonProps {",
+        "  label: string;",
+        "  tone?: ButtonTone;",
+        "}",
+        "",
+        "type Props = ButtonProps;",
+        "",
+        "const { label } = Astro.props;",
+        "---",
+        "",
+        '<button type="button">{label}</button>',
+      ),
+    );
+  });
+});
+
+/**
+ * Sources whose types `types.ts` declares beside them (ADR-0067), each emitted through the type
+ * oracle, and each checked through Astro's toolchain below.
+ */
+const typed: Record<string, { source: string[]; types: string }> = {
+  // An imported `Props` inside the annotation, and inside a copied alias.
+  importedProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import type { Props } from "./types";',
+      "",
+      "type CardProps = { item: Props; extra?: Props };",
+      "",
+      "export default function Card({ item }: CardProps) {",
+      "  return <span>{item.label}</span>;",
+      "}",
+    ],
+  },
+  // An imported `Props<T>` as the whole annotation, with no member beside it.
+  importedGenericProps: {
+    types: "export interface Props<T> { items: T[] }\n",
+    source: [
+      'import { defineOptions } from "unframework";',
+      'import type { Props } from "./types";',
+      "",
+      "export default function Card<T>({ items }: Props<T>) {",
+      "  defineOptions({ inheritAttrs: false });",
+      "  return <ul>{items.map((item, index) => <li key={index}>{String(item)}</li>)}</ul>;",
+      "}",
+    ],
+  },
+  // An imported `Props` in a file that never names `Astro`.
+  importedPropsUnread: {
+    types: "export interface Props { title?: string }\n",
+    source: [
+      'import { defineOptions } from "unframework";',
+      'import type { Props } from "./types";',
+      "",
+      "export default function Card(_props: Props) {",
+      "  defineOptions({ inheritAttrs: false });",
+      "  return <p>x</p>;",
+      "}",
+    ],
+  },
+  // An imported `OwnProps` beside the source's own `Props`, which Astro renames.
+  importedOwnProps: {
+    types: "export interface OwnProps { label: string }\n",
+    source: [
+      'import type { OwnProps } from "./types";',
+      "",
+      "interface Props { own: OwnProps }",
+      "",
+      "export default function Card({ own }: Props) {",
+      '  return <div class="card">{own.label}</div>;',
+      "}",
+    ],
+  },
+  // A model of an imported type that only a listener reads, and a type only a listener names.
+  clientTypes: {
+    types: 'export type Tone = "light" | "dark";\n\nexport type Next = Tone;\n',
+    source: [
+      'import { defineModel } from "unframework";',
+      'import type { Next, Tone } from "./types";',
+      "",
+      "export default function Card() {",
+      '  const tone = defineModel<Tone>("tone");',
+      "  return (",
+      '    <button type="button" onClick={() => { const next: Next = "dark"; tone.value = next; }}>',
+      "      Toggle",
+      "    </button>",
+      "  );",
+      "}",
+    ],
+  },
+  // An intersection as the annotation, which an interface cannot extend.
+  intersection: {
+    types: "export interface Base { label: string }\n",
+    source: [
+      'import type { Base } from "./types";',
+      "",
+      "export default function Card({ label, n }: Base & { n: number }) {",
+      "  return <span>{label} {n}</span>;",
+      "}",
+    ],
+  },
+  // Kept setup code that names an imported `Props`.
+  setupProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import { computed } from "unframework";',
+      'import type { Props } from "./types";',
+      "",
+      "export default function Card({ item }: { item?: Props }) {",
+      '  const fallback: Props = { label: "none" };',
+      "  const shown = computed(() => item ?? fallback);",
+      "  return <span>{shown.value.label}</span>;",
+      "}",
+    ],
+  },
+  // Kept setup code that names the source's own `Props`, which a model extends on Astro.
+  setupLocalProps: {
+    types: "export {};\n",
+    source: [
+      'import { defineModel } from "unframework";',
+      "",
+      "interface Props { label: string }",
+      "",
+      "export default function Card({ label }: Props) {",
+      '  const open = defineModel<boolean>("open", { required: true });',
+      '  const next: Props = { label: "x" };',
+      "  return <span>{label} {next.label} {String(open.value)}</span>;",
+      "}",
+    ],
+  },
+  // An injection key of an imported `Props`, whose value type Astro exports under the key's name.
+  keyProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import { provide } from "unframework";',
+      'import type { InjectionKey } from "unframework";',
+      'import type { Props } from "./types";',
+      "",
+      'export const ItemKey: InjectionKey<Props> = Symbol("uf.item");',
+      "",
+      "export default function Card({ item }: { item: Props }) {",
+      "  provide(ItemKey, item);",
+      "  return <span>{item.label}</span>;",
+      "}",
+    ],
+  },
+  // Injection keys whose value types only the keys name: an imported type, and a `Props`.
+  keyOnlyTypes: {
+    types:
+      'export interface Theme { tone: "light" | "dark" }\n\nexport interface Props { label: string }\n',
+    source: [
+      'import { provide } from "unframework";',
+      'import type { InjectionKey } from "unframework";',
+      'import type { Props, Theme } from "./types";',
+      "",
+      'export const ThemeKey: InjectionKey<Theme> = Symbol("uf.theme");',
+      'export const ItemKey: InjectionKey<Props> = Symbol("uf.item");',
+      "",
+      "export default function Card() {",
+      '  provide(ThemeKey, { tone: "dark" });',
+      '  provide(ItemKey, { label: "x" });',
+      "  return <p>x</p>;",
+      "}",
+    ],
+  },
+  // A generic component without props, whose model is of its type parameter.
+  genericWithoutProps: {
+    types: "export {};\n",
+    source: [
+      'import { defineModel } from "unframework";',
+      "",
+      "export default function Card<T>() {",
+      '  const value = defineModel<T>("value");',
+      "  return <p>{String(value.value)}</p>;",
+      "}",
+    ],
+  },
+  // Generic components whose props name no type parameter: none, and an inline literal.
+  genericUnnamedWithoutProps: {
+    types: "export {};\n",
+    source: [
+      'import { ref } from "unframework";',
+      "",
+      "export default function Card<T>() {",
+      "  const value = ref<T | undefined>(undefined);",
+      "  return <p>{String(value.value)}</p>;",
+      "}",
+    ],
+  },
+  // A type parameter only another's constraint and default name, which `Props` declares too.
+  genericBoundOnly: {
+    types: "export {};\n",
+    source: [
+      "export default function List<U, T extends U = U>({ items }: { items: T[] }) {",
+      "  return <p>{items.length}</p>;",
+      "}",
+    ],
+  },
+  // A type parameter only another's default names.
+  genericDefaultOnly: {
+    types: "export {};\n",
+    source: [
+      "export default function List<T, U = T>({ u }: { u: U }) {",
+      "  return <p>{String(u)}</p>;",
+      "}",
+    ],
+  },
+  genericUnnamedInline: {
+    types: "export {};\n",
+    source: [
+      "export default function List<T>({ n }: { n: number }) {",
+      "  return <p>{n}</p>;",
+      "}",
+    ],
+  },
+  // A conditional type that infers a `Props` of its own, beside an imported `Props`.
+  inferProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import { computed } from "unframework";',
+      'import type { Props } from "./types";',
+      "",
+      "type Unbox<B> = B extends { value: infer Props } ? Props : never;",
+      "",
+      "export default function Card({ item }: { item: Props }) {",
+      "  const size = computed((): Unbox<{ value: number }> => item.label.length);",
+      "  return <span>{size.value.toFixed(1)}</span>;",
+      "}",
+    ],
+  },
+  // A mapped type whose key is named `Props`, beside an imported `Props`.
+  mappedProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import type { Props } from "./types";',
+      "",
+      'type Flags = { [Props in "a" | "b"]: Props };',
+      "",
+      "export default function Card({ item }: { item: Props }) {",
+      '  const flags: Flags = { a: "a", b: "b" };',
+      "  return <span>{item.label} {flags.a}</span>;",
+      "}",
+    ],
+  },
+  // A type parameter constrained by an imported `Props`, which the kept setup names.
+  constraintProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import { ref } from "unframework";',
+      'import type { Props } from "./types";',
+      "",
+      "export default function List<T extends Props>({ items }: { items: T[] }) {",
+      "  const picked = ref<T | undefined>(items[0]);",
+      "  return <p>{picked.value?.label}</p>;",
+      "}",
+    ],
+  },
+  // A type parameter whose default is an imported `Props`.
+  defaultProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import type { Props } from "./types";',
+      "",
+      "export default function List<T = Props>({ items }: { items: T[] }) {",
+      "  return <p>{items.length}</p>;",
+      "}",
+    ],
+  },
+  // A nested generic function in the kept setup, which declares a `T` of its own.
+  nestedGeneric: {
+    types: "export {};\n",
+    source: [
+      'import { computed } from "unframework";',
+      "",
+      "export interface ListProps<T> {",
+      "  items: T[];",
+      "}",
+      "",
+      "export default function List<T>({ items }: ListProps<T>) {",
+      "  const n = computed(() => [items.length].map(<T extends number>(x: T) => x + 1)[0]);",
+      "  return <p>{n.value}</p>;",
+      "}",
+    ],
+  },
+  // A type parameter named `Props`, beside an imported `Props`.
+  parameterProps: {
+    types: "export interface Props { label: string }\n",
+    source: [
+      'import type { Props } from "./types";',
+      "",
+      "export interface Box<Props> { value: Props }",
+      "",
+      "export default function Card({ item, box }: { item: Props; box: Box<number> }) {",
+      "  return <span>{item.label} {box.value.toFixed(1)}</span>;",
+      "}",
+    ],
+  },
+  // A chain of constraints, each naming the next parameter.
+  constraintChain: {
+    types: "export {};\n",
+    source: [
+      'import { ref } from "unframework";',
+      "",
+      "export interface ListProps<T, U, V> {",
+      "  items: T[];",
+      "  u: U;",
+      "  v: V;",
+      "}",
+      "",
+      "export default function List<T extends U, U extends V, V>({ items, u, v }: ListProps<T, U, V>) {",
+      "  const picked = ref<T | undefined>(items[0]);",
+      "  return <p>{String(picked.value)} {String(u)} {String(v)}</p>;",
+      "}",
+    ],
+  },
+  // An intersection of parenthesised types.
+  parenthesised: {
+    types: "export interface Base { label: string }\n",
+    source: [
+      'import type { Base } from "./types";',
+      "",
+      "export default function Card({ label, n }: (Base) & ({ n: number })) {",
+      "  return <span>{label} {n}</span>;",
+      "}",
+    ],
+  },
+  // A generic component whose kept setup names its type parameters.
+  genericSetup: {
+    types: "export interface Item { id: string }\n",
+    source: [
+      'import { computed, ref } from "unframework";',
+      'import type { Item } from "./types";',
+      "",
+      "export interface ListProps<T extends Item, U> {",
+      "  items: T[];",
+      "  note?: U;",
+      "}",
+      "",
+      "export default function List<T extends Item, U>({ items, note }: ListProps<T, U>) {",
+      "  const picked = ref<T | undefined>(items[0]);",
+      "  const shown = computed(() => String(note as U | undefined));",
+      "  return <p>{picked.value?.id} {shown.value}</p>;",
+      "}",
+    ],
+  },
+};
+
+/** The emitted file of each typed source, by its name. */
+const emittedTyped = async (name: string) =>
+  emittedWithTypes(typed[name]!.source.join("\n") + "\n", { "types.ts": typed[name]!.types });
+
+describe("imported types through the type oracle (ADR-0067)", () => {
+  it("imports a `Props` as `OwnProps`, and renames every reference to it", async () => {
+    const card = await emittedTyped("importedProps");
+    expect(card).toContain('import type { Props as OwnProps } from "./types";');
+    expect(card).toContain("type CardProps = { item: OwnProps; extra?: OwnProps };");
+    expect(card).toContain("interface Props extends CardProps {");
+    // As the whole annotation, `Props` is an alias of it, exported where nothing reads it.
+    expect(await emittedTyped("importedGenericProps")).toContain(
+      'import type { Props as OwnProps } from "./types";\n---\n'.replace(
+        "\n---\n",
+        "\n\ntype Props<T> = OwnProps<T>;",
+      ),
+    );
+    expect(await emittedTyped("importedPropsUnread")).toContain("export type Props = OwnProps;");
+  });
+
+  it("keeps a `Props` that a scope declares, and renames an injection key's", async () => {
+    expect(await emittedTyped("parameterProps")).toContain(
+      "export interface Box<Props> { value: Props }",
+    );
+    expect(await emittedTyped("inferProps")).toContain(
+      "type Unbox<B> = B extends { value: infer Props } ? Props : never;",
+    );
+    expect(await emittedTyped("keyProps")).toContain("export type ItemKey = OwnProps;");
+    const keys = await emittedTyped("keyOnlyTypes");
+    expect(keys).toContain('import type { Props as OwnProps, Theme } from "./types";');
+    expect(keys).toContain("export type ItemKey = OwnProps;");
+    expect(await emittedTyped("mappedProps")).toContain(
+      'type Flags = { [Props in "a" | "b"]: Props };',
+    );
+  });
+
+  it("claims `OwnProps` apart from an imported `OwnProps`", async () => {
+    const card = await emittedTyped("importedOwnProps");
+    expect(card).toContain('import type { OwnProps } from "./types";');
+    expect(card).toContain("interface OwnProps_1 { own: OwnProps }");
+    expect(card).toContain("interface Props extends OwnProps_1 {");
+  });
+
+  it("imports a model's type, which `Props` prints, and no type only a listener names", async () => {
+    const card = await emittedTyped("clientTypes");
+    expect(card).toContain('import type { Tone } from "./types";');
+    expect(card).toContain("  tone?: Tone;");
+    expect(card).not.toContain("Next");
+  });
+
+  it("writes `Props` for an intersection as an intersection with the members beside it", async () => {
+    expect(await emittedTyped("intersection")).toContain(
+      "type Props = Base & { n: number } & {\n  class?: string;\n  style?: Record<string, string | number | undefined>;\n};",
+    );
+    // Parentheses around each part are kept, and an interface would read them as one type.
+    expect(await emittedTyped("parenthesised")).toContain(
+      "type Props = (Base) & ({ n: number }) & {",
+    );
+  });
+
+  it("exports `Props` where the source exports its own", () => {
+    const output = emitted(
+      [
+        "export interface Props { label: string }",
+        "",
+        "export default function Card({ label }: Props) {",
+        "  return <span>{label}</span>;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(output).toContain("export interface OwnProps { label: string }");
+    expect(output).toContain("export interface Props extends OwnProps {");
+  });
+
+  it("names an imported `Props` in a type parameter's constraint and default", async () => {
+    const constrained = await emittedTyped("constraintProps");
+    expect(constrained).toContain("interface Props<T extends OwnProps> {");
+    expect(constrained).toContain("type T = OwnProps;");
+    expect(await emittedTyped("defaultProps")).toContain("interface Props<T = OwnProps> {");
+    expect(await emittedTyped("genericWithoutProps")).toContain(
+      "interface Props<T> {\n  value?: T;",
+    );
+  });
+
+  it("declares on `Props` only the type parameters its members name", async () => {
+    const card = await emittedTyped("genericUnnamedWithoutProps");
+    expect(card).toContain("interface Props {");
+    expect(card).toContain("type T = unknown;");
+    expect(await emittedTyped("genericUnnamedInline")).toContain("interface Props { n: number");
+    expect(await emittedTyped("genericBoundOnly")).toContain(
+      "interface Props<U, T extends U = U> {",
+    );
+    expect(await emittedTyped("genericDefaultOnly")).toContain("interface Props<T, U = T> {");
+  });
+
+  it("declares no type parameter that only a nested scope declares for itself", async () => {
+    const list = await emittedTyped("nestedGeneric");
+    expect(list).toContain("<T extends number>(x: T) => x + 1");
+    expect(list).not.toContain("type T =");
+  });
+
+  it("declares the type parameters the kept setup names as their constraints", async () => {
+    const list = await emittedTyped("genericSetup");
+    expect(list).toContain("type T = Item;\ntype U = unknown;");
+    expect(list).toContain("const picked = items[0] as T | undefined;");
+  });
+
+  it(
+    "passes astro check and the linters, and types each consumer (L4, L5)",
+    { timeout: 60_000 },
+    async () => {
+      const directory = join(scratch.path, "typed");
+      const outputs: string[] = [];
+      for (const [name, { types }] of Object.entries(typed)) {
+        mkdirSync(join(directory, name), { recursive: true });
+        writeFileSync(join(directory, name, "types.ts"), types);
+        const path = join(directory, name, "Card.astro");
+        writeFileSync(
+          path,
+          (await formatOutput({ path: "Card.astro", contents: await emittedTyped(name) })).file
+            .contents,
+        );
+        outputs.push(path);
+      }
+      mkdirSync(join(directory, "exported"), { recursive: true });
+      writeFileSync(
+        join(directory, "exported", "Card.astro"),
+        emitted(
+          "export interface Props { label: string }\nexport default function Card({ label }: Props) {\n  return <span>{label}</span>;\n}\n",
+        ),
+      );
+      outputs.push(join(directory, "exported", "Card.astro"));
+      // A consumer that misuses each kind of `Props`, and one that imports an exported `Props`.
+      const consumer = join(directory, "Consumer.astro");
+      writeFileSync(
+        consumer,
+        [
+          "---",
+          'import Generic from "./importedGenericProps/Card.astro";',
+          'import Unread from "./importedPropsUnread/Card.astro";',
+          'import Exported, { type Props } from "./exported/Card.astro";',
+          "",
+          'const props: Props = { label: "Save" };',
+          "---",
+          "",
+          '<Generic items="x" />',
+          "<Unread title={1} />",
+          "<Exported {...props} />",
+          "",
+        ].join("\n"),
+      );
+      const context = { toolchainDir, root: integrationRoot };
+      const [checked, linted] = await Promise.all([
+        astroTypecheck([...outputs, consumer], context),
+        toolchain.lint(outputs, context),
+      ]);
+      const clean = Object.fromEntries(outputs.map((path) => [path, []]));
+      expect(Object.fromEntries([...checked].filter(([path]) => path !== consumer))).toEqual(clean);
+      expect(Object.fromEntries(linted)).toEqual(clean);
+      const misuses = checked.get(consumer)!.map(({ code, line }) => [code, line]);
+      expect(misuses.toSorted((a, b) => Number(a[1]) - Number(b[1]))).toEqual([
+        ["TS2322", 9],
+        ["TS2322", 10],
+      ]);
+    },
+  );
 });
 
 describe("control flow (ADR-0036)", () => {
@@ -822,9 +1422,11 @@ describe("the M1 output through the toolchain", { timeout: 60_000 }, () => {
       mkdirSync(directory, { recursive: true });
       const files: { path: string; contents: string }[] = [];
       for (const [name, source] of Object.entries(sources)) {
+        // A directory per source, where its outputs import each other by their own names.
+        mkdirSync(join(directory, name), { recursive: true });
         for (const file of emitSource(source)) {
           const contents = format ? (await formatOutput(file)).file.contents : file.contents;
-          const path = join(directory, `${name}-${file.path}`);
+          const path = join(directory, name, file.path);
           writeFileSync(path, contents);
           files.push({ path, contents });
         }
