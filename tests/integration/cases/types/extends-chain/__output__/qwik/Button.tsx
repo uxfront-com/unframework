@@ -1,3 +1,4 @@
+import type { ButtonProps } from "./types";
 import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export default component$<ButtonProps & { class?: ClassList; style?: CSSProperties }>(

@@ -36,6 +36,7 @@ import type {
 import { summarizeTracked } from "@unframework/ir";
 
 import { awaitQrlCalls, passElement } from "./calls.ts";
+import { moduleTypeParameters } from "./generics.ts";
 import { inlineCalls, localDeclaration } from "./inline.ts";
 import type { InlineFunction, Inliner } from "./inline.ts";
 import {
@@ -244,7 +245,22 @@ function moduleCode(plan: SetupPlan, item: SetupItem): string | undefined {
   if (item.kind === "Function" && plan.functions.get(item.binding)?.form === "module") {
     // A function whose whole body moved to its listeners (./handlers.ts) is not declared.
     if (plan.functionCode(item.binding) === null) return "";
-    return functionDeclaration(plan, item, "pure");
+    const declared = functionDeclaration(plan, item, "pure");
+    // A function typed by the component's `T` takes its own (src/generics.ts, ADR-0068).
+    // Its parameters follow the declaration's `function name` or the arrow's `const name = `.
+    const { name } = plan.functions.get(item.binding)!.binding;
+    const head = [
+      `async function ${name}`,
+      `function ${name}`,
+      `const ${name} = async `,
+      `const ${name} = `,
+    ].find((each) => declared.startsWith(each))!;
+    const parameters = moduleTypeParameters(
+      plan.component,
+      item.function,
+      head.startsWith("const"),
+    );
+    return `${head}${parameters}${declared.slice(head.length)}`;
   }
   return undefined;
 }
@@ -296,7 +312,7 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
     case "Derived": {
       const name = bindingName(plan, item.binding);
       const type = item.type ? `<${item.type.code}>` : "";
-      const getter = printFunction(plan, item.getter, "pure").text;
+      const getter = getterSource(plan, item.getter);
       return [declaration(`const ${name} = ${names.core("useComputed$")}${type}(${getter});`)];
     }
     case "Function":
@@ -411,6 +427,9 @@ function functionDeclaration(plan: SetupPlan, item: FunctionItem, site: RewriteS
 /** A setup function in the component: plain, a `$()` QRL, or both (./plan.ts). */
 function functionStatements(plan: SetupPlan, item: FunctionItem): Statement[] {
   const fnPlan = plan.functions.get(item.binding)!;
+  // One whose only plain callers are getters is declared in each of them instead
+  // ({@link getterSource}): client code calls its QRL.
+  const plain = !fnPlan.gettersOnly || !plan.component.typeParameters?.length;
   const fn = plan.functionCode(item.binding);
   // A function whose whole body moved to its listeners (./listeners.ts) is not declared.
   if (fn === null) return [];
@@ -430,11 +449,14 @@ function functionStatements(plan: SetupPlan, item: FunctionItem): Statement[] {
   const declared = plan.declared.has(item.binding);
   switch (fnPlan.form) {
     case "render":
-      return [block(functionDeclaration(plan, item, "pure"))];
+      return plain ? [block(functionDeclaration(plan, item, "pure"))] : [];
     case "qrl":
       return declared ? [block(qrl())] : [];
     case "both":
-      return [block(functionDeclaration(plan, item, "pure")), ...(declared ? [block(qrl())] : [])];
+      return [
+        ...(plain ? [block(functionDeclaration(plan, item, "pure"))] : []),
+        ...(declared ? [block(qrl())] : []),
+      ];
     case "module":
       return [];
     default:
@@ -535,6 +557,59 @@ export function clientCode(
     local(plan.promiseQrls),
   );
   return { code: awaited.code, kind: inlined.kind, async: awaited.async, locals: inlined.locals };
+}
+
+/**
+ * A getter (a `computed`'s, a watcher's source) as its `useComputed$` takes it. A getter is a `$`
+ * scope, which may call only functions at module scope (ADR-0045). In a generic component some
+ * stay in the arrow (src/generics.ts): the getter declares each one it calls inside itself, as
+ * client code declares a function it calls in place (./inline.ts), where `T` is in scope and the
+ * scope captures only what that function reads.
+ */
+function getterSource(plan: SetupPlan, getter: FunctionCode): string {
+  const kind: CodeKind = getter.expression ? "expression" : "statements";
+  const rewritten = rewriteCode(getter.body, plan.component, plan.rules(), "pure");
+  const inlined = inlineCalls(rewritten, kind, keptFunctions(plan), { keep: true });
+  if (!inlined.locals.size) return printFunction(plan, getter, "pure").text;
+  return functionSource(asKind(getter, inlined.kind), inlined.code);
+}
+
+/** A function whose body is now of `kind`: an expression body may have become a block. */
+function asKind(fn: FunctionCode, kind: CodeKind): FunctionCode {
+  if (kind === "expression" || !fn.expression) return fn;
+  const block = { ...fn };
+  delete block.expression;
+  return block;
+}
+
+/** The setup functions a getter declares where it calls them: those not at module scope. */
+function keptFunctions(plan: SetupPlan): Inliner {
+  const kept = new Map<string, InlineFunction>();
+  const inliner: Inliner = {
+    target(name) {
+      const found = kept.get(name);
+      if (found) return found;
+      const fnPlan = [...plan.functions.values()].find(
+        (each) => each.form !== "module" && each.binding.name === name,
+      );
+      if (!fnPlan) return undefined;
+      const fn = plan.functionCode(fnPlan.item.binding) ?? fnPlan.item.function;
+      const kind: CodeKind = fn.expression ? "expression" : "statements";
+      const rewritten = rewriteCode(fn.body, plan.component, plan.rules(), "pure");
+      // Its own calls of such functions are declared in it too.
+      const body = inlineCalls(rewritten, kind, inliner, { keep: true });
+      const target: InlineFunction = {
+        fn: asKind(fn, body.kind),
+        declaration: fnPlan.item.form === "declaration",
+        parameters: fn.parameters,
+        body: body.code,
+        locals: new Set(),
+      };
+      kept.set(name, target);
+      return target;
+    },
+  };
+  return inliner;
 }
 
 const inlineFunctions = new WeakMap<SetupPlan, Map<BindingId, InlineFunction>>();
@@ -743,7 +818,7 @@ function watchStatements(plan: SetupPlan, item: WatchItem): Statement[] {
     const single = singleRead(plan, source.getter);
     if (single !== undefined) return tracked(plan, single, track);
     const name = names.fresh(`${valueName ?? "watched"}Source`);
-    const getter = printFunction(plan, source.getter, "pure").text;
+    const getter = getterSource(plan, source.getter);
     statements.push(`const ${name} = ${names.core("useComputed$")}(${getter});`);
     return { tracked: `${track}(${name})`, read: `${name}.value` };
   });

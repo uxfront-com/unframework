@@ -1,3 +1,4 @@
+import type { FieldOptions } from "./types";
 import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export type TextFieldProps = Required<Pick<FieldOptions, "name" | "label">> &

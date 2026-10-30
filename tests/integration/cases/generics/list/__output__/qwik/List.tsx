@@ -6,8 +6,15 @@ export interface ListProps<T> {
   selected?: T;
 }
 
-export default component$<ListProps<T> & { class?: ClassList; style?: CSSProperties }>(
-  ({ label, items, selected, class: className, style, ...attributes }) => {
+export default component$(
+  <T,>({
+    label,
+    items,
+    selected,
+    class: className,
+    style,
+    ...attributes
+  }: ListProps<T> & { class?: ClassList; style?: CSSProperties }) => {
     return (
       <ul aria-label={label} {...scopeAttributes(attributes)} class={className} style={style}>
         {items.map((item, index) => (

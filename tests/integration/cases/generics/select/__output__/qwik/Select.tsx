@@ -13,15 +13,13 @@ export interface SelectProps<T extends string> {
   options: readonly T[];
 }
 
-export interface SelectModels {
+export interface SelectModels<T extends string> {
   value: T;
   onValueChange$?: QRL<(value: T) => void>;
 }
 
-export default component$<
-  SelectProps<T> & SelectModels & { class?: ClassList; style?: CSSProperties }
->(
-  ({
+export default component$(
+  <T extends string>({
     label,
     options,
     value: valueProp,
@@ -29,7 +27,7 @@ export default component$<
     class: className,
     style,
     ...attributes
-  }) => {
+  }: SelectProps<T> & SelectModels<T> & { class?: ClassList; style?: CSSProperties }) => {
     const valueLocal = useSignal<T>();
     const value = useComputed$(() => (valueProp === undefined ? valueLocal.value : valueProp));
 
@@ -43,7 +41,7 @@ export default component$<
     return (
       <label {...scopeAttributes(attributes)} class={className} style={style}>
         {label}{" "}
-        <select onChange$={(_, element) => setValue(element.value)}>
+        <select onChange$={(_, element) => setValue(element.value as T)}>
           {options.map((option) => (
             <option
               key={option}

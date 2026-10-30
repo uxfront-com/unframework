@@ -1,5 +1,8 @@
 import Swatch from "./Swatch";
+import type { Tone } from "./types";
 import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
+
+export type { Tone } from "./types";
 
 export default component$<{ tone: Tone } & { class?: ClassList; style?: CSSProperties }>(
   ({ tone, class: className, style, ...attributes }) => {

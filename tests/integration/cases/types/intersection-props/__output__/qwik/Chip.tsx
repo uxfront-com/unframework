@@ -1,3 +1,4 @@
+import type { Sized, Toned } from "./types";
 import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 type ChipProps = Sized & Toned & { label: string };

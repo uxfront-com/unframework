@@ -1,3 +1,4 @@
+import type { Tone } from "./types";
 import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export default component$<{ tone: Tone } & { class?: ClassList; style?: CSSProperties }>(

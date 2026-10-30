@@ -1,5 +1,6 @@
 import {
   addPassThroughImports,
+  addTypeImports,
   bindingOf,
   boundJsxAttribute,
   childImports,
@@ -29,6 +30,7 @@ import {
   spreadRead,
   staticJsxAttribute,
   ternaryChain,
+  typeExportsCode,
 } from "@unframework/codegen";
 import type { EmitContext, JsxContext, JsxDialect, OutputFile, Target } from "@unframework/codegen";
 import { codeOf } from "@unframework/ir";
@@ -74,6 +76,8 @@ import {
   slotProp,
 } from "./composition.ts";
 import { qwikEventProp } from "./events.ts";
+import { generatedInterface, typeParameterDeclaration } from "./generics.ts";
+import type { GeneratedInterface } from "./generics.ts";
 import { Listeners } from "./listeners.ts";
 import { OutputNames, planSetup } from "./plan.ts";
 import type { SetupPlan } from "./plan.ts";
@@ -235,6 +239,7 @@ export const qwik: Target = defineTarget({
       return names;
     };
     const reserved = ownNames(component);
+    for (const name of typeNamesOf(component, module)) reserved.add(name);
     const imports = new ImportSet(reserved);
     // A source's components are joined into one module where it is loaded (ADR-0053): each
     // claims the scope helper from a base of its own (`scopeAttributes_1`), past the names any
@@ -263,6 +268,8 @@ export const qwik: Target = defineTarget({
     for (const key of keyImports(component, module, (name) => name)) {
       if (key.specifier) imports.add(key.specifier, key.name, { local: key.local, exact: true });
     }
+    // The types it imports, by name (ADR-0067): a child's from its output, `./Field`.
+    addTypeImports(component, module, imports, (name) => name);
     const componentFn = imports.add("@qwik.dev/core", "component$");
     const names = new OutputNames(imports);
     const plan = planSetup(component, module, names);
@@ -331,22 +338,36 @@ export const qwik: Target = defineTarget({
     const parameter = propsParameter(component, jsx, plan, scope);
     const propsType = [
       component.propsParameter?.type.code,
-      events?.name,
-      models?.name,
-      slots?.name,
+      events?.reference,
+      models?.reference,
+      slots?.reference,
       ownProps(component, plan),
     ].filter((type) => type !== undefined);
     // The rest the root picks the scope attributes out of needs a props type to destructure.
     if (scope && !propsType.length) propsType.push("object");
+    const propsTypeNode = propsType.length
+      ? jsx.placeholders.type(propsType.join(" & "))
+      : undefined;
+    // A generic component is a generic arrow, `component$(<T,>(props: ListProps<T>) => …)`,
+    // whose parameter carries the props type: `component$`'s own type argument can't name `T`
+    // (ADR-0068). It takes the props object where it reads none, which carries `T` all the same.
+    const typeParameters = typeParameterDeclaration(component, jsx.placeholders);
+    const arrowParameter =
+      typeParameters && propsTypeNode
+        ? ({
+            ...(parameter ?? js.bindingIdentifier("_props")),
+            typeAnnotation: js.tsTypeAnnotation(propsTypeNode),
+          } as Parameter)
+        : parameter;
+    const arrow = js.arrowFunction(arrowParameter ? [arrowParameter] : [], [
+      ...(body ? [jsx.placeholders.statements(`${body}\n`)] : []),
+      returned,
+    ]);
+    arrow.typeParameters = typeParameters;
     const definition = js.callExpression(
       js.identifier(componentFn),
-      [
-        js.arrowFunction(parameter ? [parameter] : [], [
-          ...(body ? [jsx.placeholders.statements(`${body}\n`)] : []),
-          returned,
-        ]),
-      ],
-      propsType.length ? [jsx.placeholders.type(propsType.join(" & "))] : [],
+      [arrow],
+      propsTypeNode && !typeParameters ? [propsTypeNode] : [],
     );
     const hoisted = setup.hoisted.length
       ? [jsx.placeholders.statements(`${joinHoisted(setup.hoisted)}\n`)]
@@ -382,10 +403,10 @@ export const qwik: Target = defineTarget({
           {
             imports: declarations,
             types: [
-              ...componentTypes(component, module),
-              ...(events ? [events] : []),
-              ...(models ? [models] : []),
-              ...(slots ? [slots] : []),
+              ...moduleTypes(component, module),
+              ...(events ? [events.declaration] : []),
+              ...(models ? [models.declaration] : []),
+              ...(slots ? [slots.declaration] : []),
             ],
             body: [
               ...(keys ? [jsx.placeholders.statements(`${keys}\n`)] : []),
@@ -538,10 +559,11 @@ function compositionProps(plan: SetupPlan): [prop: string, local: string][] {
 
 /**
  * The slots a component declares as QRL render props (ADR-0054), as an exported interface beside
- * its props type: `export interface CardSlots { title$?: QRL<() => JSXOutput>; }`. The default
- * slot without props is projected, and is no prop.
+ * its props type: `export interface CardSlots { title$?: QRL<() => JSXOutput>; }`, generic over the
+ * type parameters its members read (src/generics.ts). The default slot without props is
+ * projected, and is no prop.
  */
-function slotsInterface(component: UfComponent, plan: SetupPlan): TypeDeclaration | undefined {
+function slotsInterface(component: UfComponent, plan: SetupPlan): GeneratedInterface | undefined {
   const declared = (component.slots?.slots ?? []).filter((slot) =>
     isRenderProp(component, slot.name),
   );
@@ -553,16 +575,16 @@ function slotsInterface(component: UfComponent, plan: SetupPlan): TypeDeclaratio
     (slot) =>
       `  ${slotProp(slot.name)}?: ${qrl}<(${slot.props ? `props: ${slot.props.code}` : ""}) => ${output}>;`,
   );
-  const code = `interface ${name} {\n${members.join("\n")}\n}`;
-  return { name, exported: true, code, span: component.slots!.span };
+  return generatedInterface(component, name, members, component.slots!.span);
 }
 
 /**
  * The models a component declares (ADR-0054), each a prop and its change callback, as an
  * exported interface beside its props type: `export interface StepperModels { value?: number;
- * onValueChange$?: QRL<(value: number) => void>; }`.
+ * onValueChange$?: QRL<(value: number) => void>; }`, generic over the type parameters its members
+ * read (src/generics.ts).
  */
-function modelsInterface(component: UfComponent, plan: SetupPlan): TypeDeclaration | undefined {
+function modelsInterface(component: UfComponent, plan: SetupPlan): GeneratedInterface | undefined {
   const models = [...plan.composition.models.values()];
   const [first] = models;
   if (!first) return undefined;
@@ -575,8 +597,7 @@ function modelsInterface(component: UfComponent, plan: SetupPlan): TypeDeclarati
       `  ${callbackProp}?: ${qrl}<(${model}: ${type}) => void>;`,
     ];
   });
-  const code = `interface ${name} {\n${members.join("\n")}\n}`;
-  return { name, exported: true, code, span: first.item.span };
+  return generatedInterface(component, name, members, first.item.span);
 }
 
 /**
@@ -684,9 +705,10 @@ function attributeValue(attribute: JsxAttributeNode): AstExpression | undefined 
 /**
  * The events a component emits, as an exported interface of their QRL props beside the props
  * type (ADR-0047): `export interface CounterEvents { onChange$?: QRL<(value: number) => void>; }`,
- * which the component's props type joins (`CounterProps & CounterEvents`).
+ * which the component's props type joins (`CounterProps & CounterEvents`), generic over the type
+ * parameters its payloads read (src/generics.ts).
  */
-function eventsInterface(component: UfComponent, plan: SetupPlan): TypeDeclaration | undefined {
+function eventsInterface(component: UfComponent, plan: SetupPlan): GeneratedInterface | undefined {
   const declared = component.emits?.events ?? [];
   if (!declared.length) return undefined;
   const name = plan.names.fresh(`${component.name}Events`);
@@ -694,8 +716,7 @@ function eventsInterface(component: UfComponent, plan: SetupPlan): TypeDeclarati
   const members = declared.map(
     (event) => `  ${qwikEventProp(event.name)}?: ${qrl}<(${eventParameters(event)}) => void>;`,
   );
-  const code = `interface ${name} {\n${members.join("\n")}\n}`;
-  return { name, exported: true, code, span: component.emits!.span };
+  return generatedInterface(component, name, members, component.emits!.span);
 }
 
 /** An event's payload as a listener's parameters: `value: number, note?: string`. */
@@ -703,6 +724,41 @@ function eventParameters(event: EventDeclaration): string {
   return event.parameters
     .map((parameter) => `${parameter.name}${parameter.optional ? "?" : ""}: ${parameter.type.code}`)
     .join(", ");
+}
+
+/**
+ * The types an output declares, in source order: those it reaches, copied as written, and in
+ * the output of the module's main component the module's type exports (ADR-0068), each a
+ * statement of its own, `export type { Tone } from "./types";`, that the module prints as it is.
+ */
+function moduleTypes(component: UfComponent, module: UfModule): TypeDeclaration[] {
+  const exports = typeExportsCode(component, module, (name) => name).map(({ code, span }) => ({
+    name: "",
+    exported: false,
+    code,
+    span,
+  }));
+  return [...componentTypes(component, module), ...exports].toSorted(
+    (a, b) => a.span.start - b.span.start,
+  );
+}
+
+/**
+ * The type names the output writes as the source does, which its own interfaces leave alone
+ * (`CardEvents` beside an imported `CardEvents` becomes `CardEvents_1`): the module's type
+ * imports, its type exports, and the component's type parameters.
+ */
+function typeNamesOf(component: UfComponent, module: UfModule): Set<string> {
+  const names = new Set<string>();
+  for (const entry of module.typeImports ?? []) {
+    for (const name of entry.names) names.add(name.local);
+  }
+  for (const entry of module.typeExports ?? []) {
+    if (entry.kind === "Declaration") names.add(entry.name);
+    else for (const name of entry.names) names.add(name.exported);
+  }
+  for (const parameter of component.typeParameters ?? []) names.add(parameter.name);
+  return names;
 }
 
 /** The names of the authoring APIs code calls (`nextTick`): the output declares its own. */

@@ -79,6 +79,11 @@ export interface InlineOptions {
    * call it is may become the function's statements.
    */
   discarded?: boolean;
+  /**
+   * Whether every call stays as written, its function declared in the code, and none becomes the
+   * function's statements: a getter's (./setup.ts `getterSource`).
+   */
+  keep?: boolean;
 }
 
 /**
@@ -162,6 +167,7 @@ function inlineIn(
         if (argument.type === "SpreadElement") return undefined;
         const inner = inlineIn(code.slice(argument.start, argument.end), "expression", inliner, {
           nested: inFunction || nested,
+          keep: options.keep === true,
         });
         for (const [local, fn] of inner.locals) locals.set(local, fn);
         for (const fn of inner.spliced) spliced.add(fn);
@@ -172,7 +178,7 @@ function inlineIn(
       const whole =
         kind === "expression" && node === root && !inFunction && options.discarded === true;
       const block =
-        (statement || whole) && !args.includes(undefined)
+        options.keep !== true && (statement || whole) && !args.includes(undefined)
           ? blockForm(target, args as string[])
           : undefined;
       if (block) spliced.add(target);

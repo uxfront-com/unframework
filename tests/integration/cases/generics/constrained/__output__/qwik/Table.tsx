@@ -5,8 +5,14 @@ export interface TableProps<T extends { id: string; label: string }> {
   rows: T[];
 }
 
-export default component$<TableProps<T> & { class?: ClassList; style?: CSSProperties }>(
-  ({ caption, rows, class: className, style, ...attributes }) => {
+export default component$(
+  <T extends { id: string; label: string }>({
+    caption,
+    rows,
+    class: className,
+    style,
+    ...attributes
+  }: TableProps<T> & { class?: ClassList; style?: CSSProperties }) => {
     return (
       <table {...scopeAttributes(attributes)} class={className} style={style}>
         <caption>{caption}</caption>

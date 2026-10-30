@@ -1261,11 +1261,12 @@ export function mismatchClosingTag(file: OutputFile): string {
 /**
  * An output whose props, events and exported types a consumer sees as `any`: the type each
  * target's checker reads the props and events from, the component's props parameter (React,
- * Solid), its `$props()` (Svelte), its `Props` (Astro), or the type arguments of `component$`
- * (Qwik), `defineProps`, `defineModel`, `defineEmits` and `defineSlots` (Vue), and `input`,
- * `output` and `model` (Angular); and every exported `interface` and type alias, in any output
- * file, a copied `.ts` module included, so a consumer's misuse of an exported type goes unmet
- * too (ADR-0068). An output with none of them is left as it is.
+ * Solid), its `$props()` (Svelte), its `Props` (Astro), the type arguments of `component$` or a
+ * generic component's arrow parameter (Qwik), `defineProps`, `defineModel`, `defineEmits` and
+ * `defineSlots` (Vue), and `input`, `output` and `model` (Angular); and every exported
+ * `interface` and type alias, in any output file, a copied `.ts` module included, so a consumer's
+ * misuse of an exported type goes unmet too (ADR-0068). An output with none of them is left as it
+ * is.
  */
 function widenPublicTypes(file: OutputFile, target: string): string {
   return anyExportedTypes(widenProps(file, target));
@@ -1289,7 +1290,7 @@ function widenProps(file: OutputFile, target: string): string {
       return `${contents.slice(0, colon)}: any${contents.slice(close)}`;
     }
     case "qwik":
-      return anyTypeArguments(contents, /\bcomponent\$</g);
+      return anyTypeArguments(anyGenericArrowProps(contents), /\bcomponent\$</g);
     case "vue":
       // `defineProps<any>()` declares no props to vue-tsc: each key takes anything instead.
       return anyTypeArguments(
@@ -1586,10 +1587,11 @@ export function withQwikImports(file: OutputFile, names: readonly string[]): str
 }
 
 /**
- * Where a JSX component's body starts, just after its `{`: Qwik's `component$<Props>((…) => {`,
- * or the first PascalCase `function Name(…) {` or generic `function Name<…>(…) {` (React and
- * Solid). The type parameters and the parameters are read to their matching bracket: a
- * constraint, a destructured default or a type may hold brackets of its own.
+ * Where a JSX component's body starts, just after its `{`: Qwik's `component$<Props>((…) => {`
+ * or generic `component$(<T,>(…) => {`, or the first PascalCase `function Name(…) {` or generic
+ * `function Name<…>(…) {` (React and Solid). The type parameters and the parameters are read to
+ * their matching bracket: a constraint, a destructured default or a type may hold brackets of
+ * their own.
  */
 function componentBodyStart(contents: string): number | undefined {
   // Not the import's `component$`: the call's, with its type argument or its parenthesis.
@@ -1604,6 +1606,12 @@ function componentBodyStart(contents: string): number | undefined {
     const call = /^\s*\(\s*/.exec(contents.slice(index));
     if (!call) return undefined;
     index += call[0].length;
+    // A generic component's arrow takes its type parameters first (ADR-0068).
+    if (contents[index] === "<") {
+      const parameters = matchingBracket(contents, index, "<", ">");
+      if (parameters === undefined || contents[parameters + 1] !== "(") return undefined;
+      index = parameters + 1;
+    }
     if (contents[index] !== "(") return undefined;
     const close = matchingBracket(contents, index, "(", ")");
     if (close === undefined) return undefined;
@@ -1647,6 +1655,31 @@ function componentParameters(contents: string): number | undefined {
   if (parameters === undefined) return undefined;
   const open = endAt(contents, parameters + 1, /^\s*/)!;
   return contents[open] === "(" ? open : undefined;
+}
+
+/**
+ * A Qwik output whose generic arrows' props annotations are `any`: a generic component's props
+ * type is its parameter's, `component$(<T,>({ … }: ListProps<T>) => …)`, not a type argument
+ * (ADR-0068), in each component a joined module holds (ADR-0053). Any other output is left as it
+ * is.
+ */
+function anyGenericArrowProps(contents: string): string {
+  let result = "";
+  let from = 0;
+  for (const call of contents.matchAll(/\bcomponent\$\(\s*</g)) {
+    const parameters = matchingBracket(contents, call.index + call[0].length - 1, "<", ">");
+    if (parameters === undefined || contents[parameters + 1] !== "(") continue;
+    const open = parameters + 1;
+    const close = matchingBracket(contents, open, "(", ")");
+    if (close === undefined) continue;
+    const pattern =
+      contents[open + 1] === "{" ? matchingBracket(contents, open + 1, "{", "}") : open;
+    const colon = pattern === undefined ? -1 : contents.indexOf(":", pattern + 1);
+    if (colon === -1 || colon > close) continue;
+    result += `${contents.slice(from, colon)}: any`;
+    from = close;
+  }
+  return result + contents.slice(from);
 }
 
 /** The end of `pattern` (anchored with `^`) matched at `index`, or `undefined`. */
