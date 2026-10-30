@@ -16,7 +16,8 @@ import { describe, expect, it } from "vitest";
 
 import target from "../src/index.ts";
 import { vueEventInterface } from "../src/listeners.ts";
-import { corpus, emitFormatted, emitSource, lower } from "./helpers.ts";
+import { toolchain } from "../src/toolchain/index.ts";
+import { corpus, emitFormatted, emitSource, lower, toolchainDir } from "./helpers.ts";
 
 const at = { start: 0, end: 0 };
 
@@ -379,6 +380,52 @@ export default function Picker<T extends "a" | "b" = "a">({ value }: { value: T 
   return <p>{value}</p>;
 }`);
     expect(picker).toContain(`<script setup lang="ts" generic='T extends "a" | "b" = "a"'>`);
+  });
+
+  // An attribute cannot hold its own quote, and Vue's SFC parser ends the value at it: the text
+  // double-quotes each string literal and writes a `'` inside one as `\u0027`, the same type.
+  it.each([
+    [`"a" | 'b'`, `"a" | "b"`],
+    [`"don't" | 'say "no"'`, `"don\\u0027t" | "say \\"no\\""`],
+  ])(
+    "writes a generic constraint holding both quote kinds, %s, in one quote kind",
+    async (constraint, written) => {
+      const output = await emitSource(`
+export default function Picker<T extends ${constraint}>({ value }: { value: T }) {
+  return <p>{value}</p>;
+}`);
+      expect(output).toContain(`<script setup lang="ts" generic='T extends ${written}'>`);
+      const results = await toolchain.frameworkCompile(
+        [{ path: "/virtual/Picker.vue", contents: output }],
+        { toolchainDir, root: toolchainDir },
+      );
+      expect(results.get("/virtual/Picker.vue")).toEqual({ errors: [], warnings: [] });
+    },
+  );
+
+  // Only the tsgo adapter reads a template literal type (UF6002 otherwise), so the IR is set here.
+  it("writes a generic template literal constraint's text and holes without a single quote", async () => {
+    const module = lower(`
+export default function Picker<T extends "a">({ value }: { value: T }) {
+  return <p>{value}</p>;
+}`);
+    module.components[0]!.typeParameters![0]!.constraint!.code = "`it's ${'x' | \"y\"}`";
+    const [file] = await emitFormatted(module);
+    expect(file!.contents).toContain(
+      `<script setup lang="ts" generic='T extends \`it\\u0027s \${"x" | "y"}\`'>`,
+    );
+  });
+
+  it("formats a generic component whose constraint names its own type parameter", async () => {
+    const output = await emitSource(`
+interface Comparable<T> {
+  compare(other: T): number;
+}
+export default function Sorted<T extends Comparable<T>>({ items }: { items: T[] }) {
+  return <p>{items.length}</p>;
+}`);
+    expect(output).toContain('<script setup lang="ts" generic="T extends Comparable<T>">');
+    expect(output).toContain("const { items } = defineProps<{ items: T[] }>();");
   });
 
   it("reads the members other files declare off the annotation, and imports what it names", async () => {

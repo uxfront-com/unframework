@@ -32,7 +32,9 @@ setup as written, `.value` included (ADR-0045 to ADR-0049). In order:
    TypeScript's classic API, which TypeScript 7 lacks, so the props are printed as a type literal
    of their members, `defineProps<{ closed: boolean; label: string }>()` (ADR-0067). A generic
    component's block takes its type parameters, `<script setup lang="ts" generic="T extends
-Item">` (ADR-0068).
+Item">` (ADR-0068). An attribute cannot hold its own quote, so each string literal there is
+   double-quoted, a `'` inside one written `\u0027`, and the attribute single-quoted around them:
+   `generic='T extends "a" | "b"'`.
    - Destructured props use Vue 3.5's reactive destructure:
      `const { label, tone = "info", count = undefined } = defineProps<BadgeProps>();`. Every
      optional prop gets a default, the source's or `undefined`, for two reasons. Without a

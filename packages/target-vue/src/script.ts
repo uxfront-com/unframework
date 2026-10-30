@@ -297,13 +297,74 @@ function moduleTypes(component: UfComponent, module: UfModule): string[] {
 
 /**
  * The `generic` attribute of a generic component's `<script setup>` (ADR-0068),
- * ` generic="T extends Item = Item"`, or nothing. Vue's SFC parser decodes no entity there, so
- * an attribute whose text holds a double quote is single-quoted.
+ * ` generic="T extends Item = Item"`, or nothing. An attribute cannot hold its own quote, so the
+ * text holds no `'` (`withoutSingleQuotes`), and is single-quoted where it holds a `"`.
  */
 function genericAttribute(component: UfComponent): string {
   if (!component.typeParameters?.length) return "";
-  const text = typeParametersList(component.typeParameters);
+  const text = withoutSingleQuotes(typeParametersList(component.typeParameters));
   return text.includes('"') ? ` generic='${text}'` : ` generic="${text}"`;
+}
+
+/**
+ * Type text with the same meaning and no `'`: each string literal double-quoted, a template
+ * literal kept in backticks, and a `'` in either or in a comment written `\u0027`, which a literal
+ * reads as the same character. A template literal's hole is code again, read the same way, so
+ * `` `a${'x'}` `` is `` `a${"x"}` ``. Svelte's `generics` attribute needs the same (UXF-464).
+ */
+function withoutSingleQuotes(text: string): string {
+  let written = "";
+  // The template literals and holes the text is inside, innermost last: "`" for a literal's
+  // text, a number for a hole's code, counting the braces open inside it.
+  const nested: ("`" | number)[] = [];
+  for (let index = 0; index < text.length; index++) {
+    const char = text[index]!;
+    const inside = nested.at(-1);
+    if (inside === "`") {
+      if (char === "\\") {
+        const next = text[++index] ?? "";
+        written += next === "'" ? "\\u0027" : `\\${next}`;
+      } else if (char === "`") {
+        nested.pop();
+        written += char;
+      } else if (text.startsWith("${", index)) {
+        nested.push(0);
+        written += "${";
+        index++;
+      } else {
+        written += char === "'" ? "\\u0027" : char;
+      }
+    } else if (text.startsWith("//", index) || text.startsWith("/*", index)) {
+      const close = text.startsWith("//", index) ? "\n" : "*/";
+      const end = text.indexOf(close, index + 2);
+      const stop = end === -1 ? text.length : end + close.length;
+      written += text.slice(index, stop).replaceAll("'", "\\u0027");
+      index = stop - 1;
+    } else if (char === "'" || char === '"') {
+      // A string literal, to its closing quote, double-quoted.
+      written += '"';
+      for (index++; index < text.length && text[index] !== char; index++) {
+        const each = text[index]!;
+        if (each === "\\") {
+          const next = text[++index] ?? "";
+          written += next === "'" ? "\\u0027" : `\\${next}`;
+        } else {
+          written += each === "'" ? "\\u0027" : each === '"' ? '\\"' : each;
+        }
+      }
+      written += '"';
+    } else if (char === "`") {
+      nested.push("`");
+      written += char;
+    } else if (typeof inside === "number" && (char === "{" || char === "}")) {
+      if (char === "}" && inside === 0) nested.pop();
+      else nested[nested.length - 1] = inside + (char === "{" ? 1 : -1);
+      written += char;
+    } else {
+      written += char;
+    }
+  }
+  return written;
 }
 
 /** Type parameters as written, `T extends Item = Item, K`. */
