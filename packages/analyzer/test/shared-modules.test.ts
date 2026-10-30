@@ -639,6 +639,43 @@ describe("module-level constants", () => {
     expect(problems(source, run(source).diagnostics)).toEqual([]);
   });
 
+  // A length holds none of the functions it is read off only where reading it runs none of them:
+  // a callback under it still runs as the module loads (UF2014, UF3019).
+  it.each([
+    [
+      "`window`, through `map`",
+      "const w = () => window.innerWidth;\nconst X = [w].map((f) => f()).length;",
+      "UF2014 X",
+    ],
+    [
+      "`window`, through a table's values",
+      "const w = () => window.innerWidth;\nconst O = { w };\nconst X = Object.values(O).map((f) => f()).length;",
+      "UF2014 X",
+    ],
+    [
+      "the clock, through `filter`",
+      "const d = () => Date.now();\nconst X = [d].map((f) => f()).filter((t) => t % 2 === 0).length;",
+      "UF3019 X",
+    ],
+    [
+      "the locale, through `filter`",
+      'const date = (n: number) => n.toLocaleString();\nconst X = [date].map((f) => f(1000)).filter((s) => s.includes(",")).length;',
+      "UF3019 X",
+    ],
+  ])("reports a length whose callbacks read %s as the module loads", (_, before, problem) => {
+    const source = `${before}\nexport function A() { return <p>{X}</p>; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual([problem]);
+  });
+
+  it("reports a change in place of what a deep copy holds once it may hold a module's value (UF2004)", () => {
+    const source = [
+      "const T = { a: { b: 1 } };",
+      "const f = (x: boolean) => { let c = structuredClone(T); if (x) c = T; c.a.b = 2; return c.a.b; };",
+      "export function A() { return <p>{f(true)}</p>; }",
+    ].join("\n");
+    expect(problems(source, run(source).diagnostics)).toEqual(["UF2004 c.a.b = 2"]);
+  });
+
   // An arrow an object literal holds runs once called: what it reads of the locale, or of what
   // only client code may, is reported where it is called, never where the literal is written.
   it("reports what an arrow a literal holds reads where it is called, never where it is written (UF3019, UF2014)", () => {
@@ -659,13 +696,14 @@ describe("module-level constants", () => {
       "const TITLE = ACTIONS.title();",
       "const today = () => FMT.date(3);",
       "const AGAIN = today();",
-      "export function A() { return <p>{FMT.date(2)}{TODAY}{TITLE}{AGAIN}</p>; }",
+      "export function A() { return <p>{FMT.date(2)}{ACTIONS.title()}{TODAY}{TITLE}{AGAIN}</p>; }",
     ].join("\n");
     expect(problems(called, run(called).diagnostics)).toEqual([
       "UF3019 FMT.date",
       "UF2014 ACTIONS.title",
       "UF3019 today",
       "UF3019 FMT",
+      "UF2014 ACTIONS",
     ]);
   });
 
@@ -682,6 +720,8 @@ describe("module-level constants", () => {
     ["a member passed to `map`", "const O = { m: () => STEP };\nconst X = [1].map(O.m);", "O.m"],
     ["a frozen table", "const O = Object.freeze({ m: () => STEP });\nconst X = O.m();", "O.m"],
     ["a table's own `call`", "const O = { call: () => STEP };\nconst X = O.call();", "O.call"],
+    ["a function's `call`", "const f = () => STEP;\nconst X = f.call(null);", "f"],
+    ["a function's `apply`", "const f = () => STEP;\nconst X = f.apply(null, []);", "f"],
   ])("reports a later constant a held arrow reads, called through %s (UF2023)", (_, before, at) => {
     const source = `${before}\nconst STEP = 1;\nexport function A() { return <p>{String(X)}</p>; }`;
     expect(problems(source, run(source).diagnostics)).toEqual([`UF2023 ${at}`]);
@@ -727,15 +767,25 @@ describe("module-level constants", () => {
       "UF2004 Object.preventExtensions(U)",
     ]);
     const prop = [
+      "const T = { a: 1 };",
       "export function A(props: { t: { a: number } }) {",
       "  function freeze() { Object.freeze(props.t); }",
-      '  return <button type="button" onClick={freeze}>{Object.freeze(props.t).a}</button>;',
+      '  return <button type="button" onClick={freeze}>{Object.freeze(props.t).a}{Object.freeze(T).a}</button>;',
       "}",
     ].join("\n");
     expect(problems(prop, run(prop).diagnostics)).toEqual([
       "UF2004 Object.freeze(props.t)",
       "UF3021 freeze",
+      "UF3021 freeze",
     ]);
+    // A name is no module's value for being a name: a destructured prop.
+    const named = [
+      "export function A({ t }: { t: { a: number } }) {",
+      "  function freeze() { Object.freeze(t); }",
+      '  return <button type="button" onClick={freeze}>{t.a}</button>;',
+      "}",
+    ].join("\n");
+    expect(problems(named, run(named).diagnostics)).toEqual(["UF2004 Object.freeze(t)"]);
   });
 
   it("reports a write of a constant (UF2011), and a change in place (UF2004)", () => {

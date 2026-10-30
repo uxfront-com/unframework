@@ -40,12 +40,15 @@ too, so each is checked as setup code is (ADR-0045), and code setup accepts pass
   a method returns (`[...list].sort().reverse()`), or a deep copy and all it holds
   (`structuredClone`, `JSON.parse`).
 - An arrow an object literal holds runs once called. What it reads of chance, the clock, the
-  locale or the client isn't reported where the literal is written, only where it is called: as
-  the module loads, or by a template, a getter or an initial value that reads the literal.
+  locale or the client isn't reported where the literal is written, only where it is called by
+  name or through a member that reaches it (`O.m()`, `O.m.call(…)`, `[…].map(O.m)`) as the module
+  loads, or by a template, a getter or an initial value that reads the literal. A call through a
+  table passed to a call (`L.map((f) => f())`) is a known gap, reported only where its result is
+  read.
 - A function a component passes as a handler (`onClick={copy}`) is still UF3029: a named handler
   is the component's own function, and lowering a module's on every target is a later issue.
 - `Object.freeze` of a module's value, a constant or an import, changes nothing anyone reads, so
-  setup accepts it, as module level does. Of anything else it stays UF2004 in setup, since freezing
+  a component's setup and client code accept it, as module level does. Of anything else it stays UF2004 in setup, since freezing
   a prop freezes the parent's object, and UF3021 in render, as ADR-0035 says, a module's value
   included. `Object.seal` and `Object.preventExtensions` stay rejected everywhere.
 
@@ -78,7 +81,8 @@ that adds shared modules to the analyser. The rendering cases land with the comp
 every output tree.
 
 **What it amends.** ADR-0045 accepts imports of relative `.ts` modules and the module's top-level
-`const` declarations, which it deferred to M5.
+`const` declarations, which it deferred to M5. Its UF2004 for `Object.assign` and its kin no longer
+covers `Object.freeze` of a module's value.
 
 ## Consequences
 

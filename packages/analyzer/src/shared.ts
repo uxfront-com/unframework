@@ -217,8 +217,9 @@ export interface ConstantContext {
  *   client code may read UF3020. In a function, or an arrow a value holds, they mark the constant
  *   `nondeterministic` or `clientOnly`, which a template, a getter or an initial value that calls
  *   it, or reads a value that holds it, reports (UF3019, UF2014), as setup does (`rules.ts`), and
- *   a call of it as the module loads reports there; client code may call it. A value's `length`
- *   holds none of the functions it is read off (`Object.values(FORMATTERS).length`).
+ *   a call of it as the module loads, by name or through a member, reports there; client code may
+ *   call it. A value's `length` holds none of the functions it is read off where reading it runs
+ *   none of them (`Object.values(FORMATTERS).length`).
  */
 export function lowerConstants(
   candidates: readonly ConstantCandidate[],
@@ -403,6 +404,24 @@ export function lowerConstants(
         default:
           return false;
       }
+    };
+    /**
+     * Whether a value is a name or a static member path, or `Object.keys`, `values` or `entries`
+     * of one (`Object.values(T.formats)`): nothing in it runs a function a value holds.
+     */
+    const listed = (node: AST.Node): boolean => {
+      const inner = unwrapped(node);
+      if (inner.type !== "CallExpression") return isPath(inner);
+      const callee = unwrapped(inner.callee);
+      const [argument] = inner.arguments;
+      return (
+        inner.arguments.length === 1 &&
+        argument!.type !== "SpreadElement" &&
+        isPath(argument!) &&
+        callee.type === "MemberExpression" &&
+        isGlobal(unwrapped(callee.object), "Object") &&
+        ["keys", "values", "entries"].includes(memberName(callee) ?? "")
+      );
     };
     /** Whether a member it writes belongs to a fresh value: `out[key] = …` on `const out = {}`. */
     const freshMember = (node: AST.Node) => {
@@ -645,8 +664,9 @@ export function lowerConstants(
             nondeterminism(typed.property, `\`${name}\` formats by the machine's locale`, load);
           }
           // A length is a number: it holds nothing of what it is read off, functions included
-          // (`Object.values(FORMATTERS).length`), but an object literal's own `length`.
-          if (name === "length" && objectOf(typed.object) === undefined) {
+          // (`Object.values(FORMATTERS).length`), where reading it calls nothing a value holds
+          // (`listed`), but an object literal's own `length`.
+          if (name === "length" && listed(typed.object) && objectOf(typed.object) === undefined) {
             readOnly++;
             walkChildren(typed, load);
             readOnly--;
@@ -947,6 +967,15 @@ export function lowerConstants(
       scopes.resolve(node as AST.IdentifierReference).kind === "global"
     );
   }
+}
+
+/** Whether an expression is a name, or a static member of one (`T`, `T.items`, `T["items"]`). */
+function isPath(node: AST.Node): boolean {
+  const inner = unwrapped(node);
+  if (inner.type === "Identifier") return true;
+  return (
+    inner.type === "MemberExpression" && memberName(inner) !== undefined && isPath(inner.object)
+  );
 }
 
 /** The value an object literal gives a static key, without its parentheses and assertions. */

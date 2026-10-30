@@ -99,8 +99,8 @@ checked as the declaration its likely fix writes (`analyze.ts`).
     what it holds), the receiver a method returns (`sort`, `reverse`), a deep copy and all it
     holds (`structuredClone`, `JSON.parse`), or a function's local that only ever holds one (a
     `reduce` accumulator too, but never another parameter, which holds what its caller gives).
-    Freezing a value changes nothing anyone reads, so `Object.freeze(…)` is plain, and setup
-    accepts it of a module's value too. Anything else written, deleted or changed by a mutating
+    Freezing a value changes nothing anyone reads, so `Object.freeze(…)` is plain, and a
+    component's setup and client code accept it of a module's value too. Anything else written, deleted or changed by a mutating
     method, through `as`, `!`, an alias or a pattern too, is UF2004. A function writes only its
     own locals (UF2011).
   - It holds no JSX (UF3012), and no `this`, `import.meta`, `import()`, function expression or
@@ -109,7 +109,10 @@ checked as the declaration its likely fix writes (`analyze.ts`).
     code may read (`console`, `document`, …) UF3020. In a function, or an arrow a value holds,
     they mark the constant `nondeterministic` or `clientOnly`, and a value that holds such a
     function carries it (not one that only reads it, as `Object.keys(TABLE)` and
-    `Object.values(TABLE).length` do). A call of one as the module loads reports it there. A
+    `Object.values(TABLE).length` do). A call of one as the module loads reports it there when
+    it is called by name or through a member that reaches it (`f()`, `O.m()`, `O.m.call(…)`,
+    `[…].map(O.m)`); one called through a table passed to a call (`L.map((f) => f())`,
+    `pick(TABLE)`) is a known gap, reported only where a value holding its result is read. A
     template, a getter or an initial value that calls or reads one (`XS.map(format)`, `O.d()`),
     or a local function it reaches, reports it (UF3019, UF2014), as setup does; client code may
     call it.
