@@ -20,8 +20,8 @@ function emit(name: TargetName, module: UfModule) {
   return { files, reported };
 }
 
-/** The targets whose composables lane has not landed: Vue's has (ADR-0069). */
-const WAITING = TARGET_NAMES.filter((name) => name !== "vue");
+/** The targets whose composables lane has not landed: Vue's and Svelte's have (ADR-0069). */
+const WAITING = TARGET_NAMES.filter((name) => name !== "vue" && name !== "svelte");
 
 describe("composables and shared modules before each target's lane", () => {
   it.each(WAITING)("%s reports UF1002 where a component first reads a module's value", (name) => {
@@ -54,6 +54,15 @@ describe("composables and shared modules before each target's lane", () => {
     expect(files.map(({ path }) => path)).toEqual(["List.vue"]);
     expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
     expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
+    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+  });
+
+  it("svelte emits a component that reads a module's values and calls a composable", () => {
+    const { files, reported } = emit("svelte", modules());
+    expect(reported).toEqual([]);
+    expect(files.map(({ path }) => path)).toEqual(["List.svelte"]);
+    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+    expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle.svelte";');
     expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
   });
 });

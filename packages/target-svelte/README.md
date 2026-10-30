@@ -49,6 +49,27 @@ instance script when it takes props or has a setup, and its markup (plan §6):
   the attribute is single-quoted where the text holds a `"`:
   `generics='T extends "don\u0027t" | "b"'`. A scoped slot's props that name a type
   parameter are `Snippet<[{ item: T }]>`; both cells are native.
+- **Shared modules** (ADR-0070). A value the component reads of a `.ts` module is imported as the
+  source imports it, `import { sizes } from "./tokens"`, from the copy beside the outputs. The
+  module's constants it reads, and those they read, are declared as written at the top of the
+  instance script, before `$props()`, with the types they name: `const GAP = sizes.sm * 2;`. The
+  instance script is one scope with the setup, so a module name a top-level setup binding shadows
+  is declared under a name of its own, and the constants and copied types that read it read it
+  there (`src/modules.ts`).
+- **Composables** (ADR-0069). A `.uf.ts` module's composable is its own module,
+  `useToggle.svelte.ts`, whose runes vite-plugin-svelte compiles: the source's exported function,
+  its parameters and type parameters as written, its setup as a component's (below), and an
+  object of getters for each ref and computed value it returns, with its functions and constants
+  as they are, since a destructured rune would hold its value once:
+  `return { get on() { return on; }, toggle };`. A caller imports it as
+  `import { useToggle } from "./useToggle.svelte"`, which svelte-check and the unplugin resolve to
+  that module, and keeps the object: `const toggle = useToggle(false)`, read as `toggle.on` and
+  `toggle.toggle()` in the script and the markup. The object takes the one member's name where the
+  call renames it (`const wide = useMediaQuery(…)` for `{ matches: wide }`), or the composable's
+  (`toggle` for `useToggle`), which may be a member's, since UF3024 keeps every other name off it.
+  A getter and a callback are passed as written. Both cells, `composables` and
+  `composable-effect-order`, are native: the composable's effects and hooks run where its call
+  sits.
 - **Setup** (ADR-0045 to ADR-0049), in source order after `$props()`, with what it imports from
   `svelte` and `svelte/events` (each name claimed beside the source's):
 
@@ -66,6 +87,7 @@ instance script when it takes props or has a setup, and its markup (plan §6):
   | `onMounted(fn)`, `onUnmounted(fn)`                        | `onMount(() => {…})`, `onMount(() => () => {…})`: browser only, never `onDestroy`; an `onUnmounted` declared before a watcher or a `watchEffect` with a cleanup comes after the last of them, so every cleanup runs before it, as on Vue (Svelte tears effects down in creation order)                                                                                                                                                                                                                                                                                                                                                            |
   | `nextTick()`                                              | `tick()`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
   | `defineEmits`, `emit("change", v)`                        | a callback prop `onchange` (the name in lower case) in `type Props = <props type> & { onchange?: (value: number) => void }`, destructured where called: `onchange?.(v)`                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+  | `const { on, toggle } = useToggle(false)`                 | `const toggle = useToggle(false)`, each name read through the object: `toggle.on`, `toggle.toggle()`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 - **Listeners** (ADR-0047). `onclick={…}` and `onclickcapture={…}`, the handler a setup function's
   name or an arrow. Svelte has no attribute for `once` or `passive`, for the events

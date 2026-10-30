@@ -1,9 +1,9 @@
-import { composableUse, defineTarget, printMarkup, svelteDialect } from "@unframework/codegen";
+import { defineTarget, printMarkup, svelteDialect } from "@unframework/codegen";
 import type { MarkupDialect } from "@unframework/codegen";
 import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
-import type { UfComponent } from "@unframework/ir";
+import type { UfComponent, UfComposable } from "@unframework/ir";
 
-import { instanceScript } from "./script.ts";
+import { composableModule, instanceScript } from "./script.ts";
 
 /**
  * The options every component declares, so that it compiles the same whatever the consumer's
@@ -110,19 +110,6 @@ export const svelte: Target = defineTarget({
     "late-prop": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    // A composable's call and what a module or a composable gives are declared before this
-    // target emits them (ADR-0069, ADR-0070): until its composables lane lands, a component that
-    // uses one is reported, never emitted without it (P2).
-    const composable = composableUse(component);
-    if (composable) {
-      context.report({
-        code: "UF1002",
-        severity: "error",
-        message: `The svelte target does not emit ${composable.what} yet: it lands with this target's composables lane.`,
-        span: composable.span,
-      });
-      return [];
-    }
     const script = instanceScript(component, context.module);
     const { module, block, markup: options, render } = script;
     // The component resolves the names of loop variables and setup bindings.
@@ -144,6 +131,15 @@ export const svelte: Target = defineTarget({
     });
     const parts = [OPTIONS, ...(module ? [module] : []), ...(block ? [block] : []), markup];
     return [{ path: `${component.name}.svelte`, contents: `${parts.join("\n\n")}\n` }];
+  },
+  // A composable is a `.svelte.ts` module, whose runes vite-plugin-svelte compiles (ADR-0069).
+  emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+    return [
+      {
+        path: `${composable.name}.svelte.ts`,
+        contents: composableModule(composable, context.module),
+      },
+    ];
   },
 });
 

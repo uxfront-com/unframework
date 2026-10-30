@@ -29,11 +29,14 @@ import {
   sourceNames,
   typeDeclarationCode,
   typeExportsCode,
+  typeNames,
+  typeSpecifier,
 } from "@unframework/codegen";
 import type { MarkupOptions, RewriteRules } from "@unframework/codegen";
 import { codeOf, expressionsOf, walk } from "@unframework/ir";
 import type {
   Binding,
+  BindingId,
   BindingKind,
   Code,
   DerivedItem,
@@ -54,8 +57,11 @@ import type {
   RefType,
   RenderNode,
   SetupItem,
+  TypeText,
   UfComponent,
+  UfComposable,
   UfModule,
+  UseItem,
   WatchEffectItem,
   WatchItem,
   WatchSource,
@@ -72,6 +78,14 @@ import {
 import type { Fallthrough } from "./composition.ts";
 import { isAttached } from "./events.ts";
 import { handlerTypes } from "./handlers.ts";
+import {
+  constantsCode,
+  moduleLocals,
+  moduleReach,
+  renamedDeclaration,
+  renamedType,
+} from "./modules.ts";
+import type { ModuleReach } from "./modules.ts";
 import { block, escapeScriptEnd, INDENT, reindent } from "./text.ts";
 
 /** What a component's script gives its markup. */
@@ -391,6 +405,35 @@ export function instanceScript(component: UfComponent, module: UfModule): Instan
   return new ScriptWriter(component, module).write();
 }
 
+/**
+ * A composable's own module, `useToggle.svelte.ts` (ADR-0069): its setup lowered to runes as a
+ * component's is, in a function that returns an object of getters, `get on() { return on; }`,
+ * for each ref of state and derived value, since a destructured rune would read its value once;
+ * its functions and constants as they are. Its parameters are as written: Svelte reads a getter
+ * and calls a callback as the source does.
+ */
+export function composableModule(composable: UfComposable, module: UfModule): string {
+  const owner: UfComponent = {
+    name: composable.name,
+    span: composable.span,
+    ...(composable.typeParameters ? { typeParameters: composable.typeParameters } : {}),
+    props: [],
+    types: composable.types,
+    bindings: composable.bindings,
+    setup: composable.setup,
+    render: { kind: "Fragment", children: [], span: composable.span },
+  };
+  // The types its parameters and type parameters name, which its IR as a setup owner holds no
+  // trace of (ADR-0067).
+  const typeTexts = [
+    ...composable.parameters.map(({ type }) => type),
+    ...(composable.typeParameters ?? []).flatMap(({ constraint, default: fallback }) =>
+      [constraint, fallback].filter((type): type is TypeText => type !== undefined),
+    ),
+  ];
+  return new ScriptWriter(owner, module, typeTexts).composable(composable, typeTexts);
+}
+
 class ScriptWriter {
   readonly #component: UfComponent;
   readonly #module: UfModule;
@@ -424,10 +467,22 @@ class ScriptWriter {
   readonly #slotLocals = new Map<string, string>();
   /** The name the markup writes a child under, where the script imports it under another. */
   readonly #componentTags = new Map<string, string>();
+  /** What the component reaches of its module, and the names its output declares them by. */
+  readonly #reach: ModuleReach;
+  readonly #moduleLocals: ReadonlyMap<string, string>;
+  /**
+   * The variable each composable's call keeps its result in, `const toggle = useToggle(false)`,
+   * and the object and member each destructured binding is read through (ADR-0069).
+   */
+  readonly #results = new Map<UseItem, string>();
+  readonly #used = new Map<BindingId, { object: string; member: string }>();
 
-  constructor(component: UfComponent, module: UfModule) {
+  constructor(component: UfComponent, module: UfModule, typeTexts: readonly TypeText[] = []) {
     this.#module = module;
     this.#names = new Names(component, module);
+    // The module names come first: the script claims none of them (ADR-0070).
+    this.#reach = moduleReach(component, module, typeTexts);
+    this.#moduleLocals = moduleLocals(component, this.#reach, this.#names.scope);
     // A fill's snippet is named like its slot, which would hide a binding of that name from
     // everything between the child's tags: such a binding takes a name of its own.
     const hidden = snippetNames(component.render);
@@ -445,6 +500,12 @@ class ScriptWriter {
     this.#bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
     this.#functions = handlerTypes(component);
     this.#conditionalRefs = conditionalRefs(component);
+    for (const item of component.setup) {
+      if (item.kind !== "Use") continue;
+      const object = this.#resultName(item);
+      this.#results.set(item, object);
+      for (const { binding, member } of item.members) this.#used.set(binding, { object, member });
+    }
     this.rules = {
       binding: (_reference, binding, written) => this.#read(binding, written),
       emit: (emit, _binding, parts) =>
@@ -488,11 +549,20 @@ class ScriptWriter {
     // the component's file, `import type { ButtonProps } from "./Button.svelte"`.
     const copied = componentTypes(component, this.#module);
     const typeExports = typeExportsCode(component, this.#module, (name) => `${name}.svelte`);
+    // The types the module's constants name come with them, unexported: an export of one is
+    // the output's that declares it as its own (ADR-0070).
+    const reExported = new Set(typeExports.map(({ span }) => span.start));
     const types = [
       ...copied.map((declaration) => ({
-        code: typeDeclarationCode(declaration),
+        code: renamedDeclaration(typeDeclarationCode(declaration), this.#moduleLocals),
         span: declaration.span,
       })),
+      ...this.#reach.types
+        .filter(({ span }) => !reExported.has(span.start))
+        .map((declaration) => ({
+          code: renamedDeclaration(declaration.code, this.#moduleLocals),
+          span: declaration.span,
+        })),
       ...typeExports,
     ]
       .toSorted((a, b) => a.span.start - b.span.start)
@@ -517,9 +587,12 @@ class ScriptWriter {
         ? [`import ${JSON.stringify(`./${file.slice(file.lastIndexOf("/") + 1)}.css`)};`]
         : []),
     ];
+    // The module's constants it reads, before the props, whose defaults may read them (ADR-0070).
+    const constants = constantsCode(this.#module, this.#reach, this.#moduleLocals);
     const pieces = [
       ...(imports.length ? [imports.map((line) => `${INDENT}${line}`).join("\n")] : []),
       ...(moduleScript ? [] : types.map((each) => indent(each, INDENT))),
+      ...(constants.length ? [indent(constants.join("\n"), INDENT)] : []),
       ...[...props, ...setup, ...dynamic, ...helpers].map((piece) => reindent(piece, INDENT)),
     ];
     const roots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
@@ -586,6 +659,57 @@ class ScriptWriter {
     );
   }
 
+  composable(composable: UfComposable, typeTexts: readonly TypeText[]): string {
+    const owner = this.#component;
+    this.#imports();
+    const read = new Set(typeTexts.flatMap((type) => [...typeNames(type)]));
+    for (const entry of this.#module.typeImports ?? []) {
+      for (const name of entry.names) {
+        if (!read.has(name.local)) continue;
+        const specifier = typeSpecifier(entry.specifier, this.#module, (each) => `${each}.svelte`);
+        this.#names.importType(specifier, name.imported, name.local);
+      }
+    }
+    const setup = this.#setup();
+    const members = composable.returns.map((member) => {
+      const binding = this.#bindings.get(member.binding)!;
+      if (binding.kind === "state" || binding.kind === "derived") {
+        return block(`get ${member.name}() {`, [`return ${binding.name};`], "},");
+      }
+      return binding.name === member.name ? `${member.name},` : `${member.name}: ${binding.name},`;
+    });
+    const parameters = composable.parameters.map(
+      (parameter) =>
+        `${this.#name(parameter.binding)}${parameter.optional ? "?" : ""}: ${renamedType(parameter.type.code, this.#moduleLocals)}`,
+    );
+    const typeParameters = composable.typeParameters?.length
+      ? `<${composable.typeParameters
+          .map(
+            (parameter) =>
+              `${parameter.name}${parameter.constraint ? ` extends ${parameter.constraint.code}` : ""}${
+                parameter.default ? ` = ${parameter.default.code}` : ""
+              }`,
+          )
+          .join(", ")}>`
+      : "";
+    const types = [...componentTypes(owner, this.#module), ...this.#reach.types]
+      .toSorted((a, b) => a.span.start - b.span.start)
+      .map((declaration) =>
+        renamedDeclaration(typeDeclarationCode(declaration), this.#moduleLocals),
+      );
+    const constants = constantsCode(this.#module, this.#reach, this.#moduleLocals);
+    const body = [...setup, block("return {", members, "};")].map((piece) =>
+      reindent(piece, INDENT),
+    );
+    const imports = this.#names.declarations();
+    return `${[
+      ...(imports.length ? [imports.join("\n")] : []),
+      ...types,
+      ...(constants.length ? [constants.join("\n")] : []),
+      `export function ${composable.name}${typeParameters}(${parameters.join(", ")}) {\n${body.join("\n\n")}\n}`,
+    ].join("\n\n")}\n`;
+  }
+
   // --- Composition ---------------------------------------------------------------------------
 
   /**
@@ -607,6 +731,28 @@ class ScriptWriter {
       if (!names.length) this.#names.importPassThrough(specifier);
       for (const name of names) this.#names.importPassThrough(specifier, name);
     }
+    // Each composable it calls, from the composable's own module beside its `.uf.ts`,
+    // `useToggle.svelte.ts` (ADR-0069). The specifier has no extension, `./useToggle.svelte`:
+    // svelte-check rejects one ending in `.ts` (TS5097), and the unplugin resolves this one to
+    // the module.
+    const called = new Set([...this.#results.keys()].map((item) => item.composable));
+    for (const entry of this.#module.imports ?? []) {
+      const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
+      for (const name of entry.names) {
+        if (name.kind !== "Composable" || !called.has(name.local)) continue;
+        this.#names.importNamed(`${directory}${name.imported}.svelte`, name.imported, name.local);
+      }
+    }
+    // The values it reads of its `.ts` modules, from the output tree's copies, as the source
+    // imports them (ADR-0070).
+    for (const entry of this.#module.moduleImports ?? []) {
+      for (const name of entry.names) {
+        if (!this.#reach.values.has(name.local)) continue;
+        const local = this.#moduleLocals.get(name.local) ?? name.local;
+        if (name.imported === "default") this.#names.importDefault(entry.specifier, local);
+        else this.#names.importNamed(entry.specifier, name.imported, local);
+      }
+    }
     // The types it reads, by name, under the source's names (ADR-0067): a child's from its
     // output, `./Field.svelte`. Codegen's helper picks them; the script writes its own imports.
     const types = new ImportSet();
@@ -617,6 +763,14 @@ class ScriptWriter {
         const { imported, local } = specifier;
         const name = imported.type === "Identifier" ? imported.name : imported.value;
         this.#names.importType(declaration.source.value, name, local.name);
+      }
+    }
+    // And those the module's constants it declares name (ADR-0070).
+    for (const entry of this.#module.typeImports ?? []) {
+      for (const name of entry.names) {
+        if (!this.#reach.typeNames.has(name.local)) continue;
+        const specifier = typeSpecifier(entry.specifier, this.#module, (each) => `${each}.svelte`);
+        this.#names.importType(specifier, name.imported, name.local);
       }
     }
   }
@@ -745,6 +899,17 @@ class ScriptWriter {
       case "templateRef":
       case "model":
         return binding.name;
+      // A module's value, under the name the output declares it by (ADR-0070).
+      case "moduleConst":
+      case "import":
+        return this.#moduleLocals.get(binding.name) ?? written;
+      // A composable's result, read through the object its call keeps (ADR-0069): a ref's
+      // `on.value` is the object's getter, `toggle.on`.
+      case "usedState":
+      case "usedDerived":
+      case "usedFn":
+      case "usedConst":
+        return this.#usedRead(binding.id);
       case "loopVar":
       case "localConst":
       case "localFn":
@@ -754,18 +919,38 @@ class ScriptWriter {
       case "slotScope":
       case "context":
       case "component":
-      // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
-      case "moduleConst":
-      case "import":
+      // A composable's parameter, read as the source reads it: a getter called, a callback too.
       case "argument":
-      case "usedState":
-      case "usedDerived":
-      case "usedFn":
-      case "usedConst":
         return written;
       default:
         return unreachable(binding.kind);
     }
+  }
+
+  /** How code reads a binding a composable's call destructures: `toggle.on`. */
+  #usedRead(id: BindingId): string {
+    const used = this.#used.get(id);
+    if (!used) throw new Error(`Component ${this.#component.name} calls no composable for ${id}.`);
+    return `${used.object}.${used.member}`;
+  }
+
+  /**
+   * The variable a composable's call keeps its result in, named as a Svelte developer would: by
+   * the one member it destructures under a name of its own (`const wide = useMediaQuery(…)`,
+   * from `{ matches: wide }`), or by the composable (`const toggle = useToggle(false)`). The
+   * destructured names vanish from the output, so it may take one of them: no parameter or local
+   * shadows a name the setup declares (UF3024).
+   */
+  #resultName(item: UseItem): string {
+    const [only] = item.members;
+    const renamed = only && item.members.length === 1 ? this.#name(only.binding) : undefined;
+    const stem = item.composable.replace(/^use/, "");
+    const name =
+      renamed !== undefined && renamed !== only!.member
+        ? renamed
+        : `${stem[0]!.toLowerCase()}${stem.slice(1)}`;
+    const own = item.members.some(({ binding }) => this.#name(binding) === name);
+    return own ? name : this.#names.claim(name);
   }
 
   /** How code calls an event's callback prop: `onchange`, or `props.onchange` in the object form. */
@@ -1021,12 +1206,33 @@ class ScriptWriter {
       // A prop (`#props`).
       case "Model":
         return "";
-      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
       case "Use":
-        return "";
+        return this.#use(item);
       default:
         return unreachable(item);
     }
+  }
+
+  /**
+   * `const toggle = useToggle(false)` (ADR-0069): the call keeps the object of getters it returns,
+   * since runes don't survive destructuring, and each destructured name is read through it
+   * (`#usedRead`). A value argument is read once, as the setup reads it; a getter and a callback
+   * are passed as written.
+   */
+  #use(item: UseItem): string {
+    const parts = item.arguments.map((argument) => {
+      switch (argument.kind) {
+        case "Value":
+          return this.#setupValue(argument.value);
+        case "Getter":
+          return functionText(argument.getter, this.#component, this.rules, "pure");
+        case "Callback":
+          return functionText(argument.callback, this.#component, this.rules, "client");
+        default:
+          return unreachable(argument);
+      }
+    });
+    return `const ${this.#results.get(item)!} = ${item.composable}(${parts.join(", ")});`;
   }
 
   /**
@@ -1476,6 +1682,7 @@ function isDeclaration(item: SetupItem): boolean {
     case "Variable":
     case "Model":
     case "Inject":
+    case "Use":
       return true;
     case "Function":
     case "Watch":
@@ -1483,9 +1690,6 @@ function isDeclaration(item: SetupItem): boolean {
     case "Lifecycle":
     case "Provide":
       return false;
-    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
-    case "Use":
-      return true;
     default:
       return unreachable(item);
   }
@@ -1904,6 +2108,9 @@ function isReactive(kind: BindingKind): boolean {
     case "state":
     case "derived":
     case "model":
+    // A composable's ref, read through its object's getter (ADR-0069).
+    case "usedState":
+    case "usedDerived":
       return true;
     case "loopVar":
     case "templateRef":
@@ -1915,12 +2122,9 @@ function isReactive(kind: BindingKind): boolean {
     case "slotScope":
     case "context":
     case "component":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
     case "argument":
-    case "usedState":
-    case "usedDerived":
     case "usedFn":
     case "usedConst":
       return false;
