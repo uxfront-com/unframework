@@ -69,7 +69,6 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
   // Layer 10 of M5 imports shared modules.
   // Layer 14 of M5 emits cross-file types and generics on Vue.
   // Layer 32 of M5 builds the project graph.
-  UF1205: "The project graph reports an import cycle, and the case lands in layer 32 of M5.",
   // Layer 38 of M5 lands the composable cases.
   UF2035: COMPOSABLES,
   UF2036: COMPOSABLES,

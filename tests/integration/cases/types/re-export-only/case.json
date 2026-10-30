@@ -1,0 +1,6 @@
+{
+  "description": "A component whose only link to a `.ts` module is a type it re-exports from it.",
+  "ssr": {
+    "ready": { "props": { "label": "Ready" } }
+  }
+}

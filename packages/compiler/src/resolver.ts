@@ -1,18 +1,9 @@
-import {
-  analyze,
-  frameworkOf,
-  isAuthoringModule,
-  isSharedModuleSpecifier,
-  moduleSpecifiers,
-  shapeQueries,
-  stylesheetImports,
-  unfollowedImports,
-} from "@unframework/analyzer";
+import { isSharedModuleSpecifier } from "@unframework/analyzer";
 import type { StylesheetSource } from "@unframework/analyzer";
 import { scopeStylesheet } from "@unframework/codegen";
-import type { ModuleApi } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
-import type { TypeOracle, TypeShape } from "@unframework/type-oracle";
+import type { ModuleApi, Span } from "@unframework/ir";
+import type { ParsedModule } from "@unframework/parser";
+import type { TypeOracle } from "@unframework/type-oracle";
 
 /** What {@link compile}'s `resolve` option receives: an import's specifier, and its importer. */
 export interface ResolveRequest {
@@ -58,15 +49,19 @@ export interface ResolvedModule {
  * component's stylesheet, `import "./Card.css"` (ADR-0063), or gives `undefined` for one that does
  * not exist: without it, no sheet is read (UF5005). Its `module` reads a shared `.ts` module and
  * the modules it reaches (ADR-0070), or gives `undefined` for one that does not exist: without it,
- * a value import of one is UF1202.
+ * a value import of one is UF1202. Its `cycle` gives the files of the cycle of component edges an
+ * import closes, from the importer back to it, or `undefined` where there is none (UF1205,
+ * ADR-0071): `compile()` asks it only for its own component edges (`componentImportNames` and
+ * `takesComponent`), and without it, no cycle is found.
  */
 export interface Resolver {
   (request: ResolveRequest): Promise<ModuleApi | undefined>;
   stylesheet?(request: ResolveRequest): Promise<ResolvedStylesheet | undefined>;
   module?(request: ResolveRequest): Promise<ResolvedModule | undefined>;
+  cycle?(request: ResolveRequest): Promise<string[] | undefined>;
 }
 
-/** Options for {@link createFileResolver}. */
+/** Options for `createFileResolver`, and the files of `createProject` (ADR-0071). */
 export interface FileResolverOptions {
   /**
    * The directory the importers' file names are relative to, as `compile()`'s `filename` is. A
@@ -89,110 +84,8 @@ export interface FileResolverOptions {
   typeOracle?: TypeOracle;
 }
 
-/**
- * A resolver over files (ADR-0053): it reads the imported file, analyses it up to its
- * declarations, its types read through the type oracle (ADR-0067), and gives its API with its
- * `file` relative to the importer. The analysis is cached by the contents of the file, its
- * stylesheets and its shapes, so an edit that leaves the API alone resolves to the same API, and
- * the parent compiles to the same bytes. A child's own `.uf.tsx` imports are never resolved: its
- * API is read from its declarations alone, so a cycle cannot make it loop. Its stylesheets are
- * read, for the scope id its API carries (ADR-0063). It reads a stylesheet for `stylesheet` too,
- * and for `module` a shared `.ts` module, a specifier without an extension naming its `.ts`, and
- * follows its relative imports through every `.ts` module they reach, each read once (ADR-0070).
- * M5's project graph replaces it behind the same option (§5.10).
- */
-export function createFileResolver(options: FileResolverOptions): Resolver {
-  const root = options.root.replace(/\/+$/, "");
-  const read = async (request: ResolveRequest) => {
-    const path = joinPath(directoryOf(request.importer), request.specifier);
-    if (path === undefined) return undefined;
-    const source = await options.readFile(`${root}/${path}`);
-    return source === undefined ? undefined : { path, source };
-  };
-  const cache = new Map<string, { key: string; api: ModuleApi | undefined }>();
-  const resolve = async (request: ResolveRequest) => {
-    const child = await read(request);
-    if (!child) return undefined;
-    const parsed = parseModule(child.path, child.source);
-    const stylesheets = new Map<string, StylesheetSource | undefined>();
-    for (const specifier of stylesheetImports(parsed)) {
-      const sheet = await read({ specifier, importer: child.path });
-      stylesheets.set(specifier, sheet && stylesheetSource(sheet.path, sheet.source));
-    }
-    // Each type the child's API is declared with, as `compile()` reads its source's (ADR-0067).
-    // An oracle that throws makes the resolver throw, which `compile()` reports (UF9001).
-    const shapes = new Map<string, TypeShape>();
-    for (const query of options.typeOracle ? shapeQueries(parsed) : []) {
-      shapes.set(
-        `${query.span.start}:${query.span.end}`,
-        await options.typeOracle!.resolveShape(query),
-      );
-    }
-    const key = JSON.stringify([
-      child.source,
-      ...[...stylesheets.values()].map((sheet) => sheet?.source ?? null),
-      ...shapes,
-    ]);
-    let cached = cache.get(child.path);
-    if (cached?.key !== key) {
-      const analysis = analyze(parsed, {
-        stylesheets,
-        ...(options.typeOracle
-          ? { shapes: (span) => shapes.get(`${span.start}:${span.end}`) }
-          : {}),
-      });
-      cached = { key, api: analysis.api };
-      cache.set(child.path, cached);
-    }
-    return (
-      cached.api && { ...cached.api, file: relativePath(directoryOf(request.importer), child.path) }
-    );
-  };
-  const readModule = async (path: string | undefined) => {
-    const source = path === undefined ? undefined : await options.readFile(`${root}/${path}`);
-    return source === undefined ? undefined : { file: path!, source };
-  };
-  return Object.assign(resolve, {
-    stylesheet: async (request: ResolveRequest) => {
-      const sheet = await read(request);
-      return sheet && { file: sheet.path, source: sheet.source };
-    },
-    module: async (request: ResolveRequest): Promise<ResolvedModule | undefined> => {
-      const first = await readModule(modulePath(request));
-      if (!first) return undefined;
-      const files = [first];
-      const seen = new Set([first.file]);
-      const resolved: ResolvedModule = { files };
-      for (let index = 0; index < files.length; index++) {
-        const { file, source } = files[index]!;
-        const parsed = parseModule(file, source);
-        const [unfollowed] = unfollowedImports(parsed);
-        if (unfollowed !== undefined) resolved.unresolved ??= { specifier: unfollowed, file };
-        for (const specifier of moduleSpecifiers(parsed)) {
-          if (frameworkOf(specifier) || isAuthoringModule(specifier)) {
-            resolved.framework ??= { specifier, file };
-            continue;
-          }
-          // A package is the module's own dependency, which no output tree copies.
-          if (!specifier.startsWith("./") && !specifier.startsWith("../")) continue;
-          const path = modulePath({ specifier, importer: file });
-          if (path !== undefined && seen.has(path)) continue;
-          const next = await readModule(path);
-          if (!next) {
-            resolved.unresolved ??= { specifier, file };
-          } else {
-            seen.add(next.file);
-            files.push(next);
-          }
-        }
-      }
-      return resolved;
-    },
-  });
-}
-
 /** A shared module's file: the specifier as written, or with `.ts` where it has no extension. */
-function modulePath(request: ResolveRequest): string | undefined {
+export function modulePath(request: ResolveRequest): string | undefined {
   return isSharedModuleSpecifier(request.specifier)
     ? joinPath(
         directoryOf(request.importer),
@@ -238,3 +131,48 @@ export function relativePath(directory: string, path: string): string {
   while (shared < from.length && shared < to.length - 1 && from[shared] === to[shared]) shared++;
   return [...from.slice(shared).map(() => ".."), ...to.slice(shared)].join("/");
 }
+
+/**
+ * A module's imports that may be component edges (ADR-0071): each `.uf.tsx` import with the names
+ * it takes by value (`default` for a default import), and the span of its first specifier. An
+ * import is a component edge when one of its names is a component of the module's API
+ * (`takesComponent`): a key, a type or another value closes no cycle (UF1205).
+ */
+export function componentImportNames(
+  parsed: ParsedModule,
+): { specifier: string; span: Span; names: string[] }[] {
+  const found = new Map<string, { span: Span; names: string[] }>();
+  for (const statement of parsed.program.body) {
+    if (statement.type !== "ImportDeclaration" || statement.importKind === "type") continue;
+    const specifier = statement.source.value;
+    if (!COMPONENT_MODULE.test(specifier)) continue;
+    const names = statement.specifiers.flatMap((imported) => {
+      if (imported.type === "ImportDefaultSpecifier") return ["default"];
+      if (imported.type !== "ImportSpecifier" || imported.importKind === "type") return [];
+      const name = imported.imported;
+      return [name.type === "Identifier" ? name.name : String(name.value)];
+    });
+    const entry = found.get(specifier);
+    if (entry) entry.names.push(...names);
+    else
+      found.set(specifier, {
+        span: { start: statement.source.start, end: statement.source.end },
+        names,
+      });
+  }
+  return [...found].map(([specifier, entry]) => ({ specifier, ...entry }));
+}
+
+/** Whether a module's API exports a component under one of the names an import takes. */
+export function takesComponent(api: ModuleApi | undefined, names: readonly string[]): boolean {
+  return names.some((name) =>
+    api?.components.some((component) =>
+      name === "default"
+        ? component.export === "default"
+        : component.export === "named" && component.name === name,
+    ),
+  );
+}
+
+/** A relative import of a `.uf.tsx` module. */
+const COMPONENT_MODULE = /^\.\.?\/.*\.uf\.tsx$/;
