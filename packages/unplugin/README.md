@@ -94,13 +94,15 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   these ids apart.
 - **The project** (ADR-0071). Every file compiles through one project graph (`createProject`, from
   `@unframework/compiler`) rooted at Vite's root, shared by every module the plugin loads. Before
-  a load, the plugin compares each file the module reaches through the project's edges with what
-  the project last read of it, and hands the changed ones to the project's `update`, which
-  compiles again only the modules whose inputs changed and stops where a shape is unchanged. So
-  a compile is reused while its file and every file it reached hold what they held, with or
-  without Vite's watcher. A package's types are read once per server, since Vite's watcher
-  ignores `node_modules`. The outputs a load sees hold the copies of the shared `.ts` modules
-  the file reaches (ADR-0070), as `compile()`'s do, so the golden guard judges them.
+  a load, the plugin compares each file the module reaches through the project's edges, and
+  each file of a package it read types from, with what the project holds of it, and hands the
+  changed ones to the project's `update` (a package's files by the package, `pkg:<name>`). The
+  project compiles again only the modules whose inputs changed, those loaded for other ids
+  included, and stops where a shape is unchanged. A first compile may reach a file the project
+  still holds as it was for another module, so the plugin checks again after it. So a compile is
+  reused while its file and every file it reached hold what they held, with or without Vite's
+  watcher. The outputs a load sees hold the copies of the shared `.ts` modules the file reaches
+  (ADR-0070), as `compile()`'s do, so the golden guard judges them.
 - **Children** (ADR-0053). The project resolves a file's imports, so a parent lowers its children
   by their APIs. An output imports a child's output by its file
   (`./Field.vue`): such a relative import from one of the plugin's modules, or from a segment
@@ -160,12 +162,15 @@ How `resolveId` answers:
   reruns `vitest --watch`. (In `load`, Vite would drop the file when a cold request's module is
   not in its graph yet.) It adds an edge to every file the project says the output depends on,
   directly or through another module: each child's `.uf.tsx`, each composable's `.uf.ts`, each
-  shared `.ts` module, each stylesheet and each file a type was read from. So an edit to
-  `Field.uf.tsx` invalidates `Form`'s module, and an edit to the `.ts` file that declares a props
-  type invalidates every module that reads the type, through a composable too. A module of
-  composables gets the same edges. A file that does not exist yet gets none, since Vite's import
-  analysis fails an import it cannot resolve: once created, it reaches its dependents on their
-  next load. Hot updates are M6's.
+  shared `.ts` module, each stylesheet and each file a type was read from, a linked workspace
+  package's included. So an edit to `Field.uf.tsx` invalidates `Form`'s module, and an edit to
+  the `.ts` file that declares a props type invalidates every module that reads the type, through
+  a composable too. A module of composables gets the same edges. Following another module's edges
+  may add one the output does not read, such as a grandchild's: an edit to it transforms the
+  module again, and the project compiles nothing. A package's files in `node_modules` get none,
+  since Vite's watcher ignores them, and neither does a file that does not exist yet, since Vite's
+  import analysis fails an import it cannot resolve: the next load still compares both. Hot
+  updates are M6's.
 
 `load` answers a scoped sheet's id with the sheet this target's compile emitted, whatever its
 query: plugin-vue's request for `<style src>` (`?vue&type=style&index=0&src=true&lang.css`), which

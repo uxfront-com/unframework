@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -1129,12 +1129,40 @@ describe("watching", () => {
   });
 });
 
+/** A component that renders `Field` with a prop it does not declare yet. */
+const rendersField = (name: string) =>
+  `import Field from "./Field.uf.tsx";\n\nexport default function ${name}() {\n  return <Field label="Name" hint="Hi" />;\n}\n`;
+
+/** The files a module's id imports in Vite's graph: its watch edges, relative to the root. */
+const watchedBy = (graph: Project, client: TestServer["client"], id: string) =>
+  [...(client.moduleGraph.getModuleById(id)?.importedModules ?? [])]
+    .map((module) => relative(graph.root, module.file!))
+    .toSorted();
+
+/** The props and the error codes of the last compile `onCompile` saw for an id. */
+const lastCompile = (events: CompileEvent[], id: string) => {
+  const event = events.findLast((each) => each.id === id)!;
+  return {
+    props: event.ir?.components[0]?.props.map(({ name }) => name),
+    errors: event.diagnostics
+      .filter(({ severity }) => severity === "error")
+      .map(({ code }) => code),
+  };
+};
+
+/** Loads an id that may fail to compile: `onCompile` sees it either way. */
+const request = (client: TestServer["client"], id: string) =>
+  client.transformRequest(id).catch(() => undefined);
+
 describe("the project graph (ADR-0071)", () => {
   // The verification plan's invalidation fixture (C9), and a second shared module: `B` reads its
   // types from `a.ts` and `tokens.ts`, whose copies its output tree holds, `C` reaches `a.ts`
   // through `useC.uf.ts` alone, and `D` reads none.
   const PROPS = "export interface CardProps {\n  label: string;\n}\n";
   const TOKENS = 'export type Tone = "info" | "warning";\n';
+  const HINTED = PROPS.replace("label: string;", "label: string;\n  hint?: string;");
+  const FIELD =
+    "export default function Field({ label }: { label: string }) {\n  return <i>{label}</i>;\n}\n";
   const GRAPH = {
     "a.ts": PROPS,
     "tokens.ts": TOKENS,
@@ -1145,6 +1173,17 @@ describe("the project graph (ADR-0071)", () => {
     "C.uf.tsx":
       'import { useC } from "./useC.uf.ts";\n\nexport default function C({ label }: { label: string }) {\n  const { text } = useC({ label });\n  return <p>{text.value}</p>;\n}\n',
     "D.uf.tsx": "export default function D() {\n  return <p>D</p>;\n}\n",
+    // Loaded by the tests that need them, never by `withGraph`.
+    "X.uf.tsx":
+      'import type { CardProps } from "./a.ts";\n\nexport default function X({ label }: CardProps) {\n  return <p>{label}</p>;\n}\n',
+    "Field.uf.tsx": FIELD,
+    "Form.uf.tsx": rendersField("Form"),
+    "Page.uf.tsx": rendersField("Page"),
+    // A workspace package, which pnpm links into `node_modules` (`linkPackage`).
+    "packages/tokens/package.json": JSON.stringify({ name: "tokens", types: "./index.ts" }),
+    "packages/tokens/index.ts": PROPS,
+    "P.uf.tsx":
+      'import type { CardProps } from "tokens";\n\nexport default function P({ label }: CardProps) {\n  return <p>{label}</p>;\n}\n',
   };
 
   /**
@@ -1154,6 +1193,9 @@ describe("the project graph (ADR-0071)", () => {
   const target = defineTarget({
     ...htmlTarget(),
     emit: (component) => [{ path: `${component.name}.vue`, contents: "<p></p>\n" }],
+    emitComposable: (composable) => [
+      { path: `${composable.name}.ts`, contents: `export function ${composable.name}() {}\n` },
+    ],
   });
 
   /** Runs `fn` on a server over the fixture, counting the compiles of each module. */
@@ -1162,6 +1204,7 @@ describe("the project graph (ADR-0071)", () => {
       graph: Project;
       client: TestServer["client"];
       ids: Record<"B" | "C" | "D", string>;
+      idOf: (name: string) => string;
       compiled: string[];
       events: CompileEvent[];
     }) => Promise<void>,
@@ -1182,10 +1225,10 @@ describe("the project graph (ADR-0071)", () => {
     try {
       const server = await startServer(graph.root, [...plugins, fakeVue]);
       try {
-        const id = (name: string) => `${join(graph.root, `${name}.uf.tsx`)}.vue`;
-        const ids = { B: id("B"), C: id("C"), D: id("D") };
+        const idOf = (name: string) => `${join(graph.root, `${name}.uf.tsx`)}.vue`;
+        const ids = { B: idOf("B"), C: idOf("C"), D: idOf("D") };
         for (const each of Object.values(ids)) await server.client.transformRequest(each);
-        await fn({ graph, client: server.client, ids, compiled, events });
+        await fn({ graph, client: server.client, ids, idOf, compiled, events });
       } finally {
         await server.close();
       }
@@ -1196,10 +1239,7 @@ describe("the project graph (ADR-0071)", () => {
 
   it("watches a module's `.ts`, `.uf.ts` and type dependencies", async () => {
     await withGraph(async ({ graph, client, ids }) => {
-      const watched = (id: string) =>
-        [...(client.moduleGraph.getModuleById(id)?.importedModules ?? [])]
-          .map((module) => relative(graph.root, module.file!))
-          .toSorted();
+      const watched = (id: string) => watchedBy(graph, client, id);
       expect(watched(ids.B)).toEqual(["B.uf.tsx", "a.ts", "tokens.ts"]);
       // C reaches the type through its composable's API.
       expect(watched(ids.C)).toEqual(["C.uf.tsx", "a.ts", "useC.uf.ts"]);
@@ -1232,6 +1272,56 @@ describe("the project graph (ADR-0071)", () => {
       client.moduleGraph.onFileChange(join(graph.root, "a.ts"));
       for (const id of Object.values(ids)) await client.transformRequest(id);
       expect(compiled.toSorted()).toEqual(["B.uf.tsx", "C.uf.tsx"]);
+    });
+  });
+
+  it("watches what a module of composables depends on", async () => {
+    await withGraph(async ({ graph, client }) => {
+      // Its id is the file itself on this target (ADR-0069), so only its dependency is an edge.
+      const id = join(graph.root, "useC.uf.ts");
+      await client.transformRequest(id);
+      expect(watchedBy(graph, client, id)).toEqual(["a.ts"]);
+    });
+  });
+
+  it("sees an edit in a module first compiled after it, and in those compiled before", async () => {
+    await withGraph(async ({ graph, client, ids, idOf, events }) => {
+      graph.write("a.ts", HINTED);
+      // Never loaded before the edit: its compile reads `a.ts` before B's does again.
+      await request(client, idOf("X"));
+      expect(lastCompile(events, idOf("X")).props).toEqual(["label", "hint"]);
+      client.moduleGraph.onFileChange(join(graph.root, "a.ts"));
+      await request(client, ids.B);
+      expect(lastCompile(events, ids.B).props).toContain("hint");
+    });
+  });
+
+  it("sees a child's edit in a parent first compiled after it, and in those compiled before", async () => {
+    await withGraph(async ({ graph, client, idOf, events }) => {
+      await request(client, idOf("Form"));
+      expect(lastCompile(events, idOf("Form")).errors).toEqual(["UF3035"]);
+      graph.write("Field.uf.tsx", FIELD.replace("label: string", "label: string; hint?: string"));
+      await request(client, idOf("Page"));
+      expect(lastCompile(events, idOf("Page")).errors).toEqual([]);
+      client.moduleGraph.onFileChange(join(graph.root, "Field.uf.tsx"));
+      await request(client, idOf("Form"));
+      expect(lastCompile(events, idOf("Form")).errors).toEqual([]);
+    });
+  });
+
+  it("watches a workspace package's types, and reads them again when they change", async () => {
+    await withGraph(async ({ graph, client, idOf, events }) => {
+      mkdirSync(join(graph.root, "node_modules"));
+      symlinkSync(join(graph.root, "packages/tokens"), join(graph.root, "node_modules/tokens"));
+      const id = idOf("P");
+      await request(client, id);
+      expect(lastCompile(events, id).props).toEqual(["label"]);
+      expect(watchedBy(graph, client, id)).toEqual(["P.uf.tsx", "packages/tokens/index.ts"]);
+      graph.write("packages/tokens/index.ts", HINTED);
+      client.moduleGraph.onFileChange(join(graph.root, "packages/tokens/index.ts"));
+      expect(client.moduleGraph.getModuleById(id)?.transformResult).toBeNull();
+      await request(client, id);
+      expect(lastCompile(events, id).props).toEqual(["label", "hint"]);
     });
   });
 
