@@ -12,6 +12,7 @@ import {
   unfollowedImports,
 } from "@unframework/analyzer";
 import type { StylesheetSource } from "@unframework/analyzer";
+import type { OutputFile } from "@unframework/codegen";
 import type { ModuleApi } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
 import type { ShapeQuery, TypeOracle, TypeShape } from "@unframework/type-oracle";
@@ -68,6 +69,12 @@ export interface Project {
    * holds unchanged (ADR-0070), or `undefined` for a file no compile copied.
    */
   copy(file: string): string | undefined;
+  /**
+   * The copies of shared `.ts` modules that a compiled module's result leaves out, at their paths
+   * relative to it, each with its module's current text: what `compile()` adds to every output
+   * tree beside the module's own files (ADR-0070). Empty for a module the project has not compiled.
+   */
+  copies(file: string): OutputFile[];
   /** What a module read, sorted: files, and packages as `pkg:<name>` (ADR-0071). */
   dependencies(file: string): string[];
   /**
@@ -428,6 +435,12 @@ export function createProject(options: ProjectOptions): Project {
       return build(file, source);
     },
     copy: (file) => copies.get(file),
+    copies: (file) =>
+      [...(compiled.get(file)?.copies ?? [])].flatMap((module) => {
+        const contents = copies.get(module);
+        if (contents === undefined) return [];
+        return [{ path: relativePath(directoryOf(file), module), contents }];
+      }),
     dependencies: (file) => [...edgesOf(file)].toSorted(),
     update: async (files) => {
       await typeOracle?.update({ files: [...files] });

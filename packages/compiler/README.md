@@ -64,7 +64,10 @@ module whose composables the source imports, one that is missing included, named
 the files `createFileResolver` does and the options each compile takes, but `filename` and
 `resolve`. Its `compile(file)` compiles a module, named relative to `root`, through its own
 resolver and the caller's oracle, and keeps the result. The result leaves out the copies of shared
-`.ts` modules: each copy is its module's own node, which `copy(file)` gives.
+`.ts` modules: each copy is its module's own node, which `copy(file)` gives. `copies(file)` gives
+a compiled module's copies at their paths relative to it, each with its module's current text: with
+the result's outputs, they are what `compile()` emits (the unplugin's golden guard reads them), but
+for a copy named like a component's output, which `compile()` leaves out with UF1104.
 
 Its `update(files)` tells the oracle which files changed, and reads again the copies among them.
 Then it checks every compiled module that reaches a changed file, directly or not, along the
