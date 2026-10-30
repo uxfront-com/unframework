@@ -187,9 +187,10 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     if (!seen.has(path)) seen.set(path, text);
     return text;
   };
-  // The package a directory's files belong to: the `name` in its nearest `package.json`. A
-  // project names a package it read types from `pkg:<name>` (ADR-0071), and the oracle reads its
-  // files at their real paths, outside `node_modules` for a linked workspace package.
+  // The package a directory's files belong to: the `name` in its nearest `package.json` that has
+  // one, past a nameless one such as a dual build's `dist/esm/package.json`. A project names a
+  // package it read types from `pkg:<name>` (ADR-0071), and the oracle reads its files at their
+  // real paths, outside `node_modules` for a linked workspace package.
   const packageNames = new Map<string, string | undefined>();
   const packageOf = (directory: string): string | undefined => {
     if (packageNames.has(directory)) return packageNames.get(directory);
@@ -197,11 +198,12 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     try {
       const manifest: unknown = JSON.parse(readFileSync(`${directory}/package.json`, "utf8"));
       const named = manifest && typeof manifest === "object" && "name" in manifest;
-      name = named && typeof manifest.name === "string" ? manifest.name : undefined;
+      if (named && typeof manifest.name === "string") name = manifest.name;
     } catch {
-      const parent = posix.dirname(directory);
-      name = parent === directory ? undefined : packageOf(parent);
+      // No manifest here, or one that does not parse.
     }
+    const parent = posix.dirname(directory);
+    if (name === undefined && parent !== directory) name = packageOf(parent);
     packageNames.set(directory, name);
     return name;
   };
@@ -274,6 +276,9 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
       : undefined;
   };
 
+  // Every package a module has reached, whose files the oracle may hold as `pkg:<name>`.
+  const reachedPackages = new Set<string>();
+
   /**
    * What a module's output depends on (ADR-0071): its own file and every file the project's edges
    * reach from it, its children's and its composables' types included, named relative to the
@@ -289,6 +294,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
         else files.add(dependency);
       }
     }
+    for (const name of packages) reachedPackages.add(name);
     return { files: [...files], packages };
   };
 
@@ -302,19 +308,29 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
   };
 
   /**
-   * Hands the project every change it has not seen among what a module reached, so `update`
-   * compiles again the modules whose inputs changed, those compiled for other modules included.
-   * A file is named relative to the root, a package's file by its package. Gives whether
-   * anything changed.
+   * The names a changed file has in the project and its oracle: relative to the root, for a file
+   * under it, and `pkg:<name>`, for a file of a package any module reached. One file may have
+   * both: a workspace package that one module imports by name and another by path, or a
+   * library's own files that its playground imports by the library's name.
+   */
+  const namesOf = (path: string): string[] => {
+    const name = packageOf(posix.dirname(path));
+    return [
+      ...(path.startsWith(`${root}/`) ? [path.slice(root.length + 1)] : []),
+      ...(name !== undefined && reachedPackages.has(name) ? [`${PACKAGE}${name}`] : []),
+    ];
+  };
+
+  /**
+   * Hands the project every change it has not seen among what a module reached, under every name
+   * the file has, so `update` compiles again the modules whose inputs changed, those compiled for
+   * other modules included. Gives whether anything changed.
    */
   const refresh = async (filename: string): Promise<boolean> => {
     const { files, packages } = reachedFrom(filename);
-    const names = new Map(files.map((file) => [`${root}/${file}`, file]));
-    for (const path of packageFiles(packages)) {
-      names.set(path, `${PACKAGE}${packageOf(posix.dirname(path))!}`);
-    }
+    const paths = new Set([...files.map((file) => `${root}/${file}`), ...packageFiles(packages)]);
     const changed = new Map<string, string | undefined>();
-    for (const path of names.keys()) {
+    for (const path of paths) {
       if (!seen.has(path)) continue;
       const text = await readFile(path, "utf8").catch(() => undefined);
       if (text !== seen.get(path)) changed.set(path, text);
@@ -323,7 +339,8 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     const before = new Map([...changed.keys()].map((path) => [path, seen.get(path)]));
     for (const [path, text] of changed) seen.set(path, text);
     try {
-      await projectOf().update([...new Set([...changed.keys()].map((path) => names.get(path)!))]);
+      const names = [...changed.keys()].flatMap((path) => namesOf(path));
+      await projectOf().update([...new Set(names)]);
     } catch (error) {
       // The project never took the change: the next load hands it over again.
       for (const [path, text] of before) seen.set(path, text);

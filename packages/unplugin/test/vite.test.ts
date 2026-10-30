@@ -1154,6 +1154,19 @@ const lastCompile = (events: CompileEvent[], id: string) => {
 const request = (client: TestServer["client"], id: string) =>
   client.transformRequest(id).catch(() => undefined);
 
+/** Links a workspace package into `node_modules`, as pnpm does. */
+const linkPackage = (graph: Project, name: string) => {
+  mkdirSync(join(graph.root, "node_modules"), { recursive: true });
+  symlinkSync(join(graph.root, "packages", name), join(graph.root, "node_modules", name));
+};
+
+/**
+ * A library's playground, which imports the library's types by its name. The comment goes before
+ * the import, so an edit to it moves the props type's span.
+ */
+const playgroundApp = (comment: string) =>
+  `${comment}import type { CardProps } from "my-lib";\n\nexport default function App({ label }: CardProps) {\n  return <p>{label}</p>;\n}\n`;
+
 describe("the project graph (ADR-0071)", () => {
   // The verification plan's invalidation fixture (C9), and a second shared module: `B` reads its
   // types from `a.ts` and `tokens.ts`, whose copies its output tree holds, `C` reaches `a.ts`
@@ -1184,6 +1197,20 @@ describe("the project graph (ADR-0071)", () => {
     "packages/tokens/index.ts": PROPS,
     "P.uf.tsx":
       'import type { CardProps } from "tokens";\n\nexport default function P({ label }: CardProps) {\n  return <p>{label}</p>;\n}\n',
+    // The same file by its path.
+    "R.uf.tsx":
+      'import type { CardProps } from "./packages/tokens/index.ts";\n\nexport default function R({ label }: CardProps) {\n  return <p>{label}</p>;\n}\n',
+    // A dual build, whose types sit beside a `package.json` without a name.
+    "packages/dual/package.json": JSON.stringify({ name: "dual", types: "./dist/esm/index.d.ts" }),
+    "packages/dual/dist/esm/package.json": JSON.stringify({ type: "module" }),
+    "packages/dual/dist/esm/index.d.ts": PROPS,
+    // A package installed into `node_modules`, which Vite's watcher ignores.
+    "node_modules/vendor/package.json": JSON.stringify({ name: "vendor", types: "./index.d.ts" }),
+    "node_modules/vendor/index.d.ts": PROPS,
+    "V.uf.tsx":
+      'import type { CardProps } from "vendor";\n\nexport default function V({ label }: CardProps) {\n  return <p>{label}</p>;\n}\n',
+    "Dual.uf.tsx":
+      'import type { CardProps } from "dual";\n\nexport default function Dual({ label }: CardProps) {\n  return <p>{label}</p>;\n}\n',
   };
 
   /**
@@ -1311,8 +1338,7 @@ describe("the project graph (ADR-0071)", () => {
 
   it("watches a workspace package's types, and reads them again when they change", async () => {
     await withGraph(async ({ graph, client, idOf, events }) => {
-      mkdirSync(join(graph.root, "node_modules"));
-      symlinkSync(join(graph.root, "packages/tokens"), join(graph.root, "node_modules/tokens"));
+      linkPackage(graph, "tokens");
       const id = idOf("P");
       await request(client, id);
       expect(lastCompile(events, id).props).toEqual(["label"]);
@@ -1320,6 +1346,72 @@ describe("the project graph (ADR-0071)", () => {
       graph.write("packages/tokens/index.ts", HINTED);
       client.moduleGraph.onFileChange(join(graph.root, "packages/tokens/index.ts"));
       expect(client.moduleGraph.getModuleById(id)?.transformResult).toBeNull();
+      await request(client, id);
+      expect(lastCompile(events, id).props).toEqual(["label", "hint"]);
+    });
+  });
+
+  it.each([
+    ["by its package's name first", ["P", "R"]],
+    ["by its path first", ["R", "P"]],
+  ])("sees an edit to a file that modules import %s, and by the other", async (_, names) => {
+    await withGraph(async ({ graph, client, idOf, events }) => {
+      linkPackage(graph, "tokens");
+      for (const name of names) await request(client, idOf(name));
+      graph.write("packages/tokens/index.ts", HINTED);
+      client.moduleGraph.onFileChange(join(graph.root, "packages/tokens/index.ts"));
+      for (const name of names) {
+        await request(client, idOf(name));
+        expect(lastCompile(events, idOf(name)).props, name).toEqual(["label", "hint"]);
+      }
+    });
+  });
+
+  it("sees edits to a module that imports its own root package by name, and to the package", async () => {
+    await withGraph(async ({ graph, client, events }) => {
+      // A component library's playground.
+      graph.write(
+        "package.json",
+        JSON.stringify({ name: "my-lib", exports: { ".": { types: "./src/index.ts" } } }),
+      );
+      graph.write("src/index.ts", PROPS);
+      const appFile = graph.write("playground/App.uf.tsx", playgroundApp(""));
+      const id = `${appFile}.vue`;
+      await request(client, id);
+      expect(lastCompile(events, id)).toEqual({ props: ["label"], errors: [] });
+      graph.write("playground/App.uf.tsx", playgroundApp("// The playground.\n"));
+      client.moduleGraph.onFileChange(appFile);
+      await request(client, id);
+      expect(lastCompile(events, id)).toEqual({ props: ["label"], errors: [] });
+      graph.write("src/index.ts", HINTED);
+      client.moduleGraph.onFileChange(join(graph.root, "src/index.ts"));
+      await request(client, id);
+      expect(lastCompile(events, id)).toEqual({ props: ["label", "hint"], errors: [] });
+    });
+  });
+
+  it("watches no installed package's file, and still reads it again on the next load", async () => {
+    await withGraph(async ({ graph, client, idOf, events }) => {
+      const id = idOf("V");
+      await request(client, id);
+      expect(watchedBy(graph, client, id)).toEqual(["V.uf.tsx"]);
+      graph.write("node_modules/vendor/index.d.ts", HINTED);
+      client.moduleGraph.invalidateAll();
+      await request(client, id);
+      expect(lastCompile(events, id).props).toEqual(["label", "hint"]);
+    });
+  });
+
+  it("reads a package's types again beside a `package.json` without a name", async () => {
+    await withGraph(async ({ graph, client, idOf, events }) => {
+      linkPackage(graph, "dual");
+      const id = idOf("Dual");
+      await request(client, id);
+      expect(lastCompile(events, id).props).toEqual(["label"]);
+      const types = join(graph.root, "packages/dual/dist/esm/index.d.ts");
+      expect(watchedBy(graph, client, id)).toContain("packages/dual/dist/esm/index.d.ts");
+      graph.write("packages/dual/dist/esm/index.d.ts", HINTED);
+      client.moduleGraph.onFileChange(types);
       await request(client, id);
       expect(lastCompile(events, id).props).toEqual(["label", "hint"]);
     });

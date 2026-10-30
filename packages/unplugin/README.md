@@ -96,7 +96,9 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   `@unframework/compiler`) rooted at Vite's root, shared by every module the plugin loads. Before
   a load, the plugin compares each file the module reaches through the project's edges, and
   each file of a package it read types from, with what the project holds of it, and hands the
-  changed ones to the project's `update` (a package's files by the package, `pkg:<name>`). The
+  changed ones to the project's `update` under every name it knows them by: relative to the
+  root, and `pkg:<name>` for a file of a package any module reached, where `<name>` is the name
+  in the file's nearest `package.json` that has one. The
   project compiles again only the modules whose inputs changed, those loaded for other ids
   included, and stops where a shape is unchanged. A first compile may reach a file the project
   still holds as it was for another module, so the plugin checks again after it. So a compile is
