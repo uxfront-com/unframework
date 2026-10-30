@@ -102,7 +102,7 @@ export class VueNames {
     this.reach = moduleReach(component, module, typeTexts);
     this.#own = new Set(
       component.bindings
-        .filter((binding) => binding.kind !== "moduleConst" && binding.kind !== "import")
+        .filter((binding) => scriptScoped(binding.kind))
         .map((binding) => binding.name),
     );
     const moduleNames = [...this.reach.values];
@@ -114,9 +114,10 @@ export class VueNames {
     }
     // The setup keeps its names, which its macros, slots and template refs are keyed by; a
     // module name one of them shadows is renamed instead, as one Vue reserves is.
+    // A template's own variable shadows a script name in the template alone, where Vue reads it.
     const setup = new Set([
       ...component.bindings
-        .filter((binding) => binding.kind !== "moduleConst" && binding.kind !== "import")
+        .filter((binding) => scriptScoped(binding.kind))
         .map((binding) => binding.name),
       ...(component.propsParameter?.name ? [component.propsParameter.name] : []),
     ]);
@@ -294,9 +295,7 @@ export function moduleReach(
   typeTexts: readonly TypeText[] = [],
 ): ModuleReach {
   const shadowed = new Set(
-    owner.bindings
-      .filter((binding) => binding.kind !== "import" && binding.kind !== "moduleConst")
-      .map((binding) => binding.name),
+    owner.bindings.filter((binding) => scriptScoped(binding.kind)).map((binding) => binding.name),
   );
   const moduleValues = new Set([
     ...(module.constants ?? []).map(({ name }) => name),
@@ -349,6 +348,14 @@ export function moduleReach(
 }
 
 /**
+ * Whether a binding of the owner is in scope over its setup's text: not a module's, and not
+ * one only the template sees, a list's item or a scoped slot's props.
+ */
+function scriptScoped(kind: BindingKind): boolean {
+  return kind !== "moduleConst" && kind !== "import" && kind !== "loopVar" && kind !== "slotScope";
+}
+
+/**
  * The owner's own type text and code, where a `typeof` may sit: every type its IR writes (an
  * annotation, a type argument, a parameter's type) and every piece of its code, which may hold
  * an annotation of its own. A composable's parameter types are its caller's to add.
@@ -398,10 +405,14 @@ function ownText(
       owner.slots,
       owner.setup,
       owner.typeParameters,
-      owner.render,
     ],
     [],
   );
+  // The template's own variables, a list's item and a scoped slot's props, are in scope there.
+  const template = owner.bindings
+    .filter((binding) => binding.kind === "loopVar" || binding.kind === "slotScope")
+    .map((binding) => binding.name);
+  visit(owner.render, template);
   return found;
 }
 
@@ -409,9 +420,9 @@ function ownText(
  * Each identifier a `typeof` queries in type text or code, with its offsets in the text:
  * `SIZES` in `keyof typeof SIZES`, the root `theme` of `typeof theme.dark`. A query that a
  * binding in scope where it sits answers is left out, as TypeScript scopes it: a function's or
- * a function type's parameters and type parameters, over the whole function; a block's
- * declarations, over the block; a loop's or a `catch`'s own; and `bound`, the names in scope
- * around the text.
+ * a function type's parameters, over the whole function; a block's declarations, over the block,
+ * a `switch`'s cases one block; a loop's or a `catch`'s own; and `bound`, the names in scope
+ * around the text. A type parameter is a type, which no `typeof` reads.
  */
 export function typeQueries(
   text: string,
@@ -466,7 +477,7 @@ function isNode(value: unknown): value is Node {
   return !!value && typeof value === "object" && typeof (value as Node).type === "string";
 }
 
-/** The function-like nodes, whose parameters and type parameters bind over the whole node. */
+/** The function-like nodes, whose parameters bind over the whole node. */
 const FUNCTIONS: ReadonlySet<string> = new Set([
   "FunctionDeclaration",
   "FunctionExpression",
@@ -483,21 +494,20 @@ const FUNCTIONS: ReadonlySet<string> = new Set([
 /** The names a node binds over itself: see {@link typeQueries}. */
 function bindings(node: Node): string[] {
   const names: string[] = [];
-  const typeParameters = (owner: unknown) => {
-    if (!isNode(owner) || !Array.isArray(owner.params)) return;
-    for (const parameter of owner.params) {
-      const name = isNode(parameter) ? parameter.name : undefined;
-      if (isNode(name) && typeof name.name === "string") names.push(name.name);
-    }
-  };
+  // A type parameter is a type, which a `typeof` never reads: only value bindings count.
   if (FUNCTIONS.has(node.type)) {
     for (const parameter of (node.params as unknown[] | undefined) ?? [])
       patternNames(parameter, names);
-    typeParameters(node.typeParameters);
-  } else if (node.type === "TSTypeAliasDeclaration" || node.type === "TSInterfaceDeclaration") {
-    typeParameters(node.typeParameters);
   } else if (node.type === "BlockStatement" || node.type === "StaticBlock") {
     for (const statement of (node.body as unknown[] | undefined) ?? []) declared(statement, names);
+  } else if (node.type === "SwitchStatement") {
+    // A `switch`'s cases share one block.
+    for (const each of (node.cases as unknown[] | undefined) ?? []) {
+      if (!isNode(each)) continue;
+      for (const statement of (each.consequent as unknown[] | undefined) ?? []) {
+        declared(statement, names);
+      }
+    }
   } else if (node.type === "ForStatement") {
     declared(node.init, names);
   } else if (node.type === "ForInStatement" || node.type === "ForOfStatement") {

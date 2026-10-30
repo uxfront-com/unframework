@@ -705,5 +705,92 @@ describe("vue module bindings' types and names", () => {
         expect(await typecheck(outputs)).toEqual(clean(outputs));
       },
     );
+
+    it("reads a type parameter's `typeof` as the outer value", checker, async () => {
+      const files = {
+        "t.ts": T,
+        "C.uf.tsx": [
+          'import { step } from "./t";',
+          "",
+          "type T<step> = typeof step;",
+          "const LABEL = `${step.a}`;",
+          "",
+          "export default function C() {",
+          '  const step = "x";',
+          "  const t: T<number> = { a: 2 };",
+          "  return <p>{t.a} {LABEL} {step}</p>;",
+          "}",
+          "",
+        ].join("\n"),
+        "D.uf.tsx": [
+          'import { step } from "./t";',
+          "",
+          "interface I<step> {",
+          "  v: typeof step;",
+          "}",
+          "",
+          "export default function D() {",
+          "  const i: I<number> = { v: { a: 2 } };",
+          "  return <p>{i.v.a}</p>;",
+          "}",
+          "",
+        ].join("\n"),
+      };
+      const outputs = { ...(await vue(files, "C.uf.tsx")), ...(await vue(files, "D.uf.tsx")) };
+      expect(outputs["C.vue"]).toContain("type T<step> = typeof step_1;");
+      expect(outputs["D.vue"]).toContain('import { step } from "./t";');
+      expect(await typecheck(outputs)).toEqual(clean(outputs));
+    });
+
+    it("binds a `switch` case's declarations over the switch", checker, async () => {
+      const files = {
+        "t.ts": T,
+        "C.uf.tsx": [
+          'import { step } from "./t";',
+          "",
+          "export default function C() {",
+          "  const pick = (n: number): number => {",
+          "    switch (n) {",
+          "      case 1:",
+          "        const step = 2;",
+          "        const k: typeof step = step;",
+          "        return k;",
+          "      default:",
+          "        return 0;",
+          "    }",
+          "  };",
+          "  return <p>{pick(1)}</p>;",
+          "}",
+          "",
+        ].join("\n"),
+      };
+      const outputs = await vue(files, "C.uf.tsx");
+      expect(outputs["C.vue"]).not.toContain("./t");
+      const paths = writeScratch(outputs);
+      const linted = await toolchain.lint(Object.values(paths), {
+        toolchainDir,
+        root: toolchainDir,
+      });
+      expect([...linted.values()].flat()).toEqual([]);
+    });
+
+    it("lets no template variable shadow the setup's `typeof`", checker, async () => {
+      const files = {
+        "t.ts": T,
+        "C.uf.tsx": [
+          'import { step } from "./t";',
+          "",
+          "export default function C() {",
+          "  const n: typeof step = { a: 1 };",
+          "  const items = [1, 2];",
+          "  return <ul>{n.a}{items.map((step) => <li key={step}>{step}</li>)}</ul>;",
+          "}",
+          "",
+        ].join("\n"),
+      };
+      const outputs = await vue(files, "C.uf.tsx");
+      expect(outputs["C.vue"]).toContain('import { step } from "./t";');
+      expect(await typecheck(outputs)).toEqual(clean(outputs));
+    });
   });
 });
