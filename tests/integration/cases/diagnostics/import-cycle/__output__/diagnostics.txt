@@ -1,0 +1,17 @@
+error[UF1205]: "./Pong.uf.tsx" closes an import cycle of components, Ping.uf.tsx → Pong.uf.tsx → Ping.uf.tsx: each imports the next to render it, so none of them can load before the others.
+ --> diagnostics/import-cycle/Ping.uf.tsx:4:18
+  |
+4 | import Pong from "./Pong.uf.tsx";
+  |                  ^^^^^^^^^^^^^^^
+  |
+  = help: Render the components of the cycle from one module, which declares them all.
+  = see: https://unframework.dev/diagnostics/UF1205
+
+error[UF1205]: "./Ping.uf.tsx" closes an import cycle of components, Pong.uf.tsx → Ping.uf.tsx → Pong.uf.tsx: each imports the next to render it, so none of them can load before the others.
+ --> diagnostics/import-cycle/Pong.uf.tsx:2:18
+  |
+2 | import Ping from "./Ping.uf.tsx";
+  |                  ^^^^^^^^^^^^^^^
+  |
+  = help: Render the components of the cycle from one module, which declares them all.
+  = see: https://unframework.dev/diagnostics/UF1205

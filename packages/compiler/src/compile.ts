@@ -11,15 +11,22 @@ import type { OutputFile, Target } from "@unframework/codegen";
 import { createDiagnostic, sortDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import { checkInvariants, validateModule } from "@unframework/ir";
-import type { IrValidationError, ModuleApi, UfComponent, UfModule } from "@unframework/ir";
+import type { IrValidationError, ModuleApi, Span, UfComponent, UfModule } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
-import type { AST } from "@unframework/parser";
+import type { ParsedModule } from "@unframework/parser";
 import { createSyntacticOracle } from "@unframework/type-oracle";
 import type { TypeOracle, TypeShape } from "@unframework/type-oracle";
 
 import { checkCapabilities } from "./capabilities.ts";
 import { isSpanIn, pluginIrProblems } from "./plugin-ir.ts";
-import { directoryOf, joinPath, relativePath, stylesheetSource } from "./resolver.ts";
+import {
+  componentImportNames,
+  directoryOf,
+  joinPath,
+  relativePath,
+  stylesheetSource,
+  takesComponent,
+} from "./resolver.ts";
 import type { Resolver } from "./resolver.ts";
 import { resolveTarget } from "./targets.ts";
 import type { TargetName } from "./targets.ts";
@@ -133,8 +140,8 @@ export interface CompileResult {
    * What the compile read besides the source, sorted, each once (ADR-0071): the files the type
    * oracle read or looked for, relative to its root, the shared `.ts` modules the resolver read,
    * named as `filename` is, the `.uf.ts` modules whose composables the source imports, named so
-   * too (ADR-0069), and the packages, as `pkg:<name>`, one that is not installed included. Never
-   * an absolute path (P8).
+   * too, one that is missing included (ADR-0069), and the packages, as `pkg:<name>`, one that is
+   * not installed included. Never an absolute path (P8).
    */
   dependencies: string[];
 }
@@ -192,16 +199,15 @@ export async function compile(source: string, options: CompileOptions): Promise<
     }
     const imports = new Map<string, ModuleApi | undefined>();
     for (const specifier of options.resolve ? componentImports(parsed) : []) {
+      // A caller's output depends on its composables' APIs, which the project graph watches
+      // (ADR-0069, ADR-0071): a module that is missing too, so creating it recompiles the caller.
+      const composable = COMPOSABLE_SPECIFIER.test(specifier)
+        ? joinPath(directoryOf(file), specifier)
+        : undefined;
+      if (composable !== undefined) dependencies.add(composable);
       try {
         const api = await options.resolve!({ specifier, importer: file });
         imports.set(specifier, api);
-        // A caller's output depends on its composables' APIs, which the project graph watches
-        // (ADR-0069, ADR-0071).
-        const composable =
-          api && COMPOSABLE_SPECIFIER.test(specifier)
-            ? joinPath(directoryOf(file), `./${api.file}`)
-            : undefined;
-        if (composable !== undefined) dependencies.add(composable);
       } catch (error) {
         imports.set(specifier, undefined);
         diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
@@ -237,21 +243,36 @@ export async function compile(source: string, options: CompileOptions): Promise<
             ? { unresolved: { ...unresolved, file: fromSource(unresolved.file) } }
             : {}),
         });
-        const at = parsed.program.body.find(
-          (statement): statement is AST.ImportDeclaration =>
-            statement.type === "ImportDeclaration" && statement.source.value === specifier,
-        )!.source;
+        // The first import or re-export that names the module: a type re-export alone reaches it
+        // too.
+        const at = relativeImports(parsed).find((entry) => entry.specifier === specifier)!.span;
         for (const { file: path, source: text } of resolved.files) {
           dependencies.add(path);
           if (!copies.has(fromSource(path))) {
             copies.set(fromSource(path), {
               contents: text,
-              span: { start: at.start, end: at.end },
+              span: at,
             });
           }
         }
       } catch (error) {
         modules.set(specifier, undefined);
+        diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
+      }
+    }
+    // A component edge that closes a cycle of component edges (UF1205), which the resolver's
+    // project finds, not the analyser: components that import each other to render cannot each
+    // load before the others, on Angular (ADR-0053, ADR-0071). A key, a type or another value
+    // imported back closes none, so the context pattern stays valid (UF2033).
+    const cycles: Diagnostic[] = [];
+    const edges = componentImportNames(parsed).filter(({ specifier, names }) =>
+      takesComponent(imports.get(specifier), names),
+    );
+    for (const { specifier, span } of options.resolve?.cycle ? edges : []) {
+      try {
+        const files = await options.resolve!.cycle!({ specifier, importer: file });
+        if (files) cycles.push(importCycle(file, specifier, span, files));
+      } catch (error) {
         diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
       }
     }
@@ -271,10 +292,11 @@ export async function compile(source: string, options: CompileOptions): Promise<
     } else {
       analysed = analysis.module && deepFreeze(analysis.module);
     }
-    // A copy named like a component's output withholds the module, as an analyser error does.
+    // A copy named like a component's output, or a cycle, withholds the module, as an analyser
+    // error does.
     const collisions = analysed ? copyCollisions(analysed, copies, file) : [];
-    diagnostics.push(...collisions);
-    if (collisions.length) analysed = undefined;
+    diagnostics.push(...collisions, ...cycles);
+    if (collisions.length || cycles.length) analysed = undefined;
   } catch (error) {
     diagnostics.push(internal(file, error, "The analyser failed"));
   }
@@ -401,6 +423,37 @@ function copyCollisions(
         help: "Rename the shared module, or the component.",
       }),
     ];
+  });
+}
+
+/**
+ * The source's relative imports and re-exports, each specifier once with the span of its first
+ * declaration's specifier.
+ */
+function relativeImports(parsed: ParsedModule): { specifier: string; span: Span }[] {
+  const found = new Map<string, Span>();
+  for (const statement of parsed.program.body) {
+    const from =
+      statement.type === "ImportDeclaration" ||
+      statement.type === "ExportAllDeclaration" ||
+      statement.type === "ExportNamedDeclaration"
+        ? statement.source
+        : null;
+    if (!from || found.has(from.value)) continue;
+    if (!from.value.startsWith("./") && !from.value.startsWith("../")) continue;
+    found.set(from.value, { start: from.start, end: from.end });
+  }
+  return [...found].map(([specifier, span]) => ({ specifier, span }));
+}
+
+/** UF1205 at an import that closes a cycle, which names its files relative to the source. */
+function importCycle(file: string, specifier: string, span: Span, files: string[]): Diagnostic {
+  const names = files.map((path) => relativePath(directoryOf(file), path));
+  return createDiagnostic("UF1205", {
+    file,
+    span,
+    message: `"${specifier}" closes an import cycle of components, ${names.join(" → ")}: each imports the next to render it, so none of them can load before the others.`,
+    help: "Render the components of the cycle from one module, which declares them all.",
   });
 }
 

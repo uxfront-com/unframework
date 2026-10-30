@@ -45,10 +45,15 @@ type dependencies.
   recompiles `B`, `useC` and `C` once each, and never `D`. An edit to `a.ts` that leaves the shape
   unchanged recompiles no component, and still refreshes `a.ts`'s own copy.
 
-**Cycles.** An import cycle longer than a self-import is UF1205 (`import-cycle`, error), with
-`diagnostics/import-cycle`. A component that renders itself stays allowed (ADR-0053). This covers
-two modules that import each other too, which goes further than ADR-0053's open item ("cycles
-longer than two modules"), since Angular can't load that pair as built.
+**Cycles.** A cycle of component edges is UF1205 (`import-cycle`, error), with
+`diagnostics/import-cycle`. A component edge is a value import of a component from another `.uf.tsx`
+module: the import a parent renders a child by. An injection key or any other named value, a type
+and a `.ts` or `.uf.ts` module close no cycle, so the context pattern stays allowed (the provider
+renders the consumer, which imports the key back, UF2033), and so does a cycle of shared `.ts`
+modules alone, which ES modules load and each output tree copies as written. A component that
+renders itself stays allowed (ADR-0053). The rule covers two components that render each other
+too, which goes further than ADR-0053's open item ("cycles longer than two modules"), since
+Angular can't load that pair as built.
 
 **The unplugin** compiles through a project, and calls `addWatchFile` for every edge, so an edit
 to a `.ts`, a `.uf.ts` or a type dependency invalidates its dependents' virtual modules through
@@ -74,8 +79,8 @@ option, and its open items on the graph and on cycles are settled here.
 
 - The project holds state, so its callers must route every change through it. A caller that skips
   `update` serves stale output.
-- Two modules that import each other are rejected on every target, so two components that render
-  each other live in one module.
+- Two components that import each other to render are rejected on every target, so they live in
+  one module.
 
 **Open:**
 
@@ -92,3 +97,6 @@ option, and its open items on the graph and on cycles are settled here.
   even one that leaves the shape as it was.
 - **Report only cycles longer than two modules,** as ADR-0053 wrote. A pair that imports each other
   fails to load on Angular, and no case needs one.
+- **Report every import cycle.** It rejects the context pattern that UF2033 requires, where the
+  consumer imports its key from the provider that renders it (`context/static`,
+  `context/reactive`), though every target loads it: the key is read at run time.

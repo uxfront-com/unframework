@@ -28,10 +28,11 @@ type oracle over the same root (ADR-0067), and caches that by its contents and i
 cannot resolve is UF1202, and a resolver that throws UF9001. The resolver's `stylesheet` reads each
 stylesheet the source imports (ADR-0063), and `createFileResolver` also reads a child's sheets, for
 the scope id its API carries, and caches by their text too: a sheet it cannot read is UF5005.
-The resolver's `module` reads each shared `.ts` module the source imports (ADR-0070), a specifier
-without an extension naming its `.ts`, and `createFileResolver` follows its relative imports through
-every `.ts` module they reach, each once, noting the first framework or `unframework` import
-(UF1204) and the first relative import it cannot read (UF1202). A value import of a module it
+The resolver's `module` reads each shared `.ts` module the source imports or re-exports from, a
+type re-export alone included (ADR-0070), a specifier without an extension naming its `.ts`, and
+`createFileResolver` follows its relative imports through every `.ts` module they reach, each
+once, noting the first framework or `unframework` import (UF1204) and the first relative import it
+cannot read (UF1202). A value import of a module it
 cannot read, or without a resolver, is UF1202. Each output tree beside a component's files holds a
 copy of every module the source reaches, unchanged, at its path relative to the source: neither
 the hooks nor formatting see it, and `owners` leaves it out. A copy named like a component's output
@@ -57,7 +58,33 @@ disposes of its oracle. The oracle reads the source's own file too, so it must h
 `CompileResult.dependencies` lists what the compile read or looked for through the oracle: files
 relative to its root, and packages as `pkg:<name>`, a package that is not installed included,
 sorted (ADR-0071). It also lists each shared `.ts` module the resolver read, and each `.uf.ts`
-module whose composables the source imports, named as `filename` is.
+module whose composables the source imports, one that is missing included, named as `filename` is.
+
+**The project graph** (ADR-0071). `createProject({ root, readFile, targets, typeOracle })` takes
+the files `createFileResolver` does and the options each compile takes, but `filename` and
+`resolve`. Its `compile(file)` compiles a module, named relative to `root`, through its own
+resolver and the caller's oracle, and keeps the result. The result leaves out the copies of shared
+`.ts` modules: each copy is its module's own node, which `copy(file)` gives.
+
+Its `update(files)` tells the oracle which files changed, and reads again the copies among them.
+Then it checks every compiled module that reaches a changed file, directly or not, along the
+graph's reverse edges. It compiles a module again only where a hash of its source and of every
+answer it was given changed: its children's APIs and the shapes they were read with, its
+stylesheets, the files of its shared modules with the first import they cannot read, its cycles
+and its own types' shapes. So an edit that leaves a shape alone stops there. A module's edges are
+every file those answers read, each missing `.ts` file a shared module imports included, and an
+update renews them even when the key holds. It returns the modules it compiled and the copies
+that were added, changed or went.
+
+`dependencies(file)` lists what a module read. A caller that changes a file without `update` gets
+the last result. `createFileResolver` is a project's `resolve`.
+
+**Cycles.** The resolver's `cycle` gives the files of the cycle of component edges an import
+closes, from the importer back to it: a component edge is a value import of a component from
+another `.uf.tsx` module. `compile()` asks it for each of the source's own component edges and
+reports UF1205 at the import that closes a cycle, which withholds the module from every target, as
+an analyser error does. An injection key, a type or a shared module imported back closes no cycle
+(UF2033's context pattern), and a component that imports itself is UF1203's.
 
 **Composables** (ADR-0069). The resolver gives a `.uf.ts` module's API too: its `composables`,
 each with its parameters' kinds and its members' kinds and flags, which a caller's `Use` item is
