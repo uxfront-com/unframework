@@ -54,6 +54,12 @@ export interface FunctionPlan {
   form: FunctionForm;
   /** The name client code calls it by: its own, or its QRL twin's (`both`). */
   qrl: string;
+  /**
+   * Set where getters are its only plain callers, directly or through the functions they call:
+   * in a generic component, where it stays in the arrow, each getter declares it (./setup.ts
+   * `getterSource`), so the arrow declares no plain one.
+   */
+  gettersOnly?: true;
 }
 
 /**
@@ -1096,6 +1102,8 @@ function planFunctions(
   for (const item of component.setup) if (item.kind === "Function") items.set(item.binding, item);
   const render = new Set<BindingId>();
   const client = new Set<BindingId>();
+  // Getters call plain functions as render code does, but declare a kept one themselves.
+  const getters = new Set<BindingId>();
   const mark = (target: Set<BindingId>, refs: readonly CodeReference[]) => {
     for (const reference of refs) {
       if (reference.kind === "Binding" && items.has(reference.binding))
@@ -1117,11 +1125,11 @@ function planFunctions(
         mark(render, item.value.refs);
         break;
       case "Derived":
-        mark(render, item.getter.body.refs);
+        mark(getters, item.getter.body.refs);
         break;
       case "Watch":
         for (const source of item.sources) {
-          if (source.kind === "Getter") mark(render, source.getter.body.refs);
+          if (source.kind === "Getter") mark(getters, source.getter.body.refs);
         }
         mark(client, item.callback.body.refs);
         break;
@@ -1169,7 +1177,7 @@ function planFunctions(
   for (let changed = true; changed;) {
     changed = false;
     for (const [id, item] of items) {
-      for (const set of [render, client]) {
+      for (const set of [render, client, getters]) {
         if (!set.has(id)) continue;
         for (const reference of functionRefs(item.function)) {
           if (
@@ -1187,15 +1195,23 @@ function planFunctions(
   const plans = new Map<BindingId, FunctionPlan>();
   for (const [id, item] of items) {
     const binding = bindingOf(component, id);
+    const plain = render.has(id) || getters.has(id);
     const form: FunctionForm = hoisted.has(id)
       ? "module"
-      : render.has(id) && client.has(id)
+      : plain && client.has(id)
         ? "both"
         : client.has(id)
           ? "qrl"
           : "render";
     const qrl = form === "both" ? names.fresh(`${binding.name}Qrl`) : binding.name;
-    plans.set(id, { item, binding, form, qrl });
+    const gettersOnly = getters.has(id) && !render.has(id);
+    plans.set(id, {
+      item,
+      binding,
+      form,
+      qrl,
+      ...(gettersOnly ? { gettersOnly: true as const } : {}),
+    });
   }
   return plans;
 }

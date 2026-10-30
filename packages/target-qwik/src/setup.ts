@@ -33,7 +33,7 @@ import type {
   WatchEffectItem,
   WatchItem,
 } from "@unframework/ir";
-import { codeOf, expressionsOf, summarizeTracked } from "@unframework/ir";
+import { summarizeTracked } from "@unframework/ir";
 
 import { awaitQrlCalls, passElement } from "./calls.ts";
 import { moduleTypeParameters } from "./generics.ts";
@@ -426,9 +426,10 @@ function functionDeclaration(plan: SetupPlan, item: FunctionItem, site: RewriteS
 
 /** A setup function in the component: plain, a `$()` QRL, or both (./plan.ts). */
 function functionStatements(plan: SetupPlan, item: FunctionItem): Statement[] {
-  // One only getters call is declared in each of them instead ({@link getterSource}).
-  if (getterOnly(plan).has(item.binding)) return [];
   const fnPlan = plan.functions.get(item.binding)!;
+  // One whose only plain callers are getters is declared in each of them instead
+  // ({@link getterSource}): client code calls its QRL.
+  const plain = !fnPlan.gettersOnly || !plan.component.typeParameters?.length;
   const fn = plan.functionCode(item.binding);
   // A function whose whole body moved to its listeners (./listeners.ts) is not declared.
   if (fn === null) return [];
@@ -448,11 +449,14 @@ function functionStatements(plan: SetupPlan, item: FunctionItem): Statement[] {
   const declared = plan.declared.has(item.binding);
   switch (fnPlan.form) {
     case "render":
-      return [block(functionDeclaration(plan, item, "pure"))];
+      return plain ? [block(functionDeclaration(plan, item, "pure"))] : [];
     case "qrl":
       return declared ? [block(qrl())] : [];
     case "both":
-      return [block(functionDeclaration(plan, item, "pure")), ...(declared ? [block(qrl())] : [])];
+      return [
+        ...(plain ? [block(functionDeclaration(plan, item, "pure"))] : []),
+        ...(declared ? [block(qrl())] : []),
+      ];
     case "module":
       return [];
     default:
@@ -576,71 +580,6 @@ function asKind(fn: FunctionCode, kind: CodeKind): FunctionCode {
   const block = { ...fn };
   delete block.expression;
   return block;
-}
-
-const getterOnlyFunctions = new WeakMap<SetupPlan, Set<BindingId>>();
-
-/**
- * The setup functions of a generic component that stay in the arrow and that only getters call,
- * themselves or through each other: each getter declares them, so the arrow declares none.
- */
-function getterOnly(plan: SetupPlan): Set<BindingId> {
-  let found = getterOnlyFunctions.get(plan);
-  if (found) return found;
-  found = new Set();
-  getterOnlyFunctions.set(plan, found);
-  const { component } = plan;
-  if (!component.typeParameters?.length) return found;
-  // Client code calls the QRL forms; only a plain one may be a getter's alone.
-  const kept = new Set(
-    [...plan.functions].filter(([, each]) => each.form === "render").map(([id]) => id),
-  );
-  if (!kept.size) return found;
-  const getters = new Set<Code>();
-  const bodies = new Map<Code, BindingId>();
-  for (const item of component.setup) {
-    if (item.kind === "Derived") getters.add(item.getter.body);
-    if (item.kind === "Watch") {
-      for (const source of item.sources)
-        if (source.kind === "Getter") getters.add(source.getter.body);
-    }
-    if (item.kind === "Function") bodies.set(item.function.body, item.binding);
-  }
-  // What the getters call, themselves or through the kept functions they call.
-  const reached = new Set<BindingId>();
-  const outside = new Set<BindingId>();
-  const callers = new Map<BindingId, Set<BindingId>>();
-  for (const getter of getters) {
-    for (const reference of getter.refs) {
-      if (reference.kind === "Binding" && kept.has(reference.binding))
-        reached.add(reference.binding);
-    }
-  }
-  // The setup's code and the template's expressions: everything but the getters.
-  const codes = [
-    ...codeOf(component).map(({ code }) => code),
-    ...expressionsOf(component).map(({ expression }) => expression),
-  ];
-  for (const code of codes) {
-    if (getters.has(code)) continue;
-    const owner = bodies.get(code);
-    for (const reference of code.refs) {
-      if (reference.kind !== "Binding" || !kept.has(reference.binding)) continue;
-      if (owner === undefined) outside.add(reference.binding);
-      else callers.set(reference.binding, (callers.get(reference.binding) ?? new Set()).add(owner));
-    }
-  }
-  // A function a function outside the getters calls is outside too, and one a reached function
-  // calls is reached.
-  for (let size = -1; size !== outside.size + reached.size;) {
-    size = outside.size + reached.size;
-    for (const [callee, owners] of callers) {
-      if ([...owners].some((owner) => outside.has(owner) || !kept.has(owner))) outside.add(callee);
-      if ([...owners].some((owner) => reached.has(owner))) reached.add(callee);
-    }
-  }
-  for (const id of reached) if (!outside.has(id)) found.add(id);
-  return found;
 }
 
 /** The setup functions a getter declares where it calls them: those not at module scope. */

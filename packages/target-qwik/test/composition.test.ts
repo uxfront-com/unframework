@@ -680,6 +680,44 @@ export default function Kept<T>({ items }: { items: T[] }) {
     </p>
   );
 }`;
+  // Kept functions a getter calls and client code too: a listener, a `watchEffect`, an
+  // `onMounted` and `defineExpose`. Client code calls their QRLs, so only `empty`, which the
+  // template calls as well, keeps a plain declaration in the arrow.
+  const shared = `import { computed, defineExpose, onMounted, ref, watchEffect } from "unframework";
+
+export default function Shared<T>({ items }: { items: T[] }) {
+  const picked = ref<T[]>([]);
+  function blank(): T[] {
+    return [];
+  }
+  function fresh(): T[] {
+    return [];
+  }
+  function empty(): T[] {
+    return [];
+  }
+  function none(): T[] {
+    return [];
+  }
+  const total = computed(
+    () => blank().length + fresh().length + empty().length + none().length + items.length,
+  );
+  function reset() {
+    picked.value = blank();
+  }
+  watchEffect(() => {
+    if (items.length === 0) picked.value = fresh();
+  });
+  onMounted(() => {
+    picked.value = empty();
+  });
+  defineExpose({ none });
+  return (
+    <button type="button" onClick={reset} data-empty={empty().length}>
+      {total.value} {picked.value.length}
+    </button>
+  );
+}`;
   // A function whose `T` only its return type names, which reads nothing of the component.
   const first = `import { defineEmits } from "unframework";
 
@@ -830,6 +868,22 @@ export default function List<T>({ items }: { items: T[] }) {
     );
   });
 
+  it("declares no plain function a getter and client code share, only its QRL", async () => {
+    const contents = await emitSource(shared);
+    // The getter declares all four. The listener and the exposed ref call QRLs; the tasks write
+    // their calls in place, as they do for any function (./src/inline.ts).
+    expect(contents).toContain("const blankQrl = $(");
+    expect(contents).toContain("const noneQrl = $(");
+    expect(lines(contents)).toContain(
+      lines(`const total = useComputed$(() => {
+        function blank(): T[] {`),
+    );
+    // Only `empty`, which the template calls, keeps a plain declaration in the arrow too.
+    expect(contents.match(/^ {4}function (\w+)\(\): T\[\] \{$/gm)).toEqual([
+      "    function empty(): T[] {",
+    ]);
+  });
+
   it("keeps a function no call could infer `T` for in the arrow, where its callers check", async () => {
     // A call with no contextual type would infer `unknown` from a module-scope `none<T>()`.
     const contents = await emitSource(first);
@@ -840,7 +894,18 @@ export default function List<T>({ items }: { items: T[] }) {
   it(
     "emits generic components the optimizer, the checker and lint accept (L3, L4, L5)",
     async () => {
-      const sources = [pick, multi, unread, hoisted, chain, reversedChain, named, first, kept];
+      const sources = [
+        pick,
+        multi,
+        unread,
+        hoisted,
+        chain,
+        reversedChain,
+        named,
+        first,
+        kept,
+        shared,
+      ];
       for (const source of sources) {
         const contents = await emitSource(source);
         const file = { path: "/virtual/Generic.tsx", contents };
