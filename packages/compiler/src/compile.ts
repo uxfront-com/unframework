@@ -140,8 +140,8 @@ export interface CompileResult {
    * What the compile read besides the source, sorted, each once (ADR-0071): the files the type
    * oracle read or looked for, relative to its root, the shared `.ts` modules the resolver read,
    * named as `filename` is, the `.uf.ts` modules whose composables the source imports, named so
-   * too, one that is missing included (ADR-0069), and the packages, as `pkg:<name>`, one that is not installed included. Never
-   * an absolute path (P8).
+   * too, one that is missing included (ADR-0069), and the packages, as `pkg:<name>`, one that is
+   * not installed included. Never an absolute path (P8).
    */
   dependencies: string[];
 }

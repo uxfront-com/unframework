@@ -327,3 +327,46 @@ describe("dependencies", () => {
     );
   });
 });
+
+describe("updates", () => {
+  it("find a cycle that a module created later closes", async () => {
+    const { project, write } = memoryProject({
+      "A.uf.tsx":
+        'import B from "./B.uf.tsx";\nexport default function A() {\n  return <div><B /></div>;\n}\n',
+      "B.uf.tsx":
+        'import C from "./C.uf.tsx";\nexport default function B() {\n  return <div><C /></div>;\n}\n',
+    });
+    expect((await project.compile("A.uf.tsx")).diagnostics).toEqual([]);
+    write(
+      "C.uf.tsx",
+      'import A from "./A.uf.tsx";\nexport default function C({ n }: { n: number }) {\n  return <span>{n > 0 ? <A /> : "C"}</span>;\n}\n',
+    );
+    expect((await project.update(["C.uf.tsx"])).compiled).toEqual(["A.uf.tsx"]);
+    expect((await project.compile("A.uf.tsx")).diagnostics.map(({ code }) => code)).toEqual([
+      "UF1205",
+    ]);
+  });
+
+  it("report a copy a recompile adds, and drop one no module reaches any more", async () => {
+    const first = 'export const first = "first";\n';
+    const { project, write } = memoryProject({
+      "Card.uf.tsx":
+        'import { first } from "./first.ts";\nexport default function Card() {\n  return <i>{first}</i>;\n}\n',
+      "first.ts": first,
+    });
+    await project.compile("Card.uf.tsx");
+    write("first.ts", `import { second } from "./second.ts";\nexport const first = second;\n`);
+    write("second.ts", 'export const second = "second";\n');
+    expect(await project.update(["first.ts", "second.ts"])).toEqual({
+      compiled: ["Card.uf.tsx"],
+      copied: ["first.ts", "second.ts"],
+    });
+    expect(project.copy("second.ts")).toBe('export const second = "second";\n');
+    write("first.ts", first);
+    expect(await project.update(["first.ts"])).toEqual({
+      compiled: ["Card.uf.tsx"],
+      copied: ["first.ts", "second.ts"],
+    });
+    expect(project.copy("second.ts")).toBeUndefined();
+  });
+});

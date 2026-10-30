@@ -51,8 +51,8 @@ export interface ResolvedModule {
  * the modules it reaches (ADR-0070), or gives `undefined` for one that does not exist: without it,
  * a value import of one is UF1202. Its `cycle` gives the files of the cycle of component edges an
  * import closes, from the importer back to it, or `undefined` where there is none (UF1205,
- * ADR-0071): `compile()` asks it only for a component edge of its own (`componentEdges`), and
- * without it, no cycle is found.
+ * ADR-0071): `compile()` asks it only for its own component edges (`componentImportNames` and
+ * `takesComponent`), and without it, no cycle is found.
  */
 export interface Resolver {
   (request: ResolveRequest): Promise<ModuleApi | undefined>;

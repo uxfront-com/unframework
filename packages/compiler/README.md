@@ -28,8 +28,9 @@ type oracle over the same root (ADR-0067), and caches that by its contents and i
 cannot resolve is UF1202, and a resolver that throws UF9001. The resolver's `stylesheet` reads each
 stylesheet the source imports (ADR-0063), and `createFileResolver` also reads a child's sheets, for
 the scope id its API carries, and caches by their text too: a sheet it cannot read is UF5005.
-The resolver's `module` reads each shared `.ts` module the source imports or re-exports from, a type re-export alone included (ADR-0070), a specifier
-without an extension naming its `.ts`, and `createFileResolver` follows its relative imports through
+The resolver's `module` reads each shared `.ts` module the source imports or re-exports from, a
+type re-export alone included (ADR-0070), a specifier without an extension naming its `.ts`, and
+`createFileResolver` follows its relative imports through
 every `.ts` module they reach, each once, noting the first framework or `unframework` import
 (UF1204) and the first relative import it cannot read (UF1202). A value import of a module it
 cannot read, or without a resolver, is UF1202. Each output tree beside a component's files holds a
@@ -69,8 +70,9 @@ file, directly or not, along the graph's reverse edges: it compiles one again on
 its source and of every answer it was given (its children's APIs and the shapes they were read
 with, its stylesheets, the files of its shared modules, its cycles and its own types' shapes)
 changed, so an edit that leaves a shape alone stops there. It returns the modules it compiled and
-the copies that changed. `dependencies(file)` lists what a module read. A caller that changes a
+the copies that were added, changed or went. `dependencies(file)` lists what a module read. A caller that changes a
 file without `update` gets the last result. `createFileResolver` is a project's `resolve`.
+
 **Cycles.** The resolver's `cycle` gives the files of the cycle of component edges an import
 closes, from the importer back to it: a component edge is a value import of a component from
 another `.uf.tsx` module. `compile()` asks it for each of the source's own component edges and

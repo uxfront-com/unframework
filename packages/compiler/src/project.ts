@@ -46,7 +46,7 @@ export type ProjectOptions = FileResolverOptions &
 export interface ProjectUpdate {
   /** The modules compiled again, sorted, each once. */
   compiled: string[];
-  /** The shared `.ts` modules whose copy changed or went, sorted. */
+  /** The shared `.ts` modules whose copy was added, changed or went, sorted. */
   copied: string[];
 }
 
@@ -58,8 +58,8 @@ export interface Project {
    */
   readonly resolve: Resolver;
   /**
-   * Compiles a `.uf.tsx` or `.uf.ts` module, or gives its last result while nothing it read has
-   * changed. The result's outputs leave out the copies of shared `.ts` modules, which belong to
+   * Compiles a `.uf.tsx` or `.uf.ts` module, or gives its last result: {@link Project.update}
+   * compiles it again when what it read changed. The result's outputs leave out the copies of shared `.ts` modules, which belong to
    * each module's own node: {@link Project.copy} gives them.
    */
   compile(file: string): Promise<CompileResult>;
@@ -89,6 +89,8 @@ interface Compiled {
   key: string;
   calls: Call[];
   edges: Set<string>;
+  /** The shared modules its compile reached, whose copies are their own nodes. */
+  copies: Set<string>;
 }
 
 /** A child's API, and the shapes it was analysed with: a parent's key holds both. */
@@ -219,7 +221,7 @@ export function createProject(options: ProjectOptions): Project {
    * The components a module imports to render, by file: its component edges (ADR-0071), each
    * read by the API of the module it imports, which the project's analysis caches by content.
    */
-  const componentEdgesOf = async (file: string): Promise<string[]> => {
+  const componentEdgesOf = async (file: string, read: Set<string>): Promise<string[]> => {
     const source = await readPath(file);
     if (source === undefined) return [];
     let cached = imported.get(file);
@@ -231,9 +233,10 @@ export function createProject(options: ProjectOptions): Project {
     for (const { specifier, names } of cached.imports) {
       const request = { specifier, importer: file };
       const path = joinPath(directoryOf(file), specifier);
-      if (path !== undefined && takesComponent((await resolveChild(request))?.api, names)) {
-        files.push(path);
-      }
+      if (path === undefined) continue;
+      // Every module whose API was read: a change to one may make its import a component edge.
+      read.add(path);
+      if (takesComponent((await resolveChild(request))?.api, names)) files.push(path);
     }
     return files;
   };
@@ -245,23 +248,24 @@ export function createProject(options: ProjectOptions): Project {
    */
   const findCycle = async (request: ResolveRequest) => {
     const start = joinPath(directoryOf(request.importer), request.specifier);
-    if (start === undefined || start === request.importer) return { visited: [] };
+    if (start === undefined || start === request.importer) return { read: [] };
+    const read = new Set([start]);
     const previous = new Map([[start, request.importer]]);
     const queue = [start];
     for (let index = 0; index < queue.length; index++) {
       const file = queue[index]!;
-      for (const next of await componentEdgesOf(file)) {
+      for (const next of await componentEdgesOf(file, read)) {
         if (next === request.importer) {
           const chain = [file];
           while (chain[0] !== start) chain.unshift(previous.get(chain[0]!)!);
-          return { cycle: [request.importer, ...chain, request.importer], visited: queue };
+          return { cycle: [request.importer, ...chain, request.importer], read: [...read] };
         }
         if (next === file || previous.has(next)) continue;
         previous.set(next, file);
         queue.push(next);
       }
     }
-    return { visited: queue };
+    return { read: [...read] };
   };
 
   const resolve: Resolver = Object.assign(
@@ -303,8 +307,8 @@ export function createProject(options: ProjectOptions): Project {
         edges: first === undefined ? files : [first, ...files],
       };
     }
-    const { cycle, visited } = await findCycle(request);
-    return { value: cycle, held: cycle ?? null, edges: visited };
+    const { cycle, read } = await findCycle(request);
+    return { value: cycle, held: cycle ?? null, edges: read };
   };
 
   /** The key a module compiles under: a hash of its source and of every answer it was given. */
@@ -325,6 +329,7 @@ export function createProject(options: ProjectOptions): Project {
     const held: unknown[] = [];
     const edges = new Set<string>();
     const copied = new Set<string>();
+    const reached = new Set<string>();
     const record = async (call: Call): Promise<unknown> => {
       calls.push(call);
       try {
@@ -334,6 +339,7 @@ export function createProject(options: ProjectOptions): Project {
         if (call.kind === "module") {
           for (const module of (answer.value as ResolvedModule | undefined)?.files ?? []) {
             copies.set(module.file, module.source);
+            reached.add(module.file);
             copied.add(relativePath(directoryOf(file), module.file));
           }
         }
@@ -381,6 +387,7 @@ export function createProject(options: ProjectOptions): Project {
       key: await hash(JSON.stringify([source, held])),
       calls,
       edges,
+      copies: reached,
     });
     return own;
   };
@@ -401,14 +408,12 @@ export function createProject(options: ProjectOptions): Project {
     dependencies: (file) => [...edgesOf(file)].toSorted(),
     update: async (files) => {
       await typeOracle?.update({ files: [...files] });
-      const copied: string[] = [];
+      const before = new Map(copies);
       for (const file of files) {
         if (!copies.has(file)) continue;
         const source = await readPath(file);
-        if (source === copies.get(file)) continue;
         if (source === undefined) copies.delete(file);
         else copies.set(file, source);
-        copied.push(file);
       }
       // The reverse edges, from every module compiled or analysed as a child.
       const dependents = new Map<string, Set<string>>();
@@ -435,6 +440,12 @@ export function createProject(options: ProjectOptions): Project {
         await build(file, source);
         recompiled.push(file);
       }
+      // A copy no compiled module reaches any more goes with its last importer.
+      const live = new Set([...compiled.values()].flatMap((node) => [...node.copies]));
+      for (const file of copies.keys()) if (!live.has(file)) copies.delete(file);
+      const copied = [...new Set([...before.keys(), ...copies.keys()])].filter(
+        (file) => before.get(file) !== copies.get(file),
+      );
       return { compiled: recompiled, copied: copied.toSorted() };
     },
   };
