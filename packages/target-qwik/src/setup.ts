@@ -36,6 +36,7 @@ import type {
 import { summarizeTracked } from "@unframework/ir";
 
 import { awaitQrlCalls, passElement } from "./calls.ts";
+import { readGetters } from "./composable.ts";
 import { moduleTypeParameters } from "./generics.ts";
 import { inlineCalls, localDeclaration } from "./inline.ts";
 import type { InlineFunction, Inliner } from "./inline.ts";
@@ -43,7 +44,7 @@ import {
   eventCallees,
   inlinedAt,
   isPredicate,
-  isReactive,
+  isReactiveBinding,
   referencedIds,
   unreachable,
 } from "./plan.ts";
@@ -240,7 +241,7 @@ function moduleCode(plan: SetupPlan, item: SetupItem): string | undefined {
   if (item.kind === "Const" && plan.consts.get(item.binding) === "module") {
     const name = plan.functions.get(item.binding)?.binding.name ?? bindingName(plan, item.binding);
     const type = item.type ? `: ${item.type.code}` : "";
-    return `const ${name}${type} = ${rewriteCode(item.value, plan.component, plan.rules(), "pure")};`;
+    return `const ${name}${type} = ${rewritten(plan, item.value, "expression", undefined, "pure")};`;
   }
   if (item.kind === "Function" && plan.functions.get(item.binding)?.form === "module") {
     // A function whose whole body moved to its listeners (./handlers.ts) is not declared.
@@ -271,10 +272,28 @@ function bindingName(plan: SetupPlan, id: BindingId): string {
   return binding.name;
 }
 
+/**
+ * Code with its references spelled by the plan's rules for a site, and each call of a composable's
+ * getter argument reading its signal (./composable.ts).
+ */
+function rewritten(
+  plan: SetupPlan,
+  code: Code,
+  kind: CodeKind,
+  event: string | undefined,
+  site: RewriteSite,
+): string {
+  const getters = new Set<string>();
+  for (const parameter of plan.arguments.values()) {
+    if (parameter.kind === "getter") getters.add(parameter.name);
+  }
+  return readGetters(rewriteCode(code, plan.component, plan.rules(event), site), kind, getters);
+}
+
 /** An item's statements in the component's body. */
 function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
   const { names } = plan;
-  const pure = (code: Code) => rewriteCode(code, plan.component, plan.rules(), "pure");
+  const pure = (code: Code) => rewritten(plan, code, "expression", undefined, "pure");
   switch (item.kind) {
     case "State":
     case "Variable": {
@@ -491,17 +510,11 @@ export function printFunction(
   const event = parameters.find((parameter) => parameter.event !== undefined)?.name;
   const body = options.body ?? fn.body;
   const kind = fn.expression ? "expression" : "statements";
-  const rewritten = passEvent(
-    plan,
-    rewriteCode(body, plan.component, plan.rules(event), site),
-    kind,
-    body,
-    event,
-  );
+  const code = passEvent(plan, rewritten(plan, body, kind, event, site), kind, body, event);
   const awaited =
     site === "client"
-      ? clientCode(plan, rewritten, kind, options.synchronous === true)
-      : { code: rewritten, async: false };
+      ? clientCode(plan, code, kind, options.synchronous === true)
+      : { code, async: false };
   const async = fn.async === true || awaited.async;
   const returnType =
     async && fn.async !== true && fn.returnType
@@ -568,8 +581,8 @@ export function clientCode(
  */
 function getterSource(plan: SetupPlan, getter: FunctionCode): string {
   const kind: CodeKind = getter.expression ? "expression" : "statements";
-  const rewritten = rewriteCode(getter.body, plan.component, plan.rules(), "pure");
-  const inlined = inlineCalls(rewritten, kind, keptFunctions(plan), { keep: true });
+  const code = rewritten(plan, getter.body, kind, undefined, "pure");
+  const inlined = inlineCalls(code, kind, keptFunctions(plan), { keep: true });
   if (!inlined.locals.size) return printFunction(plan, getter, "pure").text;
   return functionSource(asKind(getter, inlined.kind), inlined.code);
 }
@@ -595,9 +608,9 @@ function keptFunctions(plan: SetupPlan): Inliner {
       if (!fnPlan) return undefined;
       const fn = plan.functionCode(fnPlan.item.binding) ?? fnPlan.item.function;
       const kind: CodeKind = fn.expression ? "expression" : "statements";
-      const rewritten = rewriteCode(fn.body, plan.component, plan.rules(), "pure");
+      const code = rewritten(plan, fn.body, kind, undefined, "pure");
       // Its own calls of such functions are declared in it too.
-      const body = inlineCalls(rewritten, kind, inliner, { keep: true });
+      const body = inlineCalls(code, kind, inliner, { keep: true });
       const target: InlineFunction = {
         fn: asKind(fn, body.kind),
         declaration: fnPlan.item.form === "declaration",
@@ -651,14 +664,14 @@ function inlineFunction(plan: SetupPlan, id: BindingId): InlineFunction {
   const fn = plan.functionCode(id) ?? item.function;
   const event = fn.parameters.find((parameter) => parameter.event !== undefined)?.name;
   const kind: CodeKind = fn.expression ? "expression" : "statements";
-  const rewritten = passEvent(
+  const code = passEvent(
     plan,
-    rewriteCode(fn.body, plan.component, plan.rules(event), "client"),
+    rewritten(plan, fn.body, kind, event, "client"),
     kind,
     fn.body,
     event,
   );
-  const settled = clientCode(plan, rewritten, kind, true);
+  const settled = clientCode(plan, code, kind, true);
   // A body that now awaits a call makes the function async, and its return type a promise.
   const async = settled.async && fn.async !== true;
   const printed: FunctionCode = async
@@ -711,13 +724,13 @@ function bodyStatements(
   fn: FunctionCode,
   event?: string,
 ): { code: string; async: boolean } {
-  const rewritten = rewriteCode(fn.body, plan.component, plan.rules(event), "client");
+  const kind: CodeKind = fn.expression ? "expression" : "statements";
   // A task's calls of local functions run in place: an awaited QRL call would leave the rest of
   // the callback until after the tasks Qwik runs next, out of their source order.
   const awaited = clientCode(
     plan,
-    rewritten,
-    fn.expression ? "expression" : "statements",
+    rewritten(plan, fn.body, kind, event, "client"),
+    kind,
     true,
     true,
   );
@@ -751,6 +764,10 @@ function uses(fn: FunctionCode, name: string): boolean {
 /** `track(count)` for a ref, `track(() => title)` for a prop: what a task tracks. */
 function tracked(plan: SetupPlan, id: BindingId, track: string): { tracked: string; read: string } {
   const binding = plan.component.bindings.find((candidate) => candidate.id === id)!;
+  // A composable's getter argument is a signal (./composable.ts).
+  if (plan.arguments.get(id)?.kind === "getter") {
+    return { tracked: `${track}(${binding.name})`, read: `${binding.name}.value` };
+  }
   switch (binding.kind) {
     // A model is read through its computed (./composition.ts).
     case "state":
@@ -776,10 +793,11 @@ function tracked(plan: SetupPlan, id: BindingId, track: string): { tracked: stri
     case "slotScope":
     case "context":
     case "component":
+    // A value or a callback argument: the analyser lets a watcher read neither as a source.
+    case "argument":
     // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
-    case "argument":
     case "usedState":
     case "usedDerived":
     case "usedFn":
@@ -970,8 +988,8 @@ function singleRead(plan: SetupPlan, getter: FunctionCode): BindingId | undefine
     reference.span.end - getter.body.span.start,
   );
   if (code !== written) return undefined;
-  const kind = plan.component.bindings.find((binding) => binding.id === reference.binding)?.kind;
-  return kind !== undefined && isReactive(kind) ? reference.binding : undefined;
+  const binding = plan.component.bindings.find((each) => each.id === reference.binding);
+  return binding && isReactiveBinding(binding, plan.arguments) ? reference.binding : undefined;
 }
 
 /**
@@ -990,8 +1008,8 @@ function watchEffectCode(plan: SetupPlan, item: WatchEffectItem): string {
   // What the effect hands on to run later (a timer's callback, marked `later`) is not tracked.
   const summary = summarizeTracked(item.effect.body, plan.component);
   const dependencies = [...summary.reads].filter((id) => {
-    const kind = plan.component.bindings.find((binding) => binding.id === id)?.kind;
-    return kind !== undefined && isReactive(kind);
+    const binding = plan.component.bindings.find((each) => each.id === id);
+    return binding !== undefined && isReactiveBinding(binding, plan.arguments);
   });
   const [cleanupParameter] = item.effect.parameters;
   const cleanup =

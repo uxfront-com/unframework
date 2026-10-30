@@ -201,6 +201,28 @@ as a `<style q:style>` where the component renders, before its root, which the n
 out of Qwik's markup, and which `:first-child`, `:nth-child()` and `+` count in the server's
 markup.
 
+## Composables (M5)
+
+Each composable of a `.uf.ts` module is its own module, `useToggle.ts`, holding a `use*` hook
+(`src/composable.ts`, ADR-0069): `export function useToggle(initial: boolean)`, its setup planned
+and printed as a component's is (`src/plan.ts`, `src/setup.ts`), with `useSignal`, `useComputed$`
+and tasks. It returns what the source returns: its signals as they are, and each function as the
+`$()` QRL its caller's client code calls, never moved to module scope.
+
+A hook's `$` scopes capture only what Qwik serialises, never a plain function (optimizer C02), so
+its parameters take the forms Qwik captures:
+
+- A value is taken as written, `initial: boolean`, and read once.
+- A getter, `price: () => number`, is the signal its caller computes with `useComputed$`,
+  `price: ReadonlySignal<number>`, and each call reads it: `price()` is `price.value`, and a task
+  tracks it as it tracks a signal of its own.
+- A callback, `onLimit: (count: number) => void`, is the QRL its caller makes with `$()`,
+  `onLimit: QRL<(count: number) => void>`. A call whose value is used is awaited, and one of a
+  callback that returns `void` runs without waiting, as an emit does: `void onLimit(count.value)`.
+
+A composable that reads a module's values is UF1002 until the call site lands, and so are a
+composable's call and what it gives a component.
+
 ## Toolchain
 
 Tests and tooling use three Node and browser entries (plan §5.7, `Toolchain` in

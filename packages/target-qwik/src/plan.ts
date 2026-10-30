@@ -13,6 +13,7 @@ import type {
   BindingKind,
   Code,
   CodeReference,
+  ComposableParameter,
   ConstItem,
   ElementNode,
   EventAttribute,
@@ -21,6 +22,7 @@ import type {
   ListenerAttribute,
   RenderNode,
   UfComponent,
+  UfComposable,
   UfModule,
 } from "@unframework/ir";
 
@@ -165,6 +167,8 @@ export interface SetupPlan {
   readonly component: UfComponent;
   readonly module: UfModule;
   readonly names: OutputNames;
+  /** A composable's parameters, by their `argument` bindings: none for a component (ADR-0069). */
+  readonly arguments: ReadonlyMap<BindingId, ComposableParameter>;
   readonly functions: ReadonlyMap<BindingId, FunctionPlan>;
   readonly consts: ReadonlyMap<BindingId, ConstForm>;
   /** The names client code calls as QRLs, which a call awaits. */
@@ -218,14 +222,33 @@ export interface SetupPlan {
   functionCode(id: BindingId): FunctionCode | null | undefined;
 }
 
-/** Plans a component's setup: see {@link SetupPlan}. */
-export function planSetup(component: UfComponent, module: UfModule, names: OutputNames): SetupPlan {
-  const hoisted = hoistable(component);
-  const functions = planFunctions(component, hoisted, names);
-  const consts = planConsts(component, hoisted);
+/**
+ * Plans a component's setup: see {@link SetupPlan}. A composable's is planned as the setup of the
+ * component `owner` stands for (./composable.ts), with its parameters and what it returns: the
+ * functions it returns are QRLs its caller's client code calls, as a component's exposed ones are.
+ */
+export function planSetup(
+  component: UfComponent,
+  module: UfModule,
+  names: OutputNames,
+  composable?: UfComposable,
+): SetupPlan {
+  const args = new Map(composable?.parameters.map((parameter) => [parameter.binding, parameter]));
+  const returned = new Set(composable?.returns.map((member) => member.binding));
+  const hoisted = hoistable(component, returned);
+  const functions = planFunctions(component, hoisted, names, returned);
+  const consts = planConsts(component, hoisted, args);
   const qrls = new Set<string>();
   for (const plan of functions.values()) {
     if (plan.form === "qrl" || plan.form === "both") qrls.add(plan.qrl);
+  }
+  // A callback argument is the caller's QRL (./composable.ts): a call that returns nothing
+  // floats, as an emit does, and one whose value is used is awaited.
+  const promiseQrls = new Set<string>();
+  for (const parameter of args.values()) {
+    if (parameter.kind !== "callback") continue;
+    qrls.add(parameter.name);
+    if (returnsVoid(parameter)) promiseQrls.add(parameter.name);
   }
   const emitted = emittedEvents(component);
   const eventLocals = new Map<string, string>();
@@ -244,7 +267,6 @@ export function planSetup(component: UfComponent, module: UfModule, names: Outpu
   const { planned: eventFunctions, empty: emptyFunctions } = planEventFunctions(component, names);
   const listeners = planListeners(component);
   const qrlFunctions = new Map<string, BindingId>();
-  const promiseQrls = new Set<string>();
   for (const [id, fnPlan] of functions) {
     if (fnPlan.form !== "qrl" && fnPlan.form !== "both") continue;
     qrlFunctions.set(fnPlan.qrl, id);
@@ -258,6 +280,7 @@ export function planSetup(component: UfComponent, module: UfModule, names: Outpu
     component,
     module,
     names,
+    arguments: args,
     functions,
     consts,
     qrls,
@@ -268,7 +291,7 @@ export function planSetup(component: UfComponent, module: UfModule, names: Outpu
     eventFunctions,
     emptyFunctions,
     listeners,
-    declared: declaredQrls(component, functions, listeners),
+    declared: declaredQrls(component, functions, listeners, returned),
     promiseQrls,
     qrlFunctions,
     stable,
@@ -800,6 +823,7 @@ function declaredQrls(
   component: UfComponent,
   functions: ReadonlyMap<BindingId, FunctionPlan>,
   listeners: ListenerPlan,
+  returned: ReadonlySet<BindingId>,
 ): Set<BindingId> {
   const declared = new Set<BindingId>();
   const inlined = new Set<BindingId>();
@@ -877,8 +901,11 @@ function declaredQrls(
       else need(reference.binding);
     }
   }
-  // What a component exposes, its consumer calls as QRLs (./composition.ts).
-  for (const id of component.exposes?.functions ?? []) if (client(id)) need(id);
+  // What a component exposes, its consumer calls as QRLs (./composition.ts), and so does a
+  // composable's caller what it returns.
+  for (const id of [...(component.exposes?.functions ?? []), ...returned]) {
+    if (client(id)) need(id);
+  }
   for (const item of component.setup) {
     switch (item.kind) {
       // A task's calls run in place (./setup.ts `bodyStatements`).
@@ -969,10 +996,13 @@ function rewriteRules(plan: SetupPlan, event: string | undefined): RewriteRules 
             ? `${plan.stable.holder!.name}.${name}`
             : name;
         }
+        // A composable's parameter, as written: a getter's call reads its signal
+        // (./composable.ts `readGetters`), and a callback's is a QRL call.
+        case "argument":
+          return written;
         // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
         case "moduleConst":
         case "import":
-        case "argument":
         case "usedState":
         case "usedDerived":
         case "usedFn":
@@ -1046,12 +1076,14 @@ function functionRefs(fn: FunctionCode): CodeReference[] {
  * to module scope (ADR-0045, `unicorn/consistent-function-scoping`). The greatest such set: the
  * analyser rejects recursion, so this is the set a reader would hoist.
  */
-function hoistable(component: UfComponent): Set<BindingId> {
+function hoistable(component: UfComponent, returned: ReadonlySet<BindingId>): Set<BindingId> {
   const candidates = new Map<BindingId, readonly CodeReference[]>();
   // Code typed by a type parameter stays in the generic arrow, where `T` is (ADR-0068).
   const typed = typedByParameters(component);
   for (const item of component.setup) {
     if ((item.kind === "Const" || item.kind === "Function") && typed.has(item.binding)) continue;
+    // A function a composable returns is a QRL its caller's client code calls.
+    if (item.kind === "Function" && returned.has(item.binding)) continue;
     if (item.kind === "Const") candidates.set(item.binding, item.value.refs);
     else if (item.kind === "Function") candidates.set(item.binding, functionRefs(item.function));
   }
@@ -1097,6 +1129,7 @@ function planFunctions(
   component: UfComponent,
   hoisted: ReadonlySet<BindingId>,
   names: OutputNames,
+  returned: ReadonlySet<BindingId>,
 ): Map<BindingId, FunctionPlan> {
   const items = new Map<BindingId, FunctionItem>();
   for (const item of component.setup) if (item.kind === "Function") items.set(item.binding, item);
@@ -1171,8 +1204,9 @@ function planFunctions(
     if (listener.handler.kind === "Function") client.add(listener.handler.binding);
     else mark(client, listener.handler.function.body.refs);
   }
-  // A function a component exposes is one its consumer calls: a QRL.
+  // A function a component exposes, or a composable returns, is one its consumer calls: a QRL.
   for (const id of component.exposes?.functions ?? []) client.add(id);
+  for (const id of returned) if (items.has(id)) client.add(id);
   // A function's calls take the forms of its callers.
   for (let changed = true; changed;) {
     changed = false;
@@ -1225,11 +1259,12 @@ function planFunctions(
 function planConsts(
   component: UfComponent,
   hoisted: ReadonlySet<BindingId>,
+  args: ReadonlyMap<BindingId, ComposableParameter>,
 ): Map<BindingId, ConstForm> {
   const forms = new Map<BindingId, ConstForm>();
   for (const item of component.setup) {
     if (item.kind !== "Const") continue;
-    forms.set(item.binding, constForm(item, component, hoisted));
+    forms.set(item.binding, constForm(item, component, hoisted, args));
   }
   return forms;
 }
@@ -1238,16 +1273,42 @@ function constForm(
   item: ConstItem,
   component: UfComponent,
   hoisted: ReadonlySet<BindingId>,
+  args: ReadonlyMap<BindingId, ComposableParameter>,
 ): ConstForm {
   if (hoisted.has(item.binding)) return "module";
-  return readsReactive(item.value, component) ? "constant" : "plain";
+  return readsReactive(item.value, component, args) ? "constant" : "plain";
 }
 
-/** Whether code reads a prop, a state or a derived value, itself or through what it calls. */
-export function readsReactive(code: Code, component: UfComponent): boolean {
+/**
+ * Whether code reads a prop, a state, a derived value or a composable's getter argument, itself
+ * or through what it calls.
+ */
+export function readsReactive(
+  code: Code,
+  component: UfComponent,
+  args: ReadonlyMap<BindingId, ComposableParameter> = new Map(),
+): boolean {
   return [...summarizeCode(code, component).reads].some((id) =>
-    isReactive(bindingOf(component, id).kind),
+    isReactiveBinding(bindingOf(component, id), args),
   );
+}
+
+/**
+ * Whether a binding's value can change, as {@link isReactive} says by its kind, or for a
+ * composable's argument by its parameter's: a getter's signal changes (./composable.ts), a value
+ * is read once and a callback is called.
+ */
+export function isReactiveBinding(
+  binding: Binding,
+  args: ReadonlyMap<BindingId, ComposableParameter>,
+): boolean {
+  if (binding.kind === "argument") return args.get(binding.id)?.kind === "getter";
+  return isReactive(binding.kind);
+}
+
+/** Whether a callback parameter's function type returns `void`: its call is then no value. */
+function returnsVoid(parameter: ComposableParameter): boolean {
+  return /=>\s*void\s*$/.test(parameter.type.code);
 }
 
 /**
@@ -1272,10 +1333,11 @@ export function isReactive(kind: BindingKind): boolean {
     case "slotScope":
     case "context":
     case "component":
+    // A composable's argument changes by its parameter's kind: see `isReactiveBinding`.
+    case "argument":
     // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
-    case "argument":
     case "usedState":
     case "usedDerived":
     case "usedFn":
