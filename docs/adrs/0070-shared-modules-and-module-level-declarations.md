@@ -33,6 +33,22 @@ Three forces shape the rule:
 The analyser classifies an imported binding as `import` and a module-level one as `moduleConst`,
 and records the imports in `UfModule.moduleImports`.
 
+**How a module's constants are checked.** The module computes them as it loads, on the server
+too, so each is checked as setup code is (ADR-0045), and code setup accepts passes here too:
+
+- A value may change in place only what it builds itself: a literal, a `new`, a copy, the receiver
+  a method returns (`[...list].sort().reverse()`), or a deep copy and all it holds
+  (`structuredClone`, `JSON.parse`).
+- An arrow an object literal holds runs once called. What it reads of chance, the clock, the
+  locale or the client isn't reported where the literal is written, only where it is called: as
+  the module loads, or by a template, a getter or an initial value that reads the literal.
+- A function a component passes as a handler (`onClick={copy}`) is still UF3029: a named handler
+  is the component's own function, and lowering a module's on every target is a later issue.
+- `Object.freeze` of a module's value, a constant or an import, changes nothing anyone reads, so
+  setup accepts it, as module level does. Of anything else it stays UF2004 in setup, since freezing
+  a prop freezes the parent's object, and UF3021 in render, as ADR-0035 says, a module's value
+  included. `Object.seal` and `Object.preventExtensions` stay rejected everywhere.
+
 **What a shared module may import:** other relative `.ts` modules, and packages. Never a framework
 or `unframework`, directly or through another `.ts`: that is UF1204
 (`framework-in-shared-module`, error), and the component is withheld, so no target runs.

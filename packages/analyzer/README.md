@@ -85,26 +85,31 @@ checked as the declaration its likely fix writes (`analyze.ts`).
   a type import too. Both are module-level errors. The module records its value imports
   (`moduleImports`) and the constants its components read, with those they read in turn
   (`constants`). A constant is a plain value (`lowerConstants`): a function, `const f = (…) =>
-…`, whose body runs once called, or any other value, all of which runs as the module loads.
+…`, whose body runs once called, or any other value, which runs as the module loads, but for
+  the arrows it holds.
   - It reads the module's other constants, its value imports and the pure globals (UF3020). As
     the module loads it reads no constant declared after it, itself or through the functions it
     calls, a function constant passed to a call (a table that holds functions is only read), or an
-    arrow a value holds and calls through a member (`O.m()`), included (UF2023). An arrow runs then only where it is called in place, passed to
+    arrow a value holds and calls through any name or member that reaches it (`O.m()`, `P.m()` with
+    `P = O`, `O.a.m()`, `O.m.call(…)`, `[…].map(O.m)`), included (UF2023). An arrow runs then only where it is called in place, passed to
     a call or called through a member; one a value holds runs once called. A type it names (`typeof B`) reads nothing, and a local type
     it names is declared with it.
   - It changes in place only a fresh value, one it builds itself: a literal, a `new`, a copy
     (`filter`, `map`, `slice`, … of anything but an object literal, whose own method may give
-    what it holds), or a function's local that only ever holds one (a `reduce` accumulator too,
-    but never another parameter, which holds what its caller gives). Freezing a value changes
-    nothing anyone reads, so `Object.freeze(…)` is plain. Anything else written, deleted or changed by a mutating
+    what it holds), the receiver a method returns (`sort`, `reverse`), a deep copy and all it
+    holds (`structuredClone`, `JSON.parse`), or a function's local that only ever holds one (a
+    `reduce` accumulator too, but never another parameter, which holds what its caller gives).
+    Freezing a value changes nothing anyone reads, so `Object.freeze(…)` is plain, and setup
+    accepts it of a module's value too. Anything else written, deleted or changed by a mutating
     method, through `as`, `!`, an alias or a pattern too, is UF2004. A function writes only its
     own locals (UF2011).
   - It holds no JSX (UF3012), and no `this`, `import.meta`, `import()`, function expression or
     class, and calls no computed member (UF1002).
   - Chance, the clock and the locale are UF3019 as the module loads, and a global only client
-    code may read (`console`, `document`, …) UF3020. In a function they mark the constant
-    `nondeterministic` or `clientOnly`, and a value that holds such a function carries it (not
-    one that only reads it, as `Object.keys(TABLE)` does). A
+    code may read (`console`, `document`, …) UF3020. In a function, or an arrow a value holds,
+    they mark the constant `nondeterministic` or `clientOnly`, and a value that holds such a
+    function carries it (not one that only reads it, as `Object.keys(TABLE)` and
+    `Object.values(TABLE).length` do). A call of one as the module loads reports it there. A
     template, a getter or an initial value that calls or reads one (`XS.map(format)`, `O.d()`),
     or a local function it reaches, reports it (UF3019, UF2014), as setup does; client code may
     call it.

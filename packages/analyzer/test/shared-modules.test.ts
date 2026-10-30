@@ -601,6 +601,140 @@ describe("module-level constants", () => {
     expect(diagnostics[1]!.message).toContain("calls `later`, which reads the clock (`Date`)");
   });
 
+  // What setup accepts, a module's constant accepts too (ADR-0070): a method that returns its
+  // fresh receiver, a length read off a table of functions, and what a deep copy holds.
+  it.each([
+    [
+      "a copy sorted, then reversed, as the module loads",
+      "const L = [3, 1, 2];\nconst S = [...L].sort((a, b) => a - b).reverse();",
+      "{S[0]}",
+    ],
+    [
+      "the length of a table's values, as the module loads",
+      "const date = (n: number) => n.toLocaleString();\nconst FMT = { date };\nconst N = Object.values(FMT).length;",
+      "{N}",
+    ],
+    [
+      "the length of a table's entries, as the module loads",
+      "const date = (n: number) => n.toLocaleString();\nconst FMT = { date };\nconst N = Object.entries(FMT).length;",
+      "{N}",
+    ],
+    [
+      "a nested write on a `structuredClone` copy",
+      "const T = { a: { b: 1 } };\nconst f = () => { const c = structuredClone(T); c.a.b = 2; return c.a.b; };",
+      "{f()}",
+    ],
+    [
+      "a nested write on a `JSON` round trip's copy",
+      "const T = { a: { b: 1 } };\nconst f = (): number => { const c = JSON.parse(JSON.stringify(T)); c.a.b = 2; return c.a.b; };",
+      "{f()}",
+    ],
+    [
+      "a change of what a deep copy holds, through a method that returns it",
+      "const T = { a: [3, 1] };\nconst f = () => { const c = structuredClone(T); c.a.sort().push(1); return c.a.length; };",
+      "{f()}",
+    ],
+  ])("accepts %s", (_, before, read) => {
+    const source = `${before}\nexport function A() { return <p>${read}</p>; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual([]);
+  });
+
+  // An arrow an object literal holds runs once called: what it reads of the locale, or of what
+  // only client code may, is reported where it is called, never where the literal is written.
+  it("reports what an arrow a literal holds reads only where it is called (UF3019, UF2014)", () => {
+    const held = [
+      "const FMT = { date: (n: number) => n.toLocaleString() };",
+      "const ACTIONS = { copy: () => { void navigator.clipboard.writeText(document.title); } };",
+      "const NAMES = Object.keys(FMT).concat(Object.keys(ACTIONS));",
+      "export function A() {",
+      "  function copy() { ACTIONS.copy(); }",
+      '  return <button type="button" onClick={copy}>{NAMES.join()}</button>;',
+      "}",
+    ].join("\n");
+    expect(problems(held, run(held).diagnostics)).toEqual([]);
+    const called = [
+      "const FMT = { date: (n: number) => n.toLocaleString() };",
+      "const ACTIONS = { title: () => document.title };",
+      "const TODAY = FMT.date(1);",
+      "const TITLE = ACTIONS.title();",
+      "export function A() { return <p>{FMT.date(2)}{TODAY}{TITLE}</p>; }",
+    ].join("\n");
+    expect(problems(called, run(called).diagnostics)).toEqual([
+      "UF3019 FMT.date",
+      "UF2014 ACTIONS.title",
+      "UF3019 FMT",
+      "UF3019 TODAY",
+      "UF2014 TITLE",
+    ]);
+  });
+
+  // A held arrow runs where a value calls it as the module loads, however it reaches it (UF2023).
+  it.each([
+    [
+      "an alias of a constant",
+      "const O = { m: () => STEP };\nconst P = O;\nconst X = P.m();",
+      "P.m",
+    ],
+    ["a nested member", "const O = { a: { m: () => STEP } };\nconst X = O.a.m();", "O.a.m"],
+    ["`call`", "const O = { m: () => STEP };\nconst X = O.m.call(null);", "O.m"],
+    ["`apply`", "const O = { m: () => STEP };\nconst X = O.m.apply(null, []);", "O.m"],
+    ["a member passed to `map`", "const O = { m: () => STEP };\nconst X = [1].map(O.m);", "O.m"],
+  ])("reports a later constant a held arrow reads, called through %s (UF2023)", (_, before, at) => {
+    const source = `${before}\nconst STEP = 1;\nexport function A() { return <p>{String(X)}</p>; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual([`UF2023 ${at}`]);
+  });
+
+  // A named handler is the component's own function (`listeners.ts`): accepting a module's would
+  // need its lowering on every target, Angular's class methods among them (a proposed issue).
+  it("reports a module function passed as a handler, which only a component's own function may be (UF3029)", () => {
+    const source = [
+      "const copy = () => { void navigator.clipboard.writeText(document.title); };",
+      'export function A() { return <button type="button" onClick={copy}>Copy</button>; }',
+    ].join("\n");
+    expect(problems(source, run(source).diagnostics)).toEqual(["UF3029 copy"]);
+  });
+
+  // Freezing a module's value changes nothing anyone reads: setup accepts it as module level
+  // does. Freezing a prop freezes the parent's object, whose next write throws in strict mode,
+  // and `seal` and `preventExtensions` stay rejected everywhere (ADR-0070, ADR-0035).
+  it("accepts `Object.freeze` of a module's value in setup, and reports it of a prop (UF2004, UF3021)", () => {
+    const module = [
+      'import { sizes } from "./tokens";',
+      "const T = { a: 1 };",
+      "export function A() {",
+      "  const t = Object.freeze(T);",
+      "  const s = Object.freeze(sizes);",
+      "  return <p>{t.a}{String(s)}</p>;",
+      "}",
+    ].join("\n");
+    expect(problems(module, run(module, "Test.uf.tsx", { modules: TOKENS }).diagnostics)).toEqual(
+      [],
+    );
+    const sealed = [
+      "const T = { a: 1 };",
+      "const U = { b: 1 };",
+      "const S = Object.seal(T);",
+      "export function A() {",
+      "  const u = Object.preventExtensions(U);",
+      "  return <p>{S.a}{u.b}</p>;",
+      "}",
+    ].join("\n");
+    expect(problems(sealed, run(sealed).diagnostics)).toEqual([
+      "UF2004 Object.seal(T)",
+      "UF2004 Object.preventExtensions(U)",
+    ]);
+    const prop = [
+      "export function A(props: { t: { a: number } }) {",
+      "  function freeze() { Object.freeze(props.t); }",
+      '  return <button type="button" onClick={freeze}>{Object.freeze(props.t).a}</button>;',
+      "}",
+    ].join("\n");
+    expect(problems(prop, run(prop).diagnostics)).toEqual([
+      "UF2004 Object.freeze(props.t)",
+      "UF3021 freeze",
+    ]);
+  });
+
   it("reports a write of a constant (UF2011), and a change in place (UF2004)", () => {
     const source = [
       "const SIZES = { sm: 8 };",
