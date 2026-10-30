@@ -143,6 +143,8 @@ export async function compileSources(
   const resolve = createFileResolver({ root: "/case", readFile, typeOracle });
   const files: Record<string, string> = {};
   for (const [filename, source] of Object.entries(sources)) {
+    // A plain `.ts` module is read through the resolver, and copied by each source that reaches it.
+    if (!/\.uf\.tsx?$/.test(filename)) continue;
     const { diagnostics, outputs } = await compile(source, {
       filename,
       targets: [target],
