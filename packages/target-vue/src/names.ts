@@ -2,7 +2,13 @@
 // source's own code, so it reads a ref through `.value` as written; the template reads a setup ref
 // without it, because Vue unwraps a `<script setup>` binding's ref in templates. A binding whose
 // name Vue reserves is declared, and read everywhere, under a local name of its own.
-import { NameScope, sourceNames } from "@unframework/codegen";
+import {
+  codeNames,
+  liveTypeNames,
+  NameScope,
+  sourceNames,
+  typeNames as typesOf,
+} from "@unframework/codegen";
 import type { RewriteRules, RewriteSite } from "@unframework/codegen";
 import { codeOf } from "@unframework/ir";
 import type { Binding, BindingId, BindingKind, UfComponent, UfModule } from "@unframework/ir";
@@ -53,7 +59,10 @@ export class VueNames {
    */
   readonly #module = new Map<string, string>();
 
-  constructor(component: UfComponent, module: UfModule) {
+  /** What the owner reaches of its module (ADR-0070). */
+  readonly reach: ModuleReach;
+
+  constructor(component: UfComponent, module: UfModule, typeNames: Iterable<string> = []) {
     const reserved = sourceNames(component, module);
     // The source reads `nextTick` as the authoring API, which `vue`'s takes the place of: where
     // every use is written `nextTick`, the import keeps the name. No local of that name can be
@@ -77,10 +86,25 @@ export class VueNames {
     // `<script setup>`, or of a composable's module (ADR-0070): each is taken before anything
     // else claims a name, a module name Vue reserves is declared under a name of its own, and a
     // setup binding that shadows one is too.
-    const moduleNames = [...moduleReach(component, module)];
+    this.reach = moduleReach(component, module, typeNames);
+    const moduleNames = [...this.reach.values];
     this.scope.reserve(...moduleNames);
+    // A renamed module name must not take a name its constants' own code uses.
+    for (const constant of module.constants ?? []) {
+      if (this.reach.values.has(constant.name))
+        this.scope.reserve(...codeNames(constant.value.code));
+    }
+    // The setup keeps its names, which its macros, slots and template refs are keyed by; a
+    // module name one of them shadows is renamed instead, as one Vue reserves is.
+    const setup = new Set([
+      ...component.bindings
+        .filter((binding) => binding.kind !== "moduleConst" && binding.kind !== "import")
+        .map((binding) => binding.name),
+      ...(component.propsParameter?.name ? [component.propsParameter.name] : []),
+    ]);
     for (const name of moduleNames) {
-      this.#module.set(name, VUE_RESERVED.has(name) ? this.scope.claim(name) : name);
+      const renamed = VUE_RESERVED.has(name) || setup.has(name);
+      this.#module.set(name, renamed ? this.scope.claim(name) : name);
     }
     // A setup binding Vue reserves is declared under a name of its own, before anything else
     // claims one: every reference reads it there.
@@ -88,18 +112,10 @@ export class VueNames {
       if (binding.kind === "moduleConst" || binding.kind === "import") {
         const local = this.#module.get(binding.name);
         if (local !== undefined && local !== binding.name) this.#locals.set(binding.id, local);
-      } else if (
-        declaredBySetup(binding.kind) &&
-        (VUE_RESERVED.has(binding.name) || this.#module.has(binding.name))
-      ) {
+      } else if (declaredBySetup(binding.kind) && VUE_RESERVED.has(binding.name)) {
         this.#locals.set(binding.id, this.scope.claim(binding.name));
       }
     }
-  }
-
-  /** Whether the output declares or imports a module value of this name (ADR-0070). */
-  isModuleName(name: string): boolean {
-    return this.#module.has(name);
   }
 
   /** The name the output declares one of the module's constants or value imports by. */
@@ -232,28 +248,71 @@ export class VueNames {
   }
 }
 
+/** What a component or a composable reaches of its module (ADR-0070). */
+export interface ModuleReach {
+  /** The constants and value imports its output declares and imports. */
+  values: Set<string>;
+  /** The names its types, its constants' and the module's types they reach name. */
+  typeNames: Set<string>;
+}
+
 /**
  * The module's names a component or a composable reaches (ADR-0070): the imported values and the
- * constants it reads, and those its constants read in turn, which its output imports and
- * declares.
+ * constants it reads, those its constants read in turn, and those a type names through `typeof`,
+ * a type of its own, of a constant, or of the module's that one of those reaches
+ * (`type Size = keyof typeof SIZES`). `typeNames` adds what the owner's IR does not hold, a
+ * composable's parameter types. A module name its own bindings shadow is not read by `typeof`.
  */
-export function moduleReach(owner: UfComponent, module: UfModule): Set<string> {
-  const reached = new Set(
+export function moduleReach(
+  owner: UfComponent,
+  module: UfModule,
+  typeNames: Iterable<string> = [],
+): ModuleReach {
+  const shadowed = new Set(
+    owner.bindings
+      .filter((binding) => binding.kind !== "import" && binding.kind !== "moduleConst")
+      .map((binding) => binding.name),
+  );
+  const moduleValues = new Set([
+    ...(module.constants ?? []).map(({ name }) => name),
+    ...(module.moduleImports ?? []).flatMap(({ names }) => names.map(({ local }) => local)),
+  ]);
+  const values = new Set(
     owner.bindings
       .filter((binding) => binding.kind === "import" || binding.kind === "moduleConst")
       .map((binding) => binding.name),
   );
-  // A constant's references name a binding by `name@offset`; a module's names are unique.
-  for (let size = -1; size !== reached.size;) {
-    size = reached.size;
+  // The names in type positions, which a `typeof` may hold, and every name the constants read.
+  const types = new Set([...typeNames, ...liveTypeNames(owner, module, { client: true })]);
+  const read = new Set(types);
+  const own = new Set(owner.types);
+  for (let size = -1; size !== values.size + read.size;) {
+    size = values.size + read.size;
     for (const constant of module.constants ?? []) {
-      if (!reached.has(constant.name)) continue;
+      if (!values.has(constant.name)) continue;
+      // A constant's references name a binding by `name@offset`; a module's names are unique.
       for (const reference of constant.value.refs) {
-        if (reference.kind === "Binding") reached.add(nameOf(reference.binding));
+        if (reference.kind === "Binding") values.add(nameOf(reference.binding));
       }
+      for (const name of constant.type ? typesOf(constant.type) : []) types.add(name);
+      for (const name of codeNames(constant.value.code)) read.add(name);
+    }
+    for (const declaration of module.types) {
+      if (
+        !own.has(declaration.name) &&
+        !types.has(declaration.name) &&
+        !read.has(declaration.name)
+      ) {
+        continue;
+      }
+      for (const name of codeNames(declaration.code, "statements")) types.add(name);
+    }
+    for (const name of types) {
+      read.add(name);
+      if (moduleValues.has(name) && !shadowed.has(name)) values.add(name);
     }
   }
-  return reached;
+  return { values, typeNames: read };
 }
 
 /** The name of a binding id, `name@offset`. */

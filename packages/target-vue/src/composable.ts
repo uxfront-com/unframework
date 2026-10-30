@@ -20,7 +20,7 @@ import {
 import type { EmitContext, OutputFile } from "@unframework/codegen";
 import type { Code, TypeDeclaration, UfComponent, UfComposable, UfModule } from "@unframework/ir";
 
-import { moduleReach, nameOf, VueNames } from "./names.ts";
+import { nameOf, VueNames } from "./names.ts";
 import { itemCode, itemLayout, laidOut, typeParametersText } from "./script.ts";
 import type { Statement } from "./script.ts";
 
@@ -50,7 +50,18 @@ function setupOwner(composable: UfComposable): UfComponent {
 export function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
   const { module } = context;
   const owner = setupOwner(composable);
-  const names = new VueNames(owner, module);
+  // The types its parameters and type parameters name, which its IR as a setup owner holds no
+  // trace of (ADR-0067).
+  const parameterTypes = new Set<string>();
+  for (const parameter of composable.parameters) {
+    for (const name of typeNames(parameter.type)) parameterTypes.add(name);
+  }
+  for (const parameter of composable.typeParameters ?? []) {
+    for (const type of [parameter.constraint, parameter.default]) {
+      if (type) for (const name of typeNames(type)) parameterTypes.add(name);
+    }
+  }
+  const names = new VueNames(owner, module, parameterTypes);
   const imports = new ImportSet(names.scope);
   const rules = names.scriptRules(() => imports.add("vue", "nextTick"));
   const reads = moduleBindings(owner, module, imports, names);
@@ -67,16 +78,9 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
     const local = names.local(bindingOf(owner, parameter.binding));
     return `${local}${parameter.optional ? "?" : ""}: ${parameter.type.code}`;
   });
-  // The types its parameters and type parameters name, beside what its setup prints (ADR-0067).
+  // What its setup prints names, beside its parameters' and its constants' types.
   const read = liveTypeNames(owner, module, { client: true });
-  for (const parameter of composable.parameters)
-    for (const name of typeNames(parameter.type)) read.add(name);
-  for (const parameter of composable.typeParameters ?? []) {
-    for (const type of [parameter.constraint, parameter.default]) {
-      if (type) for (const name of typeNames(type)) read.add(name);
-    }
-  }
-  for (const name of reads.typeNames) read.add(name);
+  for (const name of [...parameterTypes, ...reads.typeNames]) read.add(name);
   addReadTypeImports(module, imports, read);
   const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
   const body = laidOut(statements).replaceAll("\n", "\n  ");
@@ -118,7 +122,7 @@ export function moduleBindings(
   imports: ImportSet,
   names: VueNames,
 ): ModuleReads {
-  const reached = moduleReach(owner, module);
+  const reached = names.reach.values;
   const constants = module.constants ?? [];
   for (const entry of module.moduleImports ?? []) {
     for (const name of entry.names) {
@@ -129,8 +133,27 @@ export function moduleBindings(
     }
   }
   const declared = constants.filter((constant) => reached.has(constant.name));
+  return {
+    constants: declared.map(
+      (constant) =>
+        `const ${names.moduleLocal(constant.name)}${constant.type ? `: ${constant.type.code}` : ""} = ${renamed(constant.value, names)};`,
+    ),
+    ...constantTypes(owner, module, reached),
+  };
+}
+
+/**
+ * The types the constants an owner declares name (ADR-0070): the names their annotations and
+ * values read, and the module's declarations those reach, transitively, beyond the owner's own.
+ */
+export function constantTypes(
+  owner: UfComponent,
+  module: UfModule,
+  reached: ReadonlySet<string>,
+): Pick<ModuleReads, "types" | "typeNames"> {
   const read = new Set<string>();
-  for (const constant of declared) {
+  for (const constant of module.constants ?? []) {
+    if (!reached.has(constant.name)) continue;
     if (constant.type) for (const name of typeNames(constant.type)) read.add(name);
     for (const name of codeNames(constant.value.code)) read.add(name);
   }
@@ -147,10 +170,6 @@ export function moduleBindings(
     }
   }
   return {
-    constants: declared.map(
-      (constant) =>
-        `const ${names.moduleLocal(constant.name)}${constant.type ? `: ${constant.type.code}` : ""} = ${renamed(constant.value, names)};`,
-    ),
     types: module.types.filter((declaration) => types.has(declaration.name)),
     typeNames: read,
   };

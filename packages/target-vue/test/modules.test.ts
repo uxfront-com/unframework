@@ -216,7 +216,7 @@ describe("vue module bindings' types and names", () => {
     },
   );
 
-  it("renames a setup binding that shadows a module constant", checker, async () => {
+  it("renames a module constant a setup binding shadows, never the setup's", checker, async () => {
     const files = {
       "Limit.uf.tsx": [
         'import { ref } from "unframework";',
@@ -232,8 +232,10 @@ describe("vue module bindings' types and names", () => {
       ].join("\n"),
     };
     const outputs = await vue(files, "Limit.uf.tsx");
-    expect(outputs["Limit.vue"]).toContain("const LIMITS_1 = ref(5);");
-    expect(outputs["Limit.vue"]).toContain("{{ caption(LIMITS_1) }}");
+    expect(outputs["Limit.vue"]).toContain("const LIMITS_1 = { max: 20 };");
+    expect(outputs["Limit.vue"]).toContain("`${value} of ${LIMITS_1.max}`");
+    expect(outputs["Limit.vue"]).toContain("const LIMITS = ref(5);");
+    expect(outputs["Limit.vue"]).toContain("{{ caption(LIMITS) }}");
     expect(await typecheck(outputs)).toEqual(clean(outputs));
   });
 
@@ -342,4 +344,146 @@ describe("vue module bindings' types and names", () => {
       expect(await typecheck(outputs)).toEqual(clean(outputs));
     },
   );
+
+  // A constant only a type names is not in the IR (the analyser keeps those a component reads), so
+  // a type reaches through `typeof` what the module imports.
+  it("imports a value that a type names through `typeof`", checker, async () => {
+    const files = {
+      "limits.ts": "export const LIMITS = { a: 3 };\nexport const SIZES = { sm: 1, md: 2 };\n",
+      "useCopy.uf.ts": [
+        'import { ref } from "unframework";',
+        'import { LIMITS } from "./limits";',
+        "",
+        "const COPY: typeof LIMITS = { a: 1 };",
+        "",
+        "export function useCopy() {",
+        "  const copy = ref(COPY.a);",
+        "  return { copy };",
+        "}",
+        "",
+      ].join("\n"),
+      "Size.uf.tsx": [
+        'import { SIZES } from "./limits";',
+        "",
+        "type Size = keyof typeof SIZES;",
+        'const DEFAULT: Size = "sm";',
+        "",
+        "export default function Size() {",
+        "  return <p>{DEFAULT}</p>;",
+        "}",
+        "",
+      ].join("\n"),
+    };
+    const outputs = {
+      ...(await vue(files, "useCopy.uf.ts")),
+      ...(await vue(files, "Size.uf.tsx")),
+    };
+    expect(outputs["useCopy.ts"]).toContain('import { LIMITS } from "./limits";');
+    expect(outputs["Size.vue"]).toContain('import { SIZES } from "./limits";');
+    expect(outputs["Size.vue"]).toContain("type Size = keyof typeof SIZES;");
+    expect(await typecheck(outputs)).toEqual(clean(outputs));
+    const paths = writeScratch(outputs);
+    const linted = await toolchain.lint(Object.values(paths), { toolchainDir, root: toolchainDir });
+    expect([...linted.values()].flat()).toEqual([]);
+  });
+
+  it(
+    "re-exports from the main output an exported type only a sibling's constant reaches",
+    checker,
+    async () => {
+      const files = {
+        "Card.uf.tsx": [
+          'export type Tone = "info" | "warn";',
+          'const TONES: Tone[] = ["info", "warn"];',
+          "",
+          "function Badge() {",
+          "  return <b>{TONES.join()}</b>;",
+          "}",
+          "",
+          "export default function Card() {",
+          "  return <p><Badge /></p>;",
+          "}",
+          "",
+        ].join("\n"),
+      };
+      const outputs: Record<string, string> = {
+        ...(await vue(files, "Card.uf.tsx")),
+        "Use.vue": [
+          '<script setup lang="ts">',
+          'import Card, { type Tone } from "./Card.vue";',
+          "",
+          'const tone: Tone = "warn";',
+          "</script>",
+          "",
+          "<template>",
+          '  <Card :data-tone="tone" />',
+          "</template>",
+          "",
+        ].join("\n"),
+      };
+      expect(outputs["Card.vue"]).toContain('export type { Tone } from "./Badge.vue";');
+      expect(await typecheck(outputs)).toEqual(clean(outputs));
+    },
+  );
+
+  it(
+    "renames a module name that `emit`, `slots` or a template ref shadows, never the setup's",
+    checker,
+    async () => {
+      const files = {
+        "Form.uf.tsx": [
+          'import { defineEmits, defineSlots, useTemplateRef } from "unframework";',
+          "",
+          'const emit = "sent";',
+          'const slots = "slots";',
+          'const box = "box";',
+          "const label = `${emit} ${slots} ${box}`;",
+          "",
+          "export default function Form() {",
+          "  const emit = defineEmits<{ change: [value: string] }>();",
+          "  const slots = defineSlots<{ title?: () => any }>();",
+          "  const box = useTemplateRef<HTMLInputElement>();",
+          "  return (",
+          "    <form>",
+          "      {slots.title && <h2>{label}</h2>}",
+          '      <input ref={box} onInput={() => emit("change", box.value?.value ?? "")} />',
+          "    </form>",
+          "  );",
+          "}",
+          "",
+        ].join("\n"),
+      };
+      const outputs = await vue(files, "Form.uf.tsx");
+      const form = outputs["Form.vue"]!;
+      expect(form).toContain('const emit_1 = "sent";');
+      expect(form).toContain('const slots_1 = "slots";');
+      expect(form).toContain('const box_1 = "box";');
+      expect(form).toContain("const label = `${emit_1} ${slots_1} ${box_1}`;");
+      expect(form).toContain("const emit = defineEmits<");
+      expect(form).toContain("const slots = defineSlots<");
+      expect(form).toContain('const box = useTemplateRef<HTMLInputElement>("box");');
+      expect(await typecheck(outputs)).toEqual(clean(outputs));
+    },
+  );
+
+  it("claims no name a constant's own code already uses", async () => {
+    const outputs = await vue(
+      {
+        "Sum.uf.tsx": [
+          "const defineProps = 1;",
+          "const add = (defineProps_1: number): number => defineProps + defineProps_1;",
+          "",
+          "export default function Sum() {",
+          "  return <p>{add(10)}</p>;",
+          "}",
+          "",
+        ].join("\n"),
+      },
+      "Sum.uf.tsx",
+    );
+    expect(outputs["Sum.vue"]).toContain("const defineProps_2 = 1;");
+    expect(outputs["Sum.vue"]).toContain(
+      "const add = (defineProps_1: number): number => defineProps_2 + defineProps_1;",
+    );
+  });
 });

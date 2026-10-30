@@ -34,6 +34,7 @@ import type {
   PropsParameter,
   SetupItem,
   StateItem,
+  TypeDeclaration,
   TypeParameter,
   TypeText,
   UfComponent,
@@ -42,11 +43,11 @@ import type {
   WatchSource,
 } from "@unframework/ir";
 
-import { addReadTypeImports, moduleBindings } from "./composable.ts";
+import { addReadTypeImports, constantTypes, moduleBindings } from "./composable.ts";
 import type { ModuleReads } from "./composable.ts";
 import { planListeners } from "./listeners.ts";
 import type { Listeners } from "./listeners.ts";
-import { unreachable, VUE_RESERVED, VueNames } from "./names.ts";
+import { moduleReach, unreachable, VUE_RESERVED, VueNames } from "./names.ts";
 
 /** What a component's script gives its template. */
 export interface ScriptSetup {
@@ -299,7 +300,29 @@ function moduleTypes(component: UfComponent, module: UfModule, reads: ModuleRead
   // a constant that names it declares it here unexported: the export is the sibling's.
   const sibling = (name: string) =>
     module.components.some((each) => each !== component && each.types.includes(name));
+  // The main output re-exports an exported type only a sibling's constants reach, from that
+  // sibling's output, which declares it (ADR-0068): `typeExportsCode` knows only components'
+  // own types.
+  const reExports: { code: string; span: TypeDeclaration["span"] }[] = [];
+  if (keyOwner(module.components, module.exports) === component.name) {
+    const written = new Set([...component.types, ...reads.types.map(({ name }) => name)]);
+    for (const other of module.components) {
+      if (other === component) continue;
+      const { types } = constantTypes(other, module, moduleReach(other, module).values);
+      for (const declaration of types) {
+        if (!declaration.exported || written.has(declaration.name) || sibling(declaration.name)) {
+          continue;
+        }
+        written.add(declaration.name);
+        reExports.push({
+          code: `export type { ${declaration.name} } from ${JSON.stringify(`./${other.name}.vue`)};`,
+          span: declaration.span,
+        });
+      }
+    }
+  }
   return [
+    ...reExports,
     ...componentTypes(component, module).map((declaration) => ({
       code: typeDeclarationCode(declaration),
       span: declaration.span,
@@ -747,10 +770,7 @@ function destructuredDeclaration(
       if (!isRead(prop)) return `${prop.name}: ${names.scope.claim(`_${prop.name}`)} = ${value}`;
       // Vue 3.5 destructures a prop under another name too (`{ Map: Map_1 }`), and every
       // reference reads the local.
-      const local =
-        VUE_RESERVED.has(prop.name) || names.isModuleName(prop.name)
-          ? names.scope.claim(prop.name)
-          : prop.name;
+      const local = VUE_RESERVED.has(prop.name) ? names.scope.claim(prop.name) : prop.name;
       if (local !== prop.name && prop.binding !== undefined) names.rename(prop.binding, local);
       const target = local === prop.name ? prop.name : `${prop.name}: ${local}`;
       return value === undefined ? target : `${target} = ${value}`;
@@ -778,12 +798,11 @@ function objectDeclaration(
   // Vue keeps the `_` and `$` prefixes for its own names, and its compiled `setup` declares
   // some: `const __props = defineProps<P>()` does not compile. The object takes the name
   // `props` there.
-  const local =
-    VUE_RESERVED.has(name) || names.isModuleName(name)
-      ? names.scope.claim(name)
-      : /^[_$]/.test(name)
-        ? names.scope.claim("props")
-        : name;
+  const local = VUE_RESERVED.has(name)
+    ? names.scope.claim(name)
+    : /^[_$]/.test(name)
+      ? names.scope.claim("props")
+      : name;
   if (local !== name) names.renamePropsObject(name, local);
   return `const ${local} = ${call};`;
 }
