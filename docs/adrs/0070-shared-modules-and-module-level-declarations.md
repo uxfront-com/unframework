@@ -42,15 +42,15 @@ too, so each is checked as setup code is (ADR-0045), and code setup accepts pass
 - An arrow an object literal holds runs once called. What it reads of chance, the clock, the
   locale or the client isn't reported where the literal is written, only where it is called by
   name or through a member that reaches it (`O.m()`, `O.m.call(…)`, `[…].map(O.m)`) as the module
-  loads, or by a template, a getter or an initial value that reads the literal. A call through a
-  table passed to a call (`L.map((f) => f())`) is a known gap, reported only where its result is
-  read.
+  loads, or by a template, a getter or an initial value that reads the literal. A call that a
+  callback makes (`L.map((f) => f())`), or a function a table is passed to (`pick(TABLE)`), is a
+  known gap.
 - A function a component passes as a handler (`onClick={copy}`) is still UF3029: a named handler
   is the component's own function, and lowering a module's on every target is a later issue.
 - `Object.freeze` of a module's value, a constant or an import, changes nothing anyone reads, so
-  a component's setup and client code accept it, as module level does. Of anything else it stays UF2004 in setup, since freezing
-  a prop freezes the parent's object, and UF3021 in render, as ADR-0035 says, a module's value
-  included. `Object.seal` and `Object.preventExtensions` stay rejected everywhere.
+  a component's setup and client code accept it, as module level does. Of anything else it stays
+  UF2004 in setup, since freezing a prop freezes the parent's object, and UF3021 in render, as
+  ADR-0035 says, a module's value included. `Object.seal` and `Object.preventExtensions` stay rejected everywhere.
 
 **What a shared module may import:** other relative `.ts` modules, and packages. Never a framework
 or `unframework`, directly or through another `.ts`: that is UF1204

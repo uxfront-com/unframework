@@ -615,6 +615,11 @@ describe("module-level constants", () => {
       "{N}",
     ],
     [
+      "the length of a table's member or item, as the module loads",
+      "const date = (n: number) => n.toLocaleString();\nconst T = { items: [date] };\nconst L = [[date]];\nconst N = T.items.length + (T?.items)?.length + L[0].length;",
+      "{N}",
+    ],
+    [
       "the length of a table's entries, as the module loads",
       "const date = (n: number) => n.toLocaleString();\nconst FMT = { date };\nconst N = Object.entries(FMT).length;",
       "{N}",
@@ -661,6 +666,16 @@ describe("module-level constants", () => {
       "the locale, through `filter`",
       'const date = (n: number) => n.toLocaleString();\nconst X = [date].map((f) => f(1000)).filter((s) => s.includes(",")).length;',
       "UF3019 X",
+    ],
+    [
+      "`window`, through a spread copy",
+      "const w = () => window.innerWidth;\nconst X = [...[w].map((f) => f())].length;",
+      "UF2014 X",
+    ],
+    [
+      "`window`, through the values of a call's result",
+      "const w = () => window.innerWidth;\nconst X = Object.values([w].map((f) => f())).length;",
+      "UF2014 X",
     ],
   ])("reports a length whose callbacks read %s as the module loads", (_, before, problem) => {
     const source = `${before}\nexport function A() { return <p>{X}</p>; }`;

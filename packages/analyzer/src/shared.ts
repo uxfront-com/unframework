@@ -969,13 +969,19 @@ export function lowerConstants(
   }
 }
 
-/** Whether an expression is a name, or a static member of one (`T`, `T.items`, `T["items"]`). */
+/**
+ * Whether an expression is a name, or a static member of one (`T`, `T.items`, `T["items"]`,
+ * `L[0]`, `T?.items`).
+ */
 function isPath(node: AST.Node): boolean {
-  const inner = unwrapped(node);
+  let inner = unwrapped(node);
+  if (inner.type === "ChainExpression") inner = unwrapped(inner.expression);
   if (inner.type === "Identifier") return true;
-  return (
-    inner.type === "MemberExpression" && memberName(inner) !== undefined && isPath(inner.object)
-  );
+  if (inner.type !== "MemberExpression") return false;
+  const { property } = inner;
+  const indexed =
+    inner.computed && property.type === "Literal" && typeof property.value === "number";
+  return (indexed || memberName(inner) !== undefined) && isPath(inner.object);
 }
 
 /** The value an object literal gives a static key, without its parentheses and assertions. */
