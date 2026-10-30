@@ -66,10 +66,10 @@ peerDependencyRules:
     "@typescript-eslint/type-utils>typescript": "7"
     "ts-api-utils>typescript": "7"
 minimumReleaseAgeExclude:
-  - "@uxfront/layer-docs@0.7.1"
-  - "@uxfront/layer-ui@0.1.6"
-  - "@uxfront/scene@0.4.1"
-  - "@uxfront/ui@0.5.0"
+  - "@uxfront/layer-docs@0.8.0"
+  - "@uxfront/layer-ui@0.1.7"
+  - "@uxfront/scene@0.5.0"
+  - "@uxfront/ui@0.6.0"
   - "@vitest/mocker@5.0.3"
   - "@vitest/spy@5.0.3"
   - vitest@5.0.3
