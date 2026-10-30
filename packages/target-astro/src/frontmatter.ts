@@ -30,7 +30,8 @@ import type {
 
 import { isRenderProp, ownProps } from "./composition.ts";
 import type { AstroRender } from "./composition.ts";
-import { SERVER, serverBindings, setupCode } from "./setup.ts";
+import { moduleReads } from "./modules.ts";
+import { SERVER, serverBindings, serverView, setupCode } from "./setup.ts";
 import { renderPropName } from "./spelling.ts";
 import type { Spelling } from "./spelling.ts";
 
@@ -72,9 +73,11 @@ export function childTags(
 }
 
 /**
- * The frontmatter of a component, in order: the children's imports, the type declarations it
- * reaches, `Props`, the props the server render reads, then the setup it keeps (helpers first,
- * then its values in source order), then the constants `<component is>` renders. `Props` is an
+ * The frontmatter of a component, in order: the children's imports, with the values it reads of
+ * `.ts` modules and the composables its kept setup calls, the type declarations it reaches,
+ * `Props`, the module's constants it reaches (`./modules.ts`), the props the server render reads,
+ * then the setup it keeps (helpers first, then its values in source order), then the constants
+ * `<component is>` renders. `Props` is an
  * alias of the props type (`type Props = CardProps;`), or an interface with the members of an
  * inline object type, which reads as Astro's own examples do; a props type already named `Props`
  * is copied as it is. The props type is extended with what a consumer passes beside the source's
@@ -107,18 +110,28 @@ export function frontmatterOf(
   { spelling, imports, render, markupNamesAstro, scope, styleObject, sheet }: FrontmatterParts,
 ): string | undefined {
   const parameter = component.propsParameter;
-  const live = serverBindings(component);
+  const view = serverView(component, module);
+  const live = serverBindings(view);
+  // What it reads of its module, first, so the names the setup claims leave the module's alone.
+  const reads = moduleReads(component, module, live, {
+    imports,
+    scope: spelling.scope,
+    local: (id) => spelling.name(id),
+  });
+  composableImports(component, module, live, imports);
   const setup = setupCode(component, live, spelling, (item) =>
     injectedType(item, component, module, imports),
   );
-  const reads = propsRead(component, live, spelling, render);
-  const exported = !reads.length && !setup.readsAstro && !markupNamesAstro;
+  const propsReads = propsRead(component, live, spelling, render);
+  const exported = !propsReads.length && !setup.readsAstro && !markupNamesAstro;
   // The type imports keep the source's names, which Astro's own names never take, but `Props`.
   const imported = (module.typeImports ?? []).flatMap(({ names }) =>
     names.map(({ local }) => local),
   );
   for (const name of imported) if (name !== "Props") spelling.scope.reserve(name);
-  const types = liveTypes(component, module, SERVER);
+  const types = [...liveTypes(view, module, SERVER), ...reads.types].toSorted(
+    (a, b) => a.span.start - b.span.start,
+  );
   const sourceProps = types.find(({ name }) => name === "Props");
   const ownProps =
     imported.includes("Props") ||
@@ -133,14 +146,14 @@ export function frontmatterOf(
   const ownCode = rename("statements");
   const extras = propsExtras(component, render, own);
   const local = (name: string) => (ownProps && name === "Props" ? ownProps : name);
-  addTypeImports(component, module, imports, (name) => `${name}.astro`, { live: SERVER, local });
+  addTypeImports(view, module, imports, (name) => `${name}.astro`, { live: SERVER, local });
   const sections: string[][] = [];
   const declared = types.map((declaration) => {
     let code =
       exported && parameter && declaration.name === "Props" && !declaration.exported
         ? `export ${declaration.code}`
         : typeDeclarationCode(declaration);
-    code = ownCode(code);
+    code = ownCode(reads.renamed(code, "statements"));
     if (ownProps && declaration.name === "Props") code = code.replace(/\bProps\b/, ownProps);
     return { code, span: declaration.span };
   });
@@ -171,9 +184,11 @@ export function frontmatterOf(
   }
   const helpers = setup.helpers.map(ownCode);
   const statements = setup.statements.map(ownCode);
-  const scoped = typeParameterAliases(component, [...reads, ...helpers, ...statements], own);
+  // The module's constants, which read only the module, before the component's own values.
+  if (reads.constants.length) sections.push(reads.constants);
+  const scoped = typeParameterAliases(component, [...propsReads, ...helpers, ...statements], own);
   if (scoped.length) sections.push(scoped);
-  if (reads.length) sections.push(reads);
+  if (propsReads.length) sections.push(propsReads);
   for (const helper of helpers) sections.push([helper]);
   if (scope) sections.push([scopeAttributesHelper(scope)]);
   if (styleObject) sections.push([styleObjectHelper(styleObject)]);
@@ -196,6 +211,35 @@ export function frontmatterOf(
   ];
   if (declarations.length) sections.unshift([declarations.join("\n")]);
   return frontmatterCode(sections);
+}
+
+/**
+ * Imports each composable a kept call calls, from its static module beside its `.uf.ts`:
+ * `import { useToggle } from "./useToggle";` (ADR-0069).
+ */
+function composableImports(
+  component: UfComponent,
+  module: UfModule,
+  live: ReadonlySet<BindingId>,
+  imports: ImportSet,
+): void {
+  const called = new Set(
+    component.setup.flatMap((item) =>
+      item.kind === "Use" && item.members.some(({ binding }) => live.has(binding))
+        ? [item.composable]
+        : [],
+    ),
+  );
+  for (const entry of module.imports ?? []) {
+    const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
+    for (const name of entry.names) {
+      if (name.kind !== "Composable" || !called.has(name.local)) continue;
+      imports.add(`${directory}${name.imported}`, name.imported, {
+        local: name.local,
+        exact: true,
+      });
+    }
+  }
 }
 
 /**
@@ -720,7 +764,7 @@ function frontmatterCode(sections: readonly (readonly string[])[]): string | und
  * A section's statements, each on lines of its own: one-line statements follow each other, and
  * a statement over several lines (a function) has a blank line on each side.
  */
-function section(statements: readonly string[]): string {
+export function section(statements: readonly string[]): string {
   return statements
     .map((statement, index) => {
       const previous = statements[index - 1];
