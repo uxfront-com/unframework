@@ -6,9 +6,10 @@
       // The tests emit from the corpus's IR snapshots and check its committed svelte outputs with
       // what tests/toolchains/svelte installs: its transit node carries that package's tsconfig and
       // the locked versions of its tools into this hash.
-      // The composable test compiles the composable and module cases, under pending/ or, once they
-      // land, under cases/ (../codegen/test/composable-cases.ts), through the compiler's source,
-      // which is no dependency of this package: its transit node carries it into this hash.
+      // The composable test this target's composables lane adds compiles the composable and module
+      // cases, under pending/ or, once they land, under cases/ (../codegen/test/composable-cases.ts),
+      // through the compiler's source, which is no dependency of this package: its transit node
+      // carries it into this hash.
       "dependsOn": [
         "$TURBO_EXTENDS$",
         "@unframework/toolchain-svelte#transit",

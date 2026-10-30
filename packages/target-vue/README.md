@@ -207,4 +207,7 @@ For tests and tooling (the target's main entry never loads it):
 Its own tests pin the shapes (`test/emit.test.ts`, `test/lint-probes.ts` against L3, L4 and L5),
 the server's setup (`test/setup.test.ts`), and the behaviour of the emitted components in
 Chromium (`test/behaviour.browser.test.ts`: reads after writes, watch timing, previous values
-and cleanup, lifecycle, template refs, ids, listeners and their options, emits).
+and cleanup, lifecycle, template refs, ids, listeners and their options, emits). Its composable
+test compiles the composable and module cases, which wait in `tests/integration/pending/`, and
+runs L3 to L5 on their outputs (`test/composable.test.ts`), and `test/modules.test.ts` pins a
+composable's module, its call and a module's values.
