@@ -13,7 +13,7 @@ import type { Diagnostic } from "@unframework/diagnostics";
 import { checkInvariants, validateModule } from "@unframework/ir";
 import type { IrValidationError, ModuleApi, Span, UfComponent, UfModule } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
-import type { AST, ParsedModule } from "@unframework/parser";
+import type { ParsedModule } from "@unframework/parser";
 import { createSyntacticOracle } from "@unframework/type-oracle";
 import type { TypeOracle, TypeShape } from "@unframework/type-oracle";
 
