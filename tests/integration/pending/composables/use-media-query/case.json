@@ -1,0 +1,8 @@
+{
+  "description": "A composable reads a media query once its caller mounts and keeps a listener until it unmounts; the component calls it twice, under two names, each call with its own state.",
+  "main": "Layout.uf.tsx",
+  "requires": "The composable reads the browser when the component mounts, which changes what it renders: the server render checks the static targets.",
+  "ssr": {
+    "initial": {}
+  }
+}

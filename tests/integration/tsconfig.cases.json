@@ -4,7 +4,8 @@
   // "Type-checking .uf.tsx"): what an author's editor reports, before the compiler runs. That is
   // the components, the composables (.uf.ts, ADR-0069) and the shared modules (.ts, ADR-0070).
   // The goldens under __output__ are checked per target by tests/toolchains instead, and the
-  // specs by tsconfig.json.
+  // specs by tsconfig.json. The cases waiting in pending/ for every target's composables lane
+  // (README, "Pending cases") are checked the same way.
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "preserve",
@@ -20,10 +21,19 @@
     "cases/**/*.uf.tsx",
     "cases/**/*.uf.ts",
     "cases/**/*.ts",
+    "pending/**/*.uf.tsx",
+    "pending/**/*.uf.ts",
+    "pending/**/*.ts",
     "styleframe.d.ts",
     "fixture-engine.d.ts"
   ],
   // Diagnostic cases are deliberately wrong: a misspelt prop or a React attribute name is a type
   // error too, and a syntax error does not parse.
-  "exclude": ["cases/**/__output__/**", "cases/diagnostics/**", "cases/**/*.test.ts"]
+  "exclude": [
+    "cases/**/__output__/**",
+    "cases/diagnostics/**",
+    "cases/**/*.test.ts",
+    "pending/diagnostics/**",
+    "pending/**/*.test.ts"
+  ]
 }

@@ -6,8 +6,22 @@
       // The toolchain tests check the corpus's committed qwik outputs with what
       // tests/toolchains/qwik installs: its transit node carries that package's tsconfig and the
       // locked versions of its tools into this hash.
-      "dependsOn": ["$TURBO_EXTENDS$", "@unframework/toolchain-qwik#transit"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tests/integration/cases/**/__output__/qwik/**"]
+      // The composable test compiles the composable and module cases, under pending/ or, once they
+      // land, under cases/ (../codegen/test/composable-cases.ts), through the compiler's source,
+      // which is no dependency of this package: its transit node carries it into this hash.
+      "dependsOn": [
+        "$TURBO_EXTENDS$",
+        "@unframework/toolchain-qwik#transit",
+        "@unframework/compiler#transit"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/tests/integration/cases/**/__output__/qwik/**",
+        "$TURBO_ROOT$/tests/integration/pending/**",
+        "$TURBO_ROOT$/tests/integration/cases/composables/**",
+        "$TURBO_ROOT$/tests/integration/cases/modules/**",
+        "$TURBO_ROOT$/tests/integration/cases/semantics/composable-*/**"
+      ]
     }
   }
 }

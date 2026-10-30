@@ -119,7 +119,6 @@ export class VueNames {
       case "slotScope":
       case "context":
       case "component":
-      // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
       case "moduleConst":
       case "import":
       case "argument":
@@ -147,9 +146,12 @@ export class VueNames {
       case "templateRef":
       case "model":
         return this.local(binding);
-      // An injected ref is read as `x.value`, the reference's whole text (ADR-0054), and the
-      // template unwraps it as it unwraps the setup's own refs.
+      // An injected ref is read as `x.value`, the reference's whole text (ADR-0054), and so is a
+      // composable's returned ref (ADR-0069): the template unwraps them as it unwraps the setup's
+      // own refs.
       case "context":
+      case "usedState":
+      case "usedDerived":
         return written === `${binding.name}.value`
           ? this.local(binding)
           : this.script(binding, written);
@@ -162,12 +164,9 @@ export class VueNames {
       case "slots":
       case "slotScope":
       case "component":
-      // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
       case "moduleConst":
       case "import":
       case "argument":
-      case "usedState":
-      case "usedDerived":
       case "usedFn":
       case "usedConst":
         return this.script(binding, written);
@@ -213,6 +212,9 @@ function declaredBySetup(kind: BindingKind): boolean {
     case "loopVar":
     case "slotScope":
     case "component":
+    // The module declares these, under their own names (ADR-0070).
+    case "moduleConst":
+    case "import":
       return false;
     case "state":
     case "derived":
@@ -224,9 +226,6 @@ function declaredBySetup(kind: BindingKind): boolean {
     case "model":
     case "slots":
     case "context":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
-    case "moduleConst":
-    case "import":
     case "argument":
     case "usedState":
     case "usedDerived":

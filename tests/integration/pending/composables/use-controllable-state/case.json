@@ -1,0 +1,8 @@
+{
+  "description": "A generic composable whose getter parameter reads a prop reactively and whose callback parameter emits: the component holds the value without the prop, and only reports a change with it.",
+  "main": "Rating.uf.tsx",
+  "ssr": {
+    "uncontrolled": {},
+    "controlled": { "props": { "value": 2 } }
+  }
+}

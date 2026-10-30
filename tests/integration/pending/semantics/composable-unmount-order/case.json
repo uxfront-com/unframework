@@ -1,0 +1,7 @@
+{
+  "description": "A composable's unmount hook runs when the component that called it unmounts, and only then: each panel's teardown follows its own unmount, in the order the panels go.",
+  "main": "Board.uf.tsx",
+  "ssr": {
+    "initial": {}
+  }
+}

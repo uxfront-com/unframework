@@ -1,0 +1,7 @@
+{
+  "description": "A component calls pure functions a .ts module exports, in its template, in a derived value and in a listener.",
+  "main": "PriceTag.uf.tsx",
+  "ssr": {
+    "initial": { "props": { "cents": 250 } }
+  }
+}

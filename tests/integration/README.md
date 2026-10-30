@@ -70,6 +70,28 @@ ADR-0070). It still needs a `.uf.tsx`: the main input is a component.
 - `tsconfig.cases.json` type-checks the `.uf.ts` and `.ts` sources with the `.uf.tsx` ones, the
   specs left to `tsconfig.json`.
 
+### Pending cases
+
+`pending/<area>/<case>/` holds the composable and shared-module cases, complete with their
+sources, specs and `case.json`, and the sources of their three diagnostics cases (ADR-0069).
+They wait there until every target's composables lane has landed: a case of a composable or a
+module value in `cases/` would make each lane rewrite its shared `__expected__/diagnostics.json`.
+
+- No project reads `pending/`. The loader reads `cases/` alone, so a pending case reaches no
+  compile, toolchain, SSR or browser project, no shared expectation and no coverage count.
+- `tsconfig.cases.json` type-checks the pending sources, but `pending/diagnostics/`, which are
+  wrong on purpose, and `tsconfig.json` the pending specs. oxfmt and oxlint skip
+  `pending/diagnostics/` as they skip `cases/diagnostics/`.
+- Each target's `composable` test compiles the rendering cases for its target and runs its L3 to
+  L5 checks on the outputs, through a helper that takes the case ids and reads each from
+  `pending/` or `cases/` (`packages/codegen/test/composable-cases.ts`). A listed case in neither
+  fails it.
+- A lane that finishes its target's call site copies the pending cases into `cases/` in a
+  scratch worktree, runs `UF_TARGETS=vue,<target> pnpm test:update` and its target's projects
+  there, and commits none of it.
+- One change moves every pending case into `cases/` once each lane has landed, in one
+  `pnpm test:update`, and removes `pending/` and its tool settings.
+
 ### A case of several sources
 
 A case may hold several `.uf.tsx` inputs (ADR-0057): a component and its children, or a harness

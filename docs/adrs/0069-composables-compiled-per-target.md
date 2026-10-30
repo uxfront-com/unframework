@@ -173,10 +173,43 @@ imports of `.uf.ts` modules. This record builds the `.uf.ts` half of D1 (ADR-000
   for later issues, and so do injection keys in `.uf.ts` modules (ADR-0054).
 - The cases stay out of the corpus until the last lane, so a lane's bug shows up late.
 
-**Open:**
+## Semantics contract entries
 
-- The semantics contract's entries for composables. Vue's composables lane adds them to this
-  record, and the change that accepts these records adds them to `3.reference/3.semantics.md`.
+Vue's composables lane drafted these entries of the semantics contract. The change that accepts
+these records adds them to `3.reference/3.semantics.md`, each with its cases, which wait in
+`tests/integration/pending/` until every target's lane has landed.
+
+| Rule                     | Guarantee                                                                            | Cases                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Composables              | A call runs the composable's setup once, where the call sits, with its own state     | `composables/use-toggle`, `composables/use-media-query`                                                    |
+| Arguments                | A value is read once, a getter reactively, and a callback is called from client code | `composables/getter-argument`, `composables/callback-argument`, `composables/use-controllable-state`       |
+| Read after write, across | Client code that calls a composable's function reads its write right after           | `semantics/composable-read-after-write`                                                                    |
+| Effect order, across     | A composable's watchers and hooks run where its call sits among the caller's own     | `semantics/composable-effect-order`                                                                        |
+| Teardown, across         | A composable's unmount hooks run when its caller unmounts, once for each call        | `semantics/composable-unmount-order`                                                                       |
+| Shared modules           | A module's values are read-only, and the same in every target's output               | `modules/shared-constants`, `modules/shared-helpers`, `modules/module-constants`, `modules/nested-modules` |
+
+- **Composables.** Each call holds its own state: two calls in one component share nothing
+  (`use-media-query` destructures two under other names). A call is part of the caller's setup,
+  so it runs once per instance, as the setup does (Setup runs once).
+- **Arguments.** A value argument that reads a prop or state is UF2007: the composable keeps
+  the value it had when the setup ran. A getter, `() => price`, follows the prop or the state it
+  reads in every derived value and watcher of the composable. A callback runs in the caller's
+  scope when the composable's client code calls it, and may write the caller's state and emit.
+- **Read after write, across.** A read of a returned ref or derived value after a call of a
+  returned function, in the caller's client code, sees the function's writes, as the caller's
+  own state does. React's caller reads them through the hook's live readers (`currentX`).
+- **Effect order, across.** The composable's watchers and hooks take the call's place among the
+  caller's own, in source order: a mounted hook declared before the call runs before the
+  composable's, and one declared after it runs after. React and Solid declare
+  `composable-effect-order` unsupported (UF4005, info): React reorders a component's effects
+  (ADR-0048), and Solid queues a composable's watchers in its own module.
+- **Teardown, across.** A composable's `onUnmounted` hooks run when the component that called
+  it unmounts, never before, and only for that instance: each instance's teardown follows its
+  own unmount, in the order the instances go. The order of a composable's teardown among the
+  caller's own is that of effect order, so it holds where `composable-effect-order` does.
+- **Shared modules** (ADR-0070). A component reads a `.ts` module's values and its own module's
+  constants as written, in its template, its setup and its client code. They are read-only, so
+  every target reads one value.
 
 ## Alternatives considered
 

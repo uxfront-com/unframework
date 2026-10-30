@@ -1,7 +1,8 @@
-import { composableUse, defineTarget, printMarkup, vueDialect } from "@unframework/codegen";
+import { defineTarget, printMarkup, vueDialect } from "@unframework/codegen";
 import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
+import { emitComposable } from "./composable.ts";
 import { scriptSetup } from "./script.ts";
 
 /**
@@ -81,19 +82,6 @@ export const vue: Target = defineTarget({
     "composable-effect-order": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    // A composable's call and what a module or a composable gives are declared before this
-    // target emits them (ADR-0069, ADR-0070): until its composables lane lands, a component that
-    // uses one is reported, never emitted without it (P2).
-    const composable = composableUse(component);
-    if (composable) {
-      context.report({
-        code: "UF1002",
-        severity: "error",
-        message: `The vue target does not emit ${composable.what} yet: it lands with this target's composables lane.`,
-        span: composable.span,
-      });
-      return [];
-    }
     const { block, rewrite, listeners, components, keys } = scriptSetup(component, context.module);
     // The component resolves the names of loop variables.
     const template = printMarkup(component.render, vueDialect, {
@@ -119,6 +107,7 @@ export const vue: Target = defineTarget({
     ];
     return [{ path: `${component.name}.vue`, contents: `${parts.join("\n\n")}\n` }];
   },
+  emitComposable,
 });
 
 export default vue;

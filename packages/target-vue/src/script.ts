@@ -34,6 +34,7 @@ import type {
   PropsParameter,
   SetupItem,
   StateItem,
+  TypeParameter,
   TypeText,
   UfComponent,
   UfModule,
@@ -41,6 +42,7 @@ import type {
   WatchSource,
 } from "@unframework/ir";
 
+import { moduleBindings } from "./composable.ts";
 import { planListeners } from "./listeners.ts";
 import type { Listeners } from "./listeners.ts";
 import { unreachable, VUE_RESERVED, VueNames } from "./names.ts";
@@ -78,7 +80,7 @@ const VUE_BUILT_INS: ReadonlySet<string> = new Set([
 ]);
 
 /** A statement of the script, and how it sits beside its neighbours. */
-interface Statement {
+export interface Statement {
   code: string;
   /**
    * `macro` for `defineProps` and `defineEmits`, `line` for a declaration on one line: a run of
@@ -143,6 +145,11 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   }
   // The imports that pass through, which the template reads as written (ADR-0064).
   addPassThroughImports(component, module, imports);
+  // Each composable it calls, from the composable's own output, `./useToggle` beside
+  // `useToggle.uf.ts` (ADR-0069).
+  addComposableImports(component, module, imports);
+  // What it reads of its module: values from its `.ts` modules, and its constants (ADR-0070).
+  const constants = moduleBindings(component, module, imports);
   // The output of the module's main component declares the keys, and the types it copies, in a
   // plain `<script lang="ts">` block, which `<script setup>` reads.
   const keys =
@@ -201,10 +208,7 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   }
   for (const item of component.setup) {
     const code = itemCode(item, component, module, names, imports, script);
-    // A model is a macro, which stays with `defineProps` and `defineEmits` where it follows them.
-    const layout =
-      item.kind === "Model" ? "macro" : declares(item) && !code.includes("\n") ? "line" : "block";
-    statements.push({ code, layout });
+    statements.push({ code, layout: itemLayout(item, code) });
   }
   for (const code of listeners.functions) statements.push({ code, layout: "block" });
   // Last, once every function it names is declared (ADR-0054).
@@ -219,13 +223,19 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   // The module's type exports, which consumers import by name (ADR-0068), exported from
   // `<script setup>` as its own exported types are.
   const types = keys ? [] : moduleTypes(component, module);
-  if (statements.length === 0 && imports.size === 0 && types.length === 0) {
+  if (
+    statements.length === 0 &&
+    imports.size === 0 &&
+    types.length === 0 &&
+    constants.length === 0
+  ) {
     return { rewrite: template, listeners, components, ...(keys ? { keys } : {}) };
   }
   const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
   const code = [
     ...(head ? [head] : []),
     ...types,
+    ...(constants.length ? [constants.join("\n")] : []),
     ...(statements.length ? [laidOut(statements)] : []),
   ].join("\n\n");
   return {
@@ -292,7 +302,13 @@ function moduleTypes(component: UfComponent, module: UfModule): string[] {
  */
 function genericAttribute(component: UfComponent): string {
   if (!component.typeParameters?.length) return "";
-  const text = component.typeParameters
+  const text = typeParametersList(component.typeParameters);
+  return text.includes('"') ? ` generic='${text}'` : ` generic="${text}"`;
+}
+
+/** Type parameters as written, `T extends Item = Item, K`. */
+function typeParametersList(parameters: readonly TypeParameter[]): string {
+  return parameters
     .map(
       (parameter) =>
         `${parameter.name}${parameter.constraint ? ` extends ${parameter.constraint.code}` : ""}${
@@ -300,7 +316,31 @@ function genericAttribute(component: UfComponent): string {
         }`,
     )
     .join(", ");
-  return text.includes('"') ? ` generic='${text}'` : ` generic="${text}"`;
+}
+
+/** A generic function's type parameters, `<T extends Item>`, or nothing (ADR-0068). */
+export function typeParametersText(parameters: readonly TypeParameter[] | undefined): string {
+  return parameters?.length ? `<${typeParametersList(parameters)}>` : "";
+}
+
+/**
+ * The imports of the composables a component calls (ADR-0069): each from its own output, named
+ * by the composable beside its `.uf.ts` module, under the source's local name.
+ */
+function addComposableImports(component: UfComponent, module: UfModule, imports: ImportSet): void {
+  const called = new Set(
+    component.setup.flatMap((item) => (item.kind === "Use" ? [item.composable] : [])),
+  );
+  for (const entry of module.imports ?? []) {
+    const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
+    for (const name of entry.names) {
+      if (name.kind !== "Composable" || !called.has(name.local)) continue;
+      imports.add(`${directory}${name.imported}`, name.imported, {
+        local: name.local,
+        exact: true,
+      });
+    }
+  }
 }
 
 /**
@@ -364,7 +404,7 @@ function readsSlots(component: UfComponent): boolean {
 }
 
 /** The statements, a blank line between two unless both are macros, or both one-line declarations. */
-function laidOut(statements: readonly Statement[]): string {
+export function laidOut(statements: readonly Statement[]): string {
   return statements
     .map((statement, index) => {
       const previous = statements[index - 1];
@@ -373,6 +413,12 @@ function laidOut(statements: readonly Statement[]): string {
       return `${together ? "\n" : "\n\n"}${statement.code}`;
     })
     .join("");
+}
+
+/** How a setup item sits in the script: a model is a macro, which stays with `defineProps`. */
+export function itemLayout(item: SetupItem, code: string): Statement["layout"] {
+  if (item.kind === "Model") return "macro";
+  return declares(item) && !code.includes("\n") ? "line" : "block";
 }
 
 /** Whether a setup item declares a binding, rather than registering an effect or a hook. */
@@ -387,15 +433,13 @@ function declares(item: SetupItem): boolean {
     case "Function":
     case "Model":
     case "Inject":
+    case "Use":
       return true;
     case "Watch":
     case "WatchEffect":
     case "Lifecycle":
     case "Provide":
       return false;
-    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
-    case "Use":
-      return true;
     default:
       return unreachable(item);
   }
@@ -409,7 +453,7 @@ function emitIsCalled(component: UfComponent, emit: Binding): boolean {
 }
 
 /** One setup item as the script writes it: the source's statement, with Vue's own APIs. */
-function itemCode(
+export function itemCode(
   item: SetupItem,
   component: UfComponent,
   module: UfModule,
@@ -509,9 +553,27 @@ function itemCode(
       const fallback = item.fallback ? `, ${code(item.fallback, "pure")}` : ", undefined";
       return `const ${local(item.binding)} = ${inject}(${item.key}${fallback});`;
     }
-    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
-    case "Use":
-      return "";
+    // `const { on, toggle } = useToggle(false)`, as written (ADR-0069): Vue reads a getter and
+    // calls a callback as the source does, and the members are the composable's own refs.
+    case "Use": {
+      const members = item.members.map((member) => {
+        const name = local(member.binding);
+        return name === member.member ? name : `${member.member}: ${name}`;
+      });
+      const parts = item.arguments.map((argument) => {
+        switch (argument.kind) {
+          case "Value":
+            return code(argument.value, "pure");
+          case "Getter":
+            return fn(argument.getter, "pure");
+          case "Callback":
+            return fn(argument.callback, "client");
+          default:
+            return unreachable(argument);
+        }
+      });
+      return `const { ${members.join(", ")} } = ${item.composable}(${parts.join(", ")});`;
+    }
     default:
       return unreachable(item);
   }

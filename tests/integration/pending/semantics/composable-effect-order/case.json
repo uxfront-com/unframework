@@ -1,0 +1,8 @@
+{
+  "description": "A composable's mounted hook and watcher run where its call sits among the caller's own, in source order.",
+  "main": "Timeline.uf.tsx",
+  "requires": "The mounted hooks write what the component renders, and every test checks where the composable's effects run, which `composable-effect-order` declares (UF4005 on React and Solid).",
+  "ssr": {
+    "initial": {}
+  }
+}
