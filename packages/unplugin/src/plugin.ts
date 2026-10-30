@@ -5,12 +5,17 @@ import { basename, extname, isAbsolute, posix, relative, sep } from "node:path";
 import type { OutputFile, Target } from "@unframework/codegen";
 import {
   checkPassThrough,
-  compile,
-  createFileResolver,
+  createProject,
   createSyntacticOracle,
   resolveTarget,
 } from "@unframework/compiler";
-import type { CompileResult, CompilerPlugin, TargetName, UfModule } from "@unframework/compiler";
+import type {
+  CompileResult,
+  CompilerPlugin,
+  Project,
+  TargetName,
+  UfModule,
+} from "@unframework/compiler";
 import { formatDiagnostic, formatDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import { createUnplugin } from "unplugin";
@@ -113,18 +118,6 @@ export const PLUGIN_NAME = "unframework";
 // they never become module ids, and `load` leaves them to Vite (Vite's SPECIAL_QUERY_RE).
 const VITE_FILE_QUERY = /[?&](?:worker|sharedworker|raw|url)\b/;
 
-interface CachedCompile {
-  source: string;
-  filename: string;
-  /**
-   * The files the resolver and the type oracle read for the compile, with what they read
-   * (`undefined` for one that did not exist): a child's API and an imported type are inputs of
-   * the compile (ADR-0053, ADR-0067).
-   */
-  reads: Map<string, string | undefined>;
-  result: Promise<CompileResult>;
-}
-
 /** A relative specifier: an output's import of another output (`./Field.vue`, ADR-0053). */
 const RELATIVE = /^\.\.?\//;
 
@@ -134,6 +127,9 @@ const RELATIVE = /^\.\.?\//;
  */
 const SHEET_SUFFIX = ".css";
 const SHEET_ID_FILTER = moduleIdFilter(SHEET_SUFFIX);
+
+/** How a project names a package it read types from (ADR-0071): `pkg:<name>`. */
+const PACKAGE = "pkg:";
 
 /** The output files a script target joins into one module (`.tsx`, `.ts`). */
 const SCRIPT = /^\.tsx?$/;
@@ -181,7 +177,35 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
 
   // Vite's root, with forward slashes; configResolved sets it before any other hook runs.
   let root = process.cwd().split(sep).join("/");
-  const cache = new Map<string, CachedCompile>();
+  // What the project and its type oracle last read of each file, by the path they read it at
+  // (`undefined` for one that did not exist).
+  const reads = new Map<string, string | undefined>();
+  const read = async (path: string) => {
+    const text = await readFile(path, "utf8").catch(() => undefined);
+    reads.set(path, text);
+    return text;
+  };
+  // The project graph over the root (ADR-0071), made on the first compile, after configResolved:
+  // every module the plugin compiles shares its graph and its type oracle (ADR-0067).
+  let graph: Project | undefined;
+  const projectOf = () =>
+    (graph ??= createProject({
+      root,
+      readFile: read,
+      typeOracle: createSyntacticOracle({ root, readFile: read }),
+      targets: [target],
+      format: options.format !== false,
+      plugins: options.plugins,
+      ...(options.passThrough ? { passThrough: options.passThrough } : {}),
+    }));
+  // A compile and an update both change the project, and client and ssr load ids at once: one
+  // runs at a time, so no compile keeps a result an update has made stale.
+  let queue: Promise<unknown> = Promise.resolve();
+  const exclusive = <T>(task: () => Promise<T>): Promise<T> => {
+    const run = queue.then(task);
+    queue = run.catch(() => undefined);
+    return run;
+  };
   // Replaced when a load finishes, never cleared while one runs: client and ssr load the same
   // id concurrently, and `getCompiled` must not miss a module because another environment is
   // reloading it.
@@ -230,61 +254,47 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
       : undefined;
   };
 
-  /** Whether the files a compile's resolver read still hold what it read. */
-  const unchanged = async (reads: ReadonlyMap<string, string | undefined>) => {
-    for (const [path, text] of reads) {
-      if ((await readFile(path, "utf8").catch(() => undefined)) !== text) return false;
+  /**
+   * The files a module's output depends on, named relative to the root: its own, and every file
+   * the project's edges reach from it, its children's and its composables' types included
+   * (ADR-0071). Packages are left out: Vite's watcher ignores `node_modules`.
+   */
+  const reachedFrom = (filename: string): string[] => {
+    const project = projectOf();
+    const files = new Set([filename]);
+    for (const file of files) {
+      for (const dependency of project.dependencies(file)) {
+        if (!dependency.startsWith(PACKAGE)) files.add(dependency);
+      }
     }
-    return true;
+    return [...files];
   };
 
   /**
-   * The compile of a file's current source, shared by every id that loads it. Its children's
-   * APIs come from the files they are in, read by the compile's resolver (ADR-0053), and its
-   * types from the files and packages they are declared in, read by its type oracle (ADR-0067):
-   * the compile is reused while the file and every file either read are unchanged.
+   * The current compile of a `.uf.tsx` file or a `.uf.ts` module, shared by every id that loads
+   * it. The files it reached that changed since the project read them go through the project's
+   * `update` first, which compiles again only the modules whose inputs changed (ADR-0071), so an
+   * edit is seen without Vite's watcher too. The result's outputs hold the copies of the shared
+   * `.ts` modules it reaches, as `compile()`'s do (ADR-0070): the golden guard judges them.
    */
-  const compileFile = async (file: string, filename: string, source: string) => {
-    const cached = cache.get(file);
-    if (
-      cached &&
-      cached.source === source &&
-      cached.filename === filename &&
-      (await unchanged(cached.reads))
-    ) {
-      return cached.result;
-    }
-    const reads = new Map<string, string | undefined>();
-    const read = async (path: string) => {
-      const text = await readFile(path, "utf8").catch(() => undefined);
-      reads.set(path, text);
-      return text;
-    };
-    // The oracle reads the source's own file for its types: the text this compile is given.
-    const typeOracle = createSyntacticOracle({
-      root,
-      readFile: (path) => (path === `${root}/${filename}` ? Promise.resolve(source) : read(path)),
+  const compileFile = (file: string) =>
+    exclusive(async (): Promise<CompileResult> => {
+      const project = projectOf();
+      const filename = filenameOf(file);
+      const changed: string[] = [];
+      for (const each of reachedFrom(filename)) {
+        const path = `${root}/${each}`;
+        if (!reads.has(path)) continue;
+        const before = reads.get(path);
+        if ((await read(path)) !== before) changed.push(each);
+      }
+      if (changed.length > 0) await project.update(changed);
+      const result = await project.compile(filename);
+      const files = result.outputs[target.name] ?? [];
+      if (!files.length) return result;
+      const outputs = { ...result.outputs, [target.name]: [...files, ...project.copies(filename)] };
+      return { ...result, outputs };
     });
-    const result = compile(source, {
-      filename,
-      targets: [target],
-      format: options.format !== false,
-      plugins: options.plugins,
-      resolve: createFileResolver({ root, readFile: read, typeOracle }),
-      typeOracle,
-      ...(options.passThrough ? { passThrough: options.passThrough } : {}),
-    });
-    // The compile owns its oracle, which it no longer needs once it settles.
-    const dispose = () => typeOracle.dispose();
-    void result.then(dispose, dispose);
-    cache.set(file, { source, filename, reads, result });
-    // compile() never rejects unless the compiler has a bug. The load that awaits `result`
-    // reports it; dropping the entry lets the next load try again.
-    result.catch(() => {
-      if (cache.get(file)?.result === result) cache.delete(file);
-    });
-    return result;
-  };
 
   /** The guard's verdict on a load: the message that fails the module, if any. */
   const guard = async (event: CompileEvent): Promise<string | undefined> => {
@@ -329,10 +339,6 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     return `${filenameOf(file)} reached Vite as itself, which would load it as ${what}: the import that resolved to it does not name the file (a package's \`exports\` entry or a tsconfig path, say), so this plugin never saw it. Import it with a specifier that ends in ${extension}, such as "./${basename(file)}"; a package that ships ${extension} sources must export them under subpaths that do.`;
   };
 
-  /** The current compile of an authored file, read from disk. */
-  const compiledFile = async (file: string) =>
-    compileFile(file, filenameOf(file), await readFile(file, "utf8"));
-
   /**
    * The id an output's relative import of another output resolves to (ADR-0053), looked up in
    * the importer's compile: a component of its file, or of a file it imports. A file's main
@@ -340,15 +346,14 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
    * file's outputs; any other under its component id. `undefined` for an import no compile names.
    */
   const childId = async (file: string, specifier: string): Promise<string | undefined> => {
-    if (!cache.has(file)) return undefined;
-    const result = await cache.get(file)!.result;
+    const result = await compileFile(file);
     const wanted = posix.join(posix.dirname(file), specifier);
     const files = [
       file,
       ...(result.ir?.imports ?? []).map((entry) => posix.join(posix.dirname(file), entry.file)),
     ];
     for (const candidate of files) {
-      const compiled = candidate === file ? result : await compiledFile(candidate);
+      const compiled = candidate === file ? result : await compileFile(candidate);
       const owners = compiled.owners[target.name] ?? {};
       for (const [path, component] of Object.entries(owners)) {
         const output = posix.join(posix.dirname(candidate), path);
@@ -374,7 +379,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
   ): Promise<{ code: string } | { error: string }> => {
     const source = await readFile(file, "utf8");
     const filename = filenameOf(file);
-    const result = await compileFile(file, filename, source);
+    const result = await compileFile(file);
     const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
     if (errors.length > 0) return { error: formatDiagnostics(errors, { [filename]: source }) };
     const path = `${basename(file)}${SHEET_SUFFIX}`;
@@ -387,10 +392,18 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     return { code: emitted.contents };
   };
 
-  /** The files a compile resolved its children from: its watch edges (ADR-0053). */
-  const childFiles = async (file: string): Promise<string[]> => {
-    const result = await cache.get(file)?.result.catch(() => undefined);
-    return (result?.ir?.imports ?? []).map((entry) => posix.join(posix.dirname(file), entry.file));
+  /**
+   * A module's watch edges but its own file (ADR-0053, ADR-0071): every file its output depends
+   * on, by its absolute path. A file that does not exist is left out, since Vite's import
+   * analysis fails an import it cannot resolve: once created, it reaches its dependents on their
+   * next load, which the project checks.
+   */
+  const watchedFiles = (file: string): string[] => {
+    const filename = filenameOf(file);
+    return reachedFrom(filename)
+      .filter((each) => each !== filename)
+      .map((each) => posix.join(root, each))
+      .filter((path) => existsSync(path));
   };
 
   /**
@@ -406,7 +419,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     const failed = failuresIn(this.environment);
     const source = await readFile(file, "utf8");
     const filename = filenameOf(file);
-    const result = await compileFile(file, filename, source);
+    const result = await compileFile(file);
     const files = result.outputs[target.name] ?? [];
     for (const diagnostic of result.diagnostics) {
       if (diagnostic.severity !== "error") this.warn(formatDiagnostic(diagnostic, source));
@@ -546,7 +559,8 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
           // file with our module as the importer. Answering with the real file gives the module
           // graph a node for it whose importer is the module: the edge that makes an edit
           // invalidate the module and `vitest --watch` rerun its tests. A module of ours imports
-          // no `.uf.tsx` file but these: its own, and its children's (ADR-0053).
+          // no `.uf.tsx` or `.uf.ts` file but these: its own, and those its output depends on
+          // (ADR-0053, ADR-0071).
           if (
             importer !== undefined &&
             (parseModuleId(importer, suffix) ??
@@ -590,7 +604,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
           const failed = failuresIn(this.environment);
           const source = await readFile(request.file, "utf8");
           const filename = filenameOf(request.file);
-          const result = await compileFile(request.file, filename, source);
+          const result = await compileFile(request.file);
           const files = result.outputs[target.name] ?? [];
           for (const diagnostic of result.diagnostics) {
             if (diagnostic.severity !== "error") this.warn(formatDiagnostic(diagnostic, source));
@@ -656,25 +670,23 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
       },
       transform: {
         filter: { id: moduleIds },
-        async handler(_code, id) {
-          // The watch edges (see resolveId): to the file, for every id except a `.tsx` one, whose
-          // module is the file itself, and to each child the compile resolved, whose API the
-          // output depends on (ADR-0053). They are added here rather than in `load`: Vite keeps
-          // the files a load adds only when the module is already in its graph, which a cold
-          // request's is not, while a transform always runs on a module the graph holds.
+        handler(_code, id) {
+          // The watch edges (see resolveId): to the file, for every id but one that is the file
+          // itself, and to every file the project says the output depends on (ADR-0071): each
+          // child's `.uf.tsx`, each composable's `.uf.ts`, each shared `.ts` module and each file
+          // a type was read from, so an edit to one invalidates the module. They are added here
+          // rather than in `load`: Vite keeps the files a load adds only when the module is
+          // already in its graph, which a cold request's is not, while a transform always runs on
+          // a module the graph holds.
           const composables = composableRequest(id);
-          if (composables) {
-            // Its id is the file itself where it has no suffix (ADR-0069).
-            if (composableSuffix && isAbsolute(composables.file)) {
-              this.addWatchFile(composables.file);
-            }
-            return null;
-          }
-          const component = componentRequest(id);
-          const request = component ?? parseModuleId(id, suffix);
+          const component = composables ? undefined : componentRequest(id);
+          const request = composables ?? component ?? parseModuleId(id, suffix);
           if (!request || !isAbsolute(request.file)) return null;
-          if (suffix || component) this.addWatchFile(request.file);
-          for (const child of await childFiles(request.file)) this.addWatchFile(child);
+          // A module of composables' id is the file itself where it has no suffix (ADR-0069).
+          if (composables ? composableSuffix : suffix || component) {
+            this.addWatchFile(request.file);
+          }
+          for (const path of watchedFiles(request.file)) this.addWatchFile(path);
           return null;
         },
       },

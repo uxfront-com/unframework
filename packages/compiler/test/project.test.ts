@@ -126,6 +126,21 @@ describe("the project's compiles", () => {
     expect(project.copy("D.uf.tsx")).toBeUndefined();
   });
 
+  it("give a module's copies at their paths beside it, with their modules' current text", async () => {
+    const { project, write } = memoryProject({
+      "shared/a.ts": PROPS,
+      "src/B.uf.tsx": FIXTURE["B.uf.tsx"]!.replace("./a.ts", "../shared/a.ts"),
+    });
+    expect(project.copies("src/B.uf.tsx")).toEqual([]);
+    await project.compile("src/B.uf.tsx");
+    expect(project.copies("src/B.uf.tsx")).toEqual([{ path: "../shared/a.ts", contents: PROPS }]);
+    // An edit that leaves the shape alone recompiles nothing, and still reaches the copy.
+    const edited = `${PROPS}export const LABEL = "Label";\n`;
+    write("shared/a.ts", edited);
+    expect((await project.update(["shared/a.ts"])).compiled).toEqual([]);
+    expect(project.copies("src/B.uf.tsx")).toEqual([{ path: "../shared/a.ts", contents: edited }]);
+  });
+
   it("give the same result as compile() through the project's resolver", async () => {
     const { project } = memoryProject(FIXTURE);
     const direct = await compile(FIXTURE["D.uf.tsx"]!, {

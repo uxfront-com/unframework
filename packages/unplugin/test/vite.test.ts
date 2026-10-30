@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { defineTarget } from "@unframework/codegen";
@@ -1125,6 +1125,137 @@ describe("watching", () => {
       client.moduleGraph.onFileChange(watched);
       expect(client.moduleGraph.getModuleById(id)?.transformResult).toBeNull();
       expect((await client.transformRequest(id))?.code).toContain("Hello, edit!");
+    });
+  });
+});
+
+describe("the project graph (ADR-0071)", () => {
+  // The verification plan's invalidation fixture (C9), and a second shared module: `B` reads its
+  // types from `a.ts` and `tokens.ts`, whose copies its output tree holds, `C` reaches `a.ts`
+  // through `useC.uf.ts` alone, and `D` reads none.
+  const PROPS = "export interface CardProps {\n  label: string;\n}\n";
+  const TOKENS = 'export type Tone = "info" | "warning";\n';
+  const GRAPH = {
+    "a.ts": PROPS,
+    "tokens.ts": TOKENS,
+    "B.uf.tsx":
+      'import type { CardProps } from "./a.ts";\nimport type { Tone } from "./tokens.ts";\n\nexport default function B({ label, tone }: CardProps & { tone?: Tone }) {\n  return <p class={tone}>{label}</p>;\n}\n',
+    "useC.uf.ts":
+      'import { computed } from "unframework";\nimport type { CardProps } from "./a.ts";\n\nexport function useC(card: CardProps) {\n  const text = computed(() => card.label);\n  return { text };\n}\n',
+    "C.uf.tsx":
+      'import { useC } from "./useC.uf.ts";\n\nexport default function C({ label }: { label: string }) {\n  const { text } = useC({ label });\n  return <p>{text.value}</p>;\n}\n',
+    "D.uf.tsx": "export default function D() {\n  return <p>D</p>;\n}\n",
+  };
+
+  /**
+   * A target that emits each component as a `.vue` file, which plugin-vue's stand-in claims, a
+   * composable's call included: no built-in target emits one until its composables lane lands.
+   */
+  const target = defineTarget({
+    ...htmlTarget(),
+    emit: (component) => [{ path: `${component.name}.vue`, contents: "<p></p>\n" }],
+  });
+
+  /** Runs `fn` on a server over the fixture, counting the compiles of each module. */
+  async function withGraph(
+    fn: (context: {
+      graph: Project;
+      client: TestServer["client"];
+      ids: Record<"B" | "C" | "D", string>;
+      compiled: string[];
+      events: CompileEvent[];
+    }) => Promise<void>,
+  ) {
+    const graph = createProject(GRAPH);
+    const compiled: string[] = [];
+    const events: CompileEvent[] = [];
+    const counter: CompilerPlugin = {
+      name: "counter",
+      ir: (module) => void compiled.push(module.file),
+    };
+    const plugins = unframework({
+      target,
+      extension: ".vue",
+      plugins: [counter],
+      onCompile: (event) => void events.push(event),
+    });
+    try {
+      const server = await startServer(graph.root, [...plugins, fakeVue]);
+      try {
+        const id = (name: string) => `${join(graph.root, `${name}.uf.tsx`)}.vue`;
+        const ids = { B: id("B"), C: id("C"), D: id("D") };
+        for (const each of Object.values(ids)) await server.client.transformRequest(each);
+        await fn({ graph, client: server.client, ids, compiled, events });
+      } finally {
+        await server.close();
+      }
+    } finally {
+      graph.remove();
+    }
+  }
+
+  it("watches a module's `.ts`, `.uf.ts` and type dependencies", async () => {
+    await withGraph(async ({ graph, client, ids }) => {
+      const watched = (id: string) =>
+        [...(client.moduleGraph.getModuleById(id)?.importedModules ?? [])]
+          .map((module) => relative(graph.root, module.file!))
+          .toSorted();
+      expect(watched(ids.B)).toEqual(["B.uf.tsx", "a.ts", "tokens.ts"]);
+      // C reaches the type through its composable's API.
+      expect(watched(ids.C)).toEqual(["C.uf.tsx", "a.ts", "useC.uf.ts"]);
+      expect(watched(ids.D)).toEqual(["D.uf.tsx"]);
+    });
+  });
+
+  it.each([
+    ["a.ts", ["B", "C"]],
+    ["useC.uf.ts", ["C"]],
+    ["tokens.ts", ["B"]],
+  ] as const)("invalidates the modules that depend on %s, and only them", async (path, names) => {
+    await withGraph(async ({ graph, client, ids }) => {
+      const edited = join(graph.root, path);
+      writeFileSync(edited, `${readFileSync(edited, "utf8")}\n`);
+      client.moduleGraph.onFileChange(edited);
+      for (const [name, id] of Object.entries(ids)) {
+        const result = client.moduleGraph.getModuleById(id)?.transformResult;
+        if ((names as readonly string[]).includes(name)) expect(result, name).toBeNull();
+        else expect(result, name).not.toBeNull();
+      }
+    });
+  });
+
+  it("compiles again exactly the dependents of a type it changed", async () => {
+    await withGraph(async ({ graph, client, ids, compiled }) => {
+      expect(compiled.toSorted()).toEqual(["B.uf.tsx", "C.uf.tsx", "D.uf.tsx"]);
+      compiled.length = 0;
+      graph.write("a.ts", PROPS.replace("label: string;", "label: string;\n  hint?: string;"));
+      client.moduleGraph.onFileChange(join(graph.root, "a.ts"));
+      for (const id of Object.values(ids)) await client.transformRequest(id);
+      expect(compiled.toSorted()).toEqual(["B.uf.tsx", "C.uf.tsx"]);
+    });
+  });
+
+  it("gives the guard each shared module's copy, as the module now holds it", async () => {
+    await withGraph(async ({ graph, client, ids, compiled, events }) => {
+      const filesOf = () => events.findLast((event) => event.id === ids.B)!.files;
+      const typeOracle = createSyntacticOracle({ root: graph.root, readFile });
+      const direct = await compile(GRAPH["B.uf.tsx"], {
+        filename: "B.uf.tsx",
+        targets: [target],
+        resolve: createFileResolver({ root: graph.root, readFile, typeOracle }),
+        typeOracle,
+      });
+      await typeOracle.dispose();
+      expect(filesOf()).toEqual(direct.outputs.html);
+      expect(filesOf().map(({ path }) => path)).toEqual(["B.vue", "a.ts", "tokens.ts"]);
+      // An edit that leaves the types alone compiles nothing, and the copy holds the new text.
+      compiled.length = 0;
+      const tokens = `${TOKENS}export const TONES: Tone[] = ["info", "warning"];\n`;
+      graph.write("tokens.ts", tokens);
+      client.moduleGraph.onFileChange(join(graph.root, "tokens.ts"));
+      await client.transformRequest(ids.B);
+      expect(compiled).toEqual([]);
+      expect(filesOf().find(({ path }) => path === "tokens.ts")?.contents).toBe(tokens);
     });
   });
 });
