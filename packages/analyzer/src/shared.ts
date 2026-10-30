@@ -289,6 +289,18 @@ export function lowerConstants(
     ): AST.ObjectExpression | undefined => {
       const inner = unwrapped(node);
       if (inner.type === "ObjectExpression") return inner;
+      // A frozen table is the table: `Object.freeze({ … })`.
+      if (inner.type === "CallExpression") {
+        const callee = unwrapped(inner.callee);
+        const [frozen] = inner.arguments;
+        return callee.type === "MemberExpression" &&
+          memberName(callee) === "freeze" &&
+          isGlobal(unwrapped(callee.object), "Object") &&
+          frozen &&
+          frozen.type !== "SpreadElement"
+          ? objectOf(frozen, visiting)
+          : undefined;
+      }
       if (inner.type === "MemberExpression") {
         const name = memberName(inner);
         const holder = name === undefined ? undefined : objectOf(inner.object, visiting);
@@ -656,12 +668,6 @@ export function lowerConstants(
       const name = memberName(callee);
       if (name === undefined) return;
       const object = unwrapped(callee.object);
-      // `f.call(…)` and `f.apply(…)` call `f`.
-      if (name === "call" || name === "apply") {
-        if (object.type === "MemberExpression") memberCalledAtLoad(object);
-        else if (object.type === "Identifier") calledAtLoad(object as AST.IdentifierReference);
-        return;
-      }
       if (object.type === "ObjectExpression") {
         const member = propertyValue(object, name);
         if (member?.type === "ArrowFunctionExpression") runsNow.add(member);
@@ -671,7 +677,19 @@ export function lowerConstants(
       // The object literal it names, through a name or a member: `P.m()` with `P = O`, `O.a.m()`.
       const holder = objectOf(object);
       const member = holder && propertyValue(holder, name);
+      // `f.call(…)` and `f.apply(…)` call `f`, but where a table holds its own `call`.
+      if (!member && (name === "call" || name === "apply")) {
+        if (object.type === "MemberExpression") memberCalledAtLoad(object);
+        else if (object.type === "Identifier" && scopes.isReference(object)) {
+          const value = moduleValue(object as AST.IdentifierReference);
+          if (value && initOf.get(value)?.type === "ArrowFunctionExpression") {
+            calledAtLoad(object as AST.IdentifierReference);
+          }
+        }
+        return;
+      }
       const called = source.slice(callee.start, callee.end);
+      const count = loadCalls.length;
       if (member?.type === "ArrowFunctionExpression") {
         loadCalls.push({ caller: own, name: called, arrow: member, at: callee });
       } else if (member?.type === "Identifier" && scopes.isReference(member)) {
@@ -680,6 +698,8 @@ export function lowerConstants(
           loadCalls.push({ caller: own, name: called, callee: heldFunction, at: callee });
         }
       }
+      // What the call gives is computed now: the table it calls through is read, not held.
+      if (loadCalls.length > count && object.type === "Identifier") loadCallees.add(object);
     };
     const walkChildren = (node: AST.Node, load: boolean) => {
       for (const key of visitorKeys[node.type] ?? []) {
@@ -837,7 +857,9 @@ export function lowerConstants(
     }
     const client =
       (arrow && arrowClientReads.get(arrow)) ??
-      all.map((value) => clientReads.get(value.id)).find((each) => each !== undefined);
+      all
+        .map((value) => clientReads.get(value.id) ?? heldClientReads.get(value.id))
+        .find((each) => each !== undefined);
     if (client) {
       reporter.report(
         "UF2014",
@@ -850,7 +872,9 @@ export function lowerConstants(
     }
     const reason =
       (arrow && arrowReasons.get(arrow)) ??
-      all.map((value) => reasons.get(value.id)).find((each) => each !== undefined);
+      all
+        .map((value) => reasons.get(value.id) ?? heldReasons.get(value.id))
+        .find((each) => each !== undefined);
     if (reason) {
       reporter.report(
         "UF3019",

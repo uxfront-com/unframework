@@ -641,7 +641,7 @@ describe("module-level constants", () => {
 
   // An arrow an object literal holds runs once called: what it reads of the locale, or of what
   // only client code may, is reported where it is called, never where the literal is written.
-  it("reports what an arrow a literal holds reads only where it is called (UF3019, UF2014)", () => {
+  it("reports what an arrow a literal holds reads where it is called, never where it is written (UF3019, UF2014)", () => {
     const held = [
       "const FMT = { date: (n: number) => n.toLocaleString() };",
       "const ACTIONS = { copy: () => { void navigator.clipboard.writeText(document.title); } };",
@@ -657,14 +657,15 @@ describe("module-level constants", () => {
       "const ACTIONS = { title: () => document.title };",
       "const TODAY = FMT.date(1);",
       "const TITLE = ACTIONS.title();",
-      "export function A() { return <p>{FMT.date(2)}{TODAY}{TITLE}</p>; }",
+      "const today = () => FMT.date(3);",
+      "const AGAIN = today();",
+      "export function A() { return <p>{FMT.date(2)}{TODAY}{TITLE}{AGAIN}</p>; }",
     ].join("\n");
     expect(problems(called, run(called).diagnostics)).toEqual([
       "UF3019 FMT.date",
       "UF2014 ACTIONS.title",
+      "UF3019 today",
       "UF3019 FMT",
-      "UF3019 TODAY",
-      "UF2014 TITLE",
     ]);
   });
 
@@ -679,6 +680,8 @@ describe("module-level constants", () => {
     ["`call`", "const O = { m: () => STEP };\nconst X = O.m.call(null);", "O.m"],
     ["`apply`", "const O = { m: () => STEP };\nconst X = O.m.apply(null, []);", "O.m"],
     ["a member passed to `map`", "const O = { m: () => STEP };\nconst X = [1].map(O.m);", "O.m"],
+    ["a frozen table", "const O = Object.freeze({ m: () => STEP });\nconst X = O.m();", "O.m"],
+    ["a table's own `call`", "const O = { call: () => STEP };\nconst X = O.call();", "O.call"],
   ])("reports a later constant a held arrow reads, called through %s (UF2023)", (_, before, at) => {
     const source = `${before}\nconst STEP = 1;\nexport function A() { return <p>{String(X)}</p>; }`;
     expect(problems(source, run(source).diagnostics)).toEqual([`UF2023 ${at}`]);
