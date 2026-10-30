@@ -24,6 +24,7 @@ import {
   MUTATING_OBJECT_FUNCTIONS,
   NONDETERMINISTIC_GLOBALS,
 } from "./expressions.ts";
+import { returnsReceiver } from "./origins.ts";
 import type { Scopes } from "./scope.ts";
 import { UNKNOWN } from "./types/kinds.ts";
 import type { Kinds } from "./types/kinds.ts";
@@ -153,8 +154,9 @@ export interface SharedValue {
   readonly kinds: Kinds;
   /**
    * What makes a function constant's result depend on chance, the clock or the locale, itself
-   * or through the module's functions it calls (UF3019): its callers' to report, as a local
-   * function's is (`rules.ts`), since its body runs where they call it.
+   * or through the module's functions it calls, or a function another value holds (UF3019): its
+   * callers' to report, as a local function's is (`rules.ts`), since its body runs where they
+   * call it.
    */
   nondeterministic?: string;
   /**
@@ -193,25 +195,31 @@ export interface ConstantContext {
  * Lowers the module's top-level `const`s (ADR-0070): plain values, which the module computes in
  * order as it loads, on the server too, and which nothing changes. Each value is either a
  * function, `const format = (…) => …`, whose body runs when it is called, or any other value,
- * all of which runs as the module loads, the functions in it included, since what it passes
- * them to may call them then.
+ * which runs as the module loads, with the functions it passes to a call, which may call them
+ * then. An arrow it holds runs once called.
  *
  * - A value reads only the module's other constants, the values it imports from shared modules
  *   and the pure globals (UF3020), each a reference of its code. As the module loads, it reads
  *   no constant declared after it, itself or through the functions it calls (UF2023). An arrow
  *   function runs as the module loads only where it is called in place, or passed to a call;
- *   one a value holds (`{ upper: (v) => … }`) runs once called.
+ *   one a value holds (`{ upper: (v) => … }`) runs once called, through any name or member that
+ *   reaches it (`O.upper()`, `P.upper.call(…)` with `P = O`, `[…].map(O.upper)`).
  * - Nothing in it changes a value in place (UF2004) but a fresh one, which it builds itself: a
  *   literal, a `new`, a copy (`map`, `slice`, `toSorted`, `Array.from`, `Object.entries`, …),
- *   or a function's local that only ever holds one (a `reduce` callback's accumulator too). So
+ *   the receiver a method returns (`sort`, `reverse`), a deep copy and all it holds
+ *   (`structuredClone`, `JSON.parse`), or a function's local that only ever holds one (a
+ *   `reduce` callback's accumulator too). So
  *   `Object.freeze({ … })` and a helper that pushes to its own array are plain. A function writes
  *   only its own locals (UF2011).
  * - It holds no JSX (UF3012), and no `this`, `import.meta`, `import()`, function expression or
  *   class (UF1002). A computed member it calls, or reads off `Math`, is named (UF1002).
  * - What reads chance, the clock or the locale is UF3019 as the module loads, and a global only
- *   client code may read UF3020. In a function they mark the constant `nondeterministic` or
- *   `clientOnly`, which a template, a getter or an initial value that calls it reports (UF3019,
- *   UF2014), as setup does (`rules.ts`); client code may call it.
+ *   client code may read UF3020. In a function, or an arrow a value holds, they mark the constant
+ *   `nondeterministic` or `clientOnly`, which a template, a getter or an initial value that calls
+ *   it, or reads a value that holds it, reports (UF3019, UF2014), as setup does (`rules.ts`), and
+ *   a call of it as the module loads, by name or through a member, reports there; client code may
+ *   call it. A value's `length` holds none of the functions it is read off where reading it runs
+ *   none of them (`Object.values(FORMATTERS).length`).
  */
 export function lowerConstants(
   candidates: readonly ConstantCandidate[],
@@ -248,6 +256,14 @@ export function lowerConstants(
   const reasons = new Map<BindingId, string>();
   /** Each function constant's first read of a global only client code may read, likewise. */
   const clientReads = new Map<BindingId, string>();
+  /**
+   * The same of the arrows any other value holds, by the value and by each arrow: an arrow runs
+   * once called, so they are reported where it is called (`O.m()`), never where it is written.
+   */
+  const heldReasons = new Map<BindingId, string>();
+  const heldClientReads = new Map<BindingId, string>();
+  const arrowReasons = new Map<AST.Node, string>();
+  const arrowClientReads = new Map<AST.Node, string>();
   const lowered = candidates.map(({ statement, declarator }) => {
     const { id, init } = declarator;
     const own = shared.values.get(id)!;
@@ -274,6 +290,18 @@ export function lowerConstants(
     ): AST.ObjectExpression | undefined => {
       const inner = unwrapped(node);
       if (inner.type === "ObjectExpression") return inner;
+      // A frozen table is the table: `Object.freeze({ … })`.
+      if (inner.type === "CallExpression") {
+        const callee = unwrapped(inner.callee);
+        const [frozen] = inner.arguments;
+        return callee.type === "MemberExpression" &&
+          memberName(callee) === "freeze" &&
+          isGlobal(unwrapped(callee.object), "Object") &&
+          frozen &&
+          frozen.type !== "SpreadElement"
+          ? objectOf(frozen, visiting)
+          : undefined;
+      }
       if (inner.type === "MemberExpression") {
         const name = memberName(inner);
         const holder = name === undefined ? undefined : objectOf(inner.object, visiting);
@@ -301,17 +329,21 @@ export function lowerConstants(
           return true;
         case "CallExpression": {
           const callee = unwrapped(inner.callee);
-          if (callee.type === "Identifier") return isGlobal(callee, "structuredClone");
+          if (cloned(inner)) return true;
           if (callee.type !== "MemberExpression") return false;
           const name = memberName(callee);
           if (name === undefined) return false;
           const object = unwrapped(callee.object);
           if (isGlobal(object, "Array")) return name === "from" || name === "of";
           if (isGlobal(object, "Object")) return FRESH_OBJECT_FUNCTIONS.has(name);
-          // A copy, but where the receiver is an object literal, whose method may give what it
-          // holds: `O.map()` with `O = { map: () => TABLE }`.
-          return FRESH_METHODS.has(name) && objectOf(object) === undefined;
+          // A copy, or the fresh receiver a method returns (`[...L].sort().reverse()`), but where
+          // the receiver is an object literal, whose method may give what it holds: `O.map()`
+          // with `O = { map: () => TABLE }`.
+          if (objectOf(object) !== undefined) return false;
+          return FRESH_METHODS.has(name) || (returnsReceiver(name) && fresh(object, visiting));
         }
+        case "MemberExpression":
+          return cloned(inner);
         case "Identifier": {
           if (!scopes.isReference(inner)) return false;
           const resolution = scopes.resolve(inner as AST.IdentifierReference);
@@ -334,18 +366,81 @@ export function lowerConstants(
           return false;
       }
     };
+    /**
+     * Whether a value is a deep copy built here (`structuredClone(T)`, `JSON.parse(…)`), or what
+     * one holds: it shares nothing with what it copies, so all of it may change, as setup's may.
+     */
+    const cloned = (node: AST.Node, visiting = new Set<object>()): boolean => {
+      const inner = unwrapped(node);
+      switch (inner.type) {
+        case "CallExpression": {
+          const callee = unwrapped(inner.callee);
+          if (callee.type === "Identifier") return isGlobal(callee, "structuredClone");
+          if (callee.type !== "MemberExpression") return false;
+          const name = memberName(callee);
+          const object = unwrapped(callee.object);
+          if (isGlobal(object, "JSON")) return name === "parse";
+          return (
+            name !== undefined &&
+            returnsReceiver(name) &&
+            objectOf(object) === undefined &&
+            cloned(object, visiting)
+          );
+        }
+        case "MemberExpression":
+          return cloned(inner.object, visiting);
+        case "Identifier": {
+          if (!scopes.isReference(inner)) return false;
+          const resolution = scopes.resolve(inner as AST.IdentifierReference);
+          if (resolution.kind !== "variable") return false;
+          const values = assigned.get(resolution.declaration);
+          if (!values?.length) return false;
+          if (visiting.has(resolution.declaration)) return true;
+          visiting.add(resolution.declaration);
+          const all = values.every((value) => value !== null && cloned(value, visiting));
+          visiting.delete(resolution.declaration);
+          return all;
+        }
+        default:
+          return false;
+      }
+    };
+    /**
+     * Whether a value is a name or a static member path, or `Object.keys`, `values` or `entries`
+     * of one (`Object.values(T.formats)`): nothing in it runs a function a value holds.
+     */
+    const listed = (node: AST.Node): boolean => {
+      const inner = unwrapped(node);
+      if (inner.type !== "CallExpression") return isPath(inner);
+      const callee = unwrapped(inner.callee);
+      const [argument] = inner.arguments;
+      return (
+        inner.arguments.length === 1 &&
+        argument!.type !== "SpreadElement" &&
+        isPath(argument!) &&
+        callee.type === "MemberExpression" &&
+        isGlobal(unwrapped(callee.object), "Object") &&
+        ["keys", "values", "entries"].includes(memberName(callee) ?? "")
+      );
+    };
     /** Whether a member it writes belongs to a fresh value: `out[key] = …` on `const out = {}`. */
     const freshMember = (node: AST.Node) => {
       const inner = unwrapped(node);
       return inner.type === "MemberExpression" && fresh(inner.object);
     };
-    /** `reason` is "`Date` reads the clock": what, then how, as setup's walk words it. */
-    const nondeterminism = (node: AST.Node, reason: string) => {
-      if (deferred) {
+    /**
+     * `reason` is "`Date` reads the clock": what, then how, as setup's walk words it. In a function
+     * that runs once called (`load` false), it is its callers' to report.
+     */
+    const nondeterminism = (node: AST.Node, reason: string, load: boolean) => {
+      if (!load) {
         const at = reason.indexOf("` ") + 1;
-        if (!reasons.has(own.id)) {
-          reasons.set(own.id, `${reason.slice(at + 1)} (${reason.slice(0, at)})`);
-        }
+        later(
+          reasons,
+          heldReasons,
+          arrowReasons,
+          `${reason.slice(at + 1)} (${reason.slice(0, at)})`,
+        );
         return;
       }
       reporter.report(
@@ -354,6 +449,20 @@ export function lowerConstants(
         `${reason}, and the module computes \`${id.name}\` as it loads, on the server too: the server's render and the browser's would differ.`,
         { help: "Pass the value in as a prop, or set it from a component's client code." },
       );
+    };
+    /**
+     * Notes what a function that runs once called reads: the constant's own, where it is a
+     * function, or else what the value holds; and each held arrow's on the way.
+     */
+    const later = (
+      ofFunction: Map<BindingId, string>,
+      ofValue: Map<BindingId, string>,
+      ofArrow: Map<AST.Node, string>,
+      what: string,
+    ) => {
+      const byValue = deferred ? ofFunction : ofValue;
+      if (!byValue.has(own.id)) byValue.set(own.id, what);
+      for (const arrow of arrows) if (!ofArrow.has(arrow)) ofArrow.set(arrow, what);
     };
     const inPlace = (at: AST.Node, how: string) =>
       reporter.report(
@@ -419,6 +528,8 @@ export function lowerConstants(
             calledAtLoad(inner as AST.IdentifierReference);
           }
         }
+        // So may a function a table holds: `[1].map(O.format)`.
+        if (load && !onlyRead && inner.type === "MemberExpression") memberCalledAtLoad(inner);
         walk(argument, load);
       }
       if (onlyRead) readOnly--;
@@ -547,10 +658,19 @@ export function lowerConstants(
                 `\`${id.name}\` reads a computed member of \`Math\`: a module's constant names it.`,
               );
             } else if (name === "random") {
-              nondeterminism(typed, "`Math.random` reads chance");
+              nondeterminism(typed, "`Math.random` reads chance", load);
             }
           } else if (name !== undefined && LOCALE_METHODS.has(name)) {
-            nondeterminism(typed.property, `\`${name}\` formats by the machine's locale`);
+            nondeterminism(typed.property, `\`${name}\` formats by the machine's locale`, load);
+          }
+          // A length is a number: it holds nothing of what it is read off, functions included
+          // (`Object.values(FORMATTERS).length`), where reading it calls nothing a value holds
+          // (`listed`), but an object literal's own `length`.
+          if (name === "length" && listed(typed.object) && objectOf(typed.object) === undefined) {
+            readOnly++;
+            walkChildren(typed, load);
+            readOnly--;
+            return;
           }
           break;
         }
@@ -564,7 +684,7 @@ export function lowerConstants(
      * A member a value calls as the module loads (`O.m()`, `({ m: () => B }).m()`): the arrow the
      * object holds there runs now, so what it reads counts (UF2023).
      */
-    const memberCalledAtLoad = (callee: AST.MemberExpression) => {
+    const memberCalledAtLoad = (callee: AST.MemberExpression): void => {
       const name = memberName(callee);
       if (name === undefined) return;
       const object = unwrapped(callee.object);
@@ -574,26 +694,32 @@ export function lowerConstants(
         else if (member?.type === "Identifier") calledAtLoad(member as AST.IdentifierReference);
         return;
       }
-      if (object.type !== "Identifier" || !scopes.isReference(object)) return;
-      const value = moduleValue(object as AST.IdentifierReference);
-      const holder = value && initOf.get(value);
-      const member =
-        holder && unwrapped(holder).type === "ObjectExpression"
-          ? propertyValue(unwrapped(holder) as AST.ObjectExpression, name)
-          : undefined;
+      // The object literal it names, through a name or a member: `P.m()` with `P = O`, `O.a.m()`.
+      const holder = objectOf(object);
+      const member = holder && propertyValue(holder, name);
+      // `f.call(…)` and `f.apply(…)` call `f`, but where a table holds its own `call`.
+      if (!member && (name === "call" || name === "apply")) {
+        if (object.type === "MemberExpression") memberCalledAtLoad(object);
+        else if (object.type === "Identifier" && scopes.isReference(object)) {
+          const value = moduleValue(object as AST.IdentifierReference);
+          if (value && initOf.get(value)?.type === "ArrowFunctionExpression") {
+            calledAtLoad(object as AST.IdentifierReference);
+          }
+        }
+        return;
+      }
+      const called = source.slice(callee.start, callee.end);
+      const count = loadCalls.length;
       if (member?.type === "ArrowFunctionExpression") {
-        loadCalls.push({ caller: own, name: `${value!.name}.${name}`, arrow: member, at: callee });
-      } else if (member?.type === "Identifier") {
+        loadCalls.push({ caller: own, name: called, arrow: member, at: callee });
+      } else if (member?.type === "Identifier" && scopes.isReference(member)) {
         const heldFunction = moduleValue(member as AST.IdentifierReference);
         if (heldFunction?.kind === "moduleConst") {
-          loadCalls.push({
-            caller: own,
-            name: `${value!.name}.${name}`,
-            callee: heldFunction,
-            at: callee,
-          });
+          loadCalls.push({ caller: own, name: called, callee: heldFunction, at: callee });
         }
       }
+      // What the call gives is computed now: the table it calls through is read, not held.
+      if (loadCalls.length > count && object.type === "Identifier") loadCallees.add(object);
     };
     const walkChildren = (node: AST.Node, load: boolean) => {
       for (const key of visitorKeys[node.type] ?? []) {
@@ -638,12 +764,15 @@ export function lowerConstants(
           if (PURE_GLOBALS.has(node.name)) {
             refs.push(createGlobalReference(node.name, at));
           } else if (reason) {
-            nondeterminism(node, reason);
-          } else if (deferred && CLIENT_GLOBALS.has(node.name)) {
+            nondeterminism(node, reason, load);
+          } else if (!load && CLIENT_GLOBALS.has(node.name)) {
             // Its body runs where it is called: only client code may call it (UF2014).
-            if (!clientReads.has(own.id)) {
-              clientReads.set(own.id, `reads \`${node.name}\`, which only client code may`);
-            }
+            later(
+              clientReads,
+              heldClientReads,
+              arrowClientReads,
+              `reads \`${node.name}\`, which only client code may`,
+            );
           } else {
             reporter.report(
               "UF3020",
@@ -746,7 +875,11 @@ export function lowerConstants(
         { help: `Declare \`${later.name}\` before \`${caller.name}\`.` },
       );
     }
-    const client = all.map((value) => clientReads.get(value.id)).find((each) => each !== undefined);
+    const client =
+      (arrow && arrowClientReads.get(arrow)) ??
+      all
+        .map((value) => clientReads.get(value.id) ?? heldClientReads.get(value.id))
+        .find((each) => each !== undefined);
     if (client) {
       reporter.report(
         "UF2014",
@@ -757,7 +890,11 @@ export function lowerConstants(
         },
       );
     }
-    const reason = all.map((value) => reasons.get(value.id)).find((each) => each !== undefined);
+    const reason =
+      (arrow && arrowReasons.get(arrow)) ??
+      all
+        .map((value) => reasons.get(value.id) ?? heldReasons.get(value.id))
+        .find((each) => each !== undefined);
     if (reason) {
       reporter.report(
         "UF3019",
@@ -788,9 +925,13 @@ export function lowerConstants(
     const all = [...followed(value)];
     const isFunction = initOf.get(value)?.type === "ArrowFunctionExpression";
     const holds = (what: string) => (isFunction ? what : `holds a function that ${what}`);
-    const reason = all.map((each) => reasons.get(each.id)).find((each) => each !== undefined);
+    const reason = all
+      .map((each) => reasons.get(each.id) ?? heldReasons.get(each.id))
+      .find((each) => each !== undefined);
     if (reason) value.nondeterministic = holds(reason);
-    const client = all.map((each) => clientReads.get(each.id)).find((each) => each !== undefined);
+    const client = all
+      .map((each) => clientReads.get(each.id) ?? heldClientReads.get(each.id))
+      .find((each) => each !== undefined);
     if (client) value.clientOnly = holds(client);
   }
   return lowered;
@@ -826,6 +967,21 @@ export function lowerConstants(
       scopes.resolve(node as AST.IdentifierReference).kind === "global"
     );
   }
+}
+
+/**
+ * Whether an expression is a name, or a static member of one (`T`, `T.items`, `T["items"]`,
+ * `L[0]`, `T?.items`).
+ */
+function isPath(node: AST.Node): boolean {
+  let inner = unwrapped(node);
+  if (inner.type === "ChainExpression") inner = unwrapped(inner.expression);
+  if (inner.type === "Identifier") return true;
+  if (inner.type !== "MemberExpression") return false;
+  const { property } = inner;
+  const indexed =
+    inner.computed && property.type === "Literal" && typeof property.value === "number";
+  return (indexed || memberName(inner) !== undefined) && isPath(inner.object);
 }
 
 /** The value an object literal gives a static key, without its parentheses and assertions. */
