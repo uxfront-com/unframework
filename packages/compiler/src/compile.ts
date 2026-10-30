@@ -11,9 +11,9 @@ import type { OutputFile, Target } from "@unframework/codegen";
 import { createDiagnostic, sortDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import { checkInvariants, validateModule } from "@unframework/ir";
-import type { IrValidationError, ModuleApi, UfComponent, UfModule } from "@unframework/ir";
+import type { IrValidationError, ModuleApi, Span, UfComponent, UfModule } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
-import type { AST } from "@unframework/parser";
+import type { AST, ParsedModule } from "@unframework/parser";
 import { createSyntacticOracle } from "@unframework/type-oracle";
 import type { TypeOracle, TypeShape } from "@unframework/type-oracle";
 
@@ -255,6 +255,17 @@ export async function compile(source: string, options: CompileOptions): Promise<
         diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
       }
     }
+    // An import that closes a cycle (UF1205), which the resolver's project finds, not the
+    // analyser: the modules of a cycle cannot each load before the others (ADR-0071).
+    const cycles: Diagnostic[] = [];
+    for (const { specifier, span } of options.resolve?.cycle ? relativeImports(parsed) : []) {
+      try {
+        const files = await options.resolve!.cycle!({ specifier, importer: file });
+        if (files) cycles.push(importCycle(file, specifier, span, files));
+      } catch (error) {
+        diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
+      }
+    }
     const analysis = analyze(parsed, {
       imports,
       modules,
@@ -271,10 +282,11 @@ export async function compile(source: string, options: CompileOptions): Promise<
     } else {
       analysed = analysis.module && deepFreeze(analysis.module);
     }
-    // A copy named like a component's output withholds the module, as an analyser error does.
+    // A copy named like a component's output, or a cycle, withholds the module, as an analyser
+    // error does.
     const collisions = analysed ? copyCollisions(analysed, copies, file) : [];
-    diagnostics.push(...collisions);
-    if (collisions.length) analysed = undefined;
+    diagnostics.push(...collisions, ...cycles);
+    if (collisions.length || cycles.length) analysed = undefined;
   } catch (error) {
     diagnostics.push(internal(file, error, "The analyser failed"));
   }
@@ -401,6 +413,37 @@ function copyCollisions(
         help: "Rename the shared module, or the component.",
       }),
     ];
+  });
+}
+
+/**
+ * The source's relative imports and re-exports, each specifier once with the span of its first
+ * declaration's specifier: the edges a cycle may close (ADR-0071). A sheet's import is no module's.
+ */
+function relativeImports(parsed: ParsedModule): { specifier: string; span: Span }[] {
+  const found = new Map<string, Span>();
+  for (const statement of parsed.program.body) {
+    const from =
+      statement.type === "ImportDeclaration" ||
+      statement.type === "ExportAllDeclaration" ||
+      statement.type === "ExportNamedDeclaration"
+        ? statement.source
+        : null;
+    if (!from || typeof from.value !== "string" || found.has(from.value)) continue;
+    if (!from.value.startsWith("./") && !from.value.startsWith("../")) continue;
+    found.set(from.value, { start: from.start, end: from.end });
+  }
+  return [...found].map(([specifier, span]) => ({ specifier, span }));
+}
+
+/** UF1205 at an import that closes a cycle, which names its files relative to the source. */
+function importCycle(file: string, specifier: string, span: Span, files: string[]): Diagnostic {
+  const names = files.map((path) => relativePath(directoryOf(file), path));
+  return createDiagnostic("UF1205", {
+    file,
+    span,
+    message: `"${specifier}" closes an import cycle, ${names.join(" → ")}: none of its modules can load before the others.`,
+    help: "Move what the modules of the cycle share into a module that imports none of them.",
   });
 }
 
