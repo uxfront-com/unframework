@@ -17,6 +17,8 @@ import type {
   Binding,
   BindingId,
   BindingKind,
+  Code,
+  FunctionCode,
   TypeText,
   UfComponent,
   UfModule,
@@ -70,6 +72,8 @@ export class VueNames {
 
   /** What the owner reaches of its module (ADR-0070). */
   readonly reach: ModuleReach;
+  /** The owner's own binding names, which its own text's `typeof` queries read. */
+  readonly #own: ReadonlySet<string>;
 
   constructor(component: UfComponent, module: UfModule, typeTexts: readonly TypeText[] = []) {
     const reserved = sourceNames(component, module);
@@ -96,6 +100,11 @@ export class VueNames {
     // else claims a name, a module name Vue reserves is declared under a name of its own, and a
     // setup binding that shadows one is too.
     this.reach = moduleReach(component, module, typeTexts);
+    this.#own = new Set(
+      component.bindings
+        .filter((binding) => binding.kind !== "moduleConst" && binding.kind !== "import")
+        .map((binding) => binding.name),
+    );
     const moduleNames = [...this.reach.values];
     this.scope.reserve(...moduleNames);
     // A renamed module name must not take a name its constants' own code uses.
@@ -125,6 +134,14 @@ export class VueNames {
         this.#locals.set(binding.id, this.scope.claim(binding.name));
       }
     }
+  }
+
+  /**
+   * The owner's own statement with each module name a `typeof` queries spelled as the output
+   * names it (ADR-0070): a query of one of the owner's bindings reads the binding.
+   */
+  ownQueries(statement: string): string {
+    return renamedQueries(statement, "statements", this, { skip: this.#own });
   }
 
   /** The name the output declares one of the module's constants or value imports by. */
@@ -293,8 +310,15 @@ export function moduleReach(
   const query = (name: string) => {
     if (moduleValues.has(name)) values.add(name);
   };
-  for (const { text, kind } of ownText(owner, typeTexts)) {
-    for (const { name } of typeQueries(text, kind)) if (!shadowed.has(name)) query(name);
+  for (const { text, kind, bound } of ownText(owner)) {
+    for (const { name } of typeQueries(text, kind, bound)) if (!shadowed.has(name)) query(name);
+  }
+  // A composable's parameter list sees its parameters, never its body's locals.
+  const parameters = owner.bindings
+    .filter((binding) => binding.kind === "argument")
+    .map((binding) => binding.name);
+  for (const { code } of typeTexts) {
+    for (const { name } of typeQueries(code, "type", parameters)) query(name);
   }
   // The module's declarations the output prints: the owner's own, and those its constants name.
   const declared = new Set(owner.types);
@@ -312,6 +336,7 @@ export function moduleReach(
         for (const { name } of typeQueries(constant.type.code, "type")) query(name);
       }
       for (const name of codeNames(constant.value.code)) named.add(name);
+      for (const { name } of typeQueries(constant.value.code, "expression")) query(name);
     }
     for (const declaration of module.types) {
       if (!declared.has(declaration.name) && !named.has(declaration.name)) continue;
@@ -326,49 +351,72 @@ export function moduleReach(
 /**
  * The owner's own type text and code, where a `typeof` may sit: every type its IR writes (an
  * annotation, a type argument, a parameter's type) and every piece of its code, which may hold
- * an annotation of its own.
+ * an annotation of its own. A composable's parameter types are its caller's to add.
  */
 function ownText(
   owner: UfComponent,
-  typeTexts: readonly TypeText[],
-): { text: string; kind: CodeKind | "type" }[] {
-  const found: { text: string; kind: CodeKind | "type" }[] = typeTexts.map(({ code }) => ({
-    text: code,
-    kind: "type",
-  }));
-  for (const { code } of codeOf(owner))
-    found.push({ text: code.code, kind: codeKind(code, owner) });
-  const visit = (node: unknown): void => {
+): { text: string; kind: CodeKind | "type"; bound: readonly string[] }[] {
+  const found: { text: string; kind: CodeKind | "type"; bound: readonly string[] }[] = [];
+  const visit = (node: unknown, bound: readonly string[]): void => {
     if (Array.isArray(node)) {
-      for (const item of node) visit(item);
+      for (const item of node) visit(item, bound);
       return;
     }
     if (!node || typeof node !== "object") return;
-    // A `TypeText` is code and a span, with no references, which `Code` has.
-    if ("code" in node && "span" in node && !("refs" in node) && typeof node.code === "string") {
-      found.push({ text: node.code, kind: "type" });
+    // A function's parameters are in scope over its parameters' types and its body.
+    if ("parameters" in node && "body" in node && Array.isArray(node.parameters)) {
+      const fn = node as FunctionCode;
+      const inner = [
+        ...bound,
+        ...fn.parameters.flatMap((parameter) =>
+          parameter.name ? [parameter.name] : (parameter.pattern?.names ?? []),
+        ),
+      ];
+      for (const parameter of fn.parameters) {
+        if (parameter.type) found.push({ text: parameter.type.code, kind: "type", bound: inner });
+      }
+      if (fn.returnType) found.push({ text: fn.returnType.code, kind: "type", bound: inner });
+      found.push({ text: fn.body.code, kind: codeKind(fn.body, owner), bound: inner });
       return;
     }
-    for (const value of Object.values(node)) visit(value);
+    if ("code" in node && "span" in node && typeof node.code === "string") {
+      // Code has references; a `TypeText` has none.
+      found.push(
+        "refs" in node
+          ? { text: node.code, kind: codeKind(node as Code, owner), bound }
+          : { text: node.code, kind: "type", bound },
+      );
+      return;
+    }
+    for (const value of Object.values(node)) visit(value, bound);
   };
-  visit([
-    owner.propsParameter,
-    owner.props,
-    owner.emits,
-    owner.slots,
-    owner.setup,
-    owner.typeParameters,
-  ]);
+  visit(
+    [
+      owner.propsParameter,
+      owner.props,
+      owner.emits,
+      owner.slots,
+      owner.setup,
+      owner.typeParameters,
+      owner.render,
+    ],
+    [],
+  );
   return found;
 }
 
 /**
  * Each identifier a `typeof` queries in type text or code, with its offsets in the text:
- * `SIZES` in `keyof typeof SIZES`, the root `theme` of `typeof theme.dark`.
+ * `SIZES` in `keyof typeof SIZES`, the root `theme` of `typeof theme.dark`. A query that a
+ * binding in scope where it sits answers is left out, as TypeScript scopes it: a function's or
+ * a function type's parameters and type parameters, over the whole function; a block's
+ * declarations, over the block; a loop's or a `catch`'s own; and `bound`, the names in scope
+ * around the text.
  */
 export function typeQueries(
   text: string,
   kind: CodeKind | "type",
+  bound: Iterable<string> = [],
 ): { name: string; start: number; end: number }[] {
   // Type text parses as the type of an assertion, whose offsets the prefix shifts.
   const prefix = kind === "type" ? "null as " : "";
@@ -381,45 +429,146 @@ export function typeQueries(
   } catch {
     return [];
   }
+  // Statements are a block's body, whose declarations they bind.
+  if (Array.isArray(root)) root = { type: "BlockStatement", body: root };
   const found: { name: string; start: number; end: number }[] = [];
-  const visit = (node: unknown): void => {
+  const visit = (node: unknown, scope: ReadonlySet<string>): void => {
     if (Array.isArray(node)) {
-      for (const item of node) visit(item);
+      for (const item of node) visit(item, scope);
       return;
     }
-    if (!node || typeof node !== "object") return;
-    const each = node as { type?: unknown; exprName?: unknown };
-    if (each.type === "TSTypeQuery") {
-      let name = each.exprName as {
-        type?: unknown;
-        left?: unknown;
-        name?: unknown;
-        start?: unknown;
-        end?: unknown;
-      };
-      while (name?.type === "TSQualifiedName") name = name.left as typeof name;
-      if (name?.type === "Identifier" && typeof name.name === "string") {
-        found.push({
-          name: name.name,
-          start: (name.start as number) - prefix.length,
-          end: (name.end as number) - prefix.length,
-        });
+    if (!isNode(node)) return;
+    if (node.type === "TSTypeQuery") {
+      let name = node.exprName;
+      while (isNode(name) && name.type === "TSQualifiedName") name = name.left;
+      if (isNode(name) && name.type === "Identifier" && typeof name.name === "string") {
+        if (!scope.has(name.name)) {
+          found.push({
+            name: name.name,
+            start: (name.start as number) - prefix.length,
+            end: (name.end as number) - prefix.length,
+          });
+        }
       }
     }
-    for (const [key, value] of Object.entries(node)) if (key !== "parent") visit(value);
+    const binds = bindings(node);
+    const inner = binds.length ? new Set([...scope, ...binds]) : scope;
+    for (const [key, value] of Object.entries(node)) if (key !== "parent") visit(value, inner);
   };
-  visit(root);
+  visit(root, new Set(bound));
   return found;
 }
 
-/** Type text or code with each module name a `typeof` queries written as the output names it. */
-export function renamedQueries(text: string, kind: CodeKind | "type", names: VueNames): string {
+/** A node of a parsed tree. */
+type Node = { type: string; [key: string]: unknown };
+
+function isNode(value: unknown): value is Node {
+  return !!value && typeof value === "object" && typeof (value as Node).type === "string";
+}
+
+/** The function-like nodes, whose parameters and type parameters bind over the whole node. */
+const FUNCTIONS: ReadonlySet<string> = new Set([
+  "FunctionDeclaration",
+  "FunctionExpression",
+  "ArrowFunctionExpression",
+  "TSDeclareFunction",
+  "TSEmptyBodyFunctionExpression",
+  "TSFunctionType",
+  "TSConstructorType",
+  "TSMethodSignature",
+  "TSCallSignatureDeclaration",
+  "TSConstructSignatureDeclaration",
+]);
+
+/** The names a node binds over itself: see {@link typeQueries}. */
+function bindings(node: Node): string[] {
+  const names: string[] = [];
+  const typeParameters = (owner: unknown) => {
+    if (!isNode(owner) || !Array.isArray(owner.params)) return;
+    for (const parameter of owner.params) {
+      const name = isNode(parameter) ? parameter.name : undefined;
+      if (isNode(name) && typeof name.name === "string") names.push(name.name);
+    }
+  };
+  if (FUNCTIONS.has(node.type)) {
+    for (const parameter of (node.params as unknown[] | undefined) ?? [])
+      patternNames(parameter, names);
+    typeParameters(node.typeParameters);
+  } else if (node.type === "TSTypeAliasDeclaration" || node.type === "TSInterfaceDeclaration") {
+    typeParameters(node.typeParameters);
+  } else if (node.type === "BlockStatement" || node.type === "StaticBlock") {
+    for (const statement of (node.body as unknown[] | undefined) ?? []) declared(statement, names);
+  } else if (node.type === "ForStatement") {
+    declared(node.init, names);
+  } else if (node.type === "ForInStatement" || node.type === "ForOfStatement") {
+    declared(node.left, names);
+  } else if (node.type === "CatchClause") {
+    patternNames(node.param, names);
+  }
+  return names;
+}
+
+/** The names a statement declares in its block: its variables, its function's or class's name. */
+function declared(statement: unknown, names: string[]): void {
+  if (!isNode(statement)) return;
+  if (statement.type === "VariableDeclaration") {
+    for (const each of (statement.declarations as unknown[] | undefined) ?? []) {
+      if (isNode(each)) patternNames(each.id, names);
+    }
+  } else if (statement.type === "FunctionDeclaration" || statement.type === "ClassDeclaration") {
+    patternNames(statement.id, names);
+  }
+}
+
+/** The names a binding pattern binds: `a`, `{ b, c: d }`, `[e, ...f]`, `g = 1`. */
+function patternNames(pattern: unknown, names: string[]): void {
+  if (!isNode(pattern)) return;
+  switch (pattern.type) {
+    case "Identifier":
+      if (typeof pattern.name === "string") names.push(pattern.name);
+      return;
+    case "AssignmentPattern":
+      patternNames(pattern.left, names);
+      return;
+    case "RestElement":
+      patternNames(pattern.argument, names);
+      return;
+    case "ArrayPattern":
+      for (const element of (pattern.elements as unknown[] | undefined) ?? []) {
+        patternNames(element, names);
+      }
+      return;
+    case "ObjectPattern":
+      for (const property of (pattern.properties as unknown[] | undefined) ?? []) {
+        if (isNode(property)) {
+          patternNames(property.type === "RestElement" ? property.argument : property.value, names);
+        }
+      }
+      return;
+    case "TSParameterProperty":
+      patternNames(pattern.parameter, names);
+      return;
+    default:
+      return;
+  }
+}
+
+/**
+ * Type text or code with each module name a `typeof` queries written as the output names it.
+ * `skip` names the queries that read something else there, the owner's own bindings in the
+ * owner's text; `bound` is as {@link typeQueries} takes it.
+ */
+export function renamedQueries(
+  text: string,
+  kind: CodeKind | "type",
+  names: VueNames,
+  { skip = new Set(), bound = [] }: { skip?: ReadonlySet<string>; bound?: Iterable<string> } = {},
+): string {
   let written = "";
   let last = 0;
-  for (const { name, start, end } of typeQueries(text, kind).toSorted(
-    (a, b) => a.start - b.start,
-  )) {
-    const local = names.moduleLocal(name);
+  const queries = typeQueries(text, kind, bound).toSorted((a, b) => a.start - b.start);
+  for (const { name, start, end } of queries) {
+    const local = skip.has(name) ? name : names.moduleLocal(name);
     if (local === name) continue;
     written += `${text.slice(last, start)}${local}`;
     last = end;

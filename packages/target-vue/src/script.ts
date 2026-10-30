@@ -218,9 +218,11 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   }
   for (const item of component.setup) {
     const code = itemCode(item, component, module, names, imports, script);
-    statements.push({ code, layout: itemLayout(item, code) });
+    statements.push({ code: names.ownQueries(code), layout: itemLayout(item, code) });
   }
-  for (const code of listeners.functions) statements.push({ code, layout: "block" });
+  for (const code of listeners.functions) {
+    statements.push({ code: names.ownQueries(code), layout: "block" });
+  }
   // Last, once every function it names is declared (ADR-0054).
   if (component.exposes) {
     const exposed = component.exposes.functions.map((id) => {

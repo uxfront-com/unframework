@@ -561,4 +561,149 @@ describe("vue module bindings' types and names", () => {
       expect(await typecheck(outputs)).toEqual(clean(outputs));
     },
   );
+
+  // A `typeof` reads what is in scope where it sits, as TypeScript scopes it.
+  describe("`typeof` in scope", () => {
+    const T = 'export const step = { a: 1 };\nexport const Intl = { tag: "x" };\n';
+
+    it("leaves a `typeof` a function type's own parameter binds", checker, async () => {
+      const files = {
+        "t.ts": T,
+        "C.uf.tsx": [
+          'import { step } from "./t";',
+          "",
+          "type F = (step: number) => typeof step;",
+          "interface G {",
+          "  get(step: number): typeof step;",
+          "}",
+          "const id: F = (n) => n;",
+          "const twice: G = { get: (n) => n * 2 };",
+          "const LABEL = `${step.a}`;",
+          "",
+          "export default function C() {",
+          '  const step = "x";',
+          "  const n: number = id(2) + twice.get(1);",
+          "  return <p>{n} {LABEL} {step}</p>;",
+          "}",
+          "",
+        ].join("\n"),
+      };
+      const outputs = await vue(files, "C.uf.tsx");
+      expect(outputs["C.vue"]).toContain("type F = (step: number) => typeof step;");
+      expect(outputs["C.vue"]).toContain("get(step: number): typeof step;");
+      expect(await typecheck(outputs)).toEqual(clean(outputs));
+    });
+
+    it("declares no module value a later parameter's `typeof` names", checker, async () => {
+      const files = {
+        "C.uf.tsx": [
+          "const value = 10;",
+          "",
+          "function Head() {",
+          "  return <h1>{value}</h1>;",
+          "}",
+          "",
+          "export default function C() {",
+          "  const clamp = (value: number, max: typeof value) => Math.min(value, max);",
+          "  return <div><Head />{clamp(1, 2)}</div>;",
+          "}",
+          "",
+        ].join("\n"),
+      };
+      const outputs = await vue(files, "C.uf.tsx");
+      expect(outputs["C.vue"]).not.toContain("const value = 10;");
+      const paths = writeScratch(outputs);
+      const linted = await toolchain.lint(Object.values(paths), {
+        toolchainDir,
+        root: toolchainDir,
+      });
+      expect([...linted.values()].flat()).toEqual([]);
+    });
+
+    it("renames and reaches a `typeof` in a constant's value", checker, async () => {
+      const files = {
+        "t.ts": T,
+        "C.uf.tsx": [
+          'import { step } from "./t";',
+          "",
+          "const COPY = { a: 2 } as typeof step;",
+          "const LABEL = `${step.a}`;",
+          "",
+          "export default function C() {",
+          '  const step = "x";',
+          "  return <p>{COPY.a} {LABEL} {step}</p>;",
+          "}",
+          "",
+        ].join("\n"),
+        "D.uf.tsx": [
+          'import { step } from "./t";',
+          "",
+          "const TABLE = { a: 3 } satisfies typeof step;",
+          "",
+          "export default function D() {",
+          "  return <p>{TABLE.a}</p>;",
+          "}",
+          "",
+        ].join("\n"),
+      };
+      const outputs = { ...(await vue(files, "C.uf.tsx")), ...(await vue(files, "D.uf.tsx")) };
+      expect(outputs["C.vue"]).toContain("const COPY = { a: 2 } as typeof step_1;");
+      expect(outputs["D.vue"]).toContain('import { step } from "./t";');
+      expect(await typecheck(outputs)).toEqual(clean(outputs));
+    });
+
+    it("reaches and renames a `typeof` in a composable's parameter types", checker, async () => {
+      const files = {
+        "t.ts": T,
+        "useX.uf.ts": [
+          'import { ref } from "unframework";',
+          'import { step } from "./t";',
+          "",
+          "export function useX(s: typeof step) {",
+          "  const step = ref<number>(s.a);",
+          "  return { step };",
+          "}",
+          "",
+        ].join("\n"),
+        "useY.uf.ts": [
+          'import { ref } from "unframework";',
+          'import { step } from "./t";',
+          "",
+          "const BASE = step.a;",
+          "",
+          "export function useY(s: typeof step) {",
+          "  const step = ref<number>(s.a + BASE);",
+          "  return { step };",
+          "}",
+          "",
+        ].join("\n"),
+      };
+      const outputs = { ...(await vue(files, "useX.uf.ts")), ...(await vue(files, "useY.uf.ts")) };
+      expect(outputs["useX.ts"]).toContain("export function useX(s: typeof step_1)");
+      expect(outputs["useY.ts"]).toContain("export function useY(s: typeof step_1)");
+      expect(await typecheck(outputs)).toEqual(clean(outputs));
+    });
+
+    it(
+      "renames a `typeof` in the setup's annotations of a name Vue reserves",
+      checker,
+      async () => {
+        const files = {
+          "t.ts": T,
+          "C.uf.tsx": [
+            'import { Intl } from "./t";',
+            "",
+            "export default function C() {",
+            '  const copy: typeof Intl = { tag: "y" };',
+            "  return <p>{copy.tag} {Intl.tag}</p>;",
+            "}",
+            "",
+          ].join("\n"),
+        };
+        const outputs = await vue(files, "C.uf.tsx");
+        expect(outputs["C.vue"]).toContain("const copy: typeof Intl_1 =");
+        expect(await typecheck(outputs)).toEqual(clean(outputs));
+      },
+    );
+  });
 });

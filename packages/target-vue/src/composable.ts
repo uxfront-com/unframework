@@ -26,7 +26,7 @@ import type {
   UfModule,
 } from "@unframework/ir";
 
-import { nameOf, renamedQueries, VueNames } from "./names.ts";
+import { nameOf, renamedQueries, typeQueries, VueNames } from "./names.ts";
 import { itemCode, itemLayout, laidOut, typeParametersText } from "./script.ts";
 import type { Statement } from "./script.ts";
 
@@ -70,7 +70,7 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
   const rules = names.scriptRules(() => imports.add("vue", "nextTick"));
   const reads = moduleBindings(owner, module, imports, names);
   const statements: Statement[] = composable.setup.map((item) => {
-    const code = itemCode(item, owner, module, names, imports, rules);
+    const code = names.ownQueries(itemCode(item, owner, module, names, imports, rules));
     return { code, layout: itemLayout(item, code) };
   });
   const returned = composable.returns.map((member) => {
@@ -78,9 +78,12 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
     return local === member.name ? local : `${member.name}: ${local}`;
   });
   statements.push({ code: `return { ${returned.join(", ")} };`, layout: "block" });
+  // A parameter list sees its parameters, never its body's locals (ADR-0070).
+  const bound = composable.parameters.map(({ name }) => name);
   const parameters = composable.parameters.map((parameter) => {
     const local = names.local(bindingOf(owner, parameter.binding));
-    return `${local}${parameter.optional ? "?" : ""}: ${parameter.type.code}`;
+    const type = renamedQueries(parameter.type.code, "type", names, { bound });
+    return `${local}${parameter.optional ? "?" : ""}: ${type}`;
   });
   // What its setup prints names, beside its parameters' and its constants' types.
   const read = liveTypeNames(owner, module, { client: true });
@@ -212,21 +215,28 @@ export function addReadTypeImports(
  * shorthand property expanded (`{ defineProps: defineProps_1 }`).
  */
 function renamed(value: Code, names: VueNames): string {
-  let written = "";
-  let last = 0;
+  // Its references, and the roots of the `typeof`s in it (`as typeof step`), which are none.
+  const edits: { start: number; end: number; text: string }[] = [];
   let shorthand: ReadonlySet<number> | undefined;
-  const references = value.refs
-    .filter((reference) => reference.kind === "Binding")
-    .toSorted((a, b) => a.span.start - b.span.start);
-  for (const reference of references) {
+  for (const reference of value.refs) {
+    if (reference.kind !== "Binding") continue;
     const name = nameOf(reference.binding);
     const local = names.moduleLocal(name);
     if (local === name) continue;
     const start = reference.span.start - value.span.start;
     shorthand ??= shorthandValues(value.code);
     const key = reference.shorthand || shorthand.has(start) ? `${name}: ` : "";
-    written += `${value.code.slice(last, start)}${key}${local}`;
-    last = reference.span.end - value.span.start;
+    edits.push({ start, end: reference.span.end - value.span.start, text: `${key}${local}` });
+  }
+  for (const { name, start, end } of typeQueries(value.code, "expression")) {
+    const local = names.moduleLocal(name);
+    if (local !== name) edits.push({ start, end, text: local });
+  }
+  let written = "";
+  let last = 0;
+  for (const { start, end, text } of edits.toSorted((a, b) => a.start - b.start)) {
+    written += `${value.code.slice(last, start)}${text}`;
+    last = end;
   }
   return `${written}${value.code.slice(last)}`;
 }
