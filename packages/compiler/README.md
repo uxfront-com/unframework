@@ -30,8 +30,7 @@ stylesheet the source imports (ADR-0063), and `createFileResolver` also reads a 
 the scope id its API carries, and caches by their text too: a sheet it cannot read is UF5005.
 The resolver's `module` reads each shared `.ts` module the source imports or re-exports from, a
 type re-export alone included (ADR-0070), a specifier without an extension naming its `.ts`, and
-`createFileResolver` follows its relative imports through
-every `.ts` module they reach, each once, noting the first framework or `unframework` import
+`createFileResolver` follows its relative imports through every `.ts` module they reach, each once, noting the first framework or `unframework` import
 (UF1204) and the first relative import it cannot read (UF1202). A value import of a module it
 cannot read, or without a resolver, is UF1202. Each output tree beside a component's files holds a
 copy of every module the source reaches, unchanged, at its path relative to the source: neither
@@ -63,15 +62,16 @@ module whose composables the source imports, one that is missing included, named
 **The project graph** (ADR-0071). `createProject({ root, readFile, targets, typeOracle })` takes
 the files `createFileResolver` does and the options each compile takes, but `filename` and
 `resolve`. Its `compile(file)` compiles a module, named relative to `root`, through its own
-resolver and oracle, and keeps the result, which leaves out the copies of shared `.ts` modules:
+resolver and the caller's oracle, and keeps the result, which leaves out the copies of shared `.ts` modules:
 each copy is its module's own node, which `copy(file)` gives. Its `update(files)` tells the oracle
-which files changed, reads each copy again, and checks every compiled module that reaches a changed
-file, directly or not, along the graph's reverse edges: it compiles one again only where a hash of
+which files changed, reads again the copies among them, and checks every compiled module that
+reaches a changed file, directly or not, along the graph's reverse edges: it compiles one again only where a hash of
 its source and of every answer it was given (its children's APIs and the shapes they were read
-with, its stylesheets, the files of its shared modules, its cycles and its own types' shapes)
+with, its stylesheets, the files of its shared modules, missing ones included, its cycles and its
+own types' shapes)
 changed, so an edit that leaves a shape alone stops there. It returns the modules it compiled and
-the copies that were added, changed or went. `dependencies(file)` lists what a module read. A caller that changes a
-file without `update` gets the last result. `createFileResolver` is a project's `resolve`.
+the copies that were added, changed or went. `dependencies(file)` lists what a module read. A
+caller that changes a file without `update` gets the last result. `createFileResolver` is a project's `resolve`.
 
 **Cycles.** The resolver's `cycle` gives the files of the cycle of component edges an import
 closes, from the importer back to it: a component edge is a value import of a component from

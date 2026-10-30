@@ -439,7 +439,7 @@ function relativeImports(parsed: ParsedModule): { specifier: string; span: Span 
       statement.type === "ExportNamedDeclaration"
         ? statement.source
         : null;
-    if (!from || typeof from.value !== "string" || found.has(from.value)) continue;
+    if (!from || found.has(from.value)) continue;
     if (!from.value.startsWith("./") && !from.value.startsWith("../")) continue;
     found.set(from.value, { start: from.start, end: from.end });
   }

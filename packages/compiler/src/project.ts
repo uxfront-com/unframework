@@ -1,7 +1,7 @@
 // The project graph (plan §5.10, ADR-0071): the modules a project compiles, the files each one
 // read, and the reverse edges between them, so a change recompiles exactly its dependents, and
 // stops where what a dependent read is unchanged (early cutoff). It replaces ADR-0053's file
-// resolver behind `compile()`'s `resolve` option, and reports an import cycle (UF1205).
+// resolver behind `compile()`'s `resolve` option, and reports a cycle of component edges (UF1205).
 import {
   analyze,
   frameworkOf,
@@ -59,8 +59,8 @@ export interface Project {
   readonly resolve: Resolver;
   /**
    * Compiles a `.uf.tsx` or `.uf.ts` module, or gives its last result: {@link Project.update}
-   * compiles it again when what it read changed. The result's outputs leave out the copies of shared `.ts` modules, which belong to
-   * each module's own node: {@link Project.copy} gives them.
+   * compiles it again when what it read changed. The result's outputs leave out the copies of
+   * shared `.ts` modules, which belong to each module's own node: {@link Project.copy} gives them.
    */
   compile(file: string): Promise<CompileResult>;
   /**
@@ -72,7 +72,7 @@ export interface Project {
   dependencies(file: string): string[];
   /**
    * Routes changed, created or deleted files through the project: it tells the type oracle,
-   * reads each copy again, then checks each compiled module that depends on a file, directly or
+   * reads again the copies among them, then checks each compiled module that depends on a file, directly or
    * not, and compiles it again only where what it read changed.
    */
   update(files: readonly string[]): Promise<ProjectUpdate>;
@@ -185,11 +185,17 @@ export function createProject(options: ProjectOptions): Project {
     return source === undefined ? undefined : { file: path!, source };
   };
 
-  const readModules = async (request: ResolveRequest): Promise<ResolvedModule | undefined> => {
+  /**
+   * A shared module and every `.ts` module it reaches (`module`), with each relative `.ts` file
+   * among them it looked for and could not read: an edge too, so creating one recompiles the
+   * modules that reach it.
+   */
+  const followModules = async (request: ResolveRequest) => {
     const first = await readModule(modulePath(request));
     if (!first) return undefined;
     const files = [first];
     const seen = new Set([first.file]);
+    const missing: string[] = [];
     const resolved: ResolvedModule = { files };
     for (let index = 0; index < files.length; index++) {
       const { file, source } = files[index]!;
@@ -208,14 +214,18 @@ export function createProject(options: ProjectOptions): Project {
         const next = await readModule(path);
         if (!next) {
           resolved.unresolved ??= { specifier, file };
+          if (path !== undefined) missing.push(path);
         } else {
           seen.add(next.file);
           files.push(next);
         }
       }
     }
-    return resolved;
+    return { resolved, missing };
   };
+
+  const readModules = async (request: ResolveRequest): Promise<ResolvedModule | undefined> =>
+    (await followModules(request))?.resolved;
 
   /**
    * The components a module imports to render, by file: its component edges (ADR-0071), each
@@ -297,14 +307,15 @@ export function createProject(options: ProjectOptions): Project {
       return { value: sheet, held: sheet ?? null, edges: path === undefined ? [] : [path] };
     }
     if (call.kind === "module") {
-      const resolved = await readModules(request);
+      const followed = await followModules(request);
+      const resolved = followed?.resolved;
       const files = resolved?.files.map(({ file }) => file) ?? [];
       const first = modulePath(request);
       return {
         value: resolved,
         // Without the texts: each copy is its module's own node.
         held: resolved ? { ...resolved, files } : null,
-        edges: first === undefined ? files : [first, ...files],
+        edges: [...(first === undefined ? [] : [first]), ...files, ...(followed?.missing ?? [])],
       };
     }
     const { cycle, read } = await findCycle(request);
@@ -346,6 +357,15 @@ export function createProject(options: ProjectOptions): Project {
         return answer.value;
       } catch (error) {
         held.push({ threw: error instanceof Error ? error.message : String(error) });
+        // The file the question named, so a fix to it recompiles this module (UF9001 otherwise
+        // stays until this module's own source changes).
+        const named =
+          call.kind === "shape"
+            ? call.query.file
+            : call.kind === "module"
+              ? modulePath(call.request)
+              : joinPath(directoryOf(call.request.importer), call.request.specifier);
+        if (named !== undefined) edges.add(named);
         throw error;
       }
     };
@@ -456,8 +476,9 @@ export function createProject(options: ProjectOptions): Project {
  * analyses it up to its declarations, its types read through the type oracle (ADR-0067), and
  * gives its API with its `file` relative to the importer. The analysis is cached by the contents
  * of the file, its stylesheets and its shapes, so an edit that leaves the API alone resolves to
- * the same API, and the parent compiles to the same bytes. A child's own `.uf.tsx` imports are
- * never resolved: its API is read from its declarations alone, so a cycle cannot make it loop.
+ * the same API, and the parent compiles to the same bytes. A child's API is read from its
+ * declarations alone, never from its own `.uf.tsx` imports, so a cycle cannot make it loop: only
+ * `cycle` resolves those, for their APIs.
  * Its stylesheets are read, for the scope id its API carries (ADR-0063). It reads a stylesheet for
  * `stylesheet` too, and for `module` a shared `.ts` module, a specifier without an extension
  * naming its `.ts`, and follows its relative imports through every `.ts` module they reach, each

@@ -93,6 +93,22 @@ describe("invalidation", () => {
     expect(project.copy("a.ts")).toBe(edited);
   });
 
+  it("recompiles a parent through a child's types when only the parent was compiled", async () => {
+    const { project, write } = memoryProject({
+      "a.ts": "export interface ChildProps {\n  label: string;\n}\n",
+      "Child.uf.tsx":
+        'import type { ChildProps } from "./a.ts";\nexport default function Child({ label }: ChildProps) {\n  return <i>{label}</i>;\n}\n',
+      "Parent.uf.tsx":
+        'import Child from "./Child.uf.tsx";\nexport default function Parent() {\n  return <div><Child label="x" hint="y" /></div>;\n}\n',
+    });
+    const codes = async () =>
+      (await project.compile("Parent.uf.tsx")).diagnostics.map(({ code }) => code);
+    expect(await codes()).toEqual(["UF3035"]);
+    write("a.ts", "export interface ChildProps {\n  label: string;\n  hint?: string;\n}\n");
+    expect((await project.update(["a.ts"])).compiled).toEqual(["Parent.uf.tsx"]);
+    expect(await codes()).toEqual([]);
+  });
+
   it("recompiles a module whose own source changed, and only it", async () => {
     const { project, write } = await compiledFixture();
     write("D.uf.tsx", FIXTURE["D.uf.tsx"]!.replace("<p>D</p>", "<p>Changed</p>"));
@@ -269,6 +285,32 @@ describe("import cycle (UF1205)", () => {
     expect(project.copy("second.ts")).toContain("export const second");
   });
 
+  it("reports nothing for a component imported back type-only, in either form", async () => {
+    const card =
+      'import Tag from "./Tag.uf.tsx";\nexport default function Card() {\n  return <div><Tag /></div>;\n}\nexport function Chip() {\n  return <b />;\n}\n';
+    for (const imported of [
+      'import type Card from "./Card.uf.tsx";',
+      'import type { Chip } from "./Card.uf.tsx";',
+      'import { type Chip } from "./Card.uf.tsx";',
+    ]) {
+      const { project } = memoryProject({
+        "Card.uf.tsx": card,
+        "Tag.uf.tsx": `${imported}\nexport default function Tag() {\n  return <i>Tag</i>;\n}\n`,
+      });
+      for (const file of ["Card.uf.tsx", "Tag.uf.tsx"]) {
+        expect((await project.compile(file)).diagnostics.map(({ code }) => code)).toEqual([]);
+      }
+    }
+  });
+
+  it("leaves a component that imports itself to UF1203", async () => {
+    const source =
+      'import Again from "./Countdown.uf.tsx";\nexport default function Countdown({ from }: { from: number }) {\n  return <div>{from > 0 ? <Again from={from - 1} /> : <b>Liftoff</b>}</div>;\n}\n';
+    const { project } = memoryProject({ "Countdown.uf.tsx": source });
+    const result = await project.compile("Countdown.uf.tsx");
+    expect(result.diagnostics.map(({ code }) => code)).toEqual(["UF1203"]);
+  });
+
   it("leaves a self-import to UF1203, and a cycle the source is not in to its own modules", async () => {
     const { project } = memoryProject({
       "Top.uf.tsx":
@@ -329,6 +371,50 @@ describe("dependencies", () => {
 });
 
 describe("updates", () => {
+  it("recompile a module once a .ts module that its shared module imports is created", async () => {
+    const { project, write } = memoryProject({
+      "Card.uf.tsx":
+        'import type { First } from "./first.ts";\nexport default function Card({ first }: { first: First }) {\n  return <i>{first}</i>;\n}\n',
+      "first.ts": 'import type { Second } from "./second.ts";\nexport type First = Second;\n',
+    });
+    const codes = async () =>
+      (await project.compile("Card.uf.tsx")).diagnostics.map(({ code }) => code);
+    expect(await codes()).toContain("UF1202");
+    expect(project.dependencies("Card.uf.tsx")).toContain("second.ts");
+    write("second.ts", "export type Second = string;\n");
+    expect(await project.update(["second.ts"])).toEqual({
+      compiled: ["Card.uf.tsx"],
+      copied: ["second.ts"],
+    });
+    expect(await codes()).toEqual([]);
+    expect(project.copy("second.ts")).toBe("export type Second = string;\n");
+  });
+
+  it("recompile a module whose read threw, once the file reads", async () => {
+    const files = new Map([
+      [
+        "/project/Card.uf.tsx",
+        'import { tone } from "./tone.ts";\nexport default function Card() {\n  return <i>{tone}</i>;\n}\n',
+      ],
+      ["/project/tone.ts", 'export const tone = "info";\n'],
+    ]);
+    let locked = true;
+    const project = createProject({
+      root: "/project",
+      targets: ["vue"],
+      readFile: (path) => {
+        if (locked && path === "/project/tone.ts") return Promise.reject(new Error("EACCES"));
+        return Promise.resolve(files.get(path));
+      },
+    });
+    const codes = async () =>
+      (await project.compile("Card.uf.tsx")).diagnostics.map(({ code }) => code);
+    expect(await codes()).toContain("UF9001");
+    locked = false;
+    expect((await project.update(["tone.ts"])).compiled).toEqual(["Card.uf.tsx"]);
+    expect(await codes()).not.toContain("UF9001");
+  });
+
   it("find a cycle that a module created later closes", async () => {
     const { project, write } = memoryProject({
       "A.uf.tsx":
