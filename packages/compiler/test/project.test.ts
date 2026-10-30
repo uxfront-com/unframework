@@ -311,7 +311,7 @@ describe("import cycle (UF1205)", () => {
     expect(result.diagnostics.map(({ code }) => code)).toEqual(["UF1203"]);
   });
 
-  it("leaves a self-import to UF1203, and a cycle the source is not in to its own modules", async () => {
+  it("leaves a cycle the source is not in to its own modules", async () => {
     const { project } = memoryProject({
       "Top.uf.tsx":
         'import Ping from "./Ping.uf.tsx";\nexport default function Top() {\n  return <Ping n={1} />;\n}\n',
@@ -371,6 +371,58 @@ describe("dependencies", () => {
 });
 
 describe("updates", () => {
+  it("follow a chain that changed under a module compiled alone, to the cycle it closes later", async () => {
+    const leaf = (name: string) =>
+      `export default function ${name}() {\n  return <i>${name}</i>;\n}\n`;
+    const renders = (name: string, next: string) =>
+      `import ${next} from "./${next}.uf.tsx";\nexport default function ${name}() {\n  return <div><${next} /></div>;\n}\n`;
+    const { project, write } = memoryProject({
+      "A.uf.tsx": renders("A", "B"),
+      "B.uf.tsx": renders("B", "C"),
+      "C.uf.tsx": leaf("C"),
+      "D.uf.tsx": leaf("D"),
+    });
+    await project.compile("A.uf.tsx");
+    expect(project.dependencies("A.uf.tsx")).toEqual(["B.uf.tsx", "C.uf.tsx"]);
+    write("B.uf.tsx", renders("B", "D"));
+    expect((await project.update(["B.uf.tsx"])).compiled).toEqual([]);
+    expect(project.dependencies("A.uf.tsx")).toEqual(["B.uf.tsx", "D.uf.tsx"]);
+    write(
+      "D.uf.tsx",
+      'import A from "./A.uf.tsx";\nexport default function D({ n }: { n: number }) {\n  return <span>{n > 0 ? <A /> : "D"}</span>;\n}\n',
+    );
+    expect((await project.update(["D.uf.tsx"])).compiled).toEqual(["A.uf.tsx"]);
+    expect((await project.compile("A.uf.tsx")).diagnostics.map(({ code }) => code)).toEqual([
+      "UF1205",
+    ]);
+  });
+
+  it("recompile a module whose child's read threw, once the child reads", async () => {
+    const files = new Map([
+      [
+        "/project/Card.uf.tsx",
+        'import Child from "./Child.uf.tsx";\nexport default function Card() {\n  return <div><Child /></div>;\n}\n',
+      ],
+      ["/project/Child.uf.tsx", "export default function Child() {\n  return <i>Child</i>;\n}\n"],
+    ]);
+    let locked = true;
+    const project = createProject({
+      root: "/project",
+      targets: ["vue"],
+      readFile: (path) => {
+        if (locked && path === "/project/Child.uf.tsx") return Promise.reject(new Error("EACCES"));
+        return Promise.resolve(files.get(path));
+      },
+    });
+    const codes = async () =>
+      (await project.compile("Card.uf.tsx")).diagnostics.map(({ code }) => code);
+    expect(await codes()).toContain("UF9001");
+    expect(project.dependencies("Card.uf.tsx")).toEqual(["Child.uf.tsx"]);
+    locked = false;
+    expect((await project.update(["Child.uf.tsx"])).compiled).toEqual(["Card.uf.tsx"]);
+    expect(await codes()).toEqual([]);
+  });
+
   it("recompile a module once a .ts module that its shared module imports is created", async () => {
     const { project, write } = memoryProject({
       "Card.uf.tsx":

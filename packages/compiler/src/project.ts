@@ -71,9 +71,9 @@ export interface Project {
   /** What a module read, sorted: files, and packages as `pkg:<name>` (ADR-0071). */
   dependencies(file: string): string[];
   /**
-   * Routes changed, created or deleted files through the project: it tells the type oracle,
-   * reads again the copies among them, then checks each compiled module that depends on a file, directly or
-   * not, and compiles it again only where what it read changed.
+   * Routes changed, created or deleted files through the project: it tells the type oracle, reads
+   * again the copies among them, then checks each compiled module that depends on a file,
+   * directly or not, and compiles it again only where what it read changed.
    */
   update(files: readonly string[]): Promise<ProjectUpdate>;
 }
@@ -186,9 +186,9 @@ export function createProject(options: ProjectOptions): Project {
   };
 
   /**
-   * A shared module and every `.ts` module it reaches (`module`), with each relative `.ts` file
-   * among them it looked for and could not read: an edge too, so creating one recompiles the
-   * modules that reach it.
+   * A shared module and every `.ts` module it reaches (`module`), and each relative `.ts` file the
+   * walk looked for and could not read: an edge too, so creating one recompiles the modules that
+   * reach it.
    */
   const followModules = async (request: ResolveRequest) => {
     const first = await readModule(modulePath(request));
@@ -323,16 +323,26 @@ export function createProject(options: ProjectOptions): Project {
   };
 
   /** The key a module compiles under: a hash of its source and of every answer it was given. */
+  /**
+   * The key a module compiles under: a hash of its source and of every answer it was given. It
+   * also gives the files the answers read now, which become the module's edges when the key is
+   * unchanged: an import chain the answers no longer follow stops being watched.
+   */
   const keyOf = async (source: string, calls: readonly Call[]) => {
     const held: unknown[] = [];
+    const edges = new Set<string>();
     for (const call of calls) {
       try {
-        held.push((await ask(call)).held);
+        const answer = await ask(call);
+        held.push(answer.held);
+        for (const edge of answer.edges) edges.add(edge);
       } catch (error) {
         held.push({ threw: error instanceof Error ? error.message : String(error) });
+        const named = namedFile(call);
+        if (named !== undefined) edges.add(named);
       }
     }
-    return hash(JSON.stringify([source, held]));
+    return { key: await hash(JSON.stringify([source, held])), edges };
   };
 
   const build = async (file: string, source: string): Promise<CompileResult> => {
@@ -357,14 +367,7 @@ export function createProject(options: ProjectOptions): Project {
         return answer.value;
       } catch (error) {
         held.push({ threw: error instanceof Error ? error.message : String(error) });
-        // The file the question named, so a fix to it recompiles this module (UF9001 otherwise
-        // stays until this module's own source changes).
-        const named =
-          call.kind === "shape"
-            ? call.query.file
-            : call.kind === "module"
-              ? modulePath(call.request)
-              : joinPath(directoryOf(call.request.importer), call.request.specifier);
+        const named = namedFile(call);
         if (named !== undefined) edges.add(named);
         throw error;
       }
@@ -456,7 +459,13 @@ export function createProject(options: ProjectOptions): Project {
           compiled.delete(file);
           continue;
         }
-        if ((await keyOf(source, node.calls)) === node.key) continue;
+        const { key, edges } = await keyOf(source, node.calls);
+        if (key === node.key) {
+          // What it read is unchanged, but where it read it may not be (ADR-0071).
+          node.edges = new Set([...edges, ...node.result.dependencies]);
+          node.edges.delete(file);
+          continue;
+        }
         await build(file, source);
         recompiled.push(file);
       }
@@ -488,6 +497,18 @@ export function createProject(options: ProjectOptions): Project {
  */
 export function createFileResolver(options: FileResolverOptions): Resolver {
   return createProject({ ...options, targets: [] }).resolve;
+}
+
+/**
+ * The file a question named, so a question that threw is still an edge: a fix to that file
+ * recompiles the module, whose UF9001 would otherwise stay until its own source changed. A shape
+ * query names the module's own file, which is no edge.
+ */
+function namedFile(call: Call): string | undefined {
+  if (call.kind === "shape") return undefined;
+  return call.kind === "module"
+    ? modulePath(call.request)
+    : joinPath(directoryOf(call.request.importer), call.request.specifier);
 }
 
 /** A SHA-256 of a text, in hex. */

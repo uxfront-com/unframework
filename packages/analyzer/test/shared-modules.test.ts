@@ -624,7 +624,7 @@ describe("imports of shared modules", () => {
         'import { a } from "./tokens";',
         'import type { T } from "./types.ts";',
         'export type { Tone } from "./tones";',
-        'export * from "./types.ts";',
+        'export * from "./more";',
         'import { b } from "./tokens";',
         'import F from "./F.uf.tsx";',
         'import { useX } from "./useX.uf.ts";',
@@ -632,7 +632,7 @@ describe("imports of shared modules", () => {
         'import { c } from "pkg";',
       ].join("\n"),
     );
-    expect(sharedModuleImports(parsed)).toEqual(["./tokens", "./types.ts", "./tones"]);
+    expect(sharedModuleImports(parsed)).toEqual(["./tokens", "./types.ts", "./tones", "./more"]);
     const shared = parseModule(
       "tokens.ts",
       [
