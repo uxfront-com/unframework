@@ -6,8 +6,11 @@ templates, whose host element has `display: contents` (decision D6, ADR-0010).
 ## Output
 
 One `<kebab-name>.ts` file per component (plan §6), in this order: the imports from
-`@angular/core` and `@angular/common`, and of the children's output files, each under a name no
-source name takes; the type declarations; `let nextId = 0;` when the component makes ids; the
+`@angular/core` and `@angular/common`, of the children's output files, of the composables'
+(`./use-toggle`, ADR-0069) and of the values the source imports from `.ts` modules, each under a
+name no source name takes; the type declarations; the module's constants the component reads, and
+those they read, as written (`const GAP = sizes.sm * 2;`, ADR-0070); `let nextId = 0;` when the
+component makes ids; the
 injection tokens of the module's keys; the inline helpers (`refObject`, the native controls'
 `modelText`, `toggle`, `selectedValues`, `optionText`); the slot directives; the directives its listeners'
 options need; the component.
@@ -61,8 +64,10 @@ emit("save") }`): the class's own member takes another name instead (`src/plan.t
   a key reads is read there as `this.label()`. Constants, ids and methods are members, read by
   name.
 - **Members.** Each allowed global the template reads (`Math`, `String`) is a `protected
-readonly` member of the same name: a template sees only its component's members. A member the
-  template uses is `protected`; one only the class uses is `private`.
+readonly` member of the same name: a template sees only its component's members. So is each
+  value of the module the template reads, a constant or an import (`protected readonly SIZES =
+SIZES;`), which class code reads by its module name (ADR-0070). A member the template uses is
+  `protected`; one only the class uses is `private`.
 - **Names.** Angular's compiler accepts a signal input only in a class whose decorator is
   imported as `Component`, so a component named `Component` takes the class name `Component_1`
   and is exported under its own; an import a source name takes is imported under another name
@@ -84,25 +89,26 @@ and `this.field()!.nativeElement` for a template ref (inside `?.nativeElement` t
 leave the chain optional). A template statement asserts a state's read so too (`this.selected()!`);
 the template itself, which reads through `@let`, and a template statement's input need none.
 
-| Source                              | Angular output                                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `const count = ref(0)`              | `signal(0)`; `ref<T>()` is `signal<T \| undefined>(undefined)`                                                                 |
-| `ref(initial)` reading an input     | `linkedSignal(() => untracked(() => this.initial()))`, read once in `ngOnInit`                                                 |
-| `count.value = x`, `count.value++`  | `this.count.set(x)`, `this.count.update((count) => count + 1)`; `+= value` reading a local or a field: `set(this.count() + …)` |
-| `const total = computed(() => …)`   | `computed(() => …)`                                                                                                            |
-| `const label = …` reading an input  | `computed(() => untracked(() => …))`, read once in `ngOnInit` (setup-once)                                                     |
-| `const rates = …`                   | a `readonly` field                                                                                                             |
-| `let timer: T`                      | a field: `private timer: T \| undefined;`, `private refreshes = 0;`                                                            |
-| `let remaining = limit` (an input)  | `private remaining!: number;`, assigned in `ngOnInit` (below)                                                                  |
-| `const input = useTemplateRef<T>()` | `viewChild<ElementRef<T>>("input")`, with `#input` on the element                                                              |
-| `const id = useId()`                | `` `uf-id-<component>-${nextId++}` ``: a module counter (emulated, `use-id`)                                                   |
-| `function save()`, arrow `const`    | a method; one passed as a value (`setTimeout(tick, 100)`) an arrow field, which keeps `this`, declared before the other fields |
-| `emit("change", value)`             | `this.change.emit(value)`, by the payload rule                                                                                 |
-| `nextTick()`                        | `this.nextTick()`, a private method that renders in a microtask with `ApplicationRef.tick()` (emulated, `next-tick`)           |
-| `watch(source, callback, options)`  | an `effect()` created in `ngOnInit`; `afterRenderEffect()` with `flush: "post"` (below)                                        |
-| `watchEffect(effect)`               | `afterRenderEffect(effect)` in the constructor: after the render, in the browser only                                          |
-| `onMounted(callback)`               | `afterNextRender(callback)` in the constructor: in the browser, once the view is in the document                               |
-| `onUnmounted(callback)`             | in `ngOnDestroy`, in the browser only                                                                                          |
+| Source                                    | Angular output                                                                                                                 |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `const count = ref(0)`                    | `signal(0)`; `ref<T>()` is `signal<T \| undefined>(undefined)`                                                                 |
+| `ref(initial)` reading an input           | `linkedSignal(() => untracked(() => this.initial()))`, read once in `ngOnInit`                                                 |
+| `count.value = x`, `count.value++`        | `this.count.set(x)`, `this.count.update((count) => count + 1)`; `+= value` reading a local or a field: `set(this.count() + …)` |
+| `const total = computed(() => …)`         | `computed(() => …)`                                                                                                            |
+| `const label = …` reading an input        | `computed(() => untracked(() => …))`, read once in `ngOnInit` (setup-once)                                                     |
+| `const rates = …`                         | a `readonly` field                                                                                                             |
+| `let timer: T`                            | a field: `private timer: T \| undefined;`, `private refreshes = 0;`                                                            |
+| `let remaining = limit` (an input)        | `private remaining!: number;`, assigned in `ngOnInit` (below)                                                                  |
+| `const input = useTemplateRef<T>()`       | `viewChild<ElementRef<T>>("input")`, with `#input` on the element                                                              |
+| `const id = useId()`                      | `` `uf-id-<component>-${nextId++}` ``: a module counter (emulated, `use-id`)                                                   |
+| `function save()`, arrow `const`          | a method; one passed as a value (`setTimeout(tick, 100)`) an arrow field, which keeps `this`, declared before the other fields |
+| `const { on, toggle } = useToggle(false)` | `protected readonly toggle_1 = useToggle(false)`, read as `this.toggle_1.on()` and `@let on = this.toggle_1.on();` (below)     |
+| `emit("change", value)`                   | `this.change.emit(value)`, by the payload rule                                                                                 |
+| `nextTick()`                              | `this.nextTick()`, a private method that renders in a microtask with `ApplicationRef.tick()` (emulated, `next-tick`)           |
+| `watch(source, callback, options)`        | an `effect()` created in `ngOnInit`; `afterRenderEffect()` with `flush: "post"` (below)                                        |
+| `watchEffect(effect)`                     | `afterRenderEffect(effect)` in the constructor: after the render, in the browser only                                          |
+| `onMounted(callback)`                     | `afterNextRender(callback)` in the constructor: in the browser, once the view is in the document                               |
+| `onUnmounted(callback)`                   | in `ngOnDestroy`, in the browser only                                                                                          |
 
 A watcher is created in `ngOnInit`, once the inputs are set, so the source's value at creation is
 known and typed: `let lastCount = currentCount();`. Its source goes through a `computed`
@@ -149,6 +155,45 @@ component still emits. So a watcher or a `watchEffect` with an `onCleanup` keeps
 returns runs in a function of its own (`(() => { … })();`), so its `return` ends it and not
 `ngOnDestroy`. A callback the class runs (a hook, an effect, a watcher's) returns no value, as
 none is read: its `return x;` keeps only what `x` changes.
+
+### Composables (ADR-0069)
+
+A `.uf.ts` module's composable is its own module, `use-toggle.ts` (`src/composable.ts`): an
+exported function that needs an injection context, as Angular's own `inject` functions do, its
+parameters and type parameters as written. Its setup is the function's body in source order, each
+binding a local: a state is `signal(initial)`, read `on()`, written through `set` and returned as
+`on.asReadonly()`, since a caller never writes it (UF2036); a derived value is `computed`; a
+constant, a `let` and a function are as written, and a getter argument is called and a callback
+argument called as the source does. `watch` is an `effect()` over a `computed` of its source, as a
+component's is, whose first run records the value, since the composable may run before the
+caller's inputs are set, which a getter argument may read; `watchEffect` is an
+`afterRenderEffect`, `onMounted` is `afterNextRender`, and `onUnmounted` is
+`inject(DestroyRef).onDestroy(…)`, registered in the browser only. The module imports what it uses
+from Angular, the types its parameters and setup name, and the values and constants it reads of
+its own module, as a component does.
+
+A caller holds each call's result in a member named for the composable (`useMediaQuery` →
+`mediaQuery`, `toggle_1` where `toggle` is taken), and reads a returned ref through it,
+`this.mediaQuery.matches()`, its template through a `@let`, and a returned function or constant as
+`mediaQuery.update()`. A template statement that calls a returned function is `void` (`(click)="void
+toggle_1.toggle()"`): the API says no more of its result than whether it is async, and Angular
+prevents the default on `false`. Where the call runs keeps its order among the class's code
+(`src/plan.ts`, `CallPlacement`):
+
+- a field initialiser, in source order, by default;
+- the constructor, in source order, for a composable with effects that a hook or an effect the
+  constructor registers comes before (`afterNextRender`), so the composable's runs after it
+  (`semantics/composable-effect-order`): the member is typed `ReturnType<typeof useTracked>`;
+- `ngOnInit`, through `runInInjectionContext(this.injector, …)`, where a value argument reads an
+  input or what reads one, which is set only then.
+
+A composable with effects runs in an injector of its own, `Injector.create({ providers: [],
+parent: this.injector })`, which `ngOnDestroy` destroys where the call sits among the component's
+`onUnmounted` hooks. Its `DestroyRef` is that injector, so the composable's teardown runs then: the
+component's own `DestroyRef` runs only once Angular has removed the parent's listeners of the
+component's outputs, so a callback the teardown calls could no longer emit to the parent
+(`semantics/composable-unmount-order`). The injector reads its view through its parent, so the
+composable's effects stay the component's view effects.
 
 ### Composition (ADR-0053 to ADR-0056)
 
@@ -313,7 +358,9 @@ Tests and tooling build, check and run the Angular output through three subpaths
 
 - `@unframework/target-angular/toolchain` (Node): the `toolchain` the harness drives.
   - `vite("browser" | "ssr", context)`: Angular's AOT compiler (ngtsc, strict templates) for
-    the unframework plugin's virtual `X.uf.tsx.ts` modules, Analog with `jit: false`, and the
+    the unframework plugin's virtual `X.uf.tsx.ts` modules and its modules of composables,
+    `X.uf.ts.ts`, which a component's program reads so its template is checked against the
+    composable's types (ADR-0069), Analog with `jit: false`, and the
     Angular linker, over the pre-bundled framework in the browser and over the packages the SSR
     module graph inlines on the server, so no JIT compiler runs.
   - `frameworkCompile(files, context)` (L3) and `typecheck(files, context)` (L4): one ngtsc
@@ -347,4 +394,6 @@ them in its `node_modules` (in this repository, `tests/toolchains/angular`), tog
 configuration, effects kept off the server) and `browser` (Chromium: the corpus's components as
 this target emits them now, served by `test/corpus-plugin.ts` and mounted by the adapter, judged
 on the semantics contract: reads after writes, watch timing, previous values and cleanups,
-lifecycle, listener options, emits).
+lifecycle, listener options, emits). The `composable` test compiles the composable and shared-module
+cases through `compile()`, from `tests/integration/pending/` or, once they land, `cases/`
+(`../codegen/test/composable-cases.ts`), and runs L3 to L5 on their outputs.

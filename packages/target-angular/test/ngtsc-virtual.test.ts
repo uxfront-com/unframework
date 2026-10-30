@@ -150,6 +150,48 @@ describe("ngtscVirtual", () => {
       expect(loaded).toEqual([other]);
     });
 
+    // ADR-0069: a composable's module, `X.uf.ts.ts`, which the component's program reads, so
+    // its template is checked against the composable's types.
+    it("may be a composable's module (`X.uf.ts.ts`)", async () => {
+      const composable = join(directory, "useLabel.uf.ts.ts");
+      const source = [
+        'import { signal } from "@angular/core";',
+        "",
+        "export function useLabel() {",
+        '  const label = signal("x");',
+        "  return { label: label.asReadonly() };",
+        "}",
+        "",
+      ].join("\n");
+      const caller = (read: string) =>
+        [
+          'import { Component } from "@angular/core";',
+          'import { useLabel } from "./use-label";',
+          "",
+          "@Component({",
+          '  selector: "uf-caller",',
+          `  template: \`<em>{{ label.${read}() }}</em>\`,`,
+          "})",
+          "export default class Caller {",
+          "  protected readonly label = useLabel();",
+          "}",
+          "",
+        ].join("\n");
+      const { transform, loaded } = await ngtscPlugin({ [composable]: source }, "server", {
+        lazy: true,
+        resolve: (specifier) => (specifier === "./use-label" ? composable : undefined),
+      });
+      await expect(transform(id("Caller"), caller("label"))).resolves.toMatchObject({
+        code: expect.stringContaining("useLabel()"),
+      });
+      expect(loaded).toEqual([composable]);
+      await expect(transform(id("Caller"), caller("lable"))).rejects.toThrow(/TS2551|TS2339/);
+      // The module itself compiles as one of the plugin's ids.
+      await expect(transform(composable)).resolves.toMatchObject({
+        code: expect.stringContaining("asReadonly"),
+      });
+    });
+
     it("is loaded once along a cycle of imports", async () => {
       const cyclic = (name: string, other: string) =>
         [

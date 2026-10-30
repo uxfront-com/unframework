@@ -3,7 +3,6 @@ import {
   angularDialect,
   codeNames,
   codeKind,
-  composableUse,
   defineTarget,
   exportDeclaration,
   exportsOf,
@@ -31,6 +30,7 @@ import type {
 import { codeOf, functionsOf, walk } from "@unframework/ir";
 import type { Span, TypeText, UfComponent, UfModule } from "@unframework/ir";
 
+import { emitComposable } from "./composable.ts";
 import {
   firstUse,
   keyOf,
@@ -45,8 +45,16 @@ import type { ScopeDirectiveNames } from "./directives.ts";
 import { planListeners } from "./listeners.ts";
 import { classMembers } from "./members.ts";
 import { planModels } from "./models.ts";
+import { moduleReads } from "./modules.ts";
 import { outputName } from "./outputs.ts";
-import { ANGULAR_MEMBERS, bindingById, planComponent, slotQuery } from "./plan.ts";
+import {
+  ANGULAR_MEMBERS,
+  bindingById,
+  formOf,
+  memberOf,
+  planComponent,
+  slotQuery,
+} from "./plan.ts";
 import type { Plan } from "./plan.ts";
 import { classRules } from "./rules.ts";
 import { fallthroughRoot, template, templateReads } from "./template.ts";
@@ -215,21 +223,9 @@ export const angular: Target = defineTarget({
     "composable-effect-order": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    // A composable's call and what a module or a composable gives are declared before this
-    // target emits them (ADR-0069, ADR-0070): until its composables lane lands, a component that
-    // uses one is reported, never emitted without it (P2).
-    const composable = composableUse(component);
-    if (composable) {
-      context.report({
-        code: "UF1002",
-        severity: "error",
-        message: `The angular target does not emit ${composable.what} yet: it lands with this target's composables lane.`,
-        span: composable.span,
-      });
-      return [];
-    }
     return [emitComponent(component, context)];
   },
+  emitComposable,
 });
 
 export default angular;
@@ -277,9 +273,21 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const closure = componentTypes(component, module);
   const listeners = planListeners(plan, nextTick, models.writes);
   const reads = templateReads(plan, listeners);
-  const templateMembers = new Set<string>(
-    [...reads.read, ...reads.keyed, ...listeners.members].map((id) => bindingById(plan, id).name),
+  const templateBindings = [...reads.read, ...reads.keyed, ...listeners.members].map((id) =>
+    bindingById(plan, id),
   );
+  // A composable's result is read through its call's holder (ADR-0069).
+  const templateMembers = new Set<string>(
+    templateBindings.map((binding) => memberOf(plan, binding).split(".")[0]!),
+  );
+  // A module's value is read through a member of its name, as a global is (ADR-0070).
+  const moduleMembers = [
+    ...new Set(
+      templateBindings
+        .filter((binding) => formOf(plan, binding) === "module")
+        .map((binding) => binding.name),
+    ),
+  ];
   for (const method of listeners.methods) templateMembers.add(method.name);
   for (const guard of listeners.guards) templateMembers.add(guard);
   for (const slot of reads.slots) templateMembers.add(slotQuery(slot));
@@ -316,7 +324,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     declarations: closure,
     rules,
     templateMembers,
-    globals: reads.globals,
+    globals: [...reads.globals, ...moduleMembers],
     handlers: listeners.methods,
     guards: listeners.guards,
     ...(listeners.once === undefined ? {} : { once: listeners.once }),
@@ -458,14 +466,21 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   // output (`./field`), and in the main component's file the module's type exports, in source
   // order among the types it declares (ADR-0067, ADR-0068).
   addTypeImports(component, module, imports, kebabCase);
+  // What it reads of its module: values from its `.ts` modules, and its constants (ADR-0070).
+  const own = new Set(types.map(({ name }) => name));
+  const constants = moduleReads(component.bindings, module, imports, kebabCase);
   const typeCode = [
-    ...types.map((type) => ({ code: typeDeclarationCode(type), span: type.span })),
+    ...[...types, ...constants.types.filter(({ name }) => !own.has(name))].map((type) => ({
+      code: typeDeclarationCode(type),
+      span: type.span,
+    })),
     ...typeExportsCode(component, module, kebabCase),
   ].toSorted((a, b) => a.span.start - b.span.start);
   const contents = placeholders.print(() =>
     [
       printProgram(js.program(imports.toDeclarations())),
       ...typeCode.map(({ code }) => `${code}\n`),
+      ...(constants.constants.length ? [`${constants.constants.join("\n")}\n`] : []),
       ...(nextId === undefined ? [] : [`let ${nextId} = 0;\n`]),
       ...declarations,
       ...directives.map(

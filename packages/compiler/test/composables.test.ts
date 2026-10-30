@@ -20,8 +20,8 @@ function emit(name: TargetName, module: UfModule) {
   return { files, reported };
 }
 
-/** The targets whose composables lane has not landed: Vue's has (ADR-0069). */
-const WAITING = TARGET_NAMES.filter((name) => name !== "vue");
+/** The targets whose composables lane has not landed: Vue's and Angular's have (ADR-0069). */
+const WAITING = TARGET_NAMES.filter((name) => name !== "vue" && name !== "angular");
 
 describe("composables and shared modules before each target's lane", () => {
   it.each(WAITING)("%s reports UF1002 where a component first reads a module's value", (name) => {
@@ -46,6 +46,15 @@ describe("composables and shared modules before each target's lane", () => {
     expect(emit(name, module).reported).toEqual([
       expect.objectContaining({ code: "UF1002", span: list.setup[0]!.span }),
     ]);
+  });
+
+  it("angular emits a component that reads a module's values and calls a composable", () => {
+    const { files, reported } = emit("angular", modules());
+    expect(reported).toEqual([]);
+    expect(files.map(({ path }) => path)).toEqual(["list.ts"]);
+    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+    expect(files[0]!.contents).toContain('import { useToggle } from "./use-toggle";');
+    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
   });
 
   it("vue emits a component that reads a module's values and calls a composable", () => {
@@ -130,6 +139,13 @@ describe("a module of composables", () => {
     expect(result.outputs.vue![0]!.contents).toContain(
       'import { useToggle } from "../composables/useToggle";',
     );
+  });
+
+  it("compiles a module of composables for angular, one module each, named in kebab case", async () => {
+    const result = await compile(TOGGLE, { filename: "src/useToggle.uf.ts", targets: ["angular"] });
+    expect(result.diagnostics).toEqual([]);
+    expect(result.outputs.angular!.map(({ path }) => path)).toEqual(["use-toggle.ts"]);
+    expect(result.owners.angular).toEqual({ "use-toggle.ts": "useToggle" });
   });
 
   it("compiles a module of composables for vue, one module each", async () => {

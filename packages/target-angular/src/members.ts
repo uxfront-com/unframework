@@ -18,7 +18,7 @@ import {
   rewriteCode,
 } from "@unframework/codegen";
 import type { Placeholders, RewriteRules } from "@unframework/codegen";
-import type { Code, Prop, TypeDeclaration, UfComponent } from "@unframework/ir";
+import type { Code, Prop, TypeDeclaration, UfComponent, UseItem } from "@unframework/ir";
 
 import { keyOf } from "./composition.ts";
 import type { SlotDirective } from "./composition.ts";
@@ -158,6 +158,7 @@ export function classMembers(context: MemberContext): {
       ),
     );
   }
+  const calls = new Map(plan.calls.map((call) => [call.item, call]));
   for (const event of component.emits?.events ?? []) {
     members.push(
       js.propertyDefinition(
@@ -485,9 +486,67 @@ export function classMembers(context: MemberContext): {
       case "Model":
       case "Provide":
         break;
-      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
-      case "Use":
+      // A composable's call, run in an injection context (ADR-0069): a field initialiser, or
+      // where its order among the class's code holds (`CallPlacement`), its result then typed
+      // by the composable's return type.
+      case "Use": {
+        const { holder, placement, injector } = calls.get(item)!;
+        const run = (into: string) =>
+          `${core("runInInjectionContext")}(this.${into}, () => ${callCode(context, item)})`;
+        // A composable with effects runs in an injector of its own, which `ngOnDestroy`
+        // destroys here among the `onUnmounted` hooks, running the teardown it registered.
+        if (injector !== undefined) {
+          fields.push(
+            js.propertyDefinition(
+              injector,
+              expression(
+                `${core("Injector")}.create({ providers: [], parent: this.${names.member("injector")} })`,
+              ),
+              { accessibility: "private", readonly: true },
+            ),
+          );
+          effect(initCode, { destroy: `this.${injector}.destroy();` }, true);
+        }
+        const call = injector === undefined ? callCode(context, item) : run(injector);
+        const type = () =>
+          placeholders.type(`ReturnType<typeof ${composableName(plan, item.composable)}>`);
+        switch (placement) {
+          case "field":
+            fields.push(
+              js.propertyDefinition(holder, expression(call), {
+                accessibility: visibility(holder),
+                readonly: true,
+              }),
+            );
+            break;
+          case "constructor":
+            fields.push(
+              js.propertyDefinition(holder, null, {
+                accessibility: visibility(holder),
+                readonly: true,
+                typeAnnotation: type(),
+              }),
+            );
+            constructorCode.push(`this.${holder} = ${call};`);
+            break;
+          case "init": {
+            // Definitely assigned: `ngOnInit` assigns it before the template reads it.
+            const field = js.propertyDefinition(holder, null, {
+              accessibility: visibility(holder),
+              typeAnnotation: type(),
+            });
+            fields.push({ ...field, definite: true });
+            initCode.push(
+              `this.${holder} = ${injector === undefined ? run(names.member("injector")) : call};`,
+            );
+            pins = undefined;
+            break;
+          }
+          default:
+            unreachable(placement);
+        }
         break;
+      }
       default:
         unreachable(item);
     }
@@ -637,6 +696,47 @@ export function classMembers(context: MemberContext): {
     ],
     implements: implementing,
   };
+}
+
+/**
+ * A composable's call, `useTotal(() => this.price(), () => this.quantity())`: a value argument
+ * as the setup evaluates it, a getter as a pure arrow, a callback as client code (ADR-0069).
+ */
+function callCode(context: MemberContext, item: UseItem): string {
+  const { component } = context.plan;
+  const parts = item.arguments.map((argument) => {
+    switch (argument.kind) {
+      case "Value":
+        return pure(context, argument.value);
+      case "Getter":
+        return functionText(argument.getter, component, context.rules, "pure");
+      case "Callback":
+        return tidied(
+          functionText(argument.callback, component, context.rules, "client"),
+          "expression",
+        );
+      default:
+        return unreachable(argument);
+    }
+  });
+  return `${composableName(context.plan, item.composable)}(${parts.join(", ")})`;
+}
+
+/**
+ * A called composable's name in the output, imported from its own module beside its `.uf.ts`
+ * (`./use-toggle`, ADR-0069) under the source's local name.
+ */
+export function composableName(plan: Plan, local: string): string {
+  for (const entry of plan.module.imports ?? []) {
+    const name = entry.names.find((each) => each.kind === "Composable" && each.local === local);
+    if (name === undefined) continue;
+    const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
+    return plan.imports.add(`${directory}${kebabCase(name.imported)}`, name.imported, {
+      local,
+      exact: true,
+    });
+  }
+  throw new Error(`\`${local}\` is called as a composable, and no import names it.`);
 }
 
 /** Code the setup evaluates (an initial value, a constant), spelled for the class. */

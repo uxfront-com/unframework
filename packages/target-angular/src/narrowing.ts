@@ -103,9 +103,22 @@ export function assertedSetup(component: UfComponent): UfComponent {
         case "Provide":
         case "Inject":
           return item;
-        // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
         case "Use":
-          return item;
+          return {
+            ...item,
+            arguments: item.arguments.map((argument) => {
+              switch (argument.kind) {
+                case "Value":
+                  return { ...argument, value: code(argument.value) };
+                case "Getter":
+                  return { ...argument, getter: fn(argument.getter) };
+                case "Callback":
+                  return { ...argument, callback: fn(argument.callback) };
+                default:
+                  return unreachable(argument);
+              }
+            }),
+          };
         default:
           return unreachable(item);
       }

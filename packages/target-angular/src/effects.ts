@@ -216,6 +216,7 @@ function watchedSignal(source: WatchSource, plan: Plan): Binding | undefined {
     case "input":
     case "computed":
     case "model":
+    case "result":
       return binding;
     case "context":
     case "instance":
@@ -230,6 +231,8 @@ function watchedSignal(source: WatchSource, plan: Plan): Binding | undefined {
     case "field":
     case "loop":
     case "emit":
+    case "module":
+    case "resultValue":
       return undefined;
     default:
       return unreachable(form);
@@ -271,17 +274,17 @@ function callbackFunction(fn: FunctionCode, plan: Plan, rules: RewriteRules): st
 }
 
 /** A parameter's binding as written: its name, or its pattern. */
-function parameterBinding(parameter: Parameter): string {
+export function parameterBinding(parameter: Parameter): string {
   return parameter.name ?? parameter.pattern?.code ?? "";
 }
 
 /** A parameter's type annotation as written, `: number`, or nothing. */
-function annotation(parameter: Parameter | undefined): string {
+export function annotation(parameter: Parameter | undefined): string {
   return parameter?.type ? `: ${parameter.type.code}` : "";
 }
 
 /** A value with a parameter's default applied, as calling with `undefined` applies it. */
-function defaulted(parameter: Parameter, value: string): string {
+export function defaulted(parameter: Parameter, value: string): string {
   return parameter.default
     ? `${value} === undefined ? ${parameter.default.code} : ${value}`
     : value;
