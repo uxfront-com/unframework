@@ -121,7 +121,8 @@ describe("the project's compiles", () => {
   });
 
   it("recompile a parent when its child's API changes, and not when it stays", async () => {
-    const child = 'export default function Child({ label }: { label: string }) {\n  return <i>{label}</i>;\n}\n';
+    const child =
+      "export default function Child({ label }: { label: string }) {\n  return <i>{label}</i>;\n}\n";
     const { project, write } = memoryProject({
       "Child.uf.tsx": child,
       "Parent.uf.tsx":
@@ -191,8 +192,9 @@ describe("import cycles (UF1205)", () => {
     });
     const result = await project.compile("Top.uf.tsx");
     expect(result.diagnostics.map(({ code }) => code)).not.toContain("UF1205");
-    expect(await project.resolve.cycle!({ specifier: "./Top.uf.tsx", importer: "Top.uf.tsx" }))
-      .toBeUndefined();
+    expect(
+      await project.resolve.cycle!({ specifier: "./Top.uf.tsx", importer: "Top.uf.tsx" }),
+    ).toBeUndefined();
   });
 
   it("recompiles a module once the cycle is broken", async () => {

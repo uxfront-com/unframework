@@ -19,13 +19,7 @@ import type { ShapeQuery, TypeOracle, TypeShape } from "@unframework/type-oracle
 
 import { compile } from "./compile.ts";
 import type { CompileOptions, CompileResult } from "./compile.ts";
-import {
-  directoryOf,
-  joinPath,
-  modulePath,
-  relativePath,
-  stylesheetSource,
-} from "./resolver.ts";
+import { directoryOf, joinPath, modulePath, relativePath, stylesheetSource } from "./resolver.ts";
 import type {
   FileResolverOptions,
   ResolvedModule,
@@ -105,10 +99,14 @@ interface Child {
  */
 export function createProject(options: ProjectOptions): Project {
   const root = options.root.replace(/\/+$/, "");
-  const { readFile, typeOracle } = options;
-  const { root: _root, readFile: _readFile, typeOracle: _oracle, ...compileOptions } = options;
+  const { typeOracle } = options;
+  // What each compile takes besides the project's own options.
+  const compileOptions: Omit<CompileOptions, "filename" | "resolve" | "typeOracle"> = {
+    ...options,
+  };
+  for (const key of ["root", "readFile", "typeOracle"]) Reflect.deleteProperty(compileOptions, key);
   const readPath = (path: string | undefined) =>
-    path === undefined ? Promise.resolve(undefined) : readFile(`${root}/${path}`);
+    path === undefined ? Promise.resolve(undefined) : options.readFile(`${root}/${path}`);
 
   /** Each child's analysis, by its file, with the key it was analysed under. */
   const children = new Map<string, { key: string; child: Child }>();
