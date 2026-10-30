@@ -63,8 +63,8 @@ describe("invalidation", () => {
     const { project } = await compiledFixture();
     expect(project.dependencies("B.uf.tsx")).toEqual(["a.ts"]);
     expect(project.dependencies("useC.uf.ts")).toEqual(["a.ts"]);
-    // C reaches a.ts through useC's API, and the cycle search reads it too.
-    expect(project.dependencies("C.uf.tsx")).toEqual(["a.ts", "useC.uf.ts"]);
+    // C reaches a.ts through useC's API, whose own node reads it.
+    expect(project.dependencies("C.uf.tsx")).toEqual(["useC.uf.ts"]);
     expect(project.dependencies("D.uf.tsx")).toEqual([]);
   });
 
@@ -147,13 +147,18 @@ describe("the project's compiles", () => {
   });
 });
 
-describe("import cycles (UF1205)", () => {
-  const PING =
-    'import Pong from "./Pong.uf.tsx";\nexport default function Ping({ n }: { n: number }) {\n  return <span>{n > 0 ? <Pong n={n - 1} /> : <i>Ping</i>}</span>;\n}\n';
-  const PONG =
-    'import Ping from "./Ping.uf.tsx";\nexport default function Pong({ n }: { n: number }) {\n  return <span>{n > 0 ? <Ping n={n - 1} /> : <i>Pong</i>}</span>;\n}\n';
+describe("import cycle (UF1205)", () => {
+  /** A component that renders the next one by a default import, while `n` lasts. */
+  const renders = (
+    name: string,
+    next: string,
+    imported = `import ${next} from "./${next}.uf.tsx";`,
+  ) =>
+    `${imported}\nexport default function ${name}({ n }: { n: number }) {\n  return <span>{n > 0 ? <${next} n={n - 1} /> : <i>${name}</i>}</span>;\n}\n`;
+  const PING = renders("Ping", "Pong");
+  const PONG = renders("Pong", "Ping");
 
-  it("reports the import that closes a cycle, with its files, and withholds the module", async () => {
+  it("reports two components that render each other at the closing import, and withholds the module", async () => {
     const { project } = memoryProject({ "Ping.uf.tsx": PING, "Pong.uf.tsx": PONG });
     const result = await project.compile("Ping.uf.tsx");
     expect(result.diagnostics).toEqual([
@@ -162,25 +167,106 @@ describe("import cycles (UF1205)", () => {
         file: "Ping.uf.tsx",
         span: { start: PING.indexOf('"./Pong'), end: PING.indexOf(";") },
         message:
-          '"./Pong.uf.tsx" closes an import cycle, Ping.uf.tsx → Pong.uf.tsx → Ping.uf.tsx: none of its modules can load before the others.',
+          '"./Pong.uf.tsx" closes an import cycle of components, Ping.uf.tsx → Pong.uf.tsx → Ping.uf.tsx: each imports the next to render it, so none of them can load before the others.',
       }),
     ]);
     expect(result.ir).toBeUndefined();
     expect(result.outputs.vue).toEqual([]);
   });
 
-  it("follows shared modules, composables and type imports, and names files from the source", async () => {
+  it("reports a cycle of three, by named imports too, naming its files from the source", async () => {
     const { project } = memoryProject({
-      "ui/Card.uf.tsx":
-        'import { tone } from "../shared/tone";\nexport type CardTone = "info";\nexport default function Card() {\n  return <i>{tone}</i>;\n}\n',
-      "shared/tone.ts":
-        'import type { CardTone } from "../ui/Card.uf.tsx";\nexport const tone: CardTone = "info";\n',
+      "a/One.uf.tsx": renders("One", "Two", 'import { Two } from "../b/Two.uf.tsx";').replace(
+        "export default function One",
+        "export function One",
+      ),
+      "b/Two.uf.tsx": renders("Two", "Three", 'import Three from "./Three.uf.tsx";').replace(
+        "export default function Two",
+        "export function Two",
+      ),
+      "b/Three.uf.tsx": renders("Three", "One", 'import { One } from "../a/One.uf.tsx";'),
     });
-    const result = await project.compile("ui/Card.uf.tsx");
-    expect(result.diagnostics.map(({ code, message }) => [code, message])).toContainEqual([
-      "UF1205",
-      '"../shared/tone" closes an import cycle, Card.uf.tsx → ../shared/tone.ts → Card.uf.tsx: none of its modules can load before the others.',
-    ]);
+    for (const [file, specifier, cycle] of [
+      [
+        "a/One.uf.tsx",
+        "../b/Two.uf.tsx",
+        "One.uf.tsx → ../b/Two.uf.tsx → ../b/Three.uf.tsx → One.uf.tsx",
+      ],
+      [
+        "b/Two.uf.tsx",
+        "./Three.uf.tsx",
+        "Two.uf.tsx → Three.uf.tsx → ../a/One.uf.tsx → Two.uf.tsx",
+      ],
+      [
+        "b/Three.uf.tsx",
+        "../a/One.uf.tsx",
+        "Three.uf.tsx → ../a/One.uf.tsx → Two.uf.tsx → Three.uf.tsx",
+      ],
+    ] as const) {
+      const result = await project.compile(file);
+      expect(result.diagnostics.map(({ code, message }) => [code, message])).toEqual([
+        [
+          "UF1205",
+          `"${specifier}" closes an import cycle of components, ${cycle}: each imports the next to render it, so none of them can load before the others.`,
+        ],
+      ]);
+    }
+  });
+
+  it("reports nothing for a consumer that imports its provider's key", async () => {
+    const { project } = memoryProject({
+      "Provider.uf.tsx": [
+        'import { provide } from "unframework";',
+        'import type { InjectionKey } from "unframework";',
+        'import Consumer from "./Consumer.uf.tsx";',
+        'export const LabelKey: InjectionKey<string> = Symbol("uf.label");',
+        "export default function Provider() {",
+        '  provide(LabelKey, "Hi");',
+        "  return <div><Consumer /></div>;",
+        "}",
+        "",
+      ].join("\n"),
+      "Consumer.uf.tsx": [
+        'import { inject } from "unframework";',
+        'import { LabelKey } from "./Provider.uf.tsx";',
+        "export default function Consumer() {",
+        "  const label = inject(LabelKey);",
+        "  return <i>{label}</i>;",
+        "}",
+        "",
+      ].join("\n"),
+    });
+    for (const file of ["Provider.uf.tsx", "Consumer.uf.tsx"]) {
+      const result = await project.compile(file);
+      expect(result.diagnostics.map(({ code }) => code)).toEqual([]);
+    }
+  });
+
+  it("reports nothing for a type imported back", async () => {
+    const { project } = memoryProject({
+      "Card.uf.tsx":
+        'import Tag from "./Tag.uf.tsx";\nexport type Tone = "info" | "warning";\nexport default function Card() {\n  return <div><Tag tone="info" /></div>;\n}\n',
+      "Tag.uf.tsx":
+        'import type { Tone } from "./Card.uf.tsx";\nexport default function Tag({ tone }: { tone: Tone }) {\n  return <i>{tone}</i>;\n}\n',
+    });
+    for (const file of ["Card.uf.tsx", "Tag.uf.tsx"]) {
+      const result = await project.compile(file);
+      expect(result.diagnostics.map(({ code }) => code)).toEqual([]);
+    }
+  });
+
+  it("reports nothing for a cycle of shared .ts modules alone", async () => {
+    const { project } = memoryProject({
+      "Card.uf.tsx":
+        'import { first } from "./first.ts";\nexport default function Card() {\n  return <i>{first}</i>;\n}\n',
+      "first.ts":
+        'import { second } from "./second.ts";\nexport const first = "first";\nexport const both = () => second;\n',
+      "second.ts":
+        'import { first } from "./first.ts";\nexport const second = "second";\nexport const back = () => first;\n',
+    });
+    const result = await project.compile("Card.uf.tsx");
+    expect(result.diagnostics.map(({ code }) => code)).not.toContain("UF1205");
+    expect(project.copy("second.ts")).toContain("export const second");
   });
 
   it("leaves a self-import to UF1203, and a cycle the source is not in to its own modules", async () => {
@@ -206,5 +292,38 @@ describe("import cycles (UF1205)", () => {
       copied: [],
     });
     expect((await project.compile("Ping.uf.tsx")).diagnostics).toEqual([]);
+  });
+});
+
+describe("dependencies", () => {
+  it("copy and list a .ts module that a component only re-exports a type from", async () => {
+    const { project } = memoryProject({
+      "tone.ts": 'export type Tone = "info" | "warning";\n',
+      "Badge.uf.tsx":
+        'export type { Tone } from "./tone.ts";\n\nexport default function Badge({ text }: { text: string }) {\n  return <span>{text}</span>;\n}\n',
+    });
+    const result = await project.compile("Badge.uf.tsx");
+    expect(result.diagnostics).toEqual([]);
+    expect(result.dependencies).toEqual(["tone.ts"]);
+    expect(project.copy("tone.ts")).toBe('export type Tone = "info" | "warning";\n');
+    const direct = await compile(
+      'export type { Tone } from "./tone";\nexport default function Badge() {\n  return <i />;\n}\n',
+      { filename: "Badge.uf.tsx", targets: ["vue"], resolve: project.resolve },
+    );
+    expect(direct.outputs.vue?.map(({ path }) => path)).toEqual(["Badge.vue", "tone.ts"]);
+  });
+
+  it("list a missing .uf.ts module, and recompile its importer once it exists", async () => {
+    const caller = FIXTURE["C.uf.tsx"]!;
+    const { project, write } = memoryProject({ "C.uf.tsx": caller });
+    const result = await project.compile("C.uf.tsx");
+    expect(result.dependencies).toEqual(["useC.uf.ts"]);
+    expect(result.diagnostics.map(({ code }) => code)).toContain("UF1202");
+    write("a.ts", FIXTURE["a.ts"]);
+    write("useC.uf.ts", FIXTURE["useC.uf.ts"]);
+    expect((await project.update(["a.ts", "useC.uf.ts"])).compiled).toEqual(["C.uf.tsx"]);
+    expect((await project.compile("C.uf.tsx")).diagnostics.map(({ code }) => code)).not.toContain(
+      "UF1202",
+    );
   });
 });

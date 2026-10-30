@@ -40,15 +40,21 @@ export function isSharedModuleSpecifier(specifier: string): boolean {
 }
 
 /**
- * The specifiers of the shared `.ts` modules a parsed module imports, values or types, in source
- * order, each once: what `compile()` asks its resolver to read before the module is analysed.
+ * The specifiers of the shared `.ts` modules a parsed module imports or re-exports from, values or
+ * types, in source order, each once: what `compile()` asks its resolver to read before the module
+ * is analysed. A re-export is an edge too: every output re-exports as the source does, so its
+ * tree needs the module's copy (ADR-0067, ADR-0070).
  */
 export function sharedModuleImports(parsed: ParsedModule): string[] {
   const found = new Set<string>();
   for (const statement of parsed.program.body) {
-    if (statement.type === "ImportDeclaration" && isSharedModuleSpecifier(statement.source.value)) {
-      found.add(statement.source.value);
-    }
+    const from =
+      statement.type === "ImportDeclaration" ||
+      statement.type === "ExportAllDeclaration" ||
+      statement.type === "ExportNamedDeclaration"
+        ? statement.source
+        : null;
+    if (from && isSharedModuleSpecifier(from.value)) found.add(from.value);
   }
   return [...found];
 }

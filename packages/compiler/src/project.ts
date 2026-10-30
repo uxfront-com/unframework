@@ -6,7 +6,6 @@ import {
   analyze,
   frameworkOf,
   isAuthoringModule,
-  isSharedModuleSpecifier,
   moduleSpecifiers,
   shapeQueries,
   stylesheetImports,
@@ -19,7 +18,15 @@ import type { ShapeQuery, TypeOracle, TypeShape } from "@unframework/type-oracle
 
 import { compile } from "./compile.ts";
 import type { CompileOptions, CompileResult } from "./compile.ts";
-import { directoryOf, joinPath, modulePath, relativePath, stylesheetSource } from "./resolver.ts";
+import {
+  componentImportNames,
+  directoryOf,
+  joinPath,
+  modulePath,
+  relativePath,
+  stylesheetSource,
+  takesComponent,
+} from "./resolver.ts";
 import type {
   FileResolverOptions,
   ResolvedModule,
@@ -112,8 +119,11 @@ export function createProject(options: ProjectOptions): Project {
   const children = new Map<string, { key: string; child: Child }>();
   /** What each child's analysis read: its stylesheets and its types' files and packages. */
   const childEdges = new Map<string, Set<string>>();
-  /** Each file's relative imports, by its text, which the cycle search follows. */
-  const imports = new Map<string, { source: string; files: string[] }>();
+  /** Each file's `.uf.tsx` imports, by its text, which the cycle search follows. */
+  const imported = new Map<
+    string,
+    { source: string; imports: ReturnType<typeof componentImportNames> }
+  >();
   const compiled = new Map<string, Compiled>();
   const copies = new Map<string, string>();
 
@@ -205,32 +215,42 @@ export function createProject(options: ProjectOptions): Project {
     return resolved;
   };
 
-  /** The files a file imports, values or types, that the compiler reads: modules of the project. */
-  const importsOf = async (file: string): Promise<string[]> => {
+  /**
+   * The components a module imports to render, by file: its component edges (ADR-0071), each
+   * read by the API of the module it imports, which the project's analysis caches by content.
+   */
+  const componentEdgesOf = async (file: string): Promise<string[]> => {
     const source = await readPath(file);
     if (source === undefined) return [];
-    const cached = imports.get(file);
-    if (cached?.source === source) return cached.files;
-    const files = moduleSpecifiers(parseModule(file, source)).flatMap((specifier) => {
-      const path = importPath({ specifier, importer: file });
-      return path === undefined ? [] : [path];
-    });
-    imports.set(file, { source, files });
+    let cached = imported.get(file);
+    if (cached?.source !== source) {
+      cached = { source, imports: componentImportNames(parseModule(file, source)) };
+      imported.set(file, cached);
+    }
+    const files: string[] = [];
+    for (const { specifier, names } of cached.imports) {
+      const request = { specifier, importer: file };
+      const path = joinPath(directoryOf(file), specifier);
+      if (path !== undefined && takesComponent((await resolveChild(request))?.api, names)) {
+        files.push(path);
+      }
+    }
     return files;
   };
 
   /**
-   * The shortest import cycle an import closes, from the importer back to it, and every file the
-   * search read. A module that imports itself is UF1203's, not a cycle (ADR-0053).
+   * The shortest cycle of component edges a component edge closes, from the importer back to it,
+   * and every file the search read. A component that renders itself is UF1203's, not a cycle
+   * (ADR-0053), and a cycle that a key, a type or a shared module closes is none (ADR-0071).
    */
   const findCycle = async (request: ResolveRequest) => {
-    const start = importPath(request);
+    const start = joinPath(directoryOf(request.importer), request.specifier);
     if (start === undefined || start === request.importer) return { visited: [] };
     const previous = new Map([[start, request.importer]]);
     const queue = [start];
     for (let index = 0; index < queue.length; index++) {
       const file = queue[index]!;
-      for (const next of await importsOf(file)) {
+      for (const next of await componentEdgesOf(file)) {
         if (next === request.importer) {
           const chain = [file];
           while (chain[0] !== start) chain.unshift(previous.get(chain[0]!)!);
@@ -430,19 +450,12 @@ export function createProject(options: ProjectOptions): Project {
  * Its stylesheets are read, for the scope id its API carries (ADR-0063). It reads a stylesheet for
  * `stylesheet` too, and for `module` a shared `.ts` module, a specifier without an extension
  * naming its `.ts`, and follows its relative imports through every `.ts` module they reach, each
- * read once (ADR-0070). Its `cycle` follows every relative import of a module, value or type,
- * for the shortest cycle back to the importer (UF1205).
+ * read once (ADR-0070). Its `cycle` follows the component edges from an import, each a value
+ * import of a component from a `.uf.tsx` module, for the shortest cycle back to the importer
+ * (UF1205).
  */
 export function createFileResolver(options: FileResolverOptions): Resolver {
   return createProject({ ...options, targets: [] }).resolve;
-}
-
-/** The file a relative import names, when it is a module the compiler reads. */
-function importPath(request: ResolveRequest): string | undefined {
-  if (isSharedModuleSpecifier(request.specifier)) return modulePath(request);
-  return /\.uf\.tsx?$/.test(request.specifier)
-    ? joinPath(directoryOf(request.importer), request.specifier)
-    : undefined;
 }
 
 /** A SHA-256 of a text, in hex. */

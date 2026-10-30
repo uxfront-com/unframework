@@ -1,7 +1,8 @@
 import { isSharedModuleSpecifier } from "@unframework/analyzer";
 import type { StylesheetSource } from "@unframework/analyzer";
 import { scopeStylesheet } from "@unframework/codegen";
-import type { ModuleApi } from "@unframework/ir";
+import type { ModuleApi, Span } from "@unframework/ir";
+import type { ParsedModule } from "@unframework/parser";
 import type { TypeOracle } from "@unframework/type-oracle";
 
 /** What {@link compile}'s `resolve` option receives: an import's specifier, and its importer. */
@@ -48,8 +49,9 @@ export interface ResolvedModule {
  * component's stylesheet, `import "./Card.css"` (ADR-0063), or gives `undefined` for one that does
  * not exist: without it, no sheet is read (UF5005). Its `module` reads a shared `.ts` module and
  * the modules it reaches (ADR-0070), or gives `undefined` for one that does not exist: without it,
- * a value import of one is UF1202. Its `cycle` gives the files of the import cycle an import
- * closes, from the importer back to it, or `undefined` where there is none (UF1205, ADR-0071):
+ * a value import of one is UF1202. Its `cycle` gives the files of the cycle of component edges an
+ * import closes, from the importer back to it, or `undefined` where there is none (UF1205,
+ * ADR-0071): `compile()` asks it only for a component edge of its own (`componentEdges`), and
  * without it, no cycle is found.
  */
 export interface Resolver {
@@ -129,3 +131,48 @@ export function relativePath(directory: string, path: string): string {
   while (shared < from.length && shared < to.length - 1 && from[shared] === to[shared]) shared++;
   return [...from.slice(shared).map(() => ".."), ...to.slice(shared)].join("/");
 }
+
+/**
+ * A module's imports that may be component edges (ADR-0071): each `.uf.tsx` import with the names
+ * it takes by value (`default` for a default import), and the span of its first specifier. An
+ * import is a component edge when one of its names is a component of the module's API
+ * (`takesComponent`): a key, a type or another value closes no cycle (UF1205).
+ */
+export function componentImportNames(
+  parsed: ParsedModule,
+): { specifier: string; span: Span; names: string[] }[] {
+  const found = new Map<string, { span: Span; names: string[] }>();
+  for (const statement of parsed.program.body) {
+    if (statement.type !== "ImportDeclaration" || statement.importKind === "type") continue;
+    const specifier = statement.source.value;
+    if (!COMPONENT_MODULE.test(specifier)) continue;
+    const names = statement.specifiers.flatMap((imported) => {
+      if (imported.type === "ImportDefaultSpecifier") return ["default"];
+      if (imported.type !== "ImportSpecifier" || imported.importKind === "type") return [];
+      const name = imported.imported;
+      return [name.type === "Identifier" ? name.name : String(name.value)];
+    });
+    const entry = found.get(specifier);
+    if (entry) entry.names.push(...names);
+    else
+      found.set(specifier, {
+        span: { start: statement.source.start, end: statement.source.end },
+        names,
+      });
+  }
+  return [...found].map(([specifier, entry]) => ({ specifier, ...entry }));
+}
+
+/** Whether a module's API exports a component under one of the names an import takes. */
+export function takesComponent(api: ModuleApi | undefined, names: readonly string[]): boolean {
+  return names.some((name) =>
+    api?.components.some((component) =>
+      name === "default"
+        ? component.export === "default"
+        : component.export === "named" && component.name === name,
+    ),
+  );
+}
+
+/** A relative import of a `.uf.tsx` module. */
+const COMPONENT_MODULE = /^\.\.?\/.*\.uf\.tsx$/;
