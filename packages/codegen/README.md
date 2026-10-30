@@ -209,8 +209,9 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   dialects: `operand`, `test`, `negate`, `conjoin`, `member`, `angularCode`, `vueAttributeCode`,
   `staticClassValue`, `vueClassValue`, `codeTokens` and `mapCode`, and the binding forms ADR-0065
   lowers: `bindingForms`, `mergesWholeStyle` and `spreadStyleExpression`. The targets' `markup-semantics` tests render the shared cases of
-  `test/markup-cases.ts` through each framework and its L5 linters, and their `composable` tests
-  compile the composable and module cases through `test/composable-cases.ts`, which reads each
+  `test/markup-cases.ts` through each framework and its L5 linters, and the `composable` test each
+  target's composables lane adds compiles the composable and module cases through
+  `test/composable-cases.ts`, which reads each
   case from `tests/integration/pending/` or `cases/` (ADR-0069).
 - **Formatting:** `formatOutput` runs oxfmt (pinned) over code files (TS, TSX, JS), with
   embedded-language formatting off and objects laid out by width alone. In a markup file it

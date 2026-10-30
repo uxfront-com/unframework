@@ -6,6 +6,7 @@
 // output declares as the source does.
 import {
   bindingOf,
+  codeNames,
   componentTypes,
   ImportSet,
   js,
@@ -16,7 +17,7 @@ import {
   typeSpecifier,
 } from "@unframework/codegen";
 import type { EmitContext, OutputFile } from "@unframework/codegen";
-import type { UfComponent, UfComposable, UfModule } from "@unframework/ir";
+import type { Code, TypeDeclaration, UfComponent, UfComposable, UfModule } from "@unframework/ir";
 
 import { VueNames } from "./names.ts";
 import { itemCode, itemLayout, laidOut, typeParametersText } from "./script.ts";
@@ -51,7 +52,7 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
   const names = new VueNames(owner, module);
   const imports = new ImportSet(names.scope);
   const rules = names.scriptRules(() => imports.add("vue", "nextTick"));
-  const constants = moduleBindings(owner, module, imports);
+  const reads = moduleBindings(owner, module, imports, names);
   const statements: Statement[] = composable.setup.map((item) => {
     const code = itemCode(item, owner, module, names, imports, rules);
     return { code, layout: itemLayout(item, code) };
@@ -74,32 +75,48 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
       if (type) for (const name of typeNames(type)) read.add(name);
     }
   }
-  for (const entry of module.typeImports ?? []) {
-    for (const name of entry.names) {
-      if (!read.has(name.local)) continue;
-      const specifier = typeSpecifier(entry.specifier, module, (each) => `${each}.vue`);
-      imports.add(specifier, name.imported, { type: true, local: name.local, exact: true });
-    }
-  }
+  for (const name of reads.typeNames) read.add(name);
+  addReadTypeImports(module, imports, read);
   const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
   const body = laidOut(statements).replaceAll("\n", "\n  ");
   const code = [
     ...(head ? [head] : []),
-    ...componentTypes(owner, module).map(typeDeclarationCode),
-    ...(constants.length ? [constants.join("\n")] : []),
+    ...[...componentTypes(owner, module), ...reads.types]
+      .toSorted((a, b) => a.span.start - b.span.start)
+      .map(typeDeclarationCode),
+    ...(reads.constants.length ? [reads.constants.join("\n")] : []),
     `export function ${composable.name}${typeParametersText(composable.typeParameters)}(${parameters.join(", ")}) {\n  ${body}\n}`,
   ].join("\n\n");
   return [{ path: `${composable.name}.ts`, contents: `${code}\n` }];
 }
 
+/** What a component or a composable reads of its module (ADR-0070). */
+export interface ModuleReads {
+  /** The constants it declares, in source order, each as written but for a renamed name. */
+  constants: string[];
+  /**
+   * The module's type declarations its constants name, transitively, that its own types leave
+   * out, to declare beside them.
+   */
+  types: TypeDeclaration[];
+  /** The type names its constants and those declarations name, which its output imports. */
+  typeNames: Set<string>;
+}
+
 /**
- * What a component or a composable reads of its module (ADR-0070), added to its output's
- * imports, and the constants it declares, in source order: the imported values and the
- * constants it reads, and those its constants read in turn. A constant's value is copied as
- * written: it reads only globals, the module's constants and its imports, which the output
- * names as the source does.
+ * What a component or a composable reads of its module (ADR-0070): the imported values and the
+ * constants it reads, and those its constants read in turn. Each value import is added to the
+ * output's imports, as the source writes it. A constant's value reads only globals, the
+ * module's constants and its imports, so it is copied as written, but for a module name Vue
+ * declares under another (`VueNames`). The types a constant names come with it: its
+ * annotation's, and those its value names (`satisfies Tone[]`).
  */
-export function moduleBindings(owner: UfComponent, module: UfModule, imports: ImportSet): string[] {
+export function moduleBindings(
+  owner: UfComponent,
+  module: UfModule,
+  imports: ImportSet,
+  names: VueNames,
+): ModuleReads {
   const reached = new Set(
     owner.bindings
       .filter((binding) => binding.kind === "import" || binding.kind === "moduleConst")
@@ -112,23 +129,80 @@ export function moduleBindings(owner: UfComponent, module: UfModule, imports: Im
     for (const constant of constants) {
       if (!reached.has(constant.name)) continue;
       for (const reference of constant.value.refs) {
-        if (reference.kind === "Binding") {
-          reached.add(reference.binding.slice(0, reference.binding.lastIndexOf("@")));
-        }
+        if (reference.kind === "Binding") reached.add(nameOf(reference.binding));
       }
     }
   }
   for (const entry of module.moduleImports ?? []) {
     for (const name of entry.names) {
-      if (reached.has(name.local)) {
-        imports.add(entry.specifier, name.imported, { local: name.local, exact: true });
-      }
+      if (!reached.has(name.local)) continue;
+      const local = names.moduleLocal(name.local);
+      if (name.imported === "default") imports.addDefault(entry.specifier, local, { exact: true });
+      else imports.add(entry.specifier, name.imported, { local, exact: true });
     }
   }
-  return constants
-    .filter((constant) => reached.has(constant.name))
-    .map(
+  const declared = constants.filter((constant) => reached.has(constant.name));
+  const read = new Set<string>();
+  for (const constant of declared) {
+    if (constant.type) for (const name of typeNames(constant.type)) read.add(name);
+    for (const name of codeNames(constant.value.code)) read.add(name);
+  }
+  // The module's declarations those names reach, and the names they read in turn.
+  const own = new Set(owner.types);
+  const types = new Map<string, TypeDeclaration>();
+  for (let size = -1; size !== types.size;) {
+    size = types.size;
+    for (const declaration of module.types) {
+      if (own.has(declaration.name) || types.has(declaration.name)) continue;
+      if (!read.has(declaration.name)) continue;
+      types.set(declaration.name, declaration);
+      for (const name of codeNames(declaration.code, "statements")) read.add(name);
+    }
+  }
+  return {
+    constants: declared.map(
       (constant) =>
-        `const ${constant.name}${constant.type ? `: ${constant.type.code}` : ""} = ${constant.value.code};`,
-    );
+        `const ${names.moduleLocal(constant.name)}${constant.type ? `: ${constant.type.code}` : ""} = ${renamed(constant.value, names)};`,
+    ),
+    types: module.types.filter((declaration) => types.has(declaration.name)),
+    typeNames: read,
+  };
+}
+
+/** Adds the `import type` names in `read` to an output's imports, as the source names them. */
+export function addReadTypeImports(
+  module: UfModule,
+  imports: ImportSet,
+  read: ReadonlySet<string>,
+): void {
+  for (const entry of module.typeImports ?? []) {
+    for (const name of entry.names) {
+      if (!read.has(name.local)) continue;
+      const specifier = typeSpecifier(entry.specifier, module, (each) => `${each}.vue`);
+      imports.add(specifier, name.imported, { type: true, local: name.local, exact: true });
+    }
+  }
+}
+
+/** The name of a binding id, `name@offset`. */
+function nameOf(id: string): string {
+  return id.slice(0, id.lastIndexOf("@"));
+}
+
+/** A constant's value, with each module name Vue declares under another written by that name. */
+function renamed(value: Code, names: VueNames): string {
+  let written = "";
+  let last = 0;
+  const references = value.refs
+    .filter((reference) => reference.kind === "Binding")
+    .toSorted((a, b) => a.span.start - b.span.start);
+  for (const reference of references) {
+    const name = nameOf(reference.binding);
+    const local = names.moduleLocal(name);
+    if (local === name) continue;
+    const start = reference.span.start - value.span.start;
+    written += `${value.code.slice(last, start)}${reference.shorthand ? `${name}: ` : ""}${local}`;
+    last = reference.span.end - value.span.start;
+  }
+  return `${written}${value.code.slice(last)}`;
 }

@@ -42,7 +42,8 @@ import type {
   WatchSource,
 } from "@unframework/ir";
 
-import { moduleBindings } from "./composable.ts";
+import { addReadTypeImports, moduleBindings } from "./composable.ts";
+import type { ModuleReads } from "./composable.ts";
 import { planListeners } from "./listeners.ts";
 import type { Listeners } from "./listeners.ts";
 import { unreachable, VUE_RESERVED, VueNames } from "./names.ts";
@@ -149,16 +150,20 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   // `useToggle.uf.ts` (ADR-0069).
   addComposableImports(component, module, imports);
   // What it reads of its module: values from its `.ts` modules, and its constants (ADR-0070).
-  const constants = moduleBindings(component, module, imports);
+  const reads = moduleBindings(component, module, imports, names);
+  const constants = reads.constants;
   // The output of the module's main component declares the keys, and the types it copies, in a
   // plain `<script lang="ts">` block, which `<script setup>` reads.
   const keys =
     module.keys?.length && keyOwner(module.components, module.exports) === component.name
-      ? keyBlock(component, module, names)
+      ? keyBlock(component, module, names, reads)
       : undefined;
   // The types it imports, by name, beside the types it copies (ADR-0067): a child's from its
   // output, `./Field.vue`.
-  if (!keys) addTypeImports(component, module, imports, (name) => `${name}.vue`);
+  if (!keys) {
+    addTypeImports(component, module, imports, (name) => `${name}.vue`);
+    addReadTypeImports(module, imports, reads.typeNames);
+  }
   // `<component is>` reads a candidate by its binding, under the alias of a built-in's name too.
   for (const binding of component.bindings) {
     const alias = binding.kind === "component" ? components.get(binding.name) : undefined;
@@ -222,7 +227,7 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   }
   // The module's type exports, which consumers import by name (ADR-0068), exported from
   // `<script setup>` as its own exported types are.
-  const types = keys ? [] : moduleTypes(component, module);
+  const types = keys ? [] : moduleTypes(component, module, reads);
   if (
     statements.length === 0 &&
     imports.size === 0 &&
@@ -255,7 +260,12 @@ const REF_TYPES = ["Ref", "ComputedRef", "ModelRef"] as const;
  * `Symbol` typed with Vue's `InjectionKey`, after the types the component copies, which
  * `<script setup>` reads from it.
  */
-function keyBlock(component: UfComponent, module: UfModule, names: VueNames): string {
+function keyBlock(
+  component: UfComponent,
+  module: UfModule,
+  names: VueNames,
+  reads: ModuleReads,
+): string {
   const imports = new ImportSet(names.scope);
   const injectionKey = imports.add("vue", "InjectionKey", { type: true });
   const declarations = module.keys!.map((key) => {
@@ -270,9 +280,10 @@ function keyBlock(component: UfComponent, module: UfModule, names: VueNames): st
     return `export const ${key.name}: ${injectionKey}<${type}> = Symbol(${JSON.stringify(key.description)});`;
   });
   addTypeImports(component, module, imports, (name) => `${name}.vue`);
+  addReadTypeImports(module, imports, reads.typeNames);
   const code = [
     printProgram(js.program(imports.toDeclarations())).trim(),
-    ...moduleTypes(component, module),
+    ...moduleTypes(component, module, reads),
     declarations.join("\n"),
   ].join("\n\n");
   return `<script lang="ts">\n${escapeScriptEnd(code)}\n</script>`;
@@ -280,12 +291,12 @@ function keyBlock(component: UfComponent, module: UfModule, names: VueNames): st
 
 /**
  * The types a component's output declares, in source order: those it reaches, copied as
- * written, and in the output of the module's main component the module's type exports
- * (ADR-0068).
+ * written, those the module's constants it declares name (ADR-0070), and in the output of the
+ * module's main component the module's type exports (ADR-0068).
  */
-function moduleTypes(component: UfComponent, module: UfModule): string[] {
+function moduleTypes(component: UfComponent, module: UfModule, reads: ModuleReads): string[] {
   return [
-    ...componentTypes(component, module).map((declaration) => ({
+    ...[...componentTypes(component, module), ...reads.types].map((declaration) => ({
       code: typeDeclarationCode(declaration),
       span: declaration.span,
     })),
@@ -310,7 +321,7 @@ function genericAttribute(component: UfComponent): string {
  * Type text with the same meaning and no `'`: each string literal double-quoted, a template
  * literal kept in backticks, and a `'` in either or in a comment written `\u0027`, which a literal
  * reads as the same character. A template literal's hole is code again, read the same way, so
- * `` `a${'x'}` `` is `` `a${"x"}` ``. Svelte's `generics` attribute needs the same (UXF-464).
+ * `` `a${'x'}` `` is `` `a${"x"}` ``. Svelte's `generics` attribute needs the same (ADR-0068).
  */
 function withoutSingleQuotes(text: string): string {
   let written = "";
@@ -725,7 +736,10 @@ function destructuredDeclaration(
       if (!isRead(prop)) return `${prop.name}: ${names.scope.claim(`_${prop.name}`)} = ${value}`;
       // Vue 3.5 destructures a prop under another name too (`{ Map: Map_1 }`), and every
       // reference reads the local.
-      const local = VUE_RESERVED.has(prop.name) ? names.scope.claim(prop.name) : prop.name;
+      const local =
+        VUE_RESERVED.has(prop.name) || names.isModuleName(prop.name)
+          ? names.scope.claim(prop.name)
+          : prop.name;
       if (local !== prop.name && prop.binding !== undefined) names.rename(prop.binding, local);
       const target = local === prop.name ? prop.name : `${prop.name}: ${local}`;
       return value === undefined ? target : `${target} = ${value}`;
@@ -753,11 +767,12 @@ function objectDeclaration(
   // Vue keeps the `_` and `$` prefixes for its own names, and its compiled `setup` declares
   // some: `const __props = defineProps<P>()` does not compile. The object takes the name
   // `props` there.
-  const local = VUE_RESERVED.has(name)
-    ? names.scope.claim(name)
-    : /^[_$]/.test(name)
-      ? names.scope.claim("props")
-      : name;
+  const local =
+    VUE_RESERVED.has(name) || names.isModuleName(name)
+      ? names.scope.claim(name)
+      : /^[_$]/.test(name)
+        ? names.scope.claim("props")
+        : name;
   if (local !== name) names.renamePropsObject(name, local);
   return `const ${local} = ${call};`;
 }

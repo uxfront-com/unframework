@@ -1,6 +1,6 @@
-// composables/use-media-query: a composable reads the browser once its caller mounts and keeps a
-// listener until it unmounts (ADR-0069). The component calls it twice, under two names, and each
-// call holds its own state.
+// composables/use-media-query: a composable reads the browser once its caller mounts (ADR-0069).
+// The component calls it twice, under two names, and each call holds its own state. Teardown
+// across a composable is semantics/composable-unmount-order's.
 import { describeTargets, it, mountScenario } from "@unframework/testing";
 import { expect } from "vitest";
 

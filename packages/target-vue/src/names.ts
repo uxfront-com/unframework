@@ -47,6 +47,11 @@ export class VueNames {
   readonly #locals = new Map<BindingId, string>();
   /** The object form's props object, when the script names it otherwise than the source. */
   #propsObject: { written: string; local: string } | undefined;
+  /**
+   * The module's top-level names (ADR-0070): its constants and the locals of its value imports,
+   * each with the name the output declares it by.
+   */
+  readonly #module = new Map<string, string>();
 
   constructor(component: UfComponent, module: UfModule) {
     const reserved = sourceNames(component, module);
@@ -68,13 +73,41 @@ export class VueNames {
     if (apis.length > 0 && apis.every((name) => name === "nextTick")) reserved.delete("nextTick");
     this.scope = new NameScope(reserved);
     this.scope.reserve(...VUE_RESERVED);
+    // The module's own names sit beside the setup's at the top of `<script setup>`, or of a
+    // composable's module (ADR-0070): each is taken before anything else claims a name, a
+    // module name Vue reserves is declared under a name of its own, and a setup binding that
+    // shadows one is too.
+    const moduleNames = [
+      ...(module.constants ?? []).map(({ name }) => name),
+      ...(module.moduleImports ?? []).flatMap(({ names }) => names.map(({ local }) => local)),
+    ];
+    this.scope.reserve(...moduleNames);
+    for (const name of moduleNames) {
+      this.#module.set(name, VUE_RESERVED.has(name) ? this.scope.claim(name) : name);
+    }
     // A setup binding Vue reserves is declared under a name of its own, before anything else
     // claims one: every reference reads it there.
     for (const binding of component.bindings) {
-      if (declaredBySetup(binding.kind) && VUE_RESERVED.has(binding.name)) {
+      if (binding.kind === "moduleConst" || binding.kind === "import") {
+        const local = this.#module.get(binding.name);
+        if (local !== undefined && local !== binding.name) this.#locals.set(binding.id, local);
+      } else if (
+        declaredBySetup(binding.kind) &&
+        (VUE_RESERVED.has(binding.name) || this.#module.has(binding.name))
+      ) {
         this.#locals.set(binding.id, this.scope.claim(binding.name));
       }
     }
+  }
+
+  /** Whether the module declares or imports a value of this name at its top level (ADR-0070). */
+  isModuleName(name: string): boolean {
+    return this.#module.has(name);
+  }
+
+  /** The name the output declares one of the module's constants or value imports by. */
+  moduleLocal(name: string): string {
+    return this.#module.get(name) ?? name;
   }
 
   /** Declares a binding under another local name (a destructured prop Vue reserves). */

@@ -78,8 +78,9 @@ export interface CompiledCase extends CaseLocation {
 
 /**
  * Compiles every source of each case (its `.uf.tsx` and `.uf.ts` files) for one target through
- * `compile()`, as the corpus's compile project does: with a resolver and a syntactic type oracle
- * that read the case's own files, and the packages its sources import.
+ * `compile()`, with a resolver and a syntactic type oracle that read the case's own files, and
+ * the packages its sources import. The harness's resolver reads the case's files alone and
+ * passes it the oracle (`caseResolver`); the outputs are the same for these cases.
  */
 export async function compileComposableCases(
   target: TargetName,

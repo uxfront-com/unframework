@@ -202,7 +202,8 @@ these records adds them to `3.reference/3.semantics.md`, each with its cases, wh
   caller's own, in source order: a mounted hook declared before the call runs before the
   composable's, and one declared after it runs after. React and Solid declare
   `composable-effect-order` unsupported (UF4005, info): React reorders a component's effects
-  (ADR-0048), and Solid queues a composable's watchers in its own module.
+  (ADR-0048), and Solid queues a composable's watchers in its own module. On Astro the cell is
+  inert, like its other client-only cells: no effect runs there.
 - **Teardown, across.** A composable's `onUnmounted` hooks run when the component that called
   it unmounts, never before, and only for that instance: each instance's teardown follows its
   own unmount, in the order the instances go. The order of a composable's teardown among the
