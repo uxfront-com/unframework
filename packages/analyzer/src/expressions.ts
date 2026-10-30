@@ -2962,6 +2962,8 @@ class Walk {
       this.#context.scopes.resolve(object).kind === "global"
     ) {
       const [target] = node.arguments;
+      // Freezing a module's value changes nothing anyone reads, as module level holds (ADR-0070).
+      if (name === "freeze" && target && this.#isModuleValue(target)) return;
       if (target && target.type !== "SpreadElement") {
         this.#mutation(node, target, `\`Object.${name}\` changes`, position, undefined);
       }
@@ -3027,6 +3029,21 @@ class Walk {
         ...(fix ? { fixes: [fix] } : {}),
       },
     );
+  }
+
+  /**
+   * Whether an expression names a module's value: one of its top-level constants, or a value it
+   * imports from a shared module (ADR-0070).
+   */
+  #isModuleValue(node: AST.Expression | AST.SpreadElement): boolean {
+    if (node.type === "SpreadElement") return false;
+    const inner = unwrapExpression(node);
+    if (inner.type !== "Identifier") return false;
+    const resolution = this.#context.scopes.resolve(inner);
+    const declared =
+      resolution.kind === "import" ||
+      (resolution.kind === "variable" && (resolution.scope as AST.Node).type === "Program");
+    return declared && this.#context.shared.values.has(resolution.declaration);
   }
 
   /** The likely fix of UF2004 on a ref's value: the same change, as a new value written whole. */
