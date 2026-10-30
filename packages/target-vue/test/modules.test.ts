@@ -486,4 +486,79 @@ describe("vue module bindings' types and names", () => {
       "const add = (defineProps_1: number): number => defineProps_2 + defineProps_1;",
     );
   });
+
+  it("declares no module value a nested parameter only shares a name with", checker, async () => {
+    const files = {
+      "util.ts": "export const format = (value: number): string => `${value}`;\n",
+      "C.uf.tsx": [
+        'import { format } from "./util";',
+        "",
+        'const label = "Total";',
+        "",
+        "function Head() {",
+        "  return <h1>{label} {format(1)}</h1>;",
+        "}",
+        "",
+        "export default function C() {",
+        "  const describe = (label: string) => label.toUpperCase();",
+        "  const count = (format: number) => format + 1;",
+        '  return <div><Head />{describe("x")} {count(1)}</div>;',
+        "}",
+        "",
+      ].join("\n"),
+    };
+    const outputs = await vue(files, "C.uf.tsx");
+    expect(outputs["C.vue"]).not.toContain('const label = "Total";');
+    expect(outputs["C.vue"]).not.toContain("./util");
+    expect(outputs["Head.vue"]).toContain('const label = "Total";');
+    const paths = writeScratch(outputs);
+    const linted = await toolchain.lint(Object.values(paths), { toolchainDir, root: toolchainDir });
+    expect([...linted.values()].flat()).toEqual([]);
+  });
+
+  it(
+    "renames a module name inside `typeof` in a constant's annotation and a module type",
+    checker,
+    async () => {
+      const files = {
+        "t.ts": "export const step = { a: 1 };\n",
+        "C.uf.tsx": [
+          'import { step } from "./t";',
+          "",
+          "type Step = typeof step;",
+          "const COPY: typeof step = { a: 2 };",
+          "const OTHER: Step = { a: 3 };",
+          "const LABEL = `${step.a}`;",
+          "",
+          "export default function C() {",
+          '  const step = "x";',
+          "  return <p>{COPY.a} {OTHER.a} {LABEL} {step}</p>;",
+          "}",
+          "",
+        ].join("\n"),
+        "useX.uf.ts": [
+          'import { ref } from "unframework";',
+          'import { step } from "./t";',
+          "",
+          "type Step = typeof step;",
+          "",
+          "export function useX(step: Step) {",
+          "  const value = ref(step.a);",
+          "  return { value };",
+          "}",
+          "",
+        ].join("\n"),
+      };
+      const outputs = {
+        ...(await vue(files, "C.uf.tsx")),
+        ...(await vue(files, "useX.uf.ts")),
+      };
+      expect(outputs["C.vue"]).toContain('import { step as step_1 } from "./t";');
+      expect(outputs["C.vue"]).toContain("type Step = typeof step_1;");
+      expect(outputs["C.vue"]).toContain("const COPY: typeof step_1 = { a: 2 };");
+      expect(outputs["useX.ts"]).toContain('import { step as step_1 } from "./t";');
+      expect(outputs["useX.ts"]).toContain("type Step = typeof step_1;");
+      expect(await typecheck(outputs)).toEqual(clean(outputs));
+    },
+  );
 });

@@ -20,7 +20,6 @@ import {
   printProgram,
   referencedBindings,
   rewriteCode,
-  typeDeclarationCode,
   typeExportsCode,
 } from "@unframework/codegen";
 import type { RewriteRules } from "@unframework/codegen";
@@ -43,7 +42,12 @@ import type {
   WatchSource,
 } from "@unframework/ir";
 
-import { addReadTypeImports, constantTypes, moduleBindings } from "./composable.ts";
+import {
+  addReadTypeImports,
+  constantTypes,
+  declarationCode,
+  moduleBindings,
+} from "./composable.ts";
 import type { ModuleReads } from "./composable.ts";
 import { planListeners } from "./listeners.ts";
 import type { Listeners } from "./listeners.ts";
@@ -228,7 +232,7 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   }
   // The module's type exports, which consumers import by name (ADR-0068), exported from
   // `<script setup>` as its own exported types are.
-  const types = keys ? [] : moduleTypes(component, module, reads);
+  const types = keys ? [] : moduleTypes(component, module, reads, names);
   if (
     statements.length === 0 &&
     imports.size === 0 &&
@@ -284,7 +288,7 @@ function keyBlock(
   addReadTypeImports(module, imports, reads.typeNames);
   const code = [
     printProgram(js.program(imports.toDeclarations())).trim(),
-    ...moduleTypes(component, module, reads),
+    ...moduleTypes(component, module, reads, names),
     declarations.join("\n"),
   ].join("\n\n");
   return `<script lang="ts">\n${escapeScriptEnd(code)}\n</script>`;
@@ -295,7 +299,12 @@ function keyBlock(
  * written, those the module's constants it declares name (ADR-0070), and in the output of the
  * module's main component the module's type exports (ADR-0068).
  */
-function moduleTypes(component: UfComponent, module: UfModule, reads: ModuleReads): string[] {
+function moduleTypes(
+  component: UfComponent,
+  module: UfModule,
+  reads: ModuleReads,
+  names: VueNames,
+): string[] {
   // An exported type a sibling's output declares is re-exported from it (`typeExportsCode`), so
   // a constant that names it declares it here unexported: the export is the sibling's.
   const sibling = (name: string) =>
@@ -324,14 +333,11 @@ function moduleTypes(component: UfComponent, module: UfModule, reads: ModuleRead
   return [
     ...reExports,
     ...componentTypes(component, module).map((declaration) => ({
-      code: typeDeclarationCode(declaration),
+      code: declarationCode(declaration, names),
       span: declaration.span,
     })),
     ...reads.types.map((declaration) => ({
-      code:
-        declaration.exported && sibling(declaration.name)
-          ? declaration.code
-          : typeDeclarationCode(declaration),
+      code: declarationCode(declaration, names, declaration.exported && !sibling(declaration.name)),
       span: declaration.span,
     })),
     ...typeExportsCode(component, module, (name) => `${name}.vue`),

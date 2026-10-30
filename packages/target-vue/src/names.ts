@@ -3,15 +3,24 @@
 // without it, because Vue unwraps a `<script setup>` binding's ref in templates. A binding whose
 // name Vue reserves is declared, and read everywhere, under a local name of its own.
 import {
+  codeKind,
   codeNames,
-  liveTypeNames,
   NameScope,
+  parseCodeSource,
+  parseExpressionSource,
   sourceNames,
   typeNames as typesOf,
 } from "@unframework/codegen";
-import type { RewriteRules, RewriteSite } from "@unframework/codegen";
+import type { CodeKind, RewriteRules, RewriteSite } from "@unframework/codegen";
 import { codeOf } from "@unframework/ir";
-import type { Binding, BindingId, BindingKind, UfComponent, UfModule } from "@unframework/ir";
+import type {
+  Binding,
+  BindingId,
+  BindingKind,
+  TypeText,
+  UfComponent,
+  UfModule,
+} from "@unframework/ir";
 
 /**
  * The globals Vue's template compiler never prefixes (compiler-core's `canPrefix`: shared's
@@ -62,7 +71,7 @@ export class VueNames {
   /** What the owner reaches of its module (ADR-0070). */
   readonly reach: ModuleReach;
 
-  constructor(component: UfComponent, module: UfModule, typeNames: Iterable<string> = []) {
+  constructor(component: UfComponent, module: UfModule, typeTexts: readonly TypeText[] = []) {
     const reserved = sourceNames(component, module);
     // The source reads `nextTick` as the authoring API, which `vue`'s takes the place of: where
     // every use is written `nextTick`, the import keeps the name. No local of that name can be
@@ -86,7 +95,7 @@ export class VueNames {
     // `<script setup>`, or of a composable's module (ADR-0070): each is taken before anything
     // else claims a name, a module name Vue reserves is declared under a name of its own, and a
     // setup binding that shadows one is too.
-    this.reach = moduleReach(component, module, typeNames);
+    this.reach = moduleReach(component, module, typeTexts);
     const moduleNames = [...this.reach.values];
     this.scope.reserve(...moduleNames);
     // A renamed module name must not take a name its constants' own code uses.
@@ -252,21 +261,20 @@ export class VueNames {
 export interface ModuleReach {
   /** The constants and value imports its output declares and imports. */
   values: Set<string>;
-  /** The names its types, its constants' and the module's types they reach name. */
-  typeNames: Set<string>;
 }
 
 /**
  * The module's names a component or a composable reaches (ADR-0070): the imported values and the
- * constants it reads, those its constants read in turn, and those a type names through `typeof`,
- * a type of its own, of a constant, or of the module's that one of those reaches
- * (`type Size = keyof typeof SIZES`). `typeNames` adds what the owner's IR does not hold, a
- * composable's parameter types. A module name its own bindings shadow is not read by `typeof`.
+ * constants it reads, those its constants read in turn, and those a `typeof` names
+ * (`type Size = keyof typeof SIZES`). A query in the owner's own types and code reads a module
+ * value only where no binding of the owner shadows it; one in the module's text (a reached
+ * constant's annotation, or a module type the output declares) always does. `typeTexts` adds
+ * what the owner's IR does not hold, a composable's parameter types.
  */
 export function moduleReach(
   owner: UfComponent,
   module: UfModule,
-  typeNames: Iterable<string> = [],
+  typeTexts: readonly TypeText[] = [],
 ): ModuleReach {
   const shadowed = new Set(
     owner.bindings
@@ -282,37 +290,141 @@ export function moduleReach(
       .filter((binding) => binding.kind === "import" || binding.kind === "moduleConst")
       .map((binding) => binding.name),
   );
-  // The names in type positions, which a `typeof` may hold, and every name the constants read.
-  const types = new Set([...typeNames, ...liveTypeNames(owner, module, { client: true })]);
-  const read = new Set(types);
-  const own = new Set(owner.types);
-  for (let size = -1; size !== values.size + read.size;) {
-    size = values.size + read.size;
+  const query = (name: string) => {
+    if (moduleValues.has(name)) values.add(name);
+  };
+  for (const { text, kind } of ownText(owner, typeTexts)) {
+    for (const { name } of typeQueries(text, kind)) if (!shadowed.has(name)) query(name);
+  }
+  // The module's declarations the output prints: the owner's own, and those its constants name.
+  const declared = new Set(owner.types);
+  const named = new Set<string>();
+  for (let size = -1; size !== values.size + declared.size;) {
+    size = values.size + declared.size;
     for (const constant of module.constants ?? []) {
       if (!values.has(constant.name)) continue;
       // A constant's references name a binding by `name@offset`; a module's names are unique.
       for (const reference of constant.value.refs) {
         if (reference.kind === "Binding") values.add(nameOf(reference.binding));
       }
-      for (const name of constant.type ? typesOf(constant.type) : []) types.add(name);
-      for (const name of codeNames(constant.value.code)) read.add(name);
+      if (constant.type) {
+        for (const name of typesOf(constant.type)) named.add(name);
+        for (const { name } of typeQueries(constant.type.code, "type")) query(name);
+      }
+      for (const name of codeNames(constant.value.code)) named.add(name);
     }
     for (const declaration of module.types) {
-      if (
-        !own.has(declaration.name) &&
-        !types.has(declaration.name) &&
-        !read.has(declaration.name)
-      ) {
-        continue;
-      }
-      for (const name of codeNames(declaration.code, "statements")) types.add(name);
-    }
-    for (const name of types) {
-      read.add(name);
-      if (moduleValues.has(name) && !shadowed.has(name)) values.add(name);
+      if (!declared.has(declaration.name) && !named.has(declaration.name)) continue;
+      declared.add(declaration.name);
+      for (const name of codeNames(declaration.code, "statements")) named.add(name);
+      for (const { name } of typeQueries(declaration.code, "statements")) query(name);
     }
   }
-  return { values, typeNames: read };
+  return { values };
+}
+
+/**
+ * The owner's own type text and code, where a `typeof` may sit: every type its IR writes (an
+ * annotation, a type argument, a parameter's type) and every piece of its code, which may hold
+ * an annotation of its own.
+ */
+function ownText(
+  owner: UfComponent,
+  typeTexts: readonly TypeText[],
+): { text: string; kind: CodeKind | "type" }[] {
+  const found: { text: string; kind: CodeKind | "type" }[] = typeTexts.map(({ code }) => ({
+    text: code,
+    kind: "type",
+  }));
+  for (const { code } of codeOf(owner))
+    found.push({ text: code.code, kind: codeKind(code, owner) });
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    // A `TypeText` is code and a span, with no references, which `Code` has.
+    if ("code" in node && "span" in node && !("refs" in node) && typeof node.code === "string") {
+      found.push({ text: node.code, kind: "type" });
+      return;
+    }
+    for (const value of Object.values(node)) visit(value);
+  };
+  visit([
+    owner.propsParameter,
+    owner.props,
+    owner.emits,
+    owner.slots,
+    owner.setup,
+    owner.typeParameters,
+  ]);
+  return found;
+}
+
+/**
+ * Each identifier a `typeof` queries in type text or code, with its offsets in the text:
+ * `SIZES` in `keyof typeof SIZES`, the root `theme` of `typeof theme.dark`.
+ */
+export function typeQueries(
+  text: string,
+  kind: CodeKind | "type",
+): { name: string; start: number; end: number }[] {
+  // Type text parses as the type of an assertion, whose offsets the prefix shifts.
+  const prefix = kind === "type" ? "null as " : "";
+  let root: unknown;
+  try {
+    root =
+      kind === "type"
+        ? parseExpressionSource(`${prefix}${text}`).expression
+        : parseCodeSource(text, kind).root;
+  } catch {
+    return [];
+  }
+  const found: { name: string; start: number; end: number }[] = [];
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    const each = node as { type?: unknown; exprName?: unknown };
+    if (each.type === "TSTypeQuery") {
+      let name = each.exprName as {
+        type?: unknown;
+        left?: unknown;
+        name?: unknown;
+        start?: unknown;
+        end?: unknown;
+      };
+      while (name?.type === "TSQualifiedName") name = name.left as typeof name;
+      if (name?.type === "Identifier" && typeof name.name === "string") {
+        found.push({
+          name: name.name,
+          start: (name.start as number) - prefix.length,
+          end: (name.end as number) - prefix.length,
+        });
+      }
+    }
+    for (const [key, value] of Object.entries(node)) if (key !== "parent") visit(value);
+  };
+  visit(root);
+  return found;
+}
+
+/** Type text or code with each module name a `typeof` queries written as the output names it. */
+export function renamedQueries(text: string, kind: CodeKind | "type", names: VueNames): string {
+  let written = "";
+  let last = 0;
+  for (const { name, start, end } of typeQueries(text, kind).toSorted(
+    (a, b) => a.start - b.start,
+  )) {
+    const local = names.moduleLocal(name);
+    if (local === name) continue;
+    written += `${text.slice(last, start)}${local}`;
+    last = end;
+  }
+  return `${written}${text.slice(last)}`;
 }
 
 /** The name of a binding id, `name@offset`. */

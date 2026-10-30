@@ -13,14 +13,20 @@ import {
   liveTypeNames,
   parseExpressionSource,
   printProgram,
-  typeDeclarationCode,
   typeNames,
   typeSpecifier,
 } from "@unframework/codegen";
 import type { EmitContext, OutputFile } from "@unframework/codegen";
-import type { Code, TypeDeclaration, UfComponent, UfComposable, UfModule } from "@unframework/ir";
+import type {
+  Code,
+  TypeDeclaration,
+  TypeText,
+  UfComponent,
+  UfComposable,
+  UfModule,
+} from "@unframework/ir";
 
-import { nameOf, VueNames } from "./names.ts";
+import { nameOf, renamedQueries, VueNames } from "./names.ts";
 import { itemCode, itemLayout, laidOut, typeParametersText } from "./script.ts";
 import type { Statement } from "./script.ts";
 
@@ -52,16 +58,14 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
   const owner = setupOwner(composable);
   // The types its parameters and type parameters name, which its IR as a setup owner holds no
   // trace of (ADR-0067).
-  const parameterTypes = new Set<string>();
-  for (const parameter of composable.parameters) {
-    for (const name of typeNames(parameter.type)) parameterTypes.add(name);
-  }
-  for (const parameter of composable.typeParameters ?? []) {
-    for (const type of [parameter.constraint, parameter.default]) {
-      if (type) for (const name of typeNames(type)) parameterTypes.add(name);
-    }
-  }
-  const names = new VueNames(owner, module, parameterTypes);
+  const parameterTexts: TypeText[] = [
+    ...composable.parameters.map(({ type }) => type),
+    ...(composable.typeParameters ?? []).flatMap(({ constraint, default: fallback }) =>
+      [constraint, fallback].filter((type): type is TypeText => type !== undefined),
+    ),
+  ];
+  const parameterTypes = new Set(parameterTexts.flatMap((type) => [...typeNames(type)]));
+  const names = new VueNames(owner, module, parameterTexts);
   const imports = new ImportSet(names.scope);
   const rules = names.scriptRules(() => imports.add("vue", "nextTick"));
   const reads = moduleBindings(owner, module, imports, names);
@@ -88,11 +92,24 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
     ...(head ? [head] : []),
     ...[...componentTypes(owner, module), ...reads.types]
       .toSorted((a, b) => a.span.start - b.span.start)
-      .map(typeDeclarationCode),
+      .map((declaration) => declarationCode(declaration, names)),
     ...(reads.constants.length ? [reads.constants.join("\n")] : []),
     `export function ${composable.name}${typeParametersText(composable.typeParameters)}(${parameters.join(", ")}) {\n  ${body}\n}`,
   ].join("\n\n");
   return [{ path: `${composable.name}.ts`, contents: `${code}\n` }];
+}
+
+/**
+ * A type declaration as the output writes it: the source's, with each module name a `typeof`
+ * queries spelled as the output names it, and exported where `exported` says.
+ */
+export function declarationCode(
+  declaration: TypeDeclaration,
+  names: VueNames,
+  exported: boolean = declaration.exported,
+): string {
+  const code = renamedQueries(declaration.code, "statements", names);
+  return exported ? `export ${code}` : code;
 }
 
 /** What a component or a composable reads of its module (ADR-0070). */
@@ -136,7 +153,7 @@ export function moduleBindings(
   return {
     constants: declared.map(
       (constant) =>
-        `const ${names.moduleLocal(constant.name)}${constant.type ? `: ${constant.type.code}` : ""} = ${renamed(constant.value, names)};`,
+        `const ${names.moduleLocal(constant.name)}${constant.type ? `: ${renamedQueries(constant.type.code, "type", names)}` : ""} = ${renamed(constant.value, names)};`,
     ),
     ...constantTypes(owner, module, reached),
   };
