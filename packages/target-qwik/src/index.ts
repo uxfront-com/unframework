@@ -24,6 +24,7 @@ import {
   mapCall,
   moduleHelperName,
   printComponentModule,
+  printProgram,
   rewriteExpression,
   scopeRoots,
   sourceNames,
@@ -31,6 +32,8 @@ import {
   staticJsxAttribute,
   ternaryChain,
   typeExportsCode,
+  typeNames,
+  typeSpecifier,
 } from "@unframework/codegen";
 import type { EmitContext, JsxContext, JsxDialect, OutputFile, Target } from "@unframework/codegen";
 import { codeOf } from "@unframework/ir";
@@ -45,7 +48,9 @@ import type {
   ModelAttribute,
   RenderNode,
   TypeDeclaration,
+  TypeText,
   UfComponent,
+  UfComposable,
   UfModule,
 } from "@unframework/ir";
 
@@ -57,6 +62,7 @@ import {
 } from "./attributes.ts";
 import type { Namespace } from "./attributes.ts";
 import { qwikClassAttribute } from "./class.ts";
+import { parameterCode, setupOwner } from "./composable.ts";
 import {
   componentHandler,
   fillExpressions,
@@ -421,9 +427,98 @@ export const qwik: Target = defineTarget({
       },
     ];
   },
+  emitComposable,
 });
 
 export default qwik;
+
+/**
+ * `useToggle.ts`: `export function useToggle(initial: boolean) { …; return { on, toggle }; }`, a
+ * `use*` hook (ADR-0069) whose setup prints as a component's, its parameters in the forms Qwik
+ * captures (./composable.ts), and what it returns as the source returns it, each function by its
+ * QRL.
+ */
+function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+  const { module } = context;
+  // A module's values reach a composable with the call site (ADR-0070): until then it is
+  // reported, never emitted without them (P2).
+  const moduleRead = composable.bindings.find(
+    (binding) => binding.kind === "moduleConst" || binding.kind === "import",
+  );
+  if (moduleRead) {
+    context.report({
+      code: "UF1002",
+      severity: "error",
+      message:
+        "The qwik target does not read a module's values in a composable yet: it lands with this target's composables lane.",
+      span: moduleRead.span,
+    });
+    return [];
+  }
+  const owner = setupOwner(composable);
+  const reserved = sourceNames(owner, module);
+  for (const name of apiNames(owner)) reserved.delete(name);
+  for (const name of typeNamesOf(owner, module)) reserved.add(name);
+  const imports = new ImportSet(reserved);
+  const names = new OutputNames(imports);
+  const plan = planSetup(owner, module, names, composable);
+  const setup = printSetup(plan);
+  const returned = composable.returns.map((member) => {
+    const local = plan.functions.get(member.binding)?.qrl ?? member.name;
+    return local === member.name ? local : `${member.name}: ${local}`;
+  });
+  const body = [setup.body, `return { ${returned.join(", ")} };`].filter(Boolean).join("\n\n");
+  const parameters = composable.parameters.map((parameter) => parameterCode(parameter, names));
+  const typeParameters = composable.typeParameters?.length
+    ? `<${composable.typeParameters
+        .map(({ name, constraint, default: fallback }) => {
+          const extended = constraint ? ` extends ${constraint.code}` : "";
+          return `${name}${extended}${fallback ? ` = ${fallback.code}` : ""}`;
+        })
+        .join(", ")}>`
+    : "";
+  const helperCode = helpers(plan, new Listeners(plan));
+  // The types it reads, by name, from where the source imports them (ADR-0067): its setup's, and
+  // its parameters' and type parameters', which its setup owner holds no trace of.
+  addTypeImports(owner, module, imports, (name) => name);
+  addParameterTypeImports(composable, module, imports);
+  const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
+  const contents = [
+    ...(head ? [head] : []),
+    ...moduleTypes(owner, module).map((declaration) =>
+      declaration.exported ? `export ${declaration.code}` : declaration.code,
+    ),
+    ...(setup.hoisted.length ? [joinHoisted(setup.hoisted)] : []),
+    `export function ${composable.name}${typeParameters}(${parameters.join(", ")}) {\n${body}\n}`,
+    ...helperCode,
+  ].join("\n\n");
+  return [{ path: `${composable.name}.ts`, contents: `${contents}\n` }];
+}
+
+/**
+ * Imports the types a composable's parameters and type parameters name (ADR-0067), as the source
+ * imports them.
+ */
+function addParameterTypeImports(
+  composable: UfComposable,
+  module: UfModule,
+  imports: ImportSet,
+): void {
+  const texts: TypeText[] = [
+    ...composable.parameters.map(({ type }) => type),
+    ...(composable.typeParameters ?? []).flatMap(({ constraint, default: fallback }) =>
+      [constraint, fallback].filter((type): type is TypeText => type !== undefined),
+    ),
+  ];
+  const read = new Set(texts.flatMap((type) => [...typeNames(type)]));
+  for (const entry of module.typeImports ?? []) {
+    for (const name of entry.names) {
+      if (!read.has(name.local)) continue;
+      const specifier = typeSpecifier(entry.specifier, module, (each) => each);
+      imports.add(specifier, name.imported, { type: true, local: name.local, exact: true });
+    }
+  }
+}
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type Parameter = Parameters<typeof js.arrowFunction>[0][number];
