@@ -8,12 +8,24 @@
       // locked versions of its tools into this hash. The emit tests lower their sources with the
       // analyser's own source (test/source.ts), which is no dependency of this package: its transit
       // node carries it, and the parser below it, into this hash too.
+      // The composable test this target's composables lane adds compiles the composable and module
+      // cases, under pending/ or, once they land, under cases/ (../codegen/test/composable-cases.ts),
+      // through the compiler's source, which is no dependency of this package: its transit node
+      // carries it into this hash.
       "dependsOn": [
         "$TURBO_EXTENDS$",
         "@unframework/toolchain-astro#transit",
-        "@unframework/analyzer#transit"
+        "@unframework/analyzer#transit",
+        "@unframework/compiler#transit"
       ],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tests/integration/cases/**/__output__/astro/**"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/tests/integration/cases/**/__output__/astro/**",
+        "$TURBO_ROOT$/tests/integration/pending/**",
+        "$TURBO_ROOT$/tests/integration/cases/composables/**",
+        "$TURBO_ROOT$/tests/integration/cases/modules/**",
+        "$TURBO_ROOT$/tests/integration/cases/semantics/composable-*/**"
+      ]
     }
   }
 }

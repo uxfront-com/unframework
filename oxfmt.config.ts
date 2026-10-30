@@ -12,6 +12,7 @@ export default defineConfig({
     // Diagnostic cases are deliberately wrong: some do not parse, and formatting would rewrite
     // the whitespace and the spellings they report.
     "tests/integration/cases/diagnostics/**",
+    "tests/integration/pending/diagnostics/**",
     "packages/testing/test/parity/cases/**/__expected__/**",
     // Generated from the IR's types: `pnpm --filter @unframework/ir generate --check` compares
     // it byte for byte.

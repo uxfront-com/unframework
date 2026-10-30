@@ -1,0 +1,6 @@
+{
+  "description": "A component reads its own module's top-level constants: a list it renders, a frozen table, a function it calls and a constant that reads another.",
+  "ssr": {
+    "initial": {}
+  }
+}

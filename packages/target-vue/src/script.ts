@@ -20,7 +20,6 @@ import {
   printProgram,
   referencedBindings,
   rewriteCode,
-  typeDeclarationCode,
   typeExportsCode,
 } from "@unframework/codegen";
 import type { RewriteRules } from "@unframework/codegen";
@@ -34,6 +33,8 @@ import type {
   PropsParameter,
   SetupItem,
   StateItem,
+  TypeDeclaration,
+  TypeParameter,
   TypeText,
   UfComponent,
   UfModule,
@@ -41,9 +42,16 @@ import type {
   WatchSource,
 } from "@unframework/ir";
 
+import {
+  addReadTypeImports,
+  constantTypes,
+  declarationCode,
+  moduleBindings,
+} from "./composable.ts";
+import type { ModuleReads } from "./composable.ts";
 import { planListeners } from "./listeners.ts";
 import type { Listeners } from "./listeners.ts";
-import { unreachable, VUE_RESERVED, VueNames } from "./names.ts";
+import { moduleReach, unreachable, VUE_RESERVED, VueNames } from "./names.ts";
 
 /** What a component's script gives its template. */
 export interface ScriptSetup {
@@ -78,7 +86,7 @@ const VUE_BUILT_INS: ReadonlySet<string> = new Set([
 ]);
 
 /** A statement of the script, and how it sits beside its neighbours. */
-interface Statement {
+export interface Statement {
   code: string;
   /**
    * `macro` for `defineProps` and `defineEmits`, `line` for a declaration on one line: a run of
@@ -143,15 +151,24 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   }
   // The imports that pass through, which the template reads as written (ADR-0064).
   addPassThroughImports(component, module, imports);
+  // Each composable it calls, from the composable's own output, `./useToggle` beside
+  // `useToggle.uf.ts` (ADR-0069).
+  addComposableImports(component, module, imports);
+  // What it reads of its module: values from its `.ts` modules, and its constants (ADR-0070).
+  const reads = moduleBindings(component, module, imports, names);
+  const constants = reads.constants;
   // The output of the module's main component declares the keys, and the types it copies, in a
   // plain `<script lang="ts">` block, which `<script setup>` reads.
   const keys =
     module.keys?.length && keyOwner(module.components, module.exports) === component.name
-      ? keyBlock(component, module, names)
+      ? keyBlock(component, module, names, reads)
       : undefined;
   // The types it imports, by name, beside the types it copies (ADR-0067): a child's from its
   // output, `./Field.vue`.
-  if (!keys) addTypeImports(component, module, imports, (name) => `${name}.vue`);
+  if (!keys) {
+    addTypeImports(component, module, imports, (name) => `${name}.vue`);
+    addReadTypeImports(module, imports, reads.typeNames);
+  }
   // `<component is>` reads a candidate by its binding, under the alias of a built-in's name too.
   for (const binding of component.bindings) {
     const alias = binding.kind === "component" ? components.get(binding.name) : undefined;
@@ -201,12 +218,11 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   }
   for (const item of component.setup) {
     const code = itemCode(item, component, module, names, imports, script);
-    // A model is a macro, which stays with `defineProps` and `defineEmits` where it follows them.
-    const layout =
-      item.kind === "Model" ? "macro" : declares(item) && !code.includes("\n") ? "line" : "block";
-    statements.push({ code, layout });
+    statements.push({ code: names.ownQueries(code), layout: itemLayout(item, code) });
   }
-  for (const code of listeners.functions) statements.push({ code, layout: "block" });
+  for (const code of listeners.functions) {
+    statements.push({ code: names.ownQueries(code), layout: "block" });
+  }
   // Last, once every function it names is declared (ADR-0054).
   if (component.exposes) {
     const exposed = component.exposes.functions.map((id) => {
@@ -218,14 +234,20 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   }
   // The module's type exports, which consumers import by name (ADR-0068), exported from
   // `<script setup>` as its own exported types are.
-  const types = keys ? [] : moduleTypes(component, module);
-  if (statements.length === 0 && imports.size === 0 && types.length === 0) {
+  const types = keys ? [] : moduleTypes(component, module, reads, names);
+  if (
+    statements.length === 0 &&
+    imports.size === 0 &&
+    types.length === 0 &&
+    constants.length === 0
+  ) {
     return { rewrite: template, listeners, components, ...(keys ? { keys } : {}) };
   }
   const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
   const code = [
     ...(head ? [head] : []),
     ...types,
+    ...(constants.length ? [constants.join("\n")] : []),
     ...(statements.length ? [laidOut(statements)] : []),
   ].join("\n\n");
   return {
@@ -245,7 +267,12 @@ const REF_TYPES = ["Ref", "ComputedRef", "ModelRef"] as const;
  * `Symbol` typed with Vue's `InjectionKey`, after the types the component copies, which
  * `<script setup>` reads from it.
  */
-function keyBlock(component: UfComponent, module: UfModule, names: VueNames): string {
+function keyBlock(
+  component: UfComponent,
+  module: UfModule,
+  names: VueNames,
+  reads: ModuleReads,
+): string {
   const imports = new ImportSet(names.scope);
   const injectionKey = imports.add("vue", "InjectionKey", { type: true });
   const declarations = module.keys!.map((key) => {
@@ -260,9 +287,10 @@ function keyBlock(component: UfComponent, module: UfModule, names: VueNames): st
     return `export const ${key.name}: ${injectionKey}<${type}> = Symbol(${JSON.stringify(key.description)});`;
   });
   addTypeImports(component, module, imports, (name) => `${name}.vue`);
+  addReadTypeImports(module, imports, reads.typeNames);
   const code = [
     printProgram(js.program(imports.toDeclarations())).trim(),
-    ...moduleTypes(component, module),
+    ...moduleTypes(component, module, reads, names),
     declarations.join("\n"),
   ].join("\n\n");
   return `<script lang="ts">\n${escapeScriptEnd(code)}\n</script>`;
@@ -270,13 +298,48 @@ function keyBlock(component: UfComponent, module: UfModule, names: VueNames): st
 
 /**
  * The types a component's output declares, in source order: those it reaches, copied as
- * written, and in the output of the module's main component the module's type exports
- * (ADR-0068).
+ * written, those the module's constants it declares name (ADR-0070), and in the output of the
+ * module's main component the module's type exports (ADR-0068).
  */
-function moduleTypes(component: UfComponent, module: UfModule): string[] {
+function moduleTypes(
+  component: UfComponent,
+  module: UfModule,
+  reads: ModuleReads,
+  names: VueNames,
+): string[] {
+  // An exported type a sibling's output declares is re-exported from it (`typeExportsCode`), so
+  // a constant that names it declares it here unexported: the export is the sibling's.
+  const sibling = (name: string) =>
+    module.components.some((each) => each !== component && each.types.includes(name));
+  // The main output re-exports an exported type only a sibling's constants reach, from that
+  // sibling's output, which declares it (ADR-0068): `typeExportsCode` knows only components'
+  // own types.
+  const reExports: { code: string; span: TypeDeclaration["span"] }[] = [];
+  if (keyOwner(module.components, module.exports) === component.name) {
+    const written = new Set([...component.types, ...reads.types.map(({ name }) => name)]);
+    for (const other of module.components) {
+      if (other === component) continue;
+      const { types } = constantTypes(other, module, moduleReach(other, module).values);
+      for (const declaration of types) {
+        if (!declaration.exported || written.has(declaration.name) || sibling(declaration.name)) {
+          continue;
+        }
+        written.add(declaration.name);
+        reExports.push({
+          code: `export type { ${declaration.name} } from ${JSON.stringify(`./${other.name}.vue`)};`,
+          span: declaration.span,
+        });
+      }
+    }
+  }
   return [
+    ...reExports,
     ...componentTypes(component, module).map((declaration) => ({
-      code: typeDeclarationCode(declaration),
+      code: declarationCode(declaration, names),
+      span: declaration.span,
+    })),
+    ...reads.types.map((declaration) => ({
+      code: declarationCode(declaration, names, declaration.exported && !sibling(declaration.name)),
       span: declaration.span,
     })),
     ...typeExportsCode(component, module, (name) => `${name}.vue`),
@@ -287,12 +350,79 @@ function moduleTypes(component: UfComponent, module: UfModule): string[] {
 
 /**
  * The `generic` attribute of a generic component's `<script setup>` (ADR-0068),
- * ` generic="T extends Item = Item"`, or nothing. Vue's SFC parser decodes no entity there, so
- * an attribute whose text holds a double quote is single-quoted.
+ * ` generic="T extends Item = Item"`, or nothing. An attribute cannot hold its own quote, so the
+ * text holds no `'` (`withoutSingleQuotes`), and is single-quoted where it holds a `"`.
  */
 function genericAttribute(component: UfComponent): string {
   if (!component.typeParameters?.length) return "";
-  const text = component.typeParameters
+  const text = withoutSingleQuotes(typeParametersList(component.typeParameters));
+  return text.includes('"') ? ` generic='${text}'` : ` generic="${text}"`;
+}
+
+/**
+ * Type text with the same meaning and no `'`: each string literal double-quoted, a template
+ * literal kept in backticks, and a `'` in either or in a comment written `\u0027`, which a literal
+ * reads as the same character. A template literal's hole is code again, read the same way, so
+ * `` `a${'x'}` `` is `` `a${"x"}` ``. Svelte's `generics` attribute needs the same (ADR-0068).
+ */
+function withoutSingleQuotes(text: string): string {
+  let written = "";
+  // The template literals and holes the text is inside, innermost last: "`" for a literal's
+  // text, a number for a hole's code, counting the braces open inside it.
+  const nested: ("`" | number)[] = [];
+  for (let index = 0; index < text.length; index++) {
+    const char = text[index]!;
+    const inside = nested.at(-1);
+    if (inside === "`") {
+      if (char === "\\") {
+        const next = text[++index] ?? "";
+        written += next === "'" ? "\\u0027" : `\\${next}`;
+      } else if (char === "`") {
+        nested.pop();
+        written += char;
+      } else if (text.startsWith("${", index)) {
+        nested.push(0);
+        written += "${";
+        index++;
+      } else {
+        written += char === "'" ? "\\u0027" : char;
+      }
+    } else if (text.startsWith("//", index) || text.startsWith("/*", index)) {
+      const close = text.startsWith("//", index) ? "\n" : "*/";
+      const end = text.indexOf(close, index + 2);
+      const stop = end === -1 ? text.length : end + close.length;
+      written += text.slice(index, stop).replaceAll("'", "\\u0027");
+      index = stop - 1;
+    } else if (char === "'" || char === '"') {
+      // A string literal, to its closing quote, double-quoted.
+      written += '"';
+      for (index++; index < text.length && text[index] !== char; index++) {
+        const each = text[index]!;
+        if (each === "\\") {
+          const next = text[++index] ?? "";
+          written += next === "'" ? "\\u0027" : `\\${next}`;
+        } else {
+          written += each === "'" ? "\\u0027" : each === '"' ? '\\"' : each;
+        }
+      }
+      written += '"';
+    } else if (char === "`") {
+      nested.push("`");
+      written += char;
+    } else if (typeof inside === "number" && (char === "{" || char === "}")) {
+      if (char === "}" && inside === 0) nested.pop();
+      else nested[nested.length - 1] = inside + (char === "{" ? 1 : -1);
+      written += char;
+    } else {
+      written += char;
+    }
+  }
+  return written;
+}
+
+/** Type parameters as written, `T extends Item = Item, K`. */
+function typeParametersList(parameters: readonly TypeParameter[]): string {
+  return parameters
     .map(
       (parameter) =>
         `${parameter.name}${parameter.constraint ? ` extends ${parameter.constraint.code}` : ""}${
@@ -300,7 +430,31 @@ function genericAttribute(component: UfComponent): string {
         }`,
     )
     .join(", ");
-  return text.includes('"') ? ` generic='${text}'` : ` generic="${text}"`;
+}
+
+/** A generic function's type parameters, `<T extends Item>`, or nothing (ADR-0068). */
+export function typeParametersText(parameters: readonly TypeParameter[] | undefined): string {
+  return parameters?.length ? `<${typeParametersList(parameters)}>` : "";
+}
+
+/**
+ * The imports of the composables a component calls (ADR-0069): each from its own output, named
+ * by the composable beside its `.uf.ts` module, under the source's local name.
+ */
+function addComposableImports(component: UfComponent, module: UfModule, imports: ImportSet): void {
+  const called = new Set(
+    component.setup.flatMap((item) => (item.kind === "Use" ? [item.composable] : [])),
+  );
+  for (const entry of module.imports ?? []) {
+    const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
+    for (const name of entry.names) {
+      if (name.kind !== "Composable" || !called.has(name.local)) continue;
+      imports.add(`${directory}${name.imported}`, name.imported, {
+        local: name.local,
+        exact: true,
+      });
+    }
+  }
 }
 
 /**
@@ -364,7 +518,7 @@ function readsSlots(component: UfComponent): boolean {
 }
 
 /** The statements, a blank line between two unless both are macros, or both one-line declarations. */
-function laidOut(statements: readonly Statement[]): string {
+export function laidOut(statements: readonly Statement[]): string {
   return statements
     .map((statement, index) => {
       const previous = statements[index - 1];
@@ -373,6 +527,12 @@ function laidOut(statements: readonly Statement[]): string {
       return `${together ? "\n" : "\n\n"}${statement.code}`;
     })
     .join("");
+}
+
+/** How a setup item sits in the script: a model is a macro, which stays with `defineProps`. */
+export function itemLayout(item: SetupItem, code: string): Statement["layout"] {
+  if (item.kind === "Model") return "macro";
+  return declares(item) && !code.includes("\n") ? "line" : "block";
 }
 
 /** Whether a setup item declares a binding, rather than registering an effect or a hook. */
@@ -387,15 +547,13 @@ function declares(item: SetupItem): boolean {
     case "Function":
     case "Model":
     case "Inject":
+    case "Use":
       return true;
     case "Watch":
     case "WatchEffect":
     case "Lifecycle":
     case "Provide":
       return false;
-    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
-    case "Use":
-      return true;
     default:
       return unreachable(item);
   }
@@ -409,7 +567,7 @@ function emitIsCalled(component: UfComponent, emit: Binding): boolean {
 }
 
 /** One setup item as the script writes it: the source's statement, with Vue's own APIs. */
-function itemCode(
+export function itemCode(
   item: SetupItem,
   component: UfComponent,
   module: UfModule,
@@ -509,9 +667,27 @@ function itemCode(
       const fallback = item.fallback ? `, ${code(item.fallback, "pure")}` : ", undefined";
       return `const ${local(item.binding)} = ${inject}(${item.key}${fallback});`;
     }
-    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
-    case "Use":
-      return "";
+    // `const { on, toggle } = useToggle(false)`, as written (ADR-0069): Vue reads a getter and
+    // calls a callback as the source does, and the members are the composable's own refs.
+    case "Use": {
+      const members = item.members.map((member) => {
+        const name = local(member.binding);
+        return name === member.member ? name : `${member.member}: ${name}`;
+      });
+      const parts = item.arguments.map((argument) => {
+        switch (argument.kind) {
+          case "Value":
+            return code(argument.value, "pure");
+          case "Getter":
+            return fn(argument.getter, "pure");
+          case "Callback":
+            return fn(argument.callback, "client");
+          default:
+            return unreachable(argument);
+        }
+      });
+      return `const { ${members.join(", ")} } = ${item.composable}(${parts.join(", ")});`;
+    }
     default:
       return unreachable(item);
   }

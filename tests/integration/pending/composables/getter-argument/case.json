@@ -1,0 +1,7 @@
+{
+  "description": "Getters passed to a composable are read reactively: a prop's on the first render and after a rerender, and the caller's state after each write.",
+  "main": "Basket.uf.tsx",
+  "ssr": {
+    "initial": { "props": { "price": 4 } }
+  }
+}

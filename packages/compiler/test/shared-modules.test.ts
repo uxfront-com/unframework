@@ -188,18 +188,18 @@ describe("compile() with shared modules", () => {
     });
     const result = await compile(BADGE, {
       filename: "src/Badge.uf.tsx",
-      targets: ["vue"],
+      targets: ["react"],
       resolve,
       typeOracle,
     });
     expect(result.ir!.moduleImports).toEqual([
       expect.objectContaining({ specifier: "./tokens", file: "tokens.ts" }),
     ]);
-    // Vue's composables lane reads the import binding: until it lands, the target reports it.
+    // React's composables lane reads the import binding: until it lands, the target reports it.
     expect(result.diagnostics.map(({ code, target }) => [code, target])).toEqual([
-      ["UF1002", "vue"],
+      ["UF1002", "react"],
     ]);
-    expect(result.outputs.vue).toEqual([]);
+    expect(result.outputs.react).toEqual([]);
   });
 
   it("withholds the component from every target when a module imports a framework (UF1204)", async () => {

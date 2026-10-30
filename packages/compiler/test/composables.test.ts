@@ -20,32 +20,41 @@ function emit(name: TargetName, module: UfModule) {
   return { files, reported };
 }
 
-describe("composables and shared modules before each target's lane", () => {
-  it.each(TARGET_NAMES)(
-    "%s reports UF1002 where a component first reads a module's value",
-    (name) => {
-      const module = modules();
-      expect(emit(name, module)).toEqual({
-        files: [],
-        reported: [
-          {
-            code: "UF1002",
-            severity: "error",
-            message: `The ${name} target does not emit a value imported from a \`.ts\` module yet: it lands with this target's composables lane.`,
-            span: module.components[0]!.bindings[0]!.span,
-          },
-        ],
-      });
-    },
-  );
+/** The targets whose composables lane has not landed: Vue's has (ADR-0069). */
+const WAITING = TARGET_NAMES.filter((name) => name !== "vue");
 
-  it.each(TARGET_NAMES)("%s reports UF1002 at a composable's call", (name) => {
+describe("composables and shared modules before each target's lane", () => {
+  it.each(WAITING)("%s reports UF1002 where a component first reads a module's value", (name) => {
+    const module = modules();
+    expect(emit(name, module)).toEqual({
+      files: [],
+      reported: [
+        {
+          code: "UF1002",
+          severity: "error",
+          message: `The ${name} target does not emit a value imported from a \`.ts\` module yet: it lands with this target's composables lane.`,
+          span: module.components[0]!.bindings[0]!.span,
+        },
+      ],
+    });
+  });
+
+  it.each(WAITING)("%s reports UF1002 at a composable's call", (name) => {
     const module = modules();
     const list = module.components[0]!;
     list.bindings = list.bindings.filter(({ kind }) => kind !== "import" && kind !== "moduleConst");
     expect(emit(name, module).reported).toEqual([
       expect.objectContaining({ code: "UF1002", span: list.setup[0]!.span }),
     ]);
+  });
+
+  it("vue emits a component that reads a module's values and calls a composable", () => {
+    const { files, reported } = emit("vue", modules());
+    expect(reported).toEqual([]);
+    expect(files.map(({ path }) => path)).toEqual(["List.vue"]);
+    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+    expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
+    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
   });
 });
 
@@ -116,22 +125,30 @@ describe("a module of composables", () => {
       hasEffects: true,
     });
     expect(result.dependencies).toEqual(["src/composables/useToggle.uf.ts"]);
-    // Vue's call site lands with its composables lane (L3's branch).
-    expect(result.diagnostics.map(({ code, target }) => [code, target])).toEqual([
-      ["UF1002", "vue"],
-    ]);
+    expect(result.diagnostics).toEqual([]);
+    // The caller imports the composable's own output, beside its module (ADR-0069).
+    expect(result.outputs.vue![0]!.contents).toContain(
+      'import { useToggle } from "../composables/useToggle";',
+    );
+  });
+
+  it("compiles a module of composables for vue, one module each", async () => {
+    const result = await compile(TOGGLE, { filename: "src/useToggle.uf.ts", targets: ["vue"] });
+    expect(result.diagnostics).toEqual([]);
+    expect(result.outputs.vue!.map(({ path }) => path)).toEqual(["useToggle.ts"]);
+    expect(result.owners.vue).toEqual({ "useToggle.ts": "useToggle" });
   });
 
   it("compiles to nothing, with UF1002 for each composable, on a target without `emitComposable`", async () => {
     const result = await compile(TOGGLE, {
       filename: "src/useToggle.uf.ts",
-      targets: TARGET_NAMES,
+      targets: WAITING,
     });
     expect(result.ir?.composables?.map(({ name }) => name)).toEqual(["useToggle"]);
     const span = result.ir!.composables![0]!.span;
     // Sorted by target, as every diagnostic at one span is.
     expect(result.diagnostics).toEqual(
-      TARGET_NAMES.toSorted().map((target) =>
+      WAITING.toSorted().map((target) =>
         expect.objectContaining({
           code: "UF1002",
           severity: "error",
@@ -141,7 +158,7 @@ describe("a module of composables", () => {
         }),
       ),
     );
-    for (const target of TARGET_NAMES) expect(result.outputs[target]).toEqual([]);
+    for (const target of WAITING) expect(result.outputs[target]).toEqual([]);
   });
 
   it("calls each target's `emitComposable`, and formats what it emits", async () => {

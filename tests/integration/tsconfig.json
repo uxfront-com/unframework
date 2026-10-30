@@ -18,7 +18,8 @@
     "styleframe.config.ts",
     "styleframe.d.ts",
     "fixture-engine.d.ts",
-    "cases/**/*.test.ts"
+    "cases/**/*.test.ts",
+    "pending/**/*.test.ts"
   ],
   "exclude": ["cases/**/__output__/**"]
 }

@@ -1,0 +1,7 @@
+{
+  "description": "A callback passed to a composable is called from its client code, and writes the caller's state and emits as the caller's own function would.",
+  "main": "Clicker.uf.tsx",
+  "ssr": {
+    "initial": {}
+  }
+}
