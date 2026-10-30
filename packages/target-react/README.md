@@ -127,8 +127,8 @@ are emulated, and the others native. Of the styles' cells, `child-root-scope` is
 (`scopeAttributes`), and the others native. Of M5's cells, `composable-effect-order` is
 unsupported (UF4005, info): a composable is a custom hook, whose effects keep React's order rather
 than the caller's (ADR-0069); `generic-components`, `generic-slot-props` and `composables` are
-native. Until its composables lane lands, the target reports a composable's call and what a module
-or a composable gives a component as UF1002.
+native. Until its call site lands, the target reports a composable's call, what a composable gives
+a component, and a module's values a component or a composable reads as UF1002.
 
 Every name the output introduces (`cx`, `setCount`, `countRef`, `CounterEvents`, `listen`,
 `CSSProperties`, `_props`) is claimed around the source's own names, so none captures another.
@@ -193,6 +193,29 @@ the rest of its props pattern, picked by the inline `scopeAttributes` helper
 (`{...scopeAttributes(attributes)}`), or from the props object in the object form, and a component
 without props takes one, typed `object`. The helper keeps only the `data-uf-*` keys, so no prop
 the output leaves unread reaches the root.
+
+## Composables (M5)
+
+Each composable of a `.uf.ts` module is its own module, `useToggle.ts`, holding a custom hook
+(`src/composable.ts`, ADR-0069): `export function useToggle(initial: boolean)`, its parameters and
+type parameters as written, and its setup printed as a component's is (`src/setup.ts`), because a
+hook runs at every render of its caller, as a component's body does. What it returns goes to
+its caller, so the hook prints it as client code would need it:
+
+- A returned state keeps its mirror, `onRef`, and comes with a live reader,
+  `const [currentOn] = useState(() => () => onRef.current)`.
+- A returned derived value is a `useMemo`, and its live getter reads through the mirrors, one
+  function for the hook's life: `const [currentTotal] = useState(() => () => priceRef.current() * quantityRef.current())`.
+- A returned function is stable, `const [toggle] = useState(() => () => {…})`, as a function
+  passed as a value is, and reads what changes through mirrors.
+- A getter or a callback argument is read as a prop is: as passed in render code, and through a
+  mirror synced in `useLayoutEffect` in deferred code (`onLimitRef.current(count)`). A value
+  argument is read as passed, so a stable function keeps the value of the first render.
+
+It returns `{ on, currentOn, toggle, close }`: each state's or derived value's reader follows its
+member, named `currentX`, or the first free `currentX_1`, `currentX_2`… where that names another
+member or an earlier reader. `liveReaderNames` applies that rule to the composable's API alone, so
+a caller names the readers as the hook does.
 
 ## Toolchain
 
