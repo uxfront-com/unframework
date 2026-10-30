@@ -125,11 +125,6 @@ export default defineNuxtConfig({
   },
 
   hooks: {
-    // Every page would otherwise prefetch the docs' lazy chunks (~75 of them),
-    // which delays the homepage's fonts and stylesheet, and with them its LCP.
-    "build:manifest"(manifest) {
-      for (const chunk of Object.values(manifest)) chunk.prefetch = false;
-    },
     // Workers rejects the `/* /404.html 404` fallback the preset writes to _redirects
     // (404 isn't a valid redirect status), failing the deploy. not_found_handling in
     // wrangler.jsonc serves 404.html instead. Registered here, not in nitro.hooks,
