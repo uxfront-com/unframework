@@ -295,9 +295,20 @@ function keyBlock(
  * module's main component the module's type exports (ADR-0068).
  */
 function moduleTypes(component: UfComponent, module: UfModule, reads: ModuleReads): string[] {
+  // An exported type a sibling's output declares is re-exported from it (`typeExportsCode`), so
+  // a constant that names it declares it here unexported: the export is the sibling's.
+  const sibling = (name: string) =>
+    module.components.some((each) => each !== component && each.types.includes(name));
   return [
-    ...[...componentTypes(component, module), ...reads.types].map((declaration) => ({
+    ...componentTypes(component, module).map((declaration) => ({
       code: typeDeclarationCode(declaration),
+      span: declaration.span,
+    })),
+    ...reads.types.map((declaration) => ({
+      code:
+        declaration.exported && sibling(declaration.name)
+          ? declaration.code
+          : typeDeclarationCode(declaration),
       span: declaration.span,
     })),
     ...typeExportsCode(component, module, (name) => `${name}.vue`),

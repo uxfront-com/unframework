@@ -274,4 +274,72 @@ describe("vue module bindings' types and names", () => {
     expect(outputs["Macro.vue"]).toContain("const label = `${defineProps_1}!`;");
     expect(await typecheck(outputs)).toEqual(clean(outputs));
   });
+
+  it("expands a shorthand property of a renamed module name", checker, async () => {
+    const files = {
+      "Macro.uf.tsx": [
+        "const defineProps = 1;",
+        "const options = { defineProps };",
+        "",
+        "export default function Macro() {",
+        "  return <p>{options.defineProps}</p>;",
+        "}",
+        "",
+      ].join("\n"),
+    };
+    const outputs = await vue(files, "Macro.uf.tsx");
+    expect(outputs["Macro.vue"]).toContain("const options = { defineProps: defineProps_1 };");
+    expect(await typecheck(outputs)).toEqual(clean(outputs));
+  });
+
+  it("renames nothing in a component that reads none of the module's names", async () => {
+    const outputs = await vue(
+      {
+        "Pair.uf.tsx": [
+          'import { ref } from "unframework";',
+          "",
+          'const shallowRef = "items";',
+          "",
+          "function Count({ format }: { format: string }) {",
+          "  const items = ref([1]);",
+          "  return <p title={format}>{items.value.length}</p>;",
+          "}",
+          "",
+          "export default function Pair() {",
+          '  return <section><p>{shallowRef}</p><Count format="n" /></section>;',
+          "}",
+          "",
+        ].join("\n"),
+      },
+      "Pair.uf.tsx",
+    );
+    expect(outputs["Count.vue"]).toContain('import { shallowRef } from "vue";');
+    expect(outputs["Count.vue"]).toContain("const { format } = defineProps<{ format: string }>();");
+  });
+
+  it(
+    "declares unexported a sibling's exported type that the main output re-exports",
+    checker,
+    async () => {
+      const files = {
+        "Card.uf.tsx": [
+          'export type Tone = "info" | "warn";',
+          'const TONES = ["info", "warn"] satisfies Tone[];',
+          "",
+          "function Badge({ tone }: { tone: Tone }) {",
+          "  return <b>{tone}</b>;",
+          "}",
+          "",
+          "export default function Card() {",
+          '  return <p>{TONES.join()}<Badge tone="info" /></p>;',
+          "}",
+          "",
+        ].join("\n"),
+      };
+      const outputs = await vue(files, "Card.uf.tsx");
+      expect(outputs["Card.vue"]).toContain('export type { Tone } from "./Badge.vue";');
+      expect(outputs["Card.vue"]).toContain('\ntype Tone = "info" | "warn";');
+      expect(await typecheck(outputs)).toEqual(clean(outputs));
+    },
+  );
 });

@@ -73,14 +73,11 @@ export class VueNames {
     if (apis.length > 0 && apis.every((name) => name === "nextTick")) reserved.delete("nextTick");
     this.scope = new NameScope(reserved);
     this.scope.reserve(...VUE_RESERVED);
-    // The module's own names sit beside the setup's at the top of `<script setup>`, or of a
-    // composable's module (ADR-0070): each is taken before anything else claims a name, a
-    // module name Vue reserves is declared under a name of its own, and a setup binding that
-    // shadows one is too.
-    const moduleNames = [
-      ...(module.constants ?? []).map(({ name }) => name),
-      ...(module.moduleImports ?? []).flatMap(({ names }) => names.map(({ local }) => local)),
-    ];
+    // The module's names the output declares sit beside the setup's at the top of
+    // `<script setup>`, or of a composable's module (ADR-0070): each is taken before anything
+    // else claims a name, a module name Vue reserves is declared under a name of its own, and a
+    // setup binding that shadows one is too.
+    const moduleNames = [...moduleReach(component, module)];
     this.scope.reserve(...moduleNames);
     for (const name of moduleNames) {
       this.#module.set(name, VUE_RESERVED.has(name) ? this.scope.claim(name) : name);
@@ -100,7 +97,7 @@ export class VueNames {
     }
   }
 
-  /** Whether the module declares or imports a value of this name at its top level (ADR-0070). */
+  /** Whether the output declares or imports a module value of this name (ADR-0070). */
   isModuleName(name: string): boolean {
     return this.#module.has(name);
   }
@@ -233,6 +230,35 @@ export class VueNames {
         this.template(binding, written),
     };
   }
+}
+
+/**
+ * The module's names a component or a composable reaches (ADR-0070): the imported values and the
+ * constants it reads, and those its constants read in turn, which its output imports and
+ * declares.
+ */
+export function moduleReach(owner: UfComponent, module: UfModule): Set<string> {
+  const reached = new Set(
+    owner.bindings
+      .filter((binding) => binding.kind === "import" || binding.kind === "moduleConst")
+      .map((binding) => binding.name),
+  );
+  // A constant's references name a binding by `name@offset`; a module's names are unique.
+  for (let size = -1; size !== reached.size;) {
+    size = reached.size;
+    for (const constant of module.constants ?? []) {
+      if (!reached.has(constant.name)) continue;
+      for (const reference of constant.value.refs) {
+        if (reference.kind === "Binding") reached.add(nameOf(reference.binding));
+      }
+    }
+  }
+  return reached;
+}
+
+/** The name of a binding id, `name@offset`. */
+export function nameOf(id: string): string {
+  return id.slice(0, id.lastIndexOf("@"));
 }
 
 /**

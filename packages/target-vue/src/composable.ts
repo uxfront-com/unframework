@@ -11,6 +11,7 @@ import {
   ImportSet,
   js,
   liveTypeNames,
+  parseExpressionSource,
   printProgram,
   typeDeclarationCode,
   typeNames,
@@ -19,7 +20,7 @@ import {
 import type { EmitContext, OutputFile } from "@unframework/codegen";
 import type { Code, TypeDeclaration, UfComponent, UfComposable, UfModule } from "@unframework/ir";
 
-import { VueNames } from "./names.ts";
+import { moduleReach, nameOf, VueNames } from "./names.ts";
 import { itemCode, itemLayout, laidOut, typeParametersText } from "./script.ts";
 import type { Statement } from "./script.ts";
 
@@ -117,22 +118,8 @@ export function moduleBindings(
   imports: ImportSet,
   names: VueNames,
 ): ModuleReads {
-  const reached = new Set(
-    owner.bindings
-      .filter((binding) => binding.kind === "import" || binding.kind === "moduleConst")
-      .map((binding) => binding.name),
-  );
+  const reached = moduleReach(owner, module);
   const constants = module.constants ?? [];
-  // A constant's references name a binding by `name@offset`; a module's names are unique.
-  for (let size = -1; size !== reached.size;) {
-    size = reached.size;
-    for (const constant of constants) {
-      if (!reached.has(constant.name)) continue;
-      for (const reference of constant.value.refs) {
-        if (reference.kind === "Binding") reached.add(nameOf(reference.binding));
-      }
-    }
-  }
   for (const entry of module.moduleImports ?? []) {
     for (const name of entry.names) {
       if (!reached.has(name.local)) continue;
@@ -184,15 +171,14 @@ export function addReadTypeImports(
   }
 }
 
-/** The name of a binding id, `name@offset`. */
-function nameOf(id: string): string {
-  return id.slice(0, id.lastIndexOf("@"));
-}
-
-/** A constant's value, with each module name Vue declares under another written by that name. */
+/**
+ * A constant's value, with each module name Vue declares under another written by that name, a
+ * shorthand property expanded (`{ defineProps: defineProps_1 }`).
+ */
 function renamed(value: Code, names: VueNames): string {
   let written = "";
   let last = 0;
+  let shorthand: ReadonlySet<number> | undefined;
   const references = value.refs
     .filter((reference) => reference.kind === "Binding")
     .toSorted((a, b) => a.span.start - b.span.start);
@@ -201,8 +187,36 @@ function renamed(value: Code, names: VueNames): string {
     const local = names.moduleLocal(name);
     if (local === name) continue;
     const start = reference.span.start - value.span.start;
-    written += `${value.code.slice(last, start)}${reference.shorthand ? `${name}: ` : ""}${local}`;
+    shorthand ??= shorthandValues(value.code);
+    const key = reference.shorthand || shorthand.has(start) ? `${name}: ` : "";
+    written += `${value.code.slice(last, start)}${key}${local}`;
     last = reference.span.end - value.span.start;
   }
   return `${written}${value.code.slice(last)}`;
+}
+
+/**
+ * Where an expression's shorthand properties' values start (`{ LIMITS }`): a constant's
+ * references carry no `shorthand` mark, so the code says.
+ */
+function shorthandValues(code: string): Set<number> {
+  const found = new Set<number>();
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    const each = node as { type?: unknown; shorthand?: unknown; value?: { start?: unknown } };
+    if (
+      each.type === "Property" &&
+      each.shorthand === true &&
+      typeof each.value?.start === "number"
+    ) {
+      found.add(each.value.start);
+    }
+    for (const [key, value] of Object.entries(node)) if (key !== "parent") visit(value);
+  };
+  visit(parseExpressionSource(code).expression);
+  return found;
 }
