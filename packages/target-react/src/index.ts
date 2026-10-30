@@ -41,6 +41,7 @@ import type {
 import { compilerBailout, declaredNames } from "./bailouts.ts";
 import type { ComponentCode } from "./bailouts.ts";
 import { placeConditionals } from "./branches.ts";
+import { emitComposable } from "./composable.ts";
 import { ReactComposer } from "./compose.ts";
 import { exposedType, refValueType, SCOPE_HELPER, slotProp } from "./composition.ts";
 import { cxHelper, reactDialect, styleObjectHelper } from "./dialect.ts";
@@ -171,6 +172,8 @@ export const react: Target = defineTarget({
         "A composable is a custom hook, and React runs a component's effects in its own order (ADR-0048): a hook's watchers, effects and hooks cannot take their place among the caller's own, so code that relies on that order may see another (ADR-0069).",
     },
   },
+  // A custom hook (ADR-0069).
+  emitComposable,
   // A function component in TSX (plan §6, ADR-0045 to ADR-0047): the copied type
   // declarations and the events' props, the setup's hooks in source order, and the render tree in
   // React's JSX.
@@ -495,7 +498,7 @@ function provided(plan: ReactPlan, tree: ReturnType<typeof jsxNode>): ReturnType
 /** `useImperativeHandle(ref, () => ({ focus }));`: what the component exposes (ADR-0054). */
 function exposeHandle(plan: ReactPlan): string | undefined {
   const { expose } = plan.composition;
-  const exposes = plan.component.exposes;
+  const exposes = plan.owner.exposes;
   if (!expose || !exposes) return undefined;
   const useImperativeHandle = plan.names.add("react", "useImperativeHandle");
   const members = exposes.functions.map((id) => {
@@ -512,7 +515,7 @@ function exposeHandle(plan: ReactPlan): string | undefined {
  * `className`, `style` and the `ref` that holds the handle; and the handle's own interface.
  */
 function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
-  const { composition, component } = plan;
+  const { composition, owner: component } = plan;
   const type = (name: string) => plan.names.add("react", name, { type: true });
   const declarations: TypeDeclaration[] = [];
   const declare = (name: string, members: string[], parameters = "") => {
@@ -666,7 +669,7 @@ function nextTickHooks(plan: ReactPlan): NextTickHooks {
  * the listener's parameters. The component's parameter is typed with the props' type and it.
  */
 function eventsInterface(plan: ReactPlan): TypeDeclaration[] {
-  const { emits } = plan.component;
+  const { emits } = plan.owner;
   if (!emits || !plan.eventsInterface) return [];
   const members = emits.events.map((event) => {
     const parameters = event.parameters
@@ -691,7 +694,7 @@ function eventsInterface(plan: ReactPlan): TypeDeclaration[] {
 function interfaceParameters(
   plan: ReactPlan,
 ): Partial<Record<"events" | "models" | "slots" | "expose", { declared: string; passed: string }>> {
-  const { component, composition } = plan;
+  const { owner: component, composition } = plan;
   const parameters = component.typeParameters ?? [];
   if (!parameters.length) return {};
   const written = (texts: readonly (TypeText | undefined)[]) => {
