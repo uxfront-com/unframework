@@ -235,7 +235,7 @@ export const solid: Target = defineTarget({
     );
     const keys = composition.keys().map((text) => placeholders.statements(`${text}\n`));
     // What it reads of its module: its imported values and its constants (ADR-0070).
-    const reads = moduleReads(component, context.module, imports, placeholders);
+    const reads = moduleReads(component.name, context.module, imports, placeholders);
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
     // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
     // component's style after its script.

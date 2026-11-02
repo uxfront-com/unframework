@@ -292,13 +292,18 @@ export function useToggle(initial: boolean) {
 | `import { SIZES } from "./tokens"`              | as written, from the copy of `tokens.ts` beside the outputs                         |
 | `const STEP = 2;` above the component           | as written, at module scope, before what the setup hoists                           |
 
-- A state whose type names a type parameter of a generic composable or component is written
+- In a generic composable or component, a state whose type names a type parameter, or whose
+  type is inferred from anything but a literal (`ref(initial)` with `initial: T`), is written
   through an updater, `setLocal(() => next)`: Solid's setter calls a function it is given, and a
-  `T` may be one (ADR-0068).
+  `T` may be one.
 - The module's constants a component or a composable reaches, and those they read, are declared
-  as written, with the module's types they name; so are those a `typeof` queries
-  (`keyof typeof SIZES`). Every module name is reserved before the output claims its own, so
-  each keeps its name. A setup function that reads only module values and other hoisted names
+  as written, with the module's types they name, and so is an imported value a `typeof` queries
+  (`keyof typeof SIZES`). A composable's parameter types are imported as the source imports them.
+  Every module name is reserved before the output claims its own, so each keeps its name.
+- A source's outputs load as one module, joined (ADR-0053), so a value two of its components (or
+  two composables of one `.uf.ts`) reach is declared or imported once, in the output of its main
+  one, which exports it (`export { STEP };`); the others import it from there,
+  `import { STEP } from "./Pair"`, as a sibling's injection key is (ADR-0054). A setup function that reads only module values and other hoisted names
   moves to module scope beside them; a setup binding named like a module value stays in the
   component, which shadows it as the source does.
 - A composable's watchers keep their own module's queue (`createWatcher`), apart from the

@@ -128,12 +128,15 @@ export class SolidCode {
         });
       }
     }
+    // In a generic owner, a state whose type names a type parameter, or whose type is inferred
+    // from anything but a literal (`ref(initial)` with `initial: T`).
     const parameters = new Set((component.typeParameters ?? []).map(({ name }) => name));
     for (const item of component.setup) {
-      if (item.kind !== "State" || !item.type || !parameters.size) continue;
-      if ([...typeNames(item.type)].some((name) => parameters.has(name))) {
-        this.#generic.add(item.binding);
-      }
+      if (item.kind !== "State" || !parameters.size) continue;
+      const generic = item.type
+        ? [...typeNames(item.type)].some((name) => parameters.has(name))
+        : item.initial !== undefined && !LITERAL.test(item.initial.code);
+      if (generic) this.#generic.add(item.binding);
     }
     // Whether watchers run before the DOM updates, after it, or both, which decides whether a
     // call names its timing (src/helpers.ts): a `watchEffect` runs after it.
@@ -328,13 +331,7 @@ export class SolidCode {
     const whole = wholeBinding(value);
     if (whole && keyRef(this.#composition, key)) {
       const binding = this.#binding(whole);
-      if (
-        binding.kind === "state" ||
-        binding.kind === "derived" ||
-        binding.kind === "model" ||
-        binding.kind === "usedState" ||
-        binding.kind === "usedDerived"
-      ) {
+      if (binding.kind === "state" || binding.kind === "derived" || binding.kind === "model") {
         return this.#composition.refObject(binding.name);
       }
     }
@@ -536,6 +533,12 @@ export class SolidCode {
     });
   }
 }
+
+/**
+ * The start of a literal, whose inferred type is never a type parameter: a number, a string, a
+ * template, an array or an object, a boolean or `null`.
+ */
+const LITERAL = /^\s*(?:-?\d|["'`[{]|(?:true|false|null)\b)/;
 
 /** Whether Solid tracks a read of a binding of a kind: what `untrack` is for. */
 function tracked(kind: Binding["kind"]): boolean {
@@ -932,7 +935,7 @@ function arrowBody(code: string): string {
 }
 
 /** The name of a binding id, `name@offset`. */
-function nameOf(id: BindingId): string {
+export function nameOf(id: BindingId): string {
   return id.slice(0, id.lastIndexOf("@"));
 }
 

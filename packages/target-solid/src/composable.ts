@@ -20,6 +20,7 @@ import {
   exportsOf,
   ImportSet,
   js,
+  keyOwner,
   NameScope,
   parseCodeSource,
   parseExpressionSource,
@@ -42,7 +43,7 @@ import type {
 import { SolidComposition } from "./composition.ts";
 import { typeParameterDeclaration } from "./generics.ts";
 import type { SolidProps } from "./props.ts";
-import { solidSetup, SolidCode } from "./setup.ts";
+import { nameOf, solidSetup, SolidCode } from "./setup.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type Statement = ReturnType<Placeholders["statements"]>;
@@ -55,7 +56,7 @@ type Statement = ReturnType<Placeholders["statements"]>;
 export function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
   const { module } = context;
   const owner = setupOwner(composable);
-  const parameterTypes = composable.parameters.map(({ type }) => type);
+  const parameterTypes = composableTypeTexts(composable);
   const names = sourceNames(owner, module);
   for (const type of parameterTypes) for (const name of typeNames(type)) names.add(name);
   for (const name of moduleValueNames(module)) names.add(name);
@@ -86,8 +87,14 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
     ),
   ]);
   fn.typeParameters = typeParameterDeclaration(owner, placeholders);
-  const reads = moduleReads(owner, module, imports, placeholders, parameterTypes);
+  const reads = moduleReads(composable.name, module, imports, placeholders);
   addTypeImports(owner, module, imports, (name) => name);
+  // The types its parameters name, which its IR as a setup owner holds no trace of (ADR-0067).
+  addNamedTypeImports(
+    module,
+    imports,
+    new Set(parameterTypes.flatMap((type) => [...typeNames(type)])),
+  );
   return [
     {
       path: `${composable.name}.ts`,
@@ -160,7 +167,10 @@ export function moduleValueNames(module: UfModule): string[] {
 
 /** What an owner's output declares of its module (ADR-0070). */
 export interface ModuleReads {
-  /** The constants it reaches, in source order, as written. */
+  /**
+   * The constants it declares, in source order, as written, and the `export { … }` of what its
+   * siblings import from it.
+   */
   constants: Statement[];
   /** The module's type declarations its constants name, transitively, beyond its own types. */
   types: TypeDeclaration[];
@@ -169,20 +179,100 @@ export interface ModuleReads {
 /**
  * What a component or a composable reads of its module (ADR-0070), added to its output: each
  * imported value it reaches, imported as the source imports it, and each constant it reaches,
- * declared as written. It reaches the values its bindings name, those a `typeof` queries in its
- * own text (`keyof typeof SIZES`), and those its constants and the module's types it copies read
- * in turn. The type imports their annotations and the copied declarations name are imported too.
- * `typeTexts` adds what the owner's IR does not hold: a composable's parameter types.
+ * declared as written, with the type imports their annotations and the copied declarations name.
+ *
+ * A source's script outputs load as one module, the files joined (ADR-0053), where a name may be
+ * declared once. So a value two owners of the module reach (its components, or a `.uf.ts`
+ * module's composables) is declared or imported once, by the module's main owner (`keyOwner`),
+ * which exports it, `export { STEP };`, and every other owner imports it from the main one's
+ * output, `import { STEP } from "./Pair"`, as a sibling's key is (ADR-0054). A value one owner
+ * reaches stays its own.
  */
 export function moduleReads(
-  owner: UfComponent,
+  name: string,
   module: UfModule,
   imports: ImportSet,
   placeholders: Placeholders,
-  typeTexts: readonly TypeText[] = [],
 ): ModuleReads {
+  if (!moduleValueNames(module).length) return { constants: [], types: [] };
+  const owners = [
+    ...module.components.map((component) => ({
+      name: component.name,
+      reach: moduleReach(component, module),
+    })),
+    ...(module.composables ?? []).map((composable) => ({
+      name: composable.name,
+      reach: moduleReach(setupOwner(composable), module, composableTypeTexts(composable)),
+    })),
+  ];
+  const own = owners.find((owner) => owner.name === name)!.reach;
+  const main = keyOwner(module.components, module.exports) ?? owners[0]!.name;
+  const shared = new Set(
+    [...own.values, ...owners.flatMap((owner) => [...owner.reach.values])].filter(
+      (value) => owners.filter((owner) => owner.reach.values.has(value)).length > 1,
+    ),
+  );
+  // What this output declares or imports from the module's own files: the main owner's, every
+  // shared value too; any other's, what it alone reaches.
+  const declared =
+    name === main
+      ? new Set([...own.values, ...shared])
+      : new Set([...own.values].filter((value) => !shared.has(value)));
+  if (name !== main) {
+    for (const value of own.values) {
+      if (shared.has(value)) imports.add(`./${main}`, value, { exact: true });
+    }
+  }
+  for (const entry of module.moduleImports ?? []) {
+    for (const each of entry.names) {
+      if (!declared.has(each.local)) continue;
+      if (each.imported === "default") {
+        imports.addDefault(entry.specifier, each.local, { exact: true });
+      } else imports.add(entry.specifier, each.imported, { local: each.local, exact: true });
+    }
+  }
+  const constants = (module.constants ?? []).filter((constant) => declared.has(constant.name));
+  // The module's types and the type imports what it declares names, beside the owner's own.
+  const reach = name === main ? mergedReach([own, ...owners.map((owner) => owner.reach)]) : own;
+  addNamedTypeImports(module, imports, reach.named);
+  const exported = name === main ? [...shared].toSorted() : [];
+  const lines = [
+    ...constants.map(
+      (constant) =>
+        `const ${constant.name}${constant.type ? `: ${constant.type.code}` : ""} = ${constant.value.code};`,
+    ),
+    ...(exported.length ? [`export { ${exported.join(", ")} };`] : []),
+  ];
+  return {
+    constants: lines.map((line, index) =>
+      placeholders.statements(`${line}${index === lines.length - 1 ? "\n" : ""}`),
+    ),
+    types: module.types.filter((declaration) => reach.types.has(declaration.name)),
+  };
+}
+
+/** What an owner reaches of its module (ADR-0070). */
+interface ModuleReach {
+  /** The constants and imported values it reaches, by local name. */
+  values: Set<string>;
+  /** The module's type declarations its constants name, transitively, beyond its own types. */
+  types: Set<string>;
+  /** The type names its constants and those declarations read. */
+  named: Set<string>;
+}
+
+/**
+ * The module values an owner reaches (ADR-0070): those its bindings name, those a `typeof`
+ * queries in its own text (`keyof typeof SIZES`), and those its constants and the module's types
+ * it copies read in turn. `typeTexts` adds what the owner's IR does not hold: a composable's
+ * parameter types.
+ */
+function moduleReach(
+  owner: UfComponent,
+  module: UfModule,
+  typeTexts: readonly TypeText[] = [],
+): ModuleReach {
   const moduleValues = new Set(moduleValueNames(module));
-  if (!moduleValues.size) return { constants: [], types: [] };
   const values = new Set(
     owner.bindings
       .filter((binding) => binding.kind === "import" || binding.kind === "moduleConst")
@@ -197,9 +287,9 @@ export function moduleReads(
   for (const declaration of componentTypes(owner, module)) query(declaration.code, "statements");
   // The constants those reach, and the module's types and values they name, transitively.
   const named = new Set<string>();
-  const declared = new Set<string>();
-  for (let size = -1; size !== values.size + declared.size;) {
-    size = values.size + declared.size;
+  const types = new Set<string>();
+  for (let size = -1; size !== values.size + types.size;) {
+    size = values.size + types.size;
     for (const constant of module.constants ?? []) {
       if (!values.has(constant.name)) continue;
       for (const reference of constant.value.refs) {
@@ -214,23 +304,48 @@ export function moduleReads(
     }
     for (const declaration of module.types) {
       if (own.has(declaration.name) || !named.has(declaration.name)) continue;
-      declared.add(declaration.name);
+      types.add(declaration.name);
       for (const name of codeNames(declaration.code, "statements")) named.add(name);
       query(declaration.code, "statements");
     }
   }
-  for (const entry of module.moduleImports ?? []) {
-    for (const name of entry.names) {
-      if (!values.has(name.local)) continue;
-      if (name.imported === "default")
-        imports.addDefault(entry.specifier, name.local, { exact: true });
-      else imports.add(entry.specifier, name.imported, { local: name.local, exact: true });
-    }
-  }
-  // The type imports the constants and the copied declarations name, beside the owner's own.
+  return { values, types, named };
+}
+
+/**
+ * What the main owner declares of its module: every owner's reach, but the types the main owner
+ * declares as its own.
+ */
+function mergedReach(reaches: readonly ModuleReach[]): ModuleReach {
+  return {
+    values: new Set(reaches.flatMap((reach) => [...reach.values])),
+    types: new Set(reaches.flatMap((reach) => [...reach.types])),
+    named: new Set(reaches.flatMap((reach) => [...reach.named])),
+  };
+}
+
+/** The type text a composable's parameters and type parameters write, beside its IR's. */
+function composableTypeTexts(composable: UfComposable): TypeText[] {
+  return [
+    ...composable.parameters.map(({ type }) => type),
+    ...(composable.typeParameters ?? []).flatMap(({ constraint, default: fallback }) =>
+      [constraint, fallback].filter((type): type is TypeText => type !== undefined),
+    ),
+  ];
+}
+
+/**
+ * Imports each of the module's `import type` names in `names`, under the source's local name,
+ * from `typeSpecifier` (ADR-0067).
+ */
+function addNamedTypeImports(
+  module: UfModule,
+  imports: ImportSet,
+  names: ReadonlySet<string>,
+): void {
   for (const entry of module.typeImports ?? []) {
     for (const name of entry.names) {
-      if (!named.has(name.local)) continue;
+      if (!names.has(name.local)) continue;
       imports.add(
         typeSpecifier(entry.specifier, module, (each) => each),
         name.imported,
@@ -242,15 +357,6 @@ export function moduleReads(
       );
     }
   }
-  const constants = (module.constants ?? []).filter((constant) => values.has(constant.name));
-  return {
-    constants: constants.map((constant, index) =>
-      placeholders.statements(
-        `const ${constant.name}${constant.type ? `: ${constant.type.code}` : ""} = ${constant.value.code};${index === constants.length - 1 ? "\n" : ""}`,
-      ),
-    ),
-    types: module.types.filter((declaration) => declared.has(declaration.name)),
-  };
 }
 
 /** The type text an owner's IR writes beside its code: its props', setup's and emits' types. */
@@ -298,9 +404,4 @@ function typeQueries(text: string, kind: CodeKind | "type"): string[] {
   };
   visit(root);
   return found;
-}
-
-/** The name of a binding id, `name@offset`. */
-function nameOf(id: string): string {
-  return id.slice(0, id.lastIndexOf("@"));
 }
