@@ -21,6 +21,7 @@
 import {
   functionSource,
   functionText,
+  keyOwner,
   rewriteCode,
   typeNames,
   writtenValue,
@@ -535,10 +536,11 @@ export class SolidCode {
 }
 
 /**
- * The start of a literal, whose inferred type is never a type parameter: a number, a string, a
- * template, an array or an object, a boolean or `null`.
+ * A primitive literal, whose inferred type is never a type parameter: a number, a string, a
+ * template with no substitution, a boolean or `null`. An array or an object may hold a `T`.
  */
-const LITERAL = /^\s*(?:-?\d|["'`[{]|(?:true|false|null)\b)/;
+const LITERAL =
+  /^\s*(?:-?\d[\d_.]*(?:e[+-]?\d+)?n?|0[box][\da-f_]+n?|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`[^`$\\]*`|true|false|null)\s*$/i;
 
 /** Whether Solid tracks a read of a binding of a kind: what `untrack` is for. */
 function tracked(kind: Binding["kind"]): boolean {
@@ -739,7 +741,11 @@ function hoistable(component: UfComponent, module: UfModule): Set<BindingId> {
     ...(module.moduleImports ?? []).flatMap(({ names }) => names.map(({ local }) => local)),
   ]);
   const kinds = new Map(component.bindings.map((binding) => [binding.id, binding.kind]));
+  // An owner that imports its module's values from a sibling's output reads them only once they
+  // are declared, inside its function: never in a constant at module scope (src/composable.ts).
+  const imported = importsModuleValues(module, component.name);
   const candidates = new Map<BindingId, Code[]>();
+  const functions = new Set<BindingId>();
   for (const item of component.setup) {
     // A generic component's type parameters are in scope only inside its function (ADR-0068).
     if (
@@ -750,6 +756,7 @@ function hoistable(component: UfComponent, module: UfModule): Set<BindingId> {
     }
     if ("binding" in item && taken.has(nameOf(item.binding))) continue;
     if (item.kind === "Const") candidates.set(item.binding, [item.value]);
+    if (item.kind === "Function") functions.add(item.binding);
     if (item.kind === "Function") {
       const fn = item.function;
       candidates.set(item.binding, [fn.body]);
@@ -764,9 +771,13 @@ function hoistable(component: UfComponent, module: UfModule): Set<BindingId> {
         piece.refs.some((ref) => {
           switch (ref.kind) {
             case "Binding": {
-              // A module's value is at module scope already (ADR-0070).
+              // A module's value is at module scope already (ADR-0070), but a sibling's output
+              // declares it for an owner that imports it, which a function may read, never a
+              // constant.
               const kind = kinds.get(ref.binding);
-              if (kind === "moduleConst" || kind === "import") return false;
+              if (kind === "moduleConst" || kind === "import") {
+                return imported && !functions.has(id);
+              }
               return !hoisted.has(ref.binding);
             }
             case "Write":
@@ -932,6 +943,21 @@ function keyRef(composition: SolidComposition, local: string): RefType | undefin
 /** An arrow's expression body: an object literal in parentheses. */
 function arrowBody(code: string): string {
   return code.trimStart().startsWith("{") ? `(${code})` : code;
+}
+
+/**
+ * The owner of a module that declares the module values its owners read (src/composable.ts,
+ * ADR-0070): its main component (`keyOwner`), or a `.uf.ts` module's first composable.
+ */
+export function moduleMain(module: UfModule): string | undefined {
+  return keyOwner(module.components, module.exports) ?? module.composables?.[0]?.name;
+}
+
+/** Whether an owner imports its module's values from its main owner's output (src/composable.ts). */
+function importsModuleValues(module: UfModule, name: string): boolean {
+  return (
+    module.components.length + (module.composables?.length ?? 0) > 1 && moduleMain(module) !== name
+  );
 }
 
 /** The name of a binding id, `name@offset`. */

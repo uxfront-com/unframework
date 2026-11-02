@@ -300,12 +300,17 @@ export function useToggle(initial: boolean) {
   as written, with the module's types they name, and so is an imported value a `typeof` queries
   (`keyof typeof SIZES`). A composable's parameter types are imported as the source imports them.
   Every module name is reserved before the output claims its own, so each keeps its name.
-- A source's outputs load as one module, joined (ADR-0053), so a value two of its components (or
-  two composables of one `.uf.ts`) reach is declared or imported once, in the output of its main
-  one, which exports it (`export { STEP };`); the others import it from there,
-  `import { STEP } from "./Pair"`, as a sibling's injection key is (ADR-0054). A setup function that reads only module values and other hoisted names
-  moves to module scope beside them; a setup binding named like a module value stays in the
-  component, which shadows it as the source does.
+- A setup function that reads only module values and other hoisted names moves to module scope
+  beside them; a setup binding named like a module value stays in the component, which shadows
+  it as the source does.
+- A source's outputs load as one module, joined in source order (ADR-0053), where a name is
+  declared once and a constant runs as the module loads. So in a source with several components
+  (or a `.uf.ts` module with several composables), the main one declares every module value any
+  of them reaches, with the types those name, and exports what the others read
+  (`export { STEP };`); the others import it from there, `import { STEP } from "./Pair"`, as a
+  sibling's injection key is (ADR-0054), and keep a setup constant that reads it in their
+  function. Neither reads a module value as it loads, so the join's order and the files' import
+  cycle don't matter. The joined module then exports those names beside the source's own.
 - A composable's watchers keep their own module's queue (`createWatcher`), apart from the
   caller's, so `composable-effect-order` is unsupported (UF4005, info). Its hooks attach to the
   calling component, so they run on its mount and unmount, once for each call.

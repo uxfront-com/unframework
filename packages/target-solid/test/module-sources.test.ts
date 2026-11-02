@@ -3,8 +3,10 @@
 // output passes babel-preset-solid (L3), tsgo (L4) and the lint rules (L5), and a source's
 // outputs join into one module as the unplugin loads them (ADR-0053).
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
+import { transformSync } from "@babel/core";
 import type { ToolchainContext } from "@unframework/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -12,9 +14,11 @@ import { compileComposableCases } from "../../codegen/test/composable-cases.ts";
 // The unplugin's join, by path, as it loads a source's script outputs as one module.
 import { joinModules } from "../../unplugin/src/assemble.ts";
 import { toolchain } from "../src/toolchain/index.ts";
+import { renderToString } from "../src/toolchain/server.ts";
 import { packageDir, toolchainDir } from "./fixtures.ts";
 
 const context: ToolchainContext = { toolchainDir, root: packageDir };
+const require = createRequire(import.meta.url);
 
 // In the package, so the outputs' `solid-js` imports resolve from its node_modules.
 mkdirSync(join(packageDir, ".uf-tmp"), { recursive: true });
@@ -72,6 +76,74 @@ const CASES: Record<string, Record<string, string>> = {
       "    chosen.value = second;",
       "  }",
       '  return <button type="button" onClick={choose}>{String(chosen.value)}</button>;',
+      "}",
+      "",
+    ].join("\n"),
+  },
+  // A sibling's constants and setup constant that read the main component's (round 2).
+  "modules/shared-constant-reader": {
+    "tokens.ts": "export const SIZE = 4;\n",
+    "Pair.uf.tsx": [
+      'import { SIZE } from "./tokens";',
+      "",
+      "const STEP = 2;",
+      "const DOUBLE = STEP * 2;",
+      "const VIA = SIZE * 2;",
+      "",
+      "export function Part() {",
+      "  const triple = STEP * 3;",
+      "  return (",
+      "    <p>",
+      "      Part {DOUBLE} {VIA} {triple}",
+      "    </p>",
+      "  );",
+      "}",
+      "",
+      "export default function Pair() {",
+      "  return (",
+      "    <div>",
+      "      <Part />",
+      "      <p>Pair {STEP}</p>",
+      "    </div>",
+      "  );",
+      "}",
+      "",
+    ].join("\n"),
+  },
+  // Typed constants: one both components read, one only the sibling reads.
+  "modules/typed-constants": {
+    "Shared.uf.tsx": [
+      "type Size = number;",
+      "",
+      "const STEP: Size = 2;",
+      "const ONLY_PART: Size = 1;",
+      "",
+      "export function Part() {",
+      "  return <p>{STEP + ONLY_PART}</p>;",
+      "}",
+      "",
+      "export default function Shared() {",
+      "  return (",
+      "    <div>",
+      "      <Part />",
+      "      <p>{STEP}</p>",
+      "    </div>",
+      "  );",
+      "}",
+      "",
+    ].join("\n"),
+  },
+  // A state initialised by an object literal that holds a type parameter.
+  "generics/spread-state": {
+    "useCopy.uf.ts": [
+      'import { ref } from "unframework";',
+      "",
+      "export function useCopy<T extends { id: number }>(initial: T) {",
+      "  const copy = ref({ ...initial });",
+      "  function reset(next: T) {",
+      "    copy.value = next;",
+      "  }",
+      "  return { copy, reset };",
       "}",
       "",
     ].join("\n"),
@@ -152,15 +224,76 @@ describe("solid sources beyond the composable cases", () => {
   it("declares a value two components of a source read once, in the main one's output", () => {
     const source = cases.find(({ id }) => id === "modules/two-components")!.sources[0]!;
     const files = source.outputs.filter(({ path }) => path.endsWith(".tsx"));
-    expect(outputOf("modules/two-components", "Pair.tsx")).toContain("export { SIZE, STEP };");
+    const pair = outputOf("modules/two-components", "Pair.tsx");
+    expect(pair).toContain("const ONLY_PART = 1;");
+    expect(pair).toContain("export { ONLY_PART, SIZE, STEP };");
     const part = outputOf("modules/two-components", "Part.tsx");
-    expect(part).toContain('import { SIZE, STEP } from "./Pair";');
-    expect(part).toContain("const ONLY_PART = 1;");
+    expect(part).toContain('import { ONLY_PART, SIZE, STEP } from "./Pair";');
+    expect(part).not.toContain("const ONLY_PART");
     expect(part).not.toContain('from "./tokens"');
-    const siblings = source.outputs.map(({ path }) => path);
+    // The outputs the source owns, as the unplugin passes them, never the copied `.ts` modules.
+    const siblings = files.map(({ path }) => path);
     expect(joinModules(files, "Pair.uf.tsx compiles to two files", siblings)).not.toHaveProperty(
       "error",
     );
+  });
+
+  it("copies a constant's types only into the output that declares it", () => {
+    expect(outputOf("modules/typed-constants", "Shared.tsx")).toContain("type Size = number;");
+    expect(outputOf("modules/typed-constants", "Part.tsx")).not.toContain("Size");
+    const source = cases.find(({ id }) => id === "modules/typed-constants")!.sources[0]!;
+    const files = source.outputs.filter(({ path }) => path.endsWith(".tsx"));
+    // The outputs the source owns, as the unplugin passes them, never the copied `.ts` modules.
+    const siblings = files.map(({ path }) => path);
+    expect(joinModules(files, "Shared.uf.tsx compiles to two files", siblings)).not.toHaveProperty(
+      "error",
+    );
+  });
+
+  it("writes a state an object literal initialises through an updater in a generic owner", () => {
+    expect(outputOf("generics/spread-state", "useCopy.ts")).toContain("setCopy(() => next);");
+  });
+
+  it("loads a source's joined module, a sibling's constants reading the main one's", async () => {
+    // The sibling's own constant and its setup's read the main component's values only once
+    // they are declared (src/composable.ts, src/setup.ts).
+    const part = outputOf("modules/shared-constant-reader", "Part.tsx");
+    expect(part).toContain('import { DOUBLE, STEP, VIA } from "./Pair";');
+    const inside = part.slice(part.indexOf("export function Part"));
+    expect(inside).toContain("const triple = STEP * 3;");
+    // Executed as the `ssr` project loads it: the files joined, Part's first.
+    const source = cases.find(({ id }) => id === "modules/shared-constant-reader")!.sources[0]!;
+    const files = source.outputs.filter(({ path }) => path.endsWith(".tsx"));
+    expect(files.map(({ path }) => path)).toEqual(["Part.tsx", "Pair.tsx"]);
+    const joined = joinModules(
+      files,
+      "Pair.uf.tsx compiles to two files",
+      files.map(({ path }) => path),
+    );
+    if ("error" in joined) throw new Error(joined.error);
+    const { code } = transformSync(joined.code, {
+      filename: "Pair.tsx",
+      babelrc: false,
+      configFile: false,
+      presets: [
+        [require.resolve("babel-preset-solid"), { generate: "ssr", hydratable: true }],
+        [require.resolve("@babel/preset-typescript"), { isTSX: true, allExtensions: true }],
+      ],
+    })!;
+    const directory = join(scratch, "joined");
+    mkdirSync(directory, { recursive: true });
+    writeFileSync(
+      join(directory, "tokens.ts"),
+      CASES["modules/shared-constant-reader"]!["tokens.ts"]!,
+    );
+    writeFileSync(join(directory, "Pair.js"), code!);
+    const loaded = (await import(join(directory, "Pair.js"))) as { default: unknown };
+    const html = (await renderToString(loaded.default, {})).replaceAll(
+      / data-hk="[^"]*"|<!--\/?\$?-->/g,
+      "",
+    );
+    expect(html).toContain("Part 4 8 6");
+    expect(html).toContain("Pair 2");
   });
 });
 

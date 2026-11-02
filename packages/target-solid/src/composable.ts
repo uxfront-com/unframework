@@ -20,7 +20,6 @@ import {
   exportsOf,
   ImportSet,
   js,
-  keyOwner,
   NameScope,
   parseCodeSource,
   parseExpressionSource,
@@ -43,7 +42,7 @@ import type {
 import { SolidComposition } from "./composition.ts";
 import { typeParameterDeclaration } from "./generics.ts";
 import type { SolidProps } from "./props.ts";
-import { nameOf, solidSetup, SolidCode } from "./setup.ts";
+import { moduleMain, nameOf, solidSetup, SolidCode } from "./setup.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type Statement = ReturnType<Placeholders["statements"]>;
@@ -179,14 +178,16 @@ export interface ModuleReads {
 /**
  * What a component or a composable reads of its module (ADR-0070), added to its output: each
  * imported value it reaches, imported as the source imports it, and each constant it reaches,
- * declared as written, with the type imports their annotations and the copied declarations name.
+ * declared as written, with the module's types and the type imports their annotations name.
  *
- * A source's script outputs load as one module, the files joined (ADR-0053), where a name may be
- * declared once. So a value two owners of the module reach (its components, or a `.uf.ts`
- * module's composables) is declared or imported once, by the module's main owner (`keyOwner`),
- * which exports it, `export { STEP };`, and every other owner imports it from the main one's
- * output, `import { STEP } from "./Pair"`, as a sibling's key is (ADR-0054). A value one owner
- * reaches stays its own.
+ * A source's script outputs load as one module, the files joined in source order (ADR-0053), where
+ * a name may be declared once and a constant's value runs as the module loads. So where a module
+ * has several owners (its components, or a `.uf.ts` module's composables), its main owner
+ * (`moduleMain`) declares every module value any of them reaches and exports those the others
+ * read, `export { STEP };`, and every other owner imports what it reads from the main one's
+ * output, `import { STEP } from "./Pair"`, as a sibling's key is (ADR-0054). The others then run
+ * nothing of the module as they load (src/setup.ts keeps their constants that read it in the
+ * component), so neither the join's order nor the import cycle between the files matters.
  */
 export function moduleReads(
   name: string,
@@ -196,82 +197,75 @@ export function moduleReads(
 ): ModuleReads {
   if (!moduleValueNames(module).length) return { constants: [], types: [] };
   const owners = [
-    ...module.components.map((component) => ({
-      name: component.name,
-      reach: moduleReach(component, module),
-    })),
+    ...module.components.map((component) => ({ owner: component, typeTexts: [] as TypeText[] })),
     ...(module.composables ?? []).map((composable) => ({
-      name: composable.name,
-      reach: moduleReach(setupOwner(composable), module, composableTypeTexts(composable)),
+      owner: setupOwner(composable),
+      typeTexts: composableTypeTexts(composable),
     })),
   ];
-  const own = owners.find((owner) => owner.name === name)!.reach;
-  const main = keyOwner(module.components, module.exports) ?? owners[0]!.name;
-  const shared = new Set(
-    [...own.values, ...owners.flatMap((owner) => [...owner.reach.values])].filter(
-      (value) => owners.filter((owner) => owner.reach.values.has(value)).length > 1,
-    ),
-  );
-  // What this output declares or imports from the module's own files: the main owner's, every
-  // shared value too; any other's, what it alone reaches.
-  const declared =
-    name === main
-      ? new Set([...own.values, ...shared])
-      : new Set([...own.values].filter((value) => !shared.has(value)));
-  if (name !== main) {
-    for (const value of own.values) {
-      if (shared.has(value)) imports.add(`./${main}`, value, { exact: true });
+  const main = moduleMain(module)!;
+  const own = owners.find(({ owner }) => owner.name === name)!;
+  const direct = ownValues(own.owner, module, own.typeTexts);
+  if (owners.length > 1 && name !== main) {
+    for (const value of [...direct].toSorted()) imports.add(`./${main}`, value, { exact: true });
+    return { constants: [], types: [] };
+  }
+  // The main owner declares what every owner reaches, and exports what the others read.
+  const exported = new Set<string>();
+  const values = new Set(direct);
+  for (const each of owners) {
+    if (each === own) continue;
+    for (const value of ownValues(each.owner, module, each.typeTexts)) {
+      exported.add(value);
+      values.add(value);
     }
   }
+  const closed = closure(values, own.owner, module);
   for (const entry of module.moduleImports ?? []) {
     for (const each of entry.names) {
-      if (!declared.has(each.local)) continue;
+      if (!closed.values.has(each.local)) continue;
       if (each.imported === "default") {
         imports.addDefault(entry.specifier, each.local, { exact: true });
       } else imports.add(entry.specifier, each.imported, { local: each.local, exact: true });
     }
   }
-  const constants = (module.constants ?? []).filter((constant) => declared.has(constant.name));
-  // The module's types and the type imports what it declares names, beside the owner's own.
-  const reach = name === main ? mergedReach([own, ...owners.map((owner) => owner.reach)]) : own;
-  addNamedTypeImports(module, imports, reach.named);
-  const exported = name === main ? [...shared].toSorted() : [];
+  addNamedTypeImports(module, imports, closed.named);
+  const constants = (module.constants ?? []).filter((constant) => closed.values.has(constant.name));
   const lines = [
     ...constants.map(
       (constant) =>
         `const ${constant.name}${constant.type ? `: ${constant.type.code}` : ""} = ${constant.value.code};`,
     ),
-    ...(exported.length ? [`export { ${exported.join(", ")} };`] : []),
+    ...(exported.size ? [`export { ${[...exported].toSorted().join(", ")} };`] : []),
   ];
   return {
     constants: lines.map((line, index) =>
       placeholders.statements(`${line}${index === lines.length - 1 ? "\n" : ""}`),
     ),
-    types: module.types.filter((declaration) => reach.types.has(declaration.name)),
+    types: module.types.filter((declaration) => closed.types.has(declaration.name)),
   };
 }
 
-/** What an owner reaches of its module (ADR-0070). */
+/** What an output declares of its module (ADR-0070). */
 interface ModuleReach {
-  /** The constants and imported values it reaches, by local name. */
+  /** The constants and imported values it declares or imports, by local name. */
   values: Set<string>;
-  /** The module's type declarations its constants name, transitively, beyond its own types. */
+  /** The module's type declarations its constants name, transitively, beyond the owner's own. */
   types: Set<string>;
   /** The type names its constants and those declarations read. */
   named: Set<string>;
 }
 
 /**
- * The module values an owner reaches (ADR-0070): those its bindings name, those a `typeof`
- * queries in its own text (`keyof typeof SIZES`), and those its constants and the module's types
- * it copies read in turn. `typeTexts` adds what the owner's IR does not hold: a composable's
- * parameter types.
+ * The module values an owner reads itself (ADR-0070): those its bindings name, and those a
+ * `typeof` queries in its own text (`keyof typeof SIZES`). `typeTexts` adds what the owner's IR
+ * does not hold: a composable's parameter types.
  */
-function moduleReach(
+function ownValues(
   owner: UfComponent,
   module: UfModule,
   typeTexts: readonly TypeText[] = [],
-): ModuleReach {
+): Set<string> {
   const moduleValues = new Set(moduleValueNames(module));
   const values = new Set(
     owner.bindings
@@ -283,17 +277,29 @@ function moduleReach(
   };
   for (const { code } of codeOf(owner)) query(code.code, codeKind(code, owner));
   for (const text of [...ownTypes(owner), ...typeTexts]) query(text.code, "type");
-  const own = new Set(owner.types);
   for (const declaration of componentTypes(owner, module)) query(declaration.code, "statements");
-  // The constants those reach, and the module's types and values they name, transitively.
+  return values;
+}
+
+/**
+ * The constants `values` reach and the module's types and values they name, transitively: what
+ * an output that declares them declares, beside the types its owner declares as its own.
+ */
+function closure(values: ReadonlySet<string>, owner: UfComponent, module: UfModule): ModuleReach {
+  const moduleValues = new Set(moduleValueNames(module));
+  const reached = new Set(values);
+  const query = (text: string, kind: CodeKind | "type") => {
+    for (const name of typeQueries(text, kind)) if (moduleValues.has(name)) reached.add(name);
+  };
+  const own = new Set(owner.types);
   const named = new Set<string>();
   const types = new Set<string>();
-  for (let size = -1; size !== values.size + types.size;) {
-    size = values.size + types.size;
+  for (let size = -1; size !== reached.size + types.size;) {
+    size = reached.size + types.size;
     for (const constant of module.constants ?? []) {
-      if (!values.has(constant.name)) continue;
+      if (!reached.has(constant.name)) continue;
       for (const reference of constant.value.refs) {
-        if (reference.kind === "Binding") values.add(nameOf(reference.binding));
+        if (reference.kind === "Binding") reached.add(nameOf(reference.binding));
       }
       if (constant.type) {
         for (const name of typeNames(constant.type)) named.add(name);
@@ -309,19 +315,7 @@ function moduleReach(
       query(declaration.code, "statements");
     }
   }
-  return { values, types, named };
-}
-
-/**
- * What the main owner declares of its module: every owner's reach, but the types the main owner
- * declares as its own.
- */
-function mergedReach(reaches: readonly ModuleReach[]): ModuleReach {
-  return {
-    values: new Set(reaches.flatMap((reach) => [...reach.values])),
-    types: new Set(reaches.flatMap((reach) => [...reach.types])),
-    named: new Set(reaches.flatMap((reach) => [...reach.named])),
-  };
+  return { values: reached, types, named };
 }
 
 /** The type text a composable's parameters and type parameters write, beside its IR's. */
