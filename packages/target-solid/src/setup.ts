@@ -18,7 +18,13 @@
 //   (src/listeners.ts); `useId()` is `uf-id-` and `createUniqueId()`.
 // - Constants and functions that capture nothing of the component are hoisted to module scope
 //   (ADR-0045, `unicorn/consistent-function-scoping`).
-import { functionSource, functionText, rewriteCode, writtenValue } from "@unframework/codegen";
+import {
+  functionSource,
+  functionText,
+  rewriteCode,
+  typeNames,
+  writtenValue,
+} from "@unframework/codegen";
 import type { ImportSet, Placeholders, RewriteRules } from "@unframework/codegen";
 import { summarizeCode, summarizeTracked, walk } from "@unframework/ir";
 import type {
@@ -33,6 +39,8 @@ import type {
   SetupItem,
   Span,
   UfComponent,
+  UfModule,
+  UseItem,
   WatchEffectItem,
   WatchItem,
 } from "@unframework/ir";
@@ -58,6 +66,8 @@ type Statement = ReturnType<Placeholders["statements"]>;
 /** How one output prints its component's code: the rewrite rules and the client functions. */
 export class SolidCode {
   readonly component: UfComponent;
+  /** The component's module. */
+  readonly module: UfModule;
   /** How every reference is spelled, writes and emits included. */
   readonly rules: RewriteRules;
   readonly #imports: ImportSet;
@@ -72,6 +82,8 @@ export class SolidCode {
     array: { lazy: false, immediate: false },
     flush: { pre: false, post: false },
   };
+  /** The state whose type names a type parameter of a generic owner (ADR-0068). */
+  readonly #generic = new Set<BindingId>();
   /** The local functions whose call reads a prop, state or a derived value, as `untrack` sees. */
   readonly #reading = new Set<BindingId>();
   #watcher: string | undefined;
@@ -85,6 +97,7 @@ export class SolidCode {
     composition: SolidComposition,
   ) {
     this.component = component;
+    this.module = composition.module;
     this.#imports = imports;
     this.#props = props;
     this.#composition = composition;
@@ -115,6 +128,13 @@ export class SolidCode {
         });
       }
     }
+    const parameters = new Set((component.typeParameters ?? []).map(({ name }) => name));
+    for (const item of component.setup) {
+      if (item.kind !== "State" || !item.type || !parameters.size) continue;
+      if ([...typeNames(item.type)].some((name) => parameters.has(name))) {
+        this.#generic.add(item.binding);
+      }
+    }
     // Whether watchers run before the DOM updates, after it, or both, which decides whether a
     // call names its timing (src/helpers.ts): a `watchEffect` runs after it.
     for (const item of component.setup) {
@@ -141,9 +161,12 @@ export class SolidCode {
           case "loopVar":
             // `<For>` passes the index as an accessor.
             return indexes.has(binding.id) ? `${text}()` : text;
+          // A composable returns its state and derived values as accessors (ADR-0069).
           case "state":
           case "derived":
           case "model":
+          case "usedState":
+          case "usedDerived":
             return `${binding.name}()${asserted}`;
           case "templateRef":
             return binding.name;
@@ -153,17 +176,16 @@ export class SolidCode {
           case "emit":
             return text;
           // A slot reads as a prop (src/composition.ts), an injected value and a slot's props as
-          // written, and a component by its import's name.
+          // written, and a component by its import's name. A module's values are the copied
+          // module's and the module's own (ADR-0070), and a composable's arguments, functions and
+          // constants are as the source writes them (ADR-0069).
           case "slots":
           case "slotScope":
           case "context":
           case "component":
-          // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
           case "moduleConst":
           case "import":
           case "argument":
-          case "usedState":
-          case "usedDerived":
           case "usedFn":
           case "usedConst":
             return text;
@@ -174,8 +196,13 @@ export class SolidCode {
       write: (write, binding, parts) => {
         switch (binding.kind) {
           case "state":
-          case "model":
-            return `${this.#setters.get(binding.id)!}(${writtenValue(write, parts)})`;
+          case "model": {
+            const value = writtenValue(write, parts);
+            // A setter takes a function as an update, so a value of a type parameter, which may
+            // be a function, is passed as one that returns it (ADR-0068).
+            const update = this.#generic.has(binding.id) ? `() => ${value}` : value;
+            return `${this.#setters.get(binding.id)!}(${update})`;
+          }
           case "localVar":
             return undefined;
           case "prop":
@@ -189,7 +216,8 @@ export class SolidCode {
           case "slotScope":
           case "context":
           case "component":
-          // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+          // Read-only: a module's value (ADR-0070), and what a composable takes or returns, whose
+          // state changes through its functions (UF2036, ADR-0069).
           case "moduleConst":
           case "import":
           case "argument":
@@ -267,6 +295,32 @@ export class SolidCode {
   }
 
   /**
+   * `const { on, toggle } = useToggle(false);` (ADR-0069): the composable returns its state and
+   * derived values as accessors, which the caller destructures and calls (`on()`), and its
+   * functions and constants as they are. A value argument is read once, a getter is passed as an
+   * arrow the composable reads reactively, and a callback as a function its client code calls.
+   */
+  use(item: UseItem): string {
+    const members = item.members.map(({ member, binding }) => {
+      const { name } = this.#binding(binding);
+      return name === member ? name : `${member}: ${name}`;
+    });
+    const parts = item.arguments.map((argument) => {
+      switch (argument.kind) {
+        case "Value":
+          return this.value(argument.value);
+        case "Getter":
+          return this.getter(argument.getter);
+        case "Callback":
+          return this.client(argument.callback);
+        default:
+          return unreachable(argument);
+      }
+    });
+    return `const { ${members.join(", ")} } = ${item.composable}(${parts.join(", ")});`;
+  }
+
+  /**
    * What a component provides, or injects as a fallback, for a key: a key of a ref takes the
    * ref itself, as `refObject` (src/composition.ts); anything else its value.
    */
@@ -274,7 +328,13 @@ export class SolidCode {
     const whole = wholeBinding(value);
     if (whole && keyRef(this.#composition, key)) {
       const binding = this.#binding(whole);
-      if (binding.kind === "state" || binding.kind === "derived" || binding.kind === "model") {
+      if (
+        binding.kind === "state" ||
+        binding.kind === "derived" ||
+        binding.kind === "model" ||
+        binding.kind === "usedState" ||
+        binding.kind === "usedDerived"
+      ) {
         return this.#composition.refObject(binding.name);
       }
     }
@@ -372,6 +432,8 @@ export class SolidCode {
       switch (binding.kind) {
         case "state":
         case "derived":
+        case "usedState":
+        case "usedDerived":
           return [binding.name];
         case "prop": {
           const object = this.#props.object;
@@ -482,6 +544,9 @@ function tracked(kind: Binding["kind"]): boolean {
     case "state":
     case "derived":
     case "model":
+    // A composable's accessors (ADR-0069).
+    case "usedState":
+    case "usedDerived":
       return true;
     case "loopVar":
     case "templateRef":
@@ -494,12 +559,9 @@ function tracked(kind: Binding["kind"]): boolean {
     case "slotScope":
     case "context":
     case "component":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
     case "argument":
-    case "usedState":
-    case "usedDerived":
     case "usedFn":
     case "usedConst":
       return false;
@@ -519,7 +581,7 @@ export interface SolidSetup {
 /** The setup's statements, in source order, and those hoisted out of the component. */
 export function solidSetup(code: SolidCode, placeholders: Placeholders): SolidSetup {
   const { component } = code;
-  const hoisted = hoistable(component);
+  const hoisted = hoistable(component, code.module);
   const module: Statement[] = [];
   const body: Statement[] = [];
   const bindingOf = (id: BindingId) => component.bindings.find((binding) => binding.id === id)!;
@@ -653,9 +715,8 @@ function itemText(item: SetupItem, code: SolidCode, bindingOf: (id: BindingId) =
       return code.inject(item);
     case "Provide":
       throw new Error("A provide prints in the template, never in the setup.");
-    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
     case "Use":
-      return "";
+      return code.use(item);
     default:
       return unreachable(item);
   }
@@ -667,7 +728,14 @@ function itemText(item: SetupItem, code: SolidCode, bindingOf: (id: BindingId) =
  * `unicorn/consistent-function-scoping` (L5) wants a function that captures nothing. An id is
  * per instance, never hoisted, and so is one that names a type parameter of a generic component.
  */
-function hoistable(component: UfComponent): Set<BindingId> {
+function hoistable(component: UfComponent, module: UfModule): Set<BindingId> {
+  // The module's own names, which a hoisted binding of the same name would declare again: the
+  // constants and the imported values (ADR-0070).
+  const taken = new Set([
+    ...(module.constants ?? []).map(({ name }) => name),
+    ...(module.moduleImports ?? []).flatMap(({ names }) => names.map(({ local }) => local)),
+  ]);
+  const kinds = new Map(component.bindings.map((binding) => [binding.id, binding.kind]));
   const candidates = new Map<BindingId, Code[]>();
   for (const item of component.setup) {
     // A generic component's type parameters are in scope only inside its function (ADR-0068).
@@ -677,6 +745,7 @@ function hoistable(component: UfComponent): Set<BindingId> {
     ) {
       continue;
     }
+    if ("binding" in item && taken.has(nameOf(item.binding))) continue;
     if (item.kind === "Const") candidates.set(item.binding, [item.value]);
     if (item.kind === "Function") {
       const fn = item.function;
@@ -691,7 +760,12 @@ function hoistable(component: UfComponent): Set<BindingId> {
       const captures = codes.some((piece) =>
         piece.refs.some((ref) => {
           switch (ref.kind) {
-            case "Binding":
+            case "Binding": {
+              // A module's value is at module scope already (ADR-0070).
+              const kind = kinds.get(ref.binding);
+              if (kind === "moduleConst" || kind === "import") return false;
+              return !hoisted.has(ref.binding);
+            }
             case "Write":
             case "Emit":
               return !hoisted.has(ref.binding);
@@ -745,9 +819,19 @@ function itemCode(item: SetupItem): Code[] {
       return [item.value];
     case "Inject":
       return item.fallback ? [item.fallback] : [];
-    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
     case "Use":
-      return [];
+      return item.arguments.map((argument) => {
+        switch (argument.kind) {
+          case "Value":
+            return argument.value;
+          case "Getter":
+            return argument.getter.body;
+          case "Callback":
+            return argument.callback.body;
+          default:
+            return unreachable(argument);
+        }
+      });
     default:
       return unreachable(item);
   }
@@ -845,6 +929,11 @@ function keyRef(composition: SolidComposition, local: string): RefType | undefin
 /** An arrow's expression body: an object literal in parentheses. */
 function arrowBody(code: string): string {
   return code.trimStart().startsWith("{") ? `(${code})` : code;
+}
+
+/** The name of a binding id, `name@offset`. */
+function nameOf(id: BindingId): string {
+  return id.slice(0, id.lastIndexOf("@"));
 }
 
 function capitalised(name: string): string {

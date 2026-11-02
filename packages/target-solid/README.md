@@ -260,6 +260,51 @@ The setup's items in source order (`src/setup.ts`), after `mergeProps`:
 - Constants and functions that capture nothing of the component move to module scope
   (`unicorn/consistent-function-scoping`).
 
+## Composables and shared modules (ADR-0069, ADR-0070)
+
+A `.uf.ts` module's composable is its own module, `useToggle.ts` (`src/composable.ts`): the
+source's exported function, its parameters and type parameters as written, its setup lowered as a
+component's (above), and a returned object of accessors for its state and derived values, with
+its functions and constants as they are. Getter and callback parameters are called as the source
+calls them.
+
+```ts
+import { createSignal } from "solid-js";
+
+export function useToggle(initial: boolean) {
+  const [on, setOn] = createSignal(initial);
+
+  function toggle() {
+    setOn(!on());
+  }
+
+  return { on, toggle };
+}
+```
+
+| Source                                          | Solid                                                                               |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `import { useToggle } from "./useToggle.uf.ts"` | `import { useToggle } from "./useToggle"`                                           |
+| `const { on, toggle } = useToggle(false)`       | as written; `on.value` is the accessor's call, `on()`, and `toggle()` is as written |
+| `const { matches: wide } = useMediaQuery(q)`    | as written, read `wide()`                                                           |
+| a getter argument, `() => price`                | `() => props.price`, which the composable reads reactively                          |
+| a callback argument                             | an arrow, which the composable's client code calls                                  |
+| `import { SIZES } from "./tokens"`              | as written, from the copy of `tokens.ts` beside the outputs                         |
+| `const STEP = 2;` above the component           | as written, at module scope, before what the setup hoists                           |
+
+- A state whose type names a type parameter of a generic composable or component is written
+  through an updater, `setLocal(() => next)`: Solid's setter calls a function it is given, and a
+  `T` may be one (ADR-0068).
+- The module's constants a component or a composable reaches, and those they read, are declared
+  as written, with the module's types they name; so are those a `typeof` queries
+  (`keyof typeof SIZES`). Every module name is reserved before the output claims its own, so
+  each keeps its name. A setup function that reads only module values and other hoisted names
+  moves to module scope beside them; a setup binding named like a module value stays in the
+  component, which shadows it as the source does.
+- A composable's watchers keep their own module's queue (`createWatcher`), apart from the
+  caller's, so `composable-effect-order` is unsupported (UF4005, info). Its hooks attach to the
+  calling component, so they run on its mount and unmount, once for each call.
+
 ## Events, refs and emits (ADR-0047, ADR-0049)
 
 - A listener is Solid's event prop by its own spelling (`onClick`, `onKeyDown`, `onDblClick`,
