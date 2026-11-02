@@ -545,7 +545,6 @@ function printState(plan: ReactPlan, code: ReactCode, item: StateItem): Printed 
     // The live reader a composable returns beside the render value (ADR-0069): one function for
     // the hook's life, which reads the mirror, so the caller's client code sees a write the
     // composable's functions just made.
-    const useState = plan.names.add("react", "useState");
     const reader = `() => ${state.mirror!}.current`;
     printed.push(["body", `const [${state.current}] = ${useState}(() => ${reader});`, "current"]);
   }

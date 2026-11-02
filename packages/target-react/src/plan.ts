@@ -581,9 +581,9 @@ export function planComponent(
       propMirrors.set(prop.binding, names.claim(`${prop.name}Ref`));
     }
   }
-  for (const parameter of composable?.parameters ?? []) {
-    if (mirroredProps.has(parameter.binding)) {
-      propMirrors.set(parameter.binding, names.claim(`${parameter.name}Ref`));
+  for (const argument of composable?.parameters ?? []) {
+    if (mirroredProps.has(argument.binding)) {
+      propMirrors.set(argument.binding, names.claim(`${argument.name}Ref`));
     }
   }
   for (const [name, event] of events) {

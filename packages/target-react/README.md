@@ -207,10 +207,15 @@ its caller, so the hook prints it as client code would need it:
 - A returned derived value is a `useMemo`, and its live getter reads through the mirrors, one
   function for the hook's life: `const [currentTotal] = useState(() => () => priceRef.current() * quantityRef.current())`.
 - A returned function is stable, `const [toggle] = useState(() => () => {…})`, as a function
-  passed as a value is, and reads what changes through mirrors.
-- A getter or a callback argument is read as a prop is: as passed in render code, and through a
-  mirror synced in `useLayoutEffect` in deferred code (`onLimitRef.current(count)`). A value
-  argument is read as passed, so a stable function keeps the value of the first render.
+  passed as a value is, and reads what changes through mirrors. One that render code calls too
+  is returned as its stable client variant, `double: currentDouble`.
+- A getter or a callback argument is read as a prop is: as passed in render code and in an
+  effect event, and through a mirror synced in `useLayoutEffect` in deferred code
+  (`onLimitRef.current(countRef.current)`). A value argument is read as passed, so a stable
+  function keeps the value of the first render.
+- A setup constant evaluates once, as `useState`'s initial value, which React calls when it is a
+  function. So a constant that holds a getter or a callback argument, `const read = price`, is
+  UF1002: call the argument, or pass it on, where it is used.
 
 It returns `{ on, currentOn, toggle, close }`: each state's or derived value's reader follows its
 member, named `currentX`, or the first free `currentX_1`, `currentX_2`… where that names another
@@ -251,4 +256,6 @@ types' `DomElementFor` over lib.dom) on every element of the vocabulary.
 `test/attributes.test.ts` checks the attribute spellings and values against `@types/react` for
 every attribute the IR can hold (the names its types lack are the IR's `UNDECLARED_ATTRIBUTES`,
 which the analyser rejects), and pins the one gap left: SVG's `<title>`, which React types as
-HTML's.
+HTML's. `test/composable.test.ts` compiles the composables of the pending composable cases
+(`tests/integration/pending/`) through `compile()` and runs L3, L4 and L5 on each hook, with the
+shapes above.

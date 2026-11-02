@@ -8,9 +8,11 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import type { OutputFile } from "@unframework/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { compileComposableCases } from "../../codegen/test/composable-cases.ts";
+import { compile } from "../../compiler/src/index.ts";
 import { liveReaderNames } from "../src/composable.ts";
 import { toolchain } from "../src/toolchain/index.ts";
 import { packageDir, toolchainDir } from "./fixtures.ts";
@@ -25,6 +27,38 @@ const cases = (await compileComposableCases("react"))
   .filter(({ sources }) => sources.length > 0);
 
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
+
+/** The hook a case's first composable compiles to. */
+const hook = (id: string) => cases.find((each) => each.id === id)!.sources[0]!.outputs[0]!.contents;
+
+/**
+ * Writes hooks under `directory` in the scratch tree, and runs React Compiler (L3), tsgo (L4)
+ * and oxlint (L5) on them: each must report nothing, about them or any other file.
+ */
+async function expectClean(directory: string, outputs: readonly OutputFile[]): Promise<void> {
+  const at = join(scratch, directory);
+  mkdirSync(at, { recursive: true });
+  const files = outputs.map((output) => {
+    const absolute = join(at, output.path);
+    writeFileSync(absolute, output.contents);
+    return { path: absolute, contents: output.contents };
+  });
+  const compiled = await toolchain.frameworkCompile(files, context);
+  for (const { path } of files) {
+    expect(compiled.get(path), path).toEqual({ errors: [], warnings: [] });
+  }
+  const paths = files.map(({ path }) => path);
+  const checked = await toolchain.typecheck(paths, context);
+  for (const [path, messages] of checked) expect(messages, path).toEqual([]);
+  const linted = await toolchain.lint(paths, context);
+  for (const [path, messages] of linted) expect(messages, path).toEqual([]);
+}
+
+/** One `.uf.ts` source compiled for React. */
+async function compileHook(source: string, filename: string) {
+  const result = await compile(source, { filename, targets: ["react"] });
+  return { diagnostics: result.diagnostics, outputs: result.outputs.react ?? [] };
+}
 
 describe("react composable cases", () => {
   it("finds the cases that hold a composable", () => {
@@ -48,33 +82,16 @@ describe("react composable cases", () => {
         diagnostics.filter(({ severity }) => severity === "error"),
       );
       expect(errors).toEqual([]);
-      const outputs = sources.flatMap(({ outputs }) => outputs);
-      expect(outputs.map(({ path }) => path)).toEqual(
+      const emitted = sources.flatMap(({ outputs }) => outputs);
+      expect(emitted.map(({ path }) => path)).toEqual(
         sources.map(({ filename }) => `${filename.slice(filename.lastIndexOf("/") + 1, -6)}.ts`),
       );
-      const directory = join(scratch, id);
-      mkdirSync(directory, { recursive: true });
-      const files = outputs.map(({ path, contents }) => {
-        const absolute = join(directory, path);
-        writeFileSync(absolute, contents);
-        return { path: absolute, contents };
-      });
-      const compiled = await toolchain.frameworkCompile(files, context);
-      for (const { path } of files)
-        expect(compiled.get(path), path).toEqual({ errors: [], warnings: [] });
-      const paths = files.map(({ path }) => path);
-      const checked = await toolchain.typecheck(paths, context);
-      for (const path of paths) expect(checked.get(path) ?? [], path).toEqual([]);
-      const linted = await toolchain.lint(paths, context);
-      for (const [path, messages] of linted) expect(messages, path).toEqual([]);
+      await expectClean(id, emitted);
     },
   );
 });
 
 describe("react composable hooks", () => {
-  const hook = (id: string) =>
-    cases.find((each) => each.id === id)!.sources[0]!.outputs[0]!.contents;
-
   it("returns each state with its live reader over the mirror, and stable functions", () => {
     const output = hook("composables/use-toggle");
     expect(output).toContain("const [currentOn] = useState(() => () => onRef.current);");
@@ -98,6 +115,85 @@ describe("react composable hooks", () => {
     expect(output).toContain(
       "if (countRef.current === limit) onLimitRef.current(countRef.current);",
     );
+  });
+});
+
+describe("react composable shapes", () => {
+  it(
+    "returns a function render code calls too as its stable client variant",
+    {
+      timeout: 60_000,
+    },
+    async () => {
+      const { diagnostics, outputs } = await compileHook(
+        [
+          'import { ref } from "unframework";',
+          "",
+          "export function useVariant(seed: () => number) {",
+          "  const count = ref(0);",
+          "  function double() {",
+          "    return count.value * 2 + seed();",
+          "  }",
+          "  const snapshot = ref(double());",
+          "  function inc() {",
+          "    count.value++;",
+          "  }",
+          "  return { count, snapshot, double, inc };",
+          "}",
+          "",
+        ].join("\n"),
+        "useVariant.uf.ts",
+      );
+      expect(diagnostics).toEqual([]);
+      const output = outputs[0]!.contents;
+      expect(output).toContain(
+        "const [currentDouble] = useState(() => () => {\n    return countRef.current * 2 + seedRef.current();",
+      );
+      expect(output).toContain("double: currentDouble,");
+      await expectClean("shapes/variant", outputs);
+    },
+  );
+
+  it("reports a getter or a callback argument held in a constant (UF1002)", async () => {
+    const source = [
+      'import { ref } from "unframework";',
+      "",
+      "export function useAlias(price: () => number, onPick: (value: number) => void) {",
+      "  const read = price;",
+      "  const n = ref(0);",
+      "  function pick() {",
+      "    n.value = read();",
+      "    onPick(n.value);",
+      "  }",
+      "  return { n, pick };",
+      "}",
+      "",
+    ].join("\n");
+    const { diagnostics, outputs } = await compileHook(source, "useAlias.uf.ts");
+    const start = source.indexOf("= price;") + 2;
+    expect(diagnostics).toEqual([
+      expect.objectContaining({
+        code: "UF1002",
+        target: "react",
+        span: { start, end: start + "price".length },
+      }),
+    ]);
+    expect(outputs).toEqual([]);
+  });
+
+  it("calls a getter argument where a constant's value reads it", async () => {
+    const { diagnostics, outputs } = await compileHook(
+      [
+        "export function useFirst(price: () => number) {",
+        "  const first = price();",
+        "  return { first };",
+        "}",
+        "",
+      ].join("\n"),
+      "useFirst.uf.ts",
+    );
+    expect(diagnostics).toEqual([]);
+    expect(outputs[0]!.contents).toContain("const [first] = useState(() => price());");
   });
 });
 

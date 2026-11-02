@@ -7,13 +7,14 @@ import {
   addTypeImports,
   componentTypes,
   js,
+  parseExpressionSource,
   pascalCase,
   printProgram,
   typeNames,
   typeSpecifier,
 } from "@unframework/codegen";
 import type { EmitContext, ImportSet, OutputFile } from "@unframework/codegen";
-import type { ComposableMemberApi, TypeText, UfComposable } from "@unframework/ir";
+import type { ComposableMemberApi, Span, TypeText, UfComposable } from "@unframework/ir";
 
 import { compilerBailout, declaredNames } from "./bailouts.ts";
 import { nextTickHelper } from "./helpers.ts";
@@ -39,8 +40,22 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
       code: "UF1002",
       severity: "error",
       message:
-        "The react target does not read a module's values in a composable yet: it lands with this target's composables lane.",
+        "The react target does not read a module's values in a composable yet: it lands with this target's call site.",
       span: moduleRead.span,
+    });
+    return [];
+  }
+  // A setup constant evaluates once, as `useState`'s initial value (ADR-0046), which React calls
+  // when it is a function: a getter or a callback argument held in one would become what it
+  // returns. Read the argument where it is used instead (P2).
+  const held = heldArgument(composable);
+  if (held) {
+    context.report({
+      code: "UF1002",
+      severity: "error",
+      message:
+        "The react target does not hold a composable's getter or callback argument in a constant yet: call or pass the argument where it is used.",
+      span: held,
     });
     return [];
   }
@@ -57,11 +72,17 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
       kind: memberKind(plan.bindings.get(member.binding)!.kind),
     })),
   );
+  // A function render code calls too is returned as its client variant, the stable one that
+  // reads through the mirrors, since the caller's client code calls it.
   const returned = composable.returns.flatMap((member) => {
     const reader = readers.get(member.name);
     const local =
       plan.state.get(member.binding)?.current ?? plan.derived.get(member.binding)?.current;
-    return [member.name, ...(reader && local ? [property(reader, local)] : [])];
+    const variant = plan.clientVariants.get(member.binding);
+    return [
+      property(member.name, variant ?? member.name),
+      ...(reader && local ? [property(reader, local)] : []),
+    ];
   });
   const body = [
     ...setup.body,
@@ -144,6 +165,46 @@ export function liveReaderNames(
     readers.set(name, reader);
   }
   return readers;
+}
+
+/**
+ * Where a constant's value holds a getter or a callback argument as a value, rather than calling
+ * it or reading a member of it, or `undefined`. A state's value that may be a function is
+ * UF2021 already.
+ */
+function heldArgument(composable: UfComposable): Span | undefined {
+  const functions = new Set(
+    composable.parameters.flatMap(({ kind, binding }) => (kind === "value" ? [] : [binding])),
+  );
+  for (const item of composable.setup) {
+    if (item.kind !== "Const") continue;
+    const { value } = item;
+    const references = value.refs.filter(
+      (each) => each.kind === "Binding" && functions.has(each.binding),
+    );
+    if (!references.length) continue;
+    // Where the argument is a callee or a member's object, by its start in the code.
+    const used = new Set<number>();
+    const visit = (node: unknown): void => {
+      if (Array.isArray(node)) {
+        for (const each of node) visit(each);
+        return;
+      }
+      if (!node || typeof node !== "object") return;
+      const fields = node as {
+        type?: unknown;
+        callee?: { start: number };
+        object?: { start: number };
+      };
+      if (fields.type === "CallExpression") used.add(fields.callee!.start);
+      if (fields.type === "MemberExpression") used.add(fields.object!.start);
+      for (const [key, child] of Object.entries(node)) if (key !== "parent") visit(child);
+    };
+    visit(parseExpressionSource(value.code).expression);
+    const held = references.find((reference) => !used.has(reference.span.start - value.span.start));
+    if (held) return held.span;
+  }
+  return undefined;
 }
 
 /** A returned member's kind, by its binding's (`ReturnedMember`). */
