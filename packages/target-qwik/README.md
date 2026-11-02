@@ -224,11 +224,20 @@ its parameters take the forms Qwik captures:
 
 What those forms cannot keep is UF1002, at the read, and the hook is not emitted:
 
-- a getter read other than by a call (passed on, kept or aliased), since it is a signal;
-- a callback passed on or kept, or called in a function of the code's own (an array method's
-  callback, a comparator, a timer's), which cannot wait for a QRL's promise;
-- a value whose type, as written or through the module's own declarations, holds a function, read
-  where a `$` scope captures it, since Qwik serialises what a `$` scope captures.
+- a getter read other than by a call or a test (passed on, kept or aliased), since it is a
+  signal;
+- a callback read other than by a call or a test, or called in a function of the code's own (an
+  array method's callback, a comparator, a timer's), which cannot wait for a QRL's promise;
+- a value whose type, as written or through the module's own declarations and the interfaces
+  they extend, holds a function, or a setup `const` that takes such a value or a part of it
+  (`const format = options.format`), read where a `$` scope captures it, since Qwik serialises
+  what a `$` scope captures.
+
+A test of an optional getter or callback, whether the caller passed it, reads the signal or the
+QRL itself: `limit ? Math.min(price.value, limit.value) : price.value`, and
+`if (onChange) void onChange(next)`. A test is an `if`'s, a loop's or a `?:`'s test, `!`, a
+comparison, the left of `&&`, or an operand of `&&`, `||` or `??` that is itself in a test.
+`typeof limit` is not one: a signal is no function.
 
 A composable that reads a module's values is UF1002 until the call site lands, and so are a
 composable's call and what it gives a component.

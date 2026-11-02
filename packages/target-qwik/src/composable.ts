@@ -71,8 +71,9 @@ export function parameterCode(parameter: ComposableParameter, names: OutputNames
 
 /**
  * Reads each getter argument's signal where printed code calls it: `price()` becomes
- * `price.value`, and `price?.()` `price?.value`. A getter takes no arguments, so the call is
- * the read. `getters` are the names the code calls them by.
+ * `price.value`, `price?.()` `price?.value` and `price!()` `price!.value`. A getter takes no
+ * arguments, so the call is the read. A test of it (`limit ? … : …`) reads the signal itself,
+ * which is there where the getter is. `getters` are the names the code calls them by.
  */
 export function readGetters(code: string, kind: CodeKind, getters: ReadonlySet<string>): string {
   if (getters.size === 0 || ![...getters].some((name) => code.includes(name))) return code;
@@ -85,14 +86,16 @@ export function readGetters(code: string, kind: CodeKind, getters: ReadonlySet<s
     }
     if (!isNode(node)) return;
     const callee = node.callee as Node | undefined;
+    const asserted = callee?.type === "TSNonNullExpression";
+    const named = asserted ? (callee.expression as Node) : callee;
     if (
       node.type === "CallExpression" &&
-      callee?.type === "Identifier" &&
-      getters.has(callee.name as string) &&
+      named?.type === "Identifier" &&
+      getters.has(named.name as string) &&
       (node.arguments as unknown[]).length === 0
     ) {
-      const read = node.optional === true ? "?.value" : ".value";
-      edits.push({ start: node.start, end: node.end, text: `${callee.name as string}${read}` });
+      const read = node.optional === true ? "?.value" : asserted ? "!.value" : ".value";
+      edits.push({ start: node.start, end: node.end, text: `${named.name as string}${read}` });
       return;
     }
     for (const [key, value] of Object.entries(node)) {
@@ -127,15 +130,20 @@ export interface ComposableProblem {
  * The reads of a composable's arguments that Qwik's forms of them cannot keep (see the module
  * comment), which the target reports rather than emit output that fails to type-check or
  * behaves otherwise (P2):
- * - a getter read other than by a call: passed on, kept or aliased, it is a signal, not a
- *   function;
- * - a callback passed on or kept, or called in a function of the code's own (an array method's
- *   callback, a comparator, a timer's): a QRL's call gives a promise, which only the code's own
- *   function awaits or leaves to run;
- * - a value whose type holds a function, read where a `$` scope captures it (a derived value, a
+ * - a getter read other than by a call or a test (passed on, kept or aliased): it is a
+ *   signal, not a function;
+ * - a callback read other than by a call or a test, or called in a function of the code's own
+ *   (an array method's callback, a comparator, a timer's): a QRL's call gives a promise, which
+ *   only the code's own function awaits or leaves to run;
+ * - a value whose type holds a function, or a setup `const` that takes such a value or a part of
+ *   it (`const format = options.format`), read where a `$` scope captures it (a derived value, a
  *   watcher, an effect, a hook, a function client code calls): Qwik serialises what a `$` scope
  *   captures, and no function (`qwik/valid-lexical-scope`). Its type is read as written, through
- *   the module's own declarations.
+ *   the module's own declarations and the interfaces they extend.
+ *
+ * A test is what tells only whether the argument was passed: an `if`'s, a loop's or a `?:`'s
+ * test, `!`, a comparison, or an operand of `&&`, `||` or `??` that is itself in a test, or on
+ * the left of `&&`.
  */
 export function composableProblems(composable: UfComposable, plan: SetupPlan): ComposableProblem[] {
   const problems: ComposableProblem[] = [];
@@ -147,20 +155,36 @@ export function composableProblems(composable: UfComposable, plan: SetupPlan): C
       .filter(({ kind, type }) => kind === "value" && holdsFunction(type.code, plan.module))
       .map(({ binding }) => binding),
   );
+  // A setup `const` holds what its value gives of such an argument, unless the value is one a
+  // function never is (a call's result, an operator's, a literal).
+  for (const item of composable.setup) {
+    if (item.kind !== "Const") continue;
+    const reads = item.value.refs.some(
+      (reference) => reference.kind === "Binding" && holding.has(reference.binding),
+    );
+    if (reads && mayGiveFunction(item.value.code)) holding.add(item.binding);
+  }
+  const nameOf = (id: string) => composable.bindings.find((binding) => binding.id === id)!.name;
   for (const { code, kind, captured } of composableCode(composable, plan)) {
     const references = code.refs.filter(
-      (reference) => reference.kind === "Binding" && functions.has(reference.binding),
+      (reference) =>
+        reference.kind === "Binding" &&
+        (functions.has(reference.binding) || holding.has(reference.binding)),
     );
     if (!references.length) continue;
     const uses = identifierUses(code.code, kind);
     for (const reference of references) {
       if (reference.kind !== "Binding") continue;
-      const parameter = functions.get(reference.binding)!;
       const use = uses.get(reference.span.start - code.span.start);
+      const parameter = functions.get(reference.binding);
+      if (!parameter) {
+        if (captured) problems.push(holdsProblem(reference.span, nameOf(reference.binding)));
+        continue;
+      }
       const { name } = parameter;
       switch (parameter.kind) {
         case "getter":
-          if (use?.called) break;
+          if (use?.called || use?.tested) break;
           problems.push({
             span: reference.span,
             message: `\`${name}\` is a getter, which the qwik target takes as the signal its caller computes (\`ReadonlySignal\`): the composable may only call it, never pass it on or keep it as a function.`,
@@ -168,7 +192,7 @@ export function composableProblems(composable: UfComposable, plan: SetupPlan): C
           });
           break;
         case "callback":
-          if (use?.called && !use.nested) break;
+          if ((use?.called && !use.nested) || use?.tested) break;
           problems.push({
             span: reference.span,
             message: use?.called
@@ -178,12 +202,9 @@ export function composableProblems(composable: UfComposable, plan: SetupPlan): C
           });
           break;
         case "value":
-          if (!captured || !holding.has(parameter.binding)) break;
-          problems.push({
-            span: reference.span,
-            message: `\`${name}\`'s type holds a function, and this code runs in a Qwik \`$\` scope, which captures only values Qwik can serialise, never a function.`,
-            help: `Make the function a callback parameter of its own, as in \`format: (value: number) => string\`.`,
-          });
+          if (captured && holding.has(parameter.binding)) {
+            problems.push(holdsProblem(reference.span, name));
+          }
           break;
         default:
           unreachable(parameter.kind);
@@ -191,6 +212,43 @@ export function composableProblems(composable: UfComposable, plan: SetupPlan): C
     }
   }
   return problems;
+}
+
+/** A read, where a `$` scope captures it, of a binding that may hold a function. */
+function holdsProblem(span: Span, name: string): ComposableProblem {
+  return {
+    span,
+    message: `\`${name}\` may hold a function, by its type, and this code runs in a Qwik \`$\` scope, which captures only values Qwik can serialise, never a function.`,
+    help: "Make the function a callback parameter of its own, as in `format: (value: number) => string`, and call it where it is used.",
+  };
+}
+
+/**
+ * Whether an expression's value may be a function it reads: anything but a call's or a `new`'s
+ * result, an operator's, a template or a literal.
+ */
+function mayGiveFunction(code: string): boolean {
+  let node = parseCodeSource(code, "expression").root as Node;
+  while (
+    [
+      "TSAsExpression",
+      "TSSatisfiesExpression",
+      "TSNonNullExpression",
+      "ParenthesizedExpression",
+    ].includes(node.type)
+  ) {
+    node = node.expression as Node;
+  }
+  return ![
+    "CallExpression",
+    "NewExpression",
+    "BinaryExpression",
+    "UnaryExpression",
+    "UpdateExpression",
+    "AwaitExpression",
+    "TemplateLiteral",
+    "Literal",
+  ].includes(node.type);
 }
 
 /** A piece of a composable's code, its kind, and whether a `$` scope of the hook captures it. */
@@ -255,8 +313,10 @@ function composableCode(composable: UfComposable, plan: SetupPlan): ComposableCo
 
 /** How code uses an identifier, by its offset in the code. */
 interface IdentifierUse {
-  /** Whether it is the callee of a call, `price()` or `onLimit?.(count)`. */
+  /** Whether it is the callee of a call, `price()`, `onLimit?.(count)` or `limit!()`. */
   called: boolean;
+  /** Whether it is read only as a test of whether it was passed (see `composableProblems`). */
+  tested: boolean;
   /** Whether that call is in a function the code declares. */
   nested: boolean;
 }
@@ -273,8 +333,12 @@ function identifierUses(code: string, kind: CodeKind): Map<number, IdentifierUse
     if (!isNode(node)) return;
     if (node.type === "Identifier") {
       const parent = ancestors.at(-1);
+      const asserted = parent?.type === "TSNonNullExpression";
+      const callee = asserted ? parent : node;
+      const caller = asserted ? ancestors.at(-2) : parent;
       found.set(node.start, {
-        called: parent?.type === "CallExpression" && parent.callee === node,
+        called: caller?.type === "CallExpression" && caller.callee === callee,
+        tested: isTested(node, ancestors),
         nested: ancestors.some(isFunction),
       });
     }
@@ -285,6 +349,31 @@ function identifierUses(code: string, kind: CodeKind): Map<number, IdentifierUse
   };
   visit(root, []);
   return found;
+}
+
+/** Whether a node is read only as a test (see `composableProblems`), by its ancestors. */
+function isTested(node: Node, ancestors: readonly Node[]): boolean {
+  const parent = ancestors.at(-1);
+  if (!parent) return false;
+  switch (parent.type) {
+    case "IfStatement":
+    case "ConditionalExpression":
+    case "WhileStatement":
+    case "DoWhileStatement":
+    case "ForStatement":
+      return parent.test === node;
+    case "UnaryExpression":
+      return parent.operator === "!";
+    case "BinaryExpression":
+      return ["===", "!==", "==", "!="].includes(parent.operator as string);
+    case "LogicalExpression":
+      return (
+        (parent.operator === "&&" && parent.left === node) ||
+        isTested(parent, ancestors.slice(0, -1))
+      );
+    default:
+      return false;
+  }
 }
 
 function isFunction(node: Node): boolean {
@@ -317,8 +406,10 @@ function nodesHoldFunction(root: unknown, module: UfModule, seen: Set<string>): 
       case "TSConstructSignatureDeclaration":
         holds = true;
         return;
+      // An interface's `extends` names a type as a reference does.
+      case "TSInterfaceHeritage":
       case "TSTypeReference": {
-        const name = node.typeName as Node;
+        const name = (node.type === "TSTypeReference" ? node.typeName : node.expression) as Node;
         if (name.type !== "Identifier") return;
         const named = name.name as string;
         if (["Function", "CallableFunction", "NewableFunction"].includes(named)) {

@@ -272,6 +272,83 @@ export function useProbe(options: { format: (value: number) => string }, named: 
     expect(outputs).toEqual([]);
   });
 
+  it("reports a `const` that takes a function-holding value or a part of it, where a `$` scope captures it", async () => {
+    const { errors, outputs } = await compileProbe(`import { computed, ref } from "unframework";
+
+export function useProbe(options: { step: number; format: (value: number) => string }) {
+  const count = ref(0);
+  const label = ref("");
+  const format = options.format;
+  const settings = options;
+  const first = options.format(1);
+  const shown = computed(() => format(count.value));
+  function show() {
+    label.value = String(settings.step) + first;
+  }
+  return { count, label, shown, show };
+}
+`);
+    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
+      { code: "UF1002", text: "format" },
+      { code: "UF1002", text: "settings" },
+    ]);
+    expect(outputs).toEqual([]);
+  });
+
+  it("reports a value whose type inherits a function from an interface the module extends", async () => {
+    const { errors, outputs } = await compileProbe(`import { computed } from "unframework";
+
+interface Base {
+  format(value: number): string;
+}
+
+interface Options extends Base {
+  label: string;
+}
+
+export function useProbe(options: Options) {
+  const shown = computed(() => options.format(1) + options.label);
+  return { shown };
+}
+`);
+    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
+      { code: "UF1002", text: "options" },
+      { code: "UF1002", text: "options" },
+    ]);
+    expect(outputs).toEqual([]);
+  });
+
+  it("tests whether an optional getter or callback was passed, as the source does", async () => {
+    const { errors, outputs } = await compileProbe(`import { computed, ref } from "unframework";
+
+export function useProbe(
+  price: () => number,
+  limit?: () => number,
+  onChange?: (next: number) => void,
+  accept?: (next: number) => boolean,
+) {
+  const count = ref(0);
+  const capped = computed(() => (limit ? Math.min(price(), limit()) : price()));
+  const bounded = computed(() => (limit !== undefined && !!price ? limit!() : 0));
+  function set(next: number) {
+    count.value = next;
+    if (onChange) onChange(next);
+    if (accept && accept!(next)) count.value += 1;
+  }
+  return { count, capped, bounded, set };
+}
+`);
+    expect(errors).toEqual([]);
+    const output = outputs[0]!.contents;
+    expect(output).toContain(
+      "const capped = useComputed$(() => (limit ? Math.min(price.value, limit.value) : price.value));",
+    );
+    expect(output).toContain("limit !== undefined && !!price ? limit!.value : 0");
+    expect(output).toContain("if (onChange) void onChange(next);");
+    expect(output).toContain("if (accept && (await accept!(next))) count.value += 1;");
+    await expectToolchainClean("guards", outputs);
+  });
+
   it("reports a composable that reads a module's values, at the value, and emits nothing", async () => {
     const { errors, outputs, source } = await compileProbe(`import { ref } from "unframework";
 
