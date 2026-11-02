@@ -91,17 +91,16 @@ export function moduleReach(
 
 /**
  * The names the output declares the reached module names by: each its own, but one a top-level
- * binding of the owner shadows, or a fill's snippet would hide (`hidden`), which takes a name of
- * its own. Every reached name is reserved first, so no name the script claims later captures one.
+ * binding of the owner shadows, which takes a name of its own. Every reached name is reserved
+ * first, so no name the script claims later captures one.
  */
 export function moduleLocals(
   owner: UfComponent,
   reach: ModuleReach,
   scope: NameScope,
-  hidden: ReadonlySet<string> = new Set(),
 ): Map<string, string> {
   scope.reserve(...reach.values);
-  const shadowed = new Set([...topLevelNames(owner), ...hidden]);
+  const shadowed = topLevelNames(owner);
   const locals = new Map<string, string>();
   for (const name of reach.values) locals.set(name, shadowed.has(name) ? scope.claim(name) : name);
   return locals;

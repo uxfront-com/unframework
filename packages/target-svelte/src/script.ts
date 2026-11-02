@@ -501,6 +501,8 @@ class ScriptWriter {
   /** What the component reaches of its module, and the names its output declares them by. */
   readonly #reach: ModuleReach;
   readonly #moduleLocals: ReadonlyMap<string, string>;
+  /** The alias of each module value a fill's snippet would hide, `const label_1 = label;`. */
+  readonly #aliases = new Map<string, string>();
   /**
    * The variable each composable's call keeps its result in, `const toggle = useToggle(false)`,
    * and the object and member each destructured binding is read through (ADR-0069).
@@ -515,9 +517,16 @@ class ScriptWriter {
     // everything between the child's tags: such a binding takes a name of its own.
     const hidden = snippetNames(component.render);
     // The module names come first: the script claims none of them, and one a top-level binding
-    // or a snippet would hide is declared under a name of its own (ADR-0070).
+    // shadows is declared under a name of its own (ADR-0070).
     this.#reach = moduleReach(component, module, typeTexts);
-    this.#moduleLocals = moduleLocals(component, this.#reach, this.#names.scope, hidden);
+    this.#moduleLocals = moduleLocals(component, this.#reach, this.#names.scope);
+    // A snippet hides a module value only from the markup between the child's tags: the value
+    // keeps its name, which every `typeof` reads, and the component reads it through an alias.
+    for (const binding of component.bindings) {
+      if (binding.kind !== "moduleConst" && binding.kind !== "import") continue;
+      if (!hidden.has(binding.name) || this.#aliases.has(binding.name)) continue;
+      this.#aliases.set(binding.name, this.#names.claim(binding.name));
+    }
     const nested = nestedSnippetNames(component);
     const bindings = component.bindings.map((binding) => {
       // A fill's parameter is hidden only by a snippet declared inside its own fill: its own
@@ -586,7 +595,13 @@ class ScriptWriter {
     // The types the module's constants name come with them (ADR-0070), exported where the
     // source exports them, unless another component's output declares one as its own and the
     // main output re-exports it from there.
-    const listed = new Set(typeExports.map(({ span }) => span.start));
+    // A type `typeExportsCode` declares is left to it; one it re-exports from a sibling's output
+    // binds no local name, so a constant that names it reads a declaration of its own.
+    const listed = new Set(
+      typeExports
+        .filter(({ code }) => !code.startsWith("export type {"))
+        .map(({ span }) => span.start),
+    );
     const sibling = (name: string) =>
       this.#module.components.some((each) => each !== component && each.types.includes(name));
     const reached = this.#reach.types.filter(({ span }) => !listed.has(span.start));
@@ -604,7 +619,10 @@ class ScriptWriter {
         ),
         span: declaration.span,
       })),
-      ...typeExports,
+      ...typeExports.map(({ code, span }) => ({
+        code: renamedDeclaration(code, this.#moduleLocals),
+        span,
+      })),
       ...this.#siblingConstantTypes(new Set([...copied, ...reached].map(({ name }) => name))),
     ]
       .toSorted((a, b) => a.span.start - b.span.start)
@@ -636,6 +654,16 @@ class ScriptWriter {
       ...(imports.length ? [imports.map((line) => `${INDENT}${line}`).join("\n")] : []),
       ...(moduleScript ? [] : types.map((each) => indent(each, INDENT))),
       ...(constants.length && !moduleScript ? [indent(constants.join("\n"), INDENT)] : []),
+      ...(this.#aliases.size
+        ? [
+            indent(
+              [...this.#aliases]
+                .map(([name, alias]) => `const ${alias} = ${this.#moduleLocals.get(name) ?? name};`)
+                .join("\n"),
+              INDENT,
+            ),
+          ]
+        : []),
       ...[...props, ...setup, ...dynamic, ...helpers].map((piece) => reindent(piece, INDENT)),
     ];
     const roots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
@@ -987,7 +1015,7 @@ class ScriptWriter {
       // A module's value, under the name the output declares it by (ADR-0070).
       case "moduleConst":
       case "import":
-        return this.#moduleLocals.get(binding.name) ?? written;
+        return this.#aliases.get(binding.name) ?? this.#moduleLocals.get(binding.name) ?? written;
       // A composable's result, read through the object its call keeps (ADR-0069): a ref's
       // `on.value` is the object's getter, `toggle.on`.
       case "usedState":

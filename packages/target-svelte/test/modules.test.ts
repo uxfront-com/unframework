@@ -2,7 +2,8 @@
 // composable is its own `.svelte.ts` module returning an object of getters; a caller keeps that
 // object and reads each destructured name through it; a value from a `.ts` module is imported as
 // the source does, and a constant of the module is declared, with those it reads, at the top of
-// the instance script, under a name of its own where the setup shadows it.
+// the instance script, or in `<script module>` where the output exports a type, under a name of its
+// own where the setup shadows it.
 import { afterAll, describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
@@ -230,24 +231,32 @@ describe("svelte shared modules", () => {
   );
 
   it(
-    "names a module value that a fill's snippet would hide apart from it, as each read does",
+    "reads a module value a fill's snippet would hide through an alias, which every `typeof` leaves alone",
     checker,
     async () => {
       const outputs = await compileSources({
         "Frame.uf.tsx": FRAME,
         "text.ts": "export function label(n: number): string {\n  return `#${n}`;\n}\n",
         "Tag.uf.tsx": [
+          'import { ref } from "unframework";',
+          "",
           'import Frame from "./Frame.uf.tsx";',
           'import { label } from "./text";',
           "",
           'const toggle = "Tag";',
+          "export type Kind = ReturnType<typeof label>;",
           "",
           "export default function Tag() {",
+          '  const kind = ref<ReturnType<typeof label>>("#0");',
           "  return (",
           "    <Frame>",
           "      {{",
           "        toggle: () => <b>{toggle}</b>,",
-          "        label: ({ n }) => <span>{label(n)}</span>,",
+          "        label: ({ n }) => (",
+          "          <span>",
+          "            {label(n)} {kind.value}",
+          "          </span>",
+          "        ),",
           "      }}",
           "    </Frame>",
           "  );",
@@ -256,10 +265,47 @@ describe("svelte shared modules", () => {
         ].join("\n"),
       });
       const script = outputs["Tag.svelte"]!;
-      expect(script).toContain('import { label as label_1 } from "./text";');
-      expect(script).toContain('const toggle_1 = "Tag";');
+      expect(script).toContain('import { label } from "./text";');
+      expect(script).toContain('const toggle = "Tag";');
+      expect(script).toContain("export type Kind = ReturnType<typeof label>;");
+      expect(script).toContain("const label_1 = label;");
+      expect(script).toContain("const toggle_1 = toggle;");
+      expect(script).toContain("<ReturnType<typeof label>>");
       expect(script).toContain("<b>{toggle_1}</b>");
-      expect(script).toContain("<span>{label_1(n)}</span>");
+      expect(script).toContain("{label_1(n)}");
+      expect(await typecheck(outputs)).toEqual(clean(outputs));
+    },
+  );
+
+  it(
+    "renames a `typeof` in an exported type of a module value the setup shadows",
+    checker,
+    async () => {
+      const outputs = await compileSources({
+        "strings.ts": 'export function label(): string {\n  return "x";\n}\n',
+        "Box.uf.tsx": [
+          'import { ref } from "unframework";',
+          "",
+          'import { label as text } from "./strings";',
+          "",
+          "const PREFIXED = text();",
+          "export type Kind = ReturnType<typeof text>;",
+          "",
+          "export default function Box() {",
+          '  const text = ref("own");',
+          "  return (",
+          "    <p>",
+          "      {text.value} {PREFIXED}",
+          "    </p>",
+          "  );",
+          "}",
+          "",
+        ].join("\n"),
+      });
+      const script = outputs["Box.svelte"]!;
+      expect(script).toContain('import { label as text_1 } from "./strings";');
+      expect(script).toContain("export type Kind = ReturnType<typeof text_1>;");
+      expect(script).toContain("const PREFIXED = text_1();");
       expect(await typecheck(outputs)).toEqual(clean(outputs));
     },
   );
@@ -361,6 +407,98 @@ describe("svelte shared modules, types other components' constants name", () => 
       });
       expect(outputs["Badge.svelte"]).toContain('export type Tone = "info" | "warn";');
       expect(outputs["Card.svelte"]).toContain('export type { Tone } from "./Badge.svelte";');
+      expect(await typecheck(outputs)).toEqual(clean(outputs));
+    },
+  );
+  it(
+    "declares a type a sibling declares where the main component's constant names it",
+    checker,
+    async () => {
+      const outputs = await compileSources({
+        "Cards.uf.tsx": [
+          'export type Tone = "warm" | "cool";',
+          'const DEFAULT_TONE: Tone = "warm";',
+          "",
+          "export function Chip({ tone }: { tone: Tone }) {",
+          "  return <i>{tone}</i>;",
+          "}",
+          "",
+          "export default function Card() {",
+          "  return (",
+          "    <div>",
+          "      <Chip tone={DEFAULT_TONE} />",
+          "    </div>",
+          "  );",
+          "}",
+          "",
+        ].join("\n"),
+      });
+      const script = outputs["Card.svelte"]!;
+      expect(script).toContain('export type { Tone } from "./Chip.svelte";');
+      expect(script).toContain('type Tone = "warm" | "cool";');
+      expect(await typecheck(outputs)).toEqual(clean(outputs));
+    },
+  );
+
+  it(
+    "declares in the main output, and never re-exports, a type its own constant and a sibling's reach",
+    checker,
+    async () => {
+      const outputs = await compileSources({
+        "Card.uf.tsx": [
+          'export type Tone = "info" | "warn";',
+          'const TONES: Tone[] = ["info", "warn"];',
+          'const FIRST: Tone = "info";',
+          "",
+          "function Badge() {",
+          "  return <b>{TONES.join()}</b>;",
+          "}",
+          "",
+          "export default function Card() {",
+          "  return (",
+          "    <div>",
+          "      {FIRST}",
+          "      <Badge />",
+          "    </div>",
+          "  );",
+          "}",
+          "",
+        ].join("\n"),
+      });
+      const script = outputs["Card.svelte"]!;
+      expect(script).toContain('export type Tone = "info" | "warn";');
+      expect(script).not.toContain('export type { Tone } from "./Badge.svelte";');
+      expect(await typecheck(outputs)).toEqual(clean(outputs));
+    },
+  );
+
+  it(
+    "imports the types of a `.ts` module beside its values in `<script module>`",
+    checker,
+    async () => {
+      const outputs = await compileSources({
+        "tokens.ts": 'export const BASE = 4;\n\nexport type Unit = "px" | "rem";\n',
+        "Gap.uf.tsx": [
+          'import { BASE } from "./tokens";',
+          'import type { Unit } from "./tokens";',
+          "",
+          'const UNIT: Unit = "px";',
+          "const GAP = BASE * 2;",
+          'export type Size = "sm";',
+          "",
+          "export default function Gap() {",
+          "  return (",
+          "    <p>",
+          "      {GAP}",
+          "      {UNIT}",
+          "    </p>",
+          "  );",
+          "}",
+          "",
+        ].join("\n"),
+      });
+      const [module] = outputs["Gap.svelte"]!.split('<script lang="ts">');
+      expect(module).toContain('import { BASE, type Unit } from "./tokens";');
       expect(await typecheck(outputs)).toEqual(clean(outputs));
     },
   );
@@ -476,22 +614,110 @@ describe("svelte composables, names and types", () => {
     },
   );
 
+  it("keeps a result whose name no member takes apart from a fill's snippet", checker, async () => {
+    const outputs = await compileSources({
+      "Frame.uf.tsx": FRAME,
+      "useToggle.uf.ts": TOGGLE,
+      "Panel.uf.tsx": [
+        'import Frame from "./Frame.uf.tsx";',
+        'import { useToggle } from "./useToggle.uf.ts";',
+        "",
+        "export default function Panel() {",
+        "  const { on, label } = useToggle(false);",
+        "  return (",
+        "    <Frame>",
+        "      {{",
+        '        toggle: () => <span>{on.value ? "yes" : "no"}</span>,',
+        "        label: ({ n }) => (",
+        "          <span>",
+        "            {label} {n}",
+        "          </span>",
+        "        ),",
+        "      }}",
+        "    </Frame>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+    });
+    const script = outputs["Panel.svelte"]!;
+    expect(script).toContain("const toggle_1 = useToggle(false);");
+    expect(script).toContain('{toggle_1.on ? "yes" : "no"}');
+    expect(script).toContain("{toggle_1.label}");
+    expect(await typecheck(outputs)).toEqual(clean(outputs));
+  });
+
+  it("names the result apart from a composable imported under its stem", checker, async () => {
+    const outputs = await compileSources({
+      "useToggle.uf.ts": TOGGLE,
+      "Box.uf.tsx": [
+        'import { useToggle as toggle } from "./useToggle.uf.ts";',
+        "",
+        "export default function Box() {",
+        "  const { on } = toggle(false);",
+        "  return <p>{on.value}</p>;",
+        "}",
+        "",
+      ].join("\n"),
+    });
+    const script = outputs["Box.svelte"]!;
+    expect(script).toContain('import { useToggle as toggle } from "./useToggle.svelte";');
+    expect(script).toContain("const toggle_1 = toggle(false);");
+    expect(await typecheck(outputs)).toEqual(clean(outputs));
+  });
+
+  it("imports a type a composable's function names only in its return type", checker, async () => {
+    const outputs = await compileSources({
+      "types.ts": "export interface Item {\n  id: number;\n}\n",
+      "useMake.uf.ts": [
+        'import type { Item } from "./types";',
+        "",
+        "export function useMake() {",
+        "  function make(): Item {",
+        "    return { id: 1 };",
+        "  }",
+        "  return { make };",
+        "}",
+        "",
+      ].join("\n"),
+    });
+    expect(outputs["useMake.svelte.ts"]).toContain('import type { Item } from "./types";');
+    expect(await typecheck(outputs)).toEqual(clean(outputs));
+  });
+
   it("reads a composable's ref once where the setup reads it at the top", async () => {
     const outputs = await compileSources({
       "useToggle.uf.ts": TOGGLE,
+      "useDouble.uf.ts": [
+        'import { computed } from "unframework";',
+        "",
+        "export function useDouble() {",
+        "  const doubled = computed(() => 2);",
+        "  return { doubled };",
+        "}",
+        "",
+      ].join("\n"),
       "Seed.uf.tsx": [
         'import { ref } from "unframework";',
         "",
+        'import { useDouble } from "./useDouble.uf.ts";',
         'import { useToggle } from "./useToggle.uf.ts";',
         "",
         "export default function Seed() {",
         "  const { on } = useToggle(false);",
+        "  const { doubled } = useDouble();",
         "  const first = ref(on.value);",
-        "  return <p>{first.value}</p>;",
+        "  const copy = ref(doubled.value);",
+        "  return (",
+        "    <p>",
+        "      {first.value} {copy.value}",
+        "    </p>",
+        "  );",
         "}",
         "",
       ].join("\n"),
     });
     expect(outputs["Seed.svelte"]).toContain("(untrack(() => toggle.on));");
+    expect(outputs["Seed.svelte"]).toContain("(untrack(() => double.doubled));");
   });
 });

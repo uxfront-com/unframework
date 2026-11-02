@@ -53,12 +53,16 @@ instance script when it takes props or has a setup, and its markup (plan §6):
   source imports it, `import { sizes } from "./tokens"`, from the copy beside the outputs. The
   module's constants it reads, and those they read, are declared as written, with the types they
   name, at the top of the instance script, before `$props()`: `const GAP = sizes.sm * 2;`. An
-  output that exports a type declares them in `<script lang="ts" module>` instead, with the
-  imports of the values they read, since a type there may query one (`keyof typeof SIZES`). A
-  type a constant names keeps its `export`, unless another component's output declares it, which
-  the main output then re-exports it from. A module name that a top-level setup binding shadows,
-  or that a fill's snippet would hide, is declared under a name of its own, `label_1`, and every
-  read of it, in a constant, a copied type or the markup, uses that name (`src/modules.ts`).
+  output with a `<script lang="ts" module>`, one that exports a type or declares the module's
+  injection keys, declares them there instead, with the imports of the values they read, since a
+  type there may query one (`keyof typeof SIZES`). A type a constant names keeps its `export`,
+  unless another component's output declares it: the main output then re-exports it from there,
+  and declares it too where its own constant names it. A module name that a top-level setup
+  binding shadows is declared under a name of its own, `label_1`, and every module text that reads
+  it, a constant, a copied type or an exported one, reads it there. A fill's snippet hides a name
+  only from the markup between the child's tags, so a module value it would hide keeps its name,
+  which every `typeof` reads, and the component reads it through an alias,
+  `const label_1 = label;` (`src/modules.ts`).
 - **Composables** (ADR-0069). A `.uf.ts` module's composable is its own module,
   `useToggle.svelte.ts`, whose runes vite-plugin-svelte compiles. It holds the source's exported
   function, with its parameters and type parameters as written and its setup lowered as a
