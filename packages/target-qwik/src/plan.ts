@@ -242,13 +242,13 @@ export function planSetup(
   for (const plan of functions.values()) {
     if (plan.form === "qrl" || plan.form === "both") qrls.add(plan.qrl);
   }
-  // A callback argument is the caller's QRL (./composable.ts): a call that returns nothing
-  // floats, as an emit does, and one whose value is used is awaited.
+  // A callback argument is the caller's QRL (./composable.ts): a statement call of one that
+  // returns nothing or a promise floats, as an emit does, and any other call is awaited.
   const promiseQrls = new Set<string>();
   for (const parameter of args.values()) {
     if (parameter.kind !== "callback") continue;
     qrls.add(parameter.name);
-    if (returnsVoid(parameter)) promiseQrls.add(parameter.name);
+    if (callbackFloats(parameter)) promiseQrls.add(parameter.name);
   }
   const emitted = emittedEvents(component);
   const eventLocals = new Map<string, string>();
@@ -1306,9 +1306,42 @@ export function isReactiveBinding(
   return isReactive(binding.kind);
 }
 
-/** Whether a callback parameter's function type returns `void`: its call is then no value. */
-function returnsVoid(parameter: ComposableParameter): boolean {
-  return /=>\s*void\s*$/.test(parameter.type.code);
+/**
+ * Whether a call of a callback argument that is a statement of its own floats, `void onSave(x)`,
+ * as an emit does: where its function type returns `void`, a promise, or a union of them. The
+ * code after it then runs as the source's does, before the caller's continuation (./calls.ts). A
+ * call of any other callback is a value, which the QRL's call awaits.
+ */
+export function callbackFloats(parameter: ComposableParameter): boolean {
+  const { root } = parseCodeSource(`let callback: ${parameter.type.code};`, "statements");
+  let returned: SyntaxNode | undefined;
+  walkNodes(root, (node) => {
+    if (returned === undefined && node.type === "TSFunctionType") {
+      returned = (node.returnType as SyntaxNode | undefined)?.typeAnnotation as
+        | SyntaxNode
+        | undefined;
+    }
+  });
+  return returned !== undefined && nothingToWait(returned);
+}
+
+/** `void`, `undefined`, a `Promise<…>` or `PromiseLike<…>`, or a union of them. */
+function nothingToWait(type: SyntaxNode): boolean {
+  switch (type.type) {
+    case "TSVoidKeyword":
+    case "TSUndefinedKeyword":
+      return true;
+    case "TSUnionType":
+      return (type.types as SyntaxNode[]).every(nothingToWait);
+    case "TSParenthesizedType":
+      return nothingToWait(type.typeAnnotation as SyntaxNode);
+    case "TSTypeReference": {
+      const name = type.typeName as SyntaxNode;
+      return name.type === "Identifier" && ["Promise", "PromiseLike"].includes(name.name as string);
+    }
+    default:
+      return false;
+  }
 }
 
 /**

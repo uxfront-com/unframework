@@ -214,11 +214,21 @@ its parameters take the forms Qwik captures:
 
 - A value is taken as written, `initial: boolean`, and read once.
 - A getter, `price: () => number`, is the signal its caller computes with `useComputed$`,
-  `price: ReadonlySignal<number>`, and each call reads it: `price()` is `price.value`, and a task
-  tracks it as it tracks a signal of its own.
+  `price: ReadonlySignal<number>`, and each call reads it: `price()` is `price.value`. A task
+  tracks it through a function, `track(() => price.value)`, since `track` infers a value only
+  from a writable signal.
 - A callback, `onLimit: (count: number) => void`, is the QRL its caller makes with `$()`,
-  `onLimit: QRL<(count: number) => void>`. A call whose value is used is awaited, and one of a
-  callback that returns `void` runs without waiting, as an emit does: `void onLimit(count.value)`.
+  `onLimit: QRL<(count: number) => void>`. A statement call of a callback that returns `void` or
+  a promise runs without waiting, as an emit does: `void onLimit(count.value)`. A call whose value
+  is used is awaited.
+
+What those forms cannot keep is UF1002, at the read, and the hook is not emitted:
+
+- a getter read other than by a call (passed on, kept or aliased), since it is a signal;
+- a callback passed on or kept, or called in a function of the code's own (an array method's
+  callback, a comparator, a timer's), which cannot wait for a QRL's promise;
+- a value whose type, as written or through the module's own declarations, holds a function, read
+  where a `$` scope captures it, since Qwik serialises what a `$` scope captures.
 
 A composable that reads a module's values is UF1002 until the call site lands, and so are a
 composable's call and what it gives a component.

@@ -761,12 +761,30 @@ function uses(fn: FunctionCode, name: string): boolean {
   return new RegExp(`(?<![\\w$.])${name.replace(/\$/g, "\\$")}(?![\\w$])`).test(fn.body.code);
 }
 
-/** `track(count)` for a ref, `track(() => title)` for a prop: what a task tracks. */
-function tracked(plan: SetupPlan, id: BindingId, track: string): { tracked: string; read: string } {
+/**
+ * `track(count)` for a ref, `track(() => title)` for a prop: what a task tracks, the read that
+ * gives its value, and that value's type where `typeof` of the read can't name it.
+ */
+function tracked(
+  plan: SetupPlan,
+  id: BindingId,
+  track: string,
+): { tracked: string; read: string; type?: string } {
   const binding = plan.component.bindings.find((candidate) => candidate.id === id)!;
-  // A composable's getter argument is a signal (./composable.ts).
-  if (plan.arguments.get(id)?.kind === "getter") {
-    return { tracked: `${track}(${binding.name})`, read: `${binding.name}.value` };
+  // A composable's getter argument is a read-only signal (./composable.ts), which `track` reads
+  // through a function: it infers a value only from a writable one. An optional one is read
+  // where the caller passed it, and its type names the signal's value, since `typeof` takes no
+  // optional chain.
+  const parameter = plan.arguments.get(id);
+  if (parameter?.kind === "getter") {
+    const read = `${binding.name}${parameter.optional ? "?." : "."}value`;
+    return {
+      tracked: `${track}(() => ${read})`,
+      read,
+      ...(parameter.optional
+        ? { type: `NonNullable<typeof ${binding.name}>["value"] | undefined` }
+        : {}),
+    };
   }
   switch (binding.kind) {
     // A model is read through its computed (./composition.ts).
@@ -841,9 +859,12 @@ function watchStatements(plan: SetupPlan, item: WatchItem): Statement[] {
     return { tracked: `${track}(${name})`, read: `${name}.value` };
   });
   const reads = sources.map((source) => source.read);
+  const types = sources.map(
+    (source) => ("type" in source && source.type) || `typeof ${source.read}`,
+  );
   // An array source's values are a mutable tuple, as Vue gives them to the callback: a function
   // that takes an array takes them (a readonly tuple would fail TS4104).
-  const tuple = `[${reads.map((read) => `typeof ${read}`).join(", ")}]`;
+  const tuple = `[${types.join(", ")}]`;
   const value = item.array
     ? `[${sources.map((source) => source.tracked).join(", ")}]`
     : sources[0]!.tracked;
@@ -873,7 +894,7 @@ function watchStatements(plan: SetupPlan, item: WatchItem): Statement[] {
   const previous = names.fresh(`previous${capitalized(base)}`);
   const useSignal = names.core("useSignal");
   if (item.immediate) {
-    const type = item.array ? tuple : `typeof ${reads[0]}`;
+    const type = item.array ? tuple : types[0];
     statements.push(`const ${previous} = ${useSignal}<{ value: ${type} }>();`);
     const last = localName(plan, "last", item.callback);
     lines.push(
@@ -987,7 +1008,9 @@ function singleRead(plan: SetupPlan, getter: FunctionCode): BindingId | undefine
     reference.span.start - getter.body.span.start,
     reference.span.end - getter.body.span.start,
   );
-  if (code !== written) return undefined;
+  // A composable's getter argument is read by a call (`() => price()`).
+  const isGetter = plan.arguments.get(reference.binding)?.kind === "getter";
+  if (code !== (isGetter ? `${written}()` : written)) return undefined;
   const binding = plan.component.bindings.find((each) => each.id === reference.binding);
   return binding && isReactiveBinding(binding, plan.arguments) ? reference.binding : undefined;
 }
@@ -1028,7 +1051,7 @@ function watchEffectCode(plan: SetupPlan, item: WatchEffectItem): string {
   }
   const statements: string[] = [];
   const sources = dependencies.map((id) => tracked(plan, id, track));
-  const tuple = `[${sources.map((source) => `typeof ${source.read}`).join(", ")}]`;
+  const tuple = `[${sources.map((source) => source.type ?? `typeof ${source.read}`).join(", ")}]`;
   const previous = names.fresh("previousEffect");
   const values = localName(plan, "values", item.effect);
   const last = localName(plan, "last", item.effect);

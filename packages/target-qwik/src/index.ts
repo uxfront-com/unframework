@@ -62,7 +62,7 @@ import {
 } from "./attributes.ts";
 import type { Namespace } from "./attributes.ts";
 import { qwikClassAttribute } from "./class.ts";
-import { parameterCode, setupOwner } from "./composable.ts";
+import { composableProblems, parameterCode, setupOwner } from "./composable.ts";
 import {
   componentHandler,
   fillExpressions,
@@ -462,6 +462,12 @@ function emitComposable(composable: UfComposable, context: EmitContext): OutputF
   const imports = new ImportSet(reserved);
   const names = new OutputNames(imports);
   const plan = planSetup(owner, module, names, composable);
+  // What Qwik's forms of its arguments cannot keep is reported, never emitted (P2).
+  const problems = composableProblems(composable, plan);
+  for (const { span, message, help } of problems) {
+    context.report({ code: "UF1002", severity: "error", message, span, help });
+  }
+  if (problems.length) return [];
   const setup = printSetup(plan);
   const returned = composable.returns.map((member) => {
     const local = plan.functions.get(member.binding)?.qrl ?? member.name;
