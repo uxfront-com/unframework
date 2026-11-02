@@ -10,6 +10,8 @@ import {
   addTypeImports,
   bindingForms,
   childImports,
+  codeKind,
+  codeNames,
   componentTypes,
   functionBodyText,
   functionText,
@@ -33,7 +35,7 @@ import {
   typeSpecifier,
 } from "@unframework/codegen";
 import type { MarkupOptions, RewriteRules } from "@unframework/codegen";
-import { codeOf, expressionsOf, walk } from "@unframework/ir";
+import { codeOf, expressionsOf, functionsOf, walk } from "@unframework/ir";
 import type {
   Binding,
   BindingId,
@@ -57,6 +59,7 @@ import type {
   RefType,
   RenderNode,
   SetupItem,
+  Span,
   TypeText,
   UfComponent,
   UfComposable,
@@ -127,6 +130,11 @@ interface LocalImport {
   names: Map<string, string>;
   /** Type imports, by local name, as `names`. */
   types: Map<string, string>;
+  /**
+   * Set for a `.ts` module's values (ADR-0070), which the module's constants may read: they move
+   * to `<script module>` with the constants, where the output has one.
+   */
+  shared?: true;
 }
 
 /**
@@ -192,6 +200,13 @@ class Names {
     entry.names.set(local, name);
   }
 
+  /** A value a `.ts` module exports, under the source's local name (ADR-0070). */
+  importShared(specifier: string, name: string, local: string): void {
+    this.#local(specifier).shared = true;
+    if (name === "default") this.importDefault(specifier, local);
+    else this.importNamed(specifier, name, local);
+  }
+
   /** A type a module exports, under the source's local name (ADR-0067): `Tone as Mode`. */
   importType(specifier: string, name: string, local: string): void {
     const entry = this.#local(specifier);
@@ -220,10 +235,15 @@ class Names {
    * `ImportSet` sorts them, so the children's sheets load, and cascade, in Vue's order
    * (ADR-0063), with the types imported from each, unless `types` is off; then Svelte's modules,
    * each name sorted, a type-only import written `import type`; then the pass-through imports,
-   * in their order (ADR-0064).
+   * in their order (ADR-0064). The values of `.ts` modules are left out unless `shared` is on.
    */
-  declarations({ types: withTypes = true }: { types?: boolean } = {}): string[] {
-    const locals = this.#sortedLocals().flatMap((entry) => {
+  declarations({
+    types: withTypes = true,
+    shared = true,
+  }: { types?: boolean; shared?: boolean } = {}): string[] {
+    const locals = this.#sortedLocals().flatMap((each) => {
+      const entry =
+        shared || !each.shared ? each : { ...each, default: undefined, names: new Map() };
       const named = [
         ...[...entry.names].map(([local, name]) => importedAs(name, local)),
         ...(withTypes
@@ -258,16 +278,27 @@ class Names {
   }
 
   /**
-   * The type imports alone, each module's `import type`, for the `<script module>` block that
-   * declares the types which read them (ADR-0068).
+   * The imports of the `<script module>` block, which declares the types and the module's
+   * constants (ADR-0068, ADR-0070): each module's types, and the values of the `.ts` modules
+   * the constants read, `import { BASE, type Size } from "./tokens"`.
    */
-  typeDeclarations(): string[] {
-    return this.#sortedLocals()
-      .filter((entry) => entry.types.size)
-      .map(
-        (entry) =>
-          `import type ${typeSpecifiers(entry.types)} from ${JSON.stringify(entry.specifier)};`,
-      );
+  moduleDeclarations(): string[] {
+    return this.#sortedLocals().flatMap((entry) => {
+      if (!entry.shared) {
+        return entry.types.size
+          ? [`import type ${typeSpecifiers(entry.types)} from ${JSON.stringify(entry.specifier)};`]
+          : [];
+      }
+      const named = [
+        ...[...entry.names].map(([local, name]) => importedAs(name, local)),
+        ...[...entry.types].map(([local, name]) => `type ${importedAs(name, local)}`),
+      ];
+      const clause = [
+        ...(entry.default === undefined ? [] : [entry.default]),
+        ...(named.length ? [`{ ${named.toSorted(byImportedName).join(", ")} }`] : []),
+      ];
+      return [`import ${clause.join(", ")} from ${JSON.stringify(entry.specifier)};`];
+    });
   }
 }
 
@@ -480,12 +511,13 @@ class ScriptWriter {
   constructor(component: UfComponent, module: UfModule, typeTexts: readonly TypeText[] = []) {
     this.#module = module;
     this.#names = new Names(component, module);
-    // The module names come first: the script claims none of them (ADR-0070).
-    this.#reach = moduleReach(component, module, typeTexts);
-    this.#moduleLocals = moduleLocals(component, this.#reach, this.#names.scope);
     // A fill's snippet is named like its slot, which would hide a binding of that name from
     // everything between the child's tags: such a binding takes a name of its own.
     const hidden = snippetNames(component.render);
+    // The module names come first: the script claims none of them, and one a top-level binding
+    // or a snippet would hide is declared under a name of its own (ADR-0070).
+    this.#reach = moduleReach(component, module, typeTexts);
+    this.#moduleLocals = moduleLocals(component, this.#reach, this.#names.scope, hidden);
     const nested = nestedSnippetNames(component);
     const bindings = component.bindings.map((binding) => {
       // A fill's parameter is hidden only by a snippet declared inside its own fill: its own
@@ -500,9 +532,11 @@ class ScriptWriter {
     this.#bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
     this.#functions = handlerTypes(component);
     this.#conditionalRefs = conditionalRefs(component);
-    for (const item of component.setup) {
-      if (item.kind !== "Use") continue;
-      const object = this.#resultName(item);
+    // The composables it calls keep their local names, which no result takes (ADR-0069).
+    const uses = component.setup.filter((item): item is UseItem => item.kind === "Use");
+    this.#names.scope.reserve(...uses.map((item) => item.composable));
+    for (const item of uses) {
+      const object = this.#resultName(item, hidden);
       this.#results.set(item, object);
       for (const { binding, member } of item.members) this.#used.set(binding, { object, member });
     }
@@ -549,26 +583,35 @@ class ScriptWriter {
     // the component's file, `import type { ButtonProps } from "./Button.svelte"`.
     const copied = componentTypes(component, this.#module);
     const typeExports = typeExportsCode(component, this.#module, (name) => `${name}.svelte`);
-    // The types the module's constants name come with them, unexported: an export of one is
-    // the output's that declares it as its own (ADR-0070).
-    const reExported = new Set(typeExports.map(({ span }) => span.start));
+    // The types the module's constants name come with them (ADR-0070), exported where the
+    // source exports them, unless another component's output declares one as its own and the
+    // main output re-exports it from there.
+    const listed = new Set(typeExports.map(({ span }) => span.start));
+    const sibling = (name: string) =>
+      this.#module.components.some((each) => each !== component && each.types.includes(name));
+    const reached = this.#reach.types.filter(({ span }) => !listed.has(span.start));
     const types = [
       ...copied.map((declaration) => ({
         code: renamedDeclaration(typeDeclarationCode(declaration), this.#moduleLocals),
         span: declaration.span,
       })),
-      ...this.#reach.types
-        .filter(({ span }) => !reExported.has(span.start))
-        .map((declaration) => ({
-          code: renamedDeclaration(declaration.code, this.#moduleLocals),
-          span: declaration.span,
-        })),
+      ...reached.map((declaration) => ({
+        code: renamedDeclaration(
+          declaration.exported && !sibling(declaration.name)
+            ? typeDeclarationCode(declaration)
+            : declaration.code,
+          this.#moduleLocals,
+        ),
+        span: declaration.span,
+      })),
       ...typeExports,
+      ...this.#siblingConstantTypes(new Set([...copied, ...reached].map(({ name }) => name))),
     ]
       .toSorted((a, b) => a.span.start - b.span.start)
       .map(({ code }) => code);
-    const moduleScript =
-      Boolean(owner) || typeExports.length > 0 || copied.some(({ exported }) => exported);
+    // An output that exports a type declares its types, and the module's constants a type may
+    // query, in `<script module>`.
+    const moduleScript = Boolean(owner) || types.some((code) => code.startsWith("export "));
     const helpers = [
       ...(once ? [onceHelper(once)] : []),
       ...(this.#refObject ? [refObjectHelper(this.#refObject)] : []),
@@ -582,7 +625,7 @@ class ScriptWriter {
     // component's style after its script.
     const file = this.#module.file;
     const imports = [
-      ...this.#names.declarations({ types: !moduleScript }),
+      ...this.#names.declarations({ types: !moduleScript, shared: !moduleScript }),
       ...(component.styles
         ? [`import ${JSON.stringify(`./${file.slice(file.lastIndexOf("/") + 1)}.css`)};`]
         : []),
@@ -592,7 +635,7 @@ class ScriptWriter {
     const pieces = [
       ...(imports.length ? [imports.map((line) => `${INDENT}${line}`).join("\n")] : []),
       ...(moduleScript ? [] : types.map((each) => indent(each, INDENT))),
-      ...(constants.length ? [indent(constants.join("\n"), INDENT)] : []),
+      ...(constants.length && !moduleScript ? [indent(constants.join("\n"), INDENT)] : []),
       ...[...props, ...setup, ...dynamic, ...helpers].map((piece) => reindent(piece, INDENT)),
     ];
     const roots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
@@ -637,7 +680,9 @@ class ScriptWriter {
         ? { candidates: (child: ComponentNode) => composed.candidates.get(child) }
         : {}),
     };
-    const moduleBlock = moduleScript ? this.#moduleScript(types, Boolean(owner)) : undefined;
+    const moduleBlock = moduleScript
+      ? this.#moduleScript(types, constants, Boolean(owner))
+      : undefined;
     const result = (instance?: string): InstanceScript => ({
       ...(moduleBlock ? { module: moduleBlock } : {}),
       ...(instance ? { block: instance } : {}),
@@ -662,7 +707,23 @@ class ScriptWriter {
   composable(composable: UfComposable, typeTexts: readonly TypeText[]): string {
     const owner = this.#component;
     this.#imports();
-    const read = new Set(typeTexts.flatMap((type) => [...typeNames(type)]));
+    // Every type its output names: its parameters', its setup's annotations, its functions' and
+    // the declarations it copies. A composable has no render to keep a binding live, so the
+    // component's reach (`liveTypeNames`) misses them.
+    const read = new Set<string>();
+    const add = (names: Iterable<string>) => {
+      for (const name of names) read.add(name);
+    };
+    for (const type of typeTexts) add(typeNames(type));
+    for (const item of owner.setup) if ("type" in item && item.type) add(typeNames(item.type));
+    for (const { function: fn } of functionsOf(owner)) {
+      for (const parameter of fn.parameters) if (parameter.type) add(typeNames(parameter.type));
+      if (fn.returnType) add(typeNames(fn.returnType));
+    }
+    for (const { code } of codeOf(owner)) add(codeNames(code.code, codeKind(code, owner)));
+    for (const declaration of [...componentTypes(owner, this.#module), ...this.#reach.types]) {
+      add(codeNames(declaration.code, "statements"));
+    }
     for (const entry of this.#module.typeImports ?? []) {
       for (const name of entry.names) {
         if (!read.has(name.local)) continue;
@@ -749,8 +810,7 @@ class ScriptWriter {
       for (const name of entry.names) {
         if (!this.#reach.values.has(name.local)) continue;
         const local = this.#moduleLocals.get(name.local) ?? name.local;
-        if (name.imported === "default") this.#names.importDefault(entry.specifier, local);
-        else this.#names.importNamed(entry.specifier, name.imported, local);
+        this.#names.importShared(entry.specifier, name.imported, local);
       }
     }
     // The types it reads, by name, under the source's names (ADR-0067): a child's from its
@@ -788,6 +848,30 @@ class ScriptWriter {
   }
 
   /**
+   * In the output of the module's main component, a re-export of each exported type that only
+   * another component's constants reach, from that component's output, which declares it
+   * (ADR-0068, ADR-0070): `typeExportsCode` knows only components' own types.
+   */
+  #siblingConstantTypes(written: ReadonlySet<string>): { code: string; span: Span }[] {
+    const component = this.#component;
+    if (keyOwner(this.#module.components, this.#module.exports) !== component.name) return [];
+    const found = new Map<string, { code: string; span: Span }>();
+    for (const other of this.#module.components) {
+      if (other === component) continue;
+      for (const declaration of moduleReach(other, this.#module).types) {
+        const { name, exported, span } = declaration;
+        const declared = this.#module.components.some((each) => each.types.includes(name));
+        if (!exported || written.has(name) || declared || found.has(name)) continue;
+        found.set(name, {
+          code: `export type { ${name} } from ${JSON.stringify(`./${other.name}.svelte`)};`,
+          span,
+        });
+      }
+    }
+    return [...found.values()];
+  }
+
+  /**
    * The `<script lang="ts" module>` block of the output that exports a type (ADR-0068) or declares
    * the module's injection keys (ADR-0054): the type imports, the types, and each key a `Symbol`,
    * which `setContext` and `getContext` take, typed with the value it holds
@@ -795,8 +879,8 @@ class ScriptWriter {
    * (`contextType`), so the output exports no name of its own that could clash with the module's
    * or a component's.
    */
-  #moduleScript(types: readonly string[], owner: boolean): string {
-    const imports = this.#names.typeDeclarations();
+  #moduleScript(types: readonly string[], constants: readonly string[], owner: boolean): string {
+    const imports = this.#names.moduleDeclarations();
     const keys = owner
       ? this.#module.keys!.map(
           (key) =>
@@ -806,6 +890,7 @@ class ScriptWriter {
     const body = [
       ...(imports.length ? [imports.map((line) => `${INDENT}${line}`).join("\n")] : []),
       ...types.map((each) => indent(each, INDENT)),
+      ...(constants.length ? [indent(constants.join("\n"), INDENT)] : []),
       ...(keys.length ? [indent(keys.join("\n"), INDENT)] : []),
     ];
     return `<script lang="ts" module>\n${escapeScriptEnd(body.join("\n\n"))}\n</script>`;
@@ -937,20 +1022,30 @@ class ScriptWriter {
   /**
    * The variable a composable's call keeps its result in, named as a Svelte developer would: by
    * the one member it destructures under a name of its own (`const wide = useMediaQuery(…)`,
-   * from `{ matches: wide }`), or by the composable (`const toggle = useToggle(false)`). The
-   * destructured names vanish from the output, so it may take one of them: no parameter or local
-   * shadows a name the setup declares (UF3024).
+   * from `{ matches: wide }`), or by the composable, as its module exports it
+   * (`const toggle = useToggle(false)`, under an alias too). The destructured names vanish from
+   * the output, so it may take one of them, since no parameter or local shadows a name the setup
+   * declares (UF3024). Any other name the source takes, a name a fill's snippet would hide, or a
+   * reserved word (`switch` for `useSwitch`) gives way to the next free one, `toggle_1`.
    */
-  #resultName(item: UseItem): string {
+  #resultName(item: UseItem, hidden: ReadonlySet<string>): string {
     const [only] = item.members;
     const renamed = only && item.members.length === 1 ? this.#name(only.binding) : undefined;
-    const stem = item.composable.replace(/^use/, "");
+    const imported =
+      this.#module.imports
+        ?.flatMap((entry) => entry.names)
+        .find((name) => name.kind === "Composable" && name.local === item.composable)?.imported ??
+      item.composable;
+    const stem = imported.replace(/^use/, "");
     const name =
       renamed !== undefined && renamed !== only!.member
         ? renamed
         : `${stem[0]!.toLowerCase()}${stem.slice(1)}`;
     const own = item.members.some(({ binding }) => this.#name(binding) === name);
-    return own ? name : this.#names.claim(name);
+    if (own && !hidden.has(name)) return name;
+    this.#names.scope.reserve(...hidden);
+    if (!isIdentifier(name)) this.#names.scope.reserve(name);
+    return this.#names.claim(name);
   }
 
   /** How code calls an event's callback prop: `onchange`, or `props.onchange` in the object form. */
@@ -1857,6 +1952,16 @@ function nestedSnippetNames(component: UfComponent): Map<string, Set<string>> {
   return found;
 }
 
+/** Whether a name may be declared: a reserved word (`switch`, `new`) may not. */
+function isIdentifier(name: string): boolean {
+  try {
+    parseStatementsSource(`const ${name} = 0;`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Whether the output may name a binding apart from the source: a variable it declares, but not a
  * prop read through the props object or a component, an import's name. An exposed function keeps
@@ -1870,6 +1975,14 @@ function renamable(binding: Binding, component: UfComponent): boolean {
     case "component":
     case "slots":
     case "emit":
+    // A module's value takes its own name where a snippet would hide it (`moduleLocals`), and a
+    // composable's result is read through the call's object (`#resultName`).
+    case "moduleConst":
+    case "import":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       return false;
     default:
       return true;

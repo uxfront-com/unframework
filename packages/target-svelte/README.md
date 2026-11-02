@@ -51,23 +51,31 @@ instance script when it takes props or has a setup, and its markup (plan §6):
   parameter are `Snippet<[{ item: T }]>`; both cells are native.
 - **Shared modules** (ADR-0070). A value the component reads of a `.ts` module is imported as the
   source imports it, `import { sizes } from "./tokens"`, from the copy beside the outputs. The
-  module's constants it reads, and those they read, are declared as written at the top of the
-  instance script, before `$props()`, with the types they name: `const GAP = sizes.sm * 2;`. The
-  instance script is one scope with the setup, so a module name a top-level setup binding shadows
-  is declared under a name of its own, and the constants and copied types that read it read it
-  there (`src/modules.ts`).
+  module's constants it reads, and those they read, are declared as written, with the types they
+  name, at the top of the instance script, before `$props()`: `const GAP = sizes.sm * 2;`. An
+  output that exports a type declares them in `<script lang="ts" module>` instead, with the
+  imports of the values they read, since a type there may query one (`keyof typeof SIZES`). A
+  type a constant names keeps its `export`, unless another component's output declares it, which
+  the main output then re-exports it from. A module name that a top-level setup binding shadows,
+  or that a fill's snippet would hide, is declared under a name of its own, `label_1`, and every
+  read of it, in a constant, a copied type or the markup, uses that name (`src/modules.ts`).
 - **Composables** (ADR-0069). A `.uf.ts` module's composable is its own module,
-  `useToggle.svelte.ts`, whose runes vite-plugin-svelte compiles: the source's exported function,
-  its parameters and type parameters as written, its setup as a component's (below), and an
-  object of getters for each ref and computed value it returns, with its functions and constants
-  as they are, since a destructured rune would hold its value once:
-  `return { get on() { return on; }, toggle };`. A caller imports it as
-  `import { useToggle } from "./useToggle.svelte"`, which svelte-check and the unplugin resolve to
-  that module, and keeps the object: `const toggle = useToggle(false)`, read as `toggle.on` and
-  `toggle.toggle()` in the script and the markup. The object takes the one member's name where the
-  call renames it (`const wide = useMediaQuery(…)` for `{ matches: wide }`), or the composable's
-  (`toggle` for `useToggle`), which may be a member's, since UF3024 keeps every other name off it.
-  A getter and a callback are passed as written. Both cells, `composables` and
+  `useToggle.svelte.ts`, whose runes vite-plugin-svelte compiles. It holds the source's exported
+  function, with its parameters and type parameters as written and its setup lowered as a
+  component's is (below). It returns an object with a getter for each ref and computed value it
+  returns, and its functions and constants as they are, since a destructured rune would hold its
+  value once: `return { get on() { return on; }, toggle };`. The module imports every type its
+  parameters, setup and functions name, and declares the module's types and constants it reads.
+  A caller imports it as `import { useToggle } from "./useToggle.svelte"`, which svelte-check and
+  the unplugin resolve to that module. It keeps the object, `const toggle = useToggle(false)`, and
+  reads each destructured name through it, `toggle.on` and `toggle.toggle()`, in the script and
+  the markup alike. The object takes the name of the one member the call renames
+  (`const wide = useMediaQuery(…)` for `{ matches: wide }`), or else the composable's exported
+  name without `use` (`toggle`, for `useToggle` imported under any alias). That name may be one
+  of the destructured members, which vanish from the output: UF3024 keeps every parameter and
+  local off them. It gives way to the next free name, `toggle_1`, where the setup takes it
+  otherwise, a fill's snippet would hide it, or it is a reserved word (`switch_1` for
+  `useSwitch`). A getter and a callback are passed as written. Both cells, `composables` and
   `composable-effect-order`, are native: the composable's effects and hooks run where its call
   sits.
 - **Setup** (ADR-0045 to ADR-0049), in source order after `$props()`, with what it imports from
