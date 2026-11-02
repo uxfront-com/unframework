@@ -35,7 +35,9 @@ export function assertedPaths(
       return plan.derived.get(binding.id)?.current
         ? reference.narrowed.filter(({ scope }) => scope !== "template")
         : [];
+    // A composable's getter or callback argument is mirrored as a prop is (ADR-0069).
     case "prop":
+    case "argument":
       return plan.propMirrors.has(binding.id)
         ? reference.narrowed.filter(({ scope }) => scope === "closure")
         : [];
@@ -54,7 +56,6 @@ export function assertedPaths(
     // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
-    case "argument":
     case "usedState":
     case "usedDerived":
     case "usedFn":
