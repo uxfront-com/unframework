@@ -180,7 +180,9 @@ Its toolchain, for tests and tooling (the target's main entry never loads it):
   its children import, as the browser project serves it, in a `<style>` before the HTML, a
   child's first (ADR-0063). The render server adds the project's own plugins
   (`ToolchainContext.plugins`), so a styling engine's plugin resolves its `virtual:` modules,
-  and the engine's stylesheet goes before the markup too (ADR-0064). The checks:
+  and the engine's stylesheet goes before the markup too (ADR-0064). A module of composables a
+  component imports (`/abs/useToggle.uf.ts`, ADR-0069) is served as the browser project compiles
+  it, read again on each render. The checks:
   - L3 runs `@astrojs/compiler-rs` with Astro's options and reports every diagnostic (it refuses
     a compiler version other than the one `astro` uses), and Vite's TypeScript transform over a
     `.ts` module, a shared one (ADR-0070) or a composable's (ADR-0069);

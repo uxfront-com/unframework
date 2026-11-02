@@ -4,7 +4,8 @@
 // the Container API loaded through that server's SSR runner, so the container and the component
 // share one copy of the Astro runtime (Astro's config inlines the `astro` package). A child that
 // a component imports (`./Field.astro`, ADR-0053) is resolved and compiled by the browser
-// project's own pipeline, as the component was (ADR-0057).
+// project's own pipeline, as the component was (ADR-0057), and so is a module of composables it
+// calls (`./useToggle`, ADR-0069).
 import { AsyncLocalStorage } from "node:async_hooks";
 import { join } from "node:path";
 import { formatWithOptions } from "node:util";
@@ -59,6 +60,11 @@ export interface ChildModules {
    * the unframework plugin (and any canary) gives it.
    */
   sheet(id: string): Promise<string>;
+  /**
+   * The static module the browser project's pipeline serves for a module of composables' id
+   * (`/abs/useToggle.uf.ts`, ADR-0069), as the unframework plugin compiles it.
+   */
+  composable(id: string): Promise<string>;
 }
 
 /** The children of the render running now: renders run one at a time. */
@@ -69,6 +75,9 @@ const ASTRO_SUB_REQUEST = /[?&]astro(?:[&=]|$)/;
 
 /** The sheet `compile()` emits beside a source (`/abs/X.uf.tsx.css`, ADR-0063), with any query. */
 const SHEET_ID = /\.uf\.tsx\.css(?:\?.*)?$/;
+
+/** A module of composables' id on Astro, the authored `.uf.ts` file's (ADR-0069), with any query. */
+const COMPOSABLE_ID = /\.uf\.ts(?:\?.*)?$/;
 
 /** Any stylesheet's id, with any query: an emitted sheet, or one a plugin serves (ADR-0064). */
 const STYLESHEET_ID = /\.css(?:\?.*)?$/;
@@ -113,6 +122,13 @@ function browserChildModules(browser: unknown): ChildModules | undefined {
       const code = typeof loaded === "object" ? loaded?.code : loaded;
       if (code == null)
         throw new Error(`ufAstroRender: the browser project serves no sheet ${id}.`);
+      return code;
+    },
+    async composable(id) {
+      const loaded = await client.pluginContainer.load(id);
+      const code = typeof loaded === "object" ? loaded?.code : loaded;
+      if (code == null)
+        throw new Error(`ufAstroRender: the browser project serves no composables ${id}.`);
       return code;
     },
   };
@@ -166,9 +182,14 @@ async function render(
     );
   }
   const server = await renderServer(root, plugins);
-  // The component, or a child it imports, may have been compiled again since it was served.
+  // The component, a child or a module of composables it imports, may have been compiled again
+  // since it was served.
   for (const [served, previous] of server.served) {
-    if (compiledAstroSource(served) !== previous) invalidate(server.ssr, served);
+    // A module of composables this render's project cannot serve is loaded again if imported.
+    const current = COMPOSABLE_ID.test(served)
+      ? await children?.composable(served).catch(() => undefined)
+      : compiledAstroSource(served);
+    if (current !== previous) invalidate(server.ssr, served);
   }
 
   const module: { default?: unknown } = await server.ssr.runner.import(`${id}?container`);
@@ -296,17 +317,27 @@ function compiledSourceLoader(served: Map<string, string>): Plugin {
       const child = await children.resolve(id, parent);
       // A served module's sheet (ADR-0063): the render reads it from the browser project.
       if (child !== undefined && SHEET_ID.test(child)) return splitQuery(child)[0];
+      // A module of composables (ADR-0069): its static module, as the browser project compiles it.
+      if (child !== undefined && COMPOSABLE_ID.test(child)) return splitQuery(child)[0];
       if (child === undefined || !ASTRO_VIRTUAL_ID.test(child)) return null;
       const [path] = splitQuery(child);
       if (compiledAstroSource(path) === undefined) await children.load(path);
       return path;
     },
     load: {
-      filter: { id: [ASTRO_VIRTUAL_ID, SHEET_ID] },
+      filter: { id: [ASTRO_VIRTUAL_ID, SHEET_ID, COMPOSABLE_ID] },
       async handler(id) {
         // The render puts the sheet before the markup itself (`importedSheets`): the module is
         // only an edge of the graph, whatever the sheet holds.
         if (SHEET_ID.test(id)) return "";
+        // A plain TypeScript module, which the server's own transform takes from here.
+        if (COMPOSABLE_ID.test(id)) {
+          if (!children) throw new Error(`ufAstroRender: no browser project serves ${id}.`);
+          const [file] = splitQuery(id);
+          const code = await children.composable(file);
+          served.set(file, code);
+          return code;
+        }
         const [path, query] = splitQuery(id);
         if (ASTRO_SUB_REQUEST.test(query)) return null;
         const source = compiledAstroSource(path);
