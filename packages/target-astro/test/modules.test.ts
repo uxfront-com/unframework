@@ -123,6 +123,97 @@ describe("astro composables", () => {
     });
     expect(outputs["Switch.astro"]).not.toContain("useToggle");
   });
+  it("declares and reads a module name `Astro` takes under one name of its own", async () => {
+    const outputs = await compileSources({
+      "tokens.ts": "export const Astro = 2;\n",
+      "useF.uf.ts": [
+        'import { computed } from "unframework";',
+        "",
+        'import { Astro } from "./tokens";',
+        "",
+        "const Self = 3;",
+        "",
+        "export function useF(n: () => number) {",
+        "  const size = computed(() => n() * Astro * Self);",
+        "  return { size };",
+        "}",
+        "",
+      ].join("\n"),
+    });
+    expect(outputs["useF.ts"]).toContain('import { Astro as Astro_1 } from "./tokens";');
+    expect(outputs["useF.ts"]).toContain("const size = n() * Astro_1 * Self;");
+  });
+
+  it("declares and reads a module constant named `Astro` under one name of its own", async () => {
+    const outputs = await compileSources({
+      "useG.uf.ts": [
+        'import { computed } from "unframework";',
+        "",
+        "const Astro = 2;",
+        "",
+        "export function useG(n: () => number) {",
+        "  const size = computed(() => n() * Astro);",
+        "  return { size };",
+        "}",
+        "",
+      ].join("\n"),
+    });
+    expect(outputs["useG.ts"]).toContain("const Astro_1 = 2;");
+    expect(outputs["useG.ts"]).toContain("const size = n() * Astro_1;");
+  });
+
+  it("declares the module's types a constant names, before it", async () => {
+    const outputs = await compileSources({
+      "useSize.uf.ts": [
+        'type Size = "sm" | "md";',
+        "",
+        "const SIZES: Record<Size, number> = { sm: 1, md: 2 };",
+        "",
+        "export function useSize() {",
+        "  const small = SIZES.sm;",
+        "  return { small };",
+        "}",
+        "",
+      ].join("\n"),
+    });
+    expect(outputs["useSize.ts"]).toContain(
+      [
+        'type Size = "sm" | "md";',
+        "",
+        "const SIZES: Record<Size, number> = { sm: 1, md: 2 };",
+      ].join("\n"),
+    );
+  });
+
+  it("drops a function that calls a callback, and one that is async", async () => {
+    const outputs = await compileSources({
+      "useCount.uf.ts": [
+        'import { ref } from "unframework";',
+        "",
+        "export function useCount(onChange: (n: number) => void) {",
+        "  const count = ref(0);",
+        "  function notify(n: number) {",
+        "    onChange(n);",
+        "  }",
+        "  async function load() {",
+        "    return 1;",
+        "  }",
+        "  return { count, notify, load };",
+        "}",
+        "",
+      ].join("\n"),
+    });
+    expect(outputs["useCount.ts"]).toBe(
+      [
+        "export function useCount() {",
+        "  const count = 0 as number;",
+        "",
+        "  return { count };",
+        "}",
+        "",
+      ].join("\n"),
+    );
+  });
 });
 
 describe("astro shared modules", () => {
@@ -183,5 +274,43 @@ describe("astro shared modules", () => {
     const code = frontmatter(outputs["Stepper.astro"]!);
     expect(code).toContain(["const STEP_1 = 1;", "const NEXT = { STEP: STEP_1 };"].join("\n"));
     expect(code).toContain("const STEP = 5 as number;");
+  });
+  it("imports a default export as a default import", async () => {
+    const outputs = await compileSources({
+      "format.ts": "export default function fmt(n: number): string {\n  return `${n}`;\n}\n",
+      "Price.uf.tsx": [
+        'import fmt from "./format";',
+        "",
+        "export default function Price() {",
+        "  return <p>{fmt(2)}</p>;",
+        "}",
+        "",
+      ].join("\n"),
+    });
+    expect(frontmatter(outputs["Price.astro"]!)).toContain('import fmt from "./format";');
+  });
+
+  it("renames a shadowed constant in a `typeof` another constant's value holds", async () => {
+    const outputs = await compileSources({
+      "Keys.uf.tsx": [
+        'import { ref } from "unframework";',
+        "",
+        "const LIMITS = { min: 0, max: 20 };",
+        "const KEYS = Object.keys(LIMITS) as (keyof typeof LIMITS)[];",
+        "",
+        "export default function Keys() {",
+        "  const LIMITS = ref(1);",
+        "  return (",
+        "    <p>",
+        "      {LIMITS.value} {KEYS.join()}",
+        "    </p>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+    });
+    expect(frontmatter(outputs["Keys.astro"]!)).toContain(
+      "const KEYS = Object.keys(LIMITS_1) as (keyof typeof LIMITS_1)[];",
+    );
   });
 });

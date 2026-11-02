@@ -43,10 +43,12 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
   const spelling = spellingOf(owner, module);
   // The module's names are its own at its top level, beside the function's.
   const imports = new ImportSet(new NameScope());
+  // The setup spells the module's names as `spelling` does (a name `Astro` is renamed), so
+  // their declarations take the same names.
   const reads = moduleReads(owner, module, live, {
     imports,
     scope: new NameScope(),
-    local: (id) => bindingOf(owner, id).name,
+    local: (id) => spelling.name(id),
   });
   addTypeImports(view, module, imports, (name) => `${name}.astro`, { live: SERVER });
   const setup = setupCode(owner, live, spelling, () => "unknown");

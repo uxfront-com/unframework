@@ -77,10 +77,9 @@ export function childTags(
  * `.ts` modules and the composables its kept setup calls, the type declarations it reaches,
  * `Props`, the module's constants it reaches (`./modules.ts`), the props the server render reads,
  * then the setup it keeps (helpers first, then its values in source order), then the constants
- * `<component is>` renders. `Props` is an
- * alias of the props type (`type Props = CardProps;`), or an interface with the members of an
- * inline object type, which reads as Astro's own examples do; a props type already named `Props`
- * is copied as it is. The props type is extended with what a consumer passes beside the source's
+ * `<component is>` renders. `Props` is an alias of the props type (`type Props = CardProps;`), or
+ * an interface with the members of an inline object type, which reads as Astro's own examples
+ * do; a props type already named `Props` is copied as it is. The props type is extended with what a consumer passes beside the source's
  * props: each model, each scoped slot's render prop, and the `class` and `style` that fall
  * through (ADR-0054). Only the props something printed reads are destructured: the markup (but
  * a list's key, which Astro does not print), and the setup's kept values. The whole statement is

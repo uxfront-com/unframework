@@ -152,7 +152,8 @@ per component (ADR-0034, ADR-0046):
   only dropped code reads is still taken, as `_delay`, so every caller passes the same arguments.
   A caller imports it from that module, `import { useToggle } from "./useToggle";`, and
   destructures the members its server render reads, under the names it reads them by, passing
-  its value arguments as written and its getters as arrows:
+  its value arguments as its setup reads them (a ref's `.value` as the constant) and its getters
+  as arrows:
   `const { on: pressed } = useToggle(true, () => price);`. A call whose members only client code
   reads is left out, with its import.
 
