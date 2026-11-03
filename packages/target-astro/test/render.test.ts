@@ -142,6 +142,7 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
           return Promise.resolve();
         },
         sheet: () => Promise.reject(new Error("no sheet")),
+        composable: () => Promise.reject(new Error("no composables")),
       };
       const result = await renderAstroComponent(root, { id: idOf("Form"), props: {} }, children);
       expect(result).toEqual({
@@ -161,6 +162,7 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
         resolve: () => Promise.resolve(idOf("Field")),
         load: () => Promise.reject(new Error("already compiled")),
         sheet: () => Promise.reject(new Error("no sheet")),
+        composable: () => Promise.reject(new Error("no composables")),
       };
       const { html } = await renderAstroComponent(root, { id: idOf("Form"), props: {} }, children);
       expect(html).toBe('<form aria-label="Again"><p class="changed">Name</p></form>');
@@ -196,6 +198,7 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
           return Promise.resolve();
         },
         sheet: (id: string) => Promise.resolve(sheets.get(id)!),
+        composable: () => Promise.reject(new Error("no composables")),
       };
       const render = () => renderAstroComponent(root, { id: idOf("Card"), props: {} }, children);
       expect((await render()).html).toBe(
@@ -205,6 +208,35 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
       expect((await render()).html).toBe(
         '<style>.badge[data-uf-2] { color: red }</style><style>.card[data-uf-1] { padding: 4px }</style><section class="card"><b class="badge">New</b></section>',
       );
+    });
+
+    // ADR-0069: a module of composables is a plain TypeScript module, which the browser
+    // project compiles from its `.uf.ts` file, and the render serves as it does, on each render.
+    it("renders a component that calls a composable the browser project compiles", async () => {
+      const composableId = join(root, "useToggle.uf.ts");
+      let composable =
+        "export function useToggle(initial: boolean) {\n  const on = initial;\n  return { on };\n}\n";
+      compileInBrowserProject(
+        "Disclosure",
+        '---\nimport { useToggle } from "./useToggle";\n\nconst { on } = useToggle(false);\n---\n\n<p>{on ? "open" : "closed"}</p>\n',
+      );
+      const asked: string[] = [];
+      const children = {
+        resolve: (specifier: string) =>
+          Promise.resolve(specifier === "./useToggle" ? composableId : undefined),
+        load: () => Promise.reject(new Error("no child")),
+        sheet: () => Promise.reject(new Error("no sheet")),
+        composable: (id: string) => {
+          asked.push(id);
+          return Promise.resolve(composable);
+        },
+      };
+      const render = () =>
+        renderAstroComponent(root, { id: idOf("Disclosure"), props: {} }, children);
+      expect(await render()).toEqual({ html: "<p>closed</p>", console: [] });
+      expect(asked).toEqual([composableId]);
+      composable = composable.replace("const on = initial;", "const on = !initial;");
+      expect((await render()).html).toBe("<p>open</p>");
     });
 
     // A real Vite client environment, as Vitest's browser project has: a stubbed plugin
