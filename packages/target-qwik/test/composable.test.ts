@@ -368,6 +368,74 @@ export function useProbe(options: {
     expect(outputs).toEqual([]);
   });
 
+  it(
+    "reads a primitive's methods and a function's `name` as free, and an array's callback by what it returns",
+    { timeout: 60_000 },
+    async () => {
+      const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+
+export function useProbe(options: {
+  name: string;
+  count: number;
+  tags: string[];
+  format: (value: number) => string;
+  formats: ((value: number) => string)[];
+}) {
+  const total = ref(0);
+  const upper = options.name.toUpperCase();
+  const fixed = options.count.toFixed(2);
+  const words = options.name.split(" ");
+  const trimmed = options.format(1).trim();
+  const called = options.format.name;
+  const joined = options.tags.join(",");
+  const least = Math.min(options.count, 1);
+  const shown = options.formats.map((format) => format(options.count));
+  function sum() {
+    total.value =
+      upper.length + fixed.length + words.length + trimmed.length + called.length + joined.length + least + shown.length;
+  }
+  return { total, sum };
+}
+`);
+      expect(errors).toEqual([]);
+      await expectToolchainClean("written-methods", outputs);
+    },
+  );
+
+  it("reads a value the written types give no type by what it reads", async () => {
+    const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+
+export function useProbe(options: {
+  format: (value: number) => string;
+  items: number[];
+  formats: Array<(value: number) => string>;
+}) {
+  const total = ref(0);
+  const merged = Object.assign({}, options);
+  const mapped = options.items.map(() => options.format);
+  const copied = Array.from(options.formats);
+  const values = Object.values(options);
+  const spread = [...options.formats.values()];
+  const kept = options.formats.map((format) => format);
+  const cloned = structuredClone(options);
+  function count() {
+    total.value = String(merged).length + mapped.length + copied.length + values.length + spread.length + kept.length + String(cloned).length;
+  }
+  return { total, count };
+}
+`);
+    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
+      { code: "UF1002", text: "merged" },
+      { code: "UF1002", text: "mapped" },
+      { code: "UF1002", text: "copied" },
+      { code: "UF1002", text: "values" },
+      { code: "UF1002", text: "spread" },
+      { code: "UF1002", text: "kept" },
+      { code: "UF1002", text: "cloned" },
+    ]);
+    expect(outputs).toEqual([]);
+  });
+
   it("reports a `let` whose initial value holds a function, since it is a signal", async () => {
     const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
 

@@ -183,7 +183,9 @@ export function composableProblems(composable: UfComposable, plan: SetupPlan): C
     );
     if (!reads) continue;
     const judged = written.ofCode(value);
-    written.known.set(item.binding, judged);
+    // A `ref` is read through `.value`, its signal's, which the reads below don't follow: what
+    // its initial value holds is judged here once.
+    written.known.set(item.binding, item.kind === "State" ? FREE : judged);
     if (!written.holds(judged)) continue;
     if (item.kind === "Const") {
       holding.add(item.binding);
@@ -486,16 +488,49 @@ const ARRAY_ELEMENTS = new Set(["at", "find", "findLast", "pop", "shift"]);
 /** Array methods that give what their callback returns, which may be an element. */
 const ARRAY_RESULTS = new Set(["flatMap", "map", "reduce", "reduceRight"]);
 
+/** Array methods that give no function, whatever the array holds. */
+const ARRAY_SCALARS = new Set([
+  "every",
+  "findIndex",
+  "findLastIndex",
+  "forEach",
+  "includes",
+  "indexOf",
+  "join",
+  "keys",
+  "lastIndexOf",
+  "push",
+  "some",
+  "toLocaleString",
+  "toString",
+  "unshift",
+]);
+
+/** Expressions whose value is never a function: literals, templates and operators. */
+const SCALAR_EXPRESSIONS = new Set([
+  "BinaryExpression",
+  "Literal",
+  "MetaProperty",
+  "TemplateLiteral",
+  "ThisExpression",
+  "UnaryExpression",
+  "UpdateExpression",
+]);
+
 /**
  * Reads the type of a setup value from the types its code names, as written (ADR-0067's
  * syntactic reading, without an oracle): an argument's annotation, a member's declared type, a
  * call's declared return type, an assertion's type, an array's elements, and the module's own
  * declarations with the interfaces they extend. `known` holds what each binding read so far
- * holds; a binding it doesn't hold is free.
+ * holds; a binding it doesn't hold is free. Where the written types give a value no type (a
+ * global's call, `Object.assign({}, options)`, a primitive's method), it holds a function exactly
+ * when what it reads holds one: a primitive holds none, so its methods give none.
  */
 class WrittenTypes {
   readonly known: Map<string, WrittenType> = new Map();
   readonly #module: UfModule;
+  /** What the parameters of the callback being read hold, by name (`items.map((item) => …)`). */
+  readonly #locals = new Map<string, WrittenType>();
 
   constructor(module: UfModule) {
     this.#module = module;
@@ -521,7 +556,8 @@ class WrittenTypes {
     switch (node.type) {
       case "Identifier": {
         const id = ids.get(node.start);
-        return (id && this.known.get(id)) || FREE;
+        if (id) return this.known.get(id) ?? FREE;
+        return this.#locals.get(node.name as string) ?? FREE;
       }
       case "ParenthesizedExpression":
       case "ChainExpression":
@@ -560,9 +596,21 @@ class WrittenTypes {
         );
       case "ArrowFunctionExpression":
       case "FunctionExpression":
+      case "ClassExpression":
         return { free: false };
+      case "AwaitExpression": {
+        const awaited = of(node.argument as Node);
+        const type = awaited.type && this.#resolve(awaited.type);
+        const name = type?.type === "TSTypeReference" ? (type.typeName as Node).name : undefined;
+        const [value] = ((type?.typeArguments as Node | null)?.params as Node[] | undefined) ?? [];
+        return (name === "Promise" || name === "PromiseLike") && value
+          ? { type: value, free: false }
+          : { free: !this.holds(awaited) };
+      }
       default:
-        return FREE;
+        if (SCALAR_EXPRESSIONS.has(node.type)) return FREE;
+        // Any other expression (`new Map([…])`, a tagged template) by what it reads.
+        return this.#join(childExpressions(node).map(of), false);
     }
   }
 
@@ -577,6 +625,8 @@ class WrittenTypes {
       return key === undefined ? { type: element, free: false } : { free: false };
     }
     if (isKeyword(type)) return key === "length" ? FREE : { free: false };
+    // A function's `name` and `length`; any other member is a method of it, a function.
+    if (isFunctionType(type)) return key === "name" || key === "length" ? FREE : { free: false };
     const member = key === undefined ? undefined : this.#memberType(type, key);
     if (member) return { type: member, free: false };
     return this.holds(object) ? { free: false } : FREE;
@@ -584,6 +634,15 @@ class WrittenTypes {
 
   #call(node: Node, ids: ReadonlyMap<number, string>): WrittenType {
     const callee = unwrapped(node.callee as Node);
+    const args = (node.arguments as Node[]).map((each) =>
+      each.type === "SpreadElement" ? (each.argument as Node) : each,
+    );
+    // What the call reads: where no written type gives its result, it holds what that holds.
+    const reads = (receiver?: WrittenType) =>
+      this.#join(
+        [...(receiver ? [receiver] : []), ...args.map((each) => this.#of(each, ids))],
+        false,
+      );
     if (callee.type === "MemberExpression" && !callee.computed) {
       const receiver = this.#of(callee.object as Node, ids);
       const name = memberKey(callee)!;
@@ -591,19 +650,75 @@ class WrittenTypes {
       if (type && isFunctionType(type)) {
         if (name === "bind") return receiver;
         if (name === "call" || name === "apply") return returned(type);
+        if (name === "toString") return FREE;
       }
       const element = type && elementType(type);
       if (element !== undefined) {
         if (ARRAY_COPIES.has(name)) return receiver;
         if (ARRAY_ELEMENTS.has(name)) return { type: element, free: false };
-        if (ARRAY_RESULTS.has(name)) return this.holds(receiver) ? { free: false } : FREE;
-        return FREE;
+        if (ARRAY_SCALARS.has(name)) return FREE;
+        if (ARRAY_RESULTS.has(name)) return this.#callbackResult(name, element, args, ids);
+        return reads(receiver);
       }
+      const called = this.#member(receiver, name);
+      if (called.type) {
+        const resolved = this.#resolve(called.type);
+        return isFunctionType(resolved) ? returned(resolved) : FREE;
+      }
+      return reads(receiver);
     }
     const called = this.#of(callee, ids);
-    if (!called.type) return { free: called.free };
+    if (!called.type) return reads();
     const type = this.#resolve(called.type);
     return isFunctionType(type) ? returned(type) : FREE;
+  }
+
+  /**
+   * What `map`, `flatMap`, `reduce` or `reduceRight` gives: what its callback returns, with its
+   * parameters holding the array's elements (and a reduction's accumulator, its initial value or
+   * an element), and a reduction's initial value. A callback not written in place gives what it
+   * holds.
+   */
+  #callbackResult(
+    name: string,
+    element: Node,
+    args: readonly Node[],
+    ids: ReadonlyMap<number, string>,
+  ): WrittenType {
+    const [callback, initial] = args;
+    if (!callback) return FREE;
+    const reduces = name === "reduce" || name === "reduceRight";
+    const start = initial ? this.#of(initial, ids) : { type: element, free: false };
+    if (callback.type !== "ArrowFunctionExpression" && callback.type !== "FunctionExpression") {
+      const passed = this.#of(callback, ids);
+      const type = passed.type && this.#resolve(passed.type);
+      const result = type && isFunctionType(type) ? returned(type) : { free: !this.holds(passed) };
+      return this.#join(reduces ? [start, result] : [result], false);
+    }
+    const parameters = (callback.params as Node[]).map((each) =>
+      each.type === "Identifier" ? (each.name as string) : undefined,
+    );
+    const bound: [string | undefined, WrittenType][] = reduces
+      ? [
+          [parameters[0], start],
+          [parameters[1], { type: element, free: false }],
+        ]
+      : [[parameters[0], { type: element, free: false }]];
+    const saved = new Map<string, WrittenType | undefined>();
+    for (const [local, value] of bound) {
+      if (local === undefined) continue;
+      saved.set(local, this.#locals.get(local));
+      this.#locals.set(local, value);
+    }
+    try {
+      const results = returnedExpressions(callback).map((each) => this.#of(each, ids));
+      return this.#join(reduces ? [start, ...results] : results, false);
+    } finally {
+      for (const [local, value] of saved) {
+        if (value === undefined) this.#locals.delete(local);
+        else this.#locals.set(local, value);
+      }
+    }
   }
 
   /** Several values, any of which a value may be: a type where each has one. */
@@ -683,6 +798,40 @@ class WrittenTypes {
         return undefined;
     }
   }
+}
+
+/** The expressions a function written in place returns: its expression body, or its `return`s. */
+function returnedExpressions(fn: Node): Node[] {
+  const body = fn.body as Node;
+  if (body.type !== "BlockStatement") return [body];
+  const found: Node[] = [];
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    if (!isNode(node) || isFunction(node)) return;
+    if (node.type === "ReturnStatement" && node.argument) found.push(node.argument as Node);
+    for (const [key, value] of Object.entries(node)) {
+      if (key !== "type" && key !== "parent" && typeof value === "object") visit(value);
+    }
+  };
+  visit(body.body);
+  return found;
+}
+
+/** The expressions directly in an expression: its operands, its callee, its arguments. */
+function childExpressions(node: Node): Node[] {
+  const found: Node[] = [];
+  for (const [key, value] of Object.entries(node)) {
+    if (key === "type" || key === "parent" || key === "typeArguments") continue;
+    for (const each of Array.isArray(value) ? value : [value]) {
+      if (!isNode(each)) continue;
+      if (each.type === "SpreadElement") found.push(each.argument as Node);
+      else if (!each.type.startsWith("TS")) found.push(each);
+    }
+  }
+  return found;
 }
 
 /** A member expression's key: its name, a literal's value, or `undefined` for any other index. */

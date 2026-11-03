@@ -234,10 +234,13 @@ What those forms cannot keep is UF1002, at the read, and the hook is not emitted
 
 Types are read as written: an argument's annotation, a member's declared type, a call's declared
 return type, an assertion's type, an array's elements (and its copies, `slice()`, and elements,
-`at(0)`), a function's `bind`, and the module's own declarations with the interfaces they extend.
-So `const step = options.step` with `step: number` holds no function, and
-`const format = options.make()` with `make: () => (value: number) => string` holds one. An
-imported type or a class is not seen.
+`at(0)`), what an array's `map` or `reduce` callback returns, a function's `bind`, and the
+module's own declarations with the interfaces they extend. So `const step = options.step` with
+`step: number` holds no function, and `const format = options.make()` with
+`make: () => (value: number) => string` holds one. Where the written types give a value no type
+(a global's call, `Object.assign({}, options)`, a primitive's method), it holds a function exactly
+when what it reads holds one, so `options.name.toUpperCase()` holds none. An imported type or a
+class is not seen.
 
 A test of an optional getter or callback, whether the caller passed it, reads the signal or the
 QRL itself: `limit ? Math.min(price.value, limit.value) : price.value`, and
