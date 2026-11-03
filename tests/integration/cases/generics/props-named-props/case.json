@@ -1,0 +1,7 @@
+{
+  "description": "A generic component whose own props interface is named `Props`, mounted with numbers and with strings.",
+  "ssr": {
+    "numbers": { "props": { "heading": "Numbers", "options": [1, 2, 3], "selected": 2 } },
+    "words": { "props": { "heading": "Words", "options": ["a", "b"] } }
+  }
+}

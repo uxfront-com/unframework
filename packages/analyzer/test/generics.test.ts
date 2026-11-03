@@ -59,6 +59,38 @@ describe("generic components", () => {
     ]);
   });
 
+  // A generic `Props` is the component's own props type, as a plain one is: the outputs keep it,
+  // and its props read as another name's do.
+  it.each([
+    [
+      "interface Props<T> { items: T[]; label: string }\nexport function List<T>({ items, label }: Props<T>) { return <p aria-label={label}>{items.length}</p>; }",
+      [
+        ["items", "T[]", undefined],
+        ["label", "string", undefined],
+      ],
+    ],
+    [
+      "interface Props<T> { items: T[] }\nexport function A(props: Props<string>) { return <p>{props.items.length}</p>; }",
+      [["items", "T[]", "Props"]],
+    ],
+  ])("lowers a generic props type named `Props` in %j", (source, props) => {
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    const component = only(module);
+    expect(component.types).toEqual(["Props"]);
+    expect(
+      component.props.map((prop) => [prop.name, prop.type.code, prop.declaredBy?.declaration]),
+    ).toEqual(props);
+  });
+
+  it("reports a generic `Props` that another component's props reach (UF2003)", () => {
+    const source =
+      "interface Props<T> { items: T[] }\nexport function A<T>(props: Props<T>) { return <p />; }\nexport function B({ inner }: { inner: Props<string> }) { return <p>{inner.items.length}</p>; }";
+    const { module, diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF2003 Props"]);
+    expect(module).toBeUndefined();
+  });
+
   // Another instantiation's members are written for the declaration's parameters, not the
   // component's: they are another declaration's (ADR-0067).
   it.each([

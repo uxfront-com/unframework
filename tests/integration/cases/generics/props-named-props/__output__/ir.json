@@ -1,0 +1,368 @@
+{
+  "irVersion": 1,
+  "file": "generics/props-named-props/Options.uf.tsx",
+  "components": [
+    {
+      "name": "Options",
+      "span": {
+        "start": 372,
+        "end": 734
+      },
+      "typeParameters": [
+        {
+          "name": "T",
+          "span": {
+            "start": 404,
+            "end": 405
+          }
+        }
+      ],
+      "props": [
+        {
+          "name": "heading",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 329,
+              "end": 335
+            }
+          },
+          "binding": "heading@409",
+          "span": {
+            "start": 320,
+            "end": 336
+          }
+        },
+        {
+          "name": "options",
+          "optional": false,
+          "type": {
+            "code": "T[]",
+            "span": {
+              "start": 348,
+              "end": 351
+            }
+          },
+          "binding": "options@418",
+          "span": {
+            "start": 339,
+            "end": 352
+          }
+        },
+        {
+          "name": "selected",
+          "optional": true,
+          "type": {
+            "code": "T",
+            "span": {
+              "start": 366,
+              "end": 367
+            }
+          },
+          "binding": "selected@427",
+          "span": {
+            "start": 355,
+            "end": 368
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "Props<T>",
+          "span": {
+            "start": 439,
+            "end": 447
+          }
+        },
+        "span": {
+          "start": 407,
+          "end": 447
+        }
+      },
+      "types": [
+        "Props"
+      ],
+      "bindings": [
+        {
+          "id": "heading@409",
+          "name": "heading",
+          "kind": "prop",
+          "span": {
+            "start": 409,
+            "end": 416
+          }
+        },
+        {
+          "id": "options@418",
+          "name": "options",
+          "kind": "prop",
+          "span": {
+            "start": 418,
+            "end": 425
+          }
+        },
+        {
+          "id": "selected@427",
+          "name": "selected",
+          "kind": "prop",
+          "span": {
+            "start": 427,
+            "end": 435
+          }
+        },
+        {
+          "id": "option@548",
+          "name": "option",
+          "kind": "loopVar",
+          "span": {
+            "start": 548,
+            "end": 554
+          }
+        },
+        {
+          "id": "index@556",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 556,
+            "end": 561
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "heading",
+                  "span": {
+                    "start": 480,
+                    "end": 487
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "heading@409",
+                      "span": {
+                        "start": 480,
+                        "end": 487
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 479,
+                  "end": 488
+                }
+              }
+            ],
+            "span": {
+              "start": 475,
+              "end": 493
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "aria-label",
+                "value": {
+                  "code": "heading",
+                  "span": {
+                    "start": 516,
+                    "end": 523
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "heading@409",
+                      "span": {
+                        "start": 516,
+                        "end": 523
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 504,
+                  "end": 524
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "options",
+                  "span": {
+                    "start": 535,
+                    "end": 542
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "options@418",
+                      "span": {
+                        "start": 535,
+                        "end": 542
+                      }
+                    }
+                  ]
+                },
+                "item": "option@548",
+                "index": "index@556",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 587,
+                    "end": 592
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@556",
+                      "span": {
+                        "start": 587,
+                        "end": 592
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [
+                    {
+                      "kind": "Bound",
+                      "name": "aria-current",
+                      "value": {
+                        "code": "option === selected ? \"true\" : undefined",
+                        "span": {
+                          "start": 608,
+                          "end": 648
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "option@548",
+                            "span": {
+                              "start": 608,
+                              "end": 614
+                            }
+                          },
+                          {
+                            "kind": "Binding",
+                            "binding": "selected@427",
+                            "span": {
+                              "start": 619,
+                              "end": 627
+                            }
+                          },
+                          {
+                            "kind": "Global",
+                            "name": "undefined",
+                            "span": {
+                              "start": 639,
+                              "end": 648
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 594,
+                        "end": 649
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "String(option)",
+                        "span": {
+                          "start": 664,
+                          "end": 678
+                        },
+                        "refs": [
+                          {
+                            "kind": "Global",
+                            "name": "String",
+                            "span": {
+                              "start": 664,
+                              "end": 670
+                            }
+                          },
+                          {
+                            "kind": "Binding",
+                            "binding": "option@548",
+                            "span": {
+                              "start": 671,
+                              "end": 677
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 663,
+                        "end": 679
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 578,
+                    "end": 695
+                  }
+                },
+                "span": {
+                  "start": 535,
+                  "end": 706
+                }
+              }
+            ],
+            "span": {
+              "start": 500,
+              "end": 719
+            }
+          }
+        ],
+        "span": {
+          "start": 466,
+          "end": 727
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Options",
+      "span": {
+        "start": 372,
+        "end": 734
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Props",
+      "exported": false,
+      "code": "interface Props<T> {\n  heading: string;\n  options: T[];\n  selected?: T;\n}",
+      "span": {
+        "start": 297,
+        "end": 370
+      }
+    }
+  ]
+}

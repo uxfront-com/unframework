@@ -757,6 +757,31 @@ const typed: Record<string, { source: string[]; types: string }> = {
       "}",
     ],
   },
+  // A local generic `Props` as the whole annotation, with no member beside it, and with the
+  // fallthrough's beside it.
+  localGenericProps: {
+    types: "",
+    source: [
+      'import { defineOptions } from "unframework";',
+      "",
+      "interface Props<T> { items: T[] }",
+      "",
+      "export default function Card<T>({ items }: Props<T>) {",
+      "  defineOptions({ inheritAttrs: false });",
+      "  return <ul>{items.map((item, index) => <li key={index}>{String(item)}</li>)}</ul>;",
+      "}",
+    ],
+  },
+  localGenericPropsFallthrough: {
+    types: "",
+    source: [
+      "interface Props<T> { items: T[] }",
+      "",
+      "export default function Card<T>({ items }: Props<T>) {",
+      "  return <ul>{items.map((item, index) => <li key={index}>{String(item)}</li>)}</ul>;",
+      "}",
+    ],
+  },
   // An imported `Props` in a file that never names `Astro`.
   importedPropsUnread: {
     types: "export interface Props { title?: string }\n",
@@ -1075,6 +1100,17 @@ describe("imported types through the type oracle (ADR-0067)", () => {
       ),
     );
     expect(await emittedTyped("importedPropsUnread")).toContain("export type Props = OwnProps;");
+  });
+
+  // Astro declares its own `Props`, so the source's is `OwnProps`, as an imported one is.
+  it("renames a local generic `Props` as `OwnProps`, with or without members beside it", async () => {
+    const alias = await emittedTyped("localGenericProps");
+    expect(alias).toContain("interface OwnProps<T> { items: T[] }");
+    expect(alias).toContain("type Props<T> = OwnProps<T>;");
+    expect(alias).not.toContain("= Props<T>");
+    const extended = await emittedTyped("localGenericPropsFallthrough");
+    expect(extended).toContain("interface OwnProps<T> { items: T[] }");
+    expect(extended).toContain("interface Props<T> extends OwnProps<T> {");
   });
 
   it("keeps a `Props` that a scope declares, and renames an injection key's", async () => {

@@ -20,13 +20,15 @@ per component (ADR-0034, ADR-0046):
   - `Props`, which Astro types `Astro.props` and the component's callers by:
     `type Props = BadgeProps;` for a named props type, `interface Props { … }` holding an inline
     object type's members, `type Props = Base & { n: number } & { … }` for a type an interface
-    cannot extend, nothing more when the props type is named `Props` already. A source that
-    exports its `Props` gets Astro's exported too. A generic component's `Props` declares the
-    type parameters its members name, and those their bounds name, as the source writes them,
-    `interface Props<T> extends ListProps<T>`, and Astro infers `T` from a consumer's props
-    (ADR-0068). One no member names is left out: nothing could infer it. Astro declares them on
-    the component's render function alone, so a parameter the kept setup names is declared at
-    the top of the frontmatter as its constraint, `type T = Item;`, or `unknown`;
+    cannot extend, nothing more when the props type is named `Props` already. A generic
+    `Props` is renamed `OwnProps` and aliased, `type Props<T> = OwnProps<T>;`, since `Props`
+    cannot alias itself. A source that exports its `Props` gets Astro's exported too. A generic
+    component's `Props` declares the type parameters its members name, and those their bounds
+    name, as the source writes them, `interface Props<T> extends ListProps<T>`, and Astro infers
+    `T` from a consumer's props (ADR-0068). One no member names is left out: nothing could infer
+    it. Astro declares them on the component's render function alone, so a parameter the kept
+    setup names is declared at the top of the frontmatter as its constraint, `type T = Item;`,
+    or `unknown`;
   - the props the server render reads (the markup and the kept setup), destructured in the
     source's order with their defaults: `const { label, tone = "info" } = Astro.props;`. Astro
     prints no list keys, so a prop only a key reads is left out, and so is a prop only client code

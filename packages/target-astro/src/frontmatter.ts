@@ -79,7 +79,9 @@ export function childTags(
  * then the setup it keeps (helpers first, then its values in source order), then the constants
  * `<component is>` renders. `Props` is an alias of the props type (`type Props = CardProps;`), or
  * an interface with the members of an inline object type, which reads as Astro's own examples
- * do; a props type already named `Props` is copied as it is. The props type is extended with what a consumer passes beside the source's
+ * do; a props type already named `Props` is copied as it is, and renamed `OwnProps` where it
+ * takes type arguments (`type Props<T> = OwnProps<T>;`) or members beside it. The props type is
+ * extended with what a consumer passes beside the source's
  * props: each model, each scoped slot's render prop, and the `class` and `style` that fall
  * through (ADR-0054). Only the props something printed reads are destructured: the markup (but
  * a list's key, which Astro does not print), and the setup's kept values. The whole statement is
@@ -132,9 +134,12 @@ export function frontmatterOf(
     (a, b) => a.span.start - b.span.start,
   );
   const sourceProps = types.find(({ name }) => name === "Props");
+  // The source's `Props` is renamed where Astro's must say more than it: members beside it, or
+  // its type arguments (`type Props<T> = OwnProps<T>;`), which `Props` cannot alias itself with.
   const ownProps =
     imported.includes("Props") ||
-    (sourceProps && propsExtras(component, render, (type) => type).length)
+    (sourceProps &&
+      (parameter?.type.code !== "Props" || propsExtras(component, render, (type) => type).length))
       ? spelling.scope.claim("OwnProps")
       : undefined;
   // The source's `Props` under the name it takes beside Astro's (`interface Props extends
