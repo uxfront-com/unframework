@@ -64,7 +64,7 @@ import type {
   WatchSource,
 } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
-import { visitorKeys } from "@unframework/parser";
+import { parseModule, visitorKeys } from "@unframework/parser";
 
 import { inheritAttrsOption, withReferences } from "./api.ts";
 import type { AuthoringApi } from "./authoring.ts";
@@ -87,7 +87,7 @@ import type {
 import { setupBindingOf } from "./render.ts";
 import type { Scopes } from "./scope.ts";
 import type { Shapes } from "./shapes.ts";
-import type { TypeTable } from "./types/from-type.ts";
+import { TypeTable } from "./types/from-type.ts";
 import {
   FUNCTION,
   has,
@@ -617,7 +617,7 @@ export function declareSetup(context: SetupContext): Setup {
       const binding = declare(
         property.value as AST.BindingIdentifier,
         USED_KINDS[found.kind],
-        found.kind === "function" ? FUNCTION : UNKNOWN,
+        found.kind === "function" ? FUNCTION : memberKinds(found.type),
       );
       binding.member = found;
       members.push({ member, binding, span: span(property) });
@@ -2860,4 +2860,17 @@ export function checkDirective(statement: AST.Directive, reporter: Reporter): vo
 /** The `never` default of an exhaustive switch: a kind added to a union fails type checking. */
 function unreachable(value: never): never {
   throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
+}
+
+/**
+ * The kinds of a composable's member, from the type its API writes (ADR-0069), so a caller's read
+ * of a nullable ref is narrowed as its own is (ADR-0046). The type's names belong to the
+ * composable's module, which the caller does not declare: each reads as `unknown`.
+ */
+function memberKinds(type: string | undefined): Kinds {
+  if (type === undefined) return UNKNOWN;
+  const parsed = parseModule("type.ts", `type T = ${type};`);
+  const [statement] = parsed.program.body;
+  if (parsed.errors.length || statement?.type !== "TSTypeAliasDeclaration") return UNKNOWN;
+  return new TypeTable([]).kindsOf(statement.typeAnnotation);
 }

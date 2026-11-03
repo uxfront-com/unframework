@@ -153,6 +153,24 @@ describe("a composable", () => {
     expect(moduleApi!.composables![0]!.hasEffects).toBe(true);
   });
 
+  it("writes the type a ref's or a derived value's value infers, where the source writes none", () => {
+    const { api, diagnostics } = composables([
+      'import { computed, ref } from "unframework";',
+      "export function useUser() {",
+      "  const count = ref(0);",
+      "  const user = ref<{ name: string } | null>(null);",
+      "  const current = computed(() => user.value);",
+      "  return { count, user, current };",
+      "}",
+    ]);
+    expect(diagnostics).toEqual([]);
+    expect(api!.composables![0]!.members).toEqual([
+      { name: "count", kind: "state", type: "number" },
+      { name: "user", kind: "state", type: "{ name: string } | null" },
+      { name: "current", kind: "derived", type: "{ name: string } | null" },
+    ]);
+  });
+
   it("marks a function that calls a callback as client code", () => {
     const { api, diagnostics } = composables([
       "export function useA(onPick: (value: number) => void) {",

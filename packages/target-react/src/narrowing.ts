@@ -35,6 +35,11 @@ export function assertedPaths(
       return plan.derived.get(binding.id)?.current
         ? reference.narrowed.filter(({ scope }) => scope !== "template")
         : [];
+    // A composable's ref or derived value, which client code reads through the hook's live
+    // reader (ADR-0069).
+    case "usedState":
+    case "usedDerived":
+      return reference.narrowed.filter(({ scope }) => scope !== "template");
     // A composable's getter or callback argument is mirrored as a prop is (ADR-0069).
     case "prop":
     case "argument":
@@ -53,11 +58,8 @@ export function assertedPaths(
     case "slotScope":
     case "context":
     case "component":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
-    case "usedState":
-    case "usedDerived":
     case "usedFn":
     case "usedConst":
       return [];

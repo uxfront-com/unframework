@@ -30,6 +30,8 @@ import type {
   BindingId,
   BindingKind,
   Code,
+  ComposableApi,
+  ComposableMemberApi,
   ElementNode,
   EventAttribute,
   FunctionCode,
@@ -43,6 +45,7 @@ import type {
   UfComponent,
   UfComposable,
   UfModule,
+  UseItem,
 } from "@unframework/ir";
 
 import { planComposition } from "./composition.ts";
@@ -71,6 +74,24 @@ export interface DerivedPlan {
   memo: boolean;
   /** `currentTotal()`: the getter over the mirrors, which client code calls. */
   current?: string;
+}
+
+/**
+ * A member a composable's call destructures (ADR-0069): `on`, or `matches: wide`, and for a ref of
+ * state or a derived value the hook's live reader, `currentMatches: currentWide`, which client code
+ * calls. Each is destructured only where the output reads it, which `read` records as it prints.
+ */
+export interface UsedPlan {
+  /** The call. */
+  item: UseItem;
+  /** The member's name in the composable's API. */
+  member: string;
+  /** The local the source destructures it to. */
+  local: string;
+  /** The live reader: its member name, by the API's rule (`liveReaderNames`), and its local. */
+  reader?: { member: string; local: string };
+  /** Whether the output reads the member's render value, and whether it calls its live reader. */
+  read: { render: boolean; client: boolean };
 }
 
 /** An event the component declares (ADR-0012): the prop a consumer passes as its listener. */
@@ -137,6 +158,8 @@ export interface ReactPlan {
    * arguments: their mirror refs.
    */
   readonly propMirrors: ReadonlyMap<BindingId, string>;
+  /** What each composable's call destructures, by the member's `used*` binding (ADR-0069). */
+  readonly used: ReadonlyMap<BindingId, UsedPlan>;
   /** The events, by name, in declaration order. */
   readonly events: ReadonlyMap<string, EventPlan>;
   /** The generated interface of the events' props, `CounterEvents`. */
@@ -245,6 +268,14 @@ export function planComponent(
     if (listener.handler.kind === "Function") {
       const fn = functionItems.get(listener.handler.binding);
       if (fn) clientFunctions.add(fn);
+    }
+  }
+  // A composable's callback argument runs in the caller's client code, as a handler does: the
+  // hook calls the one its caller's last render passed (ADR-0069).
+  for (const item of component.setup) {
+    if (item.kind !== "Use") continue;
+    for (const argument of item.arguments) {
+      if (argument.kind === "Callback") clientFunctions.add(argument.callback);
     }
   }
   for (const [id, summary] of summaries) {
@@ -371,7 +402,8 @@ export function planComponent(
               case "slotScope":
               case "context":
               case "component":
-              // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+              // A module's values never change, and a composable's result is read through its
+              // hook's live readers and stable functions (ADR-0069, ADR-0070).
               case "moduleConst":
               case "import":
               case "usedState":
@@ -461,7 +493,7 @@ export function planComponent(
 
   // Hoisting (ADR-0045): a value or a function that captures nothing of the component goes to
   // module scope (`unicorn/consistent-function-scoping` rejects such a function inside it).
-  const hoisted = hoistable(component, kindOf);
+  const hoisted = hoistable(component, kindOf, moduleNames(module));
 
   // Names, in a fixed order: the events' interface, then each item's, then the props' mirrors.
   const parameter = component.propsParameter;
@@ -492,8 +524,26 @@ export function planComponent(
 
   const state = new Map<BindingId, StatePlan>();
   const derived = new Map<BindingId, DerivedPlan>();
+  const used = new Map<BindingId, UsedPlan>();
   for (const item of component.setup) {
-    if (item.kind === "State") {
+    if (item.kind === "Use") {
+      // The live reader of each ref or derived value the call destructures, under the member
+      // name every caller derives from the API, and a local of its own (ADR-0069).
+      const readers = liveReaderNames(composableApi(module, item.composable).members);
+      for (const member of item.members) {
+        const { name } = bindings.get(member.binding)!;
+        const reader = readers.get(member.member);
+        used.set(member.binding, {
+          item,
+          member: member.member,
+          local: name,
+          ...(reader
+            ? { reader: { member: reader, local: names.claim(`current${pascalCase(name)}`) } }
+            : {}),
+          read: { render: false, client: false },
+        });
+      }
+    } else if (item.kind === "State") {
       const { name } = bindings.get(item.binding)!;
       const isWritten = written.has(item.binding);
       const isReturned = returned.has(item.binding);
@@ -548,12 +598,14 @@ export function planComponent(
         case "slots":
         case "slotScope":
         case "context":
-        case "component":
-        // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
-        case "moduleConst":
-        case "import":
+        // Client code reads a composable's ref or derived value through the hook's live reader
+        // (ADR-0069).
         case "usedState":
         case "usedDerived":
+          return true;
+        case "component":
+        case "moduleConst":
+        case "import":
         case "usedFn":
         case "usedConst":
           break;
@@ -644,6 +696,7 @@ export function planComponent(
     derived,
     hoisted,
     propMirrors,
+    used,
     events,
     ...(eventsInterface ? { eventsInterface } : {}),
     renderFunctions,
@@ -679,6 +732,37 @@ export function setupOwner(composable: UfComposable): UfComponent {
   };
 }
 
+/** The API of the composable a module imports under `local` (ADR-0069). */
+export function composableApi(module: UfModule, local: string): ComposableApi {
+  for (const entry of module.imports ?? []) {
+    const name = entry.names.find((each) => each.kind === "Composable" && each.local === local);
+    if (name) return entry.api.composables!.find((each) => each.name === name.imported)!;
+  }
+  throw new Error(`No composable is imported as ${local}.`);
+}
+
+/**
+ * The live readers a hook returns beside its members (ADR-0069), by member name: one for each
+ * state or derived value `x`, `currentX`, or where that names another member or an earlier
+ * reader, the first free one of `currentX_1`, `currentX_2`…. A rule of the API alone, so the
+ * hook and its callers agree on every name.
+ */
+export function liveReaderNames(
+  members: readonly Pick<ComposableMemberApi, "name" | "kind">[],
+): Map<string, string> {
+  const taken = new Set(members.map(({ name }) => name));
+  const readers = new Map<string, string>();
+  for (const { name, kind } of members) {
+    if (kind !== "state" && kind !== "derived") continue;
+    const base = `current${pascalCase(name)}`;
+    let reader = base;
+    for (let suffix = 1; taken.has(reader); suffix++) reader = `${base}_${suffix}`;
+    taken.add(reader);
+    readers.set(name, reader);
+  }
+  return readers;
+}
+
 /** The inline helpers' names, as the target claims them. */
 const HELPER_NAMES = [
   "cx",
@@ -706,6 +790,8 @@ export function reactive(kind: BindingKind): boolean {
     case "model":
     case "slots":
     case "context":
+    case "usedState":
+    case "usedDerived":
       return true;
     case "loopVar":
     case "templateRef":
@@ -715,11 +801,10 @@ export function reactive(kind: BindingKind): boolean {
     case "emit":
     case "slotScope":
     case "component":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+    // A module's values are read-only (ADR-0070), and a composable's functions and constants are
+    // one for the hook's life (ADR-0069).
     case "moduleConst":
     case "import":
-    case "usedState":
-    case "usedDerived":
     case "usedFn":
     case "usedConst":
       return false;
@@ -979,11 +1064,23 @@ function reservedNames(
   for (const entry of module.typeImports ?? []) {
     for (const name of entry.names) names.add(name.local);
   }
+  // The module's values, which the output declares or imports at module scope as the source
+  // does (ADR-0070), and the composables its calls import (ADR-0069).
+  for (const name of moduleNames(module)) names.add(name);
+  for (const item of component.setup) if (item.kind === "Use") names.add(item.composable);
   for (const entry of module.typeExports ?? []) {
     if (entry.kind === "Declaration") names.add(entry.name);
     else for (const name of entry.names) names.add(name.exported);
   }
   return names;
+}
+
+/** The names of a module's top-level constants and of the values it imports from `.ts` modules. */
+export function moduleNames(module: UfModule): Set<string> {
+  return new Set([
+    ...(module.constants ?? []).map(({ name }) => name),
+    ...(module.moduleImports ?? []).flatMap(({ names }) => names.map(({ local }) => local)),
+  ]);
 }
 
 /** The source's names, but for the DOM event types React rewrites (`reservedNames`). */
@@ -1056,12 +1153,15 @@ function sourceAndEventNames(
  * only globals, its own names and other such bindings, and writes, emits and calls `nextTick`
  * (a hook's result on React) not at all. An `Id` is the instance's, so never, and neither is a
  * binding whose types or code name a type parameter of a generic component, which exists only
- * inside it (ADR-0068).
+ * inside it (ADR-0068). A module's constants and imported values are at module scope already
+ * (ADR-0070).
  */
 function hoistable(
   component: UfComponent,
   kindOf: (id: BindingId) => Binding["kind"] | undefined,
+  moduleLevel: ReadonlySet<string>,
 ): Set<BindingId> {
+  const nameOf = new Map(component.bindings.map(({ id, name }) => [id, name]));
   const code = new Map<BindingId, Code[]>();
   const parameters = new Set(component.typeParameters?.map(({ name }) => name));
   const typed = new Set<BindingId>();
@@ -1095,9 +1195,12 @@ function hoistable(
     // A cycle (local functions do not recurse, UF2024) stays inside the component.
     verdicts.set(id, false);
     const pieces = code.get(id);
+    // One named like a module's value the output declares at module scope stays inside: the
+    // source's binding shadows it there (ADR-0070).
     const free =
       pieces !== undefined &&
       !typed.has(id) &&
+      !moduleLevel.has(nameOf.get(id)!) &&
       pieces.every((piece) =>
         piece.refs.every((reference) => {
           switch (reference.kind) {
@@ -1111,6 +1214,10 @@ function hoistable(
                 case "localConst":
                 case "localFn":
                   return decide(reference.binding);
+                // A module's values are at module scope too (ADR-0070).
+                case "moduleConst":
+                case "import":
+                  return true;
                 case "prop":
                 case "loopVar":
                 case "state":
@@ -1124,9 +1231,6 @@ function hoistable(
                 case "context":
                 case "component":
                 case "argument":
-                // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
-                case "moduleConst":
-                case "import":
                 case "usedState":
                 case "usedDerived":
                 case "usedFn":

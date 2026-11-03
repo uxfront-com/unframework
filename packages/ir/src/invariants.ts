@@ -2721,9 +2721,10 @@ export function isMemberPath(text: string): boolean {
 }
 
 /**
- * Checks the narrowed paths of a read (ADR-0046): on a prop's or a ref's value's read, which is no
- * call; each from the read's start to its end or a member path off it, in the code, longer than
- * the one before; `template` only in client code, and `closure` only on a destructured prop's own read.
+ * Checks the narrowed paths of a read (ADR-0046): on a prop's or a ref's value's read, a
+ * composable's returned ref or derived value included, which is no call; each from the read's
+ * start to its end or a member path off it, in the code, longer than the one before; `template`
+ * only in client code, and `closure` only on a destructured prop's own read.
  */
 function checkNarrowed(
   ref: BindingReference,
@@ -2736,7 +2737,15 @@ function checkNarrowed(
   const at = `${path}/narrowed`;
   const binding = walk.bindings.get(ref.binding);
   const kind = binding?.kind;
-  if (kind !== "prop" && kind !== "state" && kind !== "derived" && kind !== "templateRef") {
+  // A ref or a computed value a composable returns is read as the caller's own (ADR-0069).
+  if (
+    kind !== "prop" &&
+    kind !== "state" &&
+    kind !== "derived" &&
+    kind !== "templateRef" &&
+    kind !== "usedState" &&
+    kind !== "usedDerived"
+  ) {
     errors.push({
       path: at,
       message: "must be absent: only a prop's or a ref's value's read narrows",

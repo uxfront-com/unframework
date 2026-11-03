@@ -20,15 +20,19 @@ function emit(name: TargetName, module: UfModule) {
   return { files, reported };
 }
 
-/** The targets whose call site has not landed: Vue's, Svelte's, Solid's and Astro's have (ADR-0069). */
-const WAITING = TARGET_NAMES.filter(
-  (name) => name !== "vue" && name !== "svelte" && name !== "solid" && name !== "astro",
-);
 /**
- * The targets without `emitComposable`: Vue's, Svelte's, React's, Solid's and Astro's have landed
+ * The targets whose call site has not landed: Vue's, React's, Svelte's, Solid's and Astro's have
  * (ADR-0069).
  */
-const WITHOUT_EMITTER = WAITING.filter((name) => name !== "react");
+const WAITING = TARGET_NAMES.filter(
+  (name) =>
+    name !== "vue" && name !== "react" && name !== "svelte" && name !== "solid" && name !== "astro",
+);
+/**
+ * The targets without `emitComposable`: Vue's, React's, Svelte's, Solid's and Astro's have landed
+ * (ADR-0069).
+ */
+const WITHOUT_EMITTER = WAITING;
 
 describe("composables and shared modules before each target's lane", () => {
   it.each(WAITING)("%s reports UF1002 where a component first reads a module's value", (name) => {
@@ -62,6 +66,16 @@ describe("composables and shared modules before each target's lane", () => {
     expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
     expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
     expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+  });
+
+  it("react emits a component that reads a module's values and calls a composable", () => {
+    const { files, reported } = emit("react", modules());
+    expect(reported).toEqual([]);
+    expect(files.map(({ path }) => path)).toEqual(["List.tsx"]);
+    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+    expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
+    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+    expect(files[0]!.contents).toContain("const { on } = useToggle(false, () => label);");
   });
 
   it("svelte emits a component that reads a module's values and calls a composable", () => {
@@ -139,7 +153,8 @@ describe("a module of composables", () => {
           name: "useToggle",
           parameters: [{ name: "initial", kind: "value", type: "boolean" }],
           members: [
-            { name: "on", kind: "state" },
+            // Its type as its value infers it: `ref(initial)` holds the parameter's (ADR-0069).
+            { name: "on", kind: "state", type: "boolean" },
             { name: "toggle", kind: "function", client: true },
           ],
           hasEffects: true,

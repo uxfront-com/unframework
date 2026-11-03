@@ -237,3 +237,62 @@ export function describe(primitives: readonly Primitive[]): string {
     ? (names[0] ?? "nothing")
     : `${names.slice(0, -1).join(", ")} or ${names.at(-1)}`;
 }
+
+/**
+ * Kinds written as TypeScript type text, which `TypeTable.kindsOf` reads back to the same
+ * primitives, literals, shapes and elements: what a composable's API writes for a member whose
+ * source writes no type (ADR-0069), so a caller checks its reads as it checks its own. Below
+ * `depth` levels, and for what the model cannot type, it writes `unknown`.
+ */
+export function kindsType(value: Kinds, depth = 3): string {
+  if (depth < 0) return "unknown";
+  const parts: string[] = [];
+  for (const primitive of value.primitives) {
+    switch (primitive) {
+      case "string":
+        parts.push(
+          ...(value.strings ? [...value.strings].map((each) => JSON.stringify(each)) : ["string"]),
+        );
+        break;
+      case "number":
+        parts.push(
+          ...(value.numbers && [...value.numbers].every(Number.isFinite)
+            ? [...value.numbers].map(String)
+            : ["number"]),
+        );
+        break;
+      case "boolean":
+        parts.push(...(value.booleans ? [...value.booleans].map(String) : ["boolean"]));
+        break;
+      case "array": {
+        const elements = (value.elements ?? []).map((element) => element());
+        const element = elements.length ? kindsType(union(...elements), depth - 1) : "unknown";
+        parts.push(`Array<${element}>`);
+        break;
+      }
+      case "object":
+        if (!value.objects?.length) parts.push("object");
+        for (const shape of value.objects ?? []) {
+          const members = [...shape.members()].map(([name, member]) => {
+            const key = /^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name);
+            return `${key}${member.optional ? "?" : ""}: ${kindsType(member.kinds(), depth - 1)}`;
+          });
+          parts.push(`{ ${members.join("; ")} }`);
+        }
+        break;
+      case "function":
+        parts.push("((...args: never[]) => unknown)");
+        break;
+      case "null":
+      case "undefined":
+      case "bigint":
+      case "symbol":
+      case "unknown":
+        parts.push(primitive);
+        break;
+      default:
+        primitive satisfies never;
+    }
+  }
+  return parts.length ? [...new Set(parts)].join(" | ") : "never";
+}
