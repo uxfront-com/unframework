@@ -141,8 +141,11 @@ describe("qwik composable hooks", () => {
 });
 
 describe("qwik composable forms", () => {
-  it("keeps a returned function that reads nothing of the hook a `$()` QRL", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+  it(
+    "keeps a returned function that reads nothing of the hook a `$()` QRL",
+    { timeout: 60_000 },
+    async () => {
+      const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
 
 export function useProbe() {
   const count = ref(0);
@@ -152,15 +155,19 @@ export function useProbe() {
   return { count, format };
 }
 `);
-    expect(errors).toEqual([]);
-    expect(outputs[0]!.contents).toContain("const format = $((value: number) => {");
-    expect(outputs[0]!.contents).toContain("return { count, format };");
-    await expectToolchainClean("returned-pure", outputs);
-  });
+      expect(errors).toEqual([]);
+      expect(outputs[0]!.contents).toContain("const format = $((value: number) => {");
+      expect(outputs[0]!.contents).toContain("return { count, format };");
+      await expectToolchainClean("returned-pure", outputs);
+    },
+  );
 
-  it("tracks a getter argument through a function in a watcher and an effect", async () => {
-    const { errors, outputs } =
-      await compileProbe(`import { ref, watch, watchEffect } from "unframework";
+  it(
+    "tracks a getter argument through a function in a watcher and an effect",
+    { timeout: 60_000 },
+    async () => {
+      const { errors, outputs } =
+        await compileProbe(`import { ref, watch, watchEffect } from "unframework";
 
 export function useProbe(price: () => number, limit?: () => number) {
   const last = ref(0);
@@ -177,19 +184,23 @@ export function useProbe(price: () => number, limit?: () => number) {
   return { last, seen };
 }
 `);
-    expect(errors).toEqual([]);
-    const output = outputs[0]!.contents;
-    expect(output).toContain("const value = track(() => price.value);");
-    expect(output).toContain(
-      'const values: [typeof price.value, NonNullable<typeof limit>["value"] | undefined] = [',
-    );
-    expect(output).toContain("track(() => limit?.value)");
-    expect(output).toContain("last.value = price.value + (limit?.value ?? 0);");
-    await expectToolchainClean("tracked-getters", outputs);
-  });
+      expect(errors).toEqual([]);
+      const output = outputs[0]!.contents;
+      expect(output).toContain("const value = track(() => price.value);");
+      expect(output).toContain(
+        'const values: [typeof price.value, NonNullable<typeof limit>["value"] | undefined] = [',
+      );
+      expect(output).toContain("track(() => limit?.value)");
+      expect(output).toContain("last.value = price.value + (limit?.value ?? 0);");
+      await expectToolchainClean("tracked-getters", outputs);
+    },
+  );
 
-  it("floats a statement call of a callback that returns a promise, and awaits one whose value is used", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+  it(
+    "floats a statement call of a callback that returns a promise, and awaits one whose value is used",
+    { timeout: 60_000 },
+    async () => {
+      const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
 
 export function useProbe(onSave: (count: number) => Promise<void>, accept: (count: number) => boolean) {
   const count = ref(0);
@@ -200,12 +211,13 @@ export function useProbe(onSave: (count: number) => Promise<void>, accept: (coun
   return { count, save };
 }
 `);
-    expect(errors).toEqual([]);
-    const output = outputs[0]!.contents;
-    expect(output).toContain("void onSave(count.value);");
-    expect(output).toContain("if (await accept(count.value)) count.value += 10;");
-    await expectToolchainClean("callback-calls", outputs);
-  });
+      expect(errors).toEqual([]);
+      const output = outputs[0]!.contents;
+      expect(output).toContain("void onSave(count.value);");
+      expect(output).toContain("if (await accept(count.value)) count.value += 10;");
+      await expectToolchainClean("callback-calls", outputs);
+    },
+  );
 
   it("reports a getter passed on or kept other than by a call, and emits nothing", async () => {
     const { errors, outputs } = await compileProbe(`import { computed } from "unframework";
@@ -295,6 +307,87 @@ export function useProbe(options: { step: number; format: (value: number) => str
     expect(outputs).toEqual([]);
   });
 
+  it(
+    "judges a `const` by the types its value reads: a member that holds no function is free",
+    { timeout: 60_000 },
+    async () => {
+      const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+
+interface Base {
+  format(value: number): string;
+}
+
+interface Options extends Base {
+  step: number;
+  labels: readonly string[];
+}
+
+export function useProbe(options: Options) {
+  const count = ref(0);
+  const step = options.step;
+  const first = options.labels[0] ?? "";
+  const size = options.labels.length;
+  const shown = options.format(step);
+  function bump() {
+    count.value += step + size + first.length + shown.length;
+  }
+  return { count, bump };
+}
+`);
+      expect(errors).toEqual([]);
+      expect(outputs[0]!.contents).toContain("const step = options.step;");
+      await expectToolchainClean("written-free", outputs);
+    },
+  );
+
+  it("judges a `const` by a call's declared return type, a function's `bind` and an array's copies", async () => {
+    const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+
+export function useProbe(options: {
+  make: () => (value: number) => string;
+  format: (value: number) => string;
+  formats: ((value: number) => string)[];
+}) {
+  const label = ref("");
+  const made = options.make();
+  const bound = options.format.bind(null);
+  const copied = options.formats.slice();
+  const one = options.formats.at(0);
+  function show(value: number) {
+    label.value = made(value) + bound(value) + String(copied.length) + String(one);
+  }
+  return { label, show };
+}
+`);
+    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
+      { code: "UF1002", text: "made" },
+      { code: "UF1002", text: "bound" },
+      { code: "UF1002", text: "copied" },
+      { code: "UF1002", text: "one" },
+    ]);
+    expect(outputs).toEqual([]);
+  });
+
+  it("reports a `let` whose initial value holds a function, since it is a signal", async () => {
+    const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+
+export function useProbe(options: { format: (value: number) => string; step: number }) {
+  const count = ref(0);
+  const label = ref("");
+  let format = options.format;
+  let step = options.step;
+  function show() {
+    label.value = format(count.value) + String(step);
+  }
+  return { count, label, show };
+}
+`);
+    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual([
+      { code: "UF1002", text: "options.format" },
+    ]);
+    expect(outputs).toEqual([]);
+  });
+
   it("reports a value whose type inherits a function from an interface the module extends", async () => {
     const { errors, outputs } = await compileProbe(`import { computed } from "unframework";
 
@@ -318,8 +411,11 @@ export function useProbe(options: Options) {
     expect(outputs).toEqual([]);
   });
 
-  it("tests whether an optional getter or callback was passed, as the source does", async () => {
-    const { errors, outputs } = await compileProbe(`import { computed, ref } from "unframework";
+  it(
+    "tests whether an optional getter or callback was passed, as the source does",
+    { timeout: 60_000 },
+    async () => {
+      const { errors, outputs } = await compileProbe(`import { computed, ref } from "unframework";
 
 export function useProbe(
   price: () => number,
@@ -338,16 +434,17 @@ export function useProbe(
   return { count, capped, bounded, set };
 }
 `);
-    expect(errors).toEqual([]);
-    const output = outputs[0]!.contents;
-    expect(output).toContain(
-      "const capped = useComputed$(() => (limit ? Math.min(price.value, limit.value) : price.value));",
-    );
-    expect(output).toContain("limit !== undefined && !!price ? limit!.value : 0");
-    expect(output).toContain("if (onChange) void onChange(next);");
-    expect(output).toContain("if (accept && (await accept!(next))) count.value += 1;");
-    await expectToolchainClean("guards", outputs);
-  });
+      expect(errors).toEqual([]);
+      const output = outputs[0]!.contents;
+      expect(output).toContain(
+        "const capped = useComputed$(() => (limit ? Math.min(price.value, limit.value) : price.value));",
+      );
+      expect(output).toContain("limit !== undefined && !!price ? limit!.value : 0");
+      expect(output).toContain("if (onChange) void onChange(next);");
+      expect(output).toContain("if (accept && (await accept!(next))) count.value += 1;");
+      await expectToolchainClean("guards", outputs);
+    },
+  );
 
   it("reports a composable that reads a module's values, at the value, and emits nothing", async () => {
     const { errors, outputs, source } = await compileProbe(`import { ref } from "unframework";

@@ -135,11 +135,16 @@ export interface ComposableProblem {
  * - a callback read other than by a call or a test, or called in a function of the code's own
  *   (an array method's callback, a comparator, a timer's): a QRL's call gives a promise, which
  *   only the code's own function awaits or leaves to run;
- * - a value whose type holds a function, or a setup `const` that takes such a value or a part of
- *   it (`const format = options.format`), read where a `$` scope captures it (a derived value, a
- *   watcher, an effect, a hook, a function client code calls): Qwik serialises what a `$` scope
- *   captures, and no function (`qwik/valid-lexical-scope`). Its type is read as written, through
- *   the module's own declarations and the interfaces they extend.
+ * - a value whose type holds a function, or a setup `const` whose value holds one by the types
+ *   it reads (`const format = options.format`, `const make = options.make()`), read where a `$`
+ *   scope captures it (a derived value, a watcher, an effect, a hook, a function client code
+ *   calls): Qwik serialises what a `$` scope captures, and no function
+ *   (`qwik/valid-lexical-scope`);
+ * - a setup `let` or `ref` whose initial value holds a function: Qwik's output makes it a signal,
+ *   which serialises its value too.
+ *
+ * Types are read as written (`WrittenTypes`), through the module's own declarations and the
+ * interfaces they extend: an imported type or a class is not seen.
  *
  * A test is what tells only whether the argument was passed: an `if`'s, a loop's or a `?:`'s
  * test, `!`, a comparison, or an operand of `&&`, `||` or `??` that is itself in a test, or on
@@ -155,16 +160,42 @@ export function composableProblems(composable: UfComposable, plan: SetupPlan): C
       .filter(({ kind, type }) => kind === "value" && holdsFunction(type.code, plan.module))
       .map(({ binding }) => binding),
   );
-  // A setup `const` holds what its value gives of such an argument, unless the value is one a
-  // function never is (a call's result, an operator's, a literal).
-  for (const item of composable.setup) {
-    if (item.kind !== "Const") continue;
-    const reads = item.value.refs.some(
-      (reference) => reference.kind === "Binding" && holding.has(reference.binding),
-    );
-    if (reads && mayGiveFunction(item.value.code)) holding.add(item.binding);
-  }
+  // What a setup `const`, `let` or `ref` that reads a value argument holds, by the types it reads,
+  // in source order, so a later one reads an earlier one's.
   const nameOf = (id: string) => composable.bindings.find((binding) => binding.id === id)!.name;
+  const written = new WrittenTypes(plan.module);
+  for (const parameter of composable.parameters) {
+    written.known.set(
+      parameter.binding,
+      parameter.kind === "value" ? { type: typeNode(parameter.type.code), free: false } : FREE,
+    );
+  }
+  for (const item of composable.setup) {
+    if (item.kind !== "Const" && item.kind !== "State" && item.kind !== "Variable") continue;
+    const value = item.kind === "Const" ? item.value : item.initial;
+    if (!value) continue;
+    const reads = value.refs.some(
+      (reference) =>
+        reference.kind === "Binding" &&
+        written.known.has(reference.binding) &&
+        functions.get(reference.binding)?.kind !== "getter" &&
+        functions.get(reference.binding)?.kind !== "callback",
+    );
+    if (!reads) continue;
+    const judged = written.ofCode(value);
+    written.known.set(item.binding, judged);
+    if (!written.holds(judged)) continue;
+    if (item.kind === "Const") {
+      holding.add(item.binding);
+      continue;
+    }
+    const name = nameOf(item.binding);
+    problems.push({
+      span: value.span,
+      message: `\`${name}\` would hold a function, by the types its value reads: the qwik target makes a \`${item.kind === "State" ? "ref" : "let"}\` a signal, which holds only values Qwik can serialise, never a function.`,
+      help: `Declare it with \`const\` and call it where it is used, or make the function a callback parameter of its own.`,
+    });
+  }
   for (const { code, kind, captured } of composableCode(composable, plan)) {
     const references = code.refs.filter(
       (reference) =>
@@ -221,34 +252,6 @@ function holdsProblem(span: Span, name: string): ComposableProblem {
     message: `\`${name}\` may hold a function, by its type, and this code runs in a Qwik \`$\` scope, which captures only values Qwik can serialise, never a function.`,
     help: "Make the function a callback parameter of its own, as in `format: (value: number) => string`, and call it where it is used.",
   };
-}
-
-/**
- * Whether an expression's value may be a function it reads: anything but a call's or a `new`'s
- * result, an operator's, a template or a literal.
- */
-function mayGiveFunction(code: string): boolean {
-  let node = parseCodeSource(code, "expression").root as Node;
-  while (
-    [
-      "TSAsExpression",
-      "TSSatisfiesExpression",
-      "TSNonNullExpression",
-      "ParenthesizedExpression",
-    ].includes(node.type)
-  ) {
-    node = node.expression as Node;
-  }
-  return ![
-    "CallExpression",
-    "NewExpression",
-    "BinaryExpression",
-    "UnaryExpression",
-    "UpdateExpression",
-    "AwaitExpression",
-    "TemplateLiteral",
-    "Literal",
-  ].includes(node.type);
 }
 
 /** A piece of a composable's code, its kind, and whether a `$` scope of the hook captures it. */
@@ -444,4 +447,313 @@ function visitNodes(root: unknown, visit: (node: Node) => void): void {
   for (const [key, value] of Object.entries(root)) {
     if (key !== "type" && key !== "parent" && typeof value === "object") visitNodes(value, visit);
   }
+}
+
+/**
+ * What the written types say of a value: its type, where the code names one, or, where it
+ * doesn't, whether it may hold a function at all (`free` when it can't).
+ */
+interface WrittenType {
+  type?: Node;
+  free: boolean;
+}
+
+const FREE: WrittenType = { free: true };
+
+/** A type as written, `{ format: (value: number) => string }`, as a node. */
+function typeNode(type: string): Node {
+  const [statement] = parseCodeSource(`let value: ${type};`, "statements").root as Node[];
+  const [declarator] = statement!.declarations as Node[];
+  return ((declarator!.id as Node).typeAnnotation as Node).typeAnnotation as Node;
+}
+
+/** Array methods that give the array they are called on, or a copy of it. */
+const ARRAY_COPIES = new Set([
+  "concat",
+  "filter",
+  "flat",
+  "reverse",
+  "slice",
+  "sort",
+  "toReversed",
+  "toSorted",
+  "toSpliced",
+]);
+
+/** Array methods that give one of its elements. */
+const ARRAY_ELEMENTS = new Set(["at", "find", "findLast", "pop", "shift"]);
+
+/** Array methods that give what their callback returns, which may be an element. */
+const ARRAY_RESULTS = new Set(["flatMap", "map", "reduce", "reduceRight"]);
+
+/**
+ * Reads the type of a setup value from the types its code names, as written (ADR-0067's
+ * syntactic reading, without an oracle): an argument's annotation, a member's declared type, a
+ * call's declared return type, an assertion's type, an array's elements, and the module's own
+ * declarations with the interfaces they extend. `known` holds what each binding read so far
+ * holds; a binding it doesn't hold is free.
+ */
+class WrittenTypes {
+  readonly known: Map<string, WrittenType> = new Map();
+  readonly #module: UfModule;
+
+  constructor(module: UfModule) {
+    this.#module = module;
+  }
+
+  /** Whether a value may hold a function. */
+  holds(value: WrittenType): boolean {
+    return value.type ? nodesHoldFunction(value.type, this.#module, new Set()) : !value.free;
+  }
+
+  /** What a piece of code, an expression, holds. */
+  ofCode(code: Code): WrittenType {
+    const ids = new Map<number, string>();
+    for (const reference of code.refs) {
+      if (reference.kind === "Binding")
+        ids.set(reference.span.start - code.span.start, reference.binding);
+    }
+    return this.#of(parseCodeSource(code.code, "expression").root as Node, ids);
+  }
+
+  #of(node: Node, ids: ReadonlyMap<number, string>): WrittenType {
+    const of = (each: Node) => this.#of(each, ids);
+    switch (node.type) {
+      case "Identifier": {
+        const id = ids.get(node.start);
+        return (id && this.known.get(id)) || FREE;
+      }
+      case "ParenthesizedExpression":
+      case "ChainExpression":
+      case "TSNonNullExpression":
+      case "TSSatisfiesExpression":
+        return of(node.expression as Node);
+      case "TSAsExpression": {
+        const type = node.typeAnnotation as Node;
+        const constant =
+          type.type === "TSTypeReference" && (type.typeName as Node).name === "const";
+        return constant ? of(node.expression as Node) : { type, free: false };
+      }
+      case "MemberExpression":
+        return this.#member(of(node.object as Node), memberKey(node));
+      case "CallExpression":
+        return this.#call(node, ids);
+      case "ConditionalExpression":
+        return this.#join([of(node.consequent as Node), of(node.alternate as Node)]);
+      case "LogicalExpression":
+        return this.#join([of(node.left as Node), of(node.right as Node)]);
+      case "SequenceExpression":
+        return of((node.expressions as Node[]).at(-1)!);
+      case "ArrayExpression":
+        return this.#join(
+          (node.elements as (Node | null)[])
+            .filter((each): each is Node => each !== null)
+            .map((each) => of(each.type === "SpreadElement" ? (each.argument as Node) : each)),
+          false,
+        );
+      case "ObjectExpression":
+        return this.#join(
+          (node.properties as Node[]).map((each) =>
+            of((each.type === "SpreadElement" ? each.argument : each.value) as Node),
+          ),
+          false,
+        );
+      case "ArrowFunctionExpression":
+      case "FunctionExpression":
+        return { free: false };
+      default:
+        return FREE;
+    }
+  }
+
+  /** What a member of a value holds: `key` is its name, or `undefined` for a computed index. */
+  #member(object: WrittenType, key: string | undefined): WrittenType {
+    if (!object.type) return { free: object.free };
+    const type = this.#resolve(object.type);
+    const element = elementType(type);
+    if (element !== undefined) {
+      if (key === "length") return FREE;
+      // An index gives an element, and a named member is a method, a function.
+      return key === undefined ? { type: element, free: false } : { free: false };
+    }
+    if (isKeyword(type)) return key === "length" ? FREE : { free: false };
+    const member = key === undefined ? undefined : this.#memberType(type, key);
+    if (member) return { type: member, free: false };
+    return this.holds(object) ? { free: false } : FREE;
+  }
+
+  #call(node: Node, ids: ReadonlyMap<number, string>): WrittenType {
+    const callee = unwrapped(node.callee as Node);
+    if (callee.type === "MemberExpression" && !callee.computed) {
+      const receiver = this.#of(callee.object as Node, ids);
+      const name = memberKey(callee)!;
+      const type = receiver.type && this.#resolve(receiver.type);
+      if (type && isFunctionType(type)) {
+        if (name === "bind") return receiver;
+        if (name === "call" || name === "apply") return returned(type);
+      }
+      const element = type && elementType(type);
+      if (element !== undefined) {
+        if (ARRAY_COPIES.has(name)) return receiver;
+        if (ARRAY_ELEMENTS.has(name)) return { type: element, free: false };
+        if (ARRAY_RESULTS.has(name)) return this.holds(receiver) ? { free: false } : FREE;
+        return FREE;
+      }
+    }
+    const called = this.#of(callee, ids);
+    if (!called.type) return { free: called.free };
+    const type = this.#resolve(called.type);
+    return isFunctionType(type) ? returned(type) : FREE;
+  }
+
+  /** Several values, any of which a value may be: a type where each has one. */
+  #join(values: readonly WrittenType[], typed = true): WrittenType {
+    if (typed && values.length && values.every((each) => each.type)) {
+      return {
+        type: { type: "TSUnionType", types: values.map((each) => each.type), start: 0, end: 0 },
+        free: false,
+      };
+    }
+    return values.some((each) => this.holds(each)) ? { free: false } : FREE;
+  }
+
+  /** A type with its parentheses, `readonly` and the module's own names it reaches resolved. */
+  #resolve(type: Node, seen = new Set<string>()): Node {
+    switch (type.type) {
+      case "TSParenthesizedType":
+        return this.#resolve(type.typeAnnotation as Node, seen);
+      case "TSTypeOperator":
+        return type.operator === "readonly"
+          ? this.#resolve(type.typeAnnotation as Node, seen)
+          : type;
+      case "TSTypeReference": {
+        const name = (type.typeName as Node).name as string | undefined;
+        if (name === undefined || seen.has(name)) return type;
+        const declaration = this.#module.types.find((each) => each.name === name);
+        if (!declaration) return type;
+        seen.add(name);
+        const [statement] = parseCodeSource(declaration.code, "statements").root as Node[];
+        const declared = (
+          statement!.type === "ExportNamedDeclaration" ? statement!.declaration : statement
+        ) as Node;
+        if (declared.type === "TSTypeAliasDeclaration") {
+          return this.#resolve(declared.typeAnnotation as Node, seen);
+        }
+        if (declared.type !== "TSInterfaceDeclaration") return type;
+        // An interface as an object type of its members and those it inherits.
+        const members = [...((declared.body as Node).body as Node[])];
+        for (const heritage of (declared.extends as Node[] | undefined) ?? []) {
+          const inherited = this.#resolve(
+            { type: "TSTypeReference", typeName: heritage.expression, start: 0, end: 0 },
+            seen,
+          );
+          if (inherited.type === "TSTypeLiteral") members.push(...(inherited.members as Node[]));
+        }
+        return { type: "TSTypeLiteral", members, start: 0, end: 0 };
+      }
+      default:
+        return type;
+    }
+  }
+
+  /** A member's type in an object type or a union of them: a method is its signature. */
+  #memberType(type: Node, key: string): Node | undefined {
+    switch (type.type) {
+      case "TSTypeLiteral": {
+        const member = (type.members as Node[]).find(
+          (each) => propertyName(each.key as Node | undefined) === key,
+        );
+        if (!member) return undefined;
+        if (member.type === "TSMethodSignature") return member;
+        return (
+          ((member.typeAnnotation as Node | null)?.typeAnnotation as Node | undefined) ?? undefined
+        );
+      }
+      case "TSUnionType":
+      case "TSIntersectionType": {
+        const found = (type.types as Node[])
+          .map((each) => this.#memberType(this.#resolve(each), key))
+          .filter((each): each is Node => each !== undefined);
+        if (!found.length) return undefined;
+        return found.length === 1
+          ? found[0]
+          : { type: "TSUnionType", types: found, start: 0, end: 0 };
+      }
+      default:
+        return undefined;
+    }
+  }
+}
+
+/** A member expression's key: its name, a literal's value, or `undefined` for any other index. */
+function memberKey(node: Node): string | undefined {
+  const property = node.property as Node;
+  if (!node.computed) return property.name as string;
+  return property.type === "Literal" && typeof property.value === "string"
+    ? property.value
+    : undefined;
+}
+
+/** A property key's name: an identifier's or a string literal's. */
+function propertyName(key: Node | undefined): string | undefined {
+  if (key?.type === "Identifier") return key.name as string;
+  if (key?.type === "Literal") return String(key.value);
+  return undefined;
+}
+
+/** A callee without its parentheses, its optional chain and its non-null assertion. */
+function unwrapped(node: Node): Node {
+  let each = node;
+  while (
+    ["ParenthesizedExpression", "ChainExpression", "TSNonNullExpression"].includes(each.type)
+  ) {
+    each = each.expression as Node;
+  }
+  return each;
+}
+
+/** The element type of an array, a tuple or `Array<T>`, or `undefined` for any other type. */
+function elementType(type: Node): Node | undefined {
+  switch (type.type) {
+    case "TSArrayType":
+      return type.elementType as Node;
+    case "TSTupleType": {
+      const elements = (type.elementTypes as Node[]).map((each) =>
+        each.type === "TSNamedTupleMember" ? (each.elementType as Node) : each,
+      );
+      return { type: "TSUnionType", types: elements, start: 0, end: 0 };
+    }
+    case "TSTypeReference": {
+      const name = (type.typeName as Node).name;
+      if (name !== "Array" && name !== "ReadonlyArray") return undefined;
+      const [element] = ((type.typeArguments as Node | null)?.params as Node[] | undefined) ?? [];
+      return element ?? { type: "TSUnknownKeyword", start: 0, end: 0 };
+    }
+    default:
+      return undefined;
+  }
+}
+
+/** Whether a type is a primitive keyword (`string`, `number`…), whose named members are methods. */
+function isKeyword(type: Node): boolean {
+  return ["TSStringKeyword", "TSNumberKeyword", "TSBooleanKeyword", "TSBigIntKeyword"].includes(
+    type.type,
+  );
+}
+
+/** Whether a type is a function's: a function type, a method signature, or `Function`. */
+function isFunctionType(type: Node): boolean {
+  return (
+    type.type === "TSFunctionType" ||
+    type.type === "TSMethodSignature" ||
+    (type.type === "TSTypeReference" && (type.typeName as Node).name === "Function")
+  );
+}
+
+/** What calling a function type gives: its declared return type, or anything without one. */
+function returned(type: Node): WrittenType {
+  const annotation = (type.returnType as Node | null | undefined)?.typeAnnotation as
+    | Node
+    | undefined;
+  return annotation ? { type: annotation, free: false } : { free: false };
 }

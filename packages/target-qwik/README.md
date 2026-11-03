@@ -228,10 +228,16 @@ What those forms cannot keep is UF1002, at the read, and the hook is not emitted
   signal;
 - a callback read other than by a call or a test, or called in a function of the code's own (an
   array method's callback, a comparator, a timer's), which cannot wait for a QRL's promise;
-- a value whose type, as written or through the module's own declarations and the interfaces
-  they extend, holds a function, or a setup `const` that takes such a value or a part of it
-  (`const format = options.format`), read where a `$` scope captures it, since Qwik serialises
-  what a `$` scope captures.
+- a value whose type holds a function, or a setup `const` whose value holds one by the types it
+  reads, read where a `$` scope captures it, since Qwik serialises what a `$` scope captures;
+- a setup `let` or `ref` whose initial value holds a function, since each is a signal.
+
+Types are read as written: an argument's annotation, a member's declared type, a call's declared
+return type, an assertion's type, an array's elements (and its copies, `slice()`, and elements,
+`at(0)`), a function's `bind`, and the module's own declarations with the interfaces they extend.
+So `const step = options.step` with `step: number` holds no function, and
+`const format = options.make()` with `make: () => (value: number) => string` holds one. An
+imported type or a class is not seen.
 
 A test of an optional getter or callback, whether the caller passed it, reads the signal or the
 QRL itself: `limit ? Math.min(price.value, limit.value) : price.value`, and
