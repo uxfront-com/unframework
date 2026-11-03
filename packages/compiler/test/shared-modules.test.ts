@@ -188,18 +188,18 @@ describe("compile() with shared modules", () => {
     });
     const result = await compile(BADGE, {
       filename: "src/Badge.uf.tsx",
-      targets: ["svelte"],
+      targets: ["angular"],
       resolve,
       typeOracle,
     });
     expect(result.ir!.moduleImports).toEqual([
       expect.objectContaining({ specifier: "./tokens", file: "tokens.ts" }),
     ]);
-    // Svelte's composables lane reads the import binding: until it lands, the target reports it.
+    // Angular's composables lane reads the import binding: until it lands, the target reports it.
     expect(result.diagnostics.map(({ code, target }) => [code, target])).toEqual([
-      ["UF1002", "svelte"],
+      ["UF1002", "angular"],
     ]);
-    expect(result.outputs.svelte).toEqual([]);
+    expect(result.outputs.angular).toEqual([]);
   });
 
   it("withholds the component from every target when a module imports a framework (UF1204)", async () => {

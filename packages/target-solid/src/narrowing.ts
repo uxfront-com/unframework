@@ -1315,6 +1315,8 @@ function printedAsName(kind: BindingKind): "loopVar" | "accessor" | undefined {
       return "loopVar";
     case "state":
     case "derived":
+    case "usedState":
+    case "usedDerived":
       return "accessor";
     case "prop":
     case "templateRef":
@@ -1328,12 +1330,9 @@ function printedAsName(kind: BindingKind): "loopVar" | "accessor" | undefined {
     case "slotScope":
     case "context":
     case "component":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
     case "argument":
-    case "usedState":
-    case "usedDerived":
     case "usedFn":
     case "usedConst":
       return undefined;

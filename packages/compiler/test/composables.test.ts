@@ -20,11 +20,18 @@ function emit(name: TargetName, module: UfModule) {
   return { files, reported };
 }
 
-/** The targets whose call site has not landed: Vue's, React's and Astro's have (ADR-0069). */
+/**
+ * The targets whose call site has not landed: Vue's, React's, Svelte's, Solid's and Astro's have
+ * (ADR-0069).
+ */
 const WAITING = TARGET_NAMES.filter(
-  (name) => name !== "vue" && name !== "react" && name !== "astro",
+  (name) =>
+    name !== "vue" && name !== "react" && name !== "svelte" && name !== "solid" && name !== "astro",
 );
-/** The targets without `emitComposable`: Vue's, React's and Astro's have landed (ADR-0069). */
+/**
+ * The targets without `emitComposable`: Vue's, React's, Svelte's, Solid's and Astro's have landed
+ * (ADR-0069).
+ */
 const WITHOUT_EMITTER = WAITING;
 
 describe("composables and shared modules before each target's lane", () => {
@@ -69,6 +76,24 @@ describe("composables and shared modules before each target's lane", () => {
     expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
     expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
     expect(files[0]!.contents).toContain("const { on } = useToggle(false, () => label);");
+  });
+
+  it("svelte emits a component that reads a module's values and calls a composable", () => {
+    const { files, reported } = emit("svelte", modules());
+    expect(reported).toEqual([]);
+    expect(files.map(({ path }) => path)).toEqual(["List.svelte"]);
+    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+    expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle.svelte";');
+    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+  });
+
+  it("solid emits a component that reads a module's values and calls a composable", () => {
+    const { files, reported } = emit("solid", modules());
+    expect(reported).toEqual([]);
+    expect(files.map(({ path }) => path)).toEqual(["List.tsx"]);
+    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+    expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
+    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
   });
 
   it("astro emits a component that reads a module's values and calls a composable", () => {
@@ -210,6 +235,8 @@ describe("a module of composables", () => {
   });
 
   it("reports a target whose `emitComposable` throws (UF9001), and keeps the others", async () => {
+    // A target still without its emitter, whose UF1002 shows the others go on.
+    const waiting = WITHOUT_EMITTER[0]!;
     const target = {
       ...builtinTargets.vue,
       name: "broken",
@@ -219,7 +246,7 @@ describe("a module of composables", () => {
     };
     const result = await compile(TOGGLE, {
       filename: "useToggle.uf.ts",
-      targets: [target, "solid"],
+      targets: [target, waiting],
     });
     expect(
       result.diagnostics.map(({ code, target: name, message }) => [code, name, message]),
@@ -227,8 +254,8 @@ describe("a module of composables", () => {
       ["UF9001", "broken", "The broken target failed on useToggle: boom"],
       [
         "UF1002",
-        "solid",
-        "The solid target does not emit a composable yet: it lands with this target's composables lane.",
+        waiting,
+        `The ${waiting} target does not emit a composable yet: it lands with this target's composables lane.`,
       ],
     ]);
   });
