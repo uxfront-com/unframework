@@ -134,6 +134,29 @@ per component (ADR-0034, ADR-0046):
   fallthrough reaches. Content filled into a child whose sheet uses `:slotted()`, a scoped
   fill's render prop included, carries the child's `-s`.
 
+- **Shared modules** (ADR-0070, `src/modules.ts`): a value the server render reads of a `.ts`
+  module is imported as the source imports it, `import { formatPrice } from "./format";`, from
+  the copy `compile()` emits beside the outputs. The module's constants it reaches, and those
+  they read, are declared as written in the frontmatter, after `Props` and before the props it
+  reads: `const START = LIMITS.min + 2;`. A value only client code reads is left out. The
+  frontmatter is one scope with the setup, so a constant the component reaches only through
+  another, and whose name a top-level name of the component takes, is declared under a claimed
+  name (`STEP_1`), and the constants and copied types that read it read it so.
+- **Composables** (ADR-0069, `src/composable.ts`): a `.uf.ts` module's composable is a static
+  module of its own, `useToggle.ts`. It keeps the source's function, its type parameters and its
+  value and getter parameters as written, and its setup as a component's: each ref's initial
+  value, each derived value, its constants and the functions a render may call. It returns those,
+  `return { on, label, describe };`. Client code is dropped: its watchers, effects and hooks, its
+  setup `let`s, the functions that write, emit, call `nextTick` or await, or read what does, and
+  its callbacks, which only client code calls, so the parameter list leaves them out. A parameter
+  only dropped code reads is still taken, as `_delay`, so every caller passes the same arguments.
+  A caller imports it from that module, `import { useToggle } from "./useToggle";`, and
+  destructures the members its server render reads, under the names it reads them by, passing
+  its value arguments as its setup reads them (a ref's `.value` as the constant) and its getters
+  as arrows:
+  `const { on: pressed } = useToggle(true, () => price);`. A call whose members only client code
+  reads is left out, with its import.
+
 The capabilities (`src/index.ts`): `interactivity`, `event-capture`, `event-once`,
 `event-passive`, `event-semantics` and `next-tick` are unsupported (UF4001, for information):
 components render on the server only and each render is a new instance, so handlers, template
@@ -158,7 +181,9 @@ Its toolchain, for tests and tooling (the target's main entry never loads it):
   its children import, as the browser project serves it, in a `<style>` before the HTML, a
   child's first (ADR-0063). The render server adds the project's own plugins
   (`ToolchainContext.plugins`), so a styling engine's plugin resolves its `virtual:` modules,
-  and the engine's stylesheet goes before the markup too (ADR-0064). The checks:
+  and the engine's stylesheet goes before the markup too (ADR-0064). A module of composables a
+  component imports (`/abs/useToggle.uf.ts`, ADR-0069) is served as the browser project compiles
+  it, read again on each render. The checks:
   - L3 runs `@astrojs/compiler-rs` with Astro's options and reports every diagnostic (it refuses
     a compiler version other than the one `astro` uses), and Vite's TypeScript transform over a
     `.ts` module, a shared one (ADR-0070) or a composable's (ADR-0069);

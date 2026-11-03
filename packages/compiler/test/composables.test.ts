@@ -20,8 +20,12 @@ function emit(name: TargetName, module: UfModule) {
   return { files, reported };
 }
 
-/** The targets whose composables lane has not landed: Vue's has (ADR-0069). */
-const WAITING = TARGET_NAMES.filter((name) => name !== "vue");
+/** The targets whose call site has not landed: Vue's, Svelte's and Astro's have (ADR-0069). */
+const WAITING = TARGET_NAMES.filter(
+  (name) => name !== "vue" && name !== "svelte" && name !== "astro",
+);
+/** The targets without `emitComposable`: Vue's, Svelte's, React's and Astro's have landed (ADR-0069). */
+const WITHOUT_EMITTER = WAITING.filter((name) => name !== "react");
 
 describe("composables and shared modules before each target's lane", () => {
   it.each(WAITING)("%s reports UF1002 where a component first reads a module's value", (name) => {
@@ -55,6 +59,25 @@ describe("composables and shared modules before each target's lane", () => {
     expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
     expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
     expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+  });
+
+  it("svelte emits a component that reads a module's values and calls a composable", () => {
+    const { files, reported } = emit("svelte", modules());
+    expect(reported).toEqual([]);
+    expect(files.map(({ path }) => path)).toEqual(["List.svelte"]);
+    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+    expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle.svelte";');
+    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+  });
+
+  it("astro emits a component that reads a module's values and calls a composable", () => {
+    const { files, reported } = emit("astro", modules());
+    expect(reported).toEqual([]);
+    expect(files.map(({ path }) => path)).toEqual(["List.astro"]);
+    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+    expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
+    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+    expect(files[0]!.contents).toContain("const { on } = useToggle(false, () => label);");
   });
 });
 
@@ -142,13 +165,13 @@ describe("a module of composables", () => {
   it("compiles to nothing, with UF1002 for each composable, on a target without `emitComposable`", async () => {
     const result = await compile(TOGGLE, {
       filename: "src/useToggle.uf.ts",
-      targets: WAITING,
+      targets: WITHOUT_EMITTER,
     });
     expect(result.ir?.composables?.map(({ name }) => name)).toEqual(["useToggle"]);
     const span = result.ir!.composables![0]!.span;
     // Sorted by target, as every diagnostic at one span is.
     expect(result.diagnostics).toEqual(
-      WAITING.toSorted().map((target) =>
+      WITHOUT_EMITTER.toSorted().map((target) =>
         expect.objectContaining({
           code: "UF1002",
           severity: "error",
@@ -158,7 +181,7 @@ describe("a module of composables", () => {
         }),
       ),
     );
-    for (const target of WAITING) expect(result.outputs[target]).toEqual([]);
+    for (const target of WITHOUT_EMITTER) expect(result.outputs[target]).toEqual([]);
   });
 
   it("calls each target's `emitComposable`, and formats what it emits", async () => {
@@ -195,7 +218,7 @@ describe("a module of composables", () => {
     };
     const result = await compile(TOGGLE, {
       filename: "useToggle.uf.ts",
-      targets: [target, "react"],
+      targets: [target, "solid"],
     });
     expect(
       result.diagnostics.map(({ code, target: name, message }) => [code, name, message]),
@@ -203,8 +226,8 @@ describe("a module of composables", () => {
       ["UF9001", "broken", "The broken target failed on useToggle: boom"],
       [
         "UF1002",
-        "react",
-        "The react target does not emit a composable yet: it lands with this target's composables lane.",
+        "solid",
+        "The solid target does not emit a composable yet: it lands with this target's composables lane.",
       ],
     ]);
   });

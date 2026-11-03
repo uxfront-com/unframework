@@ -5,8 +5,10 @@
 // value calls are copied as written. Listeners, template refs, watchers, effects, lifecycle
 // hooks, `emit` and the setup's `let`s never run, and neither does what only they read:
 // `liveBindings` keeps exactly what the server render reaches, so nothing the output declares is
-// unused (L5).
+// unused (L5). A composable's call is the destructuring of what its static module returns, and
+// its callbacks, which only client code calls, are dropped (ADR-0069).
 import {
+  functionSource,
   functionText,
   liveBindings,
   needsParentheses,
@@ -18,12 +20,16 @@ import type { LiveOptions } from "@unframework/codegen";
 import type {
   BindingId,
   Code,
+  CodeReference,
   DerivedItem,
   FunctionItem,
   IdItem,
   InjectItem,
+  SetupItem,
   StateItem,
   UfComponent,
+  UfModule,
+  UseItem,
 } from "@unframework/ir";
 
 import { unreachable } from "./spelling.ts";
@@ -108,8 +114,10 @@ export function setupCode(
         if (live.has(item.binding))
           statements.push(injected(item, component, spelling, injectedType));
         break;
-      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
       case "Use":
+        if (item.members.some(({ binding }) => live.has(binding))) {
+          statements.push(use(item, component, live, spelling));
+        }
         break;
       default:
         unreachable(item);
@@ -137,9 +145,84 @@ function injected(
   return `const ${name} = ${cast(initialiser(item.fallback, component, spelling), type)};`;
 }
 
-/** The bindings the server render reaches. */
-export function serverBindings(component: UfComponent): Set<BindingId> {
-  return liveBindings(component, SERVER);
+/** The bindings the server render reaches, in a component's {@link serverView}. */
+export function serverBindings(view: UfComponent): Set<BindingId> {
+  return liveBindings(view, SERVER);
+}
+
+/**
+ * A component as the server render runs it, for codegen's walks of what it reaches
+ * (`liveBindings`, `liveTypes`), which leave a composable's call and the module's constants to
+ * each target (ADR-0069, ADR-0070). Each member a call destructures reads what the call
+ * evaluates where the component renders: its value and getter arguments, never its callbacks,
+ * which only client code calls. Each of the module's constants reads what its value reads, as
+ * the module computes it as it loads. Both are `const`s here, read by their bindings.
+ */
+export function serverView(component: UfComponent, module: UfModule): UfComponent {
+  const constants = (module.constants ?? []).map((constant): SetupItem => ({
+    kind: "Const",
+    binding: constant.binding,
+    ...(constant.type ? { type: constant.type } : {}),
+    value: constant.value,
+    span: constant.span,
+  }));
+  const setup = component.setup.flatMap((item): SetupItem[] => {
+    if (item.kind !== "Use") return [item];
+    const value = serverArguments(item);
+    return item.members.map(({ binding }) => ({ kind: "Const", binding, value, span: item.span }));
+  });
+  return { ...component, setup: [...constants, ...setup] };
+}
+
+/**
+ * The code a composable's call evaluates on the server, as one array of its value and getter
+ * arguments, with their references, for the walks of {@link serverView} alone.
+ */
+function serverArguments(item: UseItem): Code {
+  const parts: string[] = [];
+  const refs: CodeReference[] = [];
+  for (const argument of item.arguments) {
+    if (argument.kind === "Value") {
+      parts.push(argument.value.code);
+      refs.push(...argument.value.refs);
+    } else if (argument.kind === "Getter") {
+      parts.push(functionSource(argument.getter, argument.getter.body.code, { arrow: true }));
+      refs.push(...argument.getter.body.refs);
+    }
+  }
+  return { code: `[${parts.join(", ")}]`, span: item.span, refs };
+}
+
+/**
+ * A composable's call, `const { on } = useToggle(false);`, destructuring only the members the
+ * server render reads, under the names the component reads them by (`{ matches: wide }`). Its
+ * static module takes no callback (`./composable.ts`), so the call passes its value arguments
+ * as written and its getters as arrows, which read what the frontmatter declares.
+ */
+function use(
+  item: UseItem,
+  component: UfComponent,
+  live: ReadonlySet<BindingId>,
+  spelling: Spelling,
+): string {
+  const members = item.members.flatMap(({ member, binding }) => {
+    if (!live.has(binding)) return [];
+    const local = spelling.name(binding);
+    return [local === member ? local : `${member}: ${local}`];
+  });
+  const values = item.arguments.flatMap((argument) => {
+    switch (argument.kind) {
+      case "Value":
+        return [initialiser(argument.value, component, spelling)];
+      case "Getter":
+        return [functionText(argument.getter, component, spelling.rules, "pure", { arrow: true })];
+      case "Callback":
+        return [];
+      default:
+        return unreachable(argument);
+    }
+  });
+  return `const { ${members.join(", ")} } = ${item.composable}(${values.join(", ")});`;
 }
 
 /**
