@@ -1,0 +1,18 @@
+---
+interface OwnProps<T> {
+  heading: string;
+  options: T[];
+  selected?: T;
+}
+
+type Props<T> = OwnProps<T>;
+
+const { heading, options, selected } = Astro.props;
+---
+
+<h2>{heading}</h2>
+<ul aria-label={heading}>
+  {options.map((option) => (
+    <li aria-current={option === selected ? "true" : undefined}>{String(option)}</li>
+  ))}
+</ul>

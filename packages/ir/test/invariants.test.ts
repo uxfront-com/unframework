@@ -1395,6 +1395,10 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
       () => twoComponents(["Props", ["Props"]], ["Other", ["Other"]]),
     ],
     [
+      "a local generic `Props` the components take with their type arguments",
+      () => twoComponents(["Props<T>", ["Props"]], ["Props<string>", ["Props"]]),
+    ],
+    [
       "a shorthand reference",
       () =>
         changed((module) => {
@@ -1867,6 +1871,18 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
     [
       "a local `Props` no component takes as its props",
       () => twoComponents(["BadgeProps", ["Props", "BadgeProps"]], ["Other", ["Other"]]),
+      "/types/0/name",
+      'must not be "Props"',
+    ],
+    [
+      "a local `Props` reached through a type whose name only starts with `Props`",
+      () => twoComponents(["Props<T>", ["Props"]], ["PropsOf<T>", ["Props"]]),
+      "/types/0/name",
+      'must not be "Props"',
+    ],
+    [
+      "a local `Props` reached through a type that is more than a reference to it",
+      () => twoComponents(["Props<T>", ["Props"]], ["Props<T>[]", ["Props"]]),
       "/types/0/name",
       'must not be "Props"',
     ],
