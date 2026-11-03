@@ -171,6 +171,11 @@ export function composableProblems(composable: UfComposable, plan: SetupPlan): C
     );
   }
   for (const item of composable.setup) {
+    // A setup function gives what its declared return type says, or else what its body reads.
+    if (item.kind === "Function") {
+      written.known.set(item.binding, written.ofFunction(item.function));
+      continue;
+    }
     if (item.kind !== "Const" && item.kind !== "State" && item.kind !== "Variable") continue;
     const value = item.kind === "Const" ? item.value : item.initial;
     if (!value) continue;
@@ -522,9 +527,13 @@ const SCALAR_EXPRESSIONS = new Set([
  * syntactic reading, without an oracle): an argument's annotation, a member's declared type, a
  * call's declared return type, an assertion's type, an array's elements, and the module's own
  * declarations with the interfaces they extend. `known` holds what each binding read so far
- * holds; a binding it doesn't hold is free. Where the written types give a value no type (a
- * global's call, `Object.assign({}, options)`, a primitive's method), it holds a function exactly
- * when what it reads holds one: a primitive holds none, so its methods give none.
+ * holds; a binding it doesn't hold is free. Wherever the written types don't give a value's type
+ * exactly (a global's call, `Object.assign({}, options)`, a callback with a destructured, default
+ * or rest parameter or a block body, a generic function's result, a setup function without a
+ * return type), it holds a function exactly when its code reads a binding that holds one: a
+ * primitive holds none, so its methods give none. A module interface's or alias's type
+ * arguments are substituted; a composable's own type parameter is its caller's to choose, as an
+ * imported type is, and is free.
  */
 class WrittenTypes {
   readonly known: Map<string, WrittenType> = new Map();
@@ -549,6 +558,36 @@ class WrittenTypes {
         ids.set(reference.span.start - code.span.start, reference.binding);
     }
     return this.#of(parseCodeSource(code.code, "expression").root as Node, ids);
+  }
+
+  /**
+   * What a setup function holds, as a value its callers call: its declared return type, or else
+   * a function exactly when its body reads a binding that holds one.
+   */
+  ofFunction(fn: FunctionCode): WrittenType {
+    if (fn.returnType) {
+      const returnType = { type: "TSTypeAnnotation", typeAnnotation: typeNode(fn.returnType.code) };
+      return { type: { type: "TSFunctionType", returnType, start: 0, end: 0 }, free: false };
+    }
+    return {
+      free: !fn.body.refs.some(
+        (reference) =>
+          reference.kind === "Binding" && this.holds(this.known.get(reference.binding) ?? FREE),
+      ),
+    };
+  }
+
+  /** Whether a node's code reads a binding that holds a function: what it holds, untyped. */
+  #reads(node: Node, ids: ReadonlyMap<number, string>): WrittenType {
+    for (const [offset, id] of ids) {
+      if (offset < node.start || offset >= node.end) continue;
+      if (this.holds(this.known.get(id) ?? FREE)) return { free: false };
+    }
+    for (const local of identifierNames(node)) {
+      const value = this.#locals.get(local);
+      if (value && this.holds(value)) return { free: false };
+    }
+    return FREE;
   }
 
   #of(node: Node, ids: ReadonlyMap<number, string>): WrittenType {
@@ -637,8 +676,9 @@ class WrittenTypes {
     const args = (node.arguments as Node[]).map((each) =>
       each.type === "SpreadElement" ? (each.argument as Node) : each,
     );
-    // What the call reads: where no written type gives its result, it holds what that holds.
-    const reads = (receiver?: WrittenType) =>
+    // Where no written type gives its result, a call holds what its receiver or its arguments
+    // hold, each read as exactly as its own type allows.
+    const untyped = (receiver?: WrittenType) =>
       this.#join(
         [...(receiver ? [receiver] : []), ...args.map((each) => this.#of(each, ids))],
         false,
@@ -647,9 +687,11 @@ class WrittenTypes {
       const receiver = this.#of(callee.object as Node, ids);
       const name = memberKey(callee)!;
       const type = receiver.type && this.#resolve(receiver.type);
+      // No method of a string, a number, a boolean or a bigint gives a function.
+      if (type && isKeyword(type)) return FREE;
       if (type && isFunctionType(type)) {
         if (name === "bind") return receiver;
-        if (name === "call" || name === "apply") return returned(type);
+        if (name === "call" || name === "apply") return this.#returned(type, node, ids);
         if (name === "toString") return FREE;
       }
       const element = type && elementType(type);
@@ -657,62 +699,81 @@ class WrittenTypes {
         if (ARRAY_COPIES.has(name)) return receiver;
         if (ARRAY_ELEMENTS.has(name)) return { type: element, free: false };
         if (ARRAY_SCALARS.has(name)) return FREE;
-        if (ARRAY_RESULTS.has(name)) return this.#callbackResult(name, element, args, ids);
-        return reads(receiver);
+        if (ARRAY_RESULTS.has(name)) {
+          return this.#callbackResult(name, element, type!, args, node, ids);
+        }
+        return untyped(receiver);
       }
       const called = this.#member(receiver, name);
-      if (called.type) {
-        const resolved = this.#resolve(called.type);
-        return isFunctionType(resolved) ? returned(resolved) : FREE;
-      }
-      return reads(receiver);
+      return called.type ? this.#callOf(called.type, node, ids) : untyped(receiver);
     }
     const called = this.#of(callee, ids);
-    if (!called.type) return reads();
-    const type = this.#resolve(called.type);
-    return isFunctionType(type) ? returned(type) : FREE;
+    return called.type ? this.#callOf(called.type, node, ids) : untyped(called);
+  }
+
+  /**
+   * What calling a value of a type gives: its declared return type, or each one's of a union of
+   * functions (`(() => F) | undefined`, an optional call); what the call reads otherwise.
+   */
+  #callOf(type: Node, node: Node, ids: ReadonlyMap<number, string>): WrittenType {
+    const resolved = this.#resolve(type);
+    const parts = resolved.type === "TSUnionType" ? (resolved.types as Node[]) : [resolved];
+    const functions = parts.map((each) => this.#resolve(each)).filter((each) => !isNullish(each));
+    if (functions.length && functions.every(isFunctionType)) {
+      return this.#join(functions.map((each) => this.#returned(each, node, ids)));
+    }
+    return functions.length && !functions.some(isFunctionType) ? FREE : this.#reads(node, ids);
+  }
+
+  /**
+   * A function type's declared return type, for a call: a generic one's result is whatever its
+   * type argument is, so what the call reads.
+   */
+  #returned(type: Node, node: Node, ids: ReadonlyMap<number, string>): WrittenType {
+    const parameters = (type.typeParameters as Node | null | undefined)?.params as
+      | Node[]
+      | undefined;
+    if (parameters?.length) return this.#reads(node, ids);
+    return returned(type);
   }
 
   /**
    * What `map`, `flatMap`, `reduce` or `reduceRight` gives: what its callback returns, with its
-   * parameters holding the array's elements (and a reduction's accumulator, its initial value or
-   * an element), and a reduction's initial value. A callback not written in place gives what it
-   * holds.
+   * parameters bound (an element, its index, the array, and a reduction's accumulator, its
+   * initial value or an element), and a reduction's initial value. A callback whose parameters
+   * aren't all plain names, or whose body is a block, or that isn't written in place, gives what
+   * the call reads.
    */
   #callbackResult(
     name: string,
     element: Node,
+    array: Node,
     args: readonly Node[],
+    node: Node,
     ids: ReadonlyMap<number, string>,
   ): WrittenType {
     const [callback, initial] = args;
     if (!callback) return FREE;
+    const inPlace =
+      (callback.type === "ArrowFunctionExpression" || callback.type === "FunctionExpression") &&
+      (callback.body as Node).type !== "BlockStatement" &&
+      (callback.params as Node[]).every((each) => each.type === "Identifier");
+    if (!inPlace) return this.#reads(node, ids);
     const reduces = name === "reduce" || name === "reduceRight";
-    const start = initial ? this.#of(initial, ids) : { type: element, free: false };
-    if (callback.type !== "ArrowFunctionExpression" && callback.type !== "FunctionExpression") {
-      const passed = this.#of(callback, ids);
-      const type = passed.type && this.#resolve(passed.type);
-      const result = type && isFunctionType(type) ? returned(type) : { free: !this.holds(passed) };
-      return this.#join(reduces ? [start, result] : [result], false);
-    }
-    const parameters = (callback.params as Node[]).map((each) =>
-      each.type === "Identifier" ? (each.name as string) : undefined,
-    );
-    const bound: [string | undefined, WrittenType][] = reduces
-      ? [
-          [parameters[0], start],
-          [parameters[1], { type: element, free: false }],
-        ]
-      : [[parameters[0], { type: element, free: false }]];
+    const item: WrittenType = { type: element, free: false };
+    const start = initial ? this.#join([this.#of(initial, ids), item], false) : item;
+    const values: WrittenType[] = reduces
+      ? [start, item, FREE, { type: array, free: false }]
+      : [item, FREE, { type: array, free: false }];
     const saved = new Map<string, WrittenType | undefined>();
-    for (const [local, value] of bound) {
-      if (local === undefined) continue;
+    for (const [index, parameter] of (callback.params as Node[]).entries()) {
+      const local = parameter.name as string;
       saved.set(local, this.#locals.get(local));
-      this.#locals.set(local, value);
+      this.#locals.set(local, values[index] ?? FREE);
     }
     try {
-      const results = returnedExpressions(callback).map((each) => this.#of(each, ids));
-      return this.#join(reduces ? [start, ...results] : results, false);
+      const result = this.#of(callback.body as Node, ids);
+      return this.#join(reduces ? [start, result] : [result], false);
     } finally {
       for (const [local, value] of saved) {
         if (value === undefined) this.#locals.delete(local);
@@ -732,7 +793,11 @@ class WrittenTypes {
     return values.some((each) => this.holds(each)) ? { free: false } : FREE;
   }
 
-  /** A type with its parentheses, `readonly` and the module's own names it reaches resolved. */
+  /**
+   * A type with its parentheses, `readonly`, the `null` and `undefined` of a union, `Readonly`,
+   * `Partial`, `Required` and `NonNullable`, and the module's own names it reaches resolved, each
+   * with its type arguments in place of its type parameters.
+   */
   #resolve(type: Node, seen = new Set<string>()): Node {
     switch (type.type) {
       case "TSParenthesizedType":
@@ -741,26 +806,55 @@ class WrittenTypes {
         return type.operator === "readonly"
           ? this.#resolve(type.typeAnnotation as Node, seen)
           : type;
+      case "TSUnionType": {
+        const present = (type.types as Node[]).filter(
+          (each) => !isNullish(this.#resolve(each, seen)),
+        );
+        return present.length === 1 ? this.#resolve(present[0]!, seen) : type;
+      }
       case "TSTypeReference": {
         const name = (type.typeName as Node).name as string | undefined;
+        const typeArguments =
+          ((type.typeArguments as Node | null)?.params as Node[] | undefined) ?? [];
+        if (name !== undefined && WRAPPERS.has(name) && typeArguments.length === 1) {
+          return this.#resolve(typeArguments[0]!, seen);
+        }
         if (name === undefined || seen.has(name)) return type;
         const declaration = this.#module.types.find((each) => each.name === name);
         if (!declaration) return type;
-        seen.add(name);
         const [statement] = parseCodeSource(declaration.code, "statements").root as Node[];
-        const declared = (
+        let declared = (
           statement!.type === "ExportNamedDeclaration" ? statement!.declaration : statement
         ) as Node;
+        // A generic declaration with its type arguments in place of its parameters.
+        const parameters =
+          ((declared.typeParameters as Node | null)?.params as Node[] | undefined) ?? [];
+        if (parameters.length) {
+          const substitutes = new Map<string, Node>();
+          for (const [index, parameter] of parameters.entries()) {
+            const argument =
+              typeArguments[index] ?? (parameter.default as Node | null | undefined) ?? undefined;
+            if (argument) substitutes.set((parameter.name as Node).name as string, argument);
+          }
+          declared = substituted(declared, substitutes);
+        }
+        const next = new Set(seen).add(name);
         if (declared.type === "TSTypeAliasDeclaration") {
-          return this.#resolve(declared.typeAnnotation as Node, seen);
+          return this.#resolve(declared.typeAnnotation as Node, next);
         }
         if (declared.type !== "TSInterfaceDeclaration") return type;
         // An interface as an object type of its members and those it inherits.
         const members = [...((declared.body as Node).body as Node[])];
         for (const heritage of (declared.extends as Node[] | undefined) ?? []) {
           const inherited = this.#resolve(
-            { type: "TSTypeReference", typeName: heritage.expression, start: 0, end: 0 },
-            seen,
+            {
+              type: "TSTypeReference",
+              typeName: heritage.expression,
+              typeArguments: heritage.typeArguments ?? null,
+              start: 0,
+              end: 0,
+            },
+            next,
           );
           if (inherited.type === "TSTypeLiteral") members.push(...(inherited.members as Node[]));
         }
@@ -800,24 +894,40 @@ class WrittenTypes {
   }
 }
 
-/** The expressions a function written in place returns: its expression body, or its `return`s. */
-function returnedExpressions(fn: Node): Node[] {
-  const body = fn.body as Node;
-  if (body.type !== "BlockStatement") return [body];
-  const found: Node[] = [];
-  const visit = (node: unknown): void => {
-    if (Array.isArray(node)) {
-      for (const item of node) visit(item);
-      return;
+/** The utility types whose members are their argument's, for reading a member's type. */
+const WRAPPERS = new Set(["NonNullable", "Partial", "Readonly", "Required"]);
+
+/** Whether a type is `null`, `undefined` or `void`, which a union's member reads leave out. */
+function isNullish(type: Node): boolean {
+  return ["TSNullKeyword", "TSUndefinedKeyword", "TSVoidKeyword"].includes(type.type);
+}
+
+/** A declaration with each reference to one of `substitutes`' names replaced by its type. */
+function substituted(node: Node, substitutes: ReadonlyMap<string, Node>): Node {
+  const copy = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(copy);
+    if (!isNode(value)) return value;
+    if (value.type === "TSTypeReference" && !value.typeArguments) {
+      const name = (value.typeName as Node).name as string | undefined;
+      const substitute = name === undefined ? undefined : substitutes.get(name);
+      if (substitute) return substitute;
     }
-    if (!isNode(node) || isFunction(node)) return;
-    if (node.type === "ReturnStatement" && node.argument) found.push(node.argument as Node);
-    for (const [key, value] of Object.entries(node)) {
-      if (key !== "type" && key !== "parent" && typeof value === "object") visit(value);
+    const result: Record<string, unknown> = {};
+    for (const [key, each] of Object.entries(value)) {
+      result[key] = key === "parent" || key === "typeParameters" ? each : copy(each);
     }
+    return result;
   };
-  visit(body.body);
-  return found;
+  return copy(node) as Node;
+}
+
+/** The identifiers' names in a node. */
+function identifierNames(node: Node): Set<string> {
+  const names = new Set<string>();
+  visitNodes(node, (each) => {
+    if (each.type === "Identifier") names.add(each.name as string);
+  });
+  return names;
 }
 
 /** The expressions directly in an expression: its operands, its callee, its arguments. */

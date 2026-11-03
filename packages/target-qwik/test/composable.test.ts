@@ -436,6 +436,97 @@ export function useProbe(options: {
     expect(outputs).toEqual([]);
   });
 
+  it("reads a value the written types don't type exactly by what its code reads", async () => {
+    const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+
+type Format = (value: number) => string;
+
+interface Box<T> {
+  value: T;
+}
+
+export function useProbe(options: {
+  entries: Array<{ format: Format; id: number }>;
+  formats: Format[];
+  box: Box<Format>;
+  identity: <T>(value: T) => T;
+  make?: (() => Format) | undefined;
+  format: Format;
+}) {
+  const total = ref(0);
+  const pick = () => options.format;
+  const destructured = options.entries.map(({ format }) => format);
+  const picked = pick();
+  const boxed = options.box.value;
+  const local = options.formats.map((format) => {
+    const kept = format;
+    return kept;
+  });
+  const defaulted = options.formats.map((format = options.format) => format);
+  const rested = options.formats.map((...all) => all[0]);
+  const indexed = options.formats.map((_, index, all) => all[index]);
+  const same = options.identity(options.format);
+  const made = options.make?.();
+  const gathered = options.formats.reduce<Format[]>((all, format) => {
+    all.push(format);
+    return all;
+  }, []);
+  function count() {
+    total.value = [destructured, picked, boxed, local, defaulted, rested, indexed, same, made, gathered].length;
+  }
+  return { total, count };
+}
+`);
+    expect(errors.map(({ code, text }) => ({ code, text }))).toEqual(
+      [
+        "destructured",
+        "picked",
+        "boxed",
+        "local",
+        "defaulted",
+        "rested",
+        "indexed",
+        "same",
+        "made",
+        "gathered",
+      ].map((text) => ({ code: "UF1002", text })),
+    );
+    expect(outputs).toEqual([]);
+  });
+
+  it(
+    "reads through an optional array, the utility types and a substituted generic to a free member",
+    { timeout: 60_000 },
+    async () => {
+      const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+
+type Format = (value: number) => string;
+
+interface Box<T> {
+  value: T;
+}
+
+export function useProbe(
+  options: { formats?: Array<Format> | undefined; box: Box<number>; format: Format },
+  named: Readonly<{ format: Format; name: string }>,
+  partial: Partial<{ format: Format; step: number }>,
+) {
+  const total = ref(0);
+  const size = options.formats?.length ?? 0;
+  const boxed = options.box.value;
+  const length = named.name.length;
+  const step = partial.step ?? 1;
+  function count() {
+    total.value = size + boxed + length + step;
+  }
+  return { total, count };
+}
+`);
+      expect(errors).toEqual([]);
+      await expectToolchainClean("written-wrappers", outputs);
+    },
+  );
+
   it("reports a `let` whose initial value holds a function, since it is a signal", async () => {
     const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
 

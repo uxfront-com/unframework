@@ -233,14 +233,20 @@ What those forms cannot keep is UF1002, at the read, and the hook is not emitted
 - a setup `let` or `ref` whose initial value holds a function, since each is a signal.
 
 Types are read as written: an argument's annotation, a member's declared type, a call's declared
-return type, an assertion's type, an array's elements (and its copies, `slice()`, and elements,
-`at(0)`), what an array's `map` or `reduce` callback returns, a function's `bind`, and the
-module's own declarations with the interfaces they extend. So `const step = options.step` with
+return type (each part's, for a union of functions such as an optional one), an assertion's type,
+an array's elements (and its copies, `slice()`, and elements, `at(0)`), what an array's `map` or
+`reduce` callback returns where its parameters are plain names and its body an expression, a
+function's `bind`, a setup function's declared return type, and the module's own declarations with
+the interfaces they extend and their type arguments substituted, through `Readonly`, `Partial`,
+`Required`, `NonNullable` and a union's `undefined`. So `const step = options.step` with
 `step: number` holds no function, and `const format = options.make()` with
-`make: () => (value: number) => string` holds one. Where the written types give a value no type
-(a global's call, `Object.assign({}, options)`, a primitive's method), it holds a function exactly
-when what it reads holds one, so `options.name.toUpperCase()` holds none. An imported type or a
-class is not seen.
+`make: () => (value: number) => string` holds one.
+
+Wherever those types don't give a value's type exactly (a global's call, a callback with a
+destructured, default or rest parameter or a block body, a generic function's result, a setup
+function without a return type), it holds a function exactly when what it reads holds one. A
+primitive holds none, so `options.name.toUpperCase()` holds none. An imported type, a class and a
+composable's own type parameter are not seen: each is free.
 
 A test of an optional getter or callback, whether the caller passed it, reads the signal or the
 QRL itself: `limit ? Math.min(price.value, limit.value) : price.value`, and
