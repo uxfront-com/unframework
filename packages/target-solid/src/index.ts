@@ -2,7 +2,6 @@ import {
   addPassThroughImports,
   addTypeImports,
   componentTypes,
-  composableUse,
   defineTarget,
   moduleHelperName,
   exportDeclaration,
@@ -20,6 +19,12 @@ import {
 import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework/codegen";
 import type { TypeDeclaration, UfComponent, UfModule } from "@unframework/ir";
 
+import {
+  addComposableImports,
+  emitComposable,
+  moduleReads,
+  moduleValueNames,
+} from "./composable.ts";
 import { SolidComposition } from "./composition.ts";
 import { typeParameterDeclaration } from "./generics.ts";
 import { NEXT_TICK_HELPER, WATCHER_HELPER } from "./helpers.ts";
@@ -148,23 +153,12 @@ export const solid: Target = defineTarget({
     },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    // A composable's call and what a module or a composable gives are declared before this
-    // target emits them (ADR-0069, ADR-0070): until its composables lane lands, a component that
-    // uses one is reported, never emitted without it (P2).
-    const composable = composableUse(component);
-    if (composable) {
-      context.report({
-        code: "UF1002",
-        severity: "error",
-        message: `The solid target does not emit ${composable.what} yet: it lands with this target's composables lane.`,
-        span: composable.span,
-      });
-      return [];
-    }
     // Every name the source declares or reads is taken before the output claims its own
-    // (`props`, `Show`, `cx`, `setCount`), so none of them captures a reference (ADR-0035).
+    // (`props`, `Show`, `cx`, `setCount`), so none of them captures a reference (ADR-0035); so is
+    // every name the module declares for its components to read, which keep theirs (ADR-0070).
     const names = sourceNames(component, context.module);
     for (const name of freeNames(component, names)) names.delete(name);
+    for (const name of moduleValueNames(context.module)) names.add(name);
     // A source's components are joined into one module where it is loaded (ADR-0053): each claims
     // the class and scope helpers from bases of its own (`cx_1`), past the names any other
     // component declares.
@@ -186,6 +180,8 @@ export const solid: Target = defineTarget({
     addPassThroughImports(component, context.module, imports);
     // The types it imports, by name (ADR-0067): a child's from its output, `./Field`.
     addTypeImports(component, context.module, imports, (name) => name);
+    // The composables it calls, from their outputs (ADR-0069).
+    addComposableImports(component, context.module, imports);
     const placeholders = new Placeholders();
     const composition = new SolidComposition(component, context.module, imports);
     const props = solidProps(component, imports, placeholders, {
@@ -238,6 +234,8 @@ export const solid: Target = defineTarget({
       exportsOf(component.name, context.module.exports),
     );
     const keys = composition.keys().map((text) => placeholders.statements(`${text}\n`));
+    // What it reads of its module: its imported values and its constants (ADR-0070).
+    const reads = moduleReads(component.name, context.module, imports, placeholders);
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
     // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
     // component's style after its script.
@@ -251,11 +249,11 @@ export const solid: Target = defineTarget({
         contents: printComponentModule(
           {
             types: [
-              ...moduleTypes(component, context.module, types),
+              ...moduleTypes(component, context.module, [...types, ...reads.types]),
               ...(props.events ? [props.events] : []),
               ...composition.types,
             ],
-            body: [...keys, ...setup.hoisted, ...statements],
+            body: [...keys, ...reads.constants, ...setup.hoisted, ...statements],
             helpers: [...helpers(), ...code.helpers()],
             // Collected last: the helpers import what they call.
             imports: [...imports.toDeclarations(), ...sheet],
@@ -266,6 +264,7 @@ export const solid: Target = defineTarget({
       },
     ];
   },
+  emitComposable,
 });
 
 /**
