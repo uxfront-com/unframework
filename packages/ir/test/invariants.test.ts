@@ -3227,14 +3227,14 @@ describe("checkInvariants on a composable's narrowed result", () => {
   it("accepts narrowed paths on a read of a ref a composable returns", () => {
     const module = modules();
     // The render's read of `on.value`, the `usedState` binding the fixture destructures.
-    const shown = findInModule("on.value");
+    const read = findInModule("on.value");
     walk(module.components[0]!.render, {
-      enter(node) {
-        if (node.kind !== "Interpolation") return;
-        const ref = node.value.refs.find(
-          (each) => each.kind === "Binding" && each.span.start === shown.start,
+      enter(entered) {
+        if (entered.kind !== "Interpolation") return;
+        const ref = entered.value.refs.find(
+          (each) => each.kind === "Binding" && each.span.start === read.start,
         );
-        if (ref?.kind === "Binding") ref.narrowed = [createNarrowedPath(shown, "local")];
+        if (ref?.kind === "Binding") ref.narrowed = [createNarrowedPath(read, "local")];
       },
     });
     expect(JSON.stringify(module.components[0]!.render)).toContain('"narrowed"');

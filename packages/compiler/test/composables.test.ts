@@ -153,7 +153,8 @@ describe("a module of composables", () => {
           name: "useToggle",
           parameters: [{ name: "initial", kind: "value", type: "boolean" }],
           members: [
-            { name: "on", kind: "state" },
+            // Its type as its value infers it: `ref(initial)` holds the parameter's (ADR-0069).
+            { name: "on", kind: "state", type: "boolean" },
             { name: "toggle", kind: "function", client: true },
           ],
           hasEffects: true,
