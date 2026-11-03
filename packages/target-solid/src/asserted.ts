@@ -27,8 +27,11 @@ import type {
 /** Whether Solid's spelling of a binding of this kind loses a narrowing in `scope`. */
 export function assertsIn(kind: Binding["kind"], scope: NarrowedPath["scope"]): boolean {
   switch (kind) {
+    // A composable's state and derived values are accessors too (ADR-0069).
     case "state":
     case "derived":
+    case "usedState":
+    case "usedDerived":
       return scope !== "template";
     case "prop":
       return scope === "closure";
@@ -45,12 +48,10 @@ export function assertsIn(kind: Binding["kind"], scope: NarrowedPath["scope"]): 
     case "slotScope":
     case "context":
     case "component":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+    // Read as written (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
     case "argument":
-    case "usedState":
-    case "usedDerived":
     case "usedFn":
     case "usedConst":
       return false;
