@@ -310,12 +310,17 @@ export function watchEffectCode(
   const body = item.effect.async ? `void (async () => {\n${statements}\n})();` : statements;
   const effect = `${names.core("afterRenderEffect")}((${cleanup?.name ?? ""}) => {\n${body}\n}${injectorOption(names, late)});`;
   if (!cleanup) return { code: effect };
+  // A late one is assigned in `ngOnInit`, so its ref is optional and writable, as a watcher's.
   const ref = {
     name: plan.members.claim("renderEffect"),
     type: names.type("AfterRenderRef"),
-    optional: false,
+    optional: late,
   };
-  return { code: `this.${ref.name} = ${effect}`, ref, destroy: `this.${ref.name}.destroy();` };
+  return {
+    code: `this.${ref.name} = ${effect}`,
+    ref,
+    destroy: `this.${ref.name}${late ? "?." : "."}destroy();`,
+  };
 }
 
 /**

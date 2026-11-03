@@ -339,6 +339,8 @@ const CALLS: Record<string, Record<string, string>> = {
       "",
       'import { save, track } from "./api";',
       "",
+      "const ping = (text: string): string => text;",
+      "",
       "export default function Actions() {",
       "  const emit = defineEmits<{ save: [text: string] }>();",
       "  return (",
@@ -352,7 +354,90 @@ const CALLS: Record<string, Record<string, string>> = {
       '      <button type="button" onClick={() => emit("save", "x")}>',
       "        Emit",
       "      </button>",
+      '      <button type="button" onClick={() => ping("p")}>',
+      "        Ping",
+      "      </button>",
       "    </div>",
+      "  );",
+      "}",
+    ].join("\n"),
+  },
+  // `watchEffect`s after a call with effects in `ngOnInit`, with and without a cleanup: they are
+  // registered there after it, with the component's injector, a cleanup's ref assigned there.
+  "calls/late-effects": {
+    "useSeen.uf.ts": [
+      'import { onMounted, ref } from "unframework";',
+      "",
+      "export function useSeen(label: () => string) {",
+      "  const seen = ref(label());",
+      "  onMounted(() => {",
+      "    seen.value = label();",
+      "  });",
+      "  return { seen };",
+      "}",
+    ].join("\n"),
+    "Seen.uf.tsx": [
+      'import { ref, watchEffect } from "unframework";',
+      "",
+      'import { useSeen } from "./useSeen.uf.ts";',
+      "",
+      "export default function Seen({ label }: { label: string }) {",
+      '  const last = ref("");',
+      "  const count = ref(0);",
+      "  const { seen } = useSeen(() => label);",
+      "  watchEffect(() => {",
+      "    count.value = seen.value.length;",
+      "  });",
+      "  watchEffect((onCleanup) => {",
+      "    last.value = `seen ${seen.value}`;",
+      "    onCleanup(() => {",
+      '      last.value = "";',
+      "    });",
+      "  });",
+      "  return (",
+      "    <p>",
+      "      {last.value} {count.value}",
+      "    </p>",
+      "  );",
+      "}",
+    ].join("\n"),
+  },
+  // A second call with effects after one in `ngOnInit`, which follows it there though it reads
+  // no input.
+  "calls/two-calls": {
+    "useSeen.uf.ts": [
+      'import { onMounted, ref } from "unframework";',
+      "",
+      "export function useSeen(label: () => string) {",
+      "  const seen = ref(label());",
+      "  onMounted(() => {",
+      "    seen.value = label();",
+      "  });",
+      "  return { seen };",
+      "}",
+    ].join("\n"),
+    "useTicks.uf.ts": [
+      'import { onMounted, ref } from "unframework";',
+      "",
+      "export function useTicks() {",
+      "  const ticks = ref(0);",
+      "  onMounted(() => {",
+      "    ticks.value++;",
+      "  });",
+      "  return { ticks };",
+      "}",
+    ].join("\n"),
+    "Pair.uf.tsx": [
+      'import { useSeen } from "./useSeen.uf.ts";',
+      'import { useTicks } from "./useTicks.uf.ts";',
+      "",
+      "export default function Pair({ label }: { label: string }) {",
+      "  const { seen } = useSeen(() => label);",
+      "  const { ticks } = useTicks();",
+      "  return (",
+      "    <p>",
+      "      {seen.value} {ticks.value}",
+      "    </p>",
       "  );",
       "}",
     ].join("\n"),
@@ -445,7 +530,7 @@ describe("angular composable call sites", () => {
     async () => {
       const code = await component("calls/callback-input", "announcer.ts");
       expect(code).toMatch(/protected readonly announce = runInInjectionContext\(/);
-      expect(methodBody(code, "ngOnInit(): void")).not.toContain("this.announce");
+      expect(code).not.toContain("this.announce =");
     },
   );
 
@@ -487,6 +572,39 @@ describe("angular composable call sites", () => {
       expect(code).toContain('import { save, track } from "./api";');
       expect(code).toMatch(/\(click\)="void currentSave\('y'\)"/);
       expect(code).toMatch(/\(click\)="void track\('z'\)"/);
+      expect(code).toMatch(/\(click\)="void ping\('p'\)"/);
+    },
+  );
+
+  it(
+    "registers `watchEffect`s after a call in `ngOnInit` there, with the injector",
+    { timeout: 60_000 },
+    async () => {
+      const code = await component("calls/late-effects", "seen.ts");
+      expect(methodBody(code, "constructor()")).not.toContain("afterRenderEffect");
+      const init = methodBody(code, "ngOnInit(): void");
+      const call = init.search(/this\.seen\w* = /);
+      const effects = [...init.matchAll(/afterRenderEffect\(/g)].map(({ index }) => index);
+      expect(call).toBeGreaterThan(-1);
+      expect(effects).toHaveLength(2);
+      for (const at of effects) expect(at).toBeGreaterThan(call);
+      expect([...init.matchAll(/\{ injector: this\.injector \}/g)]).toHaveLength(2);
+      // The cleanup's ref is assigned in `ngOnInit`: optional and writable.
+      expect(code).toMatch(/private renderEffect\?: AfterRenderRef;/);
+      expect(code).toContain("this.renderEffect?.destroy();");
+    },
+  );
+
+  it(
+    "calls a composable with effects in `ngOnInit` after another call there",
+    { timeout: 60_000 },
+    async () => {
+      const code = await component("calls/two-calls", "pair.ts");
+      const init = methodBody(code, "ngOnInit(): void");
+      const first = init.search(/this\.seen\w* = /);
+      const second = init.search(/this\.ticks\w* = /);
+      expect(first).toBeGreaterThan(-1);
+      expect(second).toBeGreaterThan(first);
     },
   );
 });
