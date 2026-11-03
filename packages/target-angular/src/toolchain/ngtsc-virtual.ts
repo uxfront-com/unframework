@@ -76,11 +76,11 @@ export interface Compiled {
 export type WorkerReply = { request: number } & ({ compiled: Compiled } | { failure: unknown });
 
 /**
- * Compiles `<abs>/X.uf.tsx.ts` and `<abs>/X.uf.ts.ts` ids with Angular's AOT compiler under the strict options L3
- * checks with, failing the module on any error (template type errors included) and passing
- * warnings to Vite. Compiles run one at a time in a worker, each reusing the previous program, so
- * libraries are analysed once. `declarations` are the ambient declarations each program reads
- * beside the module (`ToolchainContext.declarations`).
+ * Compiles `<abs>/X.uf.tsx.ts` and `<abs>/X.uf.ts.ts` ids with Angular's AOT compiler under the
+ * strict options L3 checks with, failing the module on any error (template type errors included)
+ * and passing warnings to Vite. Compiles run one at a time in a worker, each reusing the previous
+ * program, so libraries are analysed once. `declarations` are the ambient declarations each
+ * program reads beside the module (`ToolchainContext.declarations`).
  */
 export function ngtscVirtual(
   compiler: AngularCompiler,

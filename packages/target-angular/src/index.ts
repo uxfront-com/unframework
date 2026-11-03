@@ -52,6 +52,7 @@ import {
   bindingById,
   formOf,
   memberOf,
+  moduleMember,
   planComponent,
   slotQuery,
 } from "./plan.ts";
@@ -278,16 +279,17 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   );
   // A composable's result is read through its call's holder (ADR-0069).
   const templateMembers = new Set<string>(
-    templateBindings.map((binding) => memberOf(plan, binding).split(".")[0]!),
+    templateBindings
+      .filter((binding) => formOf(plan, binding) !== "module")
+      .map((binding) => memberOf(plan, binding).split(".")[0]!),
   );
-  // A module's value is read through a member of its name, as a global is (ADR-0070).
-  const moduleMembers = [
-    ...new Set(
-      templateBindings
-        .filter((binding) => formOf(plan, binding) === "module")
-        .map((binding) => binding.name),
-    ),
-  ];
+  // A module's value is read through a member, of its name unless the class declares that one,
+  // as a global is (ADR-0070).
+  const moduleMembers = new Map(
+    templateBindings
+      .filter((binding) => formOf(plan, binding) === "module")
+      .map((binding) => [binding.name, moduleMember(plan, binding)] as const),
+  );
   for (const method of listeners.methods) templateMembers.add(method.name);
   for (const guard of listeners.guards) templateMembers.add(guard);
   for (const slot of reads.slots) templateMembers.add(slotQuery(slot));
@@ -324,7 +326,8 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     declarations: closure,
     rules,
     templateMembers,
-    globals: [...reads.globals, ...moduleMembers],
+    globals: reads.globals,
+    moduleMembers,
     handlers: listeners.methods,
     guards: listeners.guards,
     ...(listeners.once === undefined ? {} : { once: listeners.once }),

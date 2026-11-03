@@ -63,11 +63,13 @@ emit("save") }`): the class's own member takes another name instead (`src/plan.t
   `track` expression may read only its item, `$index` and the component's members, so a signal
   a key reads is read there as `this.label()`. Constants, ids and methods are members, read by
   name.
-- **Members.** Each allowed global the template reads (`Math`, `String`) is a `protected
-readonly` member of the same name: a template sees only its component's members. So is each
-  value of the module the template reads, a constant or an import (`protected readonly SIZES =
-SIZES;`), which class code reads by its module name (ADR-0070). A member the template uses is
-  `protected`; one only the class uses is `private`.
+- **Members.** A template sees only its component's members. So each allowed global the template
+  reads (`Math`, `String`) is a `protected readonly` member of the same name. So is each module
+  value the template reads, a constant or an import: `protected readonly SIZES = SIZES;`. Class
+  code reads a module value by its module name (ADR-0070). Where an output, the `class` and
+  `style` inputs or a slot's query takes that name, the template's member takes another
+  (`currentSave`). A member the template uses is `protected`; one only the class uses is
+  `private`.
 - **Names.** Angular's compiler accepts a signal input only in a class whose decorator is
   imported as `Component`, so a component named `Component` takes the class name `Component_1`
   and is exported under its own; an import a source name takes is imported under another name
@@ -158,42 +160,55 @@ none is read: its `return x;` keeps only what `x` changes.
 
 ### Composables (ADR-0069)
 
-A `.uf.ts` module's composable is its own module, `use-toggle.ts` (`src/composable.ts`): an
-exported function that needs an injection context, as Angular's own `inject` functions do, its
-parameters and type parameters as written. Its setup is the function's body in source order, each
-binding a local: a state is `signal(initial)`, read `on()`, written through `set` and returned as
-`on.asReadonly()`, since a caller never writes it (UF2036); a derived value is `computed`; a
-constant, a `let` and a function are as written, and a getter argument is called and a callback
-argument called as the source does. `watch` is an `effect()` over a `computed` of its source, as a
-component's is, whose first run records the value, since the composable may run before the
-caller's inputs are set, which a getter argument may read; `watchEffect` is an
-`afterRenderEffect`, `onMounted` is `afterNextRender`, and `onUnmounted` is
-`inject(DestroyRef).onDestroy(…)`, registered in the browser only. The module imports what it uses
-from Angular, the types its parameters and setup name, and the values and constants it reads of
-its own module, as a component does.
+A `.uf.ts` module's composable is its own module, `use-toggle.ts` (`src/composable.ts`). It is an
+exported function that needs an injection context, as Angular's own `inject` functions do. Its
+parameters and type parameters are as written.
 
-A caller holds each call's result in a member named for the composable (`useMediaQuery` →
-`mediaQuery`, `toggle_1` where `toggle` is taken), and reads a returned ref through it,
-`this.mediaQuery.matches()`, its template through a `@let`, and a returned function or constant as
-`mediaQuery.update()`. A template statement that calls a returned function is `void` (`(click)="void
-toggle_1.toggle()"`): the API says no more of its result than whether it is async, and Angular
-prevents the default on `false`. Where the call runs keeps its order among the class's code
-(`src/plan.ts`, `CallPlacement`):
+Its setup is the function's body, in source order, and each binding is a local:
 
-- a field initialiser, in source order, by default;
-- the constructor, in source order, for a composable with effects that a hook or an effect the
-  constructor registers comes before (`afterNextRender`), so the composable's runs after it
-  (`semantics/composable-effect-order`): the member is typed `ReturnType<typeof useTracked>`;
-- `ngOnInit`, through `runInInjectionContext(this.injector, …)`, where a value argument reads an
-  input or what reads one, which is set only then.
+- A state is `signal(initial)`. It is read as `on()` and written through `set`. It is returned as
+  `on.asReadonly()`, since a caller never writes it (UF2036).
+- A derived value is `computed`.
+- A constant, a `let` and a function are as written. A getter argument is called, and a callback
+  argument is called as the source calls it.
+- `watch` is an `effect()` over a `computed` of its source, as a component's is. Its first run
+  records the value: the composable may run before the caller's inputs are set, and a getter
+  argument may read one.
+- `watchEffect` is an `afterRenderEffect`, and `onMounted` is `afterNextRender`.
+- `onUnmounted` is `inject(DestroyRef).onDestroy(…)`, registered in the browser only.
 
-A composable with effects runs in an injector of its own, `Injector.create({ providers: [],
-parent: this.injector })`, which `ngOnDestroy` destroys where the call sits among the component's
-`onUnmounted` hooks. Its `DestroyRef` is that injector, so the composable's teardown runs then: the
-component's own `DestroyRef` runs only once Angular has removed the parent's listeners of the
-component's outputs, so a callback the teardown calls could no longer emit to the parent
-(`semantics/composable-unmount-order`). The injector reads its view through its parent, so the
-composable's effects stay the component's view effects.
+The module imports what it uses from Angular, the types its parameters and setup name, and the
+values and constants it reads of its own module, as a component does.
+
+A caller holds each call's result in a member named for the composable: `useMediaQuery` gives
+`mediaQuery`. The name skips every name the class declares, the `class` and `style` inputs
+included (`toggle_1`). Class code reads a returned ref as `this.mediaQuery.matches()`, and the
+template reads it through a `@let`. A returned function or constant is read as
+`mediaQuery.update()`. A template statement that calls a returned function is `void`
+(`(click)="void toggle_1.toggle()"`). The API says only whether the function is async, and
+Angular prevents the default on `false`.
+
+Where the call runs keeps its order among the class's code (`src/plan.ts`, `CallPlacement`):
+
+- By default, a field initialiser, in source order.
+- The constructor, in source order, for a composable with effects that comes after a hook or an
+  effect the constructor registers (`afterNextRender`). The composable's effects then run after
+  it (`semantics/composable-effect-order`).
+- `ngOnInit`, through `runInInjectionContext(this.injector, …)`, where an argument reads an input
+  or what reads one. A value is read when the call runs, and the composable may call a getter or
+  a callback while it sets up. An input is set only then.
+
+A call in the constructor or in `ngOnInit` is a private method's, `createTracked()`. The holder is
+typed `ReturnType<typeof this.createTracked>`, so a generic composable keeps the type the call
+infers.
+
+A composable with effects runs in an injector of its own,
+`Injector.create({ providers: [], parent: this.injector })`. `ngOnDestroy` destroys it where the
+call sits among the component's `onUnmounted` hooks. Its `DestroyRef` is that injector, so the
+composable's teardown runs then. The component's own `DestroyRef` runs only once Angular has
+removed the parent's listeners of the component's outputs, and a callback the teardown calls could
+no longer emit to the parent (`semantics/composable-unmount-order`). The injector reads its view
+through its parent, so the composable's effects stay the component's view effects.
 
 ### Composition (ADR-0053 to ADR-0056)
 

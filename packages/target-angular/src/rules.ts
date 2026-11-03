@@ -7,7 +7,7 @@ import type { Binding, EmitReference, EventDeclaration, Expression } from "@unfr
 
 import { narrowedWhole } from "./narrowing.ts";
 import { outputName } from "./outputs.ts";
-import { formOf, isSignal, memberOf, slotQuery, unreachable } from "./plan.ts";
+import { formOf, isSignal, memberOf, moduleMember, slotQuery, unreachable } from "./plan.ts";
 import type { MemberForm, Plan } from "./plan.ts";
 
 /**
@@ -293,9 +293,9 @@ function templateRead(plan: Plan, binding: Binding, site: RewriteSite, written: 
     case "value":
     case "method":
     case "arrow":
-    // A member of its own name (ADR-0070).
+    // A member of its own name, or another where the class declares that one (ADR-0070).
     case "module":
-      return site === "key" ? `this.${binding.name}` : binding.name;
+      return site === "key" ? `this.${moduleMember(plan, binding)}` : moduleMember(plan, binding);
     // Through its `@let`, as the setup's own signals.
     case "result":
       return site === "key" ? `this.${memberOf(plan, binding)}()` : binding.name;
@@ -378,8 +378,9 @@ export function statementRead(
     case "method":
     case "arrow":
     case "loop":
-    case "module":
       return binding.name;
+    case "module":
+      return moduleMember(plan, binding);
     case "resultValue":
       return memberOf(plan, binding);
     case "result":

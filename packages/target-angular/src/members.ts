@@ -56,6 +56,8 @@ export interface MemberContext {
   templateMembers: ReadonlySet<string>;
   /** The globals the template reads: each is a member of its own name. */
   globals: readonly string[];
+  /** The module values the template reads, by name: each is a member, `moduleMember`'s. */
+  moduleMembers: ReadonlyMap<string, string>;
   /** The methods listeners' handlers moved to. */
   handlers: readonly HandlerMethod[];
   /** The members that remember the elements a once listener ran on (./listeners.ts). */
@@ -491,8 +493,23 @@ export function classMembers(context: MemberContext): {
       // by the composable's return type.
       case "Use": {
         const { holder, placement, injector } = calls.get(item)!;
+        // A call the constructor or `ngOnInit` makes is a private method's, whose return type
+        // types the holder: `ReturnType<typeof useSelect>` would leave a type parameter
+        // `unknown`, where the call infers it.
+        let invocation = callCode(context, item);
+        let type: string | undefined;
+        if (placement !== "field") {
+          const factory = plan.members.claim(`create${pascalCase(holder)}`);
+          methods.push(
+            js.methodDefinition(factory, [], statements(placeholders, `return ${invocation};`), {
+              accessibility: "private",
+            }),
+          );
+          invocation = `this.${factory}()`;
+          type = `ReturnType<typeof this.${factory}>`;
+        }
         const run = (into: string) =>
-          `${core("runInInjectionContext")}(this.${into}, () => ${callCode(context, item)})`;
+          `${core("runInInjectionContext")}(this.${into}, () => ${invocation})`;
         // A composable with effects runs in an injector of its own, which `ngOnDestroy`
         // destroys here among the `onUnmounted` hooks, running the teardown it registered.
         if (injector !== undefined) {
@@ -507,9 +524,7 @@ export function classMembers(context: MemberContext): {
           );
           effect(initCode, { destroy: `this.${injector}.destroy();` }, true);
         }
-        const call = injector === undefined ? callCode(context, item) : run(injector);
-        const type = () =>
-          placeholders.type(`ReturnType<typeof ${composableName(plan, item.composable)}>`);
+        const call = injector === undefined ? invocation : run(injector);
         switch (placement) {
           case "field":
             fields.push(
@@ -524,7 +539,7 @@ export function classMembers(context: MemberContext): {
               js.propertyDefinition(holder, null, {
                 accessibility: visibility(holder),
                 readonly: true,
-                typeAnnotation: type(),
+                typeAnnotation: placeholders.type(type!),
               }),
             );
             constructorCode.push(`this.${holder} = ${call};`);
@@ -533,7 +548,7 @@ export function classMembers(context: MemberContext): {
             // Definitely assigned: `ngOnInit` assigns it before the template reads it.
             const field = js.propertyDefinition(holder, null, {
               accessibility: visibility(holder),
-              typeAnnotation: type(),
+              typeAnnotation: placeholders.type(type!),
             });
             fields.push({ ...field, definite: true });
             initCode.push(
@@ -636,7 +651,11 @@ export function classMembers(context: MemberContext): {
   // The template reads module functions through members of their names, as it reads globals,
   // and each pass-through name through the member the plan gives it (ADR-0064).
   const globals = [
-    ...[...context.globals.map((name) => [name, name] as const), ...plan.recipes]
+    ...[
+      ...context.globals.map((name) => [name, name] as const),
+      ...context.moduleMembers,
+      ...plan.recipes,
+    ]
       .map(([value, member]) => ({ value, member }))
       .toSorted((a, b) => (a.member < b.member ? -1 : a.member > b.member ? 1 : 0)),
     ...context.helpers.map(({ name }) => ({ value: name, member: name })),
