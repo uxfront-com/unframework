@@ -56,7 +56,13 @@ import type { AuthoringApi } from "./authoring.ts";
 import { analyzeComposable, COMPOSABLE_FILE, findComposables } from "./composables.ts";
 import type { AnalyzedComposable, ComposableCandidate } from "./composables.ts";
 import { Reporter } from "./context.ts";
-import { checkTypeDeclaration, closure, collectTypes, setupTypes } from "./declarations.ts";
+import {
+  checkCopiedText,
+  checkTypeDeclaration,
+  closure,
+  collectTypes,
+  setupTypes,
+} from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
 import { frameworkOf, isAuthoringModule } from "./frameworks.ts";
 import { containsJsx, lowerElement, lowerRootChildren, ROOT } from "./lower.ts";
@@ -1071,6 +1077,13 @@ function moduleConstant(statement: AST.VariableDeclaration, context: ModuleConte
     );
     return;
   }
+  // Each output copies it as written, into a frontmatter or a script block (ADR-0070).
+  checkCopiedText(
+    { start: statement.start, end: statement.end },
+    context.source,
+    reporter,
+    "A module's constant",
+  );
   const annotation = declarator.id.typeAnnotation?.typeAnnotation;
   context.shared.values.set(
     declarator.id,

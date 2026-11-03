@@ -1,7 +1,6 @@
 import {
   addPassThroughImports,
   childImports,
-  composableUse,
   defineTarget,
   ImportSet,
   scopeRoots,
@@ -10,6 +9,7 @@ import {
 import type { CapabilityCell, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
+import { emitComposable } from "./composable.ts";
 import { astroRender, takesFallthrough } from "./composition.ts";
 import { childTags, frontmatterOf } from "./frontmatter.ts";
 import { printComponentMarkup } from "./markup.ts";
@@ -131,19 +131,6 @@ export const astro: Target = defineTarget({
    * decides how the frontmatter declares `Props`.
    */
   emit(component: UfComponent, context): OutputFile[] {
-    // A composable's call and what a module or a composable gives are declared before this
-    // target emits them (ADR-0069, ADR-0070): until its composables lane lands, a component that
-    // uses one is reported, never emitted without it (P2).
-    const composable = composableUse(component);
-    if (composable) {
-      context.report({
-        code: "UF1002",
-        severity: "error",
-        message: `The astro target does not emit ${composable.what} yet: it lands with this target's composables lane.`,
-        span: composable.span,
-      });
-      return [];
-    }
     const { module } = context;
     const spelling = spellingOf(component, module);
     const imports = new ImportSet(spelling.scope);
@@ -193,6 +180,8 @@ export const astro: Target = defineTarget({
       },
     ];
   },
+  // A composable is a static `.ts` module, which returns initial values (ADR-0069).
+  emitComposable,
 });
 
 export default astro;
