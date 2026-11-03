@@ -22,6 +22,7 @@ import type {
   ProvideItem,
   SetupItem,
   StateItem,
+  UseItem,
   WatchEffectItem,
   WatchItem,
   WatchSource,
@@ -48,6 +49,11 @@ export interface BodyStatement {
   text: string;
   group: number;
   compact: boolean;
+  /**
+   * A composable's call, whose text destructures every member and live reader until the output
+   * is printed, and then only those it reads (`resolveUses`).
+   */
+  use?: { item: UseItem; call: string };
 }
 
 /** The type of the `onCleanup` a watcher's callback or an effect receives. */
@@ -94,6 +100,17 @@ export function printSetup(plan: ReactPlan, code: ReactCode): PrintedSetup {
       printed.body.push({ text: nextTickDeclaration(plan), group, compact: true });
       continue;
     }
+    if (item.kind === "Use") {
+      group++;
+      const call = useCall(plan, code, item);
+      printed.body.push({
+        text: `${usePattern(plan, item, true)}${call}`,
+        group,
+        compact: !call.includes("\n"),
+        use: { item, call },
+      });
+      continue;
+    }
     let previous: string | undefined;
     for (const [scope, text, part = "main"] of printItem(plan, code, item)) {
       if (scope === "module") {
@@ -121,6 +138,7 @@ function declarationOrder(plan: ReactPlan): (SetupItem | typeof NEXT_TICK)[] {
   const declared = new Map<BindingId, number>();
   for (const [index, item] of items.entries()) {
     if ("binding" in item && !plan.hoisted.has(item.binding)) declared.set(item.binding, index);
+    if (item.kind === "Use") for (const { binding } of item.members) declared.set(binding, index);
   }
   // `nextTick`'s declaration is one more item: it reads the state its `settled` compares, and
   // every item that calls it reads it.
@@ -433,12 +451,79 @@ function printItem(plan: ReactPlan, code: ReactCode, item: SetupItem): Printed {
       return printProvide(plan, code, item);
     case "Inject":
       return printInject(plan, code, item);
-    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+    // `printSetup` prints a composable's call (`useCall`).
     case "Use":
       return [];
     default:
       return item satisfies never;
   }
+}
+
+/**
+ * A composable's call, `useToggle(false);`, its hook imported from its output beside the `.uf.ts`
+ * (ADR-0069). A value argument is passed as the source writes it, which the hook reads once; a
+ * getter as a function of what the caller renders, which the hook calls in render; and a
+ * callback as client code, which the hook calls through a mirror of the last render's.
+ */
+function useCall(plan: ReactPlan, code: ReactCode, item: UseItem): string {
+  for (const entry of plan.module.imports ?? []) {
+    const name = entry.names.find(
+      (each) => each.kind === "Composable" && each.local === item.composable,
+    );
+    if (!name) continue;
+    const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
+    plan.names.add(`${directory}${name.imported}`, name.imported, {
+      local: item.composable,
+      exact: true,
+    });
+  }
+  const parts = item.arguments.map((argument) => {
+    switch (argument.kind) {
+      case "Value":
+        return code.code(argument.value, "pure");
+      case "Getter":
+        return code.fn(argument.getter, "pure");
+      case "Callback":
+        return code.fn(argument.callback, "client");
+      default:
+        return argument satisfies never;
+    }
+  });
+  return `${item.composable}(${parts.join(", ")});`;
+}
+
+/**
+ * `const { on, currentOn: currentOpen } = `: what a composable's call destructures, the members
+ * the output reads and the live readers its client code calls, in the source's order, or every
+ * one of them (`all`). Nothing where it reads none: the call still runs the hook.
+ */
+function usePattern(plan: ReactPlan, item: UseItem, all = false): string {
+  const parts = item.members.flatMap(({ binding }) => {
+    const { member, local, reader, read } = plan.used.get(binding)!;
+    return [
+      ...(all || read.render ? [property(member, local)] : []),
+      ...(reader && (all || read.client) ? [property(reader.member, reader.local)] : []),
+    ];
+  });
+  return parts.length ? `const { ${parts.join(", ")} } = ` : "";
+}
+
+/** `key: local`, or `key` where the two are one name. */
+function property(key: string, local: string): string {
+  return key === local ? key : `${key}: ${local}`;
+}
+
+/**
+ * The body's statements with each composable's call destructuring only what the output reads,
+ * once every other statement and the render are printed (ADR-0069): an unread member would fail
+ * L5.
+ */
+export function resolveUses(plan: ReactPlan, body: readonly BodyStatement[]): BodyStatement[] {
+  return body.map((statement) =>
+    statement.use
+      ? { ...statement, text: `${usePattern(plan, statement.use.item)}${statement.use.call}` }
+      : statement,
+  );
 }
 
 /**
@@ -991,6 +1076,15 @@ function renderRead(plan: ReactPlan, id: BindingId): string {
     // A composable's parameter, by its name (ADR-0069).
     case "argument":
       return binding.name;
+    // What a composable's call destructures, as its caller renders it (ADR-0069).
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst": {
+      const used = plan.used.get(id)!;
+      used.read.render = true;
+      return used.local;
+    }
     case "loopVar":
     case "templateRef":
     case "localConst":
@@ -1002,13 +1096,8 @@ function renderRead(plan: ReactPlan, id: BindingId): string {
     case "slotScope":
     case "context":
     case "component":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
-    case "usedState":
-    case "usedDerived":
-    case "usedFn":
-    case "usedConst":
       return binding.name;
     default:
       return binding.kind satisfies never;
@@ -1046,6 +1135,13 @@ function dependencies(plan: ReactPlan, body: Code): string[] {
       case "argument":
         found.push(binding.name);
         break;
+      // What a composable's call destructures: React's lint knows none of it is stable (ADR-0069).
+      case "usedState":
+      case "usedDerived":
+      case "usedFn":
+      case "usedConst":
+        found.push(renderRead(plan, reference.binding));
+        break;
       case "localConst":
       case "localFn":
         if (!plan.hoisted.has(reference.binding)) found.push(binding.name);
@@ -1057,13 +1153,8 @@ function dependencies(plan: ReactPlan, body: Code): string[] {
       case "slots":
       case "slotScope":
       case "component":
-      // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
       case "moduleConst":
       case "import":
-      case "usedState":
-      case "usedDerived":
-      case "usedFn":
-      case "usedConst":
         break;
       default:
         binding.kind satisfies never;

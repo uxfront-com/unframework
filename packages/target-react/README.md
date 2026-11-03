@@ -127,8 +127,7 @@ are emulated, and the others native. Of the styles' cells, `child-root-scope` is
 (`scopeAttributes`), and the others native. Of M5's cells, `composable-effect-order` is
 unsupported (UF4005, info): a composable is a custom hook, whose effects keep React's order rather
 than the caller's (ADR-0069); `generic-components`, `generic-slot-props` and `composables` are
-native. Until its call site lands, the target reports a composable's call, what a composable gives
-a component, and a module's values a component or a composable reads as UF1002.
+native.
 
 Every name the output introduces (`cx`, `setCount`, `countRef`, `CounterEvents`, `listen`,
 `CSSProperties`, `_props`) is claimed around the source's own names, so none captures another.
@@ -222,6 +221,34 @@ member, named `currentX`, or the first free `currentX_1`, `currentX_2`… where 
 member or an earlier reader. `liveReaderNames` applies that rule to the composable's API alone, so
 a caller names the readers as the hook does.
 
+A component calls the hook where the source calls the composable, `const { on, toggle } =
+useToggle(false)`, imported from its output beside the `.uf.ts`, `import { useToggle } from
+"./useToggle"`:
+
+- Render code reads a returned ref or derived value as its render value, `on`, and client code
+  through its live reader, `currentOn()`, so a read right after a call of the composable's
+  function sees its write (`semantics/composable-read-after-write`). A returned function or
+  constant is read as it is, one for the hook's life.
+- The call destructures what the output reads, and nothing else: an unread member would fail
+  L5. A renamed member keeps its local, `{ matches: wide, currentMatches: currentWide }`. A call
+  whose result the output never reads is a bare call, which still runs the hook.
+- A value argument is passed as written, and the hook reads it once. A getter is a function of
+  what the caller renders, `() => quantity`, which the hook calls in render; a new one each
+  render, so the hook's memos over it run again, and with React Compiler, which memoizes it, only
+  when what it reads changes. A callback is client code, `(reached) => { messageRef.current = …;
+setMessage(messageRef.current); }`, which the hook calls through its mirror of the last
+  render's.
+
+## Shared modules
+
+A component or a hook reads a module's values as the source does (`src/modules.ts`, ADR-0070):
+its output imports the values of a relative `.ts` module from its copy beside the outputs,
+`import { formatPrice } from "./format"`, and declares the module's top-level constants it
+reaches, and those they read, at module scope, as written and in source order, with the types
+they name. The output keeps the source's module and function scopes, so every name keeps its
+meaning: the target claims its own names past the module's, and a setup value named like one of
+them is never hoisted beside it.
+
 ## Toolchain
 
 The tests and tooling build, check and run React output through three entries:
@@ -256,6 +283,6 @@ types' `DomElementFor` over lib.dom) on every element of the vocabulary.
 `test/attributes.test.ts` checks the attribute spellings and values against `@types/react` for
 every attribute the IR can hold (the names its types lack are the IR's `UNDECLARED_ATTRIBUTES`,
 which the analyser rejects), and pins the one gap left: SVG's `<title>`, which React types as
-HTML's. `test/composable.test.ts` compiles the composables of the pending composable cases
-(`tests/integration/pending/`) through `compile()` and runs L3, L4 and L5 on each hook, with the
-shapes above.
+HTML's. `test/composable.test.ts` compiles every source of the pending composable and
+shared-module cases (`tests/integration/pending/`) through `compile()` and runs L3, L4 and L5 on
+each case's outputs, its components, hooks and copied `.ts` modules, with the shapes above.
