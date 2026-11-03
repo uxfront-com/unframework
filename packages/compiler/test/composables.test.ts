@@ -30,9 +30,9 @@ const WAITING = TARGET_NAMES.filter(
 );
 /**
  * The targets without `emitComposable`: Vue's, React's, Svelte's, Solid's and Astro's have landed
- * (ADR-0069).
+ * (ADR-0069), and Qwik's, ahead of its call site.
  */
-const WITHOUT_EMITTER = WAITING;
+const WITHOUT_EMITTER = WAITING.filter((name) => name !== "qwik");
 
 describe("composables and shared modules before each target's lane", () => {
   it.each(WAITING)("%s reports UF1002 where a component first reads a module's value", (name) => {
