@@ -803,6 +803,21 @@ describe("module-level constants", () => {
     expect(problems(named, run(named).diagnostics)).toEqual(["UF2004 Object.freeze(t)"]);
   });
 
+  // A constant is copied into each output as written, as setup code is (ADR-0070).
+  it("reports a constant whose text would end the block it is copied into (UF1002)", () => {
+    const source = [
+      "const BANNER = `top\n---\nx`;",
+      'const TAG = "</script>";',
+      "export function A() { return <p data-tag={TAG}>{BANNER}</p>; }",
+    ].join("\n");
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF1002 ---", "UF1002 </script"]);
+    expect(diagnostics.map(({ message }) => message)).toEqual([
+      "A module's constant cannot hold a line that is only `---`: it would end the Astro frontmatter it is copied into.",
+      "A module's constant cannot hold `</script`: it would end the Vue or Svelte script block it is copied into.",
+    ]);
+  });
+
   it("reports a write of a constant (UF2011), and a change in place (UF2004)", () => {
     const source = [
       "const SIZES = { sm: 8 };",
