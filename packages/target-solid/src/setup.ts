@@ -540,7 +540,7 @@ export class SolidCode {
  * template with no substitution, a boolean or `null`. An array or an object may hold a `T`.
  */
 const LITERAL =
-  /^\s*(?:-?\d[\d_.]*(?:e[+-]?\d+)?n?|0[box][\da-f_]+n?|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`[^`$\\]*`|true|false|null)\s*$/i;
+  /^\s*(?:-?(?:\d|\.\d)[\d_.]*(?:e[+-]?\d+)?n?|0[box][\da-f_]+n?|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`[^`$\\]*`|true|false|null)\s*$/i;
 
 /** Whether Solid tracks a read of a binding of a kind: what `untrack` is for. */
 function tracked(kind: Binding["kind"]): boolean {
@@ -763,6 +763,25 @@ function hoistable(component: UfComponent, module: UfModule): Set<BindingId> {
     }
   }
   const hoisted = new Set(candidates.keys());
+  if (imported) {
+    // What reads a module value, itself or through the functions and constants it reads: such a
+    // constant runs that read as the module loads, so it stays in the component.
+    const reads = new Set<BindingId>();
+    for (let size = -1; size !== reads.size;) {
+      size = reads.size;
+      for (const [id, codes] of candidates) {
+        const reaches = codes.some((piece) =>
+          piece.refs.some((ref) => {
+            if (ref.kind !== "Binding") return false;
+            const kind = kinds.get(ref.binding);
+            return kind === "moduleConst" || kind === "import" || reads.has(ref.binding);
+          }),
+        );
+        if (reaches) reads.add(id);
+      }
+    }
+    for (const id of reads) if (!functions.has(id)) hoisted.delete(id);
+  }
   for (let changed = true; changed;) {
     changed = false;
     for (const [id, codes] of candidates) {
@@ -771,13 +790,10 @@ function hoistable(component: UfComponent, module: UfModule): Set<BindingId> {
         piece.refs.some((ref) => {
           switch (ref.kind) {
             case "Binding": {
-              // A module's value is at module scope already (ADR-0070), but a sibling's output
-              // declares it for an owner that imports it, which a function may read, never a
-              // constant.
+              // A module's value is at module scope already (ADR-0070); a constant that reads it
+              // in an owner that imports it was kept in the component above.
               const kind = kinds.get(ref.binding);
-              if (kind === "moduleConst" || kind === "import") {
-                return imported && !functions.has(id);
-              }
+              if (kind === "moduleConst" || kind === "import") return false;
               return !hoisted.has(ref.binding);
             }
             case "Write":

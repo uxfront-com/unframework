@@ -308,9 +308,10 @@ export function useToggle(initial: boolean) {
   (or a `.uf.ts` module with several composables), the main one declares every module value any
   of them reaches, with the types those name, and exports what the others read
   (`export { STEP };`); the others import it from there, `import { STEP } from "./Pair"`, as a
-  sibling's injection key is (ADR-0054), and keep a setup constant that reads it in their
-  function. Neither reads a module value as it loads, so the join's order and the files' import
-  cycle don't matter. The joined module then exports those names beside the source's own.
+  sibling's injection key is (ADR-0054), and keep in their function a setup constant that reads
+  one, itself or through the functions it calls; those functions may still move to module scope,
+  since their bodies run later. So the joined module reads a module value only after the main
+  output declares it, whatever the join's order and the files' import cycle. The joined module then exports those names beside the source's own.
 - A composable's watchers keep their own module's queue (`createWatcher`), apart from the
   caller's, so `composable-effect-order` is unsupported (UF4005, info). Its hooks attach to the
   calling component, so they run on its mount and unmount, once for each call.

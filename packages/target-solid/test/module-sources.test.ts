@@ -110,6 +110,33 @@ const CASES: Record<string, Record<string, string>> = {
       "",
     ].join("\n"),
   },
+  // A sibling's setup constant that calls its functions, which read the main component's value.
+  "modules/hoisted-call": {
+    "Pair.uf.tsx": [
+      "const STEP = 2;",
+      "",
+      "export function Part() {",
+      "  function twice() {",
+      "    return STEP * 2;",
+      "  }",
+      "  function quad() {",
+      "    return twice() * 2;",
+      "  }",
+      "  const LIMIT = quad();",
+      "  return <p>Part {LIMIT}</p>;",
+      "}",
+      "",
+      "export default function Pair() {",
+      "  return (",
+      "    <div>",
+      "      <Part />",
+      "      <p>Pair {STEP}</p>",
+      "    </div>",
+      "  );",
+      "}",
+      "",
+    ].join("\n"),
+  },
   // Typed constants: one both components read, one only the sibling reads.
   "modules/typed-constants": {
     "Shared.uf.tsx": [
@@ -261,41 +288,60 @@ describe("solid sources beyond the composable cases", () => {
     expect(part).toContain('import { DOUBLE, STEP, VIA } from "./Pair";');
     const inside = part.slice(part.indexOf("export function Part"));
     expect(inside).toContain("const triple = STEP * 3;");
-    // Executed as the `ssr` project loads it: the files joined, Part's first.
-    const source = cases.find(({ id }) => id === "modules/shared-constant-reader")!.sources[0]!;
-    const files = source.outputs.filter(({ path }) => path.endsWith(".tsx"));
-    expect(files.map(({ path }) => path)).toEqual(["Part.tsx", "Pair.tsx"]);
-    const joined = joinModules(
-      files,
-      "Pair.uf.tsx compiles to two files",
-      files.map(({ path }) => path),
-    );
-    if ("error" in joined) throw new Error(joined.error);
-    const { code } = transformSync(joined.code, {
-      filename: "Pair.tsx",
-      babelrc: false,
-      configFile: false,
-      presets: [
-        [require.resolve("babel-preset-solid"), { generate: "ssr", hydratable: true }],
-        [require.resolve("@babel/preset-typescript"), { isTSX: true, allExtensions: true }],
-      ],
-    })!;
-    const directory = join(scratch, "joined");
-    mkdirSync(directory, { recursive: true });
-    writeFileSync(
-      join(directory, "tokens.ts"),
-      CASES["modules/shared-constant-reader"]!["tokens.ts"]!,
-    );
-    writeFileSync(join(directory, "Pair.js"), code!);
-    const loaded = (await import(join(directory, "Pair.js"))) as { default: unknown };
-    const html = (await renderToString(loaded.default, {})).replaceAll(
-      / data-hk="[^"]*"|<!--\/?\$?-->/g,
-      "",
-    );
+    const html = await renderJoined("modules/shared-constant-reader", "Pair");
     expect(html).toContain("Part 4 8 6");
     expect(html).toContain("Pair 2");
   });
+
+  it("loads a source's joined module, a sibling's constant calling what reads the main one's", async () => {
+    // The functions move to module scope, and the constant that calls them stays in the
+    // component, which runs once the main output has declared the value (src/setup.ts).
+    const part = outputOf("modules/hoisted-call", "Part.tsx");
+    expect(part.slice(0, part.indexOf("export function Part"))).toContain("function quad()");
+    expect(part.slice(part.indexOf("export function Part"))).toContain("const LIMIT = quad();");
+    const html = await renderJoined("modules/hoisted-call", "Pair");
+    expect(html).toContain("Part 8");
+    expect(html).toContain("Pair 2");
+  });
 });
+
+/**
+ * A case's source joined as the `ssr` project loads it (the files in component order, a sibling
+ * component's first), compiled for the server, imported and rendered, without hydration marks.
+ */
+async function renderJoined(id: string, main: string): Promise<string> {
+  const source = cases.find((each) => each.id === id)!.sources[0]!;
+  const files = source.outputs.filter(({ path }) => path.endsWith(".tsx"));
+  expect(files.map(({ path }) => path)).toEqual(["Part.tsx", `${main}.tsx`]);
+  // The outputs the source owns, as the unplugin passes them, never the copied `.ts` modules.
+  const joined = joinModules(
+    files,
+    `${main}.uf.tsx compiles to two files`,
+    files.map(({ path }) => path),
+  );
+  if ("error" in joined) throw new Error(joined.error);
+  const { code } = transformSync(joined.code, {
+    filename: `${main}.tsx`,
+    babelrc: false,
+    configFile: false,
+    presets: [
+      [require.resolve("babel-preset-solid"), { generate: "ssr", hydratable: true }],
+      [require.resolve("@babel/preset-typescript"), { isTSX: true, allExtensions: true }],
+    ],
+  })!;
+  const directory = join(scratch, "joined", id);
+  mkdirSync(directory, { recursive: true });
+  for (const [name, contents] of Object.entries(CASES[id]!)) {
+    if (name.endsWith(".ts") && !name.endsWith(".uf.ts"))
+      writeFileSync(join(directory, name), contents);
+  }
+  writeFileSync(join(directory, `${main}.js`), code!);
+  const loaded = (await import(join(directory, `${main}.js`))) as { default: unknown };
+  return (await renderToString(loaded.default, {})).replaceAll(
+    / data-hk="[^"]*"|<!--\/?\$?-->/g,
+    "",
+  );
+}
 
 /** One output of a case, by its path. */
 function outputOf(id: string, path: string): string {
