@@ -558,6 +558,10 @@ function templateStatement(
   if (bindingById(plan, call.callee).kind === "usedFn") {
     return { code: statement, valued: resultApi(plan, call.callee).async !== true };
   }
+  // A module's function (ADR-0070) is declared in another module, so nothing here says whether it
+  // returns a value: the statement discards it, as Angular prevents the default on `false`.
+  const { kind } = bindingById(plan, call.callee);
+  if (kind === "import" || kind === "moduleConst") return { code: statement, valued: true };
   // A setup function's value, unless it is async (its value is a promise).
   const callee = functionOf(plan.component, call.callee);
   return { code: statement, valued: !callee.async && returnsValue(callee) };

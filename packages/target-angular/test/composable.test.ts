@@ -198,7 +198,177 @@ const CALLS: Record<string, Record<string, string>> = {
       "}",
     ].join("\n"),
   },
+  // A callback that reads an input: a composable calls it only from client code (UF2035), once
+  // the inputs are set, so the call stays a field.
+  "calls/callback-input": {
+    "useAnnounce.uf.ts": [
+      'import { onMounted, ref } from "unframework";',
+      "",
+      "export function useAnnounce(say: (text: string) => void) {",
+      "  const said = ref(false);",
+      "  onMounted(() => {",
+      '    say("ready");',
+      "    said.value = true;",
+      "  });",
+      "  return { said };",
+      "}",
+    ].join("\n"),
+    "Announcer.uf.tsx": [
+      'import { ref } from "unframework";',
+      "",
+      'import { useAnnounce } from "./useAnnounce.uf.ts";',
+      "",
+      "export default function Announcer({ name }: { name: string }) {",
+      '  const last = ref("");',
+      "  const { said } = useAnnounce((text) => {",
+      "    last.value = `${name} is ${text}`;",
+      "  });",
+      "  return (",
+      "    <p>",
+      '      {last.value} {said.value ? "said" : "waiting"}',
+      "    </p>",
+      "  );",
+      "}",
+    ].join("\n"),
+  },
+  // A call with effects in `ngOnInit` between the caller's mounted hooks: the later hook follows
+  // it there (semantics contract, effect order).
+  "calls/order-init": {
+    "useLabelled.uf.ts": [
+      'import { onMounted, ref } from "unframework";',
+      "",
+      "export function useLabelled(report: (entry: string) => void, label: () => string) {",
+      "  const seen = ref(label());",
+      "  onMounted(() => report(`composable mounted ${label()}`));",
+      "  return { seen };",
+      "}",
+    ].join("\n"),
+    "Labelled.uf.tsx": [
+      'import { onMounted, ref } from "unframework";',
+      "",
+      'import { useLabelled } from "./useLabelled.uf.ts";',
+      "",
+      "export default function Labelled({ label }: { label: string }) {",
+      "  const entries = ref<string[]>([]);",
+      "  function record(entry: string) {",
+      "    entries.value = [...entries.value, entry];",
+      "  }",
+      '  onMounted(() => record("caller mounted first"));',
+      "  const { seen } = useLabelled(",
+      "    (entry) => record(entry),",
+      "    () => label,",
+      "  );",
+      '  onMounted(() => record("caller mounted last"));',
+      "  return (",
+      "    <section>",
+      '      <p role="status">{seen.value}</p>',
+      "      <ol>",
+      "        {entries.value.map((entry, index) => (",
+      "          <li key={index}>{entry}</li>",
+      "        ))}",
+      "      </ol>",
+      "    </section>",
+      "  );",
+      "}",
+    ].join("\n"),
+  },
+  // A call with a watcher after the caller's watcher, which `ngOnInit` creates: the call follows
+  // it there.
+  "calls/order-watch": {
+    "useCounted.uf.ts": [
+      'import { ref, watch } from "unframework";',
+      "",
+      "export function useCounted(report: (entry: string) => void) {",
+      "  const count = ref(0);",
+      '  watch(count, () => report("composable watcher"));',
+      "  function increment() {",
+      "    count.value++;",
+      "  }",
+      "  return { count, increment };",
+      "}",
+    ].join("\n"),
+    "Bumper.uf.tsx": [
+      'import { ref, watch } from "unframework";',
+      "",
+      'import { useCounted } from "./useCounted.uf.ts";',
+      "",
+      "export default function Bumper() {",
+      "  const entries = ref<string[]>([]);",
+      "  const bumps = ref(0);",
+      "  function record(entry: string) {",
+      "    entries.value = [...entries.value, entry];",
+      "  }",
+      "  watch(",
+      "    () => bumps.value,",
+      '    () => record("caller watcher"),',
+      "  );",
+      "  const { count, increment } = useCounted((entry) => record(entry));",
+      "  function bump() {",
+      "    bumps.value++;",
+      "    increment();",
+      "  }",
+      "  return (",
+      "    <section>",
+      '      <p role="status">Count: {count.value}</p>',
+      '      <button type="button" onClick={() => bump()}>',
+      "        Bump",
+      "      </button>",
+      "      <ol>",
+      "        {entries.value.map((entry, index) => (",
+      "          <li key={index}>{entry}</li>",
+      "        ))}",
+      "      </ol>",
+      "    </section>",
+      "  );",
+      "}",
+    ].join("\n"),
+  },
+  // Handlers that only call a function imported from a `.ts` module, one named like an output.
+  "calls/module-handler": {
+    "api.ts": [
+      "export function save(text: string): string {",
+      "  return text;",
+      "}",
+      "",
+      "export function track(text: string): void {",
+      "  void text;",
+      "}",
+    ].join("\n"),
+    "Actions.uf.tsx": [
+      'import { defineEmits } from "unframework";',
+      "",
+      'import { save, track } from "./api";',
+      "",
+      "export default function Actions() {",
+      "  const emit = defineEmits<{ save: [text: string] }>();",
+      "  return (",
+      "    <div>",
+      '      <button type="button" onClick={() => save("y")}>',
+      "        Save",
+      "      </button>",
+      '      <button type="button" onClick={() => track("z")}>',
+      "        Track",
+      "      </button>",
+      '      <button type="button" onClick={() => emit("save", "x")}>',
+      "        Emit",
+      "      </button>",
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n"),
+  },
 };
+
+/**
+ * The body of the component's method, `ngOnInit(): void` or `constructor()`, by its head: the
+ * component is the file's last class, after the directives (`ufScope`'s `ngOnInit`).
+ */
+function methodBody(code: string, head: string): string {
+  const start = code.lastIndexOf(`  ${head} {\n`);
+  if (start === -1) return "";
+  const end = code.indexOf("\n  }\n", start);
+  return code.slice(start, end);
+}
 
 describe("angular composable call sites", () => {
   const integrationDir = scratchDir();
@@ -221,8 +391,9 @@ describe("angular composable call sites", () => {
     { timeout: 60_000 },
     async () => {
       const code = await component("calls/getter-input", "greeting.ts");
-      expect(code).toContain("ngOnInit()");
-      expect(code).toMatch(/runInInjectionContext\(this\.\w+, \(\) => this\.createEager\(\)\)/);
+      expect(methodBody(code, "ngOnInit(): void")).toMatch(
+        /this\.eager = runInInjectionContext\(this\.\w+, \(\) => this\.createEager\(\)\)/,
+      );
       expect(code).not.toMatch(/= useEager\(/);
     },
   );
@@ -232,7 +403,9 @@ describe("angular composable call sites", () => {
     { timeout: 60_000 },
     async () => {
       const code = await component("calls/generic-input", "counter.ts");
-      expect(code).toMatch(/runInInjectionContext\(this\.\w+, \(\) => this\.createLatest\(\)\)/);
+      expect(methodBody(code, "ngOnInit(): void")).toMatch(
+        /runInInjectionContext\(this\.\w+, \(\) => this\.createLatest\(\)\)/,
+      );
       expect(code).toContain("ReturnType<typeof this.createLatest>");
     },
   );
@@ -242,7 +415,8 @@ describe("angular composable call sites", () => {
     { timeout: 60_000 },
     async () => {
       const code = await component("calls/generic-constructor", "tracker.ts");
-      expect(code).toMatch(/constructor\(\) \{[^]*this\.tracked\w* = /);
+      expect(methodBody(code, "constructor()")).toMatch(/this\.tracked\w* = /);
+      expect(methodBody(code, "ngOnInit(): void")).not.toMatch(/this\.tracked\w* = /);
       expect(code).toContain("ReturnType<typeof this.createTracked>");
     },
   );
@@ -264,4 +438,55 @@ describe("angular composable call sites", () => {
     const code = await component("calls/holder-style", "swatch.ts");
     expect(code).not.toMatch(/readonly style = useStyle\(/);
   });
+
+  it(
+    "calls a composable from a field where only a callback argument reads an input",
+    { timeout: 60_000 },
+    async () => {
+      const code = await component("calls/callback-input", "announcer.ts");
+      expect(code).toMatch(/protected readonly announce = runInInjectionContext\(/);
+      expect(methodBody(code, "ngOnInit(): void")).not.toContain("this.announce");
+    },
+  );
+
+  it(
+    "registers the caller's later hooks after a call in `ngOnInit`, in source order",
+    { timeout: 60_000 },
+    async () => {
+      const code = await component("calls/order-init", "labelled.ts");
+      const constructor = methodBody(code, "constructor()");
+      const init = methodBody(code, "ngOnInit(): void");
+      expect(constructor).toContain('"caller mounted first"');
+      expect(constructor).not.toContain('"caller mounted last"');
+      const call = init.indexOf("this.labelled = ");
+      const last = init.indexOf('"caller mounted last"');
+      expect(call).toBeGreaterThan(-1);
+      expect(last).toBeGreaterThan(call);
+      expect(init.slice(last)).toMatch(/\{ injector: this\.injector \}/);
+    },
+  );
+
+  it(
+    "calls a composable with effects in `ngOnInit` after the caller's earlier watcher",
+    { timeout: 60_000 },
+    async () => {
+      const code = await component("calls/order-watch", "bumper.ts");
+      const init = methodBody(code, "ngOnInit(): void");
+      const watcher = init.indexOf('"caller watcher"');
+      const call = init.indexOf("this.counted = ");
+      expect(watcher).toBeGreaterThan(-1);
+      expect(call).toBeGreaterThan(watcher);
+    },
+  );
+
+  it(
+    "compiles a handler that calls a function imported from a module",
+    { timeout: 60_000 },
+    async () => {
+      const code = await component("calls/module-handler", "actions.ts");
+      expect(code).toContain('import { save, track } from "./api";');
+      expect(code).toMatch(/\(click\)="void currentSave\('y'\)"/);
+      expect(code).toMatch(/\(click\)="void track\('z'\)"/);
+    },
+  );
 });

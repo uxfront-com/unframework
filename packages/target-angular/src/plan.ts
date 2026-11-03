@@ -18,6 +18,7 @@ import type {
   ComposableMemberApi,
   EventDeclaration,
   FunctionCode,
+  SetupItem,
   UfComponent,
   UfModule,
   UseItem,
@@ -88,8 +89,10 @@ export type MemberForm =
  * - `field`: a field initialiser, in source order;
  * - `constructor`: in the constructor, in source order, where the composable has effects and the
  *   constructor registers an earlier hook or effect, which runs first (`afterNextRender`);
- * - `init`: in `ngOnInit` through `runInInjectionContext`, where an argument reads an input
- *   or what reads one, which is set only then.
+ * - `init`: in `ngOnInit` through `runInInjectionContext`, where a value or a getter argument
+ *   reads an input or what reads one, which is set only then, or where the composable has effects and a watcher
+ *   or such a call comes before it, which `ngOnInit` creates. The hooks and effects after it are
+ *   registered there too (`Plan.late`).
  */
 export type CallPlacement = "field" | "constructor" | "init";
 
@@ -159,6 +162,12 @@ export interface Plan {
    * it (`currentSave`). Class code reads the value by its module name either way.
    */
   moduleMembers: ReadonlyMap<BindingId, string>;
+  /**
+   * The `onMounted` hooks and `watchEffect`s that follow a composable's call with effects in
+   * `ngOnInit`, and are registered there after it, in source order, rather than in the
+   * constructor before it (ADR-0069).
+   */
+  late: ReadonlySet<SetupItem>;
 }
 
 /** The names Angular gives a component class's own members: no binding may take them. */
@@ -272,7 +281,7 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
       .map(({ id, name, kind }) => [id, claimMember(outputSafeName(name, kind))] as const),
   );
   const bindingNames = new Set(component.bindings.map(({ name }) => name));
-  const { forms, seeded, placements } = formsOf(component);
+  const { forms, seeded, placements, late } = formsOf(component);
   // Each call's result is held by a member named for its composable (`useMediaQuery` →
   // `mediaQuery`), past every name of the class, the fallthrough inputs included (ADR-0069).
   const calls = component.setup.flatMap((item): ComposableCall[] => {
@@ -324,6 +333,7 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
     calls,
     results,
     moduleMembers,
+    late,
   };
 }
 
@@ -436,6 +446,7 @@ function formsOf(component: UfComponent): {
   forms: Map<BindingId, MemberForm>;
   seeded: Set<BindingId>;
   placements: Map<UseItem, CallPlacement>;
+  late: Set<SetupItem>;
 } {
   const forms = new Map<BindingId, MemberForm>();
   const seeded = new Set<BindingId>();
@@ -500,6 +511,12 @@ function formsOf(component: UfComponent): {
   const escaping = escapingFunctions(component);
   // Whether the constructor registers a hook or an effect before the item at hand.
   let constructs = false;
+  // Whether `ngOnInit` creates a watcher before the item at hand, which a call with effects then
+  // follows there, and whether it makes such a call, which the hooks and effects after it then
+  // follow there too: each keeps its source order among the caller's (ADR-0069).
+  let watches = false;
+  let defers = false;
+  const late = new Set<SetupItem>();
   for (const item of component.setup) {
     switch (item.kind) {
       case "State": {
@@ -539,37 +556,45 @@ function formsOf(component: UfComponent): {
         forms.set(item.binding, escaping.has(item.binding) ? "arrow" : "method");
         break;
       case "WatchEffect":
-        constructs = true;
+        if (defers) late.add(item);
+        else constructs = true;
         break;
       case "Lifecycle":
-        if (item.hook === "mounted") constructs = true;
+        if (item.hook !== "mounted") break;
+        if (defers) late.add(item);
+        else constructs = true;
         break;
       case "Watch":
+        watches = true;
+        break;
       case "Provide":
       case "Inject":
         break;
       case "Use": {
-        // The composable may call a getter or a callback while it sets up (`ref(name())`), as
-        // it reads a value: one that reads an input runs only once the inputs are set.
-        const code = item.arguments.map((argument) => {
+        // The composable reads a value, and may call a getter, while it sets up (`ref(name())`):
+        // one that reads an input runs only once the inputs are set. A callback runs only from
+        // client code (UF2035), by then.
+        const code = item.arguments.flatMap((argument) => {
           switch (argument.kind) {
             case "Value":
-              return argument.value;
+              return [argument.value];
             case "Getter":
-              return argument.getter.body;
+              return [argument.getter.body];
             case "Callback":
-              return argument.callback.body;
+              return [];
             default:
               return unreachable(argument);
           }
         });
-        const placement: CallPlacement = code.some(readsLazily)
-          ? "init"
-          : item.hasEffects && constructs
-            ? "constructor"
-            : "field";
+        const placement: CallPlacement =
+          code.some(readsLazily) || (item.hasEffects && (watches || defers))
+            ? "init"
+            : item.hasEffects && constructs
+              ? "constructor"
+              : "field";
         placements.set(item, placement);
         if (placement === "constructor") constructs = true;
+        if (placement === "init" && item.hasEffects) defers = true;
         for (const { binding } of item.members) {
           const kind = kinds.get(binding);
           forms.set(
@@ -588,7 +613,7 @@ function formsOf(component: UfComponent): {
         unreachable(item);
     }
   }
-  return { forms, seeded, placements };
+  return { forms, seeded, placements, late };
 }
 
 /** The template refs a `ref` on a component holds, which hold its instance (ADR-0054). */

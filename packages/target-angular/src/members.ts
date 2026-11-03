@@ -453,11 +453,18 @@ export function classMembers(context: MemberContext): {
         effect(initCode, watcherCode(item, plan, context.rules, names));
         pins = undefined;
         break;
+      // After a composable's call with effects in `ngOnInit`, in `ngOnInit` after it (ADR-0069).
       case "WatchEffect":
-        effect(constructorCode, watchEffectCode(item, plan, context.rules, names));
+        if (plan.late.has(item)) {
+          effect(initCode, watchEffectCode(item, plan, context.rules, names, true));
+          pins = undefined;
+        } else effect(constructorCode, watchEffectCode(item, plan, context.rules, names));
         break;
       case "Lifecycle":
-        effect(constructorCode, lifecycleCode(item, plan, context.rules, names), true);
+        if (plan.late.has(item)) {
+          effect(initCode, lifecycleCode(item, plan, context.rules, names, true), true);
+          pins = undefined;
+        } else effect(constructorCode, lifecycleCode(item, plan, context.rules, names), true);
         break;
       case "Inject": {
         // Its parent's value (`skipSelf`, since a component that provides the key it injects
@@ -494,8 +501,8 @@ export function classMembers(context: MemberContext): {
       case "Use": {
         const { holder, placement, injector } = calls.get(item)!;
         // A call the constructor or `ngOnInit` makes is a private method's, whose return type
-        // types the holder: `ReturnType<typeof useSelect>` would leave a type parameter
-        // `unknown`, where the call infers it.
+        // types the holder: the composable's own return type would leave a type parameter
+        // `unknown`, where the call infers it (`useControllableState`).
         let invocation = callCode(context, item);
         let type: string | undefined;
         if (placement !== "field") {
