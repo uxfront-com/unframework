@@ -901,9 +901,12 @@ function checkTypeDeclarations(
   return indices;
 }
 
-/** Whether a component's props type is `Props` itself, which no output declares again. */
+/**
+ * Whether a component's props type is `Props` itself, which no output declares again: the
+ * reference, with type arguments for a generic one (`Props<T>`, ADR-0068).
+ */
 function takesProps(component: UfComponent): boolean {
-  return component.propsParameter?.type.code === "Props";
+  return /^Props\s*(?:<[^]*>)?$/.test(component.propsParameter?.type.code ?? "");
 }
 
 /**
