@@ -16,11 +16,12 @@ import {
   createTypeReExport,
   createTypeParameter,
   createTypeText,
+  codeOf,
+  functionsOf,
   isExportName,
   walk,
 } from "@unframework/ir";
 import type {
-  Binding,
   ComponentApi,
   ComposableApi,
   ImportedName,
@@ -36,6 +37,7 @@ import type {
   TypeImport,
   TypeParameter,
   UfComponent,
+  UfComposable,
   UfExport,
   UfModule,
 } from "@unframework/ir";
@@ -44,10 +46,16 @@ import {
   findComponents,
   findTypeDeclarations,
   isComponentName,
+  parseModule,
   typeDeclarationOf,
   visitorKeys,
 } from "@unframework/parser";
-import type { AST, ComponentExport, ParsedModule } from "@unframework/parser";
+import type {
+  AST,
+  ComponentExport,
+  ParsedModule,
+  TypeDeclarationStatement,
+} from "@unframework/parser";
 
 import { componentApi, withReferences } from "./api.ts";
 import type { ApiContext } from "./api.ts";
@@ -485,7 +493,7 @@ export function analyzeModule(
     return { module: undefined, diagnostics: reporter.diagnostics, api };
   }
   exports.sort((a, b) => a.span.start - b.span.start);
-  const read = readConstants(constants, lowered);
+  const read = readConstants(constants, lowered, types.declarations, parsed.source);
   const readTypes = new Set(
     closure(
       read.map(({ binding }) => constantTypes.get(binding)),
@@ -587,7 +595,7 @@ function composableResult(
     return { module: undefined, diagnostics: reporter.diagnostics, api };
   }
   const composables = lowered.map(({ composable }) => composable);
-  const read = readConstants(constants, composables);
+  const read = readConstants(constants, composables, types.declarations, parsed.source);
   const used = new Set([
     ...composables.flatMap((composable) => composable.types),
     ...closure(
@@ -630,25 +638,85 @@ function composableResult(
 }
 
 /**
- * The module's constants its components read, and those they read in turn, in source order
- * (ADR-0070): what every output declares.
+ * The module's constants its components read, those they read in turn, and those a `typeof` in
+ * their types names, in source order (ADR-0070): what every output declares. A copied type that
+ * queries a constant names it in the output, so the output declares it too.
  */
 function readConstants(
   constants: readonly ModuleConstant[],
-  components: readonly { bindings: readonly Binding[] }[],
+  owners: readonly (UfComponent | UfComposable)[],
+  declarations: readonly TypeDeclarationStatement[],
+  source: string,
 ): ModuleConstant[] {
   const byId = new Map(constants.map((constant) => [constant.binding, constant]));
+  const byName = new Map(constants.map((constant) => [constant.name, constant.binding]));
   const read = new Set<string>();
   const add = (id: string) => {
     const constant = byId.get(id);
     if (!constant || read.has(id)) return;
     read.add(id);
     for (const ref of constant.value.refs) if (ref.kind === "Binding") add(ref.binding);
+    const queried = [
+      ...(constant.type ? typeQueryRoots(`type T = ${constant.type.code};`) : []),
+      ...typeQueryRoots(`(${constant.value.code});`),
+    ];
+    for (const name of queried) if (byName.has(name)) add(byName.get(name)!);
   };
-  for (const component of components) {
-    for (const binding of component.bindings) if (binding.kind === "moduleConst") add(binding.id);
+  for (const owner of owners) {
+    for (const binding of owner.bindings) if (binding.kind === "moduleConst") add(binding.id);
+    const own = new Set(owner.bindings.map(({ name }) => name));
+    const texts = [
+      ...ownTypeTexts(owner).map((type) => `type T = ${type};`),
+      ...codeOf(owner).map(({ code }) => code.code),
+      ...declarations
+        .filter(({ name }) => owner.types.includes(name))
+        .map(({ node }) => source.slice(node.start, node.end)),
+    ];
+    for (const name of texts.flatMap(typeQueryRoots)) {
+      if (byName.has(name) && !own.has(name)) add(byName.get(name)!);
+    }
   }
   return constants.filter((constant) => read.has(constant.binding));
+}
+
+/** The type texts an owner's IR writes beside its code. */
+function ownTypeTexts(owner: UfComponent | UfComposable): string[] {
+  const found: string[] = [];
+  if ("props" in owner) {
+    if (owner.propsParameter) found.push(owner.propsParameter.type.code);
+    for (const prop of owner.props) found.push(prop.type.code);
+    if (owner.emits) found.push(owner.emits.type.code);
+  } else {
+    for (const parameter of owner.parameters) found.push(parameter.type.code);
+  }
+  for (const item of owner.setup) if ("type" in item && item.type) found.push(item.type.code);
+  for (const { function: fn } of functionsOf(owner)) {
+    for (const parameter of fn.parameters) if (parameter.type) found.push(parameter.type.code);
+    if (fn.returnType) found.push(fn.returnType.code);
+  }
+  for (const parameter of owner.typeParameters ?? []) {
+    if (parameter.constraint) found.push(parameter.constraint.code);
+    if (parameter.default) found.push(parameter.default.code);
+  }
+  return found;
+}
+
+/**
+ * The root name of each `typeof` in source text, `SIZES` in `keyof typeof SIZES`: a statement
+ * list, or an expression in parentheses where it parses as one.
+ */
+function typeQueryRoots(text: string): string[] {
+  let parsed = parseModule("query.ts", text);
+  if (parsed.errors.length) parsed = parseModule("query.ts", `(${text});`);
+  if (parsed.errors.length) return [];
+  const found: string[] = [];
+  visit(parsed.program, (node) => {
+    if (node.type !== "TSTypeQuery") return;
+    let name = node.exprName;
+    while (name.type === "TSQualifiedName") name = name.left;
+    if (name.type === "Identifier") found.push(name.name);
+  });
+  return found;
 }
 
 /**

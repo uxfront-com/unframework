@@ -49,6 +49,41 @@ function caller(setup: readonly string[], jsx = "<p>{on.value ? label : 'off'}</
   return { source, ...result, reported: problems(source, result.diagnostics) };
 }
 
+describe("a composable's nullable ref", () => {
+  it("is narrowed in client code as the caller's own ref is, from its API's type", () => {
+    const composable = [
+      'import { ref } from "unframework";',
+      "export function useUser() {",
+      "  const user = ref<{ name: string } | null>(null);",
+      "  return { user };",
+      "}",
+    ].join("\n");
+    const { api } = run(composable, "useUser.uf.ts");
+    const source = [
+      'import { useUser } from "./useUser.uf.ts";',
+      "export default function Profile() {",
+      "  const { user } = useUser();",
+      "  function report() {",
+      "    if (user.value) console.log(user.value.name);",
+      "  }",
+      '  return <button type="button" onClick={report}>Report</button>;',
+      "}",
+    ].join("\n");
+    const { module, diagnostics } = run(source, "Profile.uf.tsx", {
+      imports: new Map([["./useUser.uf.ts", api!]]),
+    });
+    expect(problems(source, diagnostics)).toEqual([]);
+    const read = source.indexOf("user.value.name");
+    const fn = module!.components[0]!.setup[1]!;
+    expect(fn.kind).toBe("Function");
+    const refs = fn.kind === "Function" ? fn.function.body.refs : [];
+    expect(refs.find((each) => "span" in each && each.span.start === read)).toMatchObject({
+      kind: "Binding",
+      narrowed: [{ span: { start: read, end: read + "user.value".length } }],
+    });
+  });
+});
+
 describe("a composable's call", () => {
   it("is resolved like a child: the compiler asks for each `.uf.ts` a component imports", () => {
     const source = [

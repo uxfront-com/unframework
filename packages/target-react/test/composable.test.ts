@@ -12,7 +12,7 @@ import type { OutputFile } from "@unframework/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { compileComposableCases } from "../../codegen/test/composable-cases.ts";
-import { compile } from "../../compiler/src/index.ts";
+import { compile, createFileResolver, createSyntacticOracle } from "../../compiler/src/index.ts";
 import { liveReaderNames } from "../src/plan.ts";
 import { toolchain } from "../src/toolchain/index.ts";
 import { packageDir, toolchainDir } from "./fixtures.ts";
@@ -58,6 +58,34 @@ async function expectClean(directory: string, outputs: readonly OutputFile[]): P
   for (const [path, messages] of linted) expect(messages, path).toEqual([]);
 }
 
+/**
+ * The sources at `files` (paths under `/project`), each `.uf.tsx` and `.uf.ts` one compiled for
+ * React through a resolver and a type oracle over them: every output, and each `.ts` source as a
+ * copy beside them, by path.
+ */
+async function compileProject(files: Record<string, string>) {
+  const readFile = (path: string) => Promise.resolve(files[path]);
+  const resolve = createFileResolver({ root: "/project", readFile });
+  const typeOracle = createSyntacticOracle({ root: "/project", readFile });
+  const diagnostics = [];
+  const outputs = new Map<string, string>();
+  for (const [path, source] of Object.entries(files)) {
+    const filename = path.slice("/project/".length);
+    if (!/\.uf\.tsx?$/.test(filename)) {
+      outputs.set(filename, source);
+      continue;
+    }
+    const result = await compile(source, { filename, targets: ["react"], resolve, typeOracle });
+    diagnostics.push(...result.diagnostics);
+    for (const file of result.outputs.react ?? []) outputs.set(file.path, file.contents);
+  }
+  return {
+    diagnostics,
+    outputs: [...outputs].map(([path, contents]) => ({ path, contents })),
+    output: (path: string) => outputs.get(path)!,
+  };
+}
+
 /** One `.uf.ts` source compiled for React. */
 async function compileHook(source: string, filename: string) {
   const result = await compile(source, { filename, targets: ["react"] });
@@ -65,6 +93,23 @@ async function compileHook(source: string, filename: string) {
 }
 
 describe("react composable cases", () => {
+  it("finds every composable and shared-module case", () => {
+    expect(cases.map(({ id }) => id)).toEqual([
+      "composables/use-toggle",
+      "composables/use-controllable-state",
+      "composables/use-media-query",
+      "composables/getter-argument",
+      "composables/callback-argument",
+      "modules/shared-constants",
+      "modules/shared-helpers",
+      "modules/module-constants",
+      "modules/nested-modules",
+      "semantics/composable-read-after-write",
+      "semantics/composable-effect-order",
+      "semantics/composable-unmount-order",
+    ]);
+  });
+
   it.each(cases)(
     "compiles $id to outputs that pass L3 to L5",
     { timeout: 60_000 },
@@ -166,6 +211,98 @@ describe("react composable hooks", () => {
       "if (countRef.current === limit) onLimitRef.current(countRef.current);",
     );
   });
+});
+
+describe("react composable calls, narrowed and typed", () => {
+  it(
+    "asserts a narrowed path of a nullable ref the hook returns, read through its live reader",
+    { timeout: 60_000 },
+    async () => {
+      const project = await compileProject({
+        "/project/useUser.uf.ts": [
+          'import { ref } from "unframework";',
+          "",
+          "export function useUser() {",
+          "  const user = ref<{ name: string } | null>(null);",
+          "  function signIn(name: string) {",
+          "    user.value = { name };",
+          "  }",
+          "  return { user, signIn };",
+          "}",
+          "",
+        ].join("\n"),
+        "/project/Profile.uf.tsx": [
+          'import { defineEmits } from "unframework";',
+          "",
+          'import { useUser } from "./useUser.uf.ts";',
+          "",
+          "export default function Profile() {",
+          "  const emit = defineEmits<{ name: [name: string] }>();",
+          "  const { user, signIn } = useUser();",
+          "",
+          "  function report() {",
+          '    signIn("a");',
+          '    if (user.value) emit("name", user.value.name);',
+          "  }",
+          "",
+          "  return (",
+          '    <button type="button" onClick={report}>',
+          '      {user.value ? user.value.name : "Nobody"}',
+          "    </button>",
+          "  );",
+          "}",
+          "",
+        ].join("\n"),
+      });
+      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+      expect(project.output("Profile.tsx")).toContain(
+        "if (currentUser()) onName?.(currentUser()!.name);",
+      );
+      await expectClean("calls/narrowed", project.outputs);
+    },
+  );
+
+  it("imports the type a module constant's annotation names", { timeout: 60_000 }, async () => {
+    const project = await compileProject({
+      "/project/tones.ts": 'export type Tone = "info" | "danger";\n',
+      "/project/Badge.uf.tsx": [
+        'import type { Tone } from "./tones";',
+        "",
+        'const DEFAULT: Tone = "info";',
+        "",
+        "export default function Badge() {",
+        "  return <b>{DEFAULT}</b>;",
+        "}",
+        "",
+      ].join("\n"),
+    });
+    expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+    expect(project.output("Badge.tsx")).toContain('import type { Tone } from "./tones";');
+    await expectClean("modules/constant-type", project.outputs);
+  });
+
+  it(
+    "declares a module constant a type reads only through `typeof`",
+    { timeout: 60_000 },
+    async () => {
+      const project = await compileProject({
+        "/project/Gauge.uf.tsx": [
+          'import { ref } from "unframework";',
+          "",
+          "const LIMITS = { min: 0, max: 9 };",
+          "",
+          "export default function Gauge() {",
+          "  const level = ref<typeof LIMITS.min>(0);",
+          "  return <b>{level.value}</b>;",
+          "}",
+          "",
+        ].join("\n"),
+      });
+      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+      expect(project.output("Gauge.tsx")).toContain("const LIMITS = { min: 0, max: 9 };");
+      await expectClean("modules/type-query", project.outputs);
+    },
+  );
 });
 
 describe("react composable shapes", () => {

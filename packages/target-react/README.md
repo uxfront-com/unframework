@@ -234,20 +234,23 @@ useToggle(false)`, imported from its output beside the `.uf.ts`, `import { useTo
   whose result the output never reads is a bare call, which still runs the hook.
 - A value argument is passed as written, and the hook reads it once. A getter is a function of
   what the caller renders, `() => quantity`, which the hook calls in render; a new one each
-  render, so the hook's memos over it run again, and with React Compiler, which memoizes it, only
-  when what it reads changes. A callback is client code, `(reached) => { messageRef.current = …;
-setMessage(messageRef.current); }`, which the hook calls through its mirror of the last
-  render's.
+  render, so the hook's memos over it run again, and with React Compiler, which memoises it, only
+  when what it reads changes. A callback is client code, `(reached) => { onLimit?.(reached); }`,
+  which the hook calls through its mirror of the last render's.
+- A composable's ref or computed value takes its kinds from the type its API writes, so a read
+  a condition narrows in client code is asserted, `currentUser()!.name`, as a component's own
+  computed value's is.
 
 ## Shared modules
 
 A component or a hook reads a module's values as the source does (`src/modules.ts`, ADR-0070):
 its output imports the values of a relative `.ts` module from its copy beside the outputs,
-`import { formatPrice } from "./format"`, and declares the module's top-level constants it
-reaches, and those they read, at module scope, as written and in source order, with the types
-they name. The output keeps the source's module and function scopes, so every name keeps its
-meaning: the target claims its own names past the module's, and a setup value named like one of
-them is never hoisted beside it.
+`import { formatPrice } from "./format"`. It declares the module's top-level constants it reaches,
+and those they read, at module scope, as written and in source order, a constant a copied type
+reads only through `typeof` included. The types those constants name come with them: the
+module's declarations, copied, and its type imports. The output keeps the source's module and
+function scopes, so every name keeps its meaning: the target claims its own names past the
+module's, and a setup value named like one of them is never hoisted beside it.
 
 ## Toolchain
 

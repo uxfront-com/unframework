@@ -113,7 +113,12 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
       ]
     : [];
   // The module's values it reads, as the source declares and imports them (ADR-0070).
-  const reads = moduleReads(owner, module, plan.names);
+  const reads = moduleReads(owner, module, plan.names, [
+    ...composable.parameters.map(({ type }) => type),
+    ...(composable.typeParameters ?? []).flatMap(({ constraint, default: fallback }) =>
+      [constraint, fallback].filter((type): type is TypeText => type !== undefined),
+    ),
+  ]);
   // The types it imports, by name, from where the source imports them (ADR-0067).
   addTypeImports(owner, module, plan.names, (name) => name);
   addParameterTypeImports(composable, context, plan.names);
