@@ -45,6 +45,40 @@ describe("module-level constants", () => {
     expect(JSON.stringify(module!.components[0]!.setup)).toContain('"binding":"SIZES@6"');
   });
 
+  it("keeps the constants a copied type queries with `typeof`, and those they query", () => {
+    const source = [
+      'import { ref } from "unframework";',
+      "const LIMITS = { min: 0, max: 9 };",
+      "const STEP: typeof LIMITS.max = 3;",
+      "const UNUSED = 1;",
+      "type Level = typeof STEP;",
+      "export function A() {",
+      "  const level = ref<Level>(0);",
+      "  const floor = ref<typeof LIMITS.min>(0);",
+      "  return <p>{level.value + floor.value}</p>;",
+      "}",
+    ].join("\n");
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    expect(module!.constants!.map(({ name }) => name)).toEqual(["LIMITS", "STEP"]);
+  });
+
+  it("keeps a constant that a function's body queries with `typeof`, where it returns", () => {
+    const source = [
+      "const LIMITS = { min: 0, max: 9 };",
+      "export function A() {",
+      "  function pick(value: unknown): number {",
+      "    const limits = value as typeof LIMITS;",
+      "    return limits.max;",
+      "  }",
+      "  return <p>{pick(null)}</p>;",
+      "}",
+    ].join("\n");
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    expect(module!.constants!.map(({ name }) => name)).toEqual(["LIMITS"]);
+  });
+
   it("keeps the constants a read constant reads, its annotation and its globals, in source order", () => {
     const source = [
       "const BASE = 4;",

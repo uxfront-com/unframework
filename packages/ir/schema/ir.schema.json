@@ -3377,7 +3377,8 @@
           ]
         },
         "type": {
-          "type": "string"
+          "type": "string",
+          "description": "Its type as written (`ref<User | null>`). Where the source writes none, a ref's or a derived value's type as the analyser infers it from the value, `unknown` where it cannot tell, so a caller checks and narrows its reads as its own (ADR-0046). Absent where nothing is known."
         },
         "async": {
           "type": "boolean",
@@ -3400,7 +3401,7 @@
         "kind"
       ],
       "additionalProperties": false,
-      "description": "A returned member of a composable's API: a ref of state, a derived value, a function or a constant, with its type as written where the source writes one."
+      "description": "A returned member of a composable's API: a ref of state, a derived value, a function or a constant, with its type."
     },
     "ImportedName": {
       "type": "object",

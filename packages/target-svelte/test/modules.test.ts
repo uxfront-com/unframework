@@ -143,7 +143,7 @@ describe("svelte composables", () => {
           "  const { on, label } = useToggle(false);",
           "  return (",
           '    <button type="button" onClick={() => toggle.value++}>',
-          "      {label} {open.value} {on.value} {toggle.value}",
+          '      {label} {open.value ? "open" : "shut"} {on.value ? "on" : "off"} {toggle.value}',
           "    </button>",
           "  );",
           "}",
@@ -154,7 +154,9 @@ describe("svelte composables", () => {
       expect(script).toContain("let toggle = $state(0);");
       expect(script).toContain("const open = useToggle(true);");
       expect(script).toContain("const toggle_1 = useToggle(false);");
-      expect(script).toContain("{toggle_1.label} {open.on} {toggle_1.on} {toggle}");
+      expect(script).toContain(
+        '{toggle_1.label} {open.on ? "open" : "shut"} {toggle_1.on ? "on" : "off"} {toggle}',
+      );
       expect(await typecheck(outputs)).toEqual(clean(outputs));
     },
   );
@@ -555,7 +557,7 @@ describe("svelte composables, names and types", () => {
           "  const { label } = useSwitch(false);",
           "  return (",
           "    <p>",
-          "      {on.value} {lit.value} {label}",
+          '      {on.value ? "on" : "off"} {lit.value ? "lit" : "dark"} {label}',
           "    </p>",
           "  );",
           "}",
@@ -655,7 +657,7 @@ describe("svelte composables, names and types", () => {
         "",
         "export default function Box() {",
         "  const { on } = toggle(false);",
-        "  return <p>{on.value}</p>;",
+        '  return <p>{on.value ? "on" : "off"}</p>;',
         "}",
         "",
       ].join("\n"),
@@ -710,7 +712,7 @@ describe("svelte composables, names and types", () => {
         "  const copy = ref(doubled.value);",
         "  return (",
         "    <p>",
-        "      {first.value} {copy.value}",
+        '      {first.value ? "on" : "off"} {copy.value}',
         "    </p>",
         "  );",
         "}",

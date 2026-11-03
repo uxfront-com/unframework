@@ -44,7 +44,7 @@ import type { InjectionKeyInfo } from "./setup.ts";
 import type { Shapes } from "./shapes.ts";
 import type { SharedValues } from "./shared.ts";
 import type { TypeTable } from "./types/from-type.ts";
-import { FUNCTION, has, union, UNDEFINED } from "./types/kinds.ts";
+import { FUNCTION, has, kindsType, union, UNDEFINED } from "./types/kinds.ts";
 import type { Kinds } from "./types/kinds.ts";
 
 /** A module of composables is a `.uf.ts` file (D1, ADR-0005, ADR-0069). */
@@ -702,7 +702,11 @@ function composableApi(
         ...(pure ? { pure: true as const } : { client: true as const }),
       };
     }
-    const type = item && "type" in item ? item.type?.code : undefined;
+    // Where the source writes no type, the one its value infers, so a caller narrows and checks
+    // its reads as it does its own (ADR-0046).
+    const written = item && "type" in item ? item.type?.code : undefined;
+    const inferred = kind === "state" || kind === "derived" ? kindsType(binding.kinds) : "unknown";
+    const type = written ?? (inferred === "unknown" ? undefined : inferred);
     return { name: binding.name, kind, ...(type !== undefined ? { type } : {}) };
   });
   const hasEffects = composable.setup.some(

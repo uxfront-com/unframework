@@ -94,6 +94,23 @@ export function reactCode(plan: ReactPlan): ReactCode {
         const model = plan.composition.models.get(binding.id)!;
         return client && model.mirror ? `${model.mirror}.current` : model.name;
       }
+      // A composable's ref or derived value (ADR-0069): its render value, or in client code the
+      // hook's live reader, which sees a write the composable's functions just made.
+      case "usedState":
+      case "usedDerived": {
+        const used = plan.used.get(binding.id)!;
+        if (client && written === `${binding.name}.value`) {
+          used.read.client = true;
+          return `${used.reader!.local}()`;
+        }
+        used.read.render = true;
+        return written === `${binding.name}.value` ? used.local : written;
+      }
+      // A composable's function or constant, one for the hook's life.
+      case "usedFn":
+      case "usedConst":
+        plan.used.get(binding.id)!.read.render = true;
+        return written;
       case "loopVar":
       case "localConst":
       case "emit":
@@ -101,13 +118,9 @@ export function reactCode(plan: ReactPlan): ReactCode {
       case "slotScope":
       case "context":
       case "component":
-      // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+      // A module's value, declared or imported at module scope as the source does (ADR-0070).
       case "moduleConst":
       case "import":
-      case "usedState":
-      case "usedDerived":
-      case "usedFn":
-      case "usedConst":
         return written;
       default:
         return binding.kind satisfies never;
