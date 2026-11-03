@@ -303,6 +303,115 @@ describe("react composable calls, narrowed and typed", () => {
       await expectClean("modules/type-query", project.outputs);
     },
   );
+
+  it(
+    "asserts a narrowed path of an untyped computed value the hook returns",
+    { timeout: 60_000 },
+    async () => {
+      const project = await compileProject({
+        "/project/useUser.uf.ts": [
+          'import { computed, ref } from "unframework";',
+          "",
+          "export function useUser() {",
+          "  const user = ref<{ name: string } | null>(null);",
+          "  const current = computed(() => user.value);",
+          "  function signIn(name: string) {",
+          "    user.value = { name };",
+          "  }",
+          "  return { current, signIn };",
+          "}",
+          "",
+        ].join("\n"),
+        "/project/Profile.uf.tsx": [
+          'import { defineEmits } from "unframework";',
+          "",
+          'import { useUser } from "./useUser.uf.ts";',
+          "",
+          "export default function Profile() {",
+          "  const emit = defineEmits<{ name: [name: string] }>();",
+          "  const { current, signIn } = useUser();",
+          "",
+          "  function report() {",
+          '    signIn("a");',
+          '    if (current.value) emit("name", current.value.name);',
+          "  }",
+          "",
+          '  return <button type="button" onClick={report}>Report</button>;',
+          "}",
+          "",
+        ].join("\n"),
+      });
+      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+      expect(project.output("Profile.tsx")).toContain(
+        "if (currentCurrent()) onName?.(currentCurrent()!.name);",
+      );
+      await expectClean("calls/narrowed-computed", project.outputs);
+    },
+  );
+
+  it(
+    "declares a module constant the owner's own type declaration queries, on a component and a hook",
+    { timeout: 60_000 },
+    async () => {
+      const project = await compileProject({
+        "/project/Level.uf.tsx": [
+          'import { ref } from "unframework";',
+          "",
+          "const STEP = 3;",
+          "type Level = typeof STEP;",
+          "",
+          "export default function Level() {",
+          "  const level = ref<Level>(3);",
+          "  return <b>{level.value}</b>;",
+          "}",
+          "",
+        ].join("\n"),
+        "/project/useLevel.uf.ts": [
+          'import { ref } from "unframework";',
+          "",
+          "const STEP = 3;",
+          "type Level = typeof STEP;",
+          "",
+          "export function useLevel() {",
+          "  const level = ref<Level>(3);",
+          "  return { level };",
+          "}",
+          "",
+        ].join("\n"),
+      });
+      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+      expect(project.output("Level.tsx")).toContain("const STEP = 3;");
+      expect(project.output("useLevel.ts")).toContain("const STEP = 3;");
+      await expectClean("modules/declaration-query", project.outputs);
+    },
+  );
+
+  it(
+    "declares a module constant a function body that returns queries",
+    { timeout: 60_000 },
+    async () => {
+      const project = await compileProject({
+        "/project/Picker.uf.tsx": [
+          'import { ref } from "unframework";',
+          "",
+          "const LIMITS = { min: 0, max: 9 };",
+          "",
+          "export default function Picker() {",
+          "  const picked = ref(0);",
+          "  function pick(value: unknown): number {",
+          "    const limits = value as typeof LIMITS;",
+          "    return limits.max;",
+          "  }",
+          '  return <button type="button" onClick={() => (picked.value = pick(null))}>{picked.value}</button>;',
+          "}",
+          "",
+        ].join("\n"),
+      });
+      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+      expect(project.output("Picker.tsx")).toContain("const LIMITS = { min: 0, max: 9 };");
+      await expectClean("modules/body-query", project.outputs);
+    },
+  );
 });
 
 describe("react composable shapes", () => {

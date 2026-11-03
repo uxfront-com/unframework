@@ -2719,8 +2719,9 @@ export function isMemberPath(text: string): boolean {
 
 /**
  * Checks the narrowed paths of a read (ADR-0046): on a prop's or a ref's value's read, a
- * composable's returned ref's included, which is no call; each from the read's start to its end or a member path off it, in the code, longer than
- * the one before; `template` only in client code, and `closure` only on a destructured prop's own read.
+ * composable's returned ref or derived value included, which is no call; each from the read's
+ * start to its end or a member path off it, in the code, longer than the one before; `template`
+ * only in client code, and `closure` only on a destructured prop's own read.
  */
 function checkNarrowed(
   ref: BindingReference,

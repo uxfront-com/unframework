@@ -81,9 +81,10 @@ export function moduleReads(
       for (const name of codeNames(constant.value.code)) named.add(name);
       query(constant.value.code, "expression", new Set());
     }
+    // The owner's own declarations are copied too, so what they query is declared with them.
     for (const declaration of module.types) {
-      if (own.has(declaration.name) || !named.has(declaration.name)) continue;
-      declared.add(declaration.name);
+      if (!own.has(declaration.name) && !named.has(declaration.name)) continue;
+      if (!own.has(declaration.name)) declared.add(declaration.name);
       for (const name of codeNames(declaration.code, "statements")) named.add(name);
       query(declaration.code, "statements", new Set());
     }

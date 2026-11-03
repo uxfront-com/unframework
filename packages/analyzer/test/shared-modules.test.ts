@@ -63,6 +63,22 @@ describe("module-level constants", () => {
     expect(module!.constants!.map(({ name }) => name)).toEqual(["LIMITS", "STEP"]);
   });
 
+  it("keeps a constant that a function's body queries with `typeof`, where it returns", () => {
+    const source = [
+      "const LIMITS = { min: 0, max: 9 };",
+      "export function A() {",
+      "  function pick(value: unknown): number {",
+      "    const limits = value as typeof LIMITS;",
+      "    return limits.max;",
+      "  }",
+      "  return <p>{pick(null)}</p>;",
+      "}",
+    ].join("\n");
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    expect(module!.constants!.map(({ name }) => name)).toEqual(["LIMITS"]);
+  });
+
   it("keeps the constants a read constant reads, its annotation and its globals, in source order", () => {
     const source = [
       "const BASE = 4;",

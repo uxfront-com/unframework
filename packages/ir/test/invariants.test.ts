@@ -53,6 +53,7 @@ import {
   createRefAttribute,
   createRefSource,
   createWriteReference,
+  walk,
 } from "../src/index.ts";
 import type {
   Attribute,
@@ -72,6 +73,7 @@ import type {
   UfModule,
 } from "../src/index.ts";
 import { counterIds, everyKind, expression, find, ids, piece } from "./fixtures.ts";
+import { find as findInModule, modules } from "./modules-fixture.ts";
 
 const at = span(0, 1);
 
@@ -3202,6 +3204,26 @@ describe("checkInvariants on the setup, events and template refs", () => {
       errors.some((error) => error.path.endsWith(path) && error.message.includes(message)),
       JSON.stringify(errors),
     ).toBe(true);
+  });
+});
+
+describe("checkInvariants on a composable's narrowed result", () => {
+  it("accepts narrowed paths on a read of a ref a composable returns", () => {
+    const module = modules();
+    // The render's read of `on.value`, the `usedState` binding the fixture destructures.
+    const shown = findInModule("on.value");
+    walk(module.components[0]!.render, {
+      enter(node) {
+        if (node.kind !== "Interpolation") return;
+        const ref = node.value.refs.find(
+          (each) => each.kind === "Binding" && each.span.start === shown.start,
+        );
+        if (ref?.kind === "Binding") ref.narrowed = [createNarrowedPath(shown, "local")];
+      },
+    });
+    expect(JSON.stringify(module.components[0]!.render)).toContain('"narrowed"');
+    const errors = checkInvariants(module);
+    expect(errors, JSON.stringify(errors)).toEqual([]);
   });
 });
 

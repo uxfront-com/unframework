@@ -703,12 +703,14 @@ function ownTypeTexts(owner: UfComponent | UfComposable): string[] {
 
 /**
  * The root name of each `typeof` in source text, `SIZES` in `keyof typeof SIZES`: a statement
- * list, or an expression in parentheses where it parses as one.
+ * list, an expression in parentheses, or a function's body, which may `return` and `await`, the
+ * first it parses as. Every text the IR holds is one of them.
  */
 function typeQueryRoots(text: string): string[] {
-  let parsed = parseModule("query.ts", text);
-  if (parsed.errors.length) parsed = parseModule("query.ts", `(${text});`);
-  if (parsed.errors.length) return [];
+  const parsed = [text, `(${text});`, `async function body() {\n${text}\n}`]
+    .map((source) => parseModule("query.ts", source))
+    .find(({ errors }) => !errors.length);
+  if (!parsed) return [];
   const found: string[] = [];
   visit(parsed.program, (node) => {
     if (node.type !== "TSTypeQuery") return;
