@@ -8,7 +8,6 @@ import {
   componentTypes,
   js,
   parseExpressionSource,
-  pascalCase,
   printProgram,
   typeNames,
   typeSpecifier,
@@ -18,12 +17,10 @@ import type { ComposableMemberApi, Span, TypeText, UfComposable } from "@unframe
 
 import { compilerBailout, declaredNames } from "./bailouts.ts";
 import { nextTickHelper } from "./helpers.ts";
-import { planComponent, setupOwner } from "./plan.ts";
+import { moduleReads } from "./modules.ts";
+import { liveReaderNames, planComponent, setupOwner } from "./plan.ts";
 import { reactCode } from "./rules.ts";
 import { printSetup } from "./setup.ts";
-
-/** The binding kinds of what a module gives a composable, which React's call-site lane reads. */
-const MODULE_KINDS = new Set(["moduleConst", "import"]);
 
 /**
  * `useToggle.ts`: `export function useToggle(initial: boolean) { …; return { on, currentOn,
@@ -32,19 +29,6 @@ const MODULE_KINDS = new Set(["moduleConst", "import"]);
  */
 export function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
   const { module } = context;
-  // A module's values reach a composable with the call site (ADR-0070): until then it is
-  // reported, never emitted without them (P2).
-  const moduleRead = composable.bindings.find((binding) => MODULE_KINDS.has(binding.kind));
-  if (moduleRead) {
-    context.report({
-      code: "UF1002",
-      severity: "error",
-      message:
-        "The react target does not read a module's values in a composable yet: it lands with this target's call site.",
-      span: moduleRead.span,
-    });
-    return [];
-  }
   // A setup constant evaluates once, as `useState`'s initial value (ADR-0046), which React calls
   // when it is a function: a getter or a callback argument held in one would become what it
   // returns. Read the argument where it is used instead (P2).
@@ -128,6 +112,13 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
         }),
       ]
     : [];
+  // The module's values it reads, as the source declares and imports them (ADR-0070).
+  const reads = moduleReads(owner, module, plan.names, [
+    ...composable.parameters.map(({ type }) => type),
+    ...(composable.typeParameters ?? []).flatMap(({ constraint, default: fallback }) =>
+      [constraint, fallback].filter((type): type is TypeText => type !== undefined),
+    ),
+  ]);
   // The types it imports, by name, from where the source imports them (ADR-0067).
   addTypeImports(owner, module, plan.names, (name) => name);
   addParameterTypeImports(composable, context, plan.names);
@@ -135,36 +126,17 @@ export function emitComposable(composable: UfComposable, context: EmitContext): 
   const head = imports.length ? printProgram(js.program(imports)).trim() : "";
   const contents = [
     ...(head ? [head] : []),
-    ...componentTypes(owner, module).map((declaration) =>
-      declaration.exported ? `export ${declaration.code}` : declaration.code,
-    ),
+    ...[...componentTypes(owner, module), ...reads.types]
+      .toSorted((a, b) => a.span.start - b.span.start)
+      .map((declaration) =>
+        declaration.exported ? `export ${declaration.code}` : declaration.code,
+      ),
+    ...(reads.constants.length ? [reads.constants.join("\n")] : []),
     ...(setup.module.length ? [setup.module.join("\n")] : []),
     `export function ${composable.name}${typeParameters}(${parameters.join(", ")}) {\n${[...optOut, ...statements].join("\n")}\n}`,
     ...helpers,
   ].join("\n\n");
   return [{ path: `${composable.name}.ts`, contents: `${contents}\n` }];
-}
-
-/**
- * The live readers a hook returns beside its members (ADR-0069), by member name: one for each
- * state or derived value `x`, `currentX`, or where that names another member or an earlier
- * reader, the first free one of `currentX_1`, `currentX_2`…. A rule of the API alone, so the
- * hook and its callers agree on every name.
- */
-export function liveReaderNames(
-  members: readonly Pick<ComposableMemberApi, "name" | "kind">[],
-): Map<string, string> {
-  const taken = new Set(members.map(({ name }) => name));
-  const readers = new Map<string, string>();
-  for (const { name, kind } of members) {
-    if (kind !== "state" && kind !== "derived") continue;
-    const base = `current${pascalCase(name)}`;
-    let reader = base;
-    for (let suffix = 1; taken.has(reader); suffix++) reader = `${base}_${suffix}`;
-    taken.add(reader);
-    readers.set(name, reader);
-  }
-  return readers;
 }
 
 /**

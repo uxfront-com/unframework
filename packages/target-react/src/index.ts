@@ -2,7 +2,6 @@ import {
   addTypeImports,
   bindingOf,
   componentTypes,
-  composableUse,
   defineTarget,
   exportDeclaration,
   exportsOf,
@@ -55,10 +54,11 @@ import {
 } from "./helpers.ts";
 import type { NextTickHooks } from "./helpers.ts";
 import { listenerHelpers, ReactListeners } from "./listeners.ts";
+import { moduleReads } from "./modules.ts";
 import { planComponent } from "./plan.ts";
 import type { ReactPlan } from "./plan.ts";
 import { reactCode } from "./rules.ts";
-import { printSetup, withEventTypes } from "./setup.ts";
+import { printSetup, resolveUses, withEventTypes } from "./setup.ts";
 import { titleChildren } from "./title.ts";
 
 type Parameter = Parameters<typeof js.functionDeclaration>[1][number];
@@ -178,19 +178,6 @@ export const react: Target = defineTarget({
   // declarations and the events' props, the setup's hooks in source order, and the render tree in
   // React's JSX.
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    // A composable's call and what a module or a composable gives are declared before this
-    // target emits them (ADR-0069, ADR-0070): until its composables lane lands, a component that
-    // uses one is reported, never emitted without it (P2).
-    const composable = composableUse(component);
-    if (composable) {
-      context.report({
-        code: "UF1002",
-        severity: "error",
-        message: `The react target does not emit ${composable.what} yet: it lands with this target's composables lane.`,
-        span: composable.span,
-      });
-      return [];
-    }
     const { module } = context;
     // Every name the source declares or reads is taken before the output claims its own
     // (`cx`, `setCount`, `CSSProperties`, `_props`), so none captures another (ADR-0035).
@@ -245,9 +232,11 @@ export const react: Target = defineTarget({
       { code: jsx.placeholders.print(() => printExpression(tree)), kind: "expression" },
     ]);
     const parameters = propsParameters(component, jsx, plan);
+    // Every read is printed now: each composable's call destructures only what they read.
+    const resolved = resolveUses(plan, body);
     // A blank line between groups, unless both are one-line declarations, and before the return.
-    const statements = body.map(({ text, group, compact }, index) => {
-      const next = body[index + 1];
+    const statements = resolved.map(({ text, group, compact }, index) => {
+      const next = resolved[index + 1];
       const apart = !next || (next.group !== group && !(compact && next.compact));
       return jsx.placeholders.statements(apart ? `${text}\n` : text);
     });
@@ -257,14 +246,19 @@ export const react: Target = defineTarget({
       js.returnStatement(tree),
     ]);
     fn.typeParameters = typeParameters(component, jsx);
-    const hoisted = [...keyDeclarations(plan), ...setup.module].map((statement) =>
+    // The module's values it reads, as the source declares and imports them (ADR-0070).
+    const reads = moduleReads(component, module, plan.names);
+    const constants = reads.constants.length ? [reads.constants.join("\n")] : [];
+    const hoisted = [...constants, ...keyDeclarations(plan), ...setup.module].map((statement) =>
       jsx.placeholders.statements(`${statement}\n`),
     );
     // The types it imports, by name, from where the source imports them, a child's from its
     // output (`./Field`), and the module's type exports (ADR-0067, ADR-0068).
     addTypeImports(component, module, plan.names, (name) => name);
     const types = [
-      ...moduleTypes(component, module),
+      ...[...moduleTypes(component, module), ...reads.types].toSorted(
+        (a, b) => a.span.start - b.span.start,
+      ),
       ...eventsInterface(plan),
       ...compositionInterfaces(plan),
     ];

@@ -372,11 +372,16 @@ export interface ComposableParameterApi {
 
 /**
  * A returned member of a composable's API: a ref of state, a derived value, a function or a
- * constant, with its type as written where the source writes one.
+ * constant, with its type.
  */
 export interface ComposableMemberApi {
   name: string;
   kind: "state" | "derived" | "function" | "constant";
+  /**
+   * Its type as written (`ref<User | null>`). Where the source writes none, a ref's or a derived
+   * value's type as the analyser infers it from the value, `unknown` where it cannot tell, so a
+   * caller checks and narrows its reads as its own (ADR-0046). Absent where nothing is known.
+   */
   type?: string;
   /** Set for an `async` function. */
   async?: true;
