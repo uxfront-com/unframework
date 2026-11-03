@@ -1881,6 +1881,12 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
       'must not be "Props"',
     ],
     [
+      "a local `Props` reached through a type that is more than a reference to it",
+      () => twoComponents(["Props<T>", ["Props"]], ["Props<T>[]", ["Props"]]),
+      "/types/0/name",
+      'must not be "Props"',
+    ],
+    [
       "a type declaration out of order",
       () =>
         changed(

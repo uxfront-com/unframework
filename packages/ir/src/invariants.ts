@@ -906,7 +906,7 @@ function checkTypeDeclarations(
  * reference, with type arguments for a generic one (`Props<T>`, ADR-0068).
  */
 function takesProps(component: UfComponent): boolean {
-  return /^Props\s*(?:<|$)/.test(component.propsParameter?.type.code ?? "");
+  return /^Props\s*(?:<[^]*>)?$/.test(component.propsParameter?.type.code ?? "");
 }
 
 /**

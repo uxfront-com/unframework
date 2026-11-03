@@ -136,10 +136,12 @@ export function frontmatterOf(
   const sourceProps = types.find(({ name }) => name === "Props");
   // The source's `Props` is renamed where Astro's must say more than it: members beside it, or
   // its type arguments (`type Props<T> = OwnProps<T>;`), which `Props` cannot alias itself with.
+  // A component with no props declares no `Props` of Astro's, so the source's keeps its name.
   const ownProps =
     imported.includes("Props") ||
     (sourceProps &&
-      (parameter?.type.code !== "Props" || propsExtras(component, render, (type) => type).length))
+      ((parameter !== undefined && parameter.type.code !== "Props") ||
+        propsExtras(component, render, (type) => type).length))
       ? spelling.scope.claim("OwnProps")
       : undefined;
   // The source's `Props` under the name it takes beside Astro's (`interface Props extends

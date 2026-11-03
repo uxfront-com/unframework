@@ -21,8 +21,9 @@ per component (ADR-0034, ADR-0046):
     `type Props = BadgeProps;` for a named props type, `interface Props { … }` holding an inline
     object type's members, `type Props = Base & { n: number } & { … }` for a type an interface
     cannot extend, nothing more when the props type is named `Props` already. A generic
-    `Props` is renamed `OwnProps` and aliased, `type Props<T> = OwnProps<T>;`, since `Props`
-    cannot alias itself. A source that exports its `Props` gets Astro's exported too. A generic
+    `Props` is renamed `OwnProps`, since `Props` cannot alias itself:
+    `type Props<T> = OwnProps<T>;`, or `interface Props<T> extends OwnProps<T> { … }` with
+    members beside it. A source that exports its `Props` gets Astro's exported too. A generic
     component's `Props` declares the type parameters its members name, and those their bounds
     name, as the source writes them, `interface Props<T> extends ListProps<T>`, and Astro infers
     `T` from a consumer's props (ADR-0068). One no member names is left out: nothing could infer

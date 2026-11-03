@@ -328,6 +328,21 @@ export default function Menu({ open, busy, n, items, rows }: MenuProps) {
 }
 `;
 
+// A `Props` one component takes, and a component with no props that reads a module constant of
+// it: two roots each, so no member sits beside either `Props` and nothing renames the source's.
+const propsConstant = (
+  props: string,
+  constant: string,
+) => `interface ${props} { items: ${props === "Props" ? "number" : "T"}[] }
+const EMPTY: ${constant} = { items: [] };
+export function A${props.slice("Props".length)}(props: ${props}) {
+  return <><p>{props.items.length}</p><p /></>;
+}
+export function B() {
+  return <><p>{EMPTY.items.length}</p><p /></>;
+}
+`;
+
 const rootFragment = `export interface HeaderProps { draft: boolean; title: string }
 export default function Header({ draft, title }: HeaderProps) {
   return (
@@ -496,6 +511,18 @@ describe("props: the frontmatter (ADR-0034)", () => {
       await expect(renderSource(output, { label: "Hi" })).resolves.toBe("<span>Hi</span>");
     },
   );
+
+  // Only a props annotation with type arguments renames the source's `Props`: a component with
+  // no props keeps its name, which the module constant it copies names.
+  it.each([
+    ["Props", "Props"],
+    ["Props<T>", "Props<number>"],
+  ])("keeps `%s` for a component with no props that reads a constant of it", (props, constant) => {
+    const [, b] = emitSource(propsConstant(props, constant));
+    expect(b!.contents).toContain(`interface ${props} { items:`);
+    expect(b!.contents).toContain(`const EMPTY: ${constant} = { items: [] };`);
+    expect(b!.contents).not.toContain("OwnProps");
+  });
 
   it("reads only the props a printed expression reads, and declares only the types they reach", () => {
     const [other, list] = emitSource(unread);
@@ -1449,6 +1476,8 @@ describe("the M1 output through the toolchain", { timeout: 60_000 }, () => {
     controlFlow,
     rootFragment,
     attributes,
+    propsConstant: propsConstant("Props", "Props"),
+    genericPropsConstant: propsConstant("Props<T>", "Props<number>"),
   };
 
   it.each([false, true])(
