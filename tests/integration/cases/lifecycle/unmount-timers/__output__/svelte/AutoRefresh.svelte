@@ -1,13 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import { onMount } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface AutoRefreshProps {
     /** Milliseconds between two refreshes. */
     interval: number;
   }
+</script>
+
+<script lang="ts">
+  import { onMount } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = AutoRefreshProps & {
     onrefresh?: (count: number) => void;

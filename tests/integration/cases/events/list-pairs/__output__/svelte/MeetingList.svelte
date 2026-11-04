@@ -1,9 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-  import { on } from "svelte/events";
-
+<script lang="ts" module>
   export interface Meeting {
     id: number;
     title: string;
@@ -18,6 +15,11 @@
     meetings: Meeting[];
     organiser?: Organiser;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+  import { on } from "svelte/events";
 
   type Props = MeetingListProps & {
     onopened?: (title: string) => void;

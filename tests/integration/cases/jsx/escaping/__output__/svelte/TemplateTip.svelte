@@ -1,13 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface TemplateTipProps {
     example: string;
     note: string;
     path: string;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = TemplateTipProps & { class?: ClassValue; style?: string };
 

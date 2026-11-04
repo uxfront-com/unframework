@@ -16,7 +16,8 @@ import { describe, expect, it } from "vitest";
 
 import target from "../src/index.ts";
 import { vueEventInterface } from "../src/listeners.ts";
-import { corpus, emitFormatted, emitSource, lower } from "./helpers.ts";
+import { toolchain } from "../src/toolchain/index.ts";
+import { corpus, emitFormatted, emitSource, lower, toolchainDir } from "./helpers.ts";
 
 const at = { start: 0, end: 0 };
 
@@ -341,6 +342,141 @@ export default function Card({ title, tags = ["a", "b"], meta = { author: "x", y
     expect(await emitSource(source)).toContain(
       'const { title, tags = ["a", "b"], meta = { author: "x", year: 2024 } } = defineProps<CardProps>();',
     );
+  });
+});
+
+describe("vue types and generics (ADR-0067, ADR-0068)", () => {
+  it("exports a type no component reaches and a re-export, among the copied types in source order", async () => {
+    const source = `
+export type Tone = "info" | "warn";
+export type Size = "small" | "large";
+export type { Item } from "./types";
+export default function Badge({ tone }: { tone: Tone }) {
+  return <span class={tone}>Badge</span>;
+}`;
+    const output = await emitSource(source);
+    expect(output.slice(0, output.indexOf("const"))).toBe(
+      [
+        '<script setup lang="ts">',
+        'export type Tone = "info" | "warn";',
+        "",
+        'export type Size = "small" | "large";',
+        "",
+        'export type { Item } from "./types";',
+        "",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("writes a generic component's type parameters on its script, single-quoted around a double quote", async () => {
+    const list = await emitSource(`
+export default function List<T extends { id: string }>({ items }: { items: T[] }) {
+  return <ul>{items.map((item) => <li key={item.id}>{item.id}</li>)}</ul>;
+}`);
+    expect(list).toContain('<script setup lang="ts" generic="T extends { id: string }">');
+    const picker = await emitSource(`
+export default function Picker<T extends "a" | "b" = "a">({ value }: { value: T }) {
+  return <p>{value}</p>;
+}`);
+    expect(picker).toContain(`<script setup lang="ts" generic='T extends "a" | "b" = "a"'>`);
+  });
+
+  // An attribute cannot hold its own quote, and Vue's SFC parser ends the value at it: the text
+  // double-quotes each string literal and writes a `'` inside one as `\u0027`, the same type.
+  it.each([
+    [`"a" | 'b'`, `"a" | "b"`],
+    [`"don't" | 'say "no"'`, `"don\\u0027t" | "say \\"no\\""`],
+  ])(
+    "writes a generic constraint holding both quote kinds, %s, in one quote kind",
+    async (constraint, written) => {
+      const output = await emitSource(`
+export default function Picker<T extends ${constraint}>({ value }: { value: T }) {
+  return <p>{value}</p>;
+}`);
+      expect(output).toContain(`<script setup lang="ts" generic='T extends ${written}'>`);
+      const results = await toolchain.frameworkCompile(
+        [{ path: "/virtual/Picker.vue", contents: output }],
+        { toolchainDir, root: toolchainDir },
+      );
+      expect(results.get("/virtual/Picker.vue")).toEqual({ errors: [], warnings: [] });
+    },
+  );
+
+  // Only the tsgo adapter reads a template literal type (UF6002 otherwise), so the IR is set here.
+  it("writes a generic template literal constraint's text and holes without a single quote", async () => {
+    const module = lower(`
+export default function Picker<T extends "a">({ value }: { value: T }) {
+  return <p>{value}</p>;
+}`);
+    module.components[0]!.typeParameters![0]!.constraint!.code = "`it's ${'x' | \"y\"}`";
+    const [file] = await emitFormatted(module);
+    expect(file!.contents).toContain(
+      `<script setup lang="ts" generic='T extends \`it\\u0027s \${"x" | "y"}\`'>`,
+    );
+  });
+
+  it("formats a generic component whose constraint names its own type parameter", async () => {
+    const output = await emitSource(`
+interface Comparable<T> {
+  compare(other: T): number;
+}
+export default function Sorted<T extends Comparable<T>>({ items }: { items: T[] }) {
+  return <p>{items.length}</p>;
+}`);
+    expect(output).toContain('<script setup lang="ts" generic="T extends Comparable<T>">');
+    expect(output).toContain("const { items } = defineProps<{ items: T[] }>();");
+  });
+
+  it("reads the members other files declare off the annotation, and imports what it names", async () => {
+    // As the analyser lowers `Pick<SubscriptionLike, "closed"> & FieldOptions & { label: string }`:
+    // `closed` is declared by rxjs, and `tone` by `./types` in its own names (`tone?: Tone`).
+    const module = lower(`
+export default function Status({ closed, tone, label }: { closed: boolean; tone?: Tone; label: string }) {
+  return <p>{label}: {closed ? "closed" : "open"} {tone}</p>;
+}
+type Tone = string;`);
+    const span = { start: 0, end: 0 };
+    module.types = [];
+    module.components[0]!.types = [];
+    module.typeImports = [
+      {
+        specifier: "rxjs",
+        names: [
+          { imported: "SubscriptionLike", local: "SubscriptionLike", span },
+          { imported: "Observer", local: "Observer", span },
+        ],
+        span,
+      },
+      {
+        specifier: "./types",
+        names: [{ imported: "FieldOptions", local: "FieldOptions", span }],
+        span,
+      },
+    ];
+    const component = module.components[0]!;
+    component.propsParameter!.type.code =
+      'Pick<SubscriptionLike, "closed"> & FieldOptions & { label: string }';
+    const [closed, tone] = component.props;
+    closed!.declaredBy = {
+      file: "pkg:rxjs/dist/types/internal/types.d.ts",
+      declaration: "SubscriptionLike",
+      span,
+    };
+    tone!.declaredBy = { file: "types.ts", declaration: "FieldOptions", span };
+    const [file] = await emitFormatted(module);
+    const script = file!.contents.slice(0, file!.contents.indexOf("</script>"));
+    // The annotation's names, and only those: `Tone` is the file's, and `Observer` unread.
+    expect(script).toContain('import type { FieldOptions } from "./types";');
+    expect(script).toContain('import type { SubscriptionLike } from "rxjs";');
+    expect(script).not.toMatch(/\bObserver\b|\bTone\b/);
+    expect(script).toContain(
+      'closed: (Pick<SubscriptionLike, "closed"> & FieldOptions & { label: string })["closed"];',
+    );
+    expect(script).toContain(
+      'tone?: (Pick<SubscriptionLike, "closed"> & FieldOptions & { label: string })["tone"];',
+    );
+    expect(script).toContain("label: string;");
   });
 });
 

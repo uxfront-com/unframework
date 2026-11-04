@@ -55,7 +55,11 @@ export function renderPropName(slot: string, taken: ReadonlySet<string>): string
  * written, a setup binding named `Astro` excepted.
  */
 export function spellingOf(component: UfComponent, module: UfModule): Spelling {
-  const scope = new NameScope([...sourceNames(component, module), ...ASTRO_NAMES]);
+  // The composables it calls, which the frontmatter imports by name (ADR-0069).
+  const composables = component.setup.flatMap((item) =>
+    item.kind === "Use" ? [item.composable] : [],
+  );
+  const scope = new NameScope([...sourceNames(component, module), ...ASTRO_NAMES, ...composables]);
   const parameter = component.propsParameter;
   const propsObject =
     parameter?.form === "object" && ASTRO_NAMES.has(parameter.name!)
@@ -99,6 +103,13 @@ export function spellingOf(component: UfComponent, module: UfModule): Spelling {
           case "model":
           case "slots":
           case "context":
+          case "moduleConst":
+          case "import":
+          case "argument":
+          case "usedState":
+          case "usedDerived":
+          case "usedFn":
+          case "usedConst":
             return name(binding.id);
           default:
             return unreachable(binding.kind);
@@ -130,6 +141,13 @@ function declaredBySetup(binding: Binding): boolean {
     case "model":
     case "slots":
     case "context":
+    case "moduleConst":
+    case "import":
+    case "argument":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       return true;
     default:
       return unreachable(binding.kind);

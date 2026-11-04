@@ -106,10 +106,14 @@ describe("references", () => {
     expect(problems(source, diagnostics)).toEqual(["UF2005 ref"]);
   });
 
-  it("reports module-level declarations and imports of other modules as landing in M5", () => {
+  it("reads the module's constants (ADR-0070), and reports a `let` where it is declared", () => {
     const { source, diagnostics } = component("<p>{max}</p>", { before: "const max = 3;\n" });
-    expect(problems(source, diagnostics)).toEqual(["UF1002 const max = 3;", "UF1002 max"]);
-    expect(diagnostics[1]!.message).toContain("module-level declarations land in M5");
+    expect(problems(source, diagnostics)).toEqual([]);
+    const state = component("<p>{max}</p>", { before: "let max = 3;\n" });
+    expect(problems(state.source, state.diagnostics)).toEqual([
+      "UF1002 let max = 3;",
+      "UF1002 max",
+    ]);
   });
 });
 

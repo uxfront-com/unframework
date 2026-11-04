@@ -47,6 +47,8 @@ describe("solid target", () => {
       "class-binding",
       "component",
       "component-event",
+      "composable-effect-order",
+      "composables",
       "conditional",
       "conditional-event-control",
       "context",
@@ -62,6 +64,8 @@ describe("solid target", () => {
       "expose",
       "fallthrough",
       "fragment",
+      "generic-components",
+      "generic-slot-props",
       "interactivity",
       "interpolation",
       "late-prop",
@@ -89,9 +93,9 @@ describe("solid target", () => {
     ]);
   });
 
-  it("emulates watchers, nextTick, class and style bindings and the child-root rule with the helpers it prints, the rest natively", () => {
-    // Nothing is unsupported: the watchers' scheduler coalesces every shape of a synchronous run
-    // of client code (src/helpers.ts).
+  it("emulates watchers, nextTick, class and style bindings and the child-root rule with the helpers it prints, declares a composable's effect order, the rest natively", () => {
+    // Only a composable's effect order is unsupported: the watchers' scheduler coalesces every
+    // shape of a synchronous run of client code in one module (src/helpers.ts).
     const cells = Object.entries(target.capabilities).filter(
       ([, cell]) => cell.support !== "native",
     );
@@ -104,6 +108,8 @@ describe("solid target", () => {
       ["model-modifiers", expect.objectContaining({ helper: "modelText" })],
       ["reactive-context", expect.objectContaining({ helper: "refObject" })],
       ["child-root-scope", expect.objectContaining({ helper: "scopeAttributes" })],
+      // A composable's watchers keep its own module's queue (ADR-0069).
+      ["composable-effect-order", expect.objectContaining({ code: "UF4005", severity: "info" })],
     ]);
   });
 
@@ -1241,5 +1247,94 @@ describe("solid attributes", () => {
     expect(component(output)).toContain(
       '<circle cx="4" cy="4" r="3" stroke-width={props.width} />',
     );
+  });
+
+  it("writes a generic component as a generic function, and its interfaces over what they read", async () => {
+    // ADR-0068: the events' interface reads `T`, the models' none, so only it is generic.
+    const output = await emitSource(
+      [
+        'import { defineEmits, defineModel } from "unframework";',
+        "",
+        "export interface PickProps<T extends { id: string }, U = string> {",
+        "  items: T[];",
+        "  note?: U;",
+        "}",
+        "",
+        "export default function Pick<T extends { id: string }, U = string>({ items }: PickProps<T, U>) {",
+        "  const emit = defineEmits<{ pick: [item: T] }>();",
+        '  const open = defineModel<boolean>("open");',
+        "  return (",
+        "    <ul>",
+        "      {items.map((item) => (",
+        '        <li key={item.id}><button type="button" onClick={() => emit("pick", item)}>{String(open.value)}</button></li>',
+        "      ))}",
+        "    </ul>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(output).toContain(
+      "export interface PickEvents<T extends { id: string }> {\n  onPick?: (item: T) => void;\n}",
+    );
+    expect(output).toContain("export interface PickModels {");
+    expect(output).toContain(
+      [
+        "export default function Pick<T extends { id: string }, U = string>(",
+        "  props: PickProps<T, U> &",
+        "    PickEvents<T> &",
+        "    PickModels & { class?: string; style?: JSX.CSSProperties },",
+      ].join("\n"),
+    );
+  });
+
+  it("declares every type parameter a chain of constraints reaches", async () => {
+    // ADR-0068: `T`'s constraint names `U`, whose constraint names `V`.
+    const output = await emitSource(
+      [
+        'import { defineSlots } from "unframework";',
+        'import type { Element } from "unframework";',
+        "",
+        "export default function Chain<T extends U, U extends V, V extends string>({ items }: { items: T[] }) {",
+        "  const slots = defineSlots<{ item?(props: { item: T }): Element }>();",
+        "  return <ul>{items.map((item) => <li key={item}>{slots.item?.({ item })}</li>)}</ul>;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(output).toContain(
+      "export interface ChainSlots<T extends U, U extends V, V extends string> {",
+    );
+    expect(output).toContain("ChainSlots<T, U, V>");
+  });
+
+  it("keeps a generic component's code that names its type parameters inside it", async () => {
+    // ADR-0068: `T` is in scope only inside the generic function; `shout` names none and is hoisted.
+    const output = await emitSource(
+      [
+        "export default function Labels<T extends { id: string }>({ items }: { items: T[] }) {",
+        "  function label(item: T): string {",
+        "    return item.id.toUpperCase();",
+        "  }",
+        "  const none: T[] = [];",
+        "  function shout(text: string): string {",
+        "    return `${text}!`;",
+        "  }",
+        "  return (",
+        "    <ul>",
+        "      {items.map((item) => (",
+        "        <li key={item.id}>{shout(label(item))}</li>",
+        "      ))}",
+        "      {none.length}",
+        "    </ul>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    const start = output.indexOf("export default function Labels<T extends { id: string }>(");
+    expect(start).toBeGreaterThan(output.indexOf("function shout(text: string): string {"));
+    expect(output.indexOf("function label(item: T): string {")).toBeGreaterThan(start);
+    expect(output.indexOf("const none: T[] = [];")).toBeGreaterThan(start);
   });
 });

@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface Fruit {
     name: string;
     colour: string;
@@ -11,6 +9,10 @@
   export interface FruitPickerProps {
     fruits: Fruit[];
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = FruitPickerProps & {
     onkept?: (name: string, colour: string) => void;

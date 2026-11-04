@@ -17,6 +17,17 @@ async function formatted(path: string, contents: string): Promise<string> {
 const line = `<p>${"<a>link</a> ".repeat(12)}</p>`;
 
 describe("formatOutput on script blocks", () => {
+  // A generic component's attribute (ADR-0068) holds a `>` inside its quotes, which ends no tag.
+  it.each([
+    ["Pill.svelte", '<script lang="ts" generics="T extends Array<string>">', "  "],
+    ["Pill.vue", `<script setup lang="ts" generic='T extends Record<string, "a" | "b">'>`, ""],
+  ])("finds a script block whose attribute holds a `>`, in %s", async (path, open, indent) => {
+    const contents = [open, "let  value:T|null=null", "</script>", "", "<p></p>", ""].join("\n");
+    expect(await formatted(path, contents)).toBe(
+      [open, `${indent}let value: T | null = null;`, "</script>", "", "<p></p>", ""].join("\n"),
+    );
+  });
+
   it('formats a Vue `<script setup lang="ts">` as TypeScript, unindented, and leaves the template', async () => {
     const contents = [
       '<script setup lang="ts">',

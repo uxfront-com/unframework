@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2036",
+    "severity": "error",
+    "message": "`on` is a ref a composable returns, which its caller reads and never writes: the composable changes its own state.",
+    "file": "diagnostics/composable-result-write/Switch.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 5,
+      "offset": 399
+    },
+    "end": {
+      "line": 10,
+      "column": 13,
+      "offset": 407
+    },
+    "help": "Return a function from the composable that changes it, and call that: `toggle()`."
+  }
+]

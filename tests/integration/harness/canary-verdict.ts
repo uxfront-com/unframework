@@ -8,7 +8,7 @@
 // a browser project whose every test of a case its target skipped by capability ran nothing,
 // which is no evidence either way. A target on which the canary applies to no case is not
 // judged, and the verdict says so.
-import { outcomeOfCell } from "@unframework/testing/node";
+import { NOT_RENDERED_SKIP, outcomeOfCell } from "@unframework/testing/node";
 import type { PartialMatrix, ProjectKind } from "@unframework/testing/node";
 
 import { canaryProjects, corrupts, skippedByCapability } from "./canaries.ts";
@@ -79,6 +79,9 @@ export function judgeCanary(
         const failure = run.loadFailures!.find(
           (candidate) => candidate.project === `${kind}:${target}` && candidate.file === info.spec,
         );
+        // A spec the project serves a stand-in loads whatever the canary did to the component,
+        // which never loads (ADR-0068): like a quarantined cell, it proves nothing.
+        if (!failure && info.standIn?.(target)) continue;
         judged.add(kind);
         if (!failure) {
           // A spec that loaded records cells in its project, a skip by capability included; with
@@ -104,8 +107,19 @@ export function judgeCanary(
         }
         const outcome = outcomeOfCell(cell);
         // A known failure hides what failed, and a cell every test of which its target skipped
-        // by capability ran nothing to corrupt; the other cases must prove the canary.
-        if (outcome.status === "quarantined" || skippedByCapability(cell)) continue;
+        // by capability ran nothing to corrupt; so did a layer skipped because a quarantined L6
+        // rendered nothing (the server's L13). The other cases must prove the canary.
+        const render = projects[project]?.[info.id]?.[target]?.L6;
+        if (
+          outcome.status === "quarantined" ||
+          skippedByCapability(cell) ||
+          (outcome.status === "skip" &&
+            outcome.reason === NOT_RENDERED_SKIP &&
+            render !== undefined &&
+            outcomeOfCell(render).status === "quarantined")
+        ) {
+          continue;
+        }
         judged.add(kind);
         if (outcome.status !== "fail") {
           problems.push(`${where}: ${cell}, although the canary corrupted the case`);

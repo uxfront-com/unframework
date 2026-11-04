@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   type Availability = "in-stock" | "backorder" | "discontinued";
 
   interface Finish {
@@ -16,6 +14,10 @@
     size: { width: number; depth: number; unit: "cm" | "in" };
     finishes: Finish[];
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ProductSpecProps & { class?: ClassValue; style?: string };
 

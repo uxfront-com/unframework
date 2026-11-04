@@ -1,6 +1,6 @@
 # ADR-0059: L4 consumer type tests: misuse fixtures with inline expectations
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0068
 - **Date:** 2026-10-18
 - **Plan:** §5.6 (layer 4), §7.2 (L4), §7.7, §7.9, §9 M3, M5, M6; P1, P2; R2, R8; ADR-0022,
   ADR-0028, ADR-0042, ADR-0053, ADR-0054, ADR-0056

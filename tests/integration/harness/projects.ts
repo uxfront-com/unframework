@@ -41,7 +41,7 @@ import "./context.ts";
 import { listCases } from "./cases.ts";
 import { ENGINE_DECLARATIONS, enginePlugins } from "./engines.ts";
 import { goldenGuard } from "./guard.ts";
-import { noOutputCases, noOutputPlugin } from "./no-output.ts";
+import { noOutputCases, noOutputPlugin, standInCases, standInReasons } from "./no-output.ts";
 import { FAILURE_SCREENSHOTS_DIR, ROOT, toolchainDir } from "./paths.ts";
 import { loadToolchain, REFERENCE } from "./targets.ts";
 
@@ -270,15 +270,17 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
   const name = `browser:${target}`;
   const context = toolchainContext(target);
   const fragment = await toolchain.vite("browser", context);
-  // The cases this target has no output for: their specs load against a stand-in, so each test
-  // is skipped by the capability it requires (harness/no-output.ts).
+  // The cases this target has no output for, or cannot compile yet: their specs load against a
+  // stand-in, so each test is skipped with the expected errors, or fails every browser layer
+  // with the stand-in's cause (harness/no-output.ts).
   const cases = listCases(setup.harness.casesDir);
   const noOutput = noOutputCases(cases, target);
+  const standIns = standInCases(cases, target, setup.harness.quarantine);
   const config = mergeConfig(
     {
       root: ROOT,
       plugins: [
-        noOutputPlugin(cases, noOutput),
+        noOutputPlugin(cases, standInReasons(noOutput, standIns)),
         noErrorBroadcast(),
         // The engines' plugins resolve the imports every output keeps as written (ADR-0064).
         ...(await enginePlugins()),
@@ -334,6 +336,7 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
           ufHarness: setup.harness,
           ufCapabilities: builtinTargets[target as TargetName].capabilities,
           ufNoOutput: noOutput,
+          ufStandIn: standIns,
         },
         sequence: {
           groupOrder: groupOrder(

@@ -1,11 +1,13 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface DeleteFileProps {
     fileName: string;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = DeleteFileProps & {
     ondeleted?: (fileName: string, copies: number) => void;

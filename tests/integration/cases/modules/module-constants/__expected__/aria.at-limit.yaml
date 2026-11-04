@@ -1,0 +1,9 @@
+- region "Stepper":
+  - status: 20 of 20
+  - list:
+    - listitem:
+      - button "Add 1"
+    - listitem:
+      - button "Add 5"
+    - listitem:
+      - button "Add 10"

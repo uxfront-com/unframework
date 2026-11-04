@@ -1,5 +1,6 @@
 import {
   addPassThroughImports,
+  addTypeImports,
   componentTypes,
   defineTarget,
   moduleHelperName,
@@ -13,11 +14,19 @@ import {
   Placeholders,
   printComponentModule,
   sourceNames,
+  typeExportsCode,
 } from "@unframework/codegen";
 import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework/codegen";
-import type { UfComponent } from "@unframework/ir";
+import type { TypeDeclaration, UfComponent, UfModule } from "@unframework/ir";
 
+import {
+  addComposableImports,
+  emitComposable,
+  moduleReads,
+  moduleValueNames,
+} from "./composable.ts";
 import { SolidComposition } from "./composition.ts";
+import { typeParameterDeclaration } from "./generics.ts";
 import { NEXT_TICK_HELPER, WATCHER_HELPER } from "./helpers.ts";
 import { CLASS_HELPER, SCOPE_HELPER, solidJsx, STYLE_HELPER } from "./jsx.ts";
 import { solidListeners } from "./listeners.ts";
@@ -131,12 +140,25 @@ export const solid: Target = defineTarget({
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
     "sheet-order": { support: "native" },
+    "generic-components": { support: "native" },
+    "generic-slot-props": { support: "native" },
+    composables: { support: "native" },
+    // A composable's module has its own watcher queue (ADR-0069).
+    "composable-effect-order": {
+      support: "unsupported",
+      code: "UF4005",
+      severity: "info",
+      reason:
+        "A composable's watchers coalesce in its own module's queue (`createWatcher`), apart from the caller's, so its watchers, effects and hooks cannot take their place among the caller's own, and code that relies on that order may see another (ADR-0069).",
+    },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     // Every name the source declares or reads is taken before the output claims its own
-    // (`props`, `Show`, `cx`, `setCount`), so none of them captures a reference (ADR-0035).
+    // (`props`, `Show`, `cx`, `setCount`), so none of them captures a reference (ADR-0035); so is
+    // every name the module declares for its components to read, which keep theirs (ADR-0070).
     const names = sourceNames(component, context.module);
     for (const name of freeNames(component, names)) names.delete(name);
+    for (const name of moduleValueNames(context.module)) names.add(name);
     // A source's components are joined into one module where it is loaded (ADR-0053): each claims
     // the class and scope helpers from bases of its own (`cx_1`), past the names any other
     // component declares.
@@ -156,6 +178,10 @@ export const solid: Target = defineTarget({
     const imports = new ImportSet(scope);
     // The imports that pass through, which the render reads as written (ADR-0064).
     addPassThroughImports(component, context.module, imports);
+    // The types it imports, by name (ADR-0067): a child's from its output, `./Field`.
+    addTypeImports(component, context.module, imports, (name) => name);
+    // The composables it calls, from their outputs (ADR-0069).
+    addComposableImports(component, context.module, imports);
     const placeholders = new Placeholders();
     const composition = new SolidComposition(component, context.module, imports);
     const props = solidProps(component, imports, placeholders, {
@@ -200,12 +226,16 @@ export const solid: Target = defineTarget({
       ...(exposed ? [placeholders.statements(`${exposed}\n`)] : []),
       js.returnStatement(rendered(component, code, narrowings.types, jsx)),
     ]);
+    // A generic component is a generic function, `function List<T>(…)` (ADR-0068).
+    fn.typeParameters = typeParameterDeclaration(component, placeholders);
     const statements = exportDeclaration(
       component.name,
       fn,
       exportsOf(component.name, context.module.exports),
     );
     const keys = composition.keys().map((text) => placeholders.statements(`${text}\n`));
+    // What it reads of its module: its imported values and its constants (ADR-0070).
+    const reads = moduleReads(component.name, context.module, imports, placeholders);
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
     // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
     // component's style after its script.
@@ -218,8 +248,12 @@ export const solid: Target = defineTarget({
         path: `${component.name}.tsx`,
         contents: printComponentModule(
           {
-            types: [...types, ...(props.events ? [props.events] : []), ...composition.types],
-            body: [...keys, ...setup.hoisted, ...statements],
+            types: [
+              ...moduleTypes(component, context.module, [...types, ...reads.types]),
+              ...(props.events ? [props.events] : []),
+              ...composition.types,
+            ],
+            body: [...keys, ...reads.constants, ...setup.hoisted, ...statements],
             helpers: [...helpers(), ...code.helpers()],
             // Collected last: the helpers import what they call.
             imports: [...imports.toDeclarations(), ...sheet],
@@ -230,6 +264,7 @@ export const solid: Target = defineTarget({
       },
     ];
   },
+  emitComposable,
 });
 
 /**
@@ -266,6 +301,25 @@ function rendered(
     );
   }
   return wrapped;
+}
+
+/**
+ * The types an output declares, in source order: those it reaches, copied as written, and in
+ * the output of the module's main component the module's type exports (ADR-0068), each a
+ * statement of its own, `export type { Tone } from "./types";`, that the module prints as it is.
+ */
+function moduleTypes(
+  component: UfComponent,
+  module: UfModule,
+  types: readonly TypeDeclaration[],
+): TypeDeclaration[] {
+  const exports = typeExportsCode(component, module, (name) => name).map(({ code, span }) => ({
+    name: "",
+    exported: false,
+    code,
+    span,
+  }));
+  return [...types, ...exports].toSorted((a, b) => a.span.start - b.span.start);
 }
 
 /**

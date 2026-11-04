@@ -194,6 +194,32 @@ describe("judgeCanary", () => {
     expect(judgeCanary(canary, run, ["vue"], [hello]).problems).toHaveLength(2);
   });
 
+  it("excuses a layer skipped because a quarantined L6 rendered nothing, and no other skip", () => {
+    const l13 = findCanary("L13-console-warn");
+    const notRendered: LayerOutcome = {
+      status: "skip",
+      reason: "the component did not render (L6)",
+    };
+    const quarantined: LayerOutcome = { status: "quarantined", issue: "UXF-0" };
+    const run = (render: LayerOutcome) => ({
+      status: 1,
+      projects: merged(
+        cells("L13", { "basics/hello": { vue: serverWarning("vue") } }, "ssr"),
+        cells("L13", { "basics/card": { vue: notRendered } }, "ssr"),
+        cells("L6", { "basics/card": { vue: render } }, "ssr"),
+        cells("L13", {
+          "basics/hello": { vue: pageWarning("vue") },
+          "basics/card": { vue: pageWarning("vue") },
+        }),
+      ),
+    });
+    expect(judgeCanary(l13, run(quarantined), ["vue"], [hello, card]).problems).toEqual([]);
+    // A render that failed outside the quarantine hid the canary's warning.
+    expect(judgeCanary(l13, run(fail("did not render")), ["vue"], [hello, card]).problems).toEqual([
+      "vue › basics/card › L13 (ssr:vue): skip(the component did not render (L6)), although the canary corrupted the case",
+    ]);
+  });
+
   it("requires each kind of project's own evidence, in its own cells", () => {
     const l13 = findCanary("L13-console-warn");
     const caught = {
@@ -486,6 +512,30 @@ describe("judgeCanary", () => {
         expect.stringMatching(
           /^vue › basics\/hello › browser:vue: failed, but not in the browser golden guard check .*: Failed to fetch module$/,
         ),
+      ]);
+    });
+
+    it("excuses a spec its project serves a stand-in, which loads whatever the canary did (ADR-0068)", () => {
+      const served: CanaryCase = { ...hello, standIn: (target) => target === "angular" };
+      const run = {
+        status: 1,
+        projects: merged(
+          cells(
+            "L6",
+            { "basics/hello": { angular: fail(guarded("angular")), vue: fail(guarded("vue")) } },
+            "ssr",
+          ),
+          cells("L7", { "basics/hello": { angular: { status: "quarantined", issue: "UXF-0" } } }),
+        ),
+        loadFailures: [{ project: "browser:vue", file: hello.spec!, errors: [guarded("vue")] }],
+      };
+      // The other cases must prove the browser project: here, none can on Angular.
+      expect(judgeCanary(guard, run, ["angular", "vue"], [served]).problems).toEqual([
+        "angular: no case could prove it in the browser projects",
+      ]);
+      // Elsewhere it is no stand-in: its spec must fail to load.
+      expect(judgeCanary(guard, { ...run, loadFailures: [] }, ["vue"], [served]).problems).toEqual([
+        `vue › basics/hello › browser:vue: ${hello.spec} did not run, although the canary corrupted the case`,
       ]);
     });
 

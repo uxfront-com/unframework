@@ -1,0 +1,221 @@
+{
+  "irVersion": 1,
+  "file": "types/child-type-import/Form.uf.tsx",
+  "components": [
+    {
+      "name": "Form",
+      "span": {
+        "start": 165,
+        "end": 345
+      },
+      "props": [
+        {
+          "name": "field",
+          "optional": false,
+          "type": {
+            "code": "FieldProps",
+            "span": {
+              "start": 214,
+              "end": 224
+            }
+          },
+          "binding": "field@196",
+          "span": {
+            "start": 207,
+            "end": 224
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ field: FieldProps }",
+          "span": {
+            "start": 205,
+            "end": 226
+          }
+        },
+        "span": {
+          "start": 194,
+          "end": 226
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "field@196",
+          "name": "field",
+          "kind": "prop",
+          "span": {
+            "start": 196,
+            "end": 201
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "form",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Sign up",
+            "span": {
+              "start": 251,
+              "end": 271
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Field",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "name",
+                "value": {
+                  "code": "field.name",
+                  "span": {
+                    "start": 292,
+                    "end": 302
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "field@196",
+                      "span": {
+                        "start": 292,
+                        "end": 297
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 286,
+                  "end": 303
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "field.label",
+                  "span": {
+                    "start": 311,
+                    "end": 322
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "field@196",
+                      "span": {
+                        "start": 311,
+                        "end": 316
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 304,
+                  "end": 323
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 279,
+              "end": 326
+            }
+          }
+        ],
+        "span": {
+          "start": 245,
+          "end": 338
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Form",
+      "span": {
+        "start": 165,
+        "end": 345
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Field.uf.tsx",
+      "file": "Field.uf.tsx",
+      "api": {
+        "file": "Field.uf.tsx",
+        "components": [
+          {
+            "name": "Field",
+            "export": "default",
+            "props": [
+              {
+                "name": "name",
+                "optional": false,
+                "type": "string"
+              },
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "label"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Field",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 35
+      }
+    }
+  ],
+  "typeImports": [
+    {
+      "specifier": "./Field.uf.tsx",
+      "names": [
+        {
+          "imported": "FieldProps",
+          "local": "FieldProps",
+          "span": {
+            "start": 50,
+            "end": 60
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 85
+      }
+    }
+  ]
+}

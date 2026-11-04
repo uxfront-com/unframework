@@ -3,8 +3,11 @@
 The target kit (plan §5.8): everything a target needs to emit idiomatic code, and nothing
 framework-specific.
 
-- **`defineTarget`** and the `Target` interface: `name`, `framework`, a capability matrix and
-  `emit(component, context)`. The matrix has a cell for every name in `CAPABILITY_NAMES`: one per
+- **`defineTarget`** and the `Target` interface: `name`, `framework`, a capability matrix,
+  `emit(component, context)`, and `emitComposable(composable, context)`, which emits a `.uf.ts`
+  module's composable as its own module (ADR-0069). Every built-in target has `emitComposable`.
+  It is optional for a third-party target: `compile()` reports UF1002 for a composable of a
+  target without it. The matrix has a cell for every name in `CAPABILITY_NAMES`: one per
   IR node and attribute kind (`element`, `text`, `interpolation`, `conditional`, `list`,
   `static-attribute`, `bound-attribute`, `class-binding`, `style-binding`, `attribute-spread`),
   plus `props`, a root `fragment`, `svg`, `listbox`, `interactivity` (listeners, template refs,
@@ -18,6 +21,13 @@ framework-specific.
   may need). `compositionUse` finds where a component first uses composition, in source order:
   until a target's M3 lane lands, its `emit` reports UF1002 there and emits nothing for it (Vue
   emits all of composition).
+  M5's capabilities (ADR-0068, ADR-0069): a generic component (`generic-components`), a scoped
+  slot whose props name a type parameter, or a fill of one (`generic-slot-props`), a composable's
+  call (`composables`), and one whose composable runs code in the browser
+  (`composable-effect-order`, which refines `interactivity`). `composableUse` finds where a
+  component first calls a composable or reads what a module or a composable gives it, in source
+  order: a target that cannot emit them reports UF1002 there and emits nothing for it. Every
+  built-in target emits them.
   Each cell is `native`, `emulated` with the name of the inline helper the target prints (React's
   `cx` for `class-binding`), or `unsupported` with a portability diagnostic: a target declares in
   its matrix what it cannot render exactly (P4, ADR-0033). `requiredCapabilities` derives what a
@@ -26,9 +36,9 @@ framework-specific.
   compiler's capability check and the render-parity tests read it. `BEHAVIOURAL_CAPABILITIES`
   change what code does in the browser, or the cascade (`sheet-order`), not the markup that
   renders, so the render-parity tests compare a case that uses one its target leaves unsupported
-  as any other (ADR-0033, as amended by ADR-0047 and ADR-0063); `CAPABILITY_PREREQUISITES` names
-  what each refines (`interactivity`), which the compiler reports alone where the target lacks
-  it.
+  as any other (ADR-0033, as amended by ADR-0047, ADR-0063 and ADR-0069);
+  `CAPABILITY_PREREQUISITES` names what each refines (`interactivity`), which the compiler reports
+  alone where the target lacks it.
 - **The scoper** (`scopeStylesheet(file, source, scopeId)`, ADR-0063): a component's sheet,
   scoped once with Vue's algorithm: Vue's scoped plugin ported onto postcss and
   postcss-selector-parser, which keep the sheet's own text, so only selectors and keyframe names
@@ -199,7 +209,9 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   dialects: `operand`, `test`, `negate`, `conjoin`, `member`, `angularCode`, `vueAttributeCode`,
   `staticClassValue`, `vueClassValue`, `codeTokens` and `mapCode`, and the binding forms ADR-0065
   lowers: `bindingForms`, `mergesWholeStyle` and `spreadStyleExpression`. The targets' `markup-semantics` tests render the shared cases of
-  `test/markup-cases.ts` through each framework and its L5 linters.
+  `test/markup-cases.ts` through each framework and its L5 linters, and each target's
+  `composable` test compiles the composable and module cases through `test/composable-cases.ts`,
+  which reads each case from `tests/integration/cases/` (ADR-0069).
 - **Formatting:** `formatOutput` runs oxfmt (pinned) over code files (TS, TSX, JS), with
   embedded-language formatting off and objects laid out by width alone. In a markup file it
   formats only the TypeScript blocks, each as TypeScript on its own (ADR-0041): a `.vue` file's
@@ -216,8 +228,20 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   component's output keeps as written (a styling engine's, ADR-0064), and `addPassThroughImports`
   adds them to an `ImportSet`, which prints them after its sorted imports, in the IR's order; `componentTypes`
   and `typeDeclarationCode` copy the type declarations a component's props reach, exported as
-  the source does. `ImportSet` sorts imports and renames one that clashes with a name in its
-  `NameScope`: a target reserves the source's names (`sourceNames`: the component, its types,
+  the source does. `addTypeImports` adds the names of the module's `import type` declarations that
+  what a component's output prints reads (`liveTypeNames`), by the source's own names, from
+  `typeSpecifier`: a `.ts` module's or a package's as written, a `.uf.tsx` module's from the
+  output of its main component, which the module's import records with its API, a type-only one
+  included (`./TextField.vue` for `./text-field.uf.tsx`). Its options say what counts as
+  printed (`live`, client code by default, the server's alone for Astro) and the local name an
+  import takes (`local`, the source's by default: Astro renames an imported `Props`).
+  `typeExportsCode` writes the module's type exports in the output of its main component: an
+  exported type no component reaches, a re-export, and a re-export of an exported type only
+  another component's output declares, each with its span, so a target places it in source
+  order (ADR-0067, ADR-0068). A prop another file
+  declares (`declaredBy`) is written in that file's names, so neither these nor `liveTypes` and
+  the kinds look its type up in the component's own module. `ImportSet` sorts imports and renames
+  one that clashes with a name in its `NameScope`: a target reserves the source's names (`sourceNames`: the component, its types,
   bindings, every variable its expressions and setup code read or declare (`codeNames`), its
   functions' parameters, and the types its setup's annotations name (`typeNames`)) and claims its
   own (`props`, `cx`, `Show`, `setCount`) from the same scope, so nothing it adds captures or
@@ -245,4 +269,7 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   that extends it and lists them, as `runChecker` does), and `mergeLintResults` joins the two.
   Both reject a linter that cannot start or load its
   configuration or plugins, skips a file, or prints output they cannot read, and return every
-  message by file in a stable order.
+  message by file in a stable order. `compileScriptModules` is L3 for the plain `.ts` modules
+  of a template target's output tree, a shared module (ADR-0070) or a composable's (ADR-0069),
+  which no framework compiler reads: Vite's `transformWithOxc`, as each dev server loads them;
+  `transformScriptModule` also returns one module's JavaScript, which Svelte compiles next.

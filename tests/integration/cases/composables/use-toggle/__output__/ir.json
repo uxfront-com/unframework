@@ -1,0 +1,433 @@
+{
+  "irVersion": 1,
+  "file": "composables/use-toggle/Disclosure.uf.tsx",
+  "components": [
+    {
+      "name": "Disclosure",
+      "span": {
+        "start": 48,
+        "end": 559
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "on@97",
+          "name": "on",
+          "kind": "usedState",
+          "span": {
+            "start": 97,
+            "end": 99
+          }
+        },
+        {
+          "id": "toggle@101",
+          "name": "toggle",
+          "kind": "usedFn",
+          "span": {
+            "start": 101,
+            "end": 107
+          }
+        },
+        {
+          "id": "close@109",
+          "name": "close",
+          "kind": "usedFn",
+          "span": {
+            "start": 109,
+            "end": 114
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Use",
+          "composable": "useToggle",
+          "arguments": [
+            {
+              "kind": "Value",
+              "value": {
+                "code": "false",
+                "span": {
+                  "start": 129,
+                  "end": 134
+                },
+                "refs": []
+              },
+              "span": {
+                "start": 129,
+                "end": 134
+              }
+            }
+          ],
+          "members": [
+            {
+              "member": "on",
+              "binding": "on@97",
+              "span": {
+                "start": 97,
+                "end": 99
+              }
+            },
+            {
+              "member": "toggle",
+              "binding": "toggle@101",
+              "span": {
+                "start": 101,
+                "end": 107
+              }
+            },
+            {
+              "member": "close",
+              "binding": "close@109",
+              "span": {
+                "start": 109,
+                "end": 114
+              }
+            }
+          ],
+          "span": {
+            "start": 89,
+            "end": 136
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "disclosure",
+            "span": {
+              "start": 162,
+              "end": 180
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Shipping",
+            "span": {
+              "start": 181,
+              "end": 202
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 218,
+                  "end": 231
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-expanded",
+                "value": {
+                  "code": "on.value",
+                  "span": {
+                    "start": 247,
+                    "end": 255
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "on@97",
+                      "span": {
+                        "start": 247,
+                        "end": 255
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 232,
+                  "end": 256
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "toggle()",
+                      "span": {
+                        "start": 272,
+                        "end": 280
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "toggle@101",
+                          "span": {
+                            "start": 272,
+                            "end": 278
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 266,
+                      "end": 280
+                    }
+                  },
+                  "span": {
+                    "start": 266,
+                    "end": 280
+                  }
+                },
+                "span": {
+                  "start": 257,
+                  "end": 281
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Shipping details",
+                "span": {
+                  "start": 282,
+                  "end": 314
+                }
+              }
+            ],
+            "span": {
+              "start": 210,
+              "end": 323
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "on.value",
+                  "span": {
+                    "start": 331,
+                    "end": 339
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "on@97",
+                      "span": {
+                        "start": 331,
+                        "end": 339
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "div",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "panel",
+                        "span": {
+                          "start": 358,
+                          "end": 371
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "p",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Orders ship within two days.",
+                            "span": {
+                              "start": 386,
+                              "end": 414
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 383,
+                          "end": 418
+                        }
+                      },
+                      {
+                        "kind": "Element",
+                        "tag": "button",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "type",
+                            "value": "button",
+                            "span": {
+                              "start": 437,
+                              "end": 450
+                            }
+                          },
+                          {
+                            "kind": "Event",
+                            "event": "click",
+                            "handler": {
+                              "kind": "Inline",
+                              "function": {
+                                "parameters": [],
+                                "body": {
+                                  "code": "close()",
+                                  "span": {
+                                    "start": 466,
+                                    "end": 473
+                                  },
+                                  "refs": [
+                                    {
+                                      "kind": "Binding",
+                                      "binding": "close@109",
+                                      "span": {
+                                        "start": 466,
+                                        "end": 471
+                                      },
+                                      "call": true
+                                    }
+                                  ]
+                                },
+                                "expression": true,
+                                "span": {
+                                  "start": 460,
+                                  "end": 473
+                                }
+                              },
+                              "span": {
+                                "start": 460,
+                                "end": 473
+                              }
+                            },
+                            "span": {
+                              "start": 451,
+                              "end": 474
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Close",
+                            "span": {
+                              "start": 475,
+                              "end": 504
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 429,
+                          "end": 513
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 353,
+                      "end": 528
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 331,
+                  "end": 536
+                }
+              }
+            ],
+            "span": {
+              "start": 331,
+              "end": 536
+            }
+          }
+        ],
+        "span": {
+          "start": 153,
+          "end": 552
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Disclosure",
+      "span": {
+        "start": 48,
+        "end": 559
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./useToggle.uf.ts",
+      "file": "useToggle.uf.ts",
+      "api": {
+        "file": "useToggle.uf.ts",
+        "components": [],
+        "keys": [],
+        "composables": [
+          {
+            "name": "useToggle",
+            "parameters": [
+              {
+                "name": "initial",
+                "kind": "value",
+                "type": "boolean"
+              }
+            ],
+            "members": [
+              {
+                "name": "on",
+                "kind": "state",
+                "type": "boolean"
+              },
+              {
+                "name": "toggle",
+                "kind": "function",
+                "client": true
+              },
+              {
+                "name": "close",
+                "kind": "function",
+                "client": true
+              }
+            ]
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Composable",
+          "imported": "useToggle",
+          "local": "useToggle",
+          "span": {
+            "start": 9,
+            "end": 18
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 46
+      }
+    }
+  ]
+}

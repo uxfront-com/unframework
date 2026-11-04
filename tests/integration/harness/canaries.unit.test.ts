@@ -26,6 +26,7 @@ import {
 } from "../scripts/canaries.ts";
 import {
   addRootAttribute,
+  anyExportedTypes,
   CANARIES,
   canaryCase,
   dropFirstRule,
@@ -310,6 +311,9 @@ describe("canaries", () => {
       const whole = length === 1 ? ["all"] : parts.map((_, index) => `${index + 1}/${length}`);
       expect(parts.toSorted(), id).toEqual(whole.toSorted());
     }
+    // L8's specs wait out a timeout on the most cases: with M5's cases, each of two shards
+    // outgrew the ten minutes, so it runs in three.
+    expect(runs.get("L8-render-nothing")).toHaveLength(3);
     // A canary whose browser specs run waits out a timeout at most of their failures, on every
     // target: one job of the whole corpus outgrew the ten minutes (ADR-0052). The golden
     // guard's specs fail to load, so they run no test and wait for nothing.
@@ -774,8 +778,9 @@ describe("canaries", () => {
 
   it("L4-consumer types each target's props `any` where its consumers' checker reads them", async () => {
     const result = await compileWith("L4-consumer");
+    // The exported types are widened too, as the test of `types/exported-types` proves.
     const lines = (target: string) =>
-      result.outputs[target]![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line));
+      result.outputs[target]![0]!.contents.split("\n").filter(widenedProps);
     expect(lines("react")).toEqual(["}: any) {"]);
     expect(result.outputs.react![0]!.contents).toMatch(
       /^export default function TaskList\(\{\n[\s\S]*?\n\}: any\) \{$/m,
@@ -810,7 +815,7 @@ describe("canaries", () => {
         targets: [target],
         plugins: canaryPlugins("L4-consumer", target),
       });
-      return outputs[target]![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line));
+      return outputs[target]![0]!.contents.split("\n").filter(widenedProps);
     };
     expect(await lines("react")).toEqual(["}: any) {"]);
     const { outputs: react } = await compile(readFileSync(info.source, "utf8"), {
@@ -859,6 +864,69 @@ describe("canaries", () => {
     ]);
   });
 
+  it("L4-consumer types a module's exported types `any`, on a case whose consumers misuse one", async () => {
+    // The type directives of `types/exported-types` (ADR-0068): the props type and a type no
+    // component reaches, each declared `any` where the source declares it.
+    const info = listCases().find(({ id }) => id === "types/exported-types")!;
+    const { outputs } = await compile(readFileSync(info.source, "utf8"), {
+      filename: info.filename,
+      targets: ["vue"],
+      plugins: canaryPlugins("L4-consumer", "vue"),
+    });
+    expect(outputs.vue![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line))).toEqual([
+      "export type ButtonTone = any;",
+      "export type ButtonSize = any;",
+      "export type ButtonProps = any;",
+      'const { label, tone = "primary" } = defineProps<Record<string, any>>();',
+    ]);
+  });
+
+  it("finds a generic Qwik component's body and types its props `any`", async () => {
+    // Qwik's generic arrow (ADR-0068): its props type is the parameter's, not a type argument.
+    const info = listCases().find(({ id }) => id === "generics/list")!;
+    const { outputs } = await compile(readFileSync(info.source, "utf8"), {
+      filename: info.filename,
+      targets: ["qwik"],
+      plugins: canaryPlugins("L4-consumer", "qwik"),
+    });
+    expect(outputs.qwik![0]!.contents.split("\n").filter(widenedProps)).toEqual([
+      "  <T,>({ label, items, selected, class: className, style, ...attributes }: any) => {",
+    ]);
+    expect(
+      mismatchClosingTag({
+        path: "List.tsx",
+        contents:
+          "export default component$(\n  <T extends { on: () => void }>({ items }: { items: T[] }) => {\n    return <ul>{items.length}</ul>;\n  },\n);\n",
+      }),
+    ).toBe(
+      "export default component$(\n  <T extends { on: () => void }>({ items }: { items: T[] }) => {\n    return <ul>{items.length}</span>;\n  },\n);\n",
+    );
+  });
+
+  it("widens an exported interface, a type alias and a type re-export, keeping type parameters", () => {
+    const widened = anyExportedTypes(
+      [
+        'import type { Item, Tone } from "./types";',
+        'export type { Tone, Size as ButtonSize } from "./types";',
+        "export interface ListProps<T extends { id: string } = Item> extends Base<T> {",
+        "  items: T[];",
+        "  pick?: (item: T) => void;",
+        "}",
+        'export type Picked = Pick<Item, "id" | "label"> &',
+        "  Readonly<{ select: () => void }>;",
+        "type Local = string;",
+      ].join("\n"),
+    );
+    expect(widened.split("\n")).toEqual([
+      'import type { Item } from "./types";',
+      "export type Tone = any;",
+      "export type ButtonSize = any;",
+      "export type ListProps<T extends { id: string } = Item> = any;",
+      "export type Picked = any;",
+      "type Local = string;",
+    ]);
+  });
+
   it("L4-consumer applies to the cases with consumer fixtures, on each target that has them", () => {
     const canary = findCanary("L4-consumer");
     const [withFixtures, without] = ["events/emit-payloads", "basics/hello"].map((id) =>
@@ -868,6 +936,19 @@ describe("canaries", () => {
       expect(canary.appliesTo!(withFixtures!, target), target).toBe(true);
       expect(canary.appliesTo!(without!, target), target).toBe(false);
     }
+  });
+
+  it("L4-consumer's evidence is an unmet directive, declared in a .uf.tsx or a .ts module", () => {
+    const evidence = findCanary("L4-consumer").evidence.toolchain!["consumer check"] as RegExp;
+    const unmet = (at: string) =>
+      `tests/toolchains/react/consumers/types/shared-type/MisuseType.tsx:4: expected TS2322 for Badge.type:Tone (${at}), got none`;
+    expect(unmet("Badge.uf.tsx:3")).toMatch(evidence);
+    // A type re-exported from the case's shared module is declared there (ADR-0068).
+    expect(unmet("types.ts:2")).toMatch(evidence);
+    expect(unmet("types.d.mts:2")).not.toMatch(evidence);
+    expect(
+      "tests/toolchains/react/consumers/types/shared-type/MisuseType.tsx:4: unexpected TS2322 Type 'number' is not assignable.",
+    ).not.toMatch(evidence);
   });
 
   it("L10-root-inverted styles the root element in each target's own syntax", async () => {
@@ -1276,6 +1357,18 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
       "render",
     );
     expect(react).toContain("format: () => string }) {\n  x();\n  return <p>");
+    // A generic component's type parameters, whose constraint holds braces (ADR-0068).
+    const generic = injectScript(
+      {
+        path: "A.tsx",
+        contents:
+          "export default function A<T extends { id: string } = { id: string }>({ rows }: { rows: T[] }) {\n  return <p>{rows.length}</p>;\n}\n",
+      },
+      "react",
+      "x();",
+      "render",
+    );
+    expect(generic).toContain("{ rows: T[] }) {\n  x();\n  return <p>");
     const qwik = injectScript(
       {
         path: "A.tsx",
@@ -1310,6 +1403,21 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
     );
     expect(angular).toBe(
       "export default class A {\n  constructor() {\n    x();\n  }\n\n  readonly label = input.required<string>();\n}\n",
+    );
+    // A generic component's class, whose constraint holds braces (ADR-0068).
+    expect(
+      injectScript(
+        {
+          path: "a.ts",
+          contents:
+            "export default class A<T extends { id: string }> implements OnInit {\n  readonly rows = input.required<T[]>();\n}\n",
+        },
+        "angular",
+        "x();",
+        "render",
+      ),
+    ).toBe(
+      "export default class A<T extends { id: string }> implements OnInit {\n  constructor() {\n    x();\n  }\n\n  readonly rows = input.required<T[]>();\n}\n",
     );
     // The component's class, not a directive's declared before it (ADR-0047, ADR-0063).
     const directive =
@@ -1378,6 +1486,16 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
         contents: "@Component({\n  template: `<p>a</p>`,\n})\nexport default class A {}\n// </b>\n",
       }),
     ).toBe("@Component({\n  template: `<p>a</span>`,\n})\nexport default class A {}\n// </b>\n");
+    // A generic component's type parameters, a constraint's arrow among them (ADR-0068).
+    expect(
+      mismatchClosingTag({
+        path: "List.tsx",
+        contents:
+          "export default function List<T extends { on: () => void }>(props: { items: T[] }) {\n  return <ul>{props.items.length}</ul>;\n}\n",
+      }),
+    ).toBe(
+      "export default function List<T extends { on: () => void }>(props: { items: T[] }) {\n  return <ul>{props.items.length}</span>;\n}\n",
+    );
   });
 });
 
@@ -1435,3 +1553,8 @@ describe("every canary on the corpus", () => {
     },
   );
 });
+
+/** A line the L4-consumer canary widened that is not an exported type's declaration. */
+function widenedProps(line: string): boolean {
+  return /\bany\b/.test(line) && !/^\s*export type [\w$]+(?:<.*>)? = any;$/.test(line);
+}

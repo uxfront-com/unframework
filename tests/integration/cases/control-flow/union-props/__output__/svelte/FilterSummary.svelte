@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   type LookupResult = { ok: true; match: string } | { ok: false; error: string };
 
   export interface FilterSummaryProps {
@@ -10,6 +8,10 @@
     limit: number | string;
     result: LookupResult;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = FilterSummaryProps & { class?: ClassValue; style?: string };
 

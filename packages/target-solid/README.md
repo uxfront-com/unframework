@@ -54,6 +54,17 @@ export default function Counter(
   keeps its own name (`card.title`). A prop no expression reads takes no default, and a props object nothing
   reads is `_props` (an object form's name that is `_` and more is kept): unused bindings fail
   L5.
+- The source's `import type` names the output reads, by name (ADR-0067): from a `.ts` module or a
+  package as written, `import type { BadgeProps } from "./types"`, and from a child's output,
+  `import Field, { type FieldProps } from "./Field"`. The output of the module's main component
+  also writes the module's other type exports, an exported type no component reaches and a
+  re-export (`export type { Tone } from "./types"`), among the copied types in source order
+  (ADR-0068).
+- A generic component is a generic function, `function List<T>(props: ListProps<T>)`, whose
+  consumers' JSX infers `T` (ADR-0068). The interfaces the output declares for its events, models
+  and slots take the type parameters their members read (`PickerSlots<T>`), so a scoped slot's
+  fill is typed with the consumer's `T`, and a `<select>` bound to a model of `T` writes the
+  chosen value as `T`.
 - Expressions exactly as the source writes them, with each prop read through `props`.
   Conditionals are Solid's control flow, which test truthiness as the IR does (`0` renders
   nothing): `<Show when={c} fallback={…}>`, `<Show when={!c}>` when only the else branch
@@ -249,6 +260,62 @@ The setup's items in source order (`src/setup.ts`), after `mergeProps`:
 - Constants and functions that capture nothing of the component move to module scope
   (`unicorn/consistent-function-scoping`).
 
+## Composables and shared modules (ADR-0069, ADR-0070)
+
+A `.uf.ts` module's composable is its own module, `useToggle.ts` (`src/composable.ts`): the
+source's exported function, its parameters and type parameters as written, its setup lowered as a
+component's (above), and a returned object of accessors for its state and derived values, with
+its functions and constants as they are. Getter and callback parameters are called as the source
+calls them.
+
+```ts
+import { createSignal } from "solid-js";
+
+export function useToggle(initial: boolean) {
+  const [on, setOn] = createSignal(initial);
+
+  function toggle() {
+    setOn(!on());
+  }
+
+  return { on, toggle };
+}
+```
+
+| Source                                          | Solid                                                                               |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `import { useToggle } from "./useToggle.uf.ts"` | `import { useToggle } from "./useToggle"`                                           |
+| `const { on, toggle } = useToggle(false)`       | as written; `on.value` is the accessor's call, `on()`, and `toggle()` is as written |
+| `const { matches: wide } = useMediaQuery(q)`    | as written, read `wide()`                                                           |
+| a getter argument, `() => price`                | `() => props.price`, which the composable reads reactively                          |
+| a callback argument                             | an arrow, which the composable's client code calls                                  |
+| `import { SIZES } from "./tokens"`              | as written, from the copy of `tokens.ts` beside the outputs                         |
+| `const STEP = 2;` above the component           | as written, at module scope, before what the setup hoists                           |
+
+- In a generic composable or component, a state whose type names a type parameter, or whose
+  type is inferred from anything but a literal (`ref(initial)` with `initial: T`), is written
+  through an updater, `setLocal(() => next)`: Solid's setter calls a function it is given, and a
+  `T` may be one.
+- The module's constants a component or a composable reaches, and those they read, are declared
+  as written, with the module's types they name, and so is an imported value a `typeof` queries
+  (`keyof typeof SIZES`). A composable's parameter types are imported as the source imports them.
+  Every module name is reserved before the output claims its own, so each keeps its name.
+- A setup function that reads only module values and other hoisted names moves to module scope
+  beside them; a setup binding named like a module value stays in the component, which shadows
+  it as the source does.
+- A source's outputs load as one module, joined in source order (ADR-0053), where a name is
+  declared once and a constant runs as the module loads. So in a source with several components
+  (or a `.uf.ts` module with several composables), the main one declares every module value any
+  of them reaches, with the types those name, and exports what the others read
+  (`export { STEP };`); the others import it from there, `import { STEP } from "./Pair"`, as a
+  sibling's injection key is (ADR-0054), and keep in their function a setup constant that reads
+  one, itself or through the functions it calls; those functions may still move to module scope,
+  since their bodies run later. So the joined module reads a module value only after the main
+  output declares it, whatever the join's order and the files' import cycle. The joined module then exports those names beside the source's own.
+- A composable's watchers keep their own module's queue (`createWatcher`), apart from the
+  caller's, so `composable-effect-order` is unsupported (UF4005, info). Its hooks attach to the
+  calling component, so they run on its mount and unmount, once for each call.
+
 ## Events, refs and emits (ADR-0047, ADR-0049)
 
 - A listener is Solid's event prop by its own spelling (`onClick`, `onKeyDown`, `onDblClick`,
@@ -280,8 +347,9 @@ The setup's items in source order (`src/setup.ts`), after `mergeProps`:
 Every name the output introduces (`props`, `rawProps`, `_props`, `defaults`, `cx`, setters,
 `createWatcher`, `createWatchEffect`, the scheduler's `queuedWatchers`, `queueWatcher` and
 `flushQueued`, `nextTick`, `narrowed`, the events' interface, the `solid-js` imports) is
-claimed around the source's own names, so none captures another. The target reports nothing:
-what Solid cannot render as the other targets do is the analyser's to reject (ADR-0033).
+claimed around the source's own names, so none captures another. The target reports one
+difference, `composable-effect-order` (UF4005, info); what else Solid cannot render as the other
+targets do is the analyser's to reject (ADR-0033).
 
 | Capability                                     | Cell                                                                                                         |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
@@ -296,6 +364,7 @@ what Solid cannot render as the other targets do is the analyser's to reject (AD
 | `model-array`                                  | emulated: `toggle`, and `selectedValues` for a multiple select                                               |
 | `model-modifiers`                              | emulated: `modelText`                                                                                        |
 | `reactive-context`                             | emulated: `refObject`, an object whose `value` getter reads the signal                                       |
+| `composable-effect-order`                      | unsupported (UF4005, info): a composable's watchers keep its own module's queue (ADR-0069)                   |
 | everything else                                | native                                                                                                       |
 
 ## Composition (ADR-0053, ADR-0054)
@@ -398,7 +467,7 @@ The tests and tooling build, check and run Solid output through three entries:
 - `@unframework/target-solid/toolchain` (Node): the Vite configuration of browser and SSR
   projects (`vite-plugin-solid`, with `ssr: true` for SSR and without solid-refresh), the
   framework compile check (L3: babel-preset-solid in `dom` and `ssr` modes, where a template a
-  browser would parse differently is a warning), the type check (L4: one TypeScript 7 run over
+  browser would parse differently is a warning, and a `.ts` module parses without JSX), the type check (L4: one TypeScript 7 run over
   all files, against `tests/toolchains/solid/tsconfig.json`) and the lint (L5: oxlint with the
   shared baseline and eslint-plugin-solid as a JS plugin,
   `tests/toolchains/solid/output.oxlintrc.json`).

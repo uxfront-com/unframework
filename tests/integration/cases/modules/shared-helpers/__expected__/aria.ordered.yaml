@@ -1,0 +1,5 @@
+- region "Price":
+  - paragraph: "Each: €2.50"
+  - status: "2 items: €5.00"
+  - button "One more"
+  - button "Order"

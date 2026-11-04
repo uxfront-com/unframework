@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface FilterPanelProps {
     heading: string;
     hint: string;
@@ -15,6 +13,10 @@
     invalid?: boolean;
     current?: "page" | "step";
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = FilterPanelProps & { class?: ClassValue; style?: string };
 

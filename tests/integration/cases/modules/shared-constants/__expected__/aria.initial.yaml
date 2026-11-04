@@ -1,0 +1,10 @@
+- group "Size":
+  - text: Size
+  - status: "Picked: Medium"
+  - list:
+    - listitem:
+      - button "Small"
+    - listitem:
+      - button "Medium" [pressed]
+    - listitem:
+      - button "Large"

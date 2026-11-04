@@ -1,0 +1,6 @@
+{
+  "description": "A component calls a composable whose mounted hook runs in the browser: React and Solid run a hook's effects in their own order (UF4005, info).",
+  "ssr": {
+    "default": {}
+  }
+}

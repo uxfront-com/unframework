@@ -14,10 +14,27 @@ setup as written, `.value` included (ADR-0045 to ADR-0049). In order:
 
 1. **The imports** from `vue` (`ref`, `shallowRef`, `computed`, `watch`, `watchPostEffect`,
    `onMounted`, `onUnmounted`, `useTemplateRef`, `useId`, `nextTick`), each under a name no
-   source name takes.
+   source name takes, and the source's `import type` names the script reads, by name
+   (ADR-0067): from a `.ts` module or a package as written, `import type { BadgeProps } from
+"./types"`, and from a child's output, `import Field, { type FieldProps } from "./Field.vue"`.
+   Then the values it reads of its module (ADR-0070), imported as the source imports them,
+   `import { sizes } from "./tokens"` from the copy of the `.ts` module beside the outputs, and
+   each composable it calls from the composable's own output, `import { useToggle } from
+"./useToggle"` (ADR-0069).
 2. **The type declarations** the component reaches (its props, its events and its setup code),
-   copied as written.
-3. **`defineProps<P>()`** with the source's annotation.
+   copied as written, and in the output of the module's main component its other type exports,
+   an exported type no component reaches and a re-export (`export type { Tone } from "./types"`),
+   all in source order (ADR-0068). Then the module's constants it reads, and those they read,
+   as written: `const GAP = sizes.sm * 2;` (ADR-0070).
+3. **`defineProps<P>()`** with the source's annotation, which compiler-sfc resolves through the
+   output tree: relative modules, `extends` chains, intersections and the five utility types.
+   A member a package declares is the exception: compiler-sfc resolves a package only through
+   TypeScript's classic API, which TypeScript 7 lacks, so the props are printed as a type literal
+   of their members, `defineProps<{ closed: boolean; label: string }>()` (ADR-0067). A generic
+   component's block takes its type parameters, `<script setup lang="ts" generic="T extends
+Item">` (ADR-0068). An attribute cannot hold its own quote, so each string literal there is
+   double-quoted, a `'` inside one written `\u0027`, and the attribute single-quoted around them:
+   `generic='T extends "a" | "b"'`.
    - Destructured props use Vue 3.5's reactive destructure:
      `const { label, tone = "info", count = undefined } = defineProps<BadgeProps>();`. Every
      optional prop gets a default, the source's or `undefined`, for two reasons. Without a
@@ -51,6 +68,7 @@ setup as written, `.value` included (ADR-0045 to ADR-0049). In order:
    | `watch(source, callback, options)`        | the same; a prop or a `shallowRef` by a getter                 |
    | `watchEffect(effect)`                     | `watchPostEffect(effect)`: after the render, never on a server |
    | `onMounted`, `onUnmounted`, `nextTick`    | the same                                                       |
+   | `const { on, toggle } = useToggle(false)` | the same: getters and callbacks as written (ADR-0069)          |
 
    State is replaced whole (ADR-0008, UF2004), so a state not known to hold a primitive
    (`isPrimitiveState` from `@unframework/codegen`: its type argument or its initial value) is a
@@ -114,7 +132,17 @@ fallthrough. L3 skips an external `<style src>`: the compile project parses the 
 Single-selection list boxes are declared unsupported (`listbox`): Vue's client selects their
 first option, where HTML and the other targets select none (ADR-0033). Every other capability is
 native: the listeners' options and DOM semantics, `useId` and `nextTick` are Vue's own, and so is
-all of composition.
+all of composition, composables and their effect order included.
+
+## Composables
+
+A `.uf.ts` module's composable is its own module, `useToggle.ts` (ADR-0069, `src/composable.ts`):
+the source's exported function, its parameters and type parameters as written, its setup as a
+component's script writes it (above), and `return { on, toggle }`. Vue reads a getter and calls a
+callback as the source does, so nothing changes at the boundary. The module imports what it uses
+from `vue`, the types its parameters and setup name, and the values and constants it reads of its
+own module, as a component does. A caller reads a returned ref through `.value` in its script, and
+unwrapped in its template, as it reads its own (`{{ on ? "On" : "Off" }}`).
 
 ## Composition
 
@@ -152,17 +180,22 @@ Models, context and `<component is>` (ADR-0054) are Vue's own as well:
 
 For tests and tooling (the target's main entry never loads it):
 
-- **`@unframework/target-vue/toolchain`**: `@vitejs/plugin-vue` for Vite. Static asset URLs stay
-  plain strings, as on every other target. The checks:
+- **`@unframework/target-vue/toolchain`**: `@vitejs/plugin-vue` for Vite, given the disk as
+  `script.fs`, without which compileScript resolves no imported props type (ADR-0067). Static
+  asset URLs stay plain strings, as on every other target. The checks:
   - L3 runs `@vue/compiler-sfc` the way plugin-vue does, for the DOM and for SSR, and reports
     every error and warning with its position. It refuses `NODE_ENV=production`, which silences
-    them.
+    them. `compileScript` reads the files it was given, so `defineProps<X>()` resolves an `X`
+    imported from a `.ts` module or another `.vue` file of the tree (ADR-0067). A `.ts` module,
+    a shared one (ADR-0070) or a composable's (ADR-0069), goes through Vite's TypeScript
+    transform instead.
   - L4 runs vue-tsc with `strictTemplates`, from the toolchain directory, once over every file.
     `tests/toolchains/vue/tsconfig.json` allows `data-*` and the few HTML attributes Vue's
     element types lack.
   - L5 (ADR-0042) runs oxlint's shared baseline over the script block and ESLint with
     eslint-plugin-vue over the whole file, with typescript-eslint's `no-unused-vars`, which
-    oxlint does not run on a `.vue` file. No rule is off for M2.
+    oxlint does not run on a `.vue` file. No rule is off for M2. A `.ts` module is oxlint's
+    alone.
 - **`…/toolchain/client`**: mounts with `createApp`, through a render function that passes the
   props from a shallow reactive object, and the test's listeners beside them as Vue's listener
   props (`onChange` for an event `change`), only for the events the component declares, so a
@@ -174,4 +207,7 @@ For tests and tooling (the target's main entry never loads it):
 Its own tests pin the shapes (`test/emit.test.ts`, `test/lint-probes.ts` against L3, L4 and L5),
 the server's setup (`test/setup.test.ts`), and the behaviour of the emitted components in
 Chromium (`test/behaviour.browser.test.ts`: reads after writes, watch timing, previous values
-and cleanup, lifecycle, template refs, ids, listeners and their options, emits).
+and cleanup, lifecycle, template refs, ids, listeners and their options, emits). Its composable
+test compiles the composable and module cases, in `tests/integration/cases/composables/` and
+`cases/modules/`, and runs L3 to L5 on their outputs (`test/composable.test.ts`), and
+`test/modules.test.ts` pins a composable's module, its call and a module's values.

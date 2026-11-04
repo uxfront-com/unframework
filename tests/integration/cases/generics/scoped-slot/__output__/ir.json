@@ -1,0 +1,289 @@
+{
+  "irVersion": 1,
+  "file": "generics/scoped-slot/Fruits.uf.tsx",
+  "components": [
+    {
+      "name": "Fruits",
+      "span": {
+        "start": 176,
+        "end": 434
+      },
+      "props": [
+        {
+          "name": "fruits",
+          "optional": false,
+          "type": {
+            "code": "Fruit[]",
+            "span": {
+              "start": 229,
+              "end": 236
+            }
+          },
+          "binding": "fruits@209",
+          "span": {
+            "start": 221,
+            "end": 236
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ fruits: Fruit[] }",
+          "span": {
+            "start": 219,
+            "end": 238
+          }
+        },
+        "span": {
+          "start": 207,
+          "end": 238
+        }
+      },
+      "types": [
+        "Fruit"
+      ],
+      "bindings": [
+        {
+          "id": "fruits@209",
+          "name": "fruits",
+          "kind": "prop",
+          "span": {
+            "start": 209,
+            "end": 215
+          }
+        },
+        {
+          "id": "item@307",
+          "name": "item",
+          "kind": "slotScope",
+          "span": {
+            "start": 307,
+            "end": 311
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Picker",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "items",
+                "value": {
+                  "code": "fruits",
+                  "span": {
+                    "start": 272,
+                    "end": 278
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "fruits@209",
+                      "span": {
+                        "start": 272,
+                        "end": 278
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 265,
+                  "end": 279
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "item",
+                "parameter": {
+                  "pattern": {
+                    "code": "{ item }",
+                    "names": [
+                      "item"
+                    ],
+                    "span": {
+                      "start": 305,
+                      "end": 313
+                    }
+                  },
+                  "span": {
+                    "start": 305,
+                    "end": 313
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "item.name",
+                          "span": {
+                            "start": 350,
+                            "end": 359
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "item@307",
+                              "span": {
+                                "start": 350,
+                                "end": 354
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 349,
+                          "end": 360
+                        }
+                      },
+                      {
+                        "kind": "Text",
+                        "value": " × ",
+                        "span": {
+                          "start": 360,
+                          "end": 363
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "item.count",
+                          "span": {
+                            "start": 364,
+                            "end": 374
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "item@307",
+                              "span": {
+                                "start": 364,
+                                "end": 368
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 363,
+                          "end": 375
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 330,
+                      "end": 393
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 298,
+                  "end": 403
+                }
+              }
+            ],
+            "span": {
+              "start": 257,
+              "end": 427
+            }
+          }
+        ],
+        "span": {
+          "start": 257,
+          "end": 427
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Fruits",
+      "span": {
+        "start": 176,
+        "end": 434
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Fruit",
+      "exported": false,
+      "code": "interface Fruit {\n  name: string;\n  count: number;\n}",
+      "span": {
+        "start": 39,
+        "end": 91
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./Picker.uf.tsx",
+      "file": "Picker.uf.tsx",
+      "api": {
+        "file": "Picker.uf.tsx",
+        "components": [
+          {
+            "name": "Picker",
+            "export": "default",
+            "props": [
+              {
+                "name": "items",
+                "optional": false,
+                "type": "T[]",
+                "references": [
+                  "T"
+                ]
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "item",
+                "optional": true,
+                "props": "{ item: T }",
+                "references": [
+                  "T"
+                ]
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "typeParameters": [
+              "T"
+            ],
+            "rootTag": "ul"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Picker",
+          "span": {
+            "start": 7,
+            "end": 13
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 37
+      }
+    }
+  ]
+}

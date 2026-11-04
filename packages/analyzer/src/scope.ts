@@ -34,6 +34,8 @@ export type Resolution =
 export class Scopes {
   /** Each reference, by its identifier node. */
   readonly #references = new Map<object, Resolution>();
+  /** The identifiers that read or write a value, not a type. */
+  readonly #values = new Set<object>();
 
   constructor(program: AST.Program) {
     const manager = analyze(program as unknown as Parameters<typeof analyze>[0], {
@@ -44,6 +46,7 @@ export class Scopes {
     for (const scope of manager.scopes) {
       for (const reference of scope.references) {
         this.#references.set(reference.identifier, resolutionOf(reference.resolved));
+        if (reference.isValueReference) this.#values.add(reference.identifier);
       }
     }
   }
@@ -51,6 +54,14 @@ export class Scopes {
   /** What an identifier refers to. One scope analysis never visited reads as a global. */
   resolve(identifier: AST.IdentifierReference): Resolution {
     return this.#references.get(identifier) ?? { kind: "global" };
+  }
+
+  /**
+   * Whether an identifier reads or writes a value: not a type's name, a property's key or a
+   * declaration, which `resolve` reads as a global.
+   */
+  isReference(identifier: object): boolean {
+    return this.#values.has(identifier);
   }
 }
 

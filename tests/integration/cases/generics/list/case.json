@@ -1,0 +1,7 @@
+{
+  "description": "A component generic over its items, mounted with numbers and with strings.",
+  "ssr": {
+    "numbers": { "props": { "label": "Numbers", "items": [1, 2, 3], "selected": 2 } },
+    "words": { "props": { "label": "Words", "items": ["a", "b"] } }
+  }
+}

@@ -381,7 +381,7 @@ export class ReactListeners {
   #handler(listener: EventAttribute, mode: "synthetic" | "native"): string {
     const { handler } = listener;
     if (handler.kind === "Function") {
-      return handlerText(handler, this.#plan.component, this.#code.rules, "client");
+      return handlerText(handler, this.#plan.owner, this.#code.rules, "client");
     }
     const typed = withEventTypes(this.#plan, handler.function, new Set([mode]), true);
     return this.#code.fn(typed, "client");
@@ -396,7 +396,7 @@ export class ReactListeners {
   #function(listener: EventAttribute): FunctionCode | undefined {
     if (listener.handler.kind !== "Function") return undefined;
     const { binding } = listener.handler;
-    const item = this.#plan.component.setup.find(
+    const item = this.#plan.owner.setup.find(
       (entry) => entry.kind === "Function" && entry.binding === binding,
     );
     return item?.kind === "Function" ? item.function : undefined;

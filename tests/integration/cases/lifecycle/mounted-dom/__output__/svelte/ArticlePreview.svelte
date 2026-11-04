@@ -1,13 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import { onMount } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface ArticlePreviewProps {
     title: string;
     text: string;
   }
+</script>
+
+<script lang="ts">
+  import { onMount } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ArticlePreviewProps & {
     onready?: (characters: number) => void;

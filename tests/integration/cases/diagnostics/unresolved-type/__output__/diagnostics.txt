@@ -1,0 +1,8 @@
+error[UF6001]: `BadgeProp` is neither declared nor imported by this module: the compiler reads no global type in a props type.
+ --> diagnostics/unresolved-type/Badge.uf.tsx:7:42
+  |
+7 | export default function Badge({ label }: BadgeProp) {
+  |                                          ^^^^^^^^^
+  |
+  = help: Declare the type in this module, or import it from the module that declares it.
+  = see: https://unframework.dev/diagnostics/UF6001

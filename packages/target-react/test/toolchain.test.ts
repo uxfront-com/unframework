@@ -79,8 +79,8 @@ describe("react toolchain", () => {
 });
 
 /** One file through React Compiler. */
-async function check(contents: string) {
-  const path = join(packageDir, "Fixture.tsx");
+async function check(contents: string, file = "Fixture.tsx") {
+  const path = join(packageDir, file);
   return (await toolchain.frameworkCompile([{ path, contents }], context)).get(path);
 }
 
@@ -226,6 +226,17 @@ describe("react frameworkCompile (L3)", () => {
         },
       ],
     });
+  });
+
+  // A shared module copied beside the components has nothing to compile (ADR-0070), whatever
+  // its values are called; a composable's module declares its hook (ADR-0069), and is judged.
+  it("warns on a .ts module only where it declares a hook", async () => {
+    const shared = 'export const useCases = ["a"];\n// function useLater() {}\n';
+    expect(await check(shared, "tokens.ts")).toEqual({ errors: [], warnings: [] });
+    const hook = "export const useAnswer = (): number => 42;\n";
+    expect((await check(hook, "useAnswer.ts"))?.warnings.map(({ code }) => code)).toEqual([
+      "react-compiler/nothing-compiled",
+    ]);
   });
 
   it("refuses to check no files", async () => {

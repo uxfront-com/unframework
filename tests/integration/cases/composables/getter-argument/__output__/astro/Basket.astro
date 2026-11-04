@@ -1,0 +1,35 @@
+---
+import { useTotal } from "./useTotal";
+
+interface Props {
+  price: number;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { price, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const quantity = 1 as number;
+const { total, label } = useTotal(
+  () => price,
+  () => quantity,
+);
+---
+
+<section
+  class:list={["basket", className]}
+  aria-label="Basket"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
+  <p role="status">Total: {total}</p>
+  <p>{label}</p>
+  <button type="button">Add one</button>
+</section>

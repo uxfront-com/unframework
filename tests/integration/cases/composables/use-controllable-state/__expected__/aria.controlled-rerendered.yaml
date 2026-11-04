@@ -1,0 +1,4 @@
+- region "Rating":
+  - status: Rated 3 of 3
+  - button "Two"
+  - button "Three"

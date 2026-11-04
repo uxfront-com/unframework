@@ -37,6 +37,14 @@ export function goldenFiles(): string[] {
 }
 
 /**
+ * The `.ts` modules beside the Vue golden outputs: the shared modules `compile()` copies into the
+ * output tree (ADR-0070), whose types a `defineProps<X>()` imports (ADR-0067).
+ */
+export function goldenModules(): string[] {
+  return filesUnder(casesDir).filter((path) => /\/__output__\/vue\/[^/]+\.ts$/.test(path));
+}
+
+/**
  * Each IR snapshot of the corpus, a case's sources each (`ir.json`, and `ir.<Stem>.json` for a
  * case of several, ADR-0057), with the directory its golden outputs live in.
  */

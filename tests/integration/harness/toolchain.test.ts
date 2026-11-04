@@ -25,7 +25,7 @@ import { consumerFixtures, consumerProblems, copyFixtures } from "./consumers.ts
 import type { Fixture } from "./consumers.ts";
 import { ENGINE_DECLARATIONS } from "./engines.ts";
 import { CANARY_DIR, ROOT, toolchainDir } from "./paths.ts";
-import { caseResolver } from "./sources.ts";
+import { caseOracle, caseResolver } from "./sources.ts";
 import { loadToolchain } from "./targets.ts";
 import {
   display,
@@ -200,12 +200,20 @@ async function outputFiles(): Promise<Map<string, string[]>> {
     const directory = join(root, "cases", info.id, "__output__", target);
     const paths: string[] = [];
     for (const source of info.sources) {
-      const result = await compile(readFileSync(source.source, "utf8"), {
-        filename: source.filename,
-        targets: [target as TargetName],
-        plugins: canaryPlugins(canary, target),
-        resolve: caseResolver(info, harness.casesDir),
-      });
+      const text = readFileSync(source.source, "utf8");
+      const typeOracle = caseOracle(info, harness.casesDir, { filename: source.filename, text });
+      let result: Awaited<ReturnType<typeof compile>>;
+      try {
+        result = await compile(text, {
+          filename: source.filename,
+          targets: [target as TargetName],
+          plugins: canaryPlugins(canary, target),
+          resolve: caseResolver(info, harness.casesDir, typeOracle),
+          typeOracle,
+        });
+      } finally {
+        await typeOracle.dispose();
+      }
       for (const file of result.outputs[target] ?? []) {
         const path = join(directory, file.path);
         writeIfChanged(path, file.contents);

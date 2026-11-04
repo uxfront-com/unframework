@@ -119,6 +119,13 @@ declare module "vitest" {
      */
     ufNoOutput: Record<string, string>;
     /**
+     * Browser projects: the cases the target cannot compile yet (ADR-0068), by case id, each with
+     * the cause: the case's L3 is quarantined on the target, whose browser build type-checks its
+     * output. Their specs load against a stand-in for the component, and each test runs and
+     * records every browser layer as failed with the cause. Absent outside the harness.
+     */
+    ufStandIn?: Record<string, string>;
+    /**
      * SSR projects of a target the run adds only as some case's reference (ADR-0057): the ids
      * of those cases, which it renders alone. Absent everywhere else.
      */

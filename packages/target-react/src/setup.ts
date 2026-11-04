@@ -22,6 +22,7 @@ import type {
   ProvideItem,
   SetupItem,
   StateItem,
+  UseItem,
   WatchEffectItem,
   WatchItem,
   WatchSource,
@@ -48,6 +49,11 @@ export interface BodyStatement {
   text: string;
   group: number;
   compact: boolean;
+  /**
+   * A composable's call, whose text destructures every member and live reader until the output
+   * is printed, and then only those it reads (`resolveUses`).
+   */
+  use?: { item: UseItem; call: string };
 }
 
 /** The type of the `onCleanup` a watcher's callback or an effect receives. */
@@ -61,9 +67,14 @@ export function printSetup(plan: ReactPlan, code: ReactCode): PrintedSetup {
 
   // Props deferred code reads: a mirror each, synced after every render, before any effect.
   const mirrors: [string, string][] = [];
-  for (const prop of plan.component.props) {
+  for (const prop of plan.owner.props) {
     const mirror = prop.binding && plan.propMirrors.get(prop.binding);
     if (mirror) mirrors.push([mirror, propRead(plan, prop.binding!)]);
+  }
+  // A composable's getter and callback arguments, as its caller passes them at each render.
+  for (const parameter of plan.composable?.parameters ?? []) {
+    const mirror = plan.propMirrors.get(parameter.binding);
+    if (mirror) mirrors.push([mirror, plan.bindings.get(parameter.binding)!.name]);
   }
   for (const event of plan.events.values()) {
     if (event.mirror) mirrors.push([event.mirror, event.local]);
@@ -89,6 +100,17 @@ export function printSetup(plan: ReactPlan, code: ReactCode): PrintedSetup {
       printed.body.push({ text: nextTickDeclaration(plan), group, compact: true });
       continue;
     }
+    if (item.kind === "Use") {
+      group++;
+      const call = useCall(plan, code, item);
+      printed.body.push({
+        text: `${usePattern(plan, item, true)}${call}`,
+        group,
+        compact: !call.includes("\n"),
+        use: { item, call },
+      });
+      continue;
+    }
     let previous: string | undefined;
     for (const [scope, text, part = "main"] of printItem(plan, code, item)) {
       if (scope === "module") {
@@ -111,11 +133,12 @@ export function printSetup(plan: ReactPlan, code: ReactCode): PrintedSetup {
  * function too. Watchers, effects and hooks keep their source order among themselves.
  */
 function declarationOrder(plan: ReactPlan): (SetupItem | typeof NEXT_TICK)[] {
-  const items = plan.component.setup;
+  const items = plan.owner.setup;
   // What moves to module scope is declared before the component.
   const declared = new Map<BindingId, number>();
   for (const [index, item] of items.entries()) {
     if ("binding" in item && !plan.hoisted.has(item.binding)) declared.set(item.binding, index);
+    if (item.kind === "Use") for (const { binding } of item.members) declared.set(binding, index);
   }
   // `nextTick`'s declaration is one more item: it reads the state its `settled` compares, and
   // every item that calls it reads it.
@@ -126,7 +149,7 @@ function declarationOrder(plan: ReactPlan): (SetupItem | typeof NEXT_TICK)[] {
     if (at !== undefined && at !== index) needs[index]!.add(at);
   };
   for (const id of tickStates(plan)) need(tick, id);
-  for (const { code, path } of codeOf(plan.component)) {
+  for (const { code, path } of codeOf(plan.owner)) {
     const index = /^\/setup\/(\d+)\//.exec(path)?.[1];
     if (index === undefined) continue;
     for (const reference of code.refs) {
@@ -210,7 +233,7 @@ function declarationOrder(plan: ReactPlan): (SetupItem | typeof NEXT_TICK)[] {
  */
 function functionCycles(plan: ReactPlan): Map<BindingId, BindingId[]> {
   const functions = new Map<BindingId, FunctionItem>();
-  for (const item of plan.component.setup) {
+  for (const item of plan.owner.setup) {
     if (item.kind === "Function" && !plan.hoisted.has(item.binding)) {
       functions.set(item.binding, item);
     }
@@ -276,7 +299,7 @@ const NEXT_TICK = Symbol("nextTick");
 function tickStates(plan: ReactPlan): BindingId[] {
   if (!plan.nextTick) return [];
   const written = new Set<BindingId>();
-  for (const item of plan.component.setup) {
+  for (const item of plan.owner.setup) {
     const fn =
       item.kind === "Watch" || item.kind === "Lifecycle"
         ? item.callback
@@ -284,13 +307,11 @@ function tickStates(plan: ReactPlan): BindingId[] {
           ? item.effect
           : undefined;
     if (!fn) continue;
-    for (const id of summarizeCode(fn.body, plan.component).writes) {
+    for (const id of summarizeCode(fn.body, plan.owner).writes) {
       if (plan.state.get(id)?.mirror) written.add(id);
     }
   }
-  return plan.component.bindings.flatMap((binding) =>
-    written.has(binding.id) ? [binding.id] : [],
-  );
+  return plan.owner.bindings.flatMap((binding) => (written.has(binding.id) ? [binding.id] : []));
 }
 
 /**
@@ -311,20 +332,18 @@ function nextTickDeclaration(plan: ReactPlan): string {
  * or a `watchEffect` waits while one of their mirrors holds a value React has not rendered.
  */
 function unrenderedWrites(plan: ReactPlan): BindingId[] {
-  const items = plan.component.setup;
+  const items = plan.owner.setup;
   if (!items.some((item) => (item.kind === "Watch" && item.post) || item.kind === "WatchEffect")) {
     return [];
   }
   const written = new Set<BindingId>();
   for (const item of items) {
     if (item.kind !== "Watch" || item.post) continue;
-    for (const id of summarizeCode(item.callback.body, plan.component).writes) {
+    for (const id of summarizeCode(item.callback.body, plan.owner).writes) {
       if (plan.state.get(id)?.mirror) written.add(id);
     }
   }
-  return plan.component.bindings.flatMap((binding) =>
-    written.has(binding.id) ? [binding.id] : [],
-  );
+  return plan.owner.bindings.flatMap((binding) => (written.has(binding.id) ? [binding.id] : []));
 }
 
 /**
@@ -432,9 +451,79 @@ function printItem(plan: ReactPlan, code: ReactCode, item: SetupItem): Printed {
       return printProvide(plan, code, item);
     case "Inject":
       return printInject(plan, code, item);
+    // `printSetup` prints a composable's call (`useCall`).
+    case "Use":
+      return [];
     default:
       return item satisfies never;
   }
+}
+
+/**
+ * A composable's call, `useToggle(false);`, its hook imported from its output beside the `.uf.ts`
+ * (ADR-0069). A value argument is passed as the source writes it, which the hook reads once; a
+ * getter as a function of what the caller renders, which the hook calls in render; and a
+ * callback as client code, which the hook calls through a mirror of the last render's.
+ */
+function useCall(plan: ReactPlan, code: ReactCode, item: UseItem): string {
+  for (const entry of plan.module.imports ?? []) {
+    const name = entry.names.find(
+      (each) => each.kind === "Composable" && each.local === item.composable,
+    );
+    if (!name) continue;
+    const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
+    plan.names.add(`${directory}${name.imported}`, name.imported, {
+      local: item.composable,
+      exact: true,
+    });
+  }
+  const parts = item.arguments.map((argument) => {
+    switch (argument.kind) {
+      case "Value":
+        return code.code(argument.value, "pure");
+      case "Getter":
+        return code.fn(argument.getter, "pure");
+      case "Callback":
+        return code.fn(argument.callback, "client");
+      default:
+        return argument satisfies never;
+    }
+  });
+  return `${item.composable}(${parts.join(", ")});`;
+}
+
+/**
+ * `const { on, currentOn: currentOpen } = `: what a composable's call destructures, the members
+ * the output reads and the live readers its client code calls, in the source's order, or every
+ * one of them (`all`). Nothing where it reads none: the call still runs the hook.
+ */
+function usePattern(plan: ReactPlan, item: UseItem, all = false): string {
+  const parts = item.members.flatMap(({ binding }) => {
+    const { member, local, reader, read } = plan.used.get(binding)!;
+    return [
+      ...(all || read.render ? [property(member, local)] : []),
+      ...(reader && (all || read.client) ? [property(reader.member, reader.local)] : []),
+    ];
+  });
+  return parts.length ? `const { ${parts.join(", ")} } = ` : "";
+}
+
+/** `key: local`, or `key` where the two are one name. */
+function property(key: string, local: string): string {
+  return key === local ? key : `${key}: ${local}`;
+}
+
+/**
+ * The body's statements with each composable's call destructuring only what the output reads,
+ * once every other statement and the render are printed (ADR-0069): an unread member would fail
+ * L5.
+ */
+export function resolveUses(plan: ReactPlan, body: readonly BodyStatement[]): BodyStatement[] {
+  return body.map((statement) =>
+    statement.use
+      ? { ...statement, text: `${usePattern(plan, statement.use.item)}${statement.use.call}` }
+      : statement,
+  );
 }
 
 /**
@@ -537,6 +626,13 @@ function printState(plan: ReactPlan, code: ReactCode, item: StateItem): Printed 
     const useRef = plan.names.add("react", "useRef");
     printed.push(["body", `const ${state.mirror} = ${useRef}(${state.name});`]);
   }
+  if (state.current) {
+    // The live reader a composable returns beside the render value (ADR-0069): one function for
+    // the hook's life, which reads the mirror, so the caller's client code sees a write the
+    // composable's functions just made.
+    const reader = `() => ${state.mirror!}.current`;
+    printed.push(["body", `const [${state.current}] = ${useState}(() => ${reader});`, "current"]);
+  }
   return printed;
 }
 
@@ -558,7 +654,12 @@ function printDerived(plan: ReactPlan, code: ReactCode, item: DerivedItem): Prin
       item.type && !item.getter.returnType
         ? { ...item.getter, returnType: { code: item.type.code, span: item.type.span } }
         : item.getter;
-    printed.push(["body", code.fn(typed, "client", { name: derived.current }), "current"]);
+    // A composable returns it to its caller: one function for the hook's life (ADR-0069).
+    const stable = plan.composable?.returns.some((member) => member.binding === item.binding);
+    const text = stable
+      ? `const [${derived.current}] = ${plan.names.add("react", "useState")}(() => ${code.fn(typed, "client")});`
+      : code.fn(typed, "client", { name: derived.current });
+    printed.push(["body", text, "current"]);
   }
   return printed;
 }
@@ -593,7 +694,7 @@ function printFunction(plan: ReactPlan, code: ReactCode, item: FunctionItem): Pr
 function printCycle(plan: ReactPlan, code: ReactCode, members: readonly BindingId[]): Printed {
   const names = members.map((id) => plan.bindings.get(id)!.name);
   const declarations = members.map((id, at) => {
-    const item = plan.component.setup.find(
+    const item = plan.owner.setup.find(
       (entry): entry is FunctionItem => entry.kind === "Function" && entry.binding === id,
     )!;
     const fn = withEventTypes(plan, item.function, plan.eventModes.get(id));
@@ -972,6 +1073,18 @@ function renderRead(plan: ReactPlan, id: BindingId): string {
       return plan.derived.get(id)!.name;
     case "prop":
       return propRead(plan, id);
+    // A composable's parameter, by its name (ADR-0069).
+    case "argument":
+      return binding.name;
+    // What a composable's call destructures, as its caller renders it (ADR-0069).
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst": {
+      const used = plan.used.get(id)!;
+      used.read.render = true;
+      return used.local;
+    }
     case "loopVar":
     case "templateRef":
     case "localConst":
@@ -983,6 +1096,8 @@ function renderRead(plan: ReactPlan, id: BindingId): string {
     case "slotScope":
     case "context":
     case "component":
+    case "moduleConst":
+    case "import":
       return binding.name;
     default:
       return binding.kind satisfies never;
@@ -991,7 +1106,7 @@ function renderRead(plan: ReactPlan, id: BindingId): string {
 
 /** A prop as code reads it: its destructured name, or `props.label` in the object form. */
 function propRead(plan: ReactPlan, id: BindingId): string {
-  const parameter = plan.component.propsParameter;
+  const parameter = plan.owner.propsParameter;
   const { name } = plan.bindings.get(id)!;
   return parameter?.form === "object" ? `${parameter.name!}.${name}` : name;
 }
@@ -1013,10 +1128,19 @@ function dependencies(plan: ReactPlan, body: Code): string[] {
       case "derived":
         found.push(renderRead(plan, reference.binding));
         break;
-      // A model and an injected value are locals of the render (ADR-0054).
+      // A model and an injected value are locals of the render (ADR-0054), and a composable's
+      // parameter one of its hook (ADR-0069).
       case "model":
       case "context":
+      case "argument":
         found.push(binding.name);
+        break;
+      // What a composable's call destructures: React's lint knows none of it is stable (ADR-0069).
+      case "usedState":
+      case "usedDerived":
+      case "usedFn":
+      case "usedConst":
+        found.push(renderRead(plan, reference.binding));
         break;
       case "localConst":
       case "localFn":
@@ -1029,6 +1153,8 @@ function dependencies(plan: ReactPlan, body: Code): string[] {
       case "slots":
       case "slotScope":
       case "component":
+      case "moduleConst":
+      case "import":
         break;
       default:
         binding.kind satisfies never;
@@ -1044,8 +1170,8 @@ function dependencies(plan: ReactPlan, body: Code): string[] {
 function reactiveReads(plan: ReactPlan, body: Code): BindingId[] {
   const own = ownReads(plan, body);
   // What the effect hands on to run later (a timer's callback, marked `later`) is no dependency.
-  const all = summarizeTracked(body, plan.component).reads;
-  const others = plan.component.bindings.flatMap((binding) =>
+  const all = summarizeTracked(body, plan.owner).reads;
+  const others = plan.owner.bindings.flatMap((binding) =>
     all.has(binding.id) && reactive(binding.kind) && !own.has(binding.id) ? [binding.id] : [],
   );
   return [...own, ...others];
@@ -1070,7 +1196,7 @@ function ownReads(plan: ReactPlan, body: Code): Set<BindingId> {
  * the interface of the one element it is on (UF3027), as the authoring types infer it.
  */
 export function templateRefType(plan: ReactPlan, id: BindingId): string {
-  const item = plan.component.setup.find(
+  const item = plan.owner.setup.find(
     (entry) => entry.kind === "TemplateRef" && entry.binding === id,
   );
   if (item?.kind === "TemplateRef" && item.type) return item.type.code;

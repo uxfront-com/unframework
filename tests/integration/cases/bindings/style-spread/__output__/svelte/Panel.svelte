@@ -1,9 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import Hint from "./Hint.svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   type PanelLook = {
     borderColor?: string;
     borderStyle?: string;
@@ -27,6 +24,11 @@
     panel: PanelAttributes;
     note?: NoteAttributes;
   }
+</script>
+
+<script lang="ts">
+  import Hint from "./Hint.svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = PanelProps & { class?: ClassValue; style?: string };
 

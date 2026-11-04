@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Three' })",
+      "dom": [
+        "<section aria-label=\"Rating\" class=\"rating\">",
+        "  <p role=\"status\">",
+        "    \"Rated 2 of 3\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Two\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Three\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Rating\":",
+        "  - status: Rated 2 of 3",
+        "  - button \"Two\"",
+        "  - button \"Three\""
+      ],
+      "events": {
+        "change": [
+          [
+            3
+          ]
+        ]
+      }
+    }
+  ]
+}

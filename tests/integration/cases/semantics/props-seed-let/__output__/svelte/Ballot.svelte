@@ -1,14 +1,16 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface BallotProps {
     limit: number;
     label?: string;
     choices: string[];
   }
+</script>
+
+<script lang="ts">
+  import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = BallotProps & {
     onvoted?: (remaining: number, text: string) => void;

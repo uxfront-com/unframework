@@ -103,6 +103,22 @@ export function assertedSetup(component: UfComponent): UfComponent {
         case "Provide":
         case "Inject":
           return item;
+        case "Use":
+          return {
+            ...item,
+            arguments: item.arguments.map((argument) => {
+              switch (argument.kind) {
+                case "Value":
+                  return { ...argument, value: code(argument.value) };
+                case "Getter":
+                  return { ...argument, getter: fn(argument.getter) };
+                case "Callback":
+                  return { ...argument, callback: fn(argument.callback) };
+                default:
+                  return unreachable(argument);
+              }
+            }),
+          };
         default:
           return unreachable(item);
       }

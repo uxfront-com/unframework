@@ -9,6 +9,9 @@ import type { ImportSet, Placeholders } from "@unframework/codegen";
 import { codeOf, walk } from "@unframework/ir";
 import type { Binding, BindingId, Prop, TypeDeclaration, UfComponent } from "@unframework/ir";
 
+import { generatedInterface } from "./generics.ts";
+import type { GeneratedInterface } from "./generics.ts";
+
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type Parameter = Parameters<typeof js.functionDeclaration>[1][number];
 type Statement = Parameters<typeof js.program>[0][number];
@@ -63,13 +66,15 @@ export function solidProps(
   composition: { types: readonly string[]; reads: boolean },
 ): SolidProps {
   const parameter = component.propsParameter;
-  const events = eventsInterface(component, imports);
+  const generated = eventsInterface(component, imports);
+  const events = generated?.declaration;
   const emitted = component.emits !== undefined && emitsAny(component);
   // A component without props still takes the scope attributes of the styled parents that
   // render it, as an object (ADR-0063).
   const typeCode =
-    [parameter?.type.code, events?.name, ...composition.types].filter(Boolean).join(" & ") ||
-    "object";
+    [parameter?.type.code, generated?.reference, ...composition.types]
+      .filter(Boolean)
+      .join(" & ") || "object";
   const type = () => placeholders.type(typeCode);
   if (!parameter && !events && !composition.types.length && !composition.reads) {
     return { parameters: [], statements: [], read: asWritten };
@@ -177,10 +182,14 @@ export function eventProp(event: string): string {
 /**
  * The interface of a component's events (ADR-0047): each event's listener an optional prop
  * named by {@link eventProp}, taking the event's payload as its parameters, by their labels:
- * `export interface CounterEvents { onChange?: (value: number) => void; }`. Its name is claimed
- * from the file's scope (`CounterEvents`, or `CounterEvents_1` beside a source name).
+ * `export interface CounterEvents { onChange?: (value: number) => void; }`, generic over the type
+ * parameters its payloads read (src/generics.ts). Its name is claimed from the file's scope
+ * (`CounterEvents`, or `CounterEvents_1` beside a source name).
  */
-function eventsInterface(component: UfComponent, imports: ImportSet): TypeDeclaration | undefined {
+function eventsInterface(
+  component: UfComponent,
+  imports: ImportSet,
+): GeneratedInterface | undefined {
   const { emits } = component;
   if (!emits) return undefined;
   const name = imports.claim(`${component.name}Events`);
@@ -190,12 +199,7 @@ function eventsInterface(component: UfComponent, imports: ImportSet): TypeDeclar
       .join(", ");
     return `  ${eventProp(event.name)}?: (${parameters}) => void;`;
   });
-  return {
-    name,
-    exported: true,
-    code: `interface ${name} {\n${members.join("\n")}\n}`,
-    span: emits.span,
-  };
+  return generatedInterface(component, name, members, emits.span);
 }
 
 /** Whether any code of a component emits one of its events. */

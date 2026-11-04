@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface UploadStep {
     id: string;
     label: string;
@@ -15,6 +13,10 @@
     steps: UploadStep[];
     error?: string;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = UploadStatusProps & { class?: ClassValue; style?: string };
 

@@ -176,6 +176,9 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
         case "Provide":
           read(item.value);
           break;
+        // A composable's call: each target decides what it keeps live (ADR-0069), as Astro's
+        // `serverView` does, so this walk reads nothing of it.
+        case "Use":
         case "State":
         case "Derived":
         case "TemplateRef":
@@ -211,6 +214,9 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
       case "Inject":
         read(item.fallback);
         break;
+      // A composable's call: each target decides what it keeps live (ADR-0069), as Astro's
+      // `serverView` does, so this walk reads nothing of it.
+      case "Use":
       case "TemplateRef":
       case "Id":
       case "Watch":
@@ -228,12 +234,12 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
 
 /**
  * The type declarations a component's output declares (`component.types`, in source order), as
- * far as what it prints reaches them: its props' types, the annotations and code of the setup
- * items in `liveBindings(component, options)`, and with `client` its events' payloads and its
- * listeners', watchers', effects' and hooks' code; then, transitively, the declarations those
- * declarations name. A declaration the source exports is always kept: consumers may import it.
- * Astro, whose handlers are inert, copies only these, so a type only dropped code used is not
- * left unused (L5). `includeKeys: false` leaves out what only a list's key reaches, as
+ * far as what it prints reaches them: its props' and models' types, the annotations and code of
+ * the setup items in `liveBindings(component, options)`, and with `client` its events' payloads
+ * and its listeners', watchers', effects' and hooks' code; then, transitively, the declarations
+ * those declarations name. A declaration the source exports is always kept: consumers may
+ * import it. Astro, whose handlers are inert, copies only these, so a type only dropped code
+ * used is not left unused (L5). `includeKeys: false` leaves out what only a list's key reaches, as
  * {@link liveBindings} does.
  */
 export function liveTypes(
@@ -241,15 +247,39 @@ export function liveTypes(
   module: UfModule,
   options: LiveOptions,
 ): TypeDeclaration[] {
+  const { declared, reached } = reachTypes(component, module, options);
+  return [...declared.values()].filter((declaration) => reached.has(declaration.name));
+}
+
+/**
+ * Every type name what a component's output prints reads, as {@link liveTypes} walks it: the
+ * names of the declarations it copies, and the names they and the component's own annotations
+ * read, such as the types it imports (ADR-0067), which a target imports only where they are read.
+ */
+export function liveTypeNames(
+  component: UfComponent,
+  module: UfModule,
+  options: LiveOptions,
+): Set<string> {
+  return reachTypes(component, module, options).names;
+}
+
+function reachTypes(
+  component: UfComponent,
+  module: UfModule,
+  options: LiveOptions,
+): { declared: Map<string, TypeDeclaration>; reached: Set<string>; names: Set<string> } {
   const declared = new Map(
     module.types
       .filter((declaration) => component.types.includes(declaration.name))
       .map((declaration) => [declaration.name, declaration]),
   );
   const reached = new Set<string>();
+  const names = new Set<string>();
   const pending: string[] = [];
-  const reach = (names: Iterable<string>) => {
-    for (const name of names) {
+  const reach = (found: Iterable<string>) => {
+    for (const name of found) {
+      names.add(name);
       if (!declared.has(name) || reached.has(name)) continue;
       reached.add(name);
       pending.push(name);
@@ -265,7 +295,13 @@ export function liveTypes(
     code(written.body);
   };
   if (component.propsParameter) type(component.propsParameter.type);
-  for (const prop of component.props) type(prop.type);
+  // A member another file declares is written in that file's names (ADR-0067), which the
+  // component's module does not declare or import.
+  for (const prop of component.props) if (!prop.declaredBy) type(prop.type);
+  for (const parameter of component.typeParameters ?? []) {
+    type(parameter.constraint);
+    type(parameter.default);
+  }
   // A slot's props are its public type, as a prop's is (ADR-0054).
   for (const slot of component.slots?.slots ?? []) type(slot.props);
   for (const declaration of declared.values()) {
@@ -273,6 +309,8 @@ export function liveTypes(
   }
   const live = liveBindings(component, options);
   for (const item of component.setup) {
+    // A model is a prop of the output's API, typed whatever reads it (ADR-0055).
+    if (item.kind === "Model") type(item.type);
     const runs = "binding" in item ? live.has(item.binding) : options.client;
     if (!runs) continue;
     if ("type" in item) type(item.type);
@@ -306,6 +344,9 @@ export function liveTypes(
       case "Inject":
         if (item.fallback) code(item.fallback);
         break;
+      // A composable's call: this walk reads nothing of it, so a type that only its arguments
+      // name gets no import on a target that doesn't hand it a `serverView` (ADR-0069).
+      case "Use":
       case "TemplateRef":
       case "Id":
       case "Model":
@@ -337,12 +378,12 @@ export function liveTypes(
   }
   for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
     const [statement] = parseStatementsSource(declared.get(name)!.code).statements;
-    const names = new Set<string>();
-    collectNames(statement, names);
-    names.delete(name);
-    reach(names);
+    const found = new Set<string>();
+    collectNames(statement, found);
+    found.delete(name);
+    reach(found);
   }
-  return [...declared.values()].filter((declaration) => reached.has(declaration.name));
+  return { declared, reached, names };
 }
 
 /** Adds to `found` the bindings code references: read, called, written or emitted through. */
@@ -384,6 +425,9 @@ function serverCode(item: SetupItem): Code[] {
       return [item.value];
     case "Inject":
       return item.fallback ? [item.fallback] : [];
+    // A composable's call (ADR-0069): this reads nothing of it. Only a render node's setup reaches
+    // it, which is empty.
+    case "Use":
     case "TemplateRef":
     case "Id":
     case "Function":

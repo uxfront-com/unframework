@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { Diagnostic, DiagnosticCode } from "@unframework/diagnostics";
-import type { UfComponent, UfModule } from "@unframework/ir";
+import type { UfComponent, UfComposable, UfModule } from "@unframework/ir";
 
 /**
  * The features a target declares support for. Each name maps to IR features (node and
@@ -146,7 +146,26 @@ export type CapabilityName =
    * their imports. Where two sheets' rules of equal specificity meet on one element, the later
    * one wins. Required wherever `scoped-styles` is (ADR-0063).
    */
-  | "sheet-order";
+  | "sheet-order"
+  /**
+   * A component with type parameters, `function List<T>(props: ListProps<T>)`
+   * (`UfComponent.typeParameters`), written in each target's generic form (ADR-0068).
+   */
+  | "generic-components"
+  /**
+   * A scoped slot whose props' type names one of the component's type parameters
+   * (`SlotDeclaration.references`), or a fill of such a slot of a generic child: the consumer's
+   * fill is typed by the type argument (ADR-0068).
+   */
+  | "generic-slot-props"
+  /** A call of a composable from a `.uf.ts` module (`UseItem`), compiled per target (ADR-0069). */
+  | "composables"
+  /**
+   * A composable's call whose setup runs code in the browser (`UseItem.hasEffects`): its
+   * watchers, effects and hooks run in order with the caller's own (ADR-0069). Refines
+   * `interactivity`.
+   */
+  | "composable-effect-order";
 
 /** Every capability name, in a stable order. */
 export const CAPABILITY_NAMES: readonly CapabilityName[] = [
@@ -195,14 +214,18 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "child-root-scope",
   "slotted-styles",
   "sheet-order",
+  "generic-components",
+  "generic-slot-props",
+  "composables",
+  "composable-effect-order",
 ];
 
 /**
  * The capabilities that change nothing the markup shows: what code does in the browser, or the
  * cascade (`sheet-order`), so a static render's markup is the same without them (ADR-0033, as
- * amended by ADR-0047 and ADR-0063). The render-parity tests, which compare static renders, do
- * not require a case that uses one its target leaves unsupported to render differently: Astro
- * renders the same DOM with its handlers inert.
+ * amended by ADR-0047, ADR-0063 and ADR-0069). The render-parity tests, which compare static
+ * renders, do not require a case that uses one its target leaves unsupported to render differently:
+ * Astro renders the same DOM with its handlers inert.
  */
 export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "interactivity",
@@ -219,12 +242,14 @@ export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<Cap
   "model-array",
   "model-modifiers",
   "sheet-order",
+  "composable-effect-order",
 ]);
 
 /**
  * The capability each refining one needs: a listener's options and semantics, `nextTick`, a
- * component's listeners and refs and an element's `v-model` mean nothing on a target without
- * `interactivity`, and reactive context nothing without `context` (ADR-0055). The capability
+ * component's listeners and refs, an element's `v-model` and a composable's effect order mean
+ * nothing on a target without `interactivity`, and reactive context nothing without `context`
+ * (ADR-0055, ADR-0069). The capability
  * check reports only the one they refine there, once, rather than each at the same use.
  */
 export const CAPABILITY_PREREQUISITES: Readonly<Partial<Record<CapabilityName, CapabilityName>>> = {
@@ -240,6 +265,7 @@ export const CAPABILITY_PREREQUISITES: Readonly<Partial<Record<CapabilityName, C
   "model-array": "interactivity",
   "model-modifiers": "interactivity",
   "reactive-context": "context",
+  "composable-effect-order": "interactivity",
 };
 
 /** How a target supports a capability (plan §5.7). */
@@ -271,7 +297,7 @@ export interface OutputFile {
 
 /** What a target's `emit` receives besides the component. */
 export interface EmitContext {
-  /** The module the component belongs to. */
+  /** The module the component or the composable belongs to. */
   module: UfModule;
   /** The target's validated options. */
   options: unknown;
@@ -290,6 +316,12 @@ export interface Target {
   readonly options?: StandardSchemaV1;
   /** Emits one component as one or more files. Never throws: report problems instead. */
   emit(component: UfComponent, context: EmitContext): OutputFile[];
+  /**
+   * Emits one composable of a `.uf.ts` module as its module, in the target's idiom (ADR-0069).
+   * Never throws: report problems instead. Every built-in target has it. It is optional for a
+   * third-party target: `compile()` reports UF1002 for a composable of a target without it.
+   */
+  emitComposable?(composable: UfComposable, context: EmitContext): OutputFile[];
 }
 
 /** Declares a target, checking its shape at compile time. */

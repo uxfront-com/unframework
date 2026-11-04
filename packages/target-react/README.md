@@ -10,6 +10,18 @@ component, written as a React developer would write it (plan §6):
   name that is `_` and more, and takes `_` before any other: `_props`, `__`): unused bindings
   fail L5. A component whose root is an element or a component, and that keeps fallthrough on,
   also takes `className` and `style` (see Composition below).
+- the types the source imports, by name, where the output reads them (ADR-0067): from a `.ts`
+  module or a package as written, `import type { BadgeProps } from "./types"`, and from a
+  child's output, `import Field, { type FieldProps } from "./Field"`. The output of the module's
+  main component also writes the module's type exports in source order among its types (ADR-0068):
+  `export type { Tone } from "./types"`, and an exported type no component reaches.
+- a generic component as a generic function component (ADR-0068),
+  `export default function List<T>({ items }: ListProps<T> & ListAttributes)`, its constraints
+  and defaults as written. The events', models', slots' and handle's interfaces take the type
+  parameters their members name, with those their constraints name (`ListSlots<T>`), and setup
+  code a type parameter types stays inside the component. A form control's `v-model` of such a
+  type casts the control's string to it (`event.target.value as T`, or `as typeof chosen` where
+  the state's type is inferred).
 - expressions as the source writes them, a ref's value read as React's (`count.value` is
   `count`); conditionals as ternary chains ending in `null` (never `&&`, which renders a `0`);
   lists as `.map((item, index) => <li key={…}>…)`, with the index only when something reads it;
@@ -112,7 +124,10 @@ and `use-id` are native;
 emulated with inline helpers, `class-binding` with `cx` and `style-binding` with `styleObject`. Of composition's cells,
 `model-array` (`toggle`), `model-modifiers` (`modelText`) and `reactive-context` (`refObject`)
 are emulated, and the others native. Of the styles' cells, `child-root-scope` is emulated
-(`scopeAttributes`), and the others native.
+(`scopeAttributes`), and the others native. Of M5's cells, `composable-effect-order` is
+unsupported (UF4005, info): a composable is a custom hook, whose effects keep React's order rather
+than the caller's (ADR-0069); `generic-components`, `generic-slot-props` and `composables` are
+native.
 
 Every name the output introduces (`cx`, `setCount`, `countRef`, `CounterEvents`, `listen`,
 `CSSProperties`, `_props`) is claimed around the source's own names, so none captures another.
@@ -178,6 +193,66 @@ the rest of its props pattern, picked by the inline `scopeAttributes` helper
 without props takes one, typed `object`. The helper keeps only the `data-uf-*` keys, so no prop
 the output leaves unread reaches the root.
 
+## Composables (M5)
+
+Each composable of a `.uf.ts` module is its own module, `useToggle.ts`, holding a custom hook
+(`src/composable.ts`, ADR-0069): `export function useToggle(initial: boolean)`, its parameters and
+type parameters as written, and its setup printed as a component's is (`src/setup.ts`), because a
+hook runs at every render of its caller, as a component's body does. What it returns goes to
+its caller, so the hook prints it as client code would need it:
+
+- A returned state keeps its mirror, `onRef`, and comes with a live reader,
+  `const [currentOn] = useState(() => () => onRef.current)`.
+- A returned derived value is a `useMemo`, and its live getter reads through the mirrors, one
+  function for the hook's life: `const [currentTotal] = useState(() => () => priceRef.current() * quantityRef.current())`.
+- A returned function is stable, `const [toggle] = useState(() => () => {…})`, as a function
+  passed as a value is, and reads what changes through mirrors. One that render code calls too
+  is returned as its stable client variant, `double: currentDouble`.
+- A getter or a callback argument is read as a prop is: as passed in render code and in an
+  effect event, and through a mirror synced in `useLayoutEffect` in deferred code
+  (`onLimitRef.current(countRef.current)`). A value argument is read as passed, so a stable
+  function keeps the value of the first render.
+- A setup constant evaluates once, as `useState`'s initial value, which React calls when it is a
+  function. So a constant that holds a getter or a callback argument, `const read = price`, is
+  UF1002: call the argument, or pass it on, where it is used.
+
+It returns `{ on, currentOn, toggle, close }`: each state's or derived value's reader follows its
+member, named `currentX`, or the first free `currentX_1`, `currentX_2`… where that names another
+member or an earlier reader. `liveReaderNames` applies that rule to the composable's API alone, so
+a caller names the readers as the hook does.
+
+A component calls the hook where the source calls the composable, `const { on, toggle } =
+useToggle(false)`, imported from its output beside the `.uf.ts`, `import { useToggle } from
+"./useToggle"`:
+
+- Render code reads a returned ref or derived value as its render value, `on`, and client code
+  through its live reader, `currentOn()`, so a read right after a call of the composable's
+  function sees its write (`semantics/composable-read-after-write`). A returned function or
+  constant is read as it is, one for the hook's life.
+- The call destructures what the output reads, and nothing else: an unread member would fail
+  L5. A renamed member keeps its local, `{ matches: wide, currentMatches: currentWide }`. A call
+  whose result the output never reads is a bare call, which still runs the hook.
+- A value argument is passed as written, and the hook reads it once. A getter is a function of
+  what the caller renders, `() => quantity`, which the hook calls in render; a new one each
+  render, so the hook's memos over it run again, and with React Compiler, which memoises it, only
+  when what it reads changes. A callback is client code, `(reached) => { …; onLimit?.(reached); }`,
+  which the hook calls through its mirror of the last render's.
+- A composable's ref or computed value takes its kinds from the type its API writes, as written
+  or as the analyser infers it from the value, so a read a condition narrows in client code is
+  asserted, `currentUser()!.name`, as a component's own computed value's is.
+
+## Shared modules
+
+A component or a hook reads a module's values as the source does (`src/modules.ts`, ADR-0070):
+its output imports the values of a relative `.ts` module from its copy beside the outputs,
+`import { formatPrice } from "./format"`. It declares the module's top-level constants it reaches,
+and those they read, at module scope, as written and in source order, a constant a copied type
+reads only through `typeof` included, in the owner's code, its types and the type declarations
+it copies. The types those constants name come with them: the
+module's declarations, copied, and its type imports. The output keeps the source's module and
+function scopes, so every name keeps its meaning: the target claims its own names past the
+module's, and a setup value named like one of them is never hoisted beside it.
+
 ## Toolchain
 
 The tests and tooling build, check and run React output through three entries:
@@ -186,7 +261,10 @@ The tests and tooling build, check and run React output through three entries:
   projects (`@vitejs/plugin-react`), the framework compile check (L3: React Compiler 1.0 on
   Babel 7, where a bailout is a warning; a function that opts out with `"use no memo"` passes
   only where React Compiler still finds what it cannot compile there, a `Todo` or an
-  `Invariant`, and an opt-out it would compile is a warning, `react-compiler/needless-opt-out`),
+  `Invariant`, and an opt-out it would compile is a warning, `react-compiler/needless-opt-out`;
+  a file in which nothing compiled is a warning too, except a `.ts` module that declares no
+  hook, which is a shared module with nothing to compile, ADR-0070; and a `.ts` module parses
+  without JSX),
   the type check (L4: one TypeScript 7 run over all
   files, against `tests/toolchains/react/tsconfig.json`) and the lint (L5: oxlint with the
   shared baseline and its React rules, `tests/toolchains/react/output.oxlintrc.json`).
@@ -209,4 +287,8 @@ types' `DomElementFor` over lib.dom) on every element of the vocabulary.
 `test/attributes.test.ts` checks the attribute spellings and values against `@types/react` for
 every attribute the IR can hold (the names its types lack are the IR's `UNDECLARED_ATTRIBUTES`,
 which the analyser rejects), and pins the one gap left: SVG's `<title>`, which React types as
-HTML's.
+HTML's. `test/composable.test.ts` compiles every source of the composable and shared-module
+cases (`COMPOSABLE_CASES` in `../codegen/test/composable-cases.ts`: `cases/composables/`,
+`cases/modules/` and the three `semantics/composable-*` cases) through `compile()` and runs L3,
+L4 and L5 on each case's outputs, its components, hooks and copied `.ts` modules, with the
+shapes above.

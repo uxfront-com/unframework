@@ -1,0 +1,6 @@
+{
+  "description": "A module that exports its props type, a type the props reach, and a type no component reaches.",
+  "ssr": {
+    "secondary": { "props": { "label": "Cancel", "tone": "secondary" } }
+  }
+}

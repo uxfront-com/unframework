@@ -49,7 +49,7 @@ interface Expansion {
 
 /** The React spelling of a component's code. */
 export function reactCode(plan: ReactPlan): ReactCode {
-  const { component } = plan;
+  const { owner: component } = plan;
   // A write's two statements cannot be one expression, which a rule must return: it returns a
   // marker, which is replaced once the code around it is printed. The prefix is one no source
   // code holds, so the output is the same for the same source (P8).
@@ -70,7 +70,9 @@ export function reactCode(plan: ReactPlan): ReactCode {
   /** How a read of a binding is spelled: in client code (`client`), or as render reads it. */
   const spelling = (binding: Binding, written: string, client: boolean): string => {
     switch (binding.kind) {
-      case "prop": {
+      // A composable's getter or callback argument, as a prop (ADR-0069).
+      case "prop":
+      case "argument": {
         const mirror = client ? plan.propMirrors.get(binding.id) : undefined;
         return mirror ? `${mirror}.current` : written;
       }
@@ -92,6 +94,23 @@ export function reactCode(plan: ReactPlan): ReactCode {
         const model = plan.composition.models.get(binding.id)!;
         return client && model.mirror ? `${model.mirror}.current` : model.name;
       }
+      // A composable's ref or derived value (ADR-0069): its render value, or in client code the
+      // hook's live reader, which sees a write the composable's functions just made.
+      case "usedState":
+      case "usedDerived": {
+        const used = plan.used.get(binding.id)!;
+        if (client && written === `${binding.name}.value`) {
+          used.read.client = true;
+          return `${used.reader!.local}()`;
+        }
+        used.read.render = true;
+        return written === `${binding.name}.value` ? used.local : written;
+      }
+      // A composable's function or constant, one for the hook's life.
+      case "usedFn":
+      case "usedConst":
+        plan.used.get(binding.id)!.read.render = true;
+        return written;
       case "loopVar":
       case "localConst":
       case "emit":
@@ -99,6 +118,9 @@ export function reactCode(plan: ReactPlan): ReactCode {
       case "slotScope":
       case "context":
       case "component":
+      // A module's value, declared or imported at module scope as the source does (ADR-0070).
+      case "moduleConst":
+      case "import":
         return written;
       default:
         return binding.kind satisfies never;

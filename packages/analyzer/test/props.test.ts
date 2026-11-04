@@ -294,26 +294,35 @@ describe("props", () => {
 });
 
 describe("props types", () => {
+  // Every props type is read from its shape (ADR-0067): what the default oracle cannot evaluate
+  // is named as written.
   it.each([
-    ["a: () => void", "() => void", "Function types are not supported in props"],
-    ["a(): void", "a(): void", "Function types are not supported in props"],
-    ["[key: string]: string", "[key: string]: string", "Index signatures"],
-    ["a: any", "any", "`any` is not supported in props yet"],
-    ["a: unknown", "unknown", "`unknown`"],
-    ["a: object", "object", "`object`"],
-    ["a: {}", "{}", "The empty object type `{}`"],
-    ["a: symbol", "symbol", "`symbol`"],
-    ["a: bigint", "bigint", "`bigint`"],
-    ["a: [string, number]", "[string, number]", "A tuple type"],
-    ["a: `x-${string}`", "`x-${string}`", "A template literal type"],
-    ["a: Record<string, string>", "Record<string, string>", "Utility, global and imported types"],
-    ["a: Date", "Date", "`Date` is not a type this module declares"],
-    ["a: { b: string } & { c: string }", "{ b: string } & { c: string }", "An intersection type"],
-    ["a: keyof X", "keyof X", "`keyof`"],
-  ])("reports the member %s (UF1002)", (member, at, message) => {
+    ["a: () => void", "UF1002 () => void", "Function types are not supported in props"],
+    ["a(): void", "UF1002 a(): void", "Function types are not supported in props"],
+    [
+      "[key: string]: string",
+      "UF6002 [key: string]: string",
+      "An index signature needs a type checker",
+    ],
+    ["a: any", "UF6002 any", "`any` is not a type a prop can take"],
+    ["a: unknown", "UF6002 unknown", "`unknown`"],
+    ["a: object", "UF6002 object", "`object`"],
+    ["a: {}", "UF6002 {}", "The empty object type `{}`"],
+    ["a: symbol", "UF6002 symbol", "`symbol`"],
+    ["a: bigint", "UF6002 bigint", "`bigint`"],
+    ["a: [string, number]", "UF6002 [string, number]", "A tuple type"],
+    ["a: `x-${string}`", "UF6002 `x-${string}`", "A template literal type needs a type checker"],
+    [
+      "a: Record<string, string>",
+      "UF6002 Record<string, string>",
+      "`Record<string, string>` needs a type checker",
+    ],
+    ["a: Date", "UF6001 Date", "`Date` is neither declared nor imported by this module"],
+    ["a: keyof X", "UF6002 keyof X", "`keyof X` needs a type checker"],
+  ])("reports the member %s", (member, problem, message) => {
     const source = `interface P { ${member} }\nexport function A(props: P) { return <p />; }`;
     const { diagnostics } = run(source);
-    expect(problems(source, diagnostics)[0]).toBe(`UF1002 ${at}`);
+    expect(problems(source, diagnostics)[0]).toBe(problem);
     expect(diagnostics[0]!.message).toContain(message);
   });
 
@@ -328,18 +337,221 @@ describe("props types", () => {
   });
 
   it.each([
-    ["export function A(props: Imported) { return <p />; }", "Imported"],
+    ["interface I { a: string }\ntype P = I;", "P"],
+    ["type Q = { a: string };\ntype P = (Q);", "P"],
+    ["interface P { a: string }", "(P)"],
+  ])("keeps the members of %s as the props type's own, without `declaredBy`", (before, type) => {
+    const source = `${before}\nexport function A(props: ${type}) { return <p>{props.a}</p>; }`;
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    const [prop] = only(module).props;
+    expect(prop!.declaredBy).toBeUndefined();
+    expect(source.slice(prop!.span.start, prop!.span.end)).toBe("a: string");
+    expect(prop!.type.code).toBe("string");
+  });
+
+  it.each([
+    ['["b"]: string', 'UF6002 "b"', "A computed key needs a type checker"],
+    ["(): void", "UF1002 (): void;", "Function types are not supported in props"],
+    ["new (): P", "UF1002 new (): P;", "Function types are not supported in props"],
+  ])("reports the member %s of a local props type", (member, problem, message) => {
+    const source = `interface P { a: string; ${member}; }\nexport function A(props: P) { return <p />; }`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual([problem]);
+    expect(diagnostics[0]!.message).toContain(message);
+  });
+
+  // The oracle keeps a brand's object part and reports its primitive part: one problem, at the
+  // intersection, and no uses that read the member as an object.
+  it.each([
     [
-      "export function A(props: Partial<{ a: string }>) { return <p />; }",
-      "Partial<{ a: string }>",
+      'type Size = "sm" | "md" | (string & {});\ninterface P { size: Size }',
+      "<p title={props.size}>{props.size}</p>",
+      "UF6002 string & {}",
     ],
+    [
+      'type Id = number & { __brand: "id" };\ninterface P { id: Id }',
+      "<p>{props.id}</p>",
+      'UF6002 number & { __brand: "id" }',
+    ],
+  ])("reports a branded member once: %s", (types, jsx, problem) => {
+    const source = `${types}\nexport function A(props: P) { return ${jsx}; }`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual([problem]);
+    expect(diagnostics[0]!.message).toBe(
+      "An intersection with a part the default type oracle cannot read as an object type is not a type a prop can take.",
+    );
+  });
+
+  // Another member's unresolved type stops no member's own check.
+  it.each([
+    [
+      'import type { Foo } from "./missing.ts";\ninterface P { a: Foo; c: {} }',
+      ["UF6002 {}", "UF6001 Foo"],
+    ],
+    [
+      "interface X { y: string }\ninterface P { b: keyof X; c: {} }",
+      ["UF6002 keyof X", "UF6002 {}"],
+    ],
+    ['interface P { s: "a" | (string & {}); c: {} }', ["UF6002 string & {}", "UF6002 {}"]],
+    [
+      'type Size = "sm" | (string & {});\ninterface P { s: string; c: Size | {} }',
+      ["UF6002 {}", "UF6002 string & {}"],
+    ],
+    [
+      "type B = string & {};\ninterface P { c: { b: B; e: {} } }",
+      ["UF6002 {}", "UF6002 string & {}"],
+    ],
+    ["interface P { c: {}[] }", ["UF6002 {}"]],
+  ])("reports a written `{}` beside another member's problem: %s", (types, expected) => {
+    const source = `${types}\nexport function A(props: P) { return <p />; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual(expected);
+  });
+
+  // What this module writes is reported where it is written, as the syntax gives it.
+  it.each([
+    // R1: an alias of `{}`, wherever a member reaches it.
+    ["type E = {};\ninterface P { a: E }", ["UF6002 {}"]],
+    ["type E = {};\ninterface P { a: E | string; b: { c: E }; d: E[] }", ["UF6002 {}"]],
+    ["type F = {};\ntype E = F;\ninterface P { a: E }", ["UF6002 {}"]],
+    ["export type E = {};\ninterface P { a: E }", ["UF6002 {}"]],
+    // R2: a problem an alias writes, once, at the alias.
+    ["type K = object;\ninterface P { m: K; n: K }", ["UF6002 object"]],
+    ["type K = () => void;\ninterface P { m: K }", ["UF1002 () => void"]],
+    ["type K = [string, number];\ninterface P { m: K }", ["UF6002 [string, number]"]],
+    ["type K = string | {};\ninterface P { m: K }", ["UF6002 {}"]],
+    // R3: a `{}` that is no prop's own type.
+    ["interface P { f: (x: {}) => void }", ["UF1002 (x: {}) => void"]],
+    ["interface P { r: Record<string, {}> }", ["UF6002 Record<string, {}>"]],
+    ["interface P { k: keyof {} }", ["UF6002 keyof {}"]],
+    // A utility type is the shape's to resolve: one that leaves no member is `{}`.
+    ['interface X { y: string }\ninterface P { m: Omit<X, "y"> }', ['UF6002 Omit<X, "y">']],
+    [
+      'interface X { y: string }\ninterface P { m: { inner: Omit<X, "y"> } }',
+      ['UF6002 Omit<X, "y">'],
+    ],
+    // R4: an object type with signatures and no properties.
+    ["interface P { m: { [k: string]: string } }", ["UF6002 [k: string]: string"]],
+    ["interface P { m: { (): void } }", ["UF1002 (): void"]],
+    // The getter: a function, as on the base.
+    ["interface P { get m(): string }", ["UF1002 get m(): string"]],
+  ])("reports what %s writes where it is written", (types, expected) => {
+    const source = `${types}\nexport function A(props: P) { return <p />; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual(expected);
+  });
+
+  // What a utility or a generic builds is the shape's: only the members that survive it.
+  it.each([
+    ['interface Base { a: string; b: object }\ntype P = Omit<Base, "b">;', []],
+    ['interface Base { a: string; onClick(): void }\ntype P = Pick<Base, "a">;', []],
+    ['type F = () => void;\ninterface Base { a: string; b: F }\ntype P = Omit<Base, "b">;', []],
+    ['interface Base { a: string; b: object }\ninterface P extends Omit<Base, "b"> {}', []],
+    ['type P = Omit<{ a: string; b: object }, "b">;', []],
+    ["type P = Partial<{ m: {} }>;", ["UF6002 {}"]],
+    ["type P = Readonly<{ m: () => void }>;", ["UF1002 () => void"]],
+    ["type P = Required<{ m?: object }>;", ["UF6002 object"]],
+    ["interface P extends Partial<{ m: Date }> {}", ["UF6001 Date"]],
+    // A member written twice is the syntax's UF2001, inside an intersection too.
+    ["interface P { m: { a: string; a: number } & {} }", ["UF2001 a"]],
+    ["type P = Partial<{ m: { (): void } }>;", ["UF1002 (): void"]],
+    ["type P = Readonly<{ m: { [k: string]: string } }>;", ["UF6002 [k: string]: string"]],
+    // An intersection of empty object types is `{}`.
+    ["interface P { m: {} & {} }", ["UF6002 {} & {}"]],
+    // A props type that is no object is reported once, as a whole.
+    ["type P = object;", ["UF6004 P"]],
+    ["type P = () => void;", ["UF6004 P"]],
+    ["type P = Missing;", ["UF6001 P"]],
+  ])("reports %s as the shape gives it", (types, expected) => {
+    const source = `${types}\nexport function A(props: P) { return <p />; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual(expected);
+  });
+
+  // An alias the props type is built from is a part of its object, not a prop's type.
+  it.each([
+    ["type E = {};\ninterface P extends E { a: string }", []],
+    ["type E = {} & {};\ninterface P extends E { a: string }", []],
+    ["type E = {};\ntype P = E & { a: string };", []],
+    ["type E = {};\ntype P = { a: string } & E;", []],
+    ["type E = object;\ninterface P extends E { a: string }", ["UF6002 E"]],
+    ["type E = object;\ntype P = E & { a: string };", ["UF6002 E"]],
+    ["type P = {};", ["UF6002 {}"]],
+    ["type P = {} & {};", []],
+    // A generic's type argument is reported where it is written, at each use.
+    ["interface G<T> { v: T }\ninterface P { g: G<object> }", ["UF6002 G<object>"]],
+    [
+      "interface G<T> { v: T }\ninterface P { g: G<object>; h: G<{}> }",
+      ["UF6002 G<object>", "UF6002 G<{}>"],
+    ],
+    ["type G<T> = Partial<{ v: T }>;\ninterface P { m: G<() => void> }", ["UF1002 G<() => void>"]],
+  ])("reports %s as the base does", (types, expected) => {
+    const source = `${types}\nexport function A(props: P) { return <p />; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual(expected);
+  });
+
+  it("reports an enum a member names as the oracle does", () => {
+    const source =
+      "enum E { A }\ninterface P { e: E }\nexport function A(props: P) { return <p />; }";
+    expect(problems(source, run(source).diagnostics)).toContain("UF6002 E");
+  });
+
+  it("reports a nested conflict at the innermost intersection", () => {
+    const source =
+      "type P = { m: { a: string } & { a: number } } & { s: string };\nexport function A(props: P) { return <p />; }";
+    expect(problems(source, run(source).diagnostics)).toEqual([
+      "UF6005 { a: string } & { a: number }",
+    ]);
+  });
+
+  // R5: a conflict in a member's intersection names the member, where it is written.
+  it("reports a conflict in a member's intersection where it is written", () => {
+    const source =
+      "interface P { m: { a: string } & { a: number } }\nexport function A(props: P) { return <p />; }";
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF6005 { a: string } & { a: number }"]);
+    expect(diagnostics[0]!.message).toContain("`a` is declared with different types");
+  });
+
+  it("reports a problem of a type several members reach once, where it is written", () => {
+    const source = [
+      "interface Item { run(): void }",
+      "interface Sub { x: any; f: () => void }",
+      "interface P { a: Item; b: Item; c: Sub; d?: Sub }",
+      "interface Q { e: Sub }",
+      "export function A(props: P) { return <p />; }",
+      "export function B(props: Q) { return <p />; }",
+    ].join("\n");
+    expect(problems(source, run(source).diagnostics)).toEqual([
+      "UF1002 run(): void",
+      "UF6002 any",
+      "UF1002 () => void",
+    ]);
+  });
+
+  it("accepts a member typed by an intersection of object types, as an imported one is", () => {
+    const source =
+      "interface P { a: { b: string } & { c: string } }\nexport function A(props: P) { return <p />; }";
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    expect(only(module).props[0]!.type.code).toBe("{ b: string } & { c: string }");
+  });
+
+  it.each([
+    ["export function A(props: Imported) { return <p />; }", "UF6001 Imported"],
     [
       "export function A(props: { a: string } | { b: string }) { return <p />; }",
-      "{ a: string } | { b: string }",
+      "UF6004 { a: string } | { b: string }",
     ],
-    ['type U = "a" | "b";\nexport function A(props: U) { return <p />; }', '"a" | "b"'],
-  ])("reports the props type in %s as not supported yet", (source, at) => {
-    expect(problems(source, run(source).diagnostics)).toEqual([`UF1002 ${at}`]);
+    ['type U = "a" | "b";\nexport function A(props: U) { return <p />; }', "UF6004 U"],
+    [
+      'type M = { [K in "a"]: string };\nexport function A(props: M) { return <p />; }',
+      'UF6002 { [K in "a"]: string }',
+    ],
+    [
+      "interface L { x: string }\ninterface C { x: number }\nexport function A(props: L & C) { return <p />; }",
+      "UF6005 L & C",
+    ],
+  ])("reports the props type in %s", (source, problem) => {
+    expect(problems(source, run(source).diagnostics)).toEqual([problem]);
   });
 
   it.each([
@@ -347,16 +559,6 @@ describe("props types", () => {
       "interface P { a: string }\ninterface P { b: string }\nexport function A(props: P) { return <p />; }",
       "UF1002 P",
       "`P` is declared twice: TypeScript merges the declarations, which the outputs would not.",
-    ],
-    [
-      "interface Base { a: string }\ninterface P extends Base { b: string }\nexport function A(props: P) { return <p />; }",
-      "UF1002 Base",
-      "Interfaces that extend others are not supported in props yet: they land in M5.",
-    ],
-    [
-      "interface P<T> { a: T }\nexport function A(props: P<string>) { return <p />; }",
-      "UF1002 <T>",
-      "Generic types are not supported in props yet: they land in M5.",
     ],
     [
       'interface P { a: "</script>" }\nexport function A(props: P) { return <p />; }',
@@ -371,7 +573,7 @@ describe("props types", () => {
     [
       "interface Unused { a: string }\nexport function A() { return <p />; }",
       "UF1002 Unused",
-      "`Unused` is not used by any component: types that a module exports on their own land in M5.",
+      "`Unused` is neither exported nor used by any component, so no output would declare it.",
     ],
     [
       "interface CSSProperties { a: string }\nexport function A(props: CSSProperties) { return <p />; }",

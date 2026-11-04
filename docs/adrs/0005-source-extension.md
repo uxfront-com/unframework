@@ -44,12 +44,16 @@ them apart from each other and from a host app's own files.
 
 **Open:**
 
-- Whether a TS 7.1 content mapper may claim `.uf.tsx`, a suffix of a native extension, is not yet
-  known. M0 spike 6 settles it against the 7.1 nightly (R3).
+- Whether a TS 7.1 content mapper may claim `.uf.tsx`, a suffix of a native extension: upstream
+  says no. From `7.1.0-dev.20261014.1`, and in `7.1.0-beta`, tsgo refuses an extension that ends
+  in a built-in one (TS18066, microsoft/TypeScript#64581), while a mapper on `.uf` works
+  (ADR-0072). The content mapper's issue settles D1 (R3).
 - If it cannot, the fallback is a distinct `.uf` extension associated with the TSX grammar, and a
   new record supersedes this one. Consumer-typing layers 1, 2 and 4 work either way (ADR-0003).
 
-See also ADR-0023: spike 6 showed a TS 7.1 content mapper can claim `.uf.tsx`, so D1 stands.
+See also ADR-0023: spike 6 showed a TS 7.1 nightly content mapper claiming `.uf.tsx`, but 7.1
+refuses that extension since microsoft/TypeScript#64581 (ADR-0072), so D1 waits for the content
+mapper's issue.
 
 ## Alternatives considered
 

@@ -7,7 +7,7 @@ import type { Binding, EmitReference, EventDeclaration, Expression } from "@unfr
 
 import { narrowedWhole } from "./narrowing.ts";
 import { outputName } from "./outputs.ts";
-import { formOf, isSignal, slotQuery, unreachable } from "./plan.ts";
+import { formOf, isSignal, memberOf, moduleMember, slotQuery, unreachable } from "./plan.ts";
 import type { MemberForm, Plan } from "./plan.ts";
 
 /**
@@ -20,7 +20,7 @@ export function classRules(plan: Plan, nextTick?: string): RewriteRules {
   return {
     binding: (reference, binding, written) =>
       wholeRef(plan, binding, written)
-        ? `this.${binding.name}`
+        ? `this.${memberOf(plan, binding)}`
         : classRead(plan, binding, narrowedWhole(reference), written),
     slot: (reference) => slotPresence(plan, reference.slot),
     write: (write, binding, parts) => {
@@ -55,6 +55,9 @@ export function classRules(plan: Plan, nextTick?: string): RewriteRules {
         case "context":
         case "instance":
         case "component":
+        case "module":
+        case "result":
+        case "resultValue":
           throw new Error(`\`${binding.name}\` is written, which the analyser rejects (UF2011).`);
         default:
           return unreachable(form);
@@ -240,6 +243,13 @@ export function classRead(plan: Plan, binding: Binding, narrowed = false, writte
     case "arrow":
     case "field":
       return `this.${binding.name}`;
+    // The module declares it under its own name (ADR-0070).
+    case "module":
+      return binding.name;
+    case "result":
+      return `this.${memberOf(plan, binding)}()${narrowed ? "!" : ""}`;
+    case "resultValue":
+      return `this.${memberOf(plan, binding)}`;
     case "loop":
     case "emit":
     case "component":
@@ -283,7 +293,14 @@ function templateRead(plan: Plan, binding: Binding, site: RewriteSite, written: 
     case "value":
     case "method":
     case "arrow":
-      return site === "key" ? `this.${binding.name}` : binding.name;
+    // A member of its own name, or another where the class declares that one (ADR-0070).
+    case "module":
+      return site === "key" ? `this.${moduleMember(plan, binding)}` : moduleMember(plan, binding);
+    // Through its `@let`, as the setup's own signals.
+    case "result":
+      return site === "key" ? `this.${memberOf(plan, binding)}()` : binding.name;
+    case "resultValue":
+      return site === "key" ? `this.${memberOf(plan, binding)}` : memberOf(plan, binding);
     case "context":
       return `${site === "key" ? `this.${binding.name}()` : binding.name}${refMember(written)}`;
     case "loop":
@@ -362,6 +379,12 @@ export function statementRead(
     case "arrow":
     case "loop":
       return binding.name;
+    case "module":
+      return moduleMember(plan, binding);
+    case "resultValue":
+      return memberOf(plan, binding);
+    case "result":
+      return `this.${memberOf(plan, binding)}()${narrowed ? "!" : ""}`;
     case "signal":
     case "linked":
     case "computed":
@@ -387,7 +410,12 @@ export function statementRead(
  */
 function wholeRef(plan: Plan, binding: Binding, written: string): boolean {
   const form = formOf(plan, binding);
-  const ref = form === "signal" || form === "linked" || form === "computed" || form === "model";
+  const ref =
+    form === "signal" ||
+    form === "linked" ||
+    form === "computed" ||
+    form === "model" ||
+    form === "result";
   return ref && !written.endsWith(".value");
 }
 

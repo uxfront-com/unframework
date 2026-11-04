@@ -1,10 +1,20 @@
-import type { Binding, BindingId, BindingKind, ComponentApi, Slots } from "@unframework/ir";
+import type {
+  Binding,
+  BindingId,
+  BindingKind,
+  ComponentApi,
+  ComposableApi,
+  ComposableMemberApi,
+  Slots,
+} from "@unframework/ir";
 import type { AST } from "@unframework/parser";
 
 import type { AuthoringApi } from "./authoring.ts";
 import type { Reporter } from "./context.ts";
 import type { PassThrough } from "./pass-through.ts";
 import type { Scopes } from "./scope.ts";
+import type { Shapes } from "./shapes.ts";
+import type { SharedValues } from "./shared.ts";
 import type { TypeTable } from "./types/from-type.ts";
 import type { Kinds } from "./types/kinds.ts";
 
@@ -21,6 +31,10 @@ export interface PropBinding {
   id: BindingId | undefined;
   /** Its kinds: the member's type, with `undefined` when optional without a default. */
   kinds: Kinds;
+  /** Set on a composable's parameter (ADR-0069), a plain local on every target: no read narrows. */
+  argument?: true;
+  /** Set on a composable's callback argument, which only client code reads (ADR-0069). */
+  callback?: true;
 }
 
 /** A component a template may render (ADR-0053): its local name, and its API. */
@@ -62,11 +76,22 @@ export interface SetupBinding {
    */
   ref?: true;
   /**
+   * Set where its type is written: a `const`'s or a `let`'s annotation, or `ref`'s type argument.
+   * A spread of its value renders the keys that type declares (ADR-0039, ADR-0067), which it
+   * knows only when the type resolves in full (`complete`).
+   */
+  typed?: { complete: boolean };
+  /**
    * What makes a local function's result depend on time, chance or the machine itself, outside
    * the globals its summary lists (`Math.random`, a locale method): UF3019 where a template, a
    * getter or an initial value calls it. Set as its body is walked.
    */
   nondeterministic?: string;
+  /**
+   * What a `used*` binding destructures from a composable's result (ADR-0069): its kind, and a
+   * function's flags, which say where it may be called.
+   */
+  member?: ComposableMemberApi;
 }
 
 /**
@@ -136,6 +161,11 @@ export interface SetupScope {
   readonly events: ReadonlyMap<string, EventPayload> | undefined;
   /** The parameter of each setup function that receives an event, by the function. */
   readonly eventParameters: ReadonlyMap<SetupFunction, EventParameter>;
+  /**
+   * The composables the module imports, by the identifier that declares each (ADR-0069):
+   * `undefined` for one its import reported.
+   */
+  readonly composables: ReadonlyMap<object, ComposableApi | undefined>;
 }
 
 /** What lowering a component's returned JSX needs to know about the component and module. */
@@ -144,6 +174,8 @@ export interface RenderContext {
   readonly reporter: Reporter;
   readonly scopes: Scopes;
   readonly types: TypeTable;
+  /** The shapes of the types the module writes where an API is declared (ADR-0067). */
+  readonly shapes: Shapes;
   /** The component's function: its parameters are the props. */
   readonly component: ComponentFunction;
   /** The props, by name: every member of the props type. */
@@ -182,6 +214,8 @@ export interface RenderContext {
   readonly passThrough: PassThrough;
   /** Set while a `class` part is checked: the one place a pass-through name is called. */
   readonly classPart?: true;
+  /** The values the module's imports of shared modules and its constants give (ADR-0070). */
+  readonly shared: SharedValues;
 }
 
 /** The setup binding an identifier reads, where the component's setup declares it. */

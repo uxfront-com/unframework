@@ -26,9 +26,9 @@ declare const templateRefTarget: unique symbol;
 declare const typedComponent: unique symbol;
 
 /**
- * The brand the content mapper (layer 3 of plan §5.6, M5) puts on a component's virtual type once it
- * has declared the component's events, models and slots exactly. A branded component loses the open
- * layer-1 signatures, so misspelt events and models become errors too.
+ * The brand the content mapper (layer 3 of plan §5.6, ADR-0072) puts on a component's virtual type
+ * once it has declared the component's events, models and slots exactly. A branded component loses
+ * the open layer-1 signatures, so misspelt events and models become errors too.
  */
 export interface TypedComponent {
   readonly [typedComponent]: true;

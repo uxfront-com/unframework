@@ -15,7 +15,9 @@ import type {
   SetupItem,
   SlotFill,
   Span,
+  TypeParameter,
   UfComponent,
+  UfComposable,
   UfModule,
   WatchSource,
 } from "./types.ts";
@@ -63,6 +65,13 @@ const bindingKinds = {
   slotScope: true,
   context: true,
   component: true,
+  moduleConst: true,
+  import: true,
+  argument: true,
+  usedState: true,
+  usedDerived: true,
+  usedFn: true,
+  usedConst: true,
 } satisfies Record<BindingKind, true>;
 const setupItemKinds = {
   State: true,
@@ -78,6 +87,7 @@ const setupItemKinds = {
   Model: true,
   Provide: true,
   Inject: true,
+  Use: true,
 } satisfies Record<SetupItem["kind"], true>;
 const handlerKinds = { Function: true, Inline: true } satisfies Record<Handler["kind"], true>;
 const watchSourceKinds = { Ref: true, Getter: true } satisfies Record<WatchSource["kind"], true>;
@@ -196,9 +206,9 @@ export interface ModuleFeatures {
 }
 
 /**
- * Collects the kinds that a module's components use: render nodes, attributes, bindings, setup
- * items, handlers, watch sources and the references of setup code (render expressions' own
- * references are setup code's `Binding` and `Global` kinds, so they count too).
+ * Collects the kinds that a module's components and composables use: render nodes, attributes,
+ * bindings, setup items, handlers, watch sources and the references of setup code (render
+ * expressions' own references are setup code's `Binding` and `Global` kinds, so they count too).
  */
 export function collectFeatures(module: UfModule): ModuleFeatures {
   const features: ModuleFeatures = {
@@ -210,14 +220,21 @@ export function collectFeatures(module: UfModule): ModuleFeatures {
     watchSourceKinds: new Set(),
     codeReferenceKinds: new Set(),
   };
-  for (const component of module.components) {
-    for (const binding of component.bindings) features.bindingKinds.add(binding.kind);
-    for (const item of component.setup) {
+  const setup = (owner: UfComponent | UfComposable) => {
+    for (const binding of owner.bindings) features.bindingKinds.add(binding.kind);
+    for (const item of owner.setup) {
       features.setupItemKinds.add(item.kind);
       if (item.kind === "Watch") {
         for (const source of item.sources) features.watchSourceKinds.add(source.kind);
       }
     }
+    for (const { code } of codeOf(owner)) {
+      for (const ref of code.refs) features.codeReferenceKinds.add(ref.kind);
+    }
+  };
+  for (const composable of module.composables ?? []) setup(composable);
+  for (const component of module.components) {
+    setup(component);
     walk(component.render, {
       enter(node) {
         if (node.kind === "Fragment") return;
@@ -232,9 +249,6 @@ export function collectFeatures(module: UfModule): ModuleFeatures {
     });
     for (const { expression } of expressionsOf(component)) {
       for (const ref of expression.refs) features.codeReferenceKinds.add(ref.kind);
-    }
-    for (const { code } of codeOf(component)) {
-      for (const ref of code.refs) features.codeReferenceKinds.add(ref.kind);
     }
   }
   return features;
@@ -424,26 +438,30 @@ export interface LocatedFunction {
 }
 
 /**
- * Every function a component's source writes, in source order: the setup's getters, functions,
- * watch sources and callbacks, effects and hooks, then the handlers written in the render tree,
- * in document order. A setup function's body is client code: what a template or a getter may
- * call of it, its summary says (`summarize`).
+ * Every function a component's or a composable's source writes, in source order: the setup's
+ * getters, functions, watch sources and callbacks, effects, hooks and a composable's getter and
+ * callback arguments, then a component's handlers written in the render tree, in document order.
+ * A setup function's body is client code: what a template or a getter may call of it, its
+ * summary says (`summarize`).
  */
-export function functionsOf(component: UfComponent, base = ""): LocatedFunction[] {
+export function functionsOf(component: UfComponent | UfComposable, base = ""): LocatedFunction[] {
   return partsOf(component, base).flatMap((part) => ("function" in part ? [part] : []));
 }
 
 /**
  * A setup item's value: the code of a `ref`'s, a `const`'s or a `let`'s initial value, a provided
- * value or an `inject`'s fallback.
+ * value, an `inject`'s fallback or a composable's value argument.
  */
 interface LocatedValue {
   value: Code;
   path: string;
 }
 
-/** The values and functions of a component, in source order, then its inline handlers. */
-function partsOf(component: UfComponent, base: string): (LocatedValue | LocatedFunction)[] {
+/** The values and functions of a setup, in source order, then a component's inline handlers. */
+function partsOf(
+  component: UfComponent | UfComposable,
+  base: string,
+): (LocatedValue | LocatedFunction)[] {
   const parts: (LocatedValue | LocatedFunction)[] = [];
   const add = (
     fn: FunctionCode,
@@ -487,6 +505,17 @@ function partsOf(component: UfComponent, base: string): (LocatedValue | LocatedF
       case "Inject":
         if (item.fallback) parts.push({ value: item.fallback, path: `${path}/fallback` });
         break;
+      case "Use":
+        // A value is evaluated once, a getter read reactively, a callback called from client
+        // code (ADR-0069).
+        for (const [position, argument] of item.arguments.entries()) {
+          const at = `${path}/arguments/${position}`;
+          if (argument.kind === "Value") parts.push({ value: argument.value, path: `${at}/value` });
+          else if (argument.kind === "Getter")
+            add(argument.getter, `${at}/getter`, "pure", "getter");
+          else add(argument.callback, `${at}/callback`, "client", "function");
+        }
+        break;
       case "TemplateRef":
       case "Id":
       case "Model":
@@ -495,6 +524,7 @@ function partsOf(component: UfComponent, base: string): (LocatedValue | LocatedF
         unreachable(item);
     }
   }
+  if (!("render" in component)) return parts;
   walkHandlers(component.render, `${base}/render`, (attribute, path) => {
     if (attribute.handler.kind === "Inline") {
       add(attribute.handler.function, `${path}/handler/function`, "client", "handler");
@@ -581,12 +611,12 @@ export interface LocatedCode {
 }
 
 /**
- * Every piece of code of a component outside its template's expressions, in source order: the
- * setup's initial values and values, the bodies of its functions ({@link functionsOf}), and after
- * each body the conditions of its `preventDefault()` and `stopPropagation()` calls, which repeat
- * a part of it. `base` prefixes each path.
+ * Every piece of code of a component, outside its template's expressions, or of a composable, in
+ * source order: the setup's initial values and values, the bodies of its functions
+ * ({@link functionsOf}), and after each body the conditions of its `preventDefault()` and
+ * `stopPropagation()` calls, which repeat a part of it. `base` prefixes each path.
  */
-export function codeOf(component: UfComponent, base = ""): LocatedCode[] {
+export function codeOf(component: UfComponent | UfComposable, base = ""): LocatedCode[] {
   return partsOf(component, base).flatMap((part): LocatedCode[] => {
     if ("value" in part) return [{ code: part.value, path: part.path, context: "pure" }];
     const { function: fn, path, context } = part;
@@ -613,13 +643,15 @@ type AddSpan = (span: Span, path: string) => void;
 
 /**
  * Every span of a module, each with a JSON Pointer to it: components and their stylesheets,
- * exports, type declarations, imports and their names, pass-through imports and their names,
- * injection keys, props, events, slots and their types, what a component exposes, bindings,
- * setup items, functions, parameters, every node, branch, attribute, handler, fill, class part,
- * style declaration and spread key, and every expression,
- * piece of code and reference, with a write's target and value and an emit's arguments. A child's
- * API points into another file, so it has none. What points into the source (diagnostics, a
- * plugin's module) is checked span by span with it.
+ * composables, their parameters and returned members, type parameters, exports, type
+ * declarations, imports and their names, type imports and exports, value imports, module
+ * constants, pass-through imports and their names, injection keys, props, events, slots and their
+ * types, what a component exposes, bindings, setup items, a `Use` item's arguments and members,
+ * functions, parameters, every node, branch, attribute, handler, fill, class part, style
+ * declaration and spread key, and every expression, piece of code and reference, with a write's
+ * target and value and an emit's arguments. A child's API and a prop's `declaredBy` point into
+ * another file, so they have none. What points into the source (diagnostics, a plugin's module)
+ * is checked span by span with it.
  */
 export function spansOf(module: UfModule): LocatedSpan[] {
   const found: LocatedSpan[] = [];
@@ -628,6 +660,7 @@ export function spansOf(module: UfModule): LocatedSpan[] {
   for (const [index, component] of module.components.entries()) {
     const base = `/components/${index}`;
     add(component.span, base);
+    typeParameterSpans(component.typeParameters, base, add);
     if (component.propsParameter) {
       add(component.propsParameter.span, `${base}/propsParameter`);
       add(component.propsParameter.type.span, `${base}/propsParameter/type`);
@@ -660,29 +693,28 @@ export function spansOf(module: UfModule): LocatedSpan[] {
       add(slots.span, `${base}/slots`);
     }
     if (component.exposes) add(component.exposes.span, `${base}/exposes`);
-    for (const [binding, { span }] of component.bindings.entries()) {
-      add(span, `${base}/bindings/${binding}`);
-    }
-    for (const [position, item] of component.setup.entries()) {
-      const path = `${base}/setup/${position}`;
-      if ("type" in item && item.type) add(item.type.span, `${path}/type`);
-      if (item.kind === "Watch") {
-        for (const [source, { span }] of item.sources.entries()) {
-          add(span, `${path}/sources/${source}`);
-        }
-      }
-      add(item.span, path);
-    }
+    setupSpans(component, base, add);
     walkSpans(component.render, `${base}/render`, add);
     for (const located of expressionsOf(component, base)) {
       expressionSpans(located.expression, located.path, add);
     }
-    for (const located of functionsOf(component, base)) {
-      functionSpans(located.function, located.path, add);
-    }
-    for (const located of codeOf(component, base)) codeSpans(located.code, located.path, at);
+    ownerCodeSpans(component, base, add, at);
     for (const [sheet, { span }] of (component.styles ?? []).entries()) {
       add(span, `${base}/styles/${sheet}`);
+    }
+  }
+  for (const [index, composable] of (module.composables ?? []).entries()) {
+    const base = `/composables/${index}`;
+    add(composable.span, base);
+    typeParameterSpans(composable.typeParameters, base, add);
+    for (const [parameter, { span, type }] of composable.parameters.entries()) {
+      add(type.span, `${base}/parameters/${parameter}/type`);
+      add(span, `${base}/parameters/${parameter}`);
+    }
+    setupSpans(composable, base, add);
+    ownerCodeSpans(composable, base, add, at);
+    for (const [member, { span }] of composable.returns.entries()) {
+      add(span, `${base}/returns/${member}`);
     }
   }
   for (const [index, entry] of module.exports.entries()) add(entry.span, `/exports/${index}`);
@@ -705,7 +737,84 @@ export function spansOf(module: UfModule): LocatedSpan[] {
     }
     add(entry.span, `/passThroughImports/${index}`);
   }
+  for (const field of ["typeImports", "moduleImports"] as const) {
+    for (const [index, entry] of (module[field] ?? []).entries()) {
+      for (const [name, { span }] of entry.names.entries()) {
+        add(span, `/${field}/${index}/names/${name}`);
+      }
+      add(entry.span, `/${field}/${index}`);
+    }
+  }
+  for (const [index, entry] of (module.typeExports ?? []).entries()) {
+    if (entry.kind === "ReExport") {
+      for (const [name, { span }] of entry.names.entries()) {
+        add(span, `/typeExports/${index}/names/${name}`);
+      }
+    }
+    add(entry.span, `/typeExports/${index}`);
+  }
+  for (const [index, constant] of (module.constants ?? []).entries()) {
+    const path = `/constants/${index}`;
+    if (constant.type) add(constant.type.span, `${path}/type`);
+    codeSpans(constant.value, `${path}/value`, at);
+    add(constant.span, path);
+  }
   return found;
+}
+
+/** The spans of a component's or a composable's type parameters. */
+function typeParameterSpans(
+  parameters: readonly TypeParameter[] | undefined,
+  base: string,
+  add: AddSpan,
+): void {
+  for (const [index, parameter] of (parameters ?? []).entries()) {
+    const path = `${base}/typeParameters/${index}`;
+    if (parameter.constraint) add(parameter.constraint.span, `${path}/constraint`);
+    if (parameter.default) add(parameter.default.span, `${path}/default`);
+    add(parameter.span, path);
+  }
+}
+
+/**
+ * The spans of a component's or a composable's setup: its bindings and its items (a watcher's
+ * sources, a `Use` item's arguments and members).
+ */
+function setupSpans(owner: UfComponent | UfComposable, base: string, add: AddSpan): void {
+  for (const [binding, { span }] of owner.bindings.entries()) {
+    add(span, `${base}/bindings/${binding}`);
+  }
+  for (const [position, item] of owner.setup.entries()) {
+    const path = `${base}/setup/${position}`;
+    if ("type" in item && item.type) add(item.type.span, `${path}/type`);
+    if (item.kind === "Watch") {
+      for (const [source, { span }] of item.sources.entries()) {
+        add(span, `${path}/sources/${source}`);
+      }
+    }
+    if (item.kind === "Use") {
+      for (const [argument, { span }] of item.arguments.entries()) {
+        add(span, `${path}/arguments/${argument}`);
+      }
+      for (const [member, { span }] of item.members.entries()) {
+        add(span, `${path}/members/${member}`);
+      }
+    }
+    add(item.span, path);
+  }
+}
+
+/** The spans of a component's or a composable's functions and code. */
+function ownerCodeSpans(
+  owner: UfComponent | UfComposable,
+  base: string,
+  add: AddSpan,
+  at: AddSpan,
+): void {
+  for (const located of functionsOf(owner, base)) {
+    functionSpans(located.function, located.path, add);
+  }
+  for (const located of codeOf(owner, base)) codeSpans(located.code, located.path, at);
 }
 
 /** The spans of an expression and of its references. */

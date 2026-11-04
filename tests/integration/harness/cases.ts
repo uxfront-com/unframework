@@ -10,14 +10,28 @@ import type { CaseConfig } from "@unframework/testing/node";
 import { CASES_DIR } from "./paths.ts";
 import { REFERENCE } from "./targets.ts";
 
-/** One `.uf.tsx` input of a case. */
+/** One input of a case the compiler compiles: a `.uf.tsx` component, or a `.uf.ts` composable. */
 export interface CaseSource {
-  /** The `.uf.tsx` file (absolute). */
+  /** The `.uf.tsx` or `.uf.ts` file (absolute). */
   source: string;
   /** Its file name relative to the cases directory, as the compiler sees it. */
   filename: string;
-  /** Its IR snapshot, relative to `__output__/`: `ir.json` for the main source (ADR-0057). */
+  /**
+   * Its IR snapshot, relative to `__output__/`: `ir.json` for the main source, and
+   * `ir.<Stem>.json` for each other (ADR-0057), `ir.useToggle.json` for `useToggle.uf.ts`.
+   */
   ir: string;
+}
+
+/**
+ * A plain `.ts` module of a case (ADR-0070), which no compile takes as its input: the compile of
+ * each source that imports it copies it unchanged into the output tree, at its own file name.
+ */
+export interface CaseModule {
+  /** The `.ts` file (absolute). */
+  source: string;
+  /** Its file name relative to the cases directory. */
+  filename: string;
 }
 
 /** One case of the corpus. */
@@ -31,10 +45,12 @@ export interface CaseInfo {
   /** The main input's file name relative to the cases directory, as the compiler sees it. */
   filename: string;
   /**
-   * Every `.uf.tsx` input, sorted by file name: the main one, and its children or harness
-   * parents (ADR-0057). Each compiles to every target.
+   * Every input, sorted by file name: the main `.uf.tsx`, its children or harness parents
+   * (ADR-0057), and the `.uf.ts` composables (ADR-0069). Each compiles to every target.
    */
   sources: CaseSource[];
+  /** The case's `.ts` modules but its spec, sorted by file name (ADR-0070). */
+  modules: CaseModule[];
   /** The browser spec, absent for diagnostics cases. */
   spec: string | undefined;
   config: CaseConfig;
@@ -75,24 +91,40 @@ export function caseConfigs(cases: readonly CaseInfo[]): Record<string, CaseConf
 
 function readCase(casesDir: string, id: string): CaseInfo {
   const dir = join(casesDir, id);
-  const files = readdirSync(dir);
-  const inputs = files.filter((file) => file.endsWith(".uf.tsx")).toSorted();
+  const files = readdirSync(dir).toSorted();
+  // The main input is a component: a case still needs one (ADR-0069).
+  const inputs = files.filter((file) => file.endsWith(".uf.tsx"));
   if (!inputs.length) throw new Error(`Case ${id} must hold a .uf.tsx input, found none.`);
   const specs = files.filter((file) => file.endsWith(".test.ts"));
   if (specs.length > 1) throw new Error(`Case ${id} has more than one spec: ${specs.join(", ")}.`);
+  const modules = files.filter(
+    (file) => file.endsWith(".ts") && !file.endsWith(".test.ts") && !file.endsWith(".uf.ts"),
+  );
   const config = readConfig(id, join(dir, "case.json"));
   const main = mainSource(id, inputs, config.main);
-  const sources = inputs.map((input) => ({
-    source: join(dir, input),
-    filename: `${id}/${input}`,
-    ir: input === main ? "ir.json" : `ir.${input.slice(0, -".uf.tsx".length)}.json`,
-  }));
+  const sources = files
+    .filter((file) => file.endsWith(".uf.tsx") || file.endsWith(".uf.ts"))
+    .map((input) => ({
+      source: join(dir, input),
+      filename: `${id}/${input}`,
+      ir: input === main ? "ir.json" : `ir.${input.replace(/\.uf\.tsx?$/, "")}.json`,
+    }));
+  // `Toggle.uf.tsx` and `Toggle.uf.ts` would write one snapshot.
+  for (const [index, source] of sources.entries()) {
+    const other = sources.findIndex((each) => each.ir === source.ir);
+    if (other !== index) {
+      throw new Error(
+        `Case ${id}: ${basename(sources[other]!.source)} and ${basename(source.source)} both snapshot their IR as ${source.ir}: rename one.`,
+      );
+    }
+  }
   return {
     id,
     dir,
     source: join(dir, main),
     filename: `${id}/${main}`,
     sources,
+    modules: modules.map((file) => ({ source: join(dir, file), filename: `${id}/${file}` })),
     spec: specs[0] && join(dir, specs[0]),
     config,
   };

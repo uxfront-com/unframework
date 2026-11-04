@@ -1,12 +1,14 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import { onMount, untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface ReadingListProps {
     shelves: string[];
   }
+</script>
+
+<script lang="ts">
+  import { onMount, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ReadingListProps & {
     onrequested?: (url: string) => void;

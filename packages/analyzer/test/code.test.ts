@@ -5,7 +5,16 @@
 import type { FunctionItem } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
-import { applyAndRecheck, codes, functionOf, only, problems, run, setupOf } from "./helpers.ts";
+import {
+  API,
+  applyAndRecheck,
+  codes,
+  functionOf,
+  only,
+  problems,
+  run,
+  setupOf,
+} from "./helpers.ts";
 
 /** The functions of a setup, compactly, with no diagnostic. */
 function functions(setup: string, jsx = "<p />", props?: string): string[] {
@@ -356,13 +365,29 @@ describe("the client code's subset", () => {
     ]);
   });
 
-  it("reports a spread of a setup value until M5's type oracle reads its keys (UF1002)", () => {
-    const source = [
-      'import { ref } from "unframework";',
-      "export interface Link { title: string }",
-      'export function A() { const link = ref<Link>({ title: "x" }); return <a {...link.value}>x</a>; }',
-    ].join("\n");
-    expect(problems(source, run(source).diagnostics)).toEqual(["UF1002 {...link.value}"]);
+  it.each([
+    ['const link = ref({ title: "x" });', "{...link.value}"],
+    ['const link = { title: "x" };', "{...link}"],
+    ['const link = computed<Link>(() => ({ title: "x" }));', "{...link.value}"],
+    [
+      'const on = ref(true); const link: Link = { title: "x" };',
+      "{...(on.value ? link : undefined)}",
+    ],
+  ])(
+    "reports a spread that reads a setup value whose type is not written: %s (UF1002)",
+    (setup, spread) => {
+      const source = `${API}export interface Link { title: string }\nexport function A() { ${setup} return <a ${spread}>x</a>; }`;
+      const { diagnostics } = run(source);
+      expect(problems(source, diagnostics)).toEqual([`UF1002 ${spread}`]);
+      expect(diagnostics[0]!.message).toContain(
+        "whose type is not written as an annotation or as `ref`'s type argument",
+      );
+    },
+  );
+
+  it("reports a spread of a setup value whose written type declares no object (UF3048)", () => {
+    const source = `${API}export function A() { const label = ref<string>("x"); return <a {...label.value}>x</a>; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual(["UF3048 {...label.value}"]);
   });
 });
 

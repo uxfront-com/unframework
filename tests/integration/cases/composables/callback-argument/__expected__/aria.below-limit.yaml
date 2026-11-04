@@ -1,0 +1,5 @@
+- region "Clicker":
+  - status: "Count: 2"
+  - paragraph: Keep going
+  - button "Add 1"
+  - button "Reset"

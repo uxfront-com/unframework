@@ -1,0 +1,26 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/type-not-exported/Card.uf.tsx",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "typeImports": [
+    {
+      "specifier": "./types.ts",
+      "names": [
+        {
+          "imported": "CardProps",
+          "local": "CardProps",
+          "span": {
+            "start": 181,
+            "end": 190
+          }
+        }
+      ],
+      "span": {
+        "start": 167,
+        "end": 211
+      }
+    }
+  ]
+}

@@ -1,14 +1,16 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export type ShippingMethod = "standard" | "express";
 
   export interface CheckoutTotalProps {
     /** The order's subtotal, in cents. */
     subtotal: number;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = CheckoutTotalProps & {
     onshippingchange?: (method: ShippingMethod) => void;

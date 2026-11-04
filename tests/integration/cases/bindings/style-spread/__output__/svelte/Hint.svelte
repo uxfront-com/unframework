@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   interface HintAttributes {
     id: string;
     style?: string;
@@ -12,6 +10,10 @@
     text: string;
     attrs: HintAttributes;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = HintProps & { class?: ClassValue; style?: string };
 

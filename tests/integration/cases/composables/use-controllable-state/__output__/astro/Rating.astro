@@ -1,0 +1,31 @@
+---
+import { useControllableState } from "./useControllableState";
+
+interface Props {
+  value?: number;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { value, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const { current } = useControllableState(() => value, 1);
+---
+
+<section
+  class:list={["rating", className]}
+  aria-label="Rating"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
+  <p role="status">Rated {current} of 3</p>
+  <button type="button">Two</button>
+  <button type="button">Three</button>
+</section>

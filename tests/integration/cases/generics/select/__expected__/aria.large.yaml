@@ -1,0 +1,7 @@
+- region "Size":
+  - text: Size
+  - combobox "Size":
+    - option "s"
+    - option "m"
+    - option "l" [selected]
+  - status: "Chosen: l"

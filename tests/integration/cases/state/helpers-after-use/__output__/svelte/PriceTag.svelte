@@ -1,13 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import { untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface PriceTagProps {
     /** The unit price, in cents. */
     price: number;
   }
+</script>
+
+<script lang="ts">
+  import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = PriceTagProps & { class?: ClassValue; style?: string };
 

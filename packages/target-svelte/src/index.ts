@@ -1,9 +1,9 @@
 import { defineTarget, printMarkup, svelteDialect } from "@unframework/codegen";
 import type { MarkupDialect } from "@unframework/codegen";
 import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
-import type { UfComponent } from "@unframework/ir";
+import type { UfComponent, UfComposable } from "@unframework/ir";
 
-import { instanceScript } from "./script.ts";
+import { composableModule, instanceScript } from "./script.ts";
 
 /**
  * The options every component declares, so that it compiles the same whatever the consumer's
@@ -83,6 +83,10 @@ export const svelte: Target = defineTarget({
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
     "sheet-order": { support: "native" },
+    "generic-components": { support: "native" },
+    "generic-slot-props": { support: "native" },
+    composables: { support: "native" },
+    "composable-effect-order": { support: "native" },
     // A capture listener is an attribute, `onclickcapture` (ADR-0047).
     "event-capture": { support: "native" },
     // `once` and `passive` listen through `on` from `svelte/events`, in an attachment (`events.ts`):
@@ -127,6 +131,15 @@ export const svelte: Target = defineTarget({
     });
     const parts = [OPTIONS, ...(module ? [module] : []), ...(block ? [block] : []), markup];
     return [{ path: `${component.name}.svelte`, contents: `${parts.join("\n\n")}\n` }];
+  },
+  // A composable is a `.svelte.ts` module, whose runes vite-plugin-svelte compiles (ADR-0069).
+  emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+    return [
+      {
+        path: `${composable.name}.svelte.ts`,
+        contents: composableModule(composable, context.module),
+      },
+    ];
   },
 });
 

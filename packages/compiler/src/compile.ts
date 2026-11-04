@@ -1,16 +1,32 @@
-import { analyze, componentImports, stylesheetImports } from "@unframework/analyzer";
-import type { StylesheetSource } from "@unframework/analyzer";
-import { formatOutput, scopeStylesheet } from "@unframework/codegen";
+import {
+  analyze,
+  componentImports,
+  shapeQueries,
+  sharedModuleImports,
+  stylesheetImports,
+} from "@unframework/analyzer";
+import type { SharedModule, StylesheetSource } from "@unframework/analyzer";
+import { formatOutput, kebabCase, scopeStylesheet } from "@unframework/codegen";
 import type { OutputFile, Target } from "@unframework/codegen";
 import { createDiagnostic, sortDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import { checkInvariants, validateModule } from "@unframework/ir";
-import type { IrValidationError, ModuleApi, UfComponent, UfModule } from "@unframework/ir";
+import type { IrValidationError, ModuleApi, Span, UfComponent, UfModule } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
+import type { ParsedModule } from "@unframework/parser";
+import { createSyntacticOracle } from "@unframework/type-oracle";
+import type { TypeOracle, TypeShape } from "@unframework/type-oracle";
 
 import { checkCapabilities } from "./capabilities.ts";
 import { isSpanIn, pluginIrProblems } from "./plugin-ir.ts";
-import { stylesheetSource } from "./resolver.ts";
+import {
+  componentImportNames,
+  directoryOf,
+  joinPath,
+  relativePath,
+  stylesheetSource,
+  takesComponent,
+} from "./resolver.ts";
 import type { Resolver } from "./resolver.ts";
 import { resolveTarget } from "./targets.ts";
 import type { TargetName } from "./targets.ts";
@@ -59,7 +75,9 @@ export interface CompileOptions {
    * child's declarations, never compiles it, so the output depends only on the source, the
    * options and what it returns. Without it, or when it returns nothing, the import is UF1202;
    * a resolver that throws is UF9001 as well. Its `stylesheet` reads each stylesheet the source
-   * imports (ADR-0063): without it, or when it returns nothing, the import is UF5005.
+   * imports (ADR-0063): without it, or when it returns nothing, the import is UF5005. Its `module`
+   * reads each shared `.ts` module the source imports (ADR-0070): without it, or when it returns
+   * nothing, a value import of one is UF1202.
    */
   resolve?: Resolver;
   /**
@@ -71,6 +89,16 @@ export interface CompileOptions {
    * authoring API, a framework, a `.uf.tsx` or relative module) never passes through.
    */
   passThrough?: readonly string[];
+  /**
+   * The type oracle the props, events, models, slots and injection keys' types are resolved
+   * through (plan §5.5, ADR-0067): `compile()` asks it for each type the analyser reads before it
+   * analyses, as it asks the resolver for each child's API. Its queries name files relative to its
+   * root, so `filename` is relative to that root too. Without it, `compile()` uses an in-process
+   * syntactic oracle over the one source, which reads no file: a type imported from another
+   * module is UF6001. An oracle that throws is UF9001 as well. It reads the source's own file
+   * too, so it must hold the text given here. The caller owns it, and disposes of it.
+   */
+  typeOracle?: TypeOracle;
 }
 
 /**
@@ -95,18 +123,32 @@ export interface CompileResult {
   ir: UfModule | undefined;
   /** Every diagnostic, sorted. Portability diagnostics carry their target. */
   diagnostics: Diagnostic[];
-  /** Each target's files, by target name, in the order of `targets`. */
+  /**
+   * Each target's files, by target name, in the order of `targets`: each component's, then a copy
+   * of each shared `.ts` module the source reaches, unchanged, at its path relative to the source
+   * (ADR-0070).
+   */
   outputs: Record<string, OutputFile[]>;
   /**
-   * The component each output file is written for, by target name, then by the file's path:
-   * the unplugin loads a file's components under ids of their own (ADR-0053). The scoped sheet,
-   * `<source>.css`, is no component's module, and is left out (ADR-0063).
+   * The component each output file is written for, by target name, then by the file's path, or
+   * the composable for a `.uf.ts` source's: the unplugin loads a file's components under ids of
+   * their own (ADR-0053). The scoped sheet, `<source>.css`, is no component's module, and is left
+   * out (ADR-0063).
    */
   owners: Record<string, Record<string, string>>;
+  /**
+   * What the compile read besides the source, sorted, each once (ADR-0071): the files the type
+   * oracle read or looked for, relative to its root, the shared `.ts` modules the resolver read,
+   * named as `filename` is, the `.uf.ts` modules whose composables the source imports, named so
+   * too, one that is missing included (ADR-0069), and the packages, as `pkg:<name>`, one that is
+   * not installed included. Never an absolute path (P8).
+   */
+  dependencies: string[];
 }
 
 /**
- * Compiles one `.uf.tsx` source to every selected target. A pure function of the source and
+ * Compiles one `.uf.tsx` source, or a `.uf.ts` module of composables (ADR-0069), to every
+ * selected target. A pure function of the source and
  * the options: the same input and versions give byte-identical output (P8). It throws only
  * for invalid options (an unknown target name, two targets with one name, an invalid
  * `passThrough` prefix); every other
@@ -133,12 +175,39 @@ export async function compile(source: string, options: CompileOptions): Promise<
   let analysed: UfModule | undefined;
   /** Each stylesheet's file, by its specifier, as the resolver named it. */
   let sheetFiles = new Map<string, string>();
+  const dependencies = new Set<string>();
+  /**
+   * Each shared `.ts` module's text, by its path relative to the source, with the specifier of
+   * the source's import that first reaches it (ADR-0070).
+   */
+  const copies = new Map<string, Copy>();
   try {
     const parsed = parseModule(file, source);
+    // Each type the analyser reads, resolved before it analyses: the analyser is synchronous,
+    // and the oracle is not (ADR-0067).
+    const oracle = options.typeOracle ?? sourceOracle(file, source);
+    const shapes = new Map<string, TypeShape>();
+    for (const query of shapeQueries(parsed)) {
+      try {
+        const shape = await oracle.resolveShape(query);
+        shapes.set(`${query.span.start}:${query.span.end}`, shape);
+        for (const dependency of shape.dependencies) dependencies.add(dependency);
+      } catch (error) {
+        const type = source.slice(query.span.start, query.span.end);
+        diagnostics.push(internal(file, error, `The type oracle failed on \`${type}\``));
+      }
+    }
     const imports = new Map<string, ModuleApi | undefined>();
     for (const specifier of options.resolve ? componentImports(parsed) : []) {
+      // A caller's output depends on its composables' APIs, which the project graph watches
+      // (ADR-0069, ADR-0071): a module that is missing too, so creating it recompiles the caller.
+      const composable = COMPOSABLE_SPECIFIER.test(specifier)
+        ? joinPath(directoryOf(file), specifier)
+        : undefined;
+      if (composable !== undefined) dependencies.add(composable);
       try {
-        imports.set(specifier, await options.resolve!({ specifier, importer: file }));
+        const api = await options.resolve!({ specifier, importer: file });
+        imports.set(specifier, api);
       } catch (error) {
         imports.set(specifier, undefined);
         diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
@@ -157,9 +226,61 @@ export async function compile(source: string, options: CompileOptions): Promise<
     sheetFiles = new Map(
       [...stylesheets].flatMap(([specifier, sheet]) => (sheet ? [[specifier, sheet.file]] : [])),
     );
+    const modules = new Map<string, SharedModule | undefined>();
+    const fromSource = (path: string) => relativePath(directoryOf(file), path);
+    for (const specifier of options.resolve?.module ? sharedModuleImports(parsed) : []) {
+      try {
+        const resolved = await options.resolve!.module!({ specifier, importer: file });
+        if (!resolved?.files.length) {
+          modules.set(specifier, undefined);
+          continue;
+        }
+        const { framework, unresolved } = resolved;
+        modules.set(specifier, {
+          file: fromSource(resolved.files[0]!.file),
+          ...(framework ? { framework: { ...framework, file: fromSource(framework.file) } } : {}),
+          ...(unresolved
+            ? { unresolved: { ...unresolved, file: fromSource(unresolved.file) } }
+            : {}),
+        });
+        // The first import or re-export that names the module: a type re-export alone reaches it
+        // too.
+        const at = relativeImports(parsed).find((entry) => entry.specifier === specifier)!.span;
+        for (const { file: path, source: text } of resolved.files) {
+          dependencies.add(path);
+          if (!copies.has(fromSource(path))) {
+            copies.set(fromSource(path), {
+              contents: text,
+              span: at,
+            });
+          }
+        }
+      } catch (error) {
+        modules.set(specifier, undefined);
+        diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
+      }
+    }
+    // A component edge that closes a cycle of component edges (UF1205), which the resolver's
+    // project finds, not the analyser: components that import each other to render cannot each
+    // load before the others, on Angular (ADR-0053, ADR-0071). A key, a type or another value
+    // imported back closes none, so the context pattern stays valid (UF2033).
+    const cycles: Diagnostic[] = [];
+    const edges = componentImportNames(parsed).filter(({ specifier, names }) =>
+      takesComponent(imports.get(specifier), names),
+    );
+    for (const { specifier, span } of options.resolve?.cycle ? edges : []) {
+      try {
+        const files = await options.resolve!.cycle!({ specifier, importer: file });
+        if (files) cycles.push(importCycle(file, specifier, span, files));
+      } catch (error) {
+        diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
+      }
+    }
     const analysis = analyze(parsed, {
       imports,
+      modules,
       stylesheets,
+      shapes: (span) => shapes.get(`${span.start}:${span.end}`),
       ...(options.passThrough ? { passThrough: options.passThrough } : {}),
     });
     diagnostics.push(...analysis.diagnostics);
@@ -171,6 +292,11 @@ export async function compile(source: string, options: CompileOptions): Promise<
     } else {
       analysed = analysis.module && deepFreeze(analysis.module);
     }
+    // A copy named like a component's output, or a cycle, withholds the module, as an analyser
+    // error does.
+    const collisions = analysed ? copyCollisions(analysed, copies, file) : [];
+    diagnostics.push(...collisions, ...cycles);
+    if (collisions.length || cycles.length) analysed = undefined;
   } catch (error) {
     diagnostics.push(internal(file, error, "The analyser failed"));
   }
@@ -218,7 +344,15 @@ export async function compile(source: string, options: CompileOptions): Promise<
   if (module) {
     for (const target of targets) {
       try {
-        const emitted = await emitTarget(target, module, source, options, diagnostics, sheets);
+        const emitted = await emitTarget(
+          target,
+          module,
+          source,
+          options,
+          diagnostics,
+          sheets,
+          copies,
+        );
         outputs[target.name] = emitted.files;
         owners[target.name] = emitted.owners;
       } catch (error) {
@@ -233,7 +367,100 @@ export async function compile(source: string, options: CompileOptions): Promise<
     diagnostics: sortDiagnostics(diagnostics),
     outputs,
     owners,
+    dependencies: [...dependencies].toSorted(),
   };
+}
+
+/** An import of a `.uf.ts` module's composables (ADR-0069). */
+const COMPOSABLE_SPECIFIER = /\.uf\.ts$/;
+
+/**
+ * The type oracle `compile()` uses without one (ADR-0067): the syntactic adapter over the one
+ * source, at the root of a project that holds nothing else, so it reads no file and resolves
+ * the module's own types only.
+ */
+function sourceOracle(file: string, source: string): TypeOracle {
+  return createSyntacticOracle({
+    root: "",
+    readFile: async (path) => (path === `/${file}` ? source : undefined),
+  });
+}
+
+/**
+ * The shared modules whose copy would take a component's output file (UF1104, ADR-0070): an
+ * output imports a component's file by its name without the extension (`./CardIcon`), React,
+ * Solid and Qwik name it as the component and Angular in kebab-case, and the output tree holds
+ * the module's own components and every child it imports. So a copy whose path, without `.ts`,
+ * is one of those names, compared without case, is reported for every target, since the module
+ * compiles to each.
+ */
+function copyCollisions(
+  module: UfModule,
+  copies: ReadonlyMap<string, Copy>,
+  file: string,
+): Diagnostic[] {
+  const names = new Map<string, string>();
+  const add = (directory: string, name: string) => {
+    for (const stem of [name, kebabCase(name)]) {
+      names.set(`${directory}${stem}`.toLowerCase(), name);
+    }
+  };
+  for (const component of module.components) add("", component.name);
+  for (const entry of module.imports ?? []) {
+    const slash = entry.file.lastIndexOf("/");
+    for (const component of entry.api.components) {
+      add(slash === -1 ? "" : entry.file.slice(0, slash + 1), component.name);
+    }
+  }
+  return [...copies].flatMap(([path, { span }]) => {
+    const name = names.get(path.replace(/\.ts$/, "").toLowerCase());
+    if (name === undefined) return [];
+    return [
+      createDiagnostic("UF1104", {
+        file,
+        span,
+        message: `The shared module ${path} is named like ${name}'s output file, which an output imports without its extension (\`${name}\`, and \`${kebabCase(name)}\` on Angular): each output tree holds the module's copy beside the components.`,
+        help: "Rename the shared module, or the component.",
+      }),
+    ];
+  });
+}
+
+/**
+ * The source's relative imports and re-exports, each specifier once with the span of its first
+ * declaration's specifier.
+ */
+function relativeImports(parsed: ParsedModule): { specifier: string; span: Span }[] {
+  const found = new Map<string, Span>();
+  for (const statement of parsed.program.body) {
+    const from =
+      statement.type === "ImportDeclaration" ||
+      statement.type === "ExportAllDeclaration" ||
+      statement.type === "ExportNamedDeclaration"
+        ? statement.source
+        : null;
+    if (!from || found.has(from.value)) continue;
+    if (!from.value.startsWith("./") && !from.value.startsWith("../")) continue;
+    found.set(from.value, { start: from.start, end: from.end });
+  }
+  return [...found].map(([specifier, span]) => ({ specifier, span }));
+}
+
+/** UF1205 at an import that closes a cycle, which names its files relative to the source. */
+function importCycle(file: string, specifier: string, span: Span, files: string[]): Diagnostic {
+  const names = files.map((path) => relativePath(directoryOf(file), path));
+  return createDiagnostic("UF1205", {
+    file,
+    span,
+    message: `"${specifier}" closes an import cycle of components, ${names.join(" → ")}: each imports the next to render it, so none of them can load before the others.`,
+    help: "Render the components of the cycle from one module, which declares them all.",
+  });
+}
+
+/** A shared module's copy (ADR-0070), and the specifier of the import that first reaches it. */
+interface Copy {
+  contents: string;
+  span: { start: number; end: number };
 }
 
 /**
@@ -242,7 +469,8 @@ export async function compile(source: string, options: CompileOptions): Promise<
  * `output` hooks see and formatting keeps as printed, and which `owners` leaves out: the
  * unplugin serves it on an id of its own. The files of two components, or two files of one,
  * may not share a path, compared without case: case-insensitive file systems would write one
- * over the other.
+ * over the other. Each shared `.ts` module's copy follows, unchanged, where a component's files
+ * were written: neither the hooks nor formatting see it, and `owners` leaves it out (ADR-0070).
  */
 async function emitTarget(
   target: Target,
@@ -251,6 +479,7 @@ async function emitTarget(
   options: CompileOptions,
   diagnostics: Diagnostic[],
   sheets: ReadonlyMap<string, string>,
+  copies: ReadonlyMap<string, Copy>,
 ): Promise<{ files: OutputFile[]; owners: Record<string, string> }> {
   const file = options.filename;
   const sheetPath = `${file.slice(file.lastIndexOf("/") + 1)}.css`;
@@ -324,6 +553,80 @@ async function emitTarget(
       owners.set(key, { path: output.path, component: component.name });
       written.push(output);
     }
+  }
+  // A `.uf.ts` module's composables, each one module (ADR-0069). The `output` hooks are a
+  // component's, so they see none of it.
+  for (const composable of module.composables ?? []) {
+    if (!target.emitComposable) {
+      diagnostics.push(
+        createDiagnostic("UF1002", {
+          file,
+          span: composable.span,
+          message: `The ${target.name} target does not emit composables: it has no \`emitComposable\`.`,
+          target: target.name,
+        }),
+      );
+      continue;
+    }
+    let files: OutputFile[];
+    try {
+      const emitted = readFiles(
+        target.emitComposable(composable, {
+          module,
+          options: options.targetOptions?.[target.name],
+          report: (diagnostic) => diagnostics.push(reported(diagnostic, source, file, target.name)),
+        }),
+      );
+      if ("problem" in emitted) throw new TypeError(`emitComposable returned ${emitted.problem}`);
+      files = emitted.files;
+    } catch (error) {
+      const what = `The ${target.name} target failed on ${composable.name}`;
+      diagnostics.push(internal(file, error, what, target.name));
+      continue;
+    }
+    if (options.format !== false) {
+      const formatted = await Promise.all(files.map((output) => formatOutput(output)));
+      files = formatted.map((outcome) => {
+        if (outcome.error) {
+          const what = `The ${target.name} target emitted ${outcome.file.path}, which does not parse`;
+          diagnostics.push(internal(file, outcome.error, what, target.name));
+        }
+        return outcome.file;
+      });
+    }
+    for (const output of files) {
+      const key = output.path.toLowerCase();
+      const owner = owners.get(key);
+      if (owner) {
+        diagnostics.push(
+          internal(
+            file,
+            `${owner.path} (${owner.component}) and ${output.path} (${composable.name}) are one file on a case-insensitive file system`,
+            `The ${target.name} target wrote two files at one path`,
+            target.name,
+          ),
+        );
+        continue;
+      }
+      owners.set(key, { path: output.path, component: composable.name });
+      written.push(output);
+    }
+  }
+  for (const [path, { contents, span }] of written.length ? copies : []) {
+    const owner = owners.get(path.toLowerCase());
+    if (owner) {
+      diagnostics.push(
+        createDiagnostic("UF1104", {
+          file,
+          span,
+          message: `The shared module ${path} and ${owner.component}'s ${target.name} output, ${owner.path}, are one file: each output tree holds a copy of the module beside the components.`,
+          help: "Rename the shared module, or the component.",
+          target: target.name,
+        }),
+      );
+      continue;
+    }
+    written.push({ path, contents });
   }
   return {
     files: written,

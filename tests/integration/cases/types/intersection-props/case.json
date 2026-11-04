@@ -1,0 +1,7 @@
+{
+  "description": "Props typed with an intersection of two imported interfaces and a type literal.",
+  "ssr": {
+    "small": { "props": { "size": "small", "label": "Draft" } },
+    "accent": { "props": { "size": "large", "tone": "accent", "label": "Live" } }
+  }
+}

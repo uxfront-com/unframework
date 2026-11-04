@@ -1,0 +1,178 @@
+{
+  "irVersion": 1,
+  "file": "types/child-type-import/Field.uf.tsx",
+  "components": [
+    {
+      "name": "Field",
+      "span": {
+        "start": 66,
+        "end": 211
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 38,
+              "end": 44
+            }
+          },
+          "binding": "name@98",
+          "span": {
+            "start": 32,
+            "end": 45
+          }
+        },
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 55,
+              "end": 61
+            }
+          },
+          "binding": "label@104",
+          "span": {
+            "start": 48,
+            "end": 62
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "FieldProps",
+          "span": {
+            "start": 113,
+            "end": 123
+          }
+        },
+        "span": {
+          "start": 96,
+          "end": 123
+        }
+      },
+      "types": [
+        "FieldProps"
+      ],
+      "bindings": [
+        {
+          "id": "name@98",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 98,
+            "end": 102
+          }
+        },
+        {
+          "id": "label@104",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 104,
+            "end": 109
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "label",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 157,
+                "end": 162
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@104",
+                  "span": {
+                    "start": 157,
+                    "end": 162
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 156,
+              "end": 163
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "input",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "name",
+                "value": {
+                  "code": "name",
+                  "span": {
+                    "start": 183,
+                    "end": 187
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@98",
+                      "span": {
+                        "start": 183,
+                        "end": 187
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 177,
+                  "end": 188
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 170,
+              "end": 191
+            }
+          }
+        ],
+        "span": {
+          "start": 142,
+          "end": 204
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Field",
+      "span": {
+        "start": 66,
+        "end": 211
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "FieldProps",
+      "exported": true,
+      "code": "interface FieldProps {\n  name: string;\n  label: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 64
+      }
+    }
+  ]
+}

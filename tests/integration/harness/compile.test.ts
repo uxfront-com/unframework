@@ -5,7 +5,7 @@
 // (`pnpm test:update`) this project owns and writes `__output__/**` and
 // `__expected__/diagnostics.json`, and deletes the shared expectations no case owns.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { basename, join, relative, sep } from "node:path";
 
 import { compile, TARGET_NAMES } from "@unframework/compiler";
 import type { CompileResult, CompilerPlugin } from "@unframework/compiler";
@@ -13,9 +13,11 @@ import { formatDiagnostics, toJsonDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic, JsonDiagnostic } from "@unframework/diagnostics";
 import { irSchema } from "@unframework/ir";
 import {
+  BROWSER_LAYERS,
   checkLayers,
   diffLines,
   NO_OUTPUT_SKIP,
+  NO_SPEC_SKIP,
   settleArtefact,
   settleArtefactDirectory,
 } from "@unframework/testing/node";
@@ -31,13 +33,14 @@ import {
   expectationProblems,
   formattingProblems,
   forTarget,
+  moduleCopyProblems,
   nondeterminism,
   referenceProblems,
   stylesheetProblems,
 } from "./compile-checks.ts";
 import { coverageProblems } from "./coverage.ts";
 import { ROOT } from "./paths.ts";
-import { caseDiagnostics, caseOutputs, caseResolver, sourceTexts } from "./sources.ts";
+import { caseDiagnostics, caseOracle, caseOutputs, caseResolver, sourceTexts } from "./sources.ts";
 import type { SourceCompile } from "./sources.ts";
 import { REFERENCE, selectTargets } from "./targets.ts";
 
@@ -60,26 +63,39 @@ const NO_OUTPUT_LAYERS: readonly LayerName[] = [
   "L13",
 ];
 
+/**
+ * The layers only a browser project records, which none records for a diagnostics case, which has
+ * no spec: one its target has output for (a capability's note, UF4004) skips them. L13 is the
+ * server render's too.
+ */
+const NO_SPEC_LAYERS: readonly LayerName[] = BROWSER_LAYERS.filter((layer) => layer !== "L13");
+
 const validateIr = new Ajv({ allErrors: true, strict: true }).compile(irSchema);
 
 /**
- * One compile of a source to every target, its children resolved in its case (ADR-0057); each
- * compiles twice per run (determinism).
+ * One compile of a source to every target, its children and its types resolved in its case
+ * (ADR-0057, ADR-0067); each compiles twice per run (determinism).
  */
-function compileSource(
+async function compileSource(
   info: CaseInfo,
   source: CaseSource,
   text: string,
   plugins: readonly CompilerPlugin[],
   format = true,
 ): Promise<CompileResult> {
-  return compile(text, {
-    filename: source.filename,
-    targets: TARGET_NAMES,
-    plugins,
-    format,
-    resolve: caseResolver(info, harness.casesDir),
-  });
+  const typeOracle = caseOracle(info, harness.casesDir, { filename: source.filename, text });
+  try {
+    return await compile(text, {
+      filename: source.filename,
+      targets: TARGET_NAMES,
+      plugins,
+      format,
+      resolve: caseResolver(info, harness.casesDir, typeOracle),
+      typeOracle,
+    });
+  } finally {
+    await typeOracle.dispose();
+  }
 }
 
 /** A source of a case and its two compiles. */
@@ -140,6 +156,9 @@ describe("compile", () => {
           };
           if (hasErrors(caseDiagnostics(firsts(compiles)), target)) {
             for (const layer of NO_OUTPUT_LAYERS) checks[layer] = () => ({ skip: NO_OUTPUT_SKIP });
+          } else if (!info.spec && info.id.startsWith("diagnostics/")) {
+            // Only a diagnostics case: a feature case without a spec stays a missing cell.
+            for (const layer of NO_SPEC_LAYERS) checks[layer] = () => ({ skip: NO_SPEC_SKIP });
           }
           await checkLayers(
             task,
@@ -236,8 +255,8 @@ async function checkDiagnostics(
 
 /**
  * L2: each source's IR snapshot (schema-valid), the target's golden files (exactly the files of
- * every source's compile), diagnostics.txt for a case with errors, determinism, and formatting
- * idempotence.
+ * every source's compile, each copy of a case's `.ts` module unchanged), diagnostics.txt for a
+ * case with errors, determinism, and formatting idempotence.
  */
 async function checkOutputs(
   info: CaseInfo,
@@ -288,6 +307,16 @@ async function checkOutputs(
 
   const { files, problems: collisions } = caseOutputs(joined, target);
   problems.push(...collisions);
+  problems.push(
+    ...moduleCopyProblems(
+      target,
+      files,
+      info.modules.map((module) => ({
+        path: basename(module.source),
+        contents: readFileSync(module.source, "utf8"),
+      })),
+    ),
+  );
   settle(
     settleArtefactDirectory(join(output, target), files, {
       update: harness.update,

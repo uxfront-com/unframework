@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface OrderSummaryProps {
     customer: string;
     orderNumber: number;
@@ -11,6 +9,10 @@
     discount: number;
     coupon?: string;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = OrderSummaryProps & { class?: ClassValue; style?: string };
 

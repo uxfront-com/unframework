@@ -8,9 +8,17 @@ import {
   bindingForms,
   mergesWholeStyle,
   rewriteExpression,
+  typeNames,
 } from "@unframework/codegen";
 import type { PrintedAttribute } from "@unframework/codegen";
-import type { Attribute, ElementNode, EventAttribute, ModelAttribute } from "@unframework/ir";
+import type {
+  Attribute,
+  BindingId,
+  ElementNode,
+  EventAttribute,
+  ModelAttribute,
+  UfComponent,
+} from "@unframework/ir";
 
 import { bindingById } from "./plan.ts";
 import type { Plan } from "./plan.ts";
@@ -259,9 +267,13 @@ export function planModels(plan: Plan): Models {
       // reads it from; in the browser it stays unset, as Vue leaves it.
       const multiple = model.control === "select-multiple";
       const name = field();
+      // The chosen option's value is one of the options, which a generic component's consumer
+      // types: a state of its type parameter (`defineModel<T>`) takes it as `T`, through the
+      // template's own cast, since a template writes no `as` (ADR-0068).
+      const chosen = multiple ? `${helper("selectedValues")}(${name})` : `${name}.value`;
       listen(
         "change",
-        `${signal}.set(${multiple ? `${helper("selectedValues")}(${name})` : `${name}.value`})`,
+        `${signal}.set(${generic(plan.component, reference.binding) ? `$any(${chosen})` : chosen})`,
       );
       server ??= claimVariable(plan, "onServer");
       if (variable !== undefined) printed.unshift({ name: `#${variable}`, text: `#${variable}` });
@@ -363,6 +375,15 @@ function optionValue(
     return [];
   });
   return `${optionText()}(${['""', ...parts].join(" + ")})`;
+}
+
+/** Whether a binding's declared type names a type parameter of its component (ADR-0068). */
+function generic(component: UfComponent, binding: BindingId): boolean {
+  const parameters = new Set(component.typeParameters?.map(({ name }) => name));
+  if (!parameters.size) return false;
+  const item = component.setup.find((each) => "binding" in each && each.binding === binding);
+  const type = item && "type" in item ? item.type : undefined;
+  return type !== undefined && [...typeNames(type)].some((name) => parameters.has(name));
 }
 
 /** A template variable's name, free beside the class's members and the lists' variables. */

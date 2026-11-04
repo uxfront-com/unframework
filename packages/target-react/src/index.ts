@@ -1,4 +1,5 @@
 import {
+  addTypeImports,
   bindingOf,
   componentTypes,
   defineTarget,
@@ -11,6 +12,8 @@ import {
   printComponentModule,
   printExpression,
   spreadStyleExpression,
+  typeExportsCode,
+  typeNames,
 } from "@unframework/codegen";
 import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework/codegen";
 import type {
@@ -28,12 +31,16 @@ import type {
   StyleAttribute,
   TextNode,
   TypeDeclaration,
+  TypeParameter,
+  TypeText,
   UfComponent,
+  UfModule,
 } from "@unframework/ir";
 
 import { compilerBailout, declaredNames } from "./bailouts.ts";
 import type { ComponentCode } from "./bailouts.ts";
 import { placeConditionals } from "./branches.ts";
+import { emitComposable } from "./composable.ts";
 import { ReactComposer } from "./compose.ts";
 import { exposedType, refValueType, SCOPE_HELPER, slotProp } from "./composition.ts";
 import { cxHelper, reactDialect, styleObjectHelper } from "./dialect.ts";
@@ -47,14 +54,16 @@ import {
 } from "./helpers.ts";
 import type { NextTickHooks } from "./helpers.ts";
 import { listenerHelpers, ReactListeners } from "./listeners.ts";
+import { moduleReads } from "./modules.ts";
 import { planComponent } from "./plan.ts";
 import type { ReactPlan } from "./plan.ts";
 import { reactCode } from "./rules.ts";
-import { printSetup, withEventTypes } from "./setup.ts";
+import { printSetup, resolveUses, withEventTypes } from "./setup.ts";
 import { titleChildren } from "./title.ts";
 
 type Parameter = Parameters<typeof js.functionDeclaration>[1][number];
 type BindingProperty = ReturnType<typeof js.bindingProperty>;
+type TypeParameters = ReturnType<typeof js.functionDeclaration>["typeParameters"];
 
 /** The React 19 target. */
 export const react: Target = defineTarget({
@@ -151,7 +160,20 @@ export const react: Target = defineTarget({
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
     "sheet-order": { support: "native" },
+    "generic-components": { support: "native" },
+    "generic-slot-props": { support: "native" },
+    composables: { support: "native" },
+    // A custom hook's effects keep React's order, not the caller's (ADR-0048, ADR-0069).
+    "composable-effect-order": {
+      support: "unsupported",
+      code: "UF4005",
+      severity: "info",
+      reason:
+        "A composable is a custom hook, and React runs a component's effects in its own order (ADR-0048): a hook's watchers, effects and hooks cannot take their place among the caller's own, so code that relies on that order may see another (ADR-0069).",
+    },
   },
+  // A custom hook (ADR-0069).
+  emitComposable,
   // A function component in TSX (plan §6, ADR-0045 to ADR-0047): the copied type
   // declarations and the events' props, the setup's hooks in source order, and the render tree in
   // React's JSX.
@@ -210,9 +232,11 @@ export const react: Target = defineTarget({
       { code: jsx.placeholders.print(() => printExpression(tree)), kind: "expression" },
     ]);
     const parameters = propsParameters(component, jsx, plan);
+    // Every read is printed now: each composable's call destructures only what they read.
+    const resolved = resolveUses(plan, body);
     // A blank line between groups, unless both are one-line declarations, and before the return.
-    const statements = body.map(({ text, group, compact }, index) => {
-      const next = body[index + 1];
+    const statements = resolved.map(({ text, group, compact }, index) => {
+      const next = resolved[index + 1];
       const apart = !next || (next.group !== group && !(compact && next.compact));
       return jsx.placeholders.statements(apart ? `${text}\n` : text);
     });
@@ -221,11 +245,20 @@ export const react: Target = defineTarget({
       ...statements,
       js.returnStatement(tree),
     ]);
-    const hoisted = [...keyDeclarations(plan), ...setup.module].map((statement) =>
+    fn.typeParameters = typeParameters(component, jsx);
+    // The module's values it reads, as the source declares and imports them (ADR-0070).
+    const reads = moduleReads(component, module, plan.names);
+    const constants = reads.constants.length ? [reads.constants.join("\n")] : [];
+    const hoisted = [...constants, ...keyDeclarations(plan), ...setup.module].map((statement) =>
       jsx.placeholders.statements(`${statement}\n`),
     );
+    // The types it imports, by name, from where the source imports them, a child's from its
+    // output (`./Field`), and the module's type exports (ADR-0067, ADR-0068).
+    addTypeImports(component, module, plan.names, (name) => name);
     const types = [
-      ...componentTypes(component, module),
+      ...[...moduleTypes(component, module), ...reads.types].toSorted(
+        (a, b) => a.span.start - b.span.start,
+      ),
       ...eventsInterface(plan),
       ...compositionInterfaces(plan),
     ];
@@ -276,6 +309,45 @@ export const react: Target = defineTarget({
     ];
   },
 });
+
+/**
+ * The types the output declares before the component, in source order: those its props reach,
+ * copied as written, and in the output of the module's main component the module's type exports
+ * (ADR-0068), each written as its own declaration.
+ */
+function moduleTypes(component: UfComponent, module: UfModule): TypeDeclaration[] {
+  const exported = typeExportsCode(component, module, (name) => name).map(({ code, span }) => ({
+    name: "",
+    exported: false,
+    code,
+    span,
+  }));
+  return [...componentTypes(component, module), ...exported].toSorted(
+    (a, b) => a.span.start - b.span.start,
+  );
+}
+
+/**
+ * A generic component's type parameters, `function List<T extends Item = Item>` (ADR-0068): a
+ * generic function component, its constraints and defaults copied as written. `null` for a
+ * component without them.
+ */
+function typeParameters(component: UfComponent, context: JsxContext): TypeParameters {
+  if (!component.typeParameters?.length) return null;
+  const type = (text: TypeText | undefined) => (text ? context.placeholders.type(text.code) : null);
+  const params = component.typeParameters.map((parameter) => ({
+    type: "TSTypeParameter" as const,
+    name: js.bindingIdentifier(parameter.name),
+    constraint: type(parameter.constraint),
+    default: type(parameter.default),
+    in: false,
+    out: false,
+    const: false,
+    start: 0,
+    end: 0,
+  }));
+  return { type: "TSTypeParameterDeclaration", params, start: 0, end: 0 };
+}
 
 /**
  * The children's outputs and the keys' (ADR-0053, ADR-0054): each is the sibling file its
@@ -420,7 +492,7 @@ function provided(plan: ReactPlan, tree: ReturnType<typeof jsxNode>): ReturnType
 /** `useImperativeHandle(ref, () => ({ focus }));`: what the component exposes (ADR-0054). */
 function exposeHandle(plan: ReactPlan): string | undefined {
   const { expose } = plan.composition;
-  const exposes = plan.component.exposes;
+  const exposes = plan.owner.exposes;
   if (!expose || !exposes) return undefined;
   const useImperativeHandle = plan.names.add("react", "useImperativeHandle");
   const members = exposes.functions.map((id) => {
@@ -437,14 +509,15 @@ function exposeHandle(plan: ReactPlan): string | undefined {
  * `className`, `style` and the `ref` that holds the handle; and the handle's own interface.
  */
 function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
-  const { composition, component } = plan;
+  const { composition, owner: component } = plan;
   const type = (name: string) => plan.names.add("react", name, { type: true });
   const declarations: TypeDeclaration[] = [];
-  const declare = (name: string, members: string[]) => {
-    const text = `interface ${name} {\n${members.map((member) => `  ${member}`).join("\n")}\n}`;
+  const declare = (name: string, members: string[], parameters = "") => {
+    const text = `interface ${name}${parameters} {\n${members.map((member) => `  ${member}`).join("\n")}\n}`;
     declarations.push({ name, exported: true, code: text, span: component.span });
   };
   const { interfaces } = composition;
+  const generic = interfaceParameters(plan);
   if (interfaces.models) {
     declare(
       interfaces.models,
@@ -457,6 +530,7 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
           `${event}?: (${PARAMETER}: ${written}) => void;`,
         ];
       }),
+      generic.models?.declared,
     );
   }
   if (interfaces.slots) {
@@ -468,6 +542,7 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
           ? `${slotProp(slot.name, true)}?: (props: ${slot.props.code}) => ${node};`
           : `${slotProp(slot.name, false)}?: ${node};`,
       ),
+      generic.slots?.declared,
     );
   }
   if (composition.expose && component.exposes) {
@@ -483,6 +558,7 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
         const parameters = fn ? parametersOf(fn) : "";
         return `${name}${fn ? exposedType(fn, parameters) : "(): void"};`;
       }),
+      generic.expose?.declared,
     );
   }
   if (interfaces.attributes) {
@@ -490,8 +566,12 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
     if (composition.fallthrough) {
       members.push("className?: string;", `style?: ${type("CSSProperties")};`);
     }
-    if (composition.expose) members.push(`ref?: ${type("Ref")}<${composition.expose.handle}>;`);
-    declare(interfaces.attributes, members);
+    if (composition.expose) {
+      const handle = `${composition.expose.handle}${generic.expose?.passed ?? ""}`;
+      members.push(`ref?: ${type("Ref")}<${handle}>;`);
+    }
+    // The handle is the attributes' one member a type parameter may type.
+    declare(interfaces.attributes, members, generic.expose?.declared);
   }
   return declarations;
 }
@@ -583,7 +663,7 @@ function nextTickHooks(plan: ReactPlan): NextTickHooks {
  * the listener's parameters. The component's parameter is typed with the props' type and it.
  */
 function eventsInterface(plan: ReactPlan): TypeDeclaration[] {
-  const { emits } = plan.component;
+  const { emits } = plan.owner;
   if (!emits || !plan.eventsInterface) return [];
   const members = emits.events.map((event) => {
     const parameters = event.parameters
@@ -593,8 +673,65 @@ function eventsInterface(plan: ReactPlan): TypeDeclaration[] {
       .join(", ");
     return `  ${plan.events.get(event.name)!.prop}?: (${parameters}) => void;`;
   });
-  const code = `interface ${plan.eventsInterface} {\n${members.join("\n")}\n}`;
+  const parameters = interfaceParameters(plan).events?.declared ?? "";
+  const code = `interface ${plan.eventsInterface}${parameters} {\n${members.join("\n")}\n}`;
   return [{ name: plan.eventsInterface, exported: true, code, span: emits.span }];
+}
+
+/**
+ * The type parameters of the interfaces the output declares for its events, models, slots and
+ * handle (ADR-0068): those of a generic component's that the members name, with those their
+ * constraints and defaults name in turn, in the component's order, declared as the component
+ * declares them (`<T extends string>`) and passed by name (`<T>`). An interface that names none
+ * takes none.
+ */
+function interfaceParameters(
+  plan: ReactPlan,
+): Partial<Record<"events" | "models" | "slots" | "expose", { declared: string; passed: string }>> {
+  const { owner: component, composition } = plan;
+  const parameters = component.typeParameters ?? [];
+  if (!parameters.length) return {};
+  const written = (texts: readonly (TypeText | undefined)[]) => {
+    const named = new Set<string>();
+    const read = (text: TypeText | undefined) => {
+      if (text) for (const name of typeNames(text)) named.add(name);
+    };
+    texts.forEach(read);
+    let kept: TypeParameter[] = [];
+    while (true) {
+      const next = parameters.filter(({ name }) => named.has(name));
+      if (next.length === kept.length) break;
+      kept = next;
+      for (const parameter of kept) {
+        read(parameter.constraint);
+        read(parameter.default);
+      }
+    }
+    if (!kept.length) return undefined;
+    return {
+      declared: `<${kept.map(typeParameterText).join(", ")}>`,
+      passed: `<${kept.map(({ name }) => name).join(", ")}>`,
+    };
+  };
+  const exposed = component.exposes?.functions.flatMap((id) => {
+    const item = component.setup.find((entry) => entry.kind === "Function" && entry.binding === id);
+    if (item?.kind !== "Function") return [];
+    return [...item.function.parameters.map(({ type }) => type), item.function.returnType];
+  });
+  return {
+    events: written(
+      component.emits?.events.flatMap((event) => event.parameters.map(({ type }) => type)) ?? [],
+    ),
+    models: written([...composition.models.values()].map(({ item }) => item.type)),
+    slots: written(component.slots?.slots.map((slot) => slot.props) ?? []),
+    expose: written(composition.expose ? (exposed ?? []) : []),
+  };
+}
+
+/** A type parameter as its component declares it, `T extends Item = Item` (ADR-0068). */
+function typeParameterText(parameter: TypeParameter): string {
+  const constraint = parameter.constraint ? ` extends ${parameter.constraint.code}` : "";
+  return `${parameter.name}${constraint}${parameter.default ? ` = ${parameter.default.code}` : ""}`;
 }
 
 /**
@@ -612,7 +749,14 @@ function propsParameters(
   const parameter = component.propsParameter;
   const { names, composition } = plan;
   const { slots, models, attributes } = composition.interfaces;
-  const typeCode = [parameter?.type.code, plan.eventsInterface, models, slots, attributes]
+  const generic = interfaceParameters(plan);
+  const typeCode = [
+    parameter?.type.code,
+    plan.eventsInterface && `${plan.eventsInterface}${generic.events?.passed ?? ""}`,
+    models && `${models}${generic.models?.passed ?? ""}`,
+    slots && `${slots}${generic.slots?.passed ?? ""}`,
+    attributes && `${attributes}${generic.expose?.passed ?? ""}`,
+  ]
     .filter((part) => part !== undefined)
     .join(" & ");
   const { scope } = composition;

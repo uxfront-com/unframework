@@ -1,12 +1,14 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-  import { on } from "svelte/events";
-
+<script lang="ts" module>
   export interface QuickActionsProps {
     actions: string[];
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+  import { on } from "svelte/events";
 
   type Props = QuickActionsProps & {
     onwelcomed?: () => void;

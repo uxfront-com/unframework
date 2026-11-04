@@ -1,0 +1,266 @@
+{
+  "irVersion": 1,
+  "file": "types/extends-chain/Button.uf.tsx",
+  "components": [
+    {
+      "name": "Button",
+      "span": {
+        "start": 45,
+        "end": 224
+      },
+      "props": [
+        {
+          "name": "disabled",
+          "optional": true,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 109,
+              "end": 120
+            }
+          },
+          "default": {
+            "code": "false",
+            "span": {
+              "start": 100,
+              "end": 105
+            },
+            "refs": []
+          },
+          "binding": "disabled@89",
+          "declaredBy": {
+            "file": "types/extends-chain/types.ts",
+            "declaration": "ButtonProps",
+            "span": {
+              "start": 160,
+              "end": 179
+            }
+          },
+          "span": {
+            "start": 109,
+            "end": 120
+          }
+        },
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 109,
+              "end": 120
+            }
+          },
+          "binding": "label@82",
+          "declaredBy": {
+            "file": "types/extends-chain/types.ts",
+            "declaration": "Labelled",
+            "span": {
+              "start": 92,
+              "end": 106
+            }
+          },
+          "span": {
+            "start": 109,
+            "end": 120
+          }
+        },
+        {
+          "name": "id",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 109,
+              "end": 120
+            }
+          },
+          "binding": "id@78",
+          "declaredBy": {
+            "file": "types/extends-chain/base.ts",
+            "declaration": "Identified",
+            "span": {
+              "start": 95,
+              "end": 106
+            }
+          },
+          "span": {
+            "start": 109,
+            "end": 120
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ButtonProps",
+          "span": {
+            "start": 109,
+            "end": 120
+          }
+        },
+        "span": {
+          "start": 76,
+          "end": 120
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "id@78",
+          "name": "id",
+          "kind": "prop",
+          "span": {
+            "start": 78,
+            "end": 80
+          }
+        },
+        {
+          "id": "label@82",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 82,
+            "end": 87
+          }
+        },
+        {
+          "id": "disabled@89",
+          "name": "disabled",
+          "kind": "prop",
+          "span": {
+            "start": 89,
+            "end": 97
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "button",
+        "attributes": [
+          {
+            "kind": "Bound",
+            "name": "id",
+            "value": {
+              "code": "id",
+              "span": {
+                "start": 151,
+                "end": 153
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "id@78",
+                  "span": {
+                    "start": 151,
+                    "end": 153
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 147,
+              "end": 154
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "type",
+            "value": "button",
+            "span": {
+              "start": 155,
+              "end": 168
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "disabled",
+            "value": {
+              "code": "disabled",
+              "span": {
+                "start": 179,
+                "end": 187
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "disabled@89",
+                  "span": {
+                    "start": 179,
+                    "end": 187
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 169,
+              "end": 188
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 197,
+                "end": 202
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@82",
+                  "span": {
+                    "start": 197,
+                    "end": 202
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 196,
+              "end": 203
+            }
+          }
+        ],
+        "span": {
+          "start": 139,
+          "end": 217
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Button",
+      "span": {
+        "start": 45,
+        "end": 224
+      }
+    }
+  ],
+  "types": [],
+  "typeImports": [
+    {
+      "specifier": "./types",
+      "names": [
+        {
+          "imported": "ButtonProps",
+          "local": "ButtonProps",
+          "span": {
+            "start": 14,
+            "end": 25
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 43
+      }
+    }
+  ]
+}

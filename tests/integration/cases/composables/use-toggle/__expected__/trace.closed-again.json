@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Close' })",
+      "dom": [
+        "<section aria-label=\"Shipping\" class=\"disclosure\">",
+        "  <button aria-expanded=\"false\" type=\"button\">",
+        "    \"Shipping details\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Shipping\":",
+        "  - button \"Shipping details\""
+      ],
+      "events": {}
+    }
+  ]
+}

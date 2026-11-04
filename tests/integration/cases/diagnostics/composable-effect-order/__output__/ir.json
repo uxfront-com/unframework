@@ -1,0 +1,243 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/composable-effect-order/Clock.uf.tsx",
+  "components": [
+    {
+      "name": "Clock",
+      "span": {
+        "start": 369,
+        "end": 649
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "ready@411",
+          "name": "ready",
+          "kind": "state",
+          "span": {
+            "start": 411,
+            "end": 416
+          }
+        },
+        {
+          "id": "started@493",
+          "name": "started",
+          "kind": "usedState",
+          "span": {
+            "start": 493,
+            "end": 500
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "ready@411",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 423,
+              "end": 428
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 405,
+            "end": 430
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    ready.value = true;\n  }",
+              "span": {
+                "start": 450,
+                "end": 479
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "ready@411",
+                  "operator": "=",
+                  "span": {
+                    "start": 456,
+                    "end": 474
+                  },
+                  "target": {
+                    "start": 456,
+                    "end": 467
+                  },
+                  "value": {
+                    "start": 470,
+                    "end": 474
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 444,
+              "end": 479
+            }
+          },
+          "span": {
+            "start": 434,
+            "end": 481
+          }
+        },
+        {
+          "kind": "Use",
+          "composable": "useClock",
+          "arguments": [],
+          "members": [
+            {
+              "member": "started",
+              "binding": "started@493",
+              "span": {
+                "start": 493,
+                "end": 500
+              }
+            }
+          ],
+          "hasEffects": true,
+          "span": {
+            "start": 485,
+            "end": 516
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "clock",
+            "span": {
+              "start": 536,
+              "end": 549
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "ready.value ? \"Ready\" : \"Waiting\"",
+              "span": {
+                "start": 558,
+                "end": 591
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "ready@411",
+                  "span": {
+                    "start": 558,
+                    "end": 569
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 557,
+              "end": 592
+            }
+          },
+          {
+            "kind": "Text",
+            "value": ", ",
+            "span": {
+              "start": 592,
+              "end": 594
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "started.value ? \"started\" : \"stopped\"",
+              "span": {
+                "start": 595,
+                "end": 632
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "started@493",
+                  "span": {
+                    "start": 595,
+                    "end": 608
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 594,
+              "end": 633
+            }
+          }
+        ],
+        "span": {
+          "start": 533,
+          "end": 642
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Clock",
+      "span": {
+        "start": 369,
+        "end": 649
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./useClock.uf.ts",
+      "file": "useClock.uf.ts",
+      "api": {
+        "file": "useClock.uf.ts",
+        "components": [],
+        "keys": [],
+        "composables": [
+          {
+            "name": "useClock",
+            "parameters": [],
+            "members": [
+              {
+                "name": "started",
+                "kind": "state",
+                "type": "boolean"
+              }
+            ],
+            "hasEffects": true
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Composable",
+          "imported": "useClock",
+          "local": "useClock",
+          "span": {
+            "start": 332,
+            "end": 340
+          }
+        }
+      ],
+      "span": {
+        "start": 323,
+        "end": 367
+      }
+    }
+  ]
+}

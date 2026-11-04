@@ -1,12 +1,14 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface CommentQuoteProps {
     author: string;
     comment: string;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = CommentQuoteProps & { class?: ClassValue; style?: string };
 

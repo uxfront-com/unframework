@@ -1,13 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface SummaryProps {
     name: string;
     plan: string;
     seats: number;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = SummaryProps & { class?: ClassValue; style?: string };
 

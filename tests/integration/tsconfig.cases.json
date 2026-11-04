@@ -1,8 +1,10 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   // Type-checks every corpus input under tsgo with the authoring settings (packages/unframework,
-  // "Type-checking .uf.tsx"): what an author's editor reports, before the compiler runs. The
-  // goldens under __output__ are checked per target by tests/toolchains instead.
+  // "Type-checking .uf.tsx"): what an author's editor reports, before the compiler runs. That is
+  // the components, the composables (.uf.ts, ADR-0069) and the shared modules (.ts, ADR-0070).
+  // The goldens under __output__ are checked per target by tests/toolchains instead, and the
+  // specs by tsconfig.json.
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "preserve",
@@ -14,8 +16,14 @@
   },
   // The styling engines' virtual modules, which the styleframe/, theming/ and engines/ cases
   // import (ADR-0064).
-  "include": ["cases/**/*.uf.tsx", "styleframe.d.ts", "fixture-engine.d.ts"],
+  "include": [
+    "cases/**/*.uf.tsx",
+    "cases/**/*.uf.ts",
+    "cases/**/*.ts",
+    "styleframe.d.ts",
+    "fixture-engine.d.ts"
+  ],
   // Diagnostic cases are deliberately wrong: a misspelt prop or a React attribute name is a type
   // error too, and a syntax error does not parse.
-  "exclude": ["cases/**/__output__/**", "cases/diagnostics/**"]
+  "exclude": ["cases/**/__output__/**", "cases/diagnostics/**", "cases/**/*.test.ts"]
 }

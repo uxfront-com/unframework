@@ -1,0 +1,7 @@
+{
+  "description": "A component calls a .ts module that reads another .ts module: each output tree holds both, unchanged.",
+  "main": "Distance.uf.tsx",
+  "ssr": {
+    "initial": { "props": { "value": 42 } }
+  }
+}

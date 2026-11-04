@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   interface LabelAttributes {
     id: string;
     title?: string;
@@ -24,6 +22,10 @@
     stops: (LabelAttributes | undefined)[];
     signature?: LabelAttributes;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ShipmentCardProps & { class?: ClassValue; style?: string };
 

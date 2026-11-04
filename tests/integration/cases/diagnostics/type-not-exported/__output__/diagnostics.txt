@@ -1,0 +1,8 @@
+error[UF6003]: `icon`'s type names `Icon`, which `diagnostics/type-not-exported/types.ts` declares without `export`: an output that writes the prop's type cannot import it.
+ --> diagnostics/type-not-exported/Card.uf.tsx:5:41
+  |
+5 | export default function Card({ title }: CardProps) {
+  |                                         ^^^^^^^^^
+  |
+  = help: Export `Icon` from `diagnostics/type-not-exported/types.ts`.
+  = see: https://unframework.dev/diagnostics/UF6003

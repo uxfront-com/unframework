@@ -1,0 +1,608 @@
+{
+  "irVersion": 1,
+  "file": "composables/callback-argument/Clicker.uf.tsx",
+  "components": [
+    {
+      "name": "Clicker",
+      "span": {
+        "start": 99,
+        "end": 715
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@143",
+        "type": {
+          "code": "{ limit: [count: number] }",
+          "span": {
+            "start": 162,
+            "end": 188
+          }
+        },
+        "events": [
+          {
+            "name": "limit",
+            "parameters": [
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 179,
+                    "end": 185
+                  }
+                },
+                "span": {
+                  "start": 172,
+                  "end": 185
+                }
+              }
+            ],
+            "span": {
+              "start": 164,
+              "end": 186
+            }
+          }
+        ],
+        "span": {
+          "start": 137,
+          "end": 192
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@143",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 143,
+            "end": 147
+          }
+        },
+        {
+          "id": "message@201",
+          "name": "message",
+          "kind": "state",
+          "span": {
+            "start": 201,
+            "end": 208
+          }
+        },
+        {
+          "id": "count@240",
+          "name": "count",
+          "kind": "usedState",
+          "span": {
+            "start": 240,
+            "end": 245
+          }
+        },
+        {
+          "id": "step@247",
+          "name": "step",
+          "kind": "usedConst",
+          "span": {
+            "start": 247,
+            "end": 251
+          }
+        },
+        {
+          "id": "increment@253",
+          "name": "increment",
+          "kind": "usedFn",
+          "span": {
+            "start": 253,
+            "end": 262
+          }
+        },
+        {
+          "id": "reset@264",
+          "name": "reset",
+          "kind": "usedFn",
+          "span": {
+            "start": 264,
+            "end": 269
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "message@201",
+          "initial": {
+            "code": "\"Keep going\"",
+            "span": {
+              "start": 215,
+              "end": 227
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 195,
+            "end": 229
+          }
+        },
+        {
+          "kind": "Use",
+          "composable": "useCounter",
+          "arguments": [
+            {
+              "kind": "Value",
+              "value": {
+                "code": "3",
+                "span": {
+                  "start": 285,
+                  "end": 286
+                },
+                "refs": []
+              },
+              "span": {
+                "start": 285,
+                "end": 286
+              }
+            },
+            {
+              "kind": "Callback",
+              "callback": {
+                "parameters": [
+                  {
+                    "name": "reached",
+                    "span": {
+                      "start": 289,
+                      "end": 296
+                    }
+                  }
+                ],
+                "body": {
+                  "code": "{\n    message.value = `Reached ${reached}`;\n    emit(\"limit\", reached);\n  }",
+                  "span": {
+                    "start": 301,
+                    "end": 376
+                  },
+                  "refs": [
+                    {
+                      "kind": "Write",
+                      "binding": "message@201",
+                      "operator": "=",
+                      "span": {
+                        "start": 307,
+                        "end": 343
+                      },
+                      "target": {
+                        "start": 307,
+                        "end": 320
+                      },
+                      "value": {
+                        "start": 323,
+                        "end": 343
+                      }
+                    },
+                    {
+                      "kind": "Emit",
+                      "binding": "emit@143",
+                      "event": "limit",
+                      "span": {
+                        "start": 349,
+                        "end": 371
+                      },
+                      "arguments": [
+                        {
+                          "start": 363,
+                          "end": 370
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 288,
+                  "end": 376
+                }
+              },
+              "span": {
+                "start": 288,
+                "end": 376
+              }
+            }
+          ],
+          "members": [
+            {
+              "member": "count",
+              "binding": "count@240",
+              "span": {
+                "start": 240,
+                "end": 245
+              }
+            },
+            {
+              "member": "step",
+              "binding": "step@247",
+              "span": {
+                "start": 247,
+                "end": 251
+              }
+            },
+            {
+              "member": "increment",
+              "binding": "increment@253",
+              "span": {
+                "start": 253,
+                "end": 262
+              }
+            },
+            {
+              "member": "reset",
+              "binding": "reset@264",
+              "span": {
+                "start": 264,
+                "end": 269
+              }
+            }
+          ],
+          "span": {
+            "start": 232,
+            "end": 378
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "clicker",
+            "span": {
+              "start": 404,
+              "end": 419
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Clicker",
+            "span": {
+              "start": 420,
+              "end": 440
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 451,
+                  "end": 464
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Count: ",
+                "span": {
+                  "start": 465,
+                  "end": 472
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "count.value",
+                  "span": {
+                    "start": 473,
+                    "end": 484
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "count@240",
+                      "span": {
+                        "start": 473,
+                        "end": 484
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 472,
+                  "end": 485
+                }
+              }
+            ],
+            "span": {
+              "start": 448,
+              "end": 489
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "message.value",
+                  "span": {
+                    "start": 500,
+                    "end": 513
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "message@201",
+                      "span": {
+                        "start": 500,
+                        "end": 513
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 499,
+                  "end": 514
+                }
+              }
+            ],
+            "span": {
+              "start": 496,
+              "end": 518
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 533,
+                  "end": 546
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "increment()",
+                      "span": {
+                        "start": 562,
+                        "end": 573
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "increment@253",
+                          "span": {
+                            "start": 562,
+                            "end": 571
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 556,
+                      "end": 573
+                    }
+                  },
+                  "span": {
+                    "start": 556,
+                    "end": 573
+                  }
+                },
+                "span": {
+                  "start": 547,
+                  "end": 574
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add ",
+                "span": {
+                  "start": 575,
+                  "end": 588
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "step",
+                  "span": {
+                    "start": 589,
+                    "end": 593
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "step@247",
+                      "span": {
+                        "start": 589,
+                        "end": 593
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 588,
+                  "end": 594
+                }
+              }
+            ],
+            "span": {
+              "start": 525,
+              "end": 610
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 625,
+                  "end": 638
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "reset()",
+                      "span": {
+                        "start": 654,
+                        "end": 661
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "reset@264",
+                          "span": {
+                            "start": 654,
+                            "end": 659
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 648,
+                      "end": 661
+                    }
+                  },
+                  "span": {
+                    "start": 648,
+                    "end": 661
+                  }
+                },
+                "span": {
+                  "start": 639,
+                  "end": 662
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Reset",
+                "span": {
+                  "start": 663,
+                  "end": 684
+                }
+              }
+            ],
+            "span": {
+              "start": 617,
+              "end": 693
+            }
+          }
+        ],
+        "span": {
+          "start": 395,
+          "end": 708
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Clicker",
+      "span": {
+        "start": 99,
+        "end": 715
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./useCounter.uf.ts",
+      "file": "useCounter.uf.ts",
+      "api": {
+        "file": "useCounter.uf.ts",
+        "components": [],
+        "keys": [],
+        "composables": [
+          {
+            "name": "useCounter",
+            "parameters": [
+              {
+                "name": "limit",
+                "kind": "value",
+                "type": "number"
+              },
+              {
+                "name": "onLimit",
+                "kind": "callback",
+                "type": "(count: number) => void"
+              }
+            ],
+            "members": [
+              {
+                "name": "count",
+                "kind": "state",
+                "type": "number"
+              },
+              {
+                "name": "step",
+                "kind": "constant"
+              },
+              {
+                "name": "increment",
+                "kind": "function",
+                "client": true
+              },
+              {
+                "name": "reset",
+                "kind": "function",
+                "client": true
+              }
+            ]
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Composable",
+          "imported": "useCounter",
+          "local": "useCounter",
+          "span": {
+            "start": 58,
+            "end": 68
+          }
+        }
+      ],
+      "span": {
+        "start": 49,
+        "end": 97
+      }
+    }
+  ]
+}

@@ -11,5 +11,6 @@ export {
 export type { CheckerRun, DiagnosticsByFile, ProcessRun } from "./checker.ts";
 export { lintWithEslint, lintWithOxlint, mergeLintResults } from "./lint.ts";
 export type { EslintOptions, LintOptions } from "./lint.ts";
+export { compileScriptModules, transformScriptModule } from "./modules.ts";
 export { resolveInstalled, resolveToolBin } from "./resolve.ts";
 export { typecheckWithTsgo } from "./tsgo.ts";

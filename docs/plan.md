@@ -1,13 +1,16 @@
 # Unframework compiler: plan
 
-**Status:** proposal, 2026-10-01. **Supersedes:** the Inkline compiler (`packages/compiler-v1`, reference
-only and gitignored; also at `~/Workspace/inkline/core/compiler`).
+**Status:** proposal, 2026-10-01. M0 to M5 are built, and M6 is next (§9). **Supersedes:** the
+Inkline compiler (`packages/compiler-v1`, reference only and gitignored; also at
+`~/Workspace/inkline/core/compiler`).
 
 This is the plan for the next-generation Unframework compiler. One TSX component written with
 Vue-inspired APIs goes in, and native React, Vue, Svelte, Solid, Angular, Qwik and Astro components
 come out, each verified by executed tests. The plan covers the source language, the architecture, the
 testing strategy, end-user tooling and the milestones to get there. Section 11 records the decisions
-already made and lists the ones still to confirm before M0 starts.
+made before M0 started, each with the record in `docs/adrs/` that holds it now. The plan describes
+the target state: an accepted ADR is newer than the plan, and wins where the two differ. Each built
+milestone in §9 ends with what it settled and what changed from this plan.
 
 ## Contents
 
@@ -422,7 +425,7 @@ Each package follows the `@uxfront/scene` model:
 | `unframework`                   | The authoring API and `unframework/jsx-runtime` types (root export, types and stubs only), `defineConfig`, the `unframework` bin, and tooling re-exported under subpaths. | lazy-loaded tooling                                 |
 | `@unframework/unplugin`         | The bundler plugin (`/vite`, `/rolldown`, `/rollup`, `/webpack`, `/rspack`, `/esbuild`, `/bun`, …).                                                                       | `compiler`, `unplugin`                              |
 | `@unframework/cli`              | `build`, `check`, `test`, `preview`, `visual`, `manifest`, `explain`, `fix` and `init`.                                                                                   | `compiler`                                          |
-| `@unframework/language-tools`   | The TS 7.1 content mapper for `.uf.tsx`: consumer typing and UF diagnostics in editors and tsgo (M5).                                                                     | `compiler`                                          |
+| `@unframework/language-tools`   | The TS 7.1 content mapper for `.uf.tsx`: consumer typing and UF diagnostics in editors and tsgo (not built yet, ADR-0072).                                                | `compiler`                                          |
 | `@unframework/testing`          | The cross-target test API, mount adapters, matchers and a Vitest preset. Private until M7.                                                                                | `vitest`, the targets' toolchains                   |
 | `@unframework/visual`           | The visual parity runner, its report, and the seven-up preview server.                                                                                                    | `testing`                                           |
 | `@unframework/mcp`              | The MCP server for agents (M9).                                                                                                                                           | `compiler`, `testing`                               |
@@ -596,7 +599,8 @@ Each one is useful on its own.
 
    These surface in `check`, the CLI and editors.
 
-3. **The content mapper (M5).** `@unframework/language-tools` is a TS 7.1 content mapper for `.uf.tsx`.
+3. **The content mapper (not built yet, ADR-0072).** `@unframework/language-tools` is a TS 7.1
+   content mapper for `.uf.tsx`.
    - It serves virtual TSX that adds each component's macro-declared events, models and slots to its
      exported signature, plus span maps and the compiler's diagnostics.
    - With it, tsgo and editors type-check consumers completely: payloads, model types and slot props.
@@ -605,8 +609,11 @@ Each one is useful on its own.
    misused event, model or slot must fail type-checking on every typed target, mapped back to the
    `.uf.tsx` line.
 
-Whether a content mapper may claim `.uf.tsx`, a suffix of a native extension, is open. M0's spike 6
-settles it. The fallback is a distinct extension (`.uf`) associated with the TSX grammar.
+Whether a content mapper may claim `.uf.tsx`, a suffix of a native extension, was open. M0's spike
+6 found that one can (ADR-0023), on the nightlies of the time. From `7.1.0-dev.20261014.1`, and in
+`7.1.0-beta`, tsgo refuses a content-mapper extension that ends in a built-in one (TS18066), so
+the mapper is left out of M5 until the extension is settled (ADR-0072, Proposed). The fallback is
+still a distinct extension (`.uf`) associated with the TSX grammar (ADR-0005).
 
 ### 5.7 Targets
 
@@ -1075,19 +1082,22 @@ models and slots, plus the compiler's UF diagnostics, including portability for 
 Every milestone ends with a green parity matrix for its cases, on all seven targets and at every live
 layer. Sizes are relative effort: S is about a week, M two to three weeks, L four to six weeks.
 
-| Milestone | Theme                                           | Size | Cases (cumulative)          |
-| --------- | ----------------------------------------------- | ---- | --------------------------- |
-| M0        | The walking skeleton: the verification machine  | L    | 3                           |
-| M1        | Props and static JSX                            | M    | ~33                         |
-| M2        | Reactivity, events and behaviour                | L    | ~68                         |
-| M3        | Composition                                     | L    | ~113                        |
-| M4        | Styling and visual parity                       | M    | ~138                        |
-| M5        | Cross-file: types, consumer typing, composables | L    | ~163                        |
-| M6        | Build integration and distribution              | L    | ~163, plus e2e apps         |
-| M7        | Public testing and visual tooling               | M    | (the corpus on public APIs) |
-| M8        | Advanced features and versioned targets         | L    | ~193                        |
-| M9        | Agent tooling                                   | M    | -                           |
-| M10       | Design-system acceptance and 1.0                | L    | ~233                        |
+| Milestone | Theme                                           | Size | Cases (cumulative)          | Status  |
+| --------- | ----------------------------------------------- | ---- | --------------------------- | ------- |
+| M0        | The walking skeleton: the verification machine  | L    | 3                           | Done    |
+| M1        | Props and static JSX                            | M    | ~33                         | Done    |
+| M2        | Reactivity, events and behaviour                | L    | ~68                         | Done    |
+| M3        | Composition                                     | L    | ~113                        | Done    |
+| M4        | Styling and visual parity                       | M    | ~138                        | Done    |
+| M5        | Cross-file: types, consumer typing, composables | L    | ~163                        | Done    |
+| M6        | Build integration and distribution              | L    | ~163, plus e2e apps         | Next    |
+| M7        | Public testing and visual tooling               | M    | (the corpus on public APIs) | Planned |
+| M8        | Advanced features and versioned targets         | L    | ~193                        | Planned |
+| M9        | Agent tooling                                   | M    | -                           | Planned |
+| M10       | Design-system acceptance and 1.0                | L    | ~233                        | Planned |
+
+`AGENTS.md` ("Where the project is") summarises what each built milestone delivered. The case
+counts are this plan's estimates.
 
 **How the work fans out.** After M0, each milestone splits into a core lane (parser, analyzer, IR),
 seven target lanes and a harness lane, which suits parallel agents. The loop for each feature is:
@@ -1152,6 +1162,10 @@ seven target lanes and a harness lane, which suits parallel agents. The loop for
 - `parity-matrix.json` appears in the CI summary.
 - CI runs in under 10 minutes.
 
+**As built:** done. Its records are ADR-0001 to ADR-0017 (the decisions of §11), ADR-0018 to
+ADR-0025 (the spikes, spike 6 in ADR-0023) and ADR-0026 to ADR-0033 (the rules the skeleton
+settled).
+
 ### M1. Props and static JSX (M)
 
 **Scope:**
@@ -1168,6 +1182,8 @@ seven target lanes and a harness lane, which suits parallel agents. The loop for
 
 **Exit:** about 30 cases green at L1–L7, L10, L11 and L13. L5 (lint) and L8 (static behaviour
 assertions) go live.
+
+**As built:** done, with ADR-0034 to ADR-0044. D6, the Angular host, is ADR-0010, Accepted.
 
 ### M2. Reactivity, events and behaviour (L)
 
@@ -1188,6 +1204,8 @@ assertions) go live.
 - About 35 new cases are green.
 - L8 and L9 are live, with interaction traces identical across the six interactive targets.
 - Astro is declared static, and its skips are visible in the matrix.
+
+**As built:** done, with ADR-0045 to ADR-0052.
 
 ### M3. Composition (L)
 
@@ -1211,6 +1229,9 @@ assertions) go live.
 - L4 consumer type tests are live on the outputs. A misused prop, event, model or slot fails
   type-checking on every typed target, mapped back to `.uf.tsx`.
 
+**As built:** done, with ADR-0053 to ADR-0060. A child's API reaches `compile()` through a
+resolver, `createFileResolver`, which M5's project graph now provides (ADR-0053, ADR-0071).
+
 ### M4. Styling and visual parity (M)
 
 **Scope:**
@@ -1225,6 +1246,9 @@ assertions) go live.
 
 **Exit:** about 25 new cases with zero cross-target pixel difference in Chromium. Firefox and WebKit run
 nightly.
+
+**As built:** done, with ADR-0061 to ADR-0066. Firefox and WebKit run nightly (`nightly.yml`), as
+a report that gates no pull request.
 
 ### M5. Cross-file: types, consumer typing and composables (L)
 
@@ -1250,6 +1274,15 @@ nightly.
   - with no false errors under stock tsgo
 - About 25 new cases are green.
 - Changing an imported props type recompiles exactly its dependents.
+
+**As built:** done, with ADR-0067 to ADR-0072, but for layer 3 of §5.6:
+
+- The content mapper is left out. TypeScript 7.1 refuses `.uf.tsx` as a content mapper's extension
+  (TS18066), so `@unframework/language-tools` waits for the extension to be settled (ADR-0072,
+  Proposed). The compiler catches consumer misuse of events, models and slots, and probes pin
+  that stock tsgo reports no false errors, but tsgo itself doesn't check them yet.
+- The `tsgo` adapter runs on `typescript/unstable/sync`. Its port to the stable 7.1 API waits for
+  7.1 (ADR-0067).
 
 ### M6. Build integration and distribution (L)
 
@@ -1366,33 +1399,33 @@ Then `1.0.0` ships.
 
 ### Confirmed (2026-10-01)
 
-| ID  | Decision                                                                                                                                             |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| C1  | **Component shape:** a setup-once function in JSX. Props are in the signature, the body is the setup, and the last statement returns the JSX.        |
-| C2  | **Control flow:** plain JS (ternaries, `&&`, `.map`), with `v-model` as the only directive.                                                          |
-| C3  | **Public API:** Vue macros in the body (`defineEmits`, `defineModel`, `defineSlots`, `defineExpose`). Consumer typing comes from the layers in §5.6. |
-| C4  | **Styles:** a sibling CSS file, imported by the component and scoped by the compiler.                                                                |
+| ID  | Decision                                                                                                                                             | Record             |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| C1  | **Component shape:** a setup-once function in JSX. Props are in the signature, the body is the setup, and the last statement returns the JSX.        | ADR-0001, Accepted |
+| C2  | **Control flow:** plain JS (ternaries, `&&`, `.map`), with `v-model` as the only directive.                                                          | ADR-0002, Accepted |
+| C3  | **Public API:** Vue macros in the body (`defineEmits`, `defineModel`, `defineSlots`, `defineExpose`). Consumer typing comes from the layers in §5.6. | ADR-0003, Accepted |
+| C4  | **Styles:** a sibling CSS file, imported by the component and scoped by the compiler.                                                                | ADR-0004, Accepted |
 
 ### To confirm
 
-Each of these becomes an ADR in `docs/adrs/` once it is confirmed. The plan proceeds on the
-recommendation unless told otherwise.
+Each of these has its record in `docs/adrs/`. D5, D6 and D9 are Accepted. The others stay Proposed,
+and the plan proceeds on the recommendation unless told otherwise.
 
-| ID  | Decision                          | Recommendation                                                                                                                      | Alternatives                                                |
-| --- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| D1  | Source extension                  | `.uf.tsx` for components and `.uf.ts` for composables                                                                               | plain `.tsx` with include globs; `.uf` with the TSX grammar |
-| D2  | Authoring import and JSX runtime  | `unframework`, with `jsxImportSource: "unframework"`                                                                                | macros as globals, with no import                           |
-| D3  | Canonical forms                   | Destructured signature props, named models, children for the default slot and a slot object for the others, one channel per concern | accept every Vue JSX form (`v-slots`, `withModifiers`)      |
-| D4  | State updates                     | Values are replaced whole. Mutating a ref's contents in place is an error, with a fix.                                              | `reactive()` and deep mutation (immer-style lowering)       |
-| D5  | CSS scoping algorithm             | Vue's attribute algorithm, applied by the compiler on every target                                                                  | CSS Modules-style class hashing                             |
-| D6  | Angular host element              | An element selector with a `display: contents` host, unwrapped in normalisation. Attribute selectors as an option.                  | attribute selectors by default                              |
-| D7  | Target versions                   | React 19, Vue 3.5 (3.6-compatible), Svelte 5, Solid 1.9 then 2, Angular 22, Qwik 2 (experimental), Astro 7 (static)                 | Qwik 1.x; Solid 2 only                                      |
-| D8  | Output event and model names      | React and Solid `onChange` / `onOpenChange`; Svelte `onchange`; Qwik `onChange$`; Angular `output()` / `model()`                    | camelCase everywhere, including Svelte                      |
-| D9  | Visual baselines                  | Linux baselines in CI, plus a live cross-target mode                                                                                | live mode only, as in v1                                    |
-| D10 | Reference target for expectations | Vue                                                                                                                                 | hand-written expectations only                              |
-| D11 | Runtime                           | None. Inline helpers only where a framework lacks a primitive.                                                                      | a tiny `@unframework/runtime-<target>`                      |
-| D12 | Package naming                    | `unframework` (the umbrella and the authoring API) plus `@unframework/*`                                                            | everything scoped                                           |
-| D13 | JSX attribute and event names     | HTML and Vue names (`class`, `for`, `onKeydown`), vendored from `@vue/runtime-dom`'s JSX types                                      | React names (`className`, `htmlFor`, `onKeyDown`)           |
+| ID  | Decision                          | Record             | Recommendation                                                                                                                      | Alternatives                                                |
+| --- | --------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| D1  | Source extension                  | ADR-0005, Proposed | `.uf.tsx` for components and `.uf.ts` for composables                                                                               | plain `.tsx` with include globs; `.uf` with the TSX grammar |
+| D2  | Authoring import and JSX runtime  | ADR-0006, Proposed | `unframework`, with `jsxImportSource: "unframework"`                                                                                | macros as globals, with no import                           |
+| D3  | Canonical forms                   | ADR-0007, Proposed | Destructured signature props, named models, children for the default slot and a slot object for the others, one channel per concern | accept every Vue JSX form (`v-slots`, `withModifiers`)      |
+| D4  | State updates                     | ADR-0008, Proposed | Values are replaced whole. Mutating a ref's contents in place is an error, with a fix.                                              | `reactive()` and deep mutation (immer-style lowering)       |
+| D5  | CSS scoping algorithm             | ADR-0009, Accepted | Vue's attribute algorithm, applied by the compiler on every target                                                                  | CSS Modules-style class hashing                             |
+| D6  | Angular host element              | ADR-0010, Accepted | An element selector with a `display: contents` host, unwrapped in normalisation. Attribute selectors as an option.                  | attribute selectors by default                              |
+| D7  | Target versions                   | ADR-0011, Proposed | React 19, Vue 3.5 (3.6-compatible), Svelte 5, Solid 1.9 then 2, Angular 22, Qwik 2 (experimental), Astro 7 (static)                 | Qwik 1.x; Solid 2 only                                      |
+| D8  | Output event and model names      | ADR-0012, Proposed | React and Solid `onChange` / `onOpenChange`; Svelte `onchange`; Qwik `onChange$`; Angular `output()` / `model()`                    | camelCase everywhere, including Svelte                      |
+| D9  | Visual baselines                  | ADR-0013, Accepted | Linux baselines in CI, plus a live cross-target mode                                                                                | live mode only, as in v1                                    |
+| D10 | Reference target for expectations | ADR-0014, Proposed | Vue                                                                                                                                 | hand-written expectations only                              |
+| D11 | Runtime                           | ADR-0015, Proposed | None. Inline helpers only where a framework lacks a primitive.                                                                      | a tiny `@unframework/runtime-<target>`                      |
+| D12 | Package naming                    | ADR-0016, Proposed | `unframework` (the umbrella and the authoring API) plus `@unframework/*`                                                            | everything scoped                                           |
+| D13 | JSX attribute and event names     | ADR-0017, Proposed | HTML and Vue names (`class`, `for`, `onKeydown`), vendored from `@vue/runtime-dom`'s JSX types                                      | React names (`className`, `htmlFor`, `onKeyDown`)           |
 
 ---
 

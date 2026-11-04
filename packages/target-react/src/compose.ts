@@ -13,6 +13,7 @@ import {
   jsxFillValue,
   pascalCase,
   rewriteExpression,
+  typeNames,
 } from "@unframework/codegen";
 import type { JsxContext } from "@unframework/codegen";
 import type {
@@ -141,7 +142,7 @@ export class ReactComposer {
     const { handler } = attribute;
     const code =
       handler.kind === "Function"
-        ? handlerText(handler, this.#plan.component, this.#code.rules, "client")
+        ? handlerText(handler, this.#plan.owner, this.#code.rules, "client")
         : this.#code.fn(handler.function, "client");
     return [
       js.jsxAttribute(
@@ -244,13 +245,13 @@ export class ReactComposer {
           break;
         case "select-multiple":
           state = ["value", read];
-          written = "Array.from(EVENT.target.selectedOptions, (option) => option.value)";
+          written = `Array.from(EVENT.target.selectedOptions, (option) => option.value)${this.#cast(binding, read)}`;
           break;
         case "text":
         case "textarea":
         case "select":
           state = ["value", shown];
-          written = "EVENT.target.value";
+          written = `EVENT.target.value${this.#cast(binding, read)}`;
           break;
         default:
           return control satisfies never;
@@ -271,9 +272,27 @@ export class ReactComposer {
     return parts;
   }
 
+  /**
+   * ` as T` where a state's or a model's declared type names a type parameter of a generic
+   * component (ADR-0068): the control's value is a `string`, which TypeScript cannot narrow to
+   * the type argument. Without a declared type, its type may be inferred from one (`ref(initial)`),
+   * so it is cast to the type of what it reads, ` as typeof chosen`. Nothing otherwise.
+   */
+  #cast(binding: BindingId, read: string): string {
+    const { owner: component } = this.#plan;
+    if (!component.typeParameters?.length) return "";
+    const item = component.setup.find(
+      (entry) => (entry.kind === "State" || entry.kind === "Model") && entry.binding === binding,
+    );
+    const type = item && "type" in item ? item.type : undefined;
+    if (!type) return /^[\w$]+$/.test(read) ? ` as typeof ${read}` : "";
+    const names = typeNames(type);
+    return component.typeParameters.some(({ name }) => names.has(name)) ? ` as ${type.code}` : "";
+  }
+
   /** Whether a state or a model may hold `null` or `undefined`, as its declaration says. */
   #nullish(binding: BindingId): boolean {
-    const item = this.#plan.component.setup.find(
+    const item = this.#plan.owner.setup.find(
       (entry) => (entry.kind === "State" || entry.kind === "Model") && entry.binding === binding,
     );
     const type = item && "type" in item ? (item.type?.code ?? "") : "";
@@ -334,7 +353,7 @@ export class ReactComposer {
 
   /** The bound value as client code reads it: the mirror, where client code writes it. */
   #clientRead(value: Expression): string {
-    return rewriteExpression(value, this.#plan.component, this.#code.rules, "client");
+    return rewriteExpression(value, this.#plan.owner, this.#code.rules, "client");
   }
 
   /**

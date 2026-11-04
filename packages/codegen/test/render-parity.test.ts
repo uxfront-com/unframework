@@ -479,6 +479,10 @@ function testTarget(emit: Target["emit"], unsupported?: CapabilityName): Target 
       "child-root-scope": cell("child-root-scope"),
       "slotted-styles": cell("slotted-styles"),
       "sheet-order": cell("sheet-order"),
+      "generic-components": cell("generic-components"),
+      "generic-slot-props": cell("generic-slot-props"),
+      composables: cell("composables"),
+      "composable-effect-order": cell("composable-effect-order"),
     },
     emit,
   });
