@@ -707,6 +707,9 @@ function ownTypeTexts(owner: UfComponent | UfComposable): string[] {
  * first it parses as. Every text the IR holds is one of them.
  */
 function typeQueryRoots(text: string): string[] {
+  // A type query is spelt with the keyword, which no escape can write: a text without it holds
+  // none, so it skips the parses, which every component's code would otherwise pay for.
+  if (!text.includes("typeof")) return [];
   const parsed = [text, `(${text});`, `async function body() {\n${text}\n}`]
     .map((source) => parseModule("query.ts", source))
     .find(({ errors }) => !errors.length);

@@ -174,8 +174,12 @@ function memberText(
  * The type names some type's text references, each once, in source order: what a parent that
  * prints the type imports (ADR-0067), read as the oracle reads a member's.
  */
-function referencesOf(code: string): string[] {
-  const [statement] = parseModule("type.ts", `type T = ${code};`).program.body;
+function referencesOf(type: string | AST.TSType): string[] {
+  let root = typeof type === "string" ? undefined : type;
+  if (typeof type === "string") {
+    const [statement] = parseModule("type.ts", `type T = ${type};`).program.body;
+    if (statement?.type === "TSTypeAliasDeclaration") root = statement.typeAnnotation;
+  }
   const names: string[] = [];
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
@@ -193,13 +197,16 @@ function referencesOf(code: string): string[] {
       if (key !== "type" && typeof child === "object") visit(child);
     }
   };
-  if (statement?.type === "TSTypeAliasDeclaration") visit(statement.typeAnnotation);
+  if (root) visit(root);
   return names;
 }
 
-/** `references`, present only when the type references a name. */
-export function withReferences(code: string): { references?: string[] } {
-  const references = referencesOf(code);
+/**
+ * `references`, present only when the type references a name. A type already parsed is read as
+ * it is: a component's every prop would otherwise parse its type again.
+ */
+export function withReferences(type: string | AST.TSType): { references?: string[] } {
+  const references = referencesOf(type);
   return references.length ? { references } : {};
 }
 
@@ -256,7 +263,7 @@ function propsOf(node: ComponentFunction, context: ApiContext): ApiMember[] {
         name,
         optional: signature.optional,
         type: code,
-        ...withReferences(code),
+        ...(written ? withReferences(written) : {}),
         ...aliasedLiterals(code, shape, type),
       },
     ];
