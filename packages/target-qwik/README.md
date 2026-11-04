@@ -269,7 +269,12 @@ through `.value` as written and tracked by a task as a component's own signal is
 as written; and a function is the hook's QRL, which client code calls as it calls a local QRL
 (awaited where the call is a statement or its value is used, floated where the function is
 async). Since every function the hook returns is a QRL, whose call gives a promise, a call of one
-in the template, a getter or a value the setup evaluates is UF1002, at the call.
+in the template (a slot's fill included, which is a render prop), a getter or a value the setup
+evaluates is UF1002, at the call.
+
+An argument whose code reads a member of its own call, itself or through the setup declarations
+it reads (`useCounter(3, () => reset())`), is UF1002 at the read: Qwik makes the argument's QRL or
+signal before the call returns, so it would capture the member before it exists.
 
 A module's values reach an output as module-level bindings, which a `$` scope reads without
 capturing them, since the optimizer imports them into the segments it writes (ADR-0070,
