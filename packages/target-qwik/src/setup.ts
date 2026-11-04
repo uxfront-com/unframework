@@ -30,10 +30,12 @@ import type {
   ModelItem,
   Parameter,
   SetupItem,
+  UseArgument,
+  UseItem,
   WatchEffectItem,
   WatchItem,
 } from "@unframework/ir";
-import { summarizeTracked } from "@unframework/ir";
+import { codeOf, expressionsOf, summarizeTracked } from "@unframework/ir";
 
 import { awaitQrlCalls, passElement } from "./calls.ts";
 import { readGetters } from "./composable.ts";
@@ -90,7 +92,12 @@ export function printSetup(plan: SetupPlan): SetupOutput {
     entries.push({
       index,
       statements,
-      declares: "binding" in item ? [item.binding] : [],
+      declares:
+        "binding" in item
+          ? [item.binding]
+          : item.kind === "Use"
+            ? item.members.map(({ binding }) => binding)
+            : [],
       captures: withCallees(plan, captured(plan, item)),
       unmounted: item.kind === "Lifecycle" && item.hook === "unmounted",
     });
@@ -227,13 +234,27 @@ function captured(plan: SetupPlan, item: SetupItem): Set<BindingId> {
     case "Id":
     case "Model":
       break;
-    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
     case "Use":
+      for (const argument of item.arguments) add(argumentCode(argument));
       break;
     default:
       unreachable(item);
   }
   return found;
+}
+
+/** A composable's argument's code: a value's, or a getter's or a callback's body. */
+function argumentCode(argument: UseArgument): Code {
+  switch (argument.kind) {
+    case "Value":
+      return argument.value;
+    case "Getter":
+      return argument.getter.body;
+    case "Callback":
+      return argument.callback.body;
+    default:
+      return unreachable(argument);
+  }
 }
 
 /** An item that moves to module scope, as the source writes it: `undefined` for any other. */
@@ -362,12 +383,64 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
         ),
       ];
     }
-    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
     case "Use":
-      return [];
+      return [declaration(useStatement(plan, item))];
     default:
       return unreachable(item);
   }
+}
+
+/**
+ * A composable's call, `const { on, toggle } = useToggle(false);`, its hook imported from its
+ * output beside the `.uf.ts` (ADR-0069), destructuring the members the output reads: its signals,
+ * read through `.value` as written, its QRLs and its constants. Each argument takes the form the
+ * hook's parameter does (./composable.ts): a value as written, read once; a getter as the signal
+ * `useComputed$` makes of it; a callback as the QRL `$()` makes of it, which the hook calls.
+ */
+function useStatement(plan: SetupPlan, item: UseItem): string {
+  const { names } = plan;
+  for (const entry of plan.module.imports ?? []) {
+    const name = entry.names.find(
+      (each) => each.kind === "Composable" && each.local === item.composable,
+    );
+    if (!name) continue;
+    const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
+    names.imports.add(`${directory}${name.imported}`, name.imported, {
+      local: item.composable,
+      exact: true,
+    });
+  }
+  const parts = item.arguments.map((argument) => {
+    switch (argument.kind) {
+      case "Value":
+        return rewritten(plan, argument.value, "expression", undefined, "pure");
+      case "Getter":
+        return `${names.core("useComputed$")}(${getterSource(plan, argument.getter)})`;
+      case "Callback":
+        return `${names.core("$")}(${printFunction(plan, argument.callback, "client").text})`;
+      default:
+        return unreachable(argument);
+    }
+  });
+  const read = readBindings(plan);
+  const members = item.members.flatMap(({ member, binding }) => {
+    if (!read.has(binding)) return [];
+    const local = bindingName(plan, binding);
+    return [member === local ? local : `${member}: ${local}`];
+  });
+  const call = `${item.composable}(${parts.join(", ")});`;
+  return members.length ? `const { ${members.join(", ")} } = ${call}` : call;
+}
+
+/** The bindings the component's code reads anywhere: its setup's and its render's. */
+function readBindings(plan: SetupPlan): Set<BindingId> {
+  const found = new Set<BindingId>();
+  const codes = [
+    ...codeOf(plan.component).map(({ code }) => code),
+    ...expressionsOf(plan.component).map(({ expression }) => expression),
+  ];
+  for (const code of codes) for (const id of referencedIds(code.refs)) found.add(id);
+  return found;
 }
 
 /**
@@ -791,6 +864,9 @@ function tracked(
     case "state":
     case "derived":
     case "model":
+    // A composable's state or derived value is its hook's signal (ADR-0069).
+    case "usedState":
+    case "usedDerived":
       return { tracked: `${track}(${binding.name})`, read: `${binding.name}.value` };
     case "prop": {
       const read =
@@ -811,13 +887,11 @@ function tracked(
     case "slotScope":
     case "context":
     case "component":
-    // A value or a callback argument: the analyser lets a watcher read neither as a source.
+    // A value or a callback argument: the analyser lets a watcher read neither as a source, nor
+    // a module's value, nor a composable's function or constant.
     case "argument":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
-    case "usedState":
-    case "usedDerived":
     case "usedFn":
     case "usedConst":
       throw new Error(`A ${binding.kind} is not tracked yet.`);

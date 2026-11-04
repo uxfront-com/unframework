@@ -1,9 +1,10 @@
-// The composables of the composable and shared-module cases on Qwik (ADR-0069): each `.uf.ts`
-// source compiles through `compile()` with no error, to one `use*` hook, which passes the real
+// The composable and shared-module cases on Qwik (ADR-0069, ADR-0070): each source compiles
+// through `compile()` with no error, a `.uf.ts` one to one `use*` hook per composable, and every
+// output of a case, its components, its hooks and its copied `.ts` modules, passes the real
 // optimizer (L3), tsgo (L4) and the lint rules, eslint-plugin-qwik's type-aware ones among them
-// (L5), as the corpus's toolchain project runs them. The components that call them wait for
-// Qwik's call site (L27). The cases wait in `tests/integration/pending/` until every target's lane
-// has landed (../../codegen/test/composable-cases.ts).
+// (L5), as the corpus's toolchain project runs them. The cases wait in
+// `tests/integration/pending/` until every target's lane has landed
+// (../../codegen/test/composable-cases.ts).
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,7 +16,7 @@ import type { ComposableParameter, ComposableParameterKind } from "@unframework/
 import { afterAll, describe, expect, it } from "vitest";
 
 import { compileComposableCases } from "../../codegen/test/composable-cases.ts";
-import { compile } from "../../compiler/src/index.ts";
+import { compile, createFileResolver, createSyntacticOracle } from "../../compiler/src/index.ts";
 import { parameterCode, readGetters } from "../src/composable.ts";
 import { callbackFloats, OutputNames } from "../src/plan.ts";
 import { toolchain } from "../src/toolchain/index.ts";
@@ -28,21 +29,28 @@ mkdirSync(join(packageDir, ".uf-tmp"), { recursive: true });
 const scratch = mkdtempSync(join(packageDir, ".uf-tmp", "composable-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-const cases = (await compileComposableCases("qwik"))
-  .map((each) => ({
-    ...each,
-    sources: each.sources.filter(({ filename }) => filename.endsWith(".uf.ts")),
-  }))
-  .filter(({ sources }) => sources.length > 0);
+const cases = await compileComposableCases("qwik");
+
+/** The output a case's source compiles to, by the output's path. */
+function caseOutput(id: string, path: string): string {
+  return cases
+    .find((each) => each.id === id)!
+    .sources.flatMap(({ outputs }) => outputs)
+    .find((each) => each.path === path)!.contents;
+}
 
 describe("qwik composable cases", () => {
-  it("finds the cases that hold a composable", () => {
+  it("finds every composable and shared-module case", () => {
     expect(cases.map(({ id }) => id)).toEqual([
       "composables/use-toggle",
       "composables/use-controllable-state",
       "composables/use-media-query",
       "composables/getter-argument",
       "composables/callback-argument",
+      "modules/shared-constants",
+      "modules/shared-helpers",
+      "modules/module-constants",
+      "modules/nested-modules",
       "semantics/composable-read-after-write",
       "semantics/composable-effect-order",
       "semantics/composable-unmount-order",
@@ -50,17 +58,27 @@ describe("qwik composable cases", () => {
   });
 
   it.each(cases)(
-    "compiles $id to hooks that pass L3 to L5",
+    "compiles $id to outputs that pass L3 to L5",
     { timeout: 60_000 },
     async ({ id, sources }) => {
       const errors = sources.flatMap(({ diagnostics }) =>
         diagnostics.filter(({ severity }) => severity === "error"),
       );
       expect(errors).toEqual([]);
-      const emitted = sources.flatMap(({ outputs }) => outputs);
-      expect(emitted.map(({ path }) => path)).toEqual(
-        sources.map(({ filename }) => `${filename.slice(filename.lastIndexOf("/") + 1, -6)}.ts`),
-      );
+      // A hook per composable, a component per `.uf.tsx`, and each `.ts` copy once, however
+      // many sources import it.
+      const emitted = [
+        ...new Map(
+          sources.flatMap(({ outputs }) => outputs).map((each) => [each.path, each]),
+        ).values(),
+      ];
+      for (const { filename, outputs } of sources) {
+        const base = filename.slice(filename.lastIndexOf("/") + 1);
+        const path = base.endsWith(".uf.ts")
+          ? `${base.slice(0, -6)}.ts`
+          : `${base.slice(0, -7)}.tsx`;
+        expect(outputs.map((each) => each.path)).toContain(path);
+      }
       await expectToolchainClean(id, emitted);
     },
   );
@@ -100,7 +118,9 @@ async function compileProbe(source: string) {
 
 /** The hook a case's composable compiles to. */
 function hook(id: string): string {
-  return cases.find((each) => each.id === id)!.sources[0]!.outputs[0]!.contents;
+  return cases
+    .find((each) => each.id === id)!
+    .sources.find(({ filename }) => filename.endsWith(".uf.ts"))!.outputs[0]!.contents;
 }
 
 describe("qwik composable hooks", () => {
@@ -605,8 +625,8 @@ export function useProbe(
     },
   );
 
-  it("reports a composable that reads a module's values, at the value, and emits nothing", async () => {
-    const { errors, outputs, source } = await compileProbe(`import { ref } from "unframework";
+  it("declares a module's constant a composable reads beside the hook", async () => {
+    const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
 
 const STEP = 2;
 
@@ -618,8 +638,9 @@ export function useProbe() {
   return { count, add };
 }
 `);
-    expect(errors).toEqual([{ code: "UF1002", text: "STEP", at: source.indexOf("STEP") }]);
-    expect(outputs).toEqual([]);
+    expect(errors).toEqual([]);
+    expect(outputs[0]!.contents).toMatch(/^const STEP = 2;\n\nexport function useProbe\(\) \{$/m);
+    await expectToolchainClean("module-constant", outputs);
   });
 });
 
@@ -675,4 +696,210 @@ describe("qwik composable parameters", () => {
       readGetters("{ const total = price(); log(total, prices()); }", "statements", getters),
     ).toBe("{ const total = price.value; log(total, prices()); }");
   });
+});
+
+/**
+ * The sources at `files` (paths under `/project`), each `.uf.tsx` and `.uf.ts` one compiled for
+ * Qwik through a resolver and a type oracle over them: every output, and each `.ts` source as a
+ * copy beside them, by path.
+ */
+async function compileProject(files: Record<string, string>) {
+  const readFile = (path: string) => Promise.resolve(files[path]);
+  const resolve = createFileResolver({ root: "/project", readFile });
+  const typeOracle = createSyntacticOracle({ root: "/project", readFile });
+  const diagnostics = [];
+  const outputs = new Map<string, string>();
+  for (const [path, source] of Object.entries(files)) {
+    const filename = path.slice("/project/".length);
+    if (!/\.uf\.tsx?$/.test(filename)) {
+      outputs.set(filename, source);
+      continue;
+    }
+    const result = await compile(source, { filename, targets: ["qwik"], resolve, typeOracle });
+    diagnostics.push(
+      ...result.diagnostics.map(({ code, severity, span }) => ({
+        code,
+        severity,
+        text: source.slice(span.start, span.end),
+      })),
+    );
+    for (const file of result.outputs.qwik ?? []) outputs.set(file.path, file.contents);
+  }
+  return {
+    diagnostics,
+    outputs: [...outputs].map(([path, contents]) => ({ path, contents })),
+    output: (path: string) => outputs.get(path)!,
+  };
+}
+
+/** A composable with state, a derived value, a constant, a function and an async function. */
+const USE_BITS = `import { computed, ref } from "unframework";
+
+export function useBits(start: number) {
+  const count = ref(start);
+  const double = computed(() => count.value * 2);
+  const unit = "px";
+  function label(value: number) {
+    return \`\${value}\${unit}\`;
+  }
+  function add() {
+    count.value++;
+  }
+  async function save() {
+    await Promise.resolve();
+    count.value = 0;
+  }
+  return { count, double, unit, label, add, save };
+}
+`;
+
+describe("qwik composable calls", () => {
+  it("destructures what the output reads, from the hook its output imports", () => {
+    const disclosure = caseOutput("composables/use-toggle", "Disclosure.tsx");
+    expect(disclosure).toContain('import { useToggle } from "./useToggle";');
+    expect(disclosure).toContain("const { on, toggle, close } = useToggle(false);");
+    expect(disclosure).toContain("aria-expanded={on.value} onClick$={() => toggle()}");
+  });
+
+  it("destructures a renamed member under its local, once per call", () => {
+    const layout = caseOutput("composables/use-media-query", "Layout.tsx");
+    expect(layout).toContain('const { matches: wide } = useMediaQuery("(min-width: 1px)");');
+    expect(layout).toContain('const { matches: tiny } = useMediaQuery("(max-width: 1px)");');
+  });
+
+  it("passes a getter as the signal `useComputed$` makes, and a callback as a `$()` QRL", () => {
+    const basket = caseOutput("composables/getter-argument", "Basket.tsx");
+    expect(basket).toContain(
+      "useTotal(\n      useComputed$(() => price),\n      useComputed$(() => quantity.value),\n    );",
+    );
+    const clicker = caseOutput("composables/callback-argument", "Clicker.tsx");
+    expect(clicker).toContain("const { count, step, increment, reset } = useCounter(\n      3,");
+    expect(clicker).toContain("$((reached) => {\n        message.value = `Reached ${reached}`;");
+  });
+
+  it("awaits a returned function's call in client code, so a read after it sees the write", () => {
+    const cart = caseOutput("semantics/composable-read-after-write", "Cart.tsx");
+    expect(cart).toContain(
+      "const addTwiceAndReport = $(async () => {\n      await add(1);\n      await add(2);\n      onTotal$?.(items.value);",
+    );
+  });
+
+  it("tracks a returned ref in a watcher as its own", () => {
+    const timeline = caseOutput("semantics/composable-effect-order", "Timeline.tsx");
+    expect(timeline).toContain(
+      "const { count, increment } = useTracked($((entry) => record(entry)));",
+    );
+    expect(timeline).toContain("const value = track(count);");
+  });
+
+  it(
+    "leaves out what nothing reads, and floats a statement call of an async function",
+    { timeout: 60_000 },
+    async () => {
+      const project = await compileProject({
+        "/project/useBits.uf.ts": USE_BITS,
+        "/project/Probe.uf.tsx": `import { useBits } from "./useBits.uf.ts";
+
+export default function Probe() {
+  const { count, add, save, unit } = useBits(1);
+  const { double } = useBits(2);
+  function reset() {
+    save();
+    add();
+  }
+  return (
+    <button type="button" onClick={reset}>
+      {count.value}
+    </button>
+  );
+}
+`,
+      });
+      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+      const probe = project.output("Probe.tsx");
+      expect(probe).toContain("const { count, add, save } = useBits(1);\n    useBits(2);");
+      expect(probe).toContain("void save();\n      await add();");
+      await expectToolchainClean("calls/unread", project.outputs);
+    },
+  );
+
+  it("reports a returned function the template or a getter calls (UF1002), and emits nothing", async () => {
+    const project = await compileProject({
+      "/project/useBits.uf.ts": USE_BITS,
+      "/project/Probe.uf.tsx": `import { computed } from "unframework";
+
+import { useBits } from "./useBits.uf.ts";
+
+export default function Probe() {
+  const { count, label } = useBits(1);
+  const text = computed(() => label(count.value));
+  function shown() {
+    return label(0);
+  }
+  return (
+    <p>
+      {text.value} {shown()}
+    </p>
+  );
+}
+`,
+    });
+    expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
+      { code: "UF1002", severity: "error", text: "label" },
+      { code: "UF1002", severity: "error", text: "label" },
+    ]);
+    expect(project.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
+  });
+});
+
+describe("qwik shared modules", () => {
+  it("imports a shared module's values as the source does", () => {
+    const picker = caseOutput("modules/shared-constants", "SizePicker.tsx");
+    expect(picker).toContain(
+      'import { DEFAULT_SIZE, SIZES, SIZE_ORDER, type Size } from "./tokens";',
+    );
+    expect(picker).toContain("const size = useSignal<Size>(DEFAULT_SIZE);");
+  });
+
+  it("declares the module's constants at module scope, in source order", () => {
+    const stepper = caseOutput("modules/module-constants", "Stepper.tsx");
+    expect(stepper).toContain(
+      [
+        "const STEPS = [1, 5, 10] as const;",
+        "const LIMITS = Object.freeze({ min: 0, max: 20 });",
+        "const caption = (value: number): string => `${value} of ${LIMITS.max}`;",
+        "const START = LIMITS.min + 2;",
+        "",
+        "export default component$",
+      ].join("\n"),
+    );
+  });
+
+  it(
+    "declares a constant two components read in the main one's output, which the other imports",
+    { timeout: 60_000 },
+    async () => {
+      const project = await compileProject({
+        "/project/Pair.uf.tsx": `const STEP = 2;
+
+function Half() {
+  return <span>{STEP / 2}</span>;
+}
+
+export default function Pair() {
+  return (
+    <p>
+      {STEP} <Half />
+    </p>
+  );
+}
+`,
+      });
+      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+      expect(project.output("Pair.tsx")).toContain("const STEP = 2;\nexport { STEP };");
+      expect(project.output("Half.tsx")).toContain('import { STEP } from "./Pair";');
+      expect(project.output("Half.tsx")).not.toContain("const STEP");
+      await expectToolchainClean("modules/pair", project.outputs);
+    },
+  );
 });
