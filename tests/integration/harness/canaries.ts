@@ -400,7 +400,7 @@ export const CANARIES: readonly Canary[] = [
     },
     appliesTo: (info, target) => consumerFixtures(target, info.id).length > 0,
     // An output hook: the compiler rejects an `ir` hook's type that the analyser did not
-    // produce (P2), and props cannot be `any` in the source until M5 (UF1002).
+    // produce (P2).
     plugin: () => ({
       name: "uf-canary-L4-consumer",
       output: (files, { target }) =>

@@ -352,9 +352,11 @@ jobs:
           - canaries: L7
             shard: 2/2
           - canaries: L8
-            shard: 1/2
+            shard: 1/3
           - canaries: L8
-            shard: 2/2
+            shard: 2/3
+          - canaries: L8
+            shard: 3/3
           - canaries: L9-unwired-handler
             shard: 1/2
           - canaries: L9-unwired-handler
