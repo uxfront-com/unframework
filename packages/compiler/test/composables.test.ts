@@ -1,13 +1,12 @@
-// A composable's call and what a module or a composable gives are declared before the targets
-// emit them (ADR-0069, ADR-0070): until each target's composables lane lands, the target reports
-// a component that uses one, and emits nothing for it (P2).
+// A composable's call and what a module or a composable gives (ADR-0069, ADR-0070): every target
+// emits a component that uses them, and a module of composables as one module per composable.
 import type { OutputFile } from "@unframework/codegen";
 import type { Diagnostic } from "@unframework/diagnostics";
 import type { UfComposable, UfModule } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
 import { modules } from "../../ir/test/modules-fixture.ts";
-import { builtinTargets, compile, createFileResolver, TARGET_NAMES } from "../src/index.ts";
+import { builtinTargets, compile, createFileResolver } from "../src/index.ts";
 import type { TargetName } from "../src/index.ts";
 
 function emit(name: TargetName, module: UfModule) {
@@ -20,39 +19,7 @@ function emit(name: TargetName, module: UfModule) {
   return { files, reported };
 }
 
-/**
- * The targets whose call site has not landed: Vue's, React's, Svelte's, Solid's, Angular's and
- * Astro's have (ADR-0069).
- */
-const WAITING = TARGET_NAMES.filter(
-  (name) => !["vue", "react", "svelte", "solid", "angular", "astro"].includes(name),
-);
-
-describe("composables and shared modules before each target's lane", () => {
-  it.each(WAITING)("%s reports UF1002 where a component first reads a module's value", (name) => {
-    const module = modules();
-    expect(emit(name, module)).toEqual({
-      files: [],
-      reported: [
-        {
-          code: "UF1002",
-          severity: "error",
-          message: `The ${name} target does not emit a value imported from a \`.ts\` module yet: it lands with this target's composables lane.`,
-          span: module.components[0]!.bindings[0]!.span,
-        },
-      ],
-    });
-  });
-
-  it.each(WAITING)("%s reports UF1002 at a composable's call", (name) => {
-    const module = modules();
-    const list = module.components[0]!;
-    list.bindings = list.bindings.filter(({ kind }) => kind !== "import" && kind !== "moduleConst");
-    expect(emit(name, module).reported).toEqual([
-      expect.objectContaining({ code: "UF1002", span: list.setup[0]!.span }),
-    ]);
-  });
-
+describe("composables and shared modules on each target", () => {
   it("angular emits a component that reads a module's values and calls a composable", () => {
     const { files, reported } = emit("angular", modules());
     expect(reported).toEqual([]);
@@ -92,6 +59,15 @@ describe("composables and shared modules before each target's lane", () => {
 
   it("solid emits a component that reads a module's values and calls a composable", () => {
     const { files, reported } = emit("solid", modules());
+    expect(reported).toEqual([]);
+    expect(files.map(({ path }) => path)).toEqual(["List.tsx"]);
+    expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');
+    expect(files[0]!.contents).toContain('import { useToggle } from "./useToggle";');
+    expect(files[0]!.contents).toContain("const GAP = sizes.sm * 2;");
+  });
+
+  it("qwik emits a component that reads a module's values and calls a composable", () => {
+    const { files, reported } = emit("qwik", modules());
     expect(reported).toEqual([]);
     expect(files.map(({ path }) => path)).toEqual(["List.tsx"]);
     expect(files[0]!.contents).toContain('import { sizes } from "./tokens";');

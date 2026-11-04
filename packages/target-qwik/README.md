@@ -254,8 +254,45 @@ QRL itself: `limit ? Math.min(price.value, limit.value) : price.value`, and
 comparison, the left of `&&`, or an operand of `&&`, `||` or `??` that is itself in a test.
 `typeof limit` is not one: a signal is no function.
 
-A composable that reads a module's values is UF1002 until the call site lands, and so are a
-composable's call and what it gives a component.
+A component calls a composable at the top of its setup, as the source does, and imports the hook
+from its output beside the `.uf.ts`: `const { on, toggle } = useToggle(false);`, destructuring
+only the members the output reads (`src/setup.ts`). Each argument takes its parameter's form:
+
+| Source                                     | Qwik                                              |
+| ------------------------------------------ | ------------------------------------------------- |
+| a value, `useToggle(false)`                | as written, read once                             |
+| a getter, `useTotal(() => quantity.value)` | `useTotal(useComputed$(() => quantity.value))`    |
+| a callback, `useCounter((n) => …)`         | `useCounter($((n) => …))`, the QRL the hook calls |
+
+What the call gives is read as the hook returns it: a ref or a derived value is its signal, read
+through `.value` as written and tracked by a task as a component's own signal is; a constant is
+as written; and a function is the hook's QRL, which client code calls as it calls a local QRL
+(awaited where the call is a statement or its value is used, floated where the function is
+async). Since every function the hook returns is a QRL, whose call gives a promise, a call of one
+in the template (a slot's fill included, which is a render prop), a getter or a value the setup
+evaluates is UF1002, at the call.
+
+An argument whose code reads a member of its own call, itself or through the setup declarations
+it reads, another call's arguments among them (`useCounter(3, () => reset())`), is UF1002 at the
+read: Qwik makes the argument's QRL or signal before the call returns, so it would capture the
+member before it exists.
+
+Qwik's optimizer captures a destructured call's members through an object it names after the
+hook, and where one call's argument reads another call's members, it can name two calls of one
+hook alike. So once one call of a hook is read so, every call of that hook is an object of its
+own, destructured after it: `const counter_1 = useCounter(4, …);` then
+`const { reset: resetB } = counter_1;`.
+
+A module's values reach an output as module-level bindings, which a `$` scope reads without
+capturing them, since the optimizer imports them into the segments it writes (ADR-0070,
+`src/modules.ts`): a value imported from a relative `.ts` module is imported from the output
+tree's copy of the module as the source imports it, and a top-level `const` the output reaches is
+declared at module scope as written, in source order, with the module's types its annotations
+name. A function or a `const` that reads only them moves to module scope with them. Where a
+source holds several components or composables, its main one declares every module value any of
+them reads and exports those the others read, `export { STEP };`, and each other one imports what
+it reads from the main one's output, `import { STEP } from "./Pair"`, and reads it only inside
+its function, so the files join into one module (ADR-0053).
 
 ## Toolchain
 

@@ -11,8 +11,10 @@ import type {
   Binding,
   BindingId,
   BindingKind,
+  BindingReference,
   Code,
   CodeReference,
+  ComposableApi,
   ComposableParameter,
   ConstItem,
   ElementNode,
@@ -24,6 +26,8 @@ import type {
   UfComponent,
   UfComposable,
   UfModule,
+  UseArgument,
+  UseItem,
 } from "@unframework/ir";
 
 import { fillExpressions, planComposition } from "./composition.ts";
@@ -34,6 +38,7 @@ import { elementParameter, handlerOnlyFunctions, splitHandler, usedFunctions } f
 import type { SplitHandler } from "./handlers.ts";
 import { callSites, spliceable } from "./inline.ts";
 import type { CallSite } from "./inline.ts";
+import { importsModuleValues } from "./modules.ts";
 
 /**
  * Where a setup function goes:
@@ -235,7 +240,7 @@ export function planSetup(
 ): SetupPlan {
   const args = new Map(composable?.parameters.map((parameter) => [parameter.binding, parameter]));
   const returned = new Set(composable?.returns.map((member) => member.binding));
-  const hoisted = hoistable(component, returned);
+  const hoisted = hoistable(component, returned, !importsModuleValues(module, component.name));
   const functions = planFunctions(component, hoisted, names, returned);
   const consts = planConsts(component, hoisted, args);
   const qrls = new Set<string>();
@@ -249,6 +254,18 @@ export function planSetup(
     if (parameter.kind !== "callback") continue;
     qrls.add(parameter.name);
     if (callbackFloats(parameter)) promiseQrls.add(parameter.name);
+  }
+  // A function a composable's call destructures is the hook's QRL (ADR-0069): a call of an async
+  // one is its promise, awaited only where the source awaits it.
+  for (const item of component.setup) {
+    if (item.kind !== "Use") continue;
+    const api = composableApi(module, item.composable);
+    for (const used of item.members) {
+      const { name, kind } = bindingOf(component, used.binding);
+      if (kind !== "usedFn") continue;
+      qrls.add(name);
+      if (api.members.find((member) => member.name === used.member)?.async) promiseQrls.add(name);
+    }
   }
   const emitted = emittedEvents(component);
   const eventLocals = new Map<string, string>();
@@ -929,8 +946,14 @@ function declaredQrls(
       case "Provide":
       case "Inject":
         break;
-      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+      // A composable's callback argument is a QRL its hook calls, as a child calls a listener:
+      // its calls are awaited (ADR-0069).
       case "Use":
+        for (const argument of item.arguments) {
+          if (argument.kind === "Callback") {
+            visit(argument.callback.body, kindOf(argument.callback), false, true);
+          }
+        }
         break;
       default:
         unreachable(item);
@@ -1000,7 +1023,10 @@ function rewriteRules(plan: SetupPlan, event: string | undefined): RewriteRules 
         // (./composable.ts `readGetters`), and a callback's is a QRL call.
         case "argument":
           return written;
-        // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
+        // A module's value, imported or declared at module scope as the source has it, which a
+        // `$` scope reads as a module-level import (ADR-0070); what a composable's call
+        // destructures, as written: a signal read through `.value`, a QRL client code calls,
+        // a constant (ADR-0069).
         case "moduleConst":
         case "import":
         case "usedState":
@@ -1071,12 +1097,219 @@ function functionRefs(fn: FunctionCode): CodeReference[] {
 }
 
 /**
+ * The calls of a function a composable's call destructures in code that is not client code: the
+ * template (a slot's fill included), a getter, a value the setup evaluates. The hook returns each
+ * function as a `$()` QRL (./composable.ts), whose call gives a promise, so these are reported
+ * (P2).
+ */
+export function usedFunctionRenderCalls(component: UfComponent): BindingReference[] {
+  const used = new Set(
+    component.bindings.filter(({ kind }) => kind === "usedFn").map(({ id }) => id),
+  );
+  if (!used.size) return [];
+  // A named or scoped slot's fill is a render prop the child calls as it renders: render code too.
+  const codes: Code[] = expressionsOf(component).map(({ expression }) => expression);
+  for (const item of component.setup) {
+    switch (item.kind) {
+      case "State":
+      case "Variable":
+        if (item.initial) codes.push(item.initial);
+        break;
+      case "Const":
+        codes.push(item.value);
+        break;
+      case "Derived":
+        codes.push(item.getter.body);
+        break;
+      case "Watch":
+        for (const source of item.sources) {
+          if (source.kind === "Getter") codes.push(source.getter.body);
+        }
+        break;
+      case "Provide":
+        codes.push(item.value);
+        break;
+      case "Inject":
+        if (item.fallback) codes.push(item.fallback);
+        break;
+      case "Use":
+        for (const argument of item.arguments) {
+          if (argument.kind === "Value") codes.push(argument.value);
+          else if (argument.kind === "Getter") codes.push(argument.getter.body);
+        }
+        break;
+      case "Function":
+      case "WatchEffect":
+      case "Lifecycle":
+      case "TemplateRef":
+      case "Id":
+      case "Model":
+        break;
+      default:
+        unreachable(item);
+    }
+  }
+  // A setup function such code calls runs there too.
+  const functions = new Map(
+    component.setup.flatMap((item) => (item.kind === "Function" ? [[item.binding, item]] : [])),
+  );
+  const reached = new Set<BindingId>();
+  for (let index = 0; index < codes.length; index++) {
+    for (const reference of codes[index]!.refs) {
+      if (reference.kind !== "Binding" || !reference.call || reached.has(reference.binding)) {
+        continue;
+      }
+      const fn = functions.get(reference.binding);
+      if (!fn) continue;
+      reached.add(reference.binding);
+      codes.push(fn.function.body);
+    }
+  }
+  return codes.flatMap(({ refs }) =>
+    refs.filter(
+      (reference): reference is BindingReference =>
+        reference.kind === "Binding" && reference.call === true && used.has(reference.binding),
+    ),
+  );
+}
+
+/**
+ * The reads in a composable's arguments that reach a member of that same call, directly or
+ * through the setup declarations they read (`useCounter(3, () => reset())`), another call's
+ * arguments among them, each with the member it reaches. Each argument's `$` scope is created
+ * before the call returns, so it captures the member before it exists: Qwik's optimizer captures
+ * `undefined`, or a name declared after it. These are reported (P2).
+ */
+export function selfReadingArguments(
+  component: UfComponent,
+): { reference: BindingReference; member: BindingId }[] {
+  const declared = declarationReads(component);
+  const found: { reference: BindingReference; member: BindingId }[] = [];
+  for (const item of component.setup) {
+    if (item.kind !== "Use") continue;
+    const members = new Set(item.members.map(({ binding }) => binding));
+    for (const argument of item.arguments) {
+      for (const reference of argumentCode(argument).refs) {
+        if (reference.kind !== "Binding") continue;
+        const member = reachedMember(reference.binding, members, declared);
+        if (member !== undefined) found.push({ reference, member });
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * The composables one of whose calls has members another call's arguments read, directly or
+ * through the setup declarations they read, as {@link selfReadingArguments} follows them:
+ * Qwik's optimizer can name two calls of such a hook alike (./setup.ts `useStatement`).
+ */
+export function hooksReadByOtherCalls(component: UfComponent): Set<string> {
+  const declared = declarationReads(component);
+  const calls = component.setup.filter((item): item is UseItem => item.kind === "Use");
+  const found = new Set<string>();
+  for (const item of calls) {
+    const members = new Set(item.members.map(({ binding }) => binding));
+    const read = calls.some(
+      (other) =>
+        other !== item &&
+        other.arguments.some((argument) =>
+          argumentCode(argument).refs.some(
+            (reference) =>
+              reference.kind === "Binding" &&
+              reachedMember(reference.binding, members, declared) !== undefined,
+          ),
+        ),
+    );
+    if (read) found.add(item.composable);
+  }
+  return found;
+}
+
+/** What each setup declaration's code reads, by the binding it declares. */
+function declarationReads(component: UfComponent): Map<BindingId, Code[]> {
+  const declared = new Map<BindingId, Code[]>();
+  for (const item of component.setup) {
+    switch (item.kind) {
+      case "Function":
+        declared.set(item.binding, [item.function.body]);
+        break;
+      case "Const":
+        declared.set(item.binding, [item.value]);
+        break;
+      case "Derived":
+        declared.set(item.binding, [item.getter.body]);
+        break;
+      case "State":
+      case "Variable":
+        if (item.initial) declared.set(item.binding, [item.initial]);
+        break;
+      // Another call's member exists once that call returns, after its own arguments are made:
+      // a cycle through it is a cycle too.
+      case "Use":
+        for (const { binding } of item.members)
+          declared.set(binding, item.arguments.map(argumentCode));
+        break;
+      default:
+        break;
+    }
+  }
+  return declared;
+}
+
+/** A composable's argument's code: a value's, or a getter's or a callback's body. */
+export function argumentCode(argument: UseArgument): Code {
+  switch (argument.kind) {
+    case "Value":
+      return argument.value;
+    case "Getter":
+      return argument.getter.body;
+    case "Callback":
+      return argument.callback.body;
+    default:
+      return unreachable(argument);
+  }
+}
+
+/** The first of `members` a binding is, or reaches through the declarations' code it reads. */
+function reachedMember(
+  start: BindingId,
+  members: ReadonlySet<BindingId>,
+  declared: ReadonlyMap<BindingId, Code[]>,
+): BindingId | undefined {
+  const seen = new Set<BindingId>();
+  const queue = [start];
+  for (let id = queue.shift(); id !== undefined; id = queue.shift()) {
+    if (members.has(id)) return id;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    for (const code of declared.get(id) ?? []) {
+      for (const next of referencedIds(code.refs)) queue.push(next);
+    }
+  }
+  return undefined;
+}
+
+/** The API of the composable a module imports under `local` (ADR-0069). */
+function composableApi(module: UfModule, local: string): ComposableApi {
+  for (const entry of module.imports ?? []) {
+    const name = entry.names.find((each) => each.kind === "Composable" && each.local === local);
+    if (name) return entry.api.composables!.find((each) => each.name === name.imported)!;
+  }
+  throw new Error(`No composable is imported as ${local}.`);
+}
+
+/**
  * The constants and functions that capture nothing of the component: what they reference,
  * followed through each other, is only such constants and functions (and globals). They move
  * to module scope (ADR-0045, `unicorn/consistent-function-scoping`). The greatest such set: the
  * analyser rejects recursion, so this is the set a reader would hoist.
  */
-function hoistable(component: UfComponent, returned: ReadonlySet<BindingId>): Set<BindingId> {
+function hoistable(
+  component: UfComponent,
+  returned: ReadonlySet<BindingId>,
+  declaresModule: boolean,
+): Set<BindingId> {
   const candidates = new Map<BindingId, readonly CodeReference[]>();
   // Code typed by a type parameter stays in the generic arrow, where `T` is (ADR-0068).
   const typed = typedByParameters(component);
@@ -1088,6 +1321,13 @@ function hoistable(component: UfComponent, returned: ReadonlySet<BindingId>): Se
     else if (item.kind === "Function") candidates.set(item.binding, functionRefs(item.function));
   }
   const hoisted = new Set(candidates.keys());
+  // A module's values are at module scope already (ADR-0070), but where the output imports them
+  // from a sibling's (./modules.ts), which may not have run when its own module scope does.
+  const moduleValues = new Set(
+    component.bindings
+      .filter(({ kind }) => declaresModule && (kind === "moduleConst" || kind === "import"))
+      .map(({ id }) => id),
+  );
   for (let changed = true; changed;) {
     changed = false;
     for (const [id, refs] of candidates) {
@@ -1095,7 +1335,7 @@ function hoistable(component: UfComponent, returned: ReadonlySet<BindingId>): Se
       const captures = refs.some((reference) => {
         switch (reference.kind) {
           case "Binding":
-            return !hoisted.has(reference.binding);
+            return !hoisted.has(reference.binding) && !moduleValues.has(reference.binding);
           case "Write":
           case "Emit":
           case "Slot":
@@ -1183,8 +1423,14 @@ function planFunctions(
       case "Id":
       case "Model":
         break;
-      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+      // A composable's arguments (ADR-0069): a value is render code, a getter is a
+      // `useComputed$`'s, and a callback is the QRL client code calls.
       case "Use":
+        for (const argument of item.arguments) {
+          if (argument.kind === "Value") mark(render, argument.value.refs);
+          else if (argument.kind === "Getter") mark(getters, argument.getter.body.refs);
+          else mark(client, argument.callback.body.refs);
+        }
         break;
       default:
         unreachable(item);
@@ -1355,6 +1601,9 @@ export function isReactive(kind: BindingKind): boolean {
     case "state":
     case "derived":
     case "model":
+    // A composable's state or derived value is its hook's signal (ADR-0069).
+    case "usedState":
+    case "usedDerived":
       return true;
     case "loopVar":
     case "templateRef":
@@ -1368,11 +1617,8 @@ export function isReactive(kind: BindingKind): boolean {
     case "component":
     // A composable's argument changes by its parameter's kind: see `isReactiveBinding`.
     case "argument":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
-    case "usedState":
-    case "usedDerived":
     case "usedFn":
     case "usedConst":
       return false;
@@ -1411,8 +1657,11 @@ function emittedEvents(component: UfComponent): Set<string> {
       case "Provide":
       case "Inject":
         break;
-      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
+      // A composable's callback argument may emit (ADR-0069).
       case "Use":
+        for (const argument of item.arguments) {
+          if (argument.kind === "Callback") visit(argument.callback.body.refs);
+        }
         break;
       default:
         unreachable(item);

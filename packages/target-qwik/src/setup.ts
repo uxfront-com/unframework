@@ -30,10 +30,11 @@ import type {
   ModelItem,
   Parameter,
   SetupItem,
+  UseItem,
   WatchEffectItem,
   WatchItem,
 } from "@unframework/ir";
-import { summarizeTracked } from "@unframework/ir";
+import { codeOf, expressionsOf, summarizeTracked } from "@unframework/ir";
 
 import { awaitQrlCalls, passElement } from "./calls.ts";
 import { readGetters } from "./composable.ts";
@@ -41,7 +42,9 @@ import { moduleTypeParameters } from "./generics.ts";
 import { inlineCalls, localDeclaration } from "./inline.ts";
 import type { InlineFunction, Inliner } from "./inline.ts";
 import {
+  argumentCode,
   eventCallees,
+  hooksReadByOtherCalls,
   inlinedAt,
   isPredicate,
   isReactiveBinding,
@@ -90,7 +93,12 @@ export function printSetup(plan: SetupPlan): SetupOutput {
     entries.push({
       index,
       statements,
-      declares: "binding" in item ? [item.binding] : [],
+      declares:
+        "binding" in item
+          ? [item.binding]
+          : item.kind === "Use"
+            ? item.members.map(({ binding }) => binding)
+            : [],
       captures: withCallees(plan, captured(plan, item)),
       unmounted: item.kind === "Lifecycle" && item.hook === "unmounted",
     });
@@ -227,8 +235,8 @@ function captured(plan: SetupPlan, item: SetupItem): Set<BindingId> {
     case "Id":
     case "Model":
       break;
-    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
     case "Use":
+      for (const argument of item.arguments) add(argumentCode(argument));
       break;
     default:
       unreachable(item);
@@ -362,12 +370,78 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
         ),
       ];
     }
-    // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
     case "Use":
-      return [];
+      return [declaration(useStatement(plan, item))];
     default:
       return unreachable(item);
   }
+}
+
+/**
+ * A composable's call, `const { on, toggle } = useToggle(false);`, its hook imported from its
+ * output beside the `.uf.ts` (ADR-0069), destructuring the members the output reads: its signals,
+ * read through `.value` as written, its QRLs and its constants. Each argument takes the form the
+ * hook's parameter does (./composable.ts): a value as written, read once; a getter as the signal
+ * `useComputed$` makes of it; a callback as the QRL `$()` makes of it, which the hook calls.
+ */
+function useStatement(plan: SetupPlan, item: UseItem): string {
+  const { names } = plan;
+  for (const entry of plan.module.imports ?? []) {
+    const name = entry.names.find(
+      (each) => each.kind === "Composable" && each.local === item.composable,
+    );
+    if (!name) continue;
+    const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
+    names.imports.add(`${directory}${name.imported}`, name.imported, {
+      local: item.composable,
+      exact: true,
+    });
+  }
+  const parts = item.arguments.map((argument) => {
+    switch (argument.kind) {
+      case "Value":
+        return rewritten(plan, argument.value, "expression", undefined, "pure");
+      case "Getter":
+        return `${names.core("useComputed$")}(${getterSource(plan, argument.getter)})`;
+      case "Callback":
+        return `${names.core("$")}(${printFunction(plan, argument.callback, "client").text})`;
+      default:
+        return unreachable(argument);
+    }
+  });
+  const read = readBindings(plan);
+  const members = item.members.flatMap(({ member, binding }) => {
+    if (!read.has(binding)) return [];
+    const local = bindingName(plan, binding);
+    return [member === local ? local : `${member}: ${local}`];
+  });
+  const call = `${item.composable}(${parts.join(", ")});`;
+  if (!members.length) return call;
+  // Qwik's optimizer captures a destructured call's members through an object it names after the
+  // hook. Where one call's argument reads another call's members, itself or through the setup's
+  // declarations, it can name two calls of one hook alike, and the argument captures the wrong one, or the server build declares the name
+  // twice. So once any call of a hook is read so, every call of that hook is a named object,
+  // destructured after it, and the optimizer names none of them.
+  if (hooksReadByOtherCalls(plan.component).has(item.composable)) {
+    const result = names.fresh(lowerFirst(item.composable.replace(/^use/, "")));
+    return `const ${result} = ${call}\nconst { ${members.join(", ")} } = ${result};`;
+  }
+  return `const { ${members.join(", ")} } = ${call}`;
+}
+
+function lowerFirst(name: string): string {
+  return `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
+}
+
+/** The bindings the component's code reads anywhere: its setup's and its render's. */
+function readBindings(plan: SetupPlan): Set<BindingId> {
+  const found = new Set<BindingId>();
+  const codes = [
+    ...codeOf(plan.component).map(({ code }) => code),
+    ...expressionsOf(plan.component).map(({ expression }) => expression),
+  ];
+  for (const code of codes) for (const id of referencedIds(code.refs)) found.add(id);
+  return found;
 }
 
 /**
@@ -791,6 +865,9 @@ function tracked(
     case "state":
     case "derived":
     case "model":
+    // A composable's state or derived value is its hook's signal (ADR-0069).
+    case "usedState":
+    case "usedDerived":
       return { tracked: `${track}(${binding.name})`, read: `${binding.name}.value` };
     case "prop": {
       const read =
@@ -811,13 +888,11 @@ function tracked(
     case "slotScope":
     case "context":
     case "component":
-    // A value or a callback argument: the analyser lets a watcher read neither as a source.
+    // A value or a callback argument: the analyser lets a watcher read neither as a source, nor
+    // a module's value, nor a composable's function or constant.
     case "argument":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
-    case "usedState":
-    case "usedDerived":
     case "usedFn":
     case "usedConst":
       throw new Error(`A ${binding.kind} is not tracked yet.`);

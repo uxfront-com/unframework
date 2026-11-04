@@ -5,7 +5,6 @@ import {
   boundJsxAttribute,
   childImports,
   componentTypes,
-  composableUse,
   defineTarget,
   exportDeclaration,
   exportsOf,
@@ -85,7 +84,8 @@ import { qwikEventProp } from "./events.ts";
 import { generatedInterface, typeParameterDeclaration } from "./generics.ts";
 import type { GeneratedInterface } from "./generics.ts";
 import { Listeners } from "./listeners.ts";
-import { OutputNames, planSetup } from "./plan.ts";
+import { moduleReads } from "./modules.ts";
+import { OutputNames, planSetup, selfReadingArguments, usedFunctionRenderCalls } from "./plan.ts";
 import type { SetupPlan } from "./plan.ts";
 import { exposeStatement, fillFunction, printSetup } from "./setup.ts";
 import { qwikTitles } from "./title.ts";
@@ -223,20 +223,38 @@ export const qwik: Target = defineTarget({
     "composable-effect-order": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    // A composable's call and what a module or a composable gives are declared before this
-    // target emits them (ADR-0069, ADR-0070): until its composables lane lands, a component that
-    // uses one is reported, never emitted without it (P2).
-    const composable = composableUse(component);
-    if (composable) {
+    const { module } = context;
+    // A composable's functions are QRLs (./composable.ts): a call outside client code would give
+    // a promise, so it is reported, never emitted (P2).
+    const renderCalls = usedFunctionRenderCalls(component);
+    for (const call of renderCalls) {
+      const name = bindingOf(component, call.binding).name;
       context.report({
         code: "UF1002",
         severity: "error",
-        message: `The qwik target does not emit ${composable.what} yet: it lands with this target's composables lane.`,
-        span: composable.span,
+        message: `\`${name}\` is a function a composable returns, which the qwik target calls only from client code: the hook returns it as a QRL, whose call gives a promise, so the template, a getter or the setup cannot call it.`,
+        span: call.span,
+        help: "Return the value as a derived value of the composable, or call the function from a listener, a watcher or a lifecycle hook.",
       });
-      return [];
     }
-    const { module } = context;
+    // An argument's `$` scope is made before its call returns, so it cannot capture what the call
+    // returns (./plan.ts): reported, never emitted with a capture that is `undefined` (P2).
+    const selfReads = selfReadingArguments(component);
+    for (const { reference, member } of selfReads) {
+      const name = bindingOf(component, member).name;
+      const read = bindingOf(component, reference.binding).name;
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message:
+          read === name
+            ? `\`${name}\` is what this composable's call returns, which the qwik target cannot read in the call's own arguments: Qwik makes each argument's QRL or signal before the call returns, so it would capture \`${name}\` before it exists.`
+            : `\`${read}\` reads \`${name}\`, which this composable's call returns, so the qwik target cannot read it in the call's own arguments: Qwik makes each argument's QRL or signal before the call returns, so it would capture \`${name}\` before it exists.`,
+        span: reference.span,
+        help: "Do the work in the composable, or have the argument write state the component declares, which a watcher of it reads.",
+      });
+    }
+    if (renderCalls.length || selfReads.length) return [];
     // Every name the source declares or reads is taken before the output names its own, but for
     // the authoring APIs code calls (`nextTick`), which the output replaces with its own.
     const ownNames = (each: UfComponent) => {
@@ -276,6 +294,8 @@ export const qwik: Target = defineTarget({
     }
     // The types it imports, by name (ADR-0067): a child's from its output, `./Field`.
     addTypeImports(component, module, imports, (name) => name);
+    // The module's values it reads, as the source declares and imports them (ADR-0070).
+    const reads = moduleReads(component.name, module, imports);
     const componentFn = imports.add("@qwik.dev/core", "component$");
     const names = new OutputNames(imports);
     const plan = planSetup(component, module, names);
@@ -378,6 +398,9 @@ export const qwik: Target = defineTarget({
     const hoisted = setup.hoisted.length
       ? [jsx.placeholders.statements(`${joinHoisted(setup.hoisted)}\n`)]
       : [];
+    const constants = reads.constants.length
+      ? [jsx.placeholders.statements(`${reads.constants.join("\n")}\n`)]
+      : [];
     const keys = keyDeclarations(component, module, plan);
     const exported = exportsOf(component.name, module.exports);
     // A component that renders itself refers to its own `const` (ADR-0053).
@@ -409,12 +432,15 @@ export const qwik: Target = defineTarget({
           {
             imports: declarations,
             types: [
-              ...moduleTypes(component, module),
+              ...[...moduleTypes(component, module), ...reads.types].toSorted(
+                (a, b) => a.span.start - b.span.start,
+              ),
               ...(events ? [events.declaration] : []),
               ...(models ? [models.declaration] : []),
               ...(slots ? [slots.declaration] : []),
             ],
             body: [
+              ...constants,
               ...(keys ? [jsx.placeholders.statements(`${keys}\n`)] : []),
               ...hoisted,
               ...declared,
@@ -440,21 +466,6 @@ export default qwik;
  */
 function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
   const { module } = context;
-  // A module's values reach a composable with the call site (ADR-0070): until then it is
-  // reported, never emitted without them (P2).
-  const moduleRead = composable.bindings.find(
-    (binding) => binding.kind === "moduleConst" || binding.kind === "import",
-  );
-  if (moduleRead) {
-    context.report({
-      code: "UF1002",
-      severity: "error",
-      message:
-        "The qwik target does not read a module's values in a composable yet: it lands with this target's composables lane.",
-      span: moduleRead.span,
-    });
-    return [];
-  }
   const owner = setupOwner(composable);
   const reserved = sourceNames(owner, module);
   for (const name of apiNames(owner)) reserved.delete(name);
@@ -488,12 +499,17 @@ function emitComposable(composable: UfComposable, context: EmitContext): OutputF
   // its parameters' and type parameters', which its setup owner holds no trace of.
   addTypeImports(owner, module, imports, (name) => name);
   addParameterTypeImports(composable, module, imports);
+  // The module's values it reads, as the source declares and imports them (ADR-0070).
+  const reads = moduleReads(composable.name, module, imports);
   const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
   const contents = [
     ...(head ? [head] : []),
-    ...moduleTypes(owner, module).map((declaration) =>
-      declaration.exported ? `export ${declaration.code}` : declaration.code,
-    ),
+    ...[...moduleTypes(owner, module), ...reads.types]
+      .toSorted((a, b) => a.span.start - b.span.start)
+      .map((declaration) =>
+        declaration.exported ? `export ${declaration.code}` : declaration.code,
+      ),
+    ...(reads.constants.length ? [reads.constants.join("\n")] : []),
     ...(setup.hoisted.length ? [joinHoisted(setup.hoisted)] : []),
     `export function ${composable.name}${typeParameters}(${parameters.join(", ")}) {\n${body}\n}`,
     ...helperCode,

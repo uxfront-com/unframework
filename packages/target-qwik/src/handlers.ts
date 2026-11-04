@@ -355,8 +355,12 @@ export function usedFunctions(component: UfComponent, removed: ReadonlySet<numbe
       case "Id":
       case "Model":
         break;
-      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
       case "Use":
+        for (const argument of item.arguments) {
+          if (argument.kind === "Value") visit(argument.value.refs);
+          else if (argument.kind === "Getter") visit(argument.getter.body.refs);
+          else visit(argument.callback.body.refs);
+        }
         break;
       default:
         unreachable(item);
