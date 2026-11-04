@@ -146,8 +146,6 @@ describe("createFileResolver's `module`", () => {
 });
 
 describe("compile() with shared modules", () => {
-  // A target reads a value import from its composables lane on (ADR-0069): until then, a type
-  // import is what reaches a component's output.
   it("copies each module the source reaches beside the outputs, and lists it", async () => {
     const source = [
       'import type { Tone } from "./tokens";',

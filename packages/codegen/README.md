@@ -5,9 +5,9 @@ framework-specific.
 
 - **`defineTarget`** and the `Target` interface: `name`, `framework`, a capability matrix,
   `emit(component, context)`, and `emitComposable(composable, context)`, which emits a `.uf.ts`
-  module's composable as its own module (ADR-0069). `emitComposable` is optional until each
-  target's composables lane lands: `compile()` reports UF1002 for a composable of a target
-  without it. The matrix has a cell for every name in `CAPABILITY_NAMES`: one per
+  module's composable as its own module (ADR-0069). Every built-in target has `emitComposable`.
+  It is optional for a third-party target: `compile()` reports UF1002 for a composable of a
+  target without it. The matrix has a cell for every name in `CAPABILITY_NAMES`: one per
   IR node and attribute kind (`element`, `text`, `interpolation`, `conditional`, `list`,
   `static-attribute`, `bound-attribute`, `class-binding`, `style-binding`, `attribute-spread`),
   plus `props`, a root `fragment`, `svg`, `listbox`, `interactivity` (listeners, template refs,
@@ -26,8 +26,8 @@ framework-specific.
   call (`composables`), and one whose composable runs code in the browser
   (`composable-effect-order`, which refines `interactivity`). `composableUse` finds where a
   component first calls a composable or reads what a module or a composable gives it, in source
-  order: until a target's composables lane lands, its `emit` reports UF1002 there and emits
-  nothing for it.
+  order: a target that cannot emit them reports UF1002 there and emits nothing for it. Every
+  built-in target emits them.
   Each cell is `native`, `emulated` with the name of the inline helper the target prints (React's
   `cx` for `class-binding`), or `unsupported` with a portability diagnostic: a target declares in
   its matrix what it cannot render exactly (P4, ADR-0033). `requiredCapabilities` derives what a
@@ -209,10 +209,9 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   dialects: `operand`, `test`, `negate`, `conjoin`, `member`, `angularCode`, `vueAttributeCode`,
   `staticClassValue`, `vueClassValue`, `codeTokens` and `mapCode`, and the binding forms ADR-0065
   lowers: `bindingForms`, `mergesWholeStyle` and `spreadStyleExpression`. The targets' `markup-semantics` tests render the shared cases of
-  `test/markup-cases.ts` through each framework and its L5 linters, and the `composable` test each
-  target's composables lane adds compiles the composable and module cases through
-  `test/composable-cases.ts`, which reads each
-  case from `tests/integration/pending/` or `cases/` (ADR-0069).
+  `test/markup-cases.ts` through each framework and its L5 linters, and each target's
+  `composable` test compiles the composable and module cases through `test/composable-cases.ts`,
+  which reads each case from `tests/integration/cases/` (ADR-0069).
 - **Formatting:** `formatOutput` runs oxfmt (pinned) over code files (TS, TSX, JS), with
   embedded-language formatting off and objects laid out by width alone. In a markup file it
   formats only the TypeScript blocks, each as TypeScript on its own (ADR-0041): a `.vue` file's

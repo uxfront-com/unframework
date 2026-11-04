@@ -45,10 +45,8 @@ plain, versioned, schema-validated JSON (plan §5.3).
   them (`ApiMember.literals`), for UF3039; a `.uf.ts` module's `ModuleApi.composables`
   (`ComposableApi`, with `hasEffects`), imported by `Composable` names; and the `Use` setup item,
   a composable's call whose members are `usedState`, `usedDerived`, `usedFn` and `usedConst`
-  bindings. Every new field is absent when empty. The analyser fills a module's `typeImports`
-  and `typeExports`, a prop's `declaredBy`, and an API's `references` and `literals`, and lowers
-  none of the rest yet. The targets report a `Use` item and the new binding kinds as UF1002 until
-  their composables lanes.
+  bindings. Every new field is absent when empty. The analyser fills all of them, and every
+  target emits them, each composable through the target's `emitComposable`.
 - **Builders:** one per type (`createModule`, `createComponent`, `createElement`, `createFor`,
   `createExpression`, `createCode`, `createWriteReference`, `createFunctionCode`,
   `createStateItem`, `createEventAttribute`, …). They write keys in the order of the types, which

@@ -81,12 +81,14 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   default export, or its only exported component), and each other component loads under a
   component id, `<abs>/X.uf.tsx.<output file>` (`/src/Card.uf.tsx.CardIcon.vue`, ADR-0053),
   which ends in the extension the framework's plugin claims.
-- Until M5, that error stops two components that share a type declaration: each output declares
-  the types its props reach, so `joinModules` reports the type as "declared by A.tsx and B.tsx"
-  (ADR-0034). Two outputs that print the same inline helper, such as React's `cx`, clash the same
-  way, and so do two imports from one framework that name different sets (Angular's
-  `Component` beside `input`, Solid's `Show` beside `For`): only an identical import is written
-  once. Give each such component its own `.uf.tsx` file.
+- That error stops two components that share a type declared in their own file: each output
+  declares the types its props reach, so `joinModules` reports the type as "declared by A.tsx and
+  B.tsx" (ADR-0034). Two outputs that print the same inline helper, such as React's `cx`, clash
+  the same way, and so do two imports from one module whose sets differ but share a name
+  (Angular's `Component` beside `Component` and `input`, Solid's `Show` beside `Show` and `For`,
+  or `{ CardProps }` beside `{ CardProps, Tone }` from a shared `.ts` module): only an identical
+  import is written once, and a name two imports bring in is declared twice. Give each such
+  component its own `.uf.tsx` file.
 - A script module keeps the `.uf.tsx` file's exports. A `.vue`, `.svelte` or `.astro` module has
   only a default export, so markup targets refuse a main component exported by name
   (`export function Hello`), rather than load a module where `import { Hello }` finds nothing.
@@ -129,8 +131,8 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   A third-party target's composables load under the `.uf.ts` id. The id loads every composable
   the target's `emitComposable` emitted for the file, joined into one module. An output's relative
   import of a composable's output (`./useToggle`, `./useToggle.svelte.ts`, `./use-toggle`) is
-  looked up in the importer's compile, as a child's is, and resolves to the module's id. A target
-  without `emitComposable` fails the module with UF1002 until its composables lane lands.
+  looked up in the importer's compile, as a child's is, and resolves to the module's id. A
+  third-party target without `emitComposable` fails the module with UF1002.
   `composableIdSuffix`, `composableId` and `parseComposableId` build and take these ids apart.
 
 How `resolveId` answers:

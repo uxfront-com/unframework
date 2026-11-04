@@ -427,8 +427,8 @@ class Kinds {
         case "slotScope":
         case "context":
         case "component":
-        // What a module or a composable gives (ADR-0069, ADR-0070) is taken to hold any value
-        // until the composables lanes read its type.
+        // What a module or a composable gives (ADR-0069, ADR-0070) is taken to hold any value,
+        // which the shallow form is right for.
         case "moduleConst":
         case "import":
         case "argument":

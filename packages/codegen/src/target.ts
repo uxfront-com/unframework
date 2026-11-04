@@ -318,8 +318,8 @@ export interface Target {
   emit(component: UfComponent, context: EmitContext): OutputFile[];
   /**
    * Emits one composable of a `.uf.ts` module as its module, in the target's idiom (ADR-0069).
-   * Never throws: report problems instead. Optional until the target's composables lane lands:
-   * `compile()` reports UF1002 for a composable of a target without it.
+   * Never throws: report problems instead. Every built-in target has it. It is optional for a
+   * third-party target: `compile()` reports UF1002 for a composable of a target without it.
    */
   emitComposable?(composable: UfComposable, context: EmitContext): OutputFile[];
 }

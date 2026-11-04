@@ -614,9 +614,9 @@ const MODULE_BINDING_KINDS: Readonly<Partial<Record<BindingKind, string>>> = {
 
 /**
  * Where a component first calls a composable or reads a value a module or a composable gives it,
- * in source order (ADR-0069, ADR-0070), with what it uses, or `undefined`. The IR declares these
- * before the targets emit them, so until a target's composables lane lands, its `emit` reports
- * UF1002 there and emits nothing (P2).
+ * in source order (ADR-0069, ADR-0070), with what it uses, or `undefined`. Every built-in target
+ * emits these, so none calls it: a target that cannot emit them reports UF1002 there and emits
+ * nothing (P2).
  */
 export function composableUse(component: UfComponent): { what: string; span: Span } | undefined {
   const uses: { what: string; span: Span }[] = [];

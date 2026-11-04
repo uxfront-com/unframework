@@ -831,7 +831,7 @@ describe("composables (ADR-0069)", () => {
       try {
         const id = join(composables.root, "useToggle.uf.ts");
         await expect(server.client.pluginContainer.load(id)).rejects.toThrow(
-          "error[UF1002] (html): The html target does not emit a composable yet",
+          "error[UF1002] (html): The html target does not emit composables: it has no `emitComposable`.",
         );
       } finally {
         await server.close();
@@ -1217,8 +1217,9 @@ describe("the project graph (ADR-0071)", () => {
   };
 
   /**
-   * A target that emits each component as a `.vue` file, which plugin-vue's stand-in claims, a
-   * composable's call included: no built-in target emits one until its composables lane lands.
+   * A target that emits each component as a stub `.vue` file, which plugin-vue's stand-in claims,
+   * a composable's call included, so these tests judge the watch edges and the compiles rather
+   * than a framework's output.
    */
   const target = defineTarget({
     ...htmlTarget(),
