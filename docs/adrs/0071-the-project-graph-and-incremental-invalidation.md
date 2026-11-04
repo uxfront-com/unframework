@@ -1,7 +1,7 @@
 # ADR-0071: The project graph and incremental invalidation
 
-- **Status:** Proposed
-- **Date:** 2026-10-24
+- **Status:** Accepted
+- **Date:** 2026-11-04
 - **Plan:** §5.6 (layer 2), §5.10, §8.2, §9 M5, M6; P2, P8; ADR-0021, ADR-0027, ADR-0053, ADR-0067,
   ADR-0069, ADR-0070; amends ADR-0053
 

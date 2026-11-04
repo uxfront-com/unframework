@@ -42,14 +42,6 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
     "Raised by a crashing compiler plugin: the L1 canary triggers it, and no case installs plugins.",
   UF9001:
     "An internal compiler error: a case that triggers it is a compiler bug to fix, not to keep.",
-  // M5's codes are catalogued before the analyser reports them (ADR-0067 to ADR-0070). Layer 6
-  // of M5 reads props types through the type oracle.
-  // Layer 9 of M5 accepts generic components.
-  // Layer 8 of M5 resolves child APIs and the corpus's types through the oracle.
-  // Layer 10 of M5 imports shared modules.
-  // Layer 14 of M5 emits cross-file types and generics on Vue.
-  // Layer 32 of M5 builds the project graph.
-  // Layer 38 of M5 lands the composable cases.
 };
 
 /**

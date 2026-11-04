@@ -1,7 +1,7 @@
 # ADR-0067: The type oracle and cross-file props types
 
-- **Status:** Proposed
-- **Date:** 2026-10-24
+- **Status:** Accepted
+- **Date:** 2026-11-04
 - **Plan:** §4.2, §5.3, §5.5, §5.6 (layer 2), §6, §9 M5; P2, P5, P6, P8; R2, R3; ADR-0023,
   ADR-0034, ADR-0053, ADR-0055; amends ADR-0034 and ADR-0053
 

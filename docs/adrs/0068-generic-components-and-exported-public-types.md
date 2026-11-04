@@ -1,7 +1,7 @@
 # ADR-0068: Generic components and exported public types
 
-- **Status:** Proposed
-- **Date:** 2026-10-24
+- **Status:** Accepted
+- **Date:** 2026-11-04
 - **Plan:** §4.2, §5.6 (layer 4), §6, §7.2 (L4), §9 M5; G2, P2, P4, P6; ADR-0033, ADR-0034,
   ADR-0050, ADR-0059, ADR-0067; amends ADR-0034, ADR-0050 and ADR-0059
 
@@ -13,7 +13,7 @@ its own generic form, and not every one can carry `T` everywhere a consumer need
 
 - Angular's slot directives can't infer `T` for a scoped slot's context, since ngtsc infers a
   component's type parameter from its inputs alone.
-- Qwik's `component$` returns a non-generic component, so a generic signature needs a cast.
+- Qwik's `component$` wraps a function, so it takes `T` only from a generic arrow inside it.
 - Whether `astro check` types `interface Props<T>` for a consumer was not known until M5's Astro
   spike, which showed that it does (Evidence).
 
@@ -35,17 +35,18 @@ empty. Shapes keep `T` as a type-parameter node (ADR-0067).
 
 **Per target:**
 
-| Target       | `function List<T>(props: ListProps<T>)`                                    | `generic-components`                  | `generic-slot-props`       |
-| ------------ | -------------------------------------------------------------------------- | ------------------------------------- | -------------------------- |
-| React, Solid | a generic function component                                               | native                                | native                     |
-| Vue          | `<script setup lang="ts" generic="T">`                                     | native                                | native                     |
-| Svelte       | `<script lang="ts" generics="T">`, with `Snippet<[T]>`                     | native                                | native                     |
-| Angular      | a generic component class, whose `T` ngtsc infers from the inputs          | native                                | unsupported (UF4004, info) |
-| Qwik         | `component$`, with Qwik's documented type-only cast to a generic signature | native: the cast is no helper         | native                     |
-| Astro        | `interface Props<T>`                                                       | native, as M5's Astro spike confirmed | native                     |
+| Target       | `function List<T>(props: ListProps<T>)`                               | `generic-components`                  | `generic-slot-props`       |
+| ------------ | --------------------------------------------------------------------- | ------------------------------------- | -------------------------- |
+| React, Solid | a generic function component                                          | native                                | native                     |
+| Vue          | `<script setup lang="ts" generic="T">`                                | native                                | native                     |
+| Svelte       | `<script lang="ts" generics="T">`, with `Snippet<[T]>`                | native                                | native                     |
+| Angular      | a generic component class, whose `T` ngtsc infers from the inputs     | native                                | unsupported (UF4004, info) |
+| Qwik         | `component$` around a generic arrow, `<T,>(props: ListProps<T>) => …` | native, with no cast                  | native                     |
+| Astro        | `interface Props<T>`                                                  | native, as M5's Astro spike confirmed | native                     |
 
 - **Angular's gap.** A scoped slot's context takes `T`'s constraint, because slot directives can't
-  infer `T`. UF4004 (`generic-slot-props`) says so at the slot.
+  infer `T`, and an unconstrained `T` reads as `any` there. UF4004 (`generic-slot-props`) says so
+  at the slot.
 - **Astro needs no fallback.** `astro check` infers `T` from a consumer's props and checks the
   rest against it, through a scoped slot's render prop and through an `extends` of an imported
   generic interface (Evidence). So `generic-components` is native on Astro, and UF4006, kept for a
@@ -100,12 +101,12 @@ generic-slot-props gap.
 - Typed lists, selects and tables work on every target, with `T` checked for their consumers.
 - A design system's consumers import its public types by name, in every framework.
 - Every gap is a declared cell with its code, so no target differs only in a test (P4).
+- Qwik's generic arrow types `T` through `component$` with no assertion, so its checker types a
+  consumer's props by `T`, and L4's consumer fixtures check it like any other target's.
 
 **Negative:**
 
 - Angular consumers of a generic scoped slot see the constraint, not `T`.
-- Qwik's cast is a type-only assertion the checker trusts, so only L4's consumer fixtures catch a
-  wrong one.
 - Two new capabilities and their rows on the targets page, set once, in the change that adds M5's
   IR and capabilities.
 
@@ -115,8 +116,9 @@ generic-slot-props gap.
   and drop the checking that typed lists exist for (G2).
 - **Reject generic components on Angular.** Its generic class works, and only scoped slots lose
   `T`, so a capability cell for that part keeps the rest native.
-- **An inline helper for Qwik's generic signature.** A helper would make the cell emulated and add
-  code to the output. Qwik's documented cast is type-only and adds none.
+- **A cast or an inline helper for Qwik's generic signature.** A helper would make the cell emulated
+  and add code to the output. A type-only cast would need `PublicProps`, which `@qwik.dev/core`
+  doesn't export, and a generic arrow inside `component$` already gives a generic component.
 - **Print exported types instead of re-exporting them.** Printed types drift from the author's
   names and docs (ADR-0067).
 
