@@ -44,6 +44,7 @@ import type { InlineFunction, Inliner } from "./inline.ts";
 import {
   argumentCode,
   eventCallees,
+  hooksReadByOtherCalls,
   inlinedAt,
   isPredicate,
   isReactiveBinding,
@@ -417,35 +418,15 @@ function useStatement(plan: SetupPlan, item: UseItem): string {
   const call = `${item.composable}(${parts.join(", ")});`;
   if (!members.length) return call;
   // Qwik's optimizer captures a destructured call's members through an object it names after the
-  // hook. Where one call's argument reads another call's members, it can name two calls of one
-  // hook alike, and the argument captures the wrong one, or the server build declares the name
+  // hook. Where one call's argument reads another call's members, itself or through the setup's
+  // declarations, it can name two calls of one hook alike, and the argument captures the wrong one, or the server build declares the name
   // twice. So once any call of a hook is read so, every call of that hook is a named object,
   // destructured after it, and the optimizer names none of them.
-  if (namedHooks(plan).has(item.composable)) {
+  if (hooksReadByOtherCalls(plan.component).has(item.composable)) {
     const result = names.fresh(lowerFirst(item.composable.replace(/^use/, "")));
     return `const ${result} = ${call}\nconst { ${members.join(", ")} } = ${result};`;
   }
   return `const { ${members.join(", ")} } = ${call}`;
-}
-
-/** The composables one of whose calls has members another call's arguments read. */
-function namedHooks(plan: SetupPlan): Set<string> {
-  const calls = plan.component.setup.filter((item): item is UseItem => item.kind === "Use");
-  const found = new Set<string>();
-  for (const item of calls) {
-    const members = new Set(item.members.map(({ binding }) => binding));
-    const read = calls.some(
-      (other) =>
-        other !== item &&
-        other.arguments.some((argument) =>
-          argumentCode(argument).refs.some(
-            (reference) => reference.kind === "Binding" && members.has(reference.binding),
-          ),
-        ),
-    );
-    if (read) found.add(item.composable);
-  }
-  return found;
 }
 
 function lowerFirst(name: string): string {

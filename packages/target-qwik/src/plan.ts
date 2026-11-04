@@ -27,6 +27,7 @@ import type {
   UfComposable,
   UfModule,
   UseArgument,
+  UseItem,
 } from "@unframework/ir";
 
 import { fillExpressions, planComposition } from "./composition.ts";
@@ -1182,7 +1183,51 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
 export function selfReadingArguments(
   component: UfComponent,
 ): { reference: BindingReference; member: BindingId }[] {
-  // What each setup declaration's code reads, by the binding it declares.
+  const declared = declarationReads(component);
+  const found: { reference: BindingReference; member: BindingId }[] = [];
+  for (const item of component.setup) {
+    if (item.kind !== "Use") continue;
+    const members = new Set(item.members.map(({ binding }) => binding));
+    for (const argument of item.arguments) {
+      for (const reference of argumentCode(argument).refs) {
+        if (reference.kind !== "Binding") continue;
+        const member = reachedMember(reference.binding, members, declared);
+        if (member !== undefined) found.push({ reference, member });
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * The composables one of whose calls has members another call's arguments read, directly or
+ * through the setup declarations they read, as {@link selfReadingArguments} follows them:
+ * Qwik's optimizer can name two calls of such a hook alike (./setup.ts `useStatement`).
+ */
+export function hooksReadByOtherCalls(component: UfComponent): Set<string> {
+  const declared = declarationReads(component);
+  const calls = component.setup.filter((item): item is UseItem => item.kind === "Use");
+  const found = new Set<string>();
+  for (const item of calls) {
+    const members = new Set(item.members.map(({ binding }) => binding));
+    const read = calls.some(
+      (other) =>
+        other !== item &&
+        other.arguments.some((argument) =>
+          argumentCode(argument).refs.some(
+            (reference) =>
+              reference.kind === "Binding" &&
+              reachedMember(reference.binding, members, declared) !== undefined,
+          ),
+        ),
+    );
+    if (read) found.add(item.composable);
+  }
+  return found;
+}
+
+/** What each setup declaration's code reads, by the binding it declares. */
+function declarationReads(component: UfComponent): Map<BindingId, Code[]> {
   const declared = new Map<BindingId, Code[]>();
   for (const item of component.setup) {
     switch (item.kind) {
@@ -1209,19 +1254,7 @@ export function selfReadingArguments(
         break;
     }
   }
-  const found: { reference: BindingReference; member: BindingId }[] = [];
-  for (const item of component.setup) {
-    if (item.kind !== "Use") continue;
-    const members = new Set(item.members.map(({ binding }) => binding));
-    for (const argument of item.arguments) {
-      for (const reference of argumentCode(argument).refs) {
-        if (reference.kind !== "Binding") continue;
-        const member = reachedMember(reference.binding, members, declared);
-        if (member !== undefined) found.push({ reference, member });
-      }
-    }
-  }
-  return found;
+  return declared;
 }
 
 /** A composable's argument's code: a value's, or a getter's or a callback's body. */

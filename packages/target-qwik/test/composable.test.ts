@@ -1078,10 +1078,18 @@ export default function Probe() {
     },
   );
 
-  it(
-    "names every call of a hook one of whose calls another call's argument reads, so the server builds it",
+  it.each([
+    { how: "itself", callback: "resetB();", relay: "", read: "resetB" },
+    {
+      how: "through a setup function",
+      callback: "relay();",
+      relay: "  function relay() {\n    resetB();\n  }\n",
+      read: "relay",
+    },
+  ])(
+    "names every call of a hook another call's argument reads $how, so the server builds it",
     { timeout: 60_000 },
-    async () => {
+    async ({ how, callback, relay, read }) => {
       const project = await compileProject({
         "/project/useCounter.uf.ts": USE_COUNTER,
         "/project/Probe.uf.tsx": `import { ref } from "unframework";
@@ -1091,12 +1099,12 @@ import { useCounter } from "./useCounter.uf.ts";
 export default function Probe() {
   const message = ref("");
   const { count: a, increment } = useCounter(3, () => {
-    resetB();
+    ${callback}
   });
   const { count: b, reset: resetB } = useCounter(4, () => {
     message.value = "b";
   });
-  return (
+${relay}  return (
     <button type="button" onClick={() => increment()}>
       {a.value} {b.value} {message.value}
     </button>
@@ -1111,10 +1119,12 @@ export default function Probe() {
         /const counter_1 = useCounter\(\s*4,[\s\S]*?\);\n\s*const \{ count: b, reset: resetB \} = counter_1;/,
       );
       expect(probe).toMatch(
-        /const counter = useCounter\(\s*3,\s*\$\(async \(\) => \{\s*await resetB\(\);[\s\S]*?\);\n\s*const \{ count: a, increment \} = counter;/,
+        new RegExp(
+          `const counter = useCounter\\(\\s*3,\\s*\\$\\(async \\(\\) => \\{\\s*await ${read}\\(\\);[\\s\\S]*?\\);\\n\\s*const \\{ count: a, increment \\} = counter;`,
+        ),
       );
       expect(probe.indexOf("const counter_1 =")).toBeLessThan(probe.indexOf("const counter ="));
-      await expectToolchainClean("calls/same-hook", project.outputs);
+      await expectToolchainClean(`calls/same-hook-${how.replace(/\W+/g, "-")}`, project.outputs);
       // The server's build hoists every segment into the module (Qwik's Vite plugin runs the
       // optimizer with `hoist` for every server transform), where two calls the optimizer named
       // alike would be declared twice.
