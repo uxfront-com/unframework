@@ -1,7 +1,7 @@
 # ADR-0070: Shared modules and module-level declarations
 
-- **Status:** Proposed
-- **Date:** 2026-10-24
+- **Status:** Accepted
+- **Date:** 2026-11-04
 - **Plan:** §4.1, §4.2, §5.10, §9 M5; P2, P6, P7, P8; ADR-0005, ADR-0045, ADR-0053, ADR-0054,
   ADR-0064, ADR-0069; amends ADR-0045
 

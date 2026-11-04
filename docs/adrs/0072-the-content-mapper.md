@@ -56,6 +56,25 @@ re-verifies ADR-0023's spike on the newest nightly. The repo itself stays on 7.0
 pinned nightly, and the port to 7.1 stable, a separate issue once 7.1 ships, re-verifies the
 protocol and the SDK there. The owner may hold the port instead, which makes it M5's last layer.
 
+## The 7.1 finding
+
+TypeScript 7.1 refuses `.uf.tsx` as a content mapper's extension, so this decision can't be built
+as written:
+
+- From nightly `7.1.0-dev.20261014.1`, and in `7.1.0-beta`, tsgo refuses a content-mapper
+  extension that ends in a built-in one: `.uf.tsx` is TS18066 ("Content mapper file extension
+  '.uf.tsx' … ends in a built-in extension"). Upstream did it on purpose, in
+  microsoft/TypeScript#64581 ("Add content mapper output extensions", merged 13 October 2026), so
+  7.1 stable will refuse it too. `7.1.0-dev.20261013.1` is the last nightly that accepts it.
+- The protocol and `ts-content-mapper@0.1.0` still work: the same mapper registered for `.uf`
+  catches a wrong payload and a misspelt event on the newest nightly. Stock tsgo 7.0.2 doesn't
+  see `.uf` files (TS18003), which is why ADR-0005 keeps `.uf` as its fallback.
+
+So `@unframework/language-tools` isn't part of M5, and layers 1 and 2 stand as built. This record
+stays Proposed: its decision waits for the content mapper's issue, which first settles the
+extension, by an upstream request to allow a compound extension such as `.uf.tsx`, or by
+ADR-0005's `.uf` fallback in a new record.
+
 ## Consequences
 
 **Positive:**

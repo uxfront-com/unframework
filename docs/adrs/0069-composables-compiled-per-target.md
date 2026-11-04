@@ -1,7 +1,7 @@
 # ADR-0069: Composables compiled per target
 
-- **Status:** Proposed
-- **Date:** 2026-10-24
+- **Status:** Accepted
+- **Date:** 2026-11-04
 - **Plan:** §4.1, §4.2, §4.5, §5.3, §6, §8.2, §9 M5; D1 (ADR-0005); G2, P2, P4, P6, P7; R1; ADR-0045,
   ADR-0046, ADR-0047, ADR-0048, ADR-0053, ADR-0057; amends ADR-0045
 

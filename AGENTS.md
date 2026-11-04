@@ -45,8 +45,21 @@ in a real browser.
   Linux screenshots and geometry. Firefox and WebKit run nightly (`nightly.yml`), live against
   Vue in the same engine: a report that gates no pull request, red until each engine's
   differences are fixed or declared, so read its matrix rather than its status. Documented on
-  unframework.dev (`2.components/17.styles.md`, `18.styling-engines.md`). **M5, cross-file types,
-  consumer typing and composables, is next** (plan §9).
+  unframework.dev (`2.components/17.styles.md`, `18.styling-engines.md`).
+- **M5, cross-file types, consumer typing and composables, is done:** props types imported from
+  `.ts` modules, a child's module or a package, read through the type oracle
+  (`@unframework/type-oracle`, syntactic by default, and `@unframework/type-oracle-tsgo` on
+  TypeScript's checker), with `extends` chains, intersections and the five utility types; generic
+  components (`function List<T>`), whose scoped slots Angular types by the constraint (UF4004,
+  info); every type a module exports, exported by each output; shared `.ts` modules, copied into
+  each output tree unchanged, and a module's own top-level `const`s; `.uf.ts` composables, compiled
+  to one module per target in its idiom, whose effect order React and Solid declare (UF4005,
+  info); and the project graph (`createProject`), which recompiles only what an edit reaches and
+  reports an import cycle of components (UF1205). Layer 1 of the consumer checks (stock tsgo) is
+  pinned by probes. Layer 3, the content mapper, is left out: TypeScript 7.1 refuses `.uf.tsx` as
+  its extension (ADR-0072). Documented on unframework.dev (`2.components/19.types-and-generics.md`,
+  `20.composables.md`, `21.shared-modules.md`). **M6, build integration and distribution, is
+  next** (plan §9).
 - Anything outside the built subset is rejected as UF1002 (`unsupported-syntax`) until its
   milestone lands. The authoring types already accept the whole language (plan §4).
 - The plan describes the target state. The code is the truth for what is built:
@@ -57,13 +70,13 @@ in a real browser.
 
 ## Read first
 
-| Document                            | Read it                                                                                                                                                                                                                                                                                                                               |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/plan.md`                      | For the architecture. Cited everywhere as §n, principles P1–P8, goals G1–G7, layers L1–L15, milestones M0–M10, decisions C1–C4 and D1–D13, risks R1–R14.                                                                                                                                                                              |
-| `docs/adrs/README.md` and the index | Before you reopen a decision. ADR-0018 to ADR-0033 record what the M0 spikes and build settled, ADR-0034 to ADR-0044 what M1 settled, ADR-0045 to ADR-0052 what M2 settled, ADR-0053 to ADR-0060 what M3 settled, ADR-0061 to ADR-0066 what M4 settled. An accepted ADR is newer than the plan: where the two differ, follow the ADR. |
-| `tests/integration/README.md`       | Before you touch the corpus or the harness.                                                                                                                                                                                                                                                                                           |
-| `packages/<name>/README.md`         | Before you change a package. Each README states the package's contract and its toolchain. Keep the README true when you change the contract.                                                                                                                                                                                          |
-| `.github/CONTRIBUTING.md`           | For scripts, the package template and releases.                                                                                                                                                                                                                                                                                       |
+| Document                            | Read it                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/plan.md`                      | For the architecture. Cited everywhere as §n, principles P1–P8, goals G1–G7, layers L1–L15, milestones M0–M10, decisions C1–C4 and D1–D13, risks R1–R14.                                                                                                                                                                                                                    |
+| `docs/adrs/README.md` and the index | Before you reopen a decision. ADR-0018 to ADR-0033 record what the M0 spikes and build settled, ADR-0034 to ADR-0044 what M1 settled, ADR-0045 to ADR-0052 what M2 settled, ADR-0053 to ADR-0060 what M3 settled, ADR-0061 to ADR-0066 what M4 settled, ADR-0067 to ADR-0071 what M5 settled. An accepted ADR is newer than the plan: where the two differ, follow the ADR. |
+| `tests/integration/README.md`       | Before you touch the corpus or the harness.                                                                                                                                                                                                                                                                                                                                 |
+| `packages/<name>/README.md`         | Before you change a package. Each README states the package's contract and its toolchain. Keep the README true when you change the contract.                                                                                                                                                                                                                                |
+| `.github/CONTRIBUTING.md`           | For scripts, the package template and releases.                                                                                                                                                                                                                                                                                                                             |
 
 ## Layout
 

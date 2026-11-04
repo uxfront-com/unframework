@@ -82,7 +82,9 @@ ambient `*.css` module, which TypeScript 7's `noUncheckedSideEffectImports` requ
 Stock tsgo with these types is layer 1 of plan §5.6. Props are in the component's signature, so they
 are checked for every consumer. Events, models and slots are declared by macros in the body, which
 TypeScript cannot see: the types accept every legitimate use of them and leave their checking to the
-compiler (layer 2) and the content mapper (layer 3, M5). Each row below is pinned by a probe in
+compiler (layer 2) and the content mapper (layer 3), which is still to come: TypeScript 7.1
+refuses `.uf.tsx` as a content mapper's extension, so its own issue settles the extension first
+(ADR-0072). Each row below is pinned by a probe in
 [`probes/caught`](probes/caught), with the exact TypeScript error code.
 
 | Where              | Caught                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
