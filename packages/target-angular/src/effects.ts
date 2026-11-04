@@ -216,6 +216,7 @@ function watchedSignal(source: WatchSource, plan: Plan): Binding | undefined {
     case "input":
     case "computed":
     case "model":
+    case "result":
       return binding;
     case "context":
     case "instance":
@@ -230,6 +231,8 @@ function watchedSignal(source: WatchSource, plan: Plan): Binding | undefined {
     case "field":
     case "loop":
     case "emit":
+    case "module":
+    case "resultValue":
       return undefined;
     default:
       return unreachable(form);
@@ -271,28 +274,32 @@ function callbackFunction(fn: FunctionCode, plan: Plan, rules: RewriteRules): st
 }
 
 /** A parameter's binding as written: its name, or its pattern. */
-function parameterBinding(parameter: Parameter): string {
+export function parameterBinding(parameter: Parameter): string {
   return parameter.name ?? parameter.pattern?.code ?? "";
 }
 
 /** A parameter's type annotation as written, `: number`, or nothing. */
-function annotation(parameter: Parameter | undefined): string {
+export function annotation(parameter: Parameter | undefined): string {
   return parameter?.type ? `: ${parameter.type.code}` : "";
 }
 
 /** A value with a parameter's default applied, as calling with `undefined` applies it. */
-function defaulted(parameter: Parameter, value: string): string {
+export function defaulted(parameter: Parameter, value: string): string {
   return parameter.default
     ? `${value} === undefined ? ${parameter.default.code} : ${value}`
     : value;
 }
 
-/** `watchEffect(effect)`'s code for the constructor. */
+/**
+ * `watchEffect(effect)`'s code for the constructor, or for `ngOnInit` (`late`), which is no
+ * injection context and names the component's injector.
+ */
 export function watchEffectCode(
   item: WatchEffectItem,
   plan: Plan,
   rules: RewriteRules,
   names: EffectNames,
+  late = false,
 ): EffectCode {
   const [cleanup] = item.effect.parameters;
   const statements = bodyStatements(item.effect, plan, rules);
@@ -301,28 +308,37 @@ export function watchEffectCode(
   // (UF2015 keeps every reactive read there), and the effect's own value, which Angular hands to
   // a later phase, stays `undefined`.
   const body = item.effect.async ? `void (async () => {\n${statements}\n})();` : statements;
-  const effect = `${names.core("afterRenderEffect")}((${cleanup?.name ?? ""}) => {\n${body}\n});`;
+  const effect = `${names.core("afterRenderEffect")}((${cleanup?.name ?? ""}) => {\n${body}\n}${injectorOption(names, late)});`;
   if (!cleanup) return { code: effect };
+  // A late one is assigned in `ngOnInit`, so its ref is optional and writable, as a watcher's.
   const ref = {
     name: plan.members.claim("renderEffect"),
     type: names.type("AfterRenderRef"),
-    optional: false,
+    optional: late,
   };
-  return { code: `this.${ref.name} = ${effect}`, ref, destroy: `this.${ref.name}.destroy();` };
+  return {
+    code: `this.${ref.name} = ${effect}`,
+    ref,
+    destroy: `this.${ref.name}${late ? "?." : "."}destroy();`,
+  };
 }
 
-/** A lifecycle hook's code: `onMounted` for the constructor, `onUnmounted` for `ngOnDestroy`. */
+/**
+ * A lifecycle hook's code: `onMounted` for the constructor, or for `ngOnInit` (`late`), and
+ * `onUnmounted` for `ngOnDestroy`.
+ */
 export function lifecycleCode(
   item: LifecycleItem,
   plan: Plan,
   rules: RewriteRules,
   names: EffectNames,
+  late = false,
 ): EffectCode {
   const body = bodyStatements(item.callback, plan, rules);
   switch (item.hook) {
     case "mounted":
       return {
-        code: `${names.core("afterNextRender")}(${item.callback.async ? "async " : ""}() => {\n${body}\n});`,
+        code: `${names.core("afterNextRender")}(${item.callback.async ? "async " : ""}() => {\n${body}\n}${injectorOption(names, late)});`,
       };
     case "unmounted": {
       // In the browser only, as every target runs it (ADR-0048): the server destroys the
@@ -340,4 +356,9 @@ export function lifecycleCode(
     default:
       return unreachable(item.hook);
   }
+}
+
+/** The options argument a hook registered in `ngOnInit` takes: the component's injector. */
+function injectorOption(names: EffectNames, late: boolean): string {
+  return late ? `, { injector: this.${names.member("injector")} }` : "";
 }

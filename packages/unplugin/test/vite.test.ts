@@ -824,11 +824,14 @@ describe("composables (ADR-0069)", () => {
   it("fails a module of composables loudly on a target without `emitComposable`", async () => {
     const composables = createProject(files);
     try {
-      const server = await startServer(composables.root, unframework({ target: "angular" }));
+      const server = await startServer(
+        composables.root,
+        unframework({ target: htmlTarget(), extension: ".html" }),
+      );
       try {
-        const id = `${join(composables.root, "useToggle.uf.ts")}.ts`;
+        const id = join(composables.root, "useToggle.uf.ts");
         await expect(server.client.pluginContainer.load(id)).rejects.toThrow(
-          "error[UF1002] (angular): The angular target does not emit a composable yet",
+          "error[UF1002] (html): The html target does not emit a composable yet",
         );
       } finally {
         await server.close();

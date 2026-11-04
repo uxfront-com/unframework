@@ -15,7 +15,7 @@ import { functionBodyText, parseExpression, parseStatementsSource } from "@unfra
 import type { RewriteRules } from "@unframework/codegen";
 import type { FunctionCode } from "@unframework/ir";
 
-import { isSignal } from "./plan.ts";
+import { isSignal, memberOf } from "./plan.ts";
 import type { Plan } from "./plan.ts";
 import { tidied } from "./rules.ts";
 
@@ -46,13 +46,16 @@ export function bodyStatements(fn: FunctionCode, plan: Plan, rules: RewriteRules
 
 /**
  * The members whose call reads a value and changes nothing: the signals (inputs, states,
- * derived values, setup-once constants) and the template refs' queries.
+ * derived values, setup-once constants, a composable's returned refs, `toggle_1.on`) and the
+ * template refs' queries.
  */
 function reads(plan: Plan): ReadonlySet<string> {
   const names = new Set<string>();
   for (const binding of plan.component.bindings) {
     const form = plan.forms.get(binding.id);
-    if (form !== undefined && (isSignal(form) || form === "query")) names.add(binding.name);
+    if (form !== undefined && (isSignal(form) || form === "query")) {
+      names.add(memberOf(plan, binding));
+    }
   }
   return names;
 }
@@ -266,16 +269,24 @@ function hasEffects(node: Node, members: ReadonlySet<string>): boolean {
   return found;
 }
 
-/** Whether a node is the class code's read of a signal or a query: `this.count()`. */
+/**
+ * Whether a node is the class code's read of a signal or a query: `this.count()`, or a
+ * composable's returned ref through its holder, `this.toggle_1.on()`.
+ */
 function isRead(node: Node, members: ReadonlySet<string>): boolean {
   if (node.type !== "CallExpression" || (node.arguments as unknown[]).length > 0) return false;
-  const callee = node.callee as Node;
-  return (
-    callee.type === "MemberExpression" &&
-    !callee.computed &&
-    (callee.object as Node).type === "ThisExpression" &&
-    members.has((callee.property as Node).name as string)
-  );
+  const path = memberPath(node.callee as Node);
+  return path !== undefined && members.has(path);
+}
+
+/** `this.count` as `count`, `this.toggle_1.on` as `toggle_1.on`, or `undefined`. */
+function memberPath(node: Node): string | undefined {
+  if (node.type !== "MemberExpression" || node.computed) return undefined;
+  const object = node.object as Node;
+  const name = (node.property as Node).name as string;
+  if (object.type === "ThisExpression") return name;
+  const holder = memberPath(object);
+  return holder === undefined || holder.includes(".") ? undefined : `${holder}.${name}`;
 }
 
 function isNode(value: unknown): value is Node {

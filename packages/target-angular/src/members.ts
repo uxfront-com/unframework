@@ -18,7 +18,7 @@ import {
   rewriteCode,
 } from "@unframework/codegen";
 import type { Placeholders, RewriteRules } from "@unframework/codegen";
-import type { Code, Prop, TypeDeclaration, UfComponent } from "@unframework/ir";
+import type { Code, Prop, TypeDeclaration, UfComponent, UseItem } from "@unframework/ir";
 
 import { keyOf } from "./composition.ts";
 import type { SlotDirective } from "./composition.ts";
@@ -56,6 +56,8 @@ export interface MemberContext {
   templateMembers: ReadonlySet<string>;
   /** The globals the template reads: each is a member of its own name. */
   globals: readonly string[];
+  /** The module values the template reads, by name: each is a member, `moduleMember`'s. */
+  moduleMembers: ReadonlyMap<string, string>;
   /** The methods listeners' handlers moved to. */
   handlers: readonly HandlerMethod[];
   /** The members that remember the elements a once listener ran on (./listeners.ts). */
@@ -158,6 +160,7 @@ export function classMembers(context: MemberContext): {
       ),
     );
   }
+  const calls = new Map(plan.calls.map((call) => [call.item, call]));
   for (const event of component.emits?.events ?? []) {
     members.push(
       js.propertyDefinition(
@@ -450,11 +453,18 @@ export function classMembers(context: MemberContext): {
         effect(initCode, watcherCode(item, plan, context.rules, names));
         pins = undefined;
         break;
+      // After a composable's call with effects in `ngOnInit`, in `ngOnInit` after it (ADR-0069).
       case "WatchEffect":
-        effect(constructorCode, watchEffectCode(item, plan, context.rules, names));
+        if (plan.late.has(item)) {
+          effect(initCode, watchEffectCode(item, plan, context.rules, names, true));
+          pins = undefined;
+        } else effect(constructorCode, watchEffectCode(item, plan, context.rules, names));
         break;
       case "Lifecycle":
-        effect(constructorCode, lifecycleCode(item, plan, context.rules, names), true);
+        if (plan.late.has(item)) {
+          effect(initCode, lifecycleCode(item, plan, context.rules, names, true), true);
+          pins = undefined;
+        } else effect(constructorCode, lifecycleCode(item, plan, context.rules, names), true);
         break;
       case "Inject": {
         // Its parent's value (`skipSelf`, since a component that provides the key it injects
@@ -485,9 +495,80 @@ export function classMembers(context: MemberContext): {
       case "Model":
       case "Provide":
         break;
-      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
-      case "Use":
+      // A composable's call, run in an injection context (ADR-0069): a field initialiser, or
+      // where its order among the class's code holds (`CallPlacement`), its result then typed
+      // by the composable's return type.
+      case "Use": {
+        const { holder, placement, injector } = calls.get(item)!;
+        // A call the constructor or `ngOnInit` makes is a private method's, whose return type
+        // types the holder: the composable's own return type would leave a type parameter
+        // `unknown`, where the call infers it (`useControllableState`).
+        let invocation = callCode(context, item);
+        let type: string | undefined;
+        if (placement !== "field") {
+          const factory = plan.members.claim(`create${pascalCase(holder)}`);
+          methods.push(
+            js.methodDefinition(factory, [], statements(placeholders, `return ${invocation};`), {
+              accessibility: "private",
+            }),
+          );
+          invocation = `this.${factory}()`;
+          type = `ReturnType<typeof this.${factory}>`;
+        }
+        const run = (into: string) =>
+          `${core("runInInjectionContext")}(this.${into}, () => ${invocation})`;
+        // A composable with effects runs in an injector of its own, which `ngOnDestroy`
+        // destroys here among the `onUnmounted` hooks, running the teardown it registered.
+        if (injector !== undefined) {
+          fields.push(
+            js.propertyDefinition(
+              injector,
+              expression(
+                `${core("Injector")}.create({ providers: [], parent: this.${names.member("injector")} })`,
+              ),
+              { accessibility: "private", readonly: true },
+            ),
+          );
+          effect(initCode, { destroy: `this.${injector}.destroy();` }, true);
+        }
+        const call = injector === undefined ? invocation : run(injector);
+        switch (placement) {
+          case "field":
+            fields.push(
+              js.propertyDefinition(holder, expression(call), {
+                accessibility: visibility(holder),
+                readonly: true,
+              }),
+            );
+            break;
+          case "constructor":
+            fields.push(
+              js.propertyDefinition(holder, null, {
+                accessibility: visibility(holder),
+                readonly: true,
+                typeAnnotation: placeholders.type(type!),
+              }),
+            );
+            constructorCode.push(`this.${holder} = ${call};`);
+            break;
+          case "init": {
+            // Definitely assigned: `ngOnInit` assigns it before the template reads it.
+            const field = js.propertyDefinition(holder, null, {
+              accessibility: visibility(holder),
+              typeAnnotation: placeholders.type(type!),
+            });
+            fields.push({ ...field, definite: true });
+            initCode.push(
+              `this.${holder} = ${injector === undefined ? run(names.member("injector")) : call};`,
+            );
+            pins = undefined;
+            break;
+          }
+          default:
+            unreachable(placement);
+        }
         break;
+      }
       default:
         unreachable(item);
     }
@@ -577,7 +658,11 @@ export function classMembers(context: MemberContext): {
   // The template reads module functions through members of their names, as it reads globals,
   // and each pass-through name through the member the plan gives it (ADR-0064).
   const globals = [
-    ...[...context.globals.map((name) => [name, name] as const), ...plan.recipes]
+    ...[
+      ...context.globals.map((name) => [name, name] as const),
+      ...context.moduleMembers,
+      ...plan.recipes,
+    ]
       .map(([value, member]) => ({ value, member }))
       .toSorted((a, b) => (a.member < b.member ? -1 : a.member > b.member ? 1 : 0)),
     ...context.helpers.map(({ name }) => ({ value: name, member: name })),
@@ -637,6 +722,47 @@ export function classMembers(context: MemberContext): {
     ],
     implements: implementing,
   };
+}
+
+/**
+ * A composable's call, `useTotal(() => this.price(), () => this.quantity())`: a value argument
+ * as the setup evaluates it, a getter as a pure arrow, a callback as client code (ADR-0069).
+ */
+function callCode(context: MemberContext, item: UseItem): string {
+  const { component } = context.plan;
+  const parts = item.arguments.map((argument) => {
+    switch (argument.kind) {
+      case "Value":
+        return pure(context, argument.value);
+      case "Getter":
+        return functionText(argument.getter, component, context.rules, "pure");
+      case "Callback":
+        return tidied(
+          functionText(argument.callback, component, context.rules, "client"),
+          "expression",
+        );
+      default:
+        return unreachable(argument);
+    }
+  });
+  return `${composableName(context.plan, item.composable)}(${parts.join(", ")})`;
+}
+
+/**
+ * A called composable's name in the output, imported from its own module beside its `.uf.ts`
+ * (`./use-toggle`, ADR-0069) under the source's local name.
+ */
+export function composableName(plan: Plan, local: string): string {
+  for (const entry of plan.module.imports ?? []) {
+    const name = entry.names.find((each) => each.kind === "Composable" && each.local === local);
+    if (name === undefined) continue;
+    const directory = entry.specifier.slice(0, entry.specifier.lastIndexOf("/") + 1);
+    return plan.imports.add(`${directory}${kebabCase(name.imported)}`, name.imported, {
+      local,
+      exact: true,
+    });
+  }
+  throw new Error(`\`${local}\` is called as a composable, and no import names it.`);
 }
 
 /** Code the setup evaluates (an initial value, a constant), spelled for the class. */

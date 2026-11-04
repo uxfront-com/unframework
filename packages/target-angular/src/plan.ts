@@ -15,10 +15,13 @@ import type {
   BindingId,
   BindingKind,
   Code,
+  ComposableMemberApi,
   EventDeclaration,
   FunctionCode,
+  SetupItem,
   UfComponent,
   UfModule,
+  UseItem,
 } from "@unframework/ir";
 
 import { assertedSetup } from "./narrowing.ts";
@@ -51,7 +54,13 @@ import { outputName } from "./outputs.ts";
  * - `instance`: a template ref on a component, `viewChild<T>("name")`, read as the component's
  *   instance (`this.search()?.focus()`, ADR-0054);
  * - `component`: a component `<component is>` names, which the template reads as its name
- *   (`'Chip'`), as the `@switch`'s cases match it.
+ *   (`'Chip'`), as the `@switch`'s cases match it;
+ * - `module`: a module's constant or a value imported from a `.ts` module (ADR-0070), which
+ *   class code reads by its module name and the template through a member of that name;
+ * - `result`: a ref a composable returns (ADR-0069), a read-only signal read through the member
+ *   that holds the call's result (`this.toggle_1.on()`), and in the template through a `@let`;
+ * - `resultValue`: a function or a constant a composable returns, read through that member
+ *   (`this.toggle_1.toggle()`).
  */
 export type MemberForm =
   | "input"
@@ -69,7 +78,41 @@ export type MemberForm =
   | "model"
   | "context"
   | "instance"
-  | "component";
+  | "component"
+  | "module"
+  | "result"
+  | "resultValue";
+
+/**
+ * Where a component calls a composable (ADR-0069), a function that needs an injection context,
+ * run where its order among the class's code holds:
+ * - `field`: a field initialiser, in source order;
+ * - `constructor`: in the constructor, in source order, where the composable has effects and the
+ *   constructor registers an earlier hook or effect, which runs first (`afterNextRender`);
+ * - `init`: in `ngOnInit` through `runInInjectionContext`, where a value or a getter argument
+ *   reads an input or what reads one, which is set only then, or where the composable has effects and a watcher
+ *   or such a call comes before it, which `ngOnInit` creates. The hooks and effects after it are
+ *   registered there too (`Plan.late`).
+ */
+export type CallPlacement = "field" | "constructor" | "init";
+
+/**
+ * A composable's call: the member that holds its result, where the class makes it, and for a
+ * composable with effects the member holding the injector it runs in.
+ */
+export interface ComposableCall {
+  item: UseItem;
+  holder: string;
+  placement: CallPlacement;
+  /**
+   * A child of the component's injector, `Injector.create(…)`, which `ngOnDestroy` destroys
+   * where the call sits among the component's own `onUnmounted` hooks. The composable registers
+   * its teardown with `DestroyRef`, which is this injector there: the component's own
+   * `DestroyRef` runs only once Angular has removed the parent's listeners of its outputs, so a
+   * callback the teardown calls could no longer emit to the parent (NG0953).
+   */
+  injector?: string;
+}
 
 /** What the emitter knows about a component before it prints anything. */
 export interface Plan {
@@ -106,6 +149,25 @@ export interface Plan {
    * by its local name (ADR-0064): its own name, unless a member of the class takes it.
    */
   recipes: ReadonlyMap<string, string>;
+  /** Each composable's call, in source order (ADR-0069). */
+  calls: readonly ComposableCall[];
+  /**
+   * What a composable returns, read through its call's holder, by the `used*` binding:
+   * `toggle_1.on` (ADR-0069).
+   */
+  results: ReadonlyMap<BindingId, string>;
+  /**
+   * The member the template reads a module's value through, by its binding (ADR-0070): the
+   * value's own name, unless an output, the `class` and `style` inputs or a slot's query takes
+   * it (`currentSave`). Class code reads the value by its module name either way.
+   */
+  moduleMembers: ReadonlyMap<BindingId, string>;
+  /**
+   * The `onMounted` hooks and `watchEffect`s that follow a composable's call with effects in
+   * `ngOnInit`, and are registered there after it, in source order, rather than in the
+   * constructor before it (ADR-0069).
+   */
+  late: ReadonlySet<SetupItem>;
 }
 
 /** The names Angular gives a component class's own members: no binding may take them. */
@@ -131,6 +193,7 @@ export const ANGULAR_IMPORTS: readonly string[] = [
   "OnInit",
   "PLATFORM_ID",
   "Renderer2",
+  "Signal",
   "InjectionToken",
   "NgTemplateOutlet",
   "TemplateRef",
@@ -147,6 +210,7 @@ export const ANGULAR_IMPORTS: readonly string[] = [
   "linkedSignal",
   "model",
   "output",
+  "runInInjectionContext",
   "signal",
   "untracked",
   "viewChild",
@@ -196,9 +260,54 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
       recipes.set(local, member);
     }
   }
+  // A member the template reads takes no name composition declares, nor a list variable's.
+  const claimMember = (name: string) => {
+    let member = composition.claim(name);
+    while (loopNames.has(member)) member = composition.claim(name);
+    members.reserve(member);
+    return member;
+  };
+  // A module's value named like an output, the fallthrough inputs or a slot's query keeps its
+  // module name, which class code reads, and the template reads it through another member.
+  const declaredMembers = new Set([
+    ...[...events.keys()].map(outputName),
+    "class",
+    "style",
+    ...(component.slots?.slots.map(({ name }) => slotQuery(name)) ?? []),
+  ]);
+  const moduleMembers = new Map(
+    component.bindings
+      .filter(({ kind, name }) => isModuleBinding(kind) && declaredMembers.has(name))
+      .map(({ id, name, kind }) => [id, claimMember(outputSafeName(name, kind))] as const),
+  );
   const bindingNames = new Set(component.bindings.map(({ name }) => name));
+  const { forms, seeded, placements, late } = formsOf(component);
+  // Each call's result is held by a member named for its composable (`useMediaQuery` →
+  // `mediaQuery`), past every name of the class, the fallthrough inputs included (ADR-0069).
+  const calls = component.setup.flatMap((item): ComposableCall[] => {
+    if (item.kind !== "Use") return [];
+    const holder = claimMember(holderName(item.composable));
+    const injector = item.hasEffects
+      ? claimMember(`${holderName(item.composable)}Injector`)
+      : undefined;
+    return [
+      {
+        item,
+        holder,
+        placement: placements.get(item)!,
+        ...(injector === undefined ? {} : { injector }),
+      },
+    ];
+  });
+  const results = new Map(
+    calls.flatMap(({ item, holder }) =>
+      item.members.map(({ member, binding }) => [binding, `${holder}.${member}`] as const),
+    ),
+  );
+  // A module's value is read by its module name in class code, so no local shadows it.
   const locals = new NameScope([
     ...[...source].filter((name) => !bindingNames.has(name)),
+    ...component.bindings.filter(({ kind }) => isModuleBinding(kind)).map(({ name }) => name),
     ...ANGULAR_IMPORTS,
     "Object",
   ]);
@@ -216,11 +325,32 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
       ...ANGULAR_IMPORTS,
       "Object",
     ],
-    ...formsOf(component),
+    forms,
+    seeded,
     events,
     loopNames,
     recipes,
+    calls,
+    results,
+    moduleMembers,
+    late,
   };
+}
+
+/** A module's constant or a value imported from a `.ts` module (ADR-0070). */
+function isModuleBinding(kind: BindingKind): boolean {
+  return kind === "moduleConst" || kind === "import";
+}
+
+/** The member the template reads a module's value through (ADR-0070). */
+export function moduleMember(plan: Plan, binding: Binding): string {
+  return plan.moduleMembers.get(binding.id) ?? binding.name;
+}
+
+/** The member a composable's call is held by: its name without `use`, `toggle` for `useToggle`. */
+function holderName(composable: string): string {
+  const name = composable.replace(/^use(?=[A-Z])/, "");
+  return `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
 }
 
 /**
@@ -247,6 +377,7 @@ function withOutputNames(component: UfComponent, module: UfModule): UfComponent 
       (events.has(name) || declared.has(name)) &&
       kind !== "prop" &&
       kind !== "emit" &&
+      !isModuleBinding(kind) &&
       !isLoopVariable(kind),
   );
   if (clashing.length === 0) return component;
@@ -294,7 +425,6 @@ function outputSafeName(name: string, kind: BindingKind): string {
     case "slotScope":
     case "context":
     case "component":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
     case "argument":
@@ -315,9 +445,12 @@ function outputSafeName(name: string, kind: BindingKind): string {
 function formsOf(component: UfComponent): {
   forms: Map<BindingId, MemberForm>;
   seeded: Set<BindingId>;
+  placements: Map<UseItem, CallPlacement>;
+  late: Set<SetupItem>;
 } {
   const forms = new Map<BindingId, MemberForm>();
   const seeded = new Set<BindingId>();
+  const placements = new Map<UseItem, CallPlacement>();
   const kinds = new Map(component.bindings.map((binding) => [binding.id, binding.kind]));
   // A value read while the class is constructed cannot read an input (NG0950 for a required
   // one, the default for another) or what reads one: `computed` and the seeded members are
@@ -356,17 +489,19 @@ function formsOf(component: UfComponent): {
       case "component":
         forms.set(binding.id, "component");
         break;
-      // A model is its setup item's; `slots` is read only as slots (`SlotReference`).
-      case "model":
-      case "slots":
-      // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
       case "moduleConst":
       case "import":
-      case "argument":
+        forms.set(binding.id, "module");
+        break;
+      // A composable's result is its call's (`Use`); a model is its setup item's; `slots` is
+      // read only as slots (`SlotReference`); a composable's argument is no component's.
       case "usedState":
       case "usedDerived":
       case "usedFn":
       case "usedConst":
+      case "model":
+      case "slots":
+      case "argument":
         break;
       default:
         unreachable(binding.kind);
@@ -374,6 +509,14 @@ function formsOf(component: UfComponent): {
   }
   const instances = componentRefs(component);
   const escaping = escapingFunctions(component);
+  // Whether the constructor registers a hook or an effect before the item at hand.
+  let constructs = false;
+  // Whether `ngOnInit` creates a watcher before the item at hand, which a call with effects then
+  // follows there, and whether it makes such a call, which the hooks and effects after it then
+  // follow there too: each keeps its source order among the caller's (ADR-0069).
+  let watches = false;
+  let defers = false;
+  const late = new Set<SetupItem>();
   for (const item of component.setup) {
     switch (item.kind) {
       case "State": {
@@ -412,20 +555,65 @@ function formsOf(component: UfComponent): {
       case "Function":
         forms.set(item.binding, escaping.has(item.binding) ? "arrow" : "method");
         break;
-      case "Watch":
       case "WatchEffect":
+        if (defers) late.add(item);
+        else constructs = true;
+        break;
       case "Lifecycle":
+        if (item.hook !== "mounted") break;
+        if (defers) late.add(item);
+        else constructs = true;
+        break;
+      case "Watch":
+        watches = true;
+        break;
       case "Provide":
       case "Inject":
         break;
-      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
-      case "Use":
+      case "Use": {
+        // The composable reads a value, and may call a getter, while it sets up (`ref(name())`):
+        // one that reads an input runs only once the inputs are set. A callback runs only from
+        // client code (UF2035), by then.
+        const code = item.arguments.flatMap((argument) => {
+          switch (argument.kind) {
+            case "Value":
+              return [argument.value];
+            case "Getter":
+              return [argument.getter.body];
+            case "Callback":
+              return [];
+            default:
+              return unreachable(argument);
+          }
+        });
+        const placement: CallPlacement =
+          code.some(readsLazily) || (item.hasEffects && (watches || defers))
+            ? "init"
+            : item.hasEffects && constructs
+              ? "constructor"
+              : "field";
+        placements.set(item, placement);
+        if (placement === "constructor") constructs = true;
+        if (placement === "init" && item.hasEffects) defers = true;
+        for (const { binding } of item.members) {
+          const kind = kinds.get(binding);
+          forms.set(
+            binding,
+            kind === "usedState" || kind === "usedDerived" ? "result" : "resultValue",
+          );
+          // Read lazily where the call runs after the fields, or where it is a derived value,
+          // which may read an input through a getter argument.
+          if (placement === "constructor" || placement === "init" || kind === "usedDerived") {
+            lazy.add(binding);
+          }
+        }
         break;
+      }
       default:
         unreachable(item);
     }
   }
-  return { forms, seeded };
+  return { forms, seeded, placements, late };
 }
 
 /** The template refs a `ref` on a component holds, which hold its instance (ADR-0054). */
@@ -486,12 +674,15 @@ function escapingFunctions(component: UfComponent): Set<BindingId> {
       case "Inject":
         if (item.fallback) visit(item.fallback);
         break;
+      case "Use":
+        for (const argument of item.arguments) {
+          if (argument.kind === "Value") visit(argument.value);
+          else visit((argument.kind === "Getter" ? argument.getter : argument.callback).body);
+        }
+        break;
       case "TemplateRef":
       case "Id":
       case "Model":
-        break;
-      // `emit` reports UF1002 for a composable's call before this runs (ADR-0069).
-      case "Use":
         break;
       default:
         unreachable(item);
@@ -518,7 +709,6 @@ export function isLoopVariable(kind: BindingKind): boolean {
     case "slotScope":
     case "context":
     case "component":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
     case "argument":
@@ -550,7 +740,6 @@ function isFunction(kind: BindingKind): boolean {
     case "slotScope":
     case "context":
     case "component":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
     case "argument":
@@ -586,7 +775,6 @@ function readLazily(kind: BindingKind): boolean {
     case "slots":
     case "slotScope":
     case "component":
-    // `emit` reports UF1002 for these first (ADR-0069, ADR-0070).
     case "moduleConst":
     case "import":
     case "argument":
@@ -605,6 +793,31 @@ export function bindingById(plan: Plan, id: BindingId): Binding {
   const binding = plan.component.bindings.find((each) => each.id === id);
   if (!binding) throw new Error(`Component ${plan.component.name} declares no binding ${id}.`);
   return binding;
+}
+
+/**
+ * The member a class reads a binding through: its own, or for a composable's result the holder's
+ * member (`toggle_1.on`).
+ */
+export function memberOf(plan: Plan, binding: Binding): string {
+  return plan.results.get(binding.id) ?? binding.name;
+}
+
+/** What a composable's API says of a member a `Use` item destructures (ADR-0069). */
+export function resultApi(plan: Plan, id: BindingId): ComposableMemberApi {
+  for (const { item } of plan.calls) {
+    const used = item.members.find(({ binding }) => binding === id);
+    if (used === undefined) continue;
+    for (const entry of plan.module.imports ?? []) {
+      const name = entry.names.find(
+        (each) => each.kind === "Composable" && each.local === item.composable,
+      );
+      const api = name && entry.api.composables?.find((each) => each.name === name.imported);
+      const member = api?.members.find((each) => each.name === used.member);
+      if (member) return member;
+    }
+  }
+  throw new Error(`No composable's API declares the member ${id} reads.`);
 }
 
 /** A binding's form. */
@@ -632,9 +845,12 @@ export function isSignal(form: MemberForm): boolean {
     case "emit":
     case "instance":
     case "component":
+    case "module":
+    case "resultValue":
       return false;
     case "model":
     case "context":
+    case "result":
       return true;
     default:
       return unreachable(form);
