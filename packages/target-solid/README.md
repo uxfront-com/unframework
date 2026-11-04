@@ -349,8 +349,7 @@ Every name the output introduces (`props`, `rawProps`, `_props`, `defaults`, `cx
 `flushQueued`, `nextTick`, `narrowed`, the events' interface, the `solid-js` imports) is
 claimed around the source's own names, so none captures another. The target reports one
 difference, `composable-effect-order` (UF4005, info); what else Solid cannot render as the other
-targets do is the analyser's to reject (ADR-0033). Until its composables lane lands, it reports a
-composable's call and what a module or a composable gives a component as UF1002.
+targets do is the analyser's to reject (ADR-0033).
 
 | Capability                                     | Cell                                                                                                         |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |

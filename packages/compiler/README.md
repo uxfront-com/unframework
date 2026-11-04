@@ -94,9 +94,9 @@ each with its parameters' kinds and its members' kinds and flags, which a caller
 lowered by, so a caller's output never depends on a composable's body. `compile()` also takes a
 `.uf.ts` source: its IR holds the module's composables and no component, and each target emits
 each composable with its `emitComposable`, formatted as a component's files are, with `owners`
-naming the composable. The `output` hooks see none of it. `emitComposable` is optional until each
-target's composables lane lands: a target without it reports UF1002 at the composable, for that
-target, and emits nothing for it.
+naming the composable. The `output` hooks see none of it. Every built-in target has
+`emitComposable`. It is optional for a third-party target: one without it reports UF1002 at the
+composable, for that target, and emits nothing for it.
 A capability that refines one the target cannot support (a listener's options and semantics, and
 `nextTick`, refine `interactivity`: codegen's `CAPABILITY_PREREQUISITES`) is not reported again, so
 Astro reports one inert listener once.

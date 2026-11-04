@@ -421,5 +421,5 @@ configuration, effects kept off the server) and `browser` (Chromium: the corpus'
 this target emits them now, served by `test/corpus-plugin.ts` and mounted by the adapter, judged
 on the semantics contract: reads after writes, watch timing, previous values and cleanups,
 lifecycle, listener options, emits). The `composable` test compiles the composable and shared-module
-cases through `compile()`, from `tests/integration/pending/` or, once they land, `cases/`
-(`../codegen/test/composable-cases.ts`), and runs L3 to L5 on their outputs.
+cases through `compile()`, from `tests/integration/cases/` (`../codegen/test/composable-cases.ts`),
+and runs L3 to L5 on their outputs.

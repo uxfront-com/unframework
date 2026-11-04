@@ -562,7 +562,7 @@ async function emitTarget(
         createDiagnostic("UF1002", {
           file,
           span: composable.span,
-          message: `The ${target.name} target does not emit a composable yet: it lands with this target's composables lane.`,
+          message: `The ${target.name} target does not emit composables: it has no \`emitComposable\`.`,
           target: target.name,
         }),
       );

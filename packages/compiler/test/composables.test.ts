@@ -189,8 +189,7 @@ describe("a module of composables", () => {
         severity: "error",
         target: "plain",
         span: result.ir!.composables![0]!.span,
-        message:
-          "The plain target does not emit a composable yet: it lands with this target's composables lane.",
+        message: "The plain target does not emit composables: it has no `emitComposable`.",
       }),
     ]);
     expect(result.outputs.plain).toEqual([]);

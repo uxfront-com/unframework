@@ -176,8 +176,8 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
         case "Provide":
           read(item.value);
           break;
-        // A composable's call: each target's composables lane decides what it keeps live
-        // (ADR-0069), and `emit` reports UF1002 before this runs.
+        // A composable's call: each target decides what it keeps live (ADR-0069), as Astro's
+        // `serverView` does, so this walk reads nothing of it.
         case "Use":
         case "State":
         case "Derived":
@@ -214,8 +214,8 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
       case "Inject":
         read(item.fallback);
         break;
-      // A composable's call: each target's composables lane decides what it keeps live (ADR-0069),
-      // and `emit` reports UF1002 before this runs.
+      // A composable's call: each target decides what it keeps live (ADR-0069), as Astro's
+      // `serverView` does, so this walk reads nothing of it.
       case "Use":
       case "TemplateRef":
       case "Id":
@@ -344,8 +344,8 @@ function reachTypes(
       case "Inject":
         if (item.fallback) code(item.fallback);
         break;
-      // A composable's call: each target's composables lane decides what it keeps live (ADR-0069),
-      // and `emit` reports UF1002 before this runs.
+      // A composable's call: each target decides what it keeps live (ADR-0069), as Astro's
+      // `serverView` does, so this walk reads nothing of it.
       case "Use":
       case "TemplateRef":
       case "Id":
@@ -425,8 +425,8 @@ function serverCode(item: SetupItem): Code[] {
       return [item.value];
     case "Inject":
       return item.fallback ? [item.fallback] : [];
-    // A composable's call: each target's composables lane decides what runs where it renders
-    // (ADR-0069), and `emit` reports UF1002 before this runs.
+    // A composable's call: each target decides what runs where it renders (ADR-0069), as
+    // Astro's `serverView` does, so this reads nothing of it.
     case "Use":
     case "TemplateRef":
     case "Id":
