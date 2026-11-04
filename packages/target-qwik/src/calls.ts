@@ -103,10 +103,14 @@ function isFunction(node: Node): boolean {
   return node.type === "ArrowFunctionExpression" || node.type === "FunctionExpression";
 }
 
-/** A call whose callee is the name of a QRL: `save()`, `save?.()` is not one (a QRL is defined). */
+/**
+ * A call whose callee is the name of a QRL: `save()`, or `onChange!(next)` for a composable's
+ * optional callback argument. `save?.()` is not one (a QRL is defined).
+ */
 function isQrlCall(node: Node, qrls: ReadonlySet<string>): boolean {
   if (node.type !== "CallExpression") return false;
-  const callee = node.callee as Node;
+  let callee = node.callee as Node;
+  if (callee.type === "TSNonNullExpression") callee = callee.expression as Node;
   return callee.type === "Identifier" && qrls.has(callee.name as string);
 }
 

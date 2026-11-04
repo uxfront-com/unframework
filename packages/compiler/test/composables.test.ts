@@ -27,11 +27,6 @@ function emit(name: TargetName, module: UfModule) {
 const WAITING = TARGET_NAMES.filter(
   (name) => !["vue", "react", "svelte", "solid", "angular", "astro"].includes(name),
 );
-/**
- * The targets without `emitComposable`: Vue's, React's, Svelte's, Solid's, Angular's and Astro's
- * have landed (ADR-0069).
- */
-const WITHOUT_EMITTER = WAITING;
 
 describe("composables and shared modules before each target's lane", () => {
   it.each(WAITING)("%s reports UF1002 where a component first reads a module's value", (name) => {
@@ -205,25 +200,24 @@ describe("a module of composables", () => {
   });
 
   it("compiles to nothing, with UF1002 for each composable, on a target without `emitComposable`", async () => {
+    // Every built-in target has its emitter now: a target without one stands in.
+    const plain = { ...builtinTargets.vue, name: "plain", emitComposable: undefined };
     const result = await compile(TOGGLE, {
       filename: "src/useToggle.uf.ts",
-      targets: WITHOUT_EMITTER,
+      targets: [plain],
     });
     expect(result.ir?.composables?.map(({ name }) => name)).toEqual(["useToggle"]);
-    const span = result.ir!.composables![0]!.span;
-    // Sorted by target, as every diagnostic at one span is.
-    expect(result.diagnostics).toEqual(
-      WITHOUT_EMITTER.toSorted().map((target) =>
-        expect.objectContaining({
-          code: "UF1002",
-          severity: "error",
-          target,
-          span,
-          message: `The ${target} target does not emit a composable yet: it lands with this target's composables lane.`,
-        }),
-      ),
-    );
-    for (const target of WITHOUT_EMITTER) expect(result.outputs[target]).toEqual([]);
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        code: "UF1002",
+        severity: "error",
+        target: "plain",
+        span: result.ir!.composables![0]!.span,
+        message:
+          "The plain target does not emit a composable yet: it lands with this target's composables lane.",
+      }),
+    ]);
+    expect(result.outputs.plain).toEqual([]);
   });
 
   it("calls each target's `emitComposable`, and formats what it emits", async () => {
@@ -251,8 +245,7 @@ describe("a module of composables", () => {
   });
 
   it("reports a target whose `emitComposable` throws (UF9001), and keeps the others", async () => {
-    // A target still without its emitter, whose UF1002 shows the others go on.
-    const waiting = WITHOUT_EMITTER[0]!;
+    // Every target has its emitter now: Vue's output shows the others go on.
     const target = {
       ...builtinTargets.vue,
       name: "broken",
@@ -262,17 +255,11 @@ describe("a module of composables", () => {
     };
     const result = await compile(TOGGLE, {
       filename: "useToggle.uf.ts",
-      targets: [target, waiting],
+      targets: [target, "vue"],
     });
     expect(
       result.diagnostics.map(({ code, target: name, message }) => [code, name, message]),
-    ).toEqual([
-      ["UF9001", "broken", "The broken target failed on useToggle: boom"],
-      [
-        "UF1002",
-        waiting,
-        `The ${waiting} target does not emit a composable yet: it lands with this target's composables lane.`,
-      ],
-    ]);
+    ).toEqual([["UF9001", "broken", "The broken target failed on useToggle: boom"]]);
+    expect(result.outputs.vue!.map(({ path }) => path)).toEqual(["useToggle.ts"]);
   });
 });

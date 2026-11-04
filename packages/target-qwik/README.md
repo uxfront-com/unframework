@@ -201,6 +201,62 @@ as a `<style q:style>` where the component renders, before its root, which the n
 out of Qwik's markup, and which `:first-child`, `:nth-child()` and `+` count in the server's
 markup.
 
+## Composables (M5)
+
+Each composable of a `.uf.ts` module is its own module, `useToggle.ts`, holding a `use*` hook
+(`src/composable.ts`, ADR-0069): `export function useToggle(initial: boolean)`, its setup planned
+and printed as a component's is (`src/plan.ts`, `src/setup.ts`), with `useSignal`, `useComputed$`
+and tasks. It returns what the source returns: its signals as they are, and each function as the
+`$()` QRL its caller's client code calls, never moved to module scope.
+
+A hook's `$` scopes capture only what Qwik serialises, never a plain function (optimizer C02), so
+its parameters take the forms Qwik captures:
+
+- A value is taken as written, `initial: boolean`, and read once.
+- A getter, `price: () => number`, is the signal its caller computes with `useComputed$`,
+  `price: ReadonlySignal<number>`, and each call reads it: `price()` is `price.value`. A task
+  tracks it through a function, `track(() => price.value)`, since `track` infers a value only
+  from a writable signal.
+- A callback, `onLimit: (count: number) => void`, is the QRL its caller makes with `$()`,
+  `onLimit: QRL<(count: number) => void>`. A statement call of a callback that returns `void` or
+  a promise runs without waiting, as an emit does: `void onLimit(count.value)`. A call whose value
+  is used is awaited.
+
+What those forms cannot keep is UF1002, at the read, and the hook is not emitted:
+
+- a getter read other than by a call or a test (passed on, kept or aliased), since it is a
+  signal;
+- a callback read other than by a call or a test, or called in a function of the code's own (an
+  array method's callback, a comparator, a timer's), which cannot wait for a QRL's promise;
+- a value whose type holds a function, or a setup `const` whose value holds one by the types it
+  reads, read where a `$` scope captures it, since Qwik serialises what a `$` scope captures;
+- a setup `let` or `ref` whose initial value holds a function, since each is a signal.
+
+Types are read as written: an argument's annotation, a member's declared type, a call's declared
+return type (each part's, for a union of functions such as an optional one), an assertion's type,
+an array's elements (and its copies, `slice()`, and elements, `at(0)`), what an array's `map` or
+`reduce` callback returns where its parameters are plain names and its body an expression, a
+function's `bind`, a setup function's declared return type, and the module's own declarations with
+the interfaces they extend and their type arguments substituted, through `Readonly`, `Partial`,
+`Required`, `NonNullable` and a union's `undefined`. So `const step = options.step` with
+`step: number` holds no function, and `const format = options.make()` with
+`make: () => (value: number) => string` holds one.
+
+Wherever those types don't give a value's type exactly (a global's call, a callback with a
+destructured, default or rest parameter or a block body, a generic function's result, a setup
+function without a return type), it holds a function exactly when what it reads holds one. A
+primitive holds none, so `options.name.toUpperCase()` holds none. An imported type, a class and a
+composable's own type parameter are not seen: each is free.
+
+A test of an optional getter or callback, whether the caller passed it, reads the signal or the
+QRL itself: `limit ? Math.min(price.value, limit.value) : price.value`, and
+`if (onChange) void onChange(next)`. A test is an `if`'s, a loop's or a `?:`'s test, `!`, a
+comparison, the left of `&&`, or an operand of `&&`, `||` or `??` that is itself in a test.
+`typeof limit` is not one: a signal is no function.
+
+A composable that reads a module's values is UF1002 until the call site lands, and so are a
+composable's call and what it gives a component.
+
 ## Toolchain
 
 Tests and tooling use three Node and browser entries (plan §5.7, `Toolchain` in
