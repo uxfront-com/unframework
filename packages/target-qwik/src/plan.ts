@@ -1096,7 +1096,7 @@ function functionRefs(fn: FunctionCode): CodeReference[] {
 
 /**
  * The calls of a function a composable's call destructures in code that is not client code: the
- * template, a getter, a value the setup evaluates. The hook returns each function as a `$()` QRL
+ * template (a slot's fill included), a getter, a value the setup evaluates. The hook returns each function as a `$()` QRL
  * (./composable.ts), whose call gives a promise, so these are reported (P2).
  */
 export function usedFunctionRenderCalls(component: UfComponent): BindingReference[] {
@@ -1104,11 +1104,8 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
     component.bindings.filter(({ kind }) => kind === "usedFn").map(({ id }) => id),
   );
   if (!used.size) return [];
-  const codes: Code[] = [];
-  const fills = fillExpressions(component);
-  for (const { expression } of expressionsOf(component)) {
-    if (!fills.has(expression)) codes.push(expression);
-  }
+  // A named or scoped slot's fill is a render prop the child calls as it renders: render code too.
+  const codes: Code[] = expressionsOf(component).map(({ expression }) => expression);
   for (const item of component.setup) {
     switch (item.kind) {
       case "State":
@@ -1173,8 +1170,79 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
   );
 }
 
+/**
+ * The reads in a composable's arguments that reach a member of that same call, directly or
+ * through the setup declarations they read (`useCounter(3, () => reset())`), each with the member
+ * it reaches. Each argument's `$` scope is created before the call returns, so it captures the
+ * member before it exists: Qwik's optimizer captures `undefined`, or a name declared after it.
+ * These are reported (P2).
+ */
+export function selfReadingArguments(
+  component: UfComponent,
+): { reference: BindingReference; member: BindingId }[] {
+  // What each setup declaration's code reads, by the binding it declares.
+  const declared = new Map<BindingId, Code[]>();
+  for (const item of component.setup) {
+    switch (item.kind) {
+      case "Function":
+        declared.set(item.binding, [item.function.body]);
+        break;
+      case "Const":
+        declared.set(item.binding, [item.value]);
+        break;
+      case "Derived":
+        declared.set(item.binding, [item.getter.body]);
+        break;
+      case "State":
+      case "Variable":
+        if (item.initial) declared.set(item.binding, [item.initial]);
+        break;
+      default:
+        break;
+    }
+  }
+  const found: { reference: BindingReference; member: BindingId }[] = [];
+  for (const item of component.setup) {
+    if (item.kind !== "Use") continue;
+    const members = new Set(item.members.map(({ binding }) => binding));
+    for (const argument of item.arguments) {
+      const code =
+        argument.kind === "Value"
+          ? argument.value
+          : argument.kind === "Getter"
+            ? argument.getter.body
+            : argument.callback.body;
+      for (const reference of code.refs) {
+        if (reference.kind !== "Binding") continue;
+        const member = reachedMember(reference.binding, members, declared);
+        if (member !== undefined) found.push({ reference, member });
+      }
+    }
+  }
+  return found;
+}
+
+/** The first of `members` a binding is, or reaches through the declarations' code it reads. */
+function reachedMember(
+  start: BindingId,
+  members: ReadonlySet<BindingId>,
+  declared: ReadonlyMap<BindingId, Code[]>,
+): BindingId | undefined {
+  const seen = new Set<BindingId>();
+  const queue = [start];
+  for (let id = queue.shift(); id !== undefined; id = queue.shift()) {
+    if (members.has(id)) return id;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    for (const code of declared.get(id) ?? []) {
+      for (const next of referencedIds(code.refs)) queue.push(next);
+    }
+  }
+  return undefined;
+}
+
 /** The API of the composable a module imports under `local` (ADR-0069). */
-export function composableApi(module: UfModule, local: string): ComposableApi {
+function composableApi(module: UfModule, local: string): ComposableApi {
   for (const entry of module.imports ?? []) {
     const name = entry.names.find((each) => each.kind === "Composable" && each.local === local);
     if (name) return entry.api.composables!.find((each) => each.name === name.imported)!;

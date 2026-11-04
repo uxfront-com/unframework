@@ -85,7 +85,7 @@ import { generatedInterface, typeParameterDeclaration } from "./generics.ts";
 import type { GeneratedInterface } from "./generics.ts";
 import { Listeners } from "./listeners.ts";
 import { moduleReads } from "./modules.ts";
-import { OutputNames, planSetup, usedFunctionRenderCalls } from "./plan.ts";
+import { OutputNames, planSetup, selfReadingArguments, usedFunctionRenderCalls } from "./plan.ts";
 import type { SetupPlan } from "./plan.ts";
 import { exposeStatement, fillFunction, printSetup } from "./setup.ts";
 import { qwikTitles } from "./title.ts";
@@ -237,7 +237,24 @@ export const qwik: Target = defineTarget({
         help: "Return the value as a derived value of the composable, or call the function from a listener, a watcher or a lifecycle hook.",
       });
     }
-    if (renderCalls.length) return [];
+    // An argument's `$` scope is made before its call returns, so it cannot capture what the call
+    // returns (./plan.ts): reported, never emitted with a capture that is `undefined` (P2).
+    const selfReads = selfReadingArguments(component);
+    for (const { reference, member } of selfReads) {
+      const name = bindingOf(component, member).name;
+      const read = bindingOf(component, reference.binding).name;
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message:
+          read === name
+            ? `\`${name}\` is what this composable's call returns, which the qwik target cannot read in the call's own arguments: Qwik makes each argument's QRL or signal before the call returns, so it would capture \`${name}\` before it exists.`
+            : `\`${read}\` reads \`${name}\`, which this composable's call returns, so the qwik target cannot read it in the call's own arguments: Qwik makes each argument's QRL or signal before the call returns, so it would capture \`${name}\` before it exists.`,
+        span: reference.span,
+        help: "Do the work in the composable, or have the argument write state the component declares, which a watcher of it reads.",
+      });
+    }
+    if (renderCalls.length || selfReads.length) return [];
     // Every name the source declares or reads is taken before the output names its own, but for
     // the authoring APIs code calls (`nextTick`), which the output replaces with its own.
     const ownNames = (each: UfComponent) => {

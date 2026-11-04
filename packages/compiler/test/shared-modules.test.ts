@@ -163,13 +163,13 @@ describe("compile() with shared modules", () => {
     });
     const result = await compile(source, {
       filename: "src/Badge.uf.tsx",
-      targets: ["vue", "react"],
+      targets: ["vue", "react", "qwik"],
       resolve,
       typeOracle,
     });
     expect(result.diagnostics).toEqual([]);
     expect(result.dependencies).toEqual(["shared/tones.ts", "src/base.ts", "src/tokens.ts"]);
-    for (const target of ["vue", "react"]) {
+    for (const target of ["vue", "react", "qwik"]) {
       expect(result.outputs[target]!.slice(1)).toEqual([
         { path: "tokens.ts", contents: TOKENS },
         { path: "base.ts", contents: BASE },
@@ -180,13 +180,28 @@ describe("compile() with shared modules", () => {
   });
 
   it("copies nothing where no component's files were written", async () => {
+    // Qwik calls a composable's function only from client code: the template's call withholds the
+    // component's files, and with them the module's copies.
+    const source = BADGE.replace(
+      "export default function Badge({ tone }: { tone: Tone }) {\n",
+      'import { useLabel } from "./useLabel.uf.ts";\nexport default function Badge({ tone }: { tone: Tone }) {\n  const { label } = useLabel();\n',
+    ).replace("{sizes.sm}", "{sizes.sm} {label()}");
     const { resolve, typeOracle } = memoryResolver({
-      "/project/src/Badge.uf.tsx": BADGE,
+      "/project/src/Badge.uf.tsx": source,
+      "/project/src/useLabel.uf.ts": [
+        "export function useLabel() {",
+        "  function label() {",
+        '    return "Badge";',
+        "  }",
+        "  return { label };",
+        "}",
+        "",
+      ].join("\n"),
       "/project/src/tokens.ts": TOKENS,
       "/project/src/base.ts": BASE,
       "/project/shared/tones.ts": TONES,
     });
-    const result = await compile(BADGE, {
+    const result = await compile(source, {
       filename: "src/Badge.uf.tsx",
       targets: ["qwik"],
       resolve,
@@ -195,7 +210,6 @@ describe("compile() with shared modules", () => {
     expect(result.ir!.moduleImports).toEqual([
       expect.objectContaining({ specifier: "./tokens", file: "tokens.ts" }),
     ]);
-    // Qwik's composables lane reads the import binding: until it lands, the target reports it.
     expect(result.diagnostics.map(({ code, target }) => [code, target])).toEqual([
       ["UF1002", "qwik"],
     ]);

@@ -5,7 +5,7 @@
 // (L5), as the corpus's toolchain project runs them. The cases wait in
 // `tests/integration/pending/` until every target's lane has landed
 // (../../codegen/test/composable-cases.ts).
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -60,7 +60,7 @@ describe("qwik composable cases", () => {
   it.each(cases)(
     "compiles $id to outputs that pass L3 to L5",
     { timeout: 60_000 },
-    async ({ id, sources }) => {
+    async ({ id, dir, sources }) => {
       const errors = sources.flatMap(({ diagnostics }) =>
         diagnostics.filter(({ severity }) => severity === "error"),
       );
@@ -72,13 +72,15 @@ describe("qwik composable cases", () => {
           sources.flatMap(({ outputs }) => outputs).map((each) => [each.path, each]),
         ).values(),
       ];
-      for (const { filename, outputs } of sources) {
-        const base = filename.slice(filename.lastIndexOf("/") + 1);
-        const path = base.endsWith(".uf.ts")
-          ? `${base.slice(0, -6)}.ts`
-          : `${base.slice(0, -7)}.tsx`;
-        expect(outputs.map((each) => each.path)).toContain(path);
-      }
+      // Each source's own output, and each `.ts` of the case as its copy, and nothing else.
+      const expected = readdirSync(dir)
+        .flatMap((name) => {
+          if (name.endsWith(".uf.ts")) return [`${name.slice(0, -6)}.ts`];
+          if (name.endsWith(".uf.tsx")) return [`${name.slice(0, -7)}.tsx`];
+          return name.endsWith(".ts") && !name.endsWith(".test.ts") ? [name] : [];
+        })
+        .toSorted();
+      expect(emitted.map(({ path }) => path).toSorted()).toEqual(expected);
       await expectToolchainClean(id, emitted);
     },
   );
@@ -732,6 +734,22 @@ async function compileProject(files: Record<string, string>) {
   };
 }
 
+/** A composable that takes a callback, as the pending `callback-argument` case's does. */
+const USE_COUNTER = `import { ref } from "unframework";
+
+export function useCounter(limit: number, onLimit: (count: number) => void) {
+  const count = ref(0);
+  function increment() {
+    count.value += 1;
+    if (count.value === limit) onLimit(count.value);
+  }
+  function reset() {
+    count.value = 0;
+  }
+  return { count, increment, reset };
+}
+`;
+
 /** A composable with state, a derived value, a constant, a function and an async function. */
 const USE_BITS = `import { computed, ref } from "unframework";
 
@@ -850,6 +868,184 @@ export default function Probe() {
     ]);
     expect(project.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
   });
+
+  it("reports a returned function each other site of render code calls (UF1002)", async () => {
+    const project = await compileProject({
+      "/project/useBits.uf.ts": USE_BITS,
+      "/project/Probe.uf.tsx": `import { provide, ref, watch } from "unframework";
+import type { InjectionKey } from "unframework";
+
+import { useBits } from "./useBits.uf.ts";
+
+export const NameKey: InjectionKey<string> = Symbol("name");
+
+export default function Probe() {
+  const { count, label } = useBits(1);
+  const shown = ref(label(1));
+  const fixed = label(2);
+  watch(
+    () => label(count.value),
+    () => console.log(shown.value),
+  );
+  const { unit } = useBits(label(3).length);
+  provide(NameKey, label(4));
+  return (
+    <p>
+      {fixed} {unit}
+    </p>
+  );
+}
+`,
+      "/project/Reader.uf.tsx": `import { inject } from "unframework";
+
+import { NameKey } from "./Probe.uf.tsx";
+import { useBits } from "./useBits.uf.ts";
+
+export default function Reader() {
+  const { label } = useBits(1);
+  const name = inject(NameKey, label(5));
+  return <p>{name}</p>;
+}
+`,
+    });
+    expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual(
+      Array.from({ length: 6 }, () => ({ code: "UF1002", severity: "error", text: "label" })),
+    );
+    expect(project.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
+    expect(project.outputs.map(({ path }) => path)).not.toContain("Reader.tsx");
+  });
+
+  it("reports a returned function a named slot's fill calls, since the fill renders (UF1002)", async () => {
+    const project = await compileProject({
+      "/project/useName.uf.ts": `import { ref } from "unframework";
+
+export function useName() {
+  const n = ref("Ada");
+  function label(): string {
+    return "Hi " + n.value;
+  }
+  return { n, label };
+}
+`,
+      "/project/Card.uf.tsx": `import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+
+export default function Card() {
+  const slots = defineSlots<{ title?(): Element }>();
+  return (
+    <div class="card">
+      <h3>{slots.title?.() ?? "Untitled"}</h3>
+    </div>
+  );
+}
+`,
+      "/project/Page.uf.tsx": `import Card from "./Card.uf.tsx";
+import { useName } from "./useName.uf.ts";
+
+export default function Page() {
+  const { label } = useName();
+  return <Card>{{ title: () => <span aria-label={label()}>{label()}</span> }}</Card>;
+}
+`,
+    });
+    expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
+      { code: "UF1002", severity: "error", text: "label" },
+      { code: "UF1002", severity: "error", text: "label" },
+    ]);
+    expect(project.outputs.map(({ path }) => path)).not.toContain("Page.tsx");
+  });
+
+  it("reports an argument that reads what its own call returns, itself or through a function (UF1002)", async () => {
+    const direct = await compileProject({
+      "/project/useCounter.uf.ts": USE_COUNTER,
+      "/project/Probe.uf.tsx": `import { useCounter } from "./useCounter.uf.ts";
+
+export default function Probe() {
+  const { count, increment, reset } = useCounter(3, () => {
+    reset();
+  });
+  return (
+    <button type="button" onClick={() => increment()}>
+      {count.value}
+    </button>
+  );
+}
+`,
+    });
+    expect(direct.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
+      { code: "UF1002", severity: "error", text: "reset" },
+    ]);
+    expect(direct.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
+    const through = await compileProject({
+      "/project/useCounter.uf.ts": USE_COUNTER,
+      "/project/Probe.uf.tsx": `import { useCounter } from "./useCounter.uf.ts";
+
+export default function Probe() {
+  const { count, increment, reset } = useCounter(3, (n) => {
+    report(n);
+  });
+  function report(n: number) {
+    console.log(n);
+    reset();
+  }
+  return (
+    <button type="button" onClick={() => increment()}>
+      {count.value}
+    </button>
+  );
+}
+`,
+    });
+    expect(through.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
+      { code: "UF1002", severity: "error", text: "report" },
+    ]);
+    expect(through.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
+  });
+
+  it(
+    "declares a call before what reads its members, and after what its callback calls, a QRL it awaits",
+    { timeout: 60_000 },
+    async () => {
+      const project = await compileProject({
+        "/project/useCounter.uf.ts": USE_COUNTER,
+        "/project/Probe.uf.tsx": `import { ref } from "unframework";
+
+import { useCounter } from "./useCounter.uf.ts";
+
+export default function Probe() {
+  const message = ref("Counting");
+  function bump() {
+    increment();
+  }
+  const { count, increment } = useCounter(3, () => {
+    announce();
+  });
+  function announce() {
+    message.value = "Reached";
+  }
+  return (
+    <button type="button" onClick={bump}>
+      {count.value} {message.value}
+    </button>
+  );
+}
+`,
+      });
+      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+      const probe = project.output("Probe.tsx");
+      const at = (text: string) => {
+        expect(probe).toContain(text);
+        return probe.indexOf(text);
+      };
+      const announce = at("const announce = $(() => {");
+      const call = at("const { count, increment } = useCounter(");
+      const bump = at("const bump = $(async () => {\n      await increment();");
+      expect(at("$(async () => {\n        await announce();")).toBeGreaterThan(call);
+      expect(announce).toBeLessThan(call);
+      expect(call).toBeLessThan(bump);
+      await expectToolchainClean("calls/order", project.outputs);
+    },
+  );
 });
 
 describe("qwik shared modules", () => {
@@ -900,6 +1096,90 @@ export default function Pair() {
       expect(project.output("Half.tsx")).toContain('import { STEP } from "./Pair";');
       expect(project.output("Half.tsx")).not.toContain("const STEP");
       await expectToolchainClean("modules/pair", project.outputs);
+    },
+  );
+
+  it(
+    "moves what reads only module values to module scope, but in an owner that imports them",
+    { timeout: 60_000 },
+    async () => {
+      const project = await compileProject({
+        "/project/Pair.uf.tsx": `const STEP = 2;
+
+function Half() {
+  const LIMIT = STEP * 2;
+  return <span>{LIMIT}</span>;
+}
+
+export default function Pair() {
+  const DOUBLE = STEP * 2;
+  function grow(value: number): number {
+    return value + STEP;
+  }
+  return (
+    <p>
+      {DOUBLE} {grow(1)} <Half />
+    </p>
+  );
+}
+`,
+      });
+      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+      const pair = project.output("Pair.tsx");
+      const component = pair.indexOf("export default component$");
+      expect(pair.indexOf("const DOUBLE = STEP * 2;")).toBeLessThan(component);
+      expect(pair.indexOf("function grow(value: number): number {")).toBeLessThan(component);
+      const half = project.output("Half.tsx");
+      expect(half.indexOf("const LIMIT = STEP * 2;")).toBeGreaterThan(
+        half.indexOf("export const Half = component$"),
+      );
+      await expectToolchainClean("modules/hoisted", project.outputs);
+    },
+  );
+
+  it(
+    "declares the constants, types and type imports a reached constant names, and what a type queries",
+    { timeout: 60_000 },
+    async () => {
+      const project = await compileProject({
+        "/project/units.ts": 'export type Unit = "km" | "mi";\n',
+        "/project/Gauge.uf.tsx": `import { ref } from "unframework";
+
+import type { Unit } from "./units";
+
+interface Limits {
+  min: number;
+  max: number;
+}
+
+const LIMITS: Limits = { min: 0, max: 9 };
+const START = LIMITS.min + 1;
+const UNIT: Unit = "km";
+const SIZES = { sm: 1, md: 2 } as const;
+
+export default function Gauge() {
+  const size = ref<keyof typeof SIZES>("sm");
+  return (
+    <p>
+      {START} {UNIT} {size.value}
+    </p>
+  );
+}
+`,
+      });
+      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+      const gauge = project.output("Gauge.tsx");
+      expect(gauge).toContain('import type { Unit } from "./units";');
+      expect(gauge).toContain("interface Limits {");
+      expect(gauge).toContain(
+        [
+          "const LIMITS: Limits = { min: 0, max: 9 };",
+          "const START = LIMITS.min + 1;",
+          'const UNIT: Unit = "km";',
+          "const SIZES = { sm: 1, md: 2 } as const;",
+        ].join("\n"),
+      );
+      await expectToolchainClean("modules/closure", project.outputs);
     },
   );
 });
