@@ -1,0 +1,7 @@
+- region "Timeline":
+  - status: "Count: 0"
+  - button "Increment"
+  - list:
+    - listitem: caller mounted first
+    - listitem: composable mounted
+    - listitem: caller mounted last

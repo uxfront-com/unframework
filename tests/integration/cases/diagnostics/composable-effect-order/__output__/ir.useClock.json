@@ -1,0 +1,98 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/composable-effect-order/useClock.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "composables": [
+    {
+      "name": "useClock",
+      "span": {
+        "start": 129,
+        "end": 265
+      },
+      "parameters": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "started@166",
+          "name": "started",
+          "kind": "state",
+          "span": {
+            "start": 166,
+            "end": 173
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "started@166",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 180,
+              "end": 185
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 160,
+            "end": 187
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    started.value = true;\n  }",
+              "span": {
+                "start": 207,
+                "end": 238
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "started@166",
+                  "operator": "=",
+                  "span": {
+                    "start": 213,
+                    "end": 233
+                  },
+                  "target": {
+                    "start": 213,
+                    "end": 226
+                  },
+                  "value": {
+                    "start": 229,
+                    "end": 233
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 201,
+              "end": 238
+            }
+          },
+          "span": {
+            "start": 191,
+            "end": 240
+          }
+        }
+      ],
+      "returns": [
+        {
+          "name": "started",
+          "binding": "started@166",
+          "span": {
+            "start": 253,
+            "end": 260
+          }
+        }
+      ]
+    }
+  ]
+}

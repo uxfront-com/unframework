@@ -1,0 +1,4 @@
+- region "Shipping":
+  - button "Shipping details" [expanded]
+  - paragraph: Orders ship within two days.
+  - button "Close"

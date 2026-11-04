@@ -29,32 +29,12 @@ function lanesBut(
   );
 }
 
-// M5's contract lands before what lowers and emits it (ADR-0067 to ADR-0070): each entry names
-// the layer of M5 whose case removes it.
-const COMPOSABLES =
-  "No case uses a composable or a module value until every target emits them: the composable and module cases land in layer 38 of M5 (ADR-0069).";
-
 /**
  * IR kinds that no case has yet, by family, and why none can: a kind a milestone adds before
  * its corpus case.
  */
 export const EXEMPT_KINDS: Readonly<Partial<Record<KindFamily, Readonly<Record<string, string>>>>> =
-  {
-    binding: {
-      // Layer 38 of M5.
-      moduleConst: COMPOSABLES,
-      import: COMPOSABLES,
-      argument: COMPOSABLES,
-      usedState: COMPOSABLES,
-      usedDerived: COMPOSABLES,
-      usedFn: COMPOSABLES,
-      usedConst: COMPOSABLES,
-    },
-    "setup item": {
-      // Layer 38 of M5.
-      Use: COMPOSABLES,
-    },
-  };
+  {};
 
 /** Catalogued diagnostic codes that no case triggers, and why none can. */
 export const EXEMPT_CODES: Readonly<Record<string, string>> = {
@@ -70,9 +50,6 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
   // Layer 14 of M5 emits cross-file types and generics on Vue.
   // Layer 32 of M5 builds the project graph.
   // Layer 38 of M5 lands the composable cases.
-  UF2035: COMPOSABLES,
-  UF2036: COMPOSABLES,
-  UF4005: COMPOSABLES,
 };
 
 /**
@@ -99,6 +76,4 @@ export const EXEMPT_CAPABILITIES: Readonly<
   context: lanesBut("astro"),
   "reactive-context": lanesBut("astro"),
   "dynamic-component": lanesBut(),
-  composables: COMPOSABLES,
-  "composable-effect-order": COMPOSABLES,
 };

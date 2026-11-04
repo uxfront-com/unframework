@@ -1,0 +1,53 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "semantics/composable-effect-order/Timeline.uf.tsx",
+    "start": {
+      "line": 12,
+      "column": 3,
+      "offset": 268
+    },
+    "end": {
+      "line": 12,
+      "column": 51,
+      "offset": 316
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4005",
+    "severity": "info",
+    "message": "The react target does not support composable-effect-order: A composable is a custom hook, and React runs a component's effects in its own order (ADR-0048): a hook's watchers, effects and hooks cannot take their place among the caller's own, so code that relies on that order may see another (ADR-0069).",
+    "file": "semantics/composable-effect-order/Timeline.uf.tsx",
+    "start": {
+      "line": 14,
+      "column": 3,
+      "offset": 320
+    },
+    "end": {
+      "line": 14,
+      "column": 69,
+      "offset": 386
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF4005",
+    "severity": "info",
+    "message": "The solid target does not support composable-effect-order: A composable's watchers coalesce in its own module's queue (`createWatcher`), apart from the caller's, so its watchers, effects and hooks cannot take their place among the caller's own, and code that relies on that order may see another (ADR-0069).",
+    "file": "semantics/composable-effect-order/Timeline.uf.tsx",
+    "start": {
+      "line": 14,
+      "column": 3,
+      "offset": 320
+    },
+    "end": {
+      "line": 14,
+      "column": 69,
+      "offset": 386
+    },
+    "target": "solid"
+  }
+]

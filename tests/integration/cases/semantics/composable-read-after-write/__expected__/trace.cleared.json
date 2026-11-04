@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Clear' })",
+      "dom": [
+        "<section aria-label=\"Cart\" class=\"cart\">",
+        "  <p role=\"status\">",
+        "    \"Items: 0\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Add three\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Clear\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Cart\":",
+        "  - status: \"Items: 0\"",
+        "  - button \"Add three\"",
+        "  - button \"Clear\""
+      ],
+      "events": {
+        "cleared": [
+          [
+            true
+          ]
+        ]
+      }
+    }
+  ]
+}

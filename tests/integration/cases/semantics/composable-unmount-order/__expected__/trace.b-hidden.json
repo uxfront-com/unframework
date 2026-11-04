@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Hide b' })",
+      "dom": [
+        "<div class=\"board\">",
+        "  <section aria-label=\"Panel a\" class=\"panel\">",
+        "    <h2>",
+        "      \"Panel a\"",
+        "    </h2>",
+        "  </section>",
+        "  <button type=\"button\">",
+        "    \"Hide a\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Hide b\"",
+        "  </button>",
+        "  <output>",
+        "    \"b closed\"",
+        "  </output>",
+        "</div>"
+      ],
+      "aria": [
+        "- region \"Panel a\":",
+        "  - heading \"Panel a\" [level=2]",
+        "- button \"Hide a\"",
+        "- button \"Hide b\"",
+        "- status: b closed"
+      ],
+      "events": {}
+    }
+  ]
+}

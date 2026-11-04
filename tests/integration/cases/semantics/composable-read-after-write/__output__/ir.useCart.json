@@ -1,0 +1,240 @@
+{
+  "irVersion": 1,
+  "file": "semantics/composable-read-after-write/useCart.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "composables": [
+    {
+      "name": "useCart",
+      "span": {
+        "start": 193,
+        "end": 447
+      },
+      "parameters": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "items@229",
+          "name": "items",
+          "kind": "state",
+          "span": {
+            "start": 229,
+            "end": 234
+          }
+        },
+        {
+          "id": "empty@253",
+          "name": "empty",
+          "kind": "derived",
+          "span": {
+            "start": 253,
+            "end": 258
+          }
+        },
+        {
+          "id": "add@308",
+          "name": "add",
+          "kind": "localFn",
+          "span": {
+            "start": 308,
+            "end": 311
+          }
+        },
+        {
+          "id": "clear@371",
+          "name": "clear",
+          "kind": "localFn",
+          "span": {
+            "start": 371,
+            "end": 376
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "items@229",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 241,
+              "end": 242
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 223,
+            "end": 244
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "empty@253",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "items.value === 0",
+              "span": {
+                "start": 276,
+                "end": 293
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "items@229",
+                  "span": {
+                    "start": 276,
+                    "end": 287
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 270,
+              "end": 293
+            }
+          },
+          "span": {
+            "start": 247,
+            "end": 295
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "add@308",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 319,
+                    "end": 325
+                  }
+                },
+                "span": {
+                  "start": 312,
+                  "end": 325
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    items.value += count;\n  }",
+              "span": {
+                "start": 327,
+                "end": 358
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "items@229",
+                  "operator": "+=",
+                  "span": {
+                    "start": 333,
+                    "end": 353
+                  },
+                  "target": {
+                    "start": 333,
+                    "end": 344
+                  },
+                  "value": {
+                    "start": 348,
+                    "end": 353
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 311,
+              "end": 358
+            }
+          },
+          "span": {
+            "start": 299,
+            "end": 358
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "clear@371",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    items.value = 0;\n  }",
+              "span": {
+                "start": 379,
+                "end": 405
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "items@229",
+                  "operator": "=",
+                  "span": {
+                    "start": 385,
+                    "end": 400
+                  },
+                  "target": {
+                    "start": 385,
+                    "end": 396
+                  },
+                  "value": {
+                    "start": 399,
+                    "end": 400
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 376,
+              "end": 405
+            }
+          },
+          "span": {
+            "start": 362,
+            "end": 405
+          }
+        }
+      ],
+      "returns": [
+        {
+          "name": "items",
+          "binding": "items@229",
+          "span": {
+            "start": 418,
+            "end": 423
+          }
+        },
+        {
+          "name": "empty",
+          "binding": "empty@253",
+          "span": {
+            "start": 425,
+            "end": 430
+          }
+        },
+        {
+          "name": "add",
+          "binding": "add@308",
+          "span": {
+            "start": 432,
+            "end": 435
+          }
+        },
+        {
+          "name": "clear",
+          "binding": "clear@371",
+          "span": {
+            "start": 437,
+            "end": 442
+          }
+        }
+      ]
+    }
+  ]
+}

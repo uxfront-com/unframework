@@ -1,0 +1,30 @@
+---
+import { useMediaQuery } from "./useMediaQuery";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const { matches: wide } = useMediaQuery("(min-width: 1px)");
+const { matches: tiny } = useMediaQuery("(max-width: 1px)");
+---
+
+<section
+  class:list={["layout", className]}
+  aria-label="Layout"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
+  <p role="status">{wide ? "Wide layout" : "Narrow layout"}</p>
+  <p>{tiny ? "Tiny screen" : "Not a tiny screen"}</p>
+</section>

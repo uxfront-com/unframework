@@ -1,0 +1,330 @@
+{
+  "irVersion": 1,
+  "file": "modules/nested-modules/Distance.uf.tsx",
+  "components": [
+    {
+      "name": "Distance",
+      "span": {
+        "start": 117,
+        "end": 494
+      },
+      "props": [
+        {
+          "name": "value",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 170,
+              "end": 176
+            }
+          },
+          "binding": "value@152",
+          "span": {
+            "start": 163,
+            "end": 176
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ value: number }",
+          "span": {
+            "start": 161,
+            "end": 178
+          }
+        },
+        "span": {
+          "start": 150,
+          "end": 178
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "formatDistance@45",
+          "name": "formatDistance",
+          "kind": "import",
+          "span": {
+            "start": 45,
+            "end": 59
+          }
+        },
+        {
+          "id": "value@152",
+          "name": "value",
+          "kind": "prop",
+          "span": {
+            "start": 152,
+            "end": 157
+          }
+        },
+        {
+          "id": "unit@190",
+          "name": "unit",
+          "kind": "state",
+          "span": {
+            "start": 190,
+            "end": 194
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "unit@190",
+          "type": {
+            "code": "Unit",
+            "span": {
+              "start": 201,
+              "end": 205
+            }
+          },
+          "initial": {
+            "code": "\"km\"",
+            "span": {
+              "start": 207,
+              "end": 211
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 184,
+            "end": 213
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "distance",
+            "span": {
+              "start": 239,
+              "end": 255
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Distance",
+            "span": {
+              "start": 256,
+              "end": 277
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 288,
+                  "end": 301
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "formatDistance(value, unit.value)",
+                  "span": {
+                    "start": 303,
+                    "end": 336
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "formatDistance@45",
+                      "span": {
+                        "start": 303,
+                        "end": 317
+                      },
+                      "call": true
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "value@152",
+                      "span": {
+                        "start": 318,
+                        "end": 323
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "unit@190",
+                      "span": {
+                        "start": 325,
+                        "end": 335
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 302,
+                  "end": 337
+                }
+              }
+            ],
+            "span": {
+              "start": 285,
+              "end": 341
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 356,
+                  "end": 369
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(unit.value = unit.value === \"km\" ? \"mi\" : \"km\")",
+                      "span": {
+                        "start": 385,
+                        "end": 433
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "unit@190",
+                          "operator": "=",
+                          "span": {
+                            "start": 385,
+                            "end": 433
+                          },
+                          "target": {
+                            "start": 386,
+                            "end": 396
+                          },
+                          "value": {
+                            "start": 399,
+                            "end": 432
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "unit@190",
+                          "span": {
+                            "start": 399,
+                            "end": 409
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 379,
+                      "end": 433
+                    }
+                  },
+                  "span": {
+                    "start": 379,
+                    "end": 433
+                  }
+                },
+                "span": {
+                  "start": 370,
+                  "end": 434
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Switch units",
+                "span": {
+                  "start": 435,
+                  "end": 463
+                }
+              }
+            ],
+            "span": {
+              "start": 348,
+              "end": 472
+            }
+          }
+        ],
+        "span": {
+          "start": 230,
+          "end": 487
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Distance",
+      "span": {
+        "start": 117,
+        "end": 494
+      }
+    }
+  ],
+  "types": [],
+  "typeImports": [
+    {
+      "specifier": "./units",
+      "names": [
+        {
+          "imported": "Unit",
+          "local": "Unit",
+          "span": {
+            "start": 93,
+            "end": 97
+          }
+        }
+      ],
+      "span": {
+        "start": 79,
+        "end": 115
+      }
+    }
+  ],
+  "moduleImports": [
+    {
+      "specifier": "./format",
+      "file": "format.ts",
+      "names": [
+        {
+          "imported": "formatDistance",
+          "local": "formatDistance",
+          "span": {
+            "start": 45,
+            "end": 59
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 78
+      }
+    }
+  ]
+}

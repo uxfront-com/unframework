@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "rerender {\"value\":3}",
+      "dom": [
+        "<section aria-label=\"Rating\" class=\"rating\">",
+        "  <p role=\"status\">",
+        "    \"Rated 3 of 3\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Two\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Three\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Rating\":",
+        "  - status: Rated 3 of 3",
+        "  - button \"Two\"",
+        "  - button \"Three\""
+      ],
+      "events": {}
+    }
+  ]
+}

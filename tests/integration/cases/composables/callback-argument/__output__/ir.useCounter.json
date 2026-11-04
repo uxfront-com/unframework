@@ -1,0 +1,299 @@
+{
+  "irVersion": 1,
+  "file": "composables/callback-argument/useCounter.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "composables": [
+    {
+      "name": "useCounter",
+      "span": {
+        "start": 252,
+        "end": 573
+      },
+      "parameters": [
+        {
+          "name": "limit",
+          "kind": "value",
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 286,
+              "end": 292
+            }
+          },
+          "binding": "limit@279",
+          "span": {
+            "start": 279,
+            "end": 292
+          }
+        },
+        {
+          "name": "onLimit",
+          "kind": "callback",
+          "type": {
+            "code": "(count: number) => void",
+            "span": {
+              "start": 303,
+              "end": 326
+            }
+          },
+          "binding": "onLimit@294",
+          "span": {
+            "start": 294,
+            "end": 326
+          }
+        }
+      ],
+      "types": [],
+      "bindings": [
+        {
+          "id": "limit@279",
+          "name": "limit",
+          "kind": "argument",
+          "span": {
+            "start": 279,
+            "end": 284
+          }
+        },
+        {
+          "id": "onLimit@294",
+          "name": "onLimit",
+          "kind": "argument",
+          "span": {
+            "start": 294,
+            "end": 301
+          }
+        },
+        {
+          "id": "count@338",
+          "name": "count",
+          "kind": "state",
+          "span": {
+            "start": 338,
+            "end": 343
+          }
+        },
+        {
+          "id": "step@362",
+          "name": "step",
+          "kind": "localConst",
+          "span": {
+            "start": 362,
+            "end": 366
+          }
+        },
+        {
+          "id": "increment@384",
+          "name": "increment",
+          "kind": "localFn",
+          "span": {
+            "start": 384,
+            "end": 393
+          }
+        },
+        {
+          "id": "reset@492",
+          "name": "reset",
+          "kind": "localFn",
+          "span": {
+            "start": 492,
+            "end": 497
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "count@338",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 350,
+              "end": 351
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 332,
+            "end": 353
+          }
+        },
+        {
+          "kind": "Const",
+          "binding": "step@362",
+          "value": {
+            "code": "1",
+            "span": {
+              "start": 369,
+              "end": 370
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 356,
+            "end": 371
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "increment@384",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    count.value += step;\n    if (count.value === limit) onLimit(count.value);\n  }",
+              "span": {
+                "start": 396,
+                "end": 479
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "count@338",
+                  "operator": "+=",
+                  "span": {
+                    "start": 402,
+                    "end": 421
+                  },
+                  "target": {
+                    "start": 402,
+                    "end": 413
+                  },
+                  "value": {
+                    "start": 417,
+                    "end": 421
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "step@362",
+                  "span": {
+                    "start": 417,
+                    "end": 421
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "count@338",
+                  "span": {
+                    "start": 431,
+                    "end": 442
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "limit@279",
+                  "span": {
+                    "start": 447,
+                    "end": 452
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "onLimit@294",
+                  "span": {
+                    "start": 454,
+                    "end": 461
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "count@338",
+                  "span": {
+                    "start": 462,
+                    "end": 473
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 393,
+              "end": 479
+            }
+          },
+          "span": {
+            "start": 375,
+            "end": 479
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "reset@492",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    count.value = 0;\n  }",
+              "span": {
+                "start": 500,
+                "end": 526
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "count@338",
+                  "operator": "=",
+                  "span": {
+                    "start": 506,
+                    "end": 521
+                  },
+                  "target": {
+                    "start": 506,
+                    "end": 517
+                  },
+                  "value": {
+                    "start": 520,
+                    "end": 521
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 497,
+              "end": 526
+            }
+          },
+          "span": {
+            "start": 483,
+            "end": 526
+          }
+        }
+      ],
+      "returns": [
+        {
+          "name": "count",
+          "binding": "count@338",
+          "span": {
+            "start": 539,
+            "end": 544
+          }
+        },
+        {
+          "name": "step",
+          "binding": "step@362",
+          "span": {
+            "start": 546,
+            "end": 550
+          }
+        },
+        {
+          "name": "increment",
+          "binding": "increment@384",
+          "span": {
+            "start": 552,
+            "end": 561
+          }
+        },
+        {
+          "name": "reset",
+          "binding": "reset@492",
+          "span": {
+            "start": 563,
+            "end": 568
+          }
+        }
+      ]
+    }
+  ]
+}

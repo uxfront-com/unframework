@@ -1,0 +1,57 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/composable-result-write/Switch.uf.tsx",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./useToggle.uf.ts",
+      "file": "useToggle.uf.ts",
+      "api": {
+        "file": "useToggle.uf.ts",
+        "components": [],
+        "keys": [],
+        "composables": [
+          {
+            "name": "useToggle",
+            "parameters": [
+              {
+                "name": "initial",
+                "kind": "value",
+                "type": "boolean"
+              }
+            ],
+            "members": [
+              {
+                "name": "on",
+                "kind": "state",
+                "type": "boolean"
+              },
+              {
+                "name": "toggle",
+                "kind": "function",
+                "client": true
+              }
+            ]
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Composable",
+          "imported": "useToggle",
+          "local": "useToggle",
+          "span": {
+            "start": 255,
+            "end": 264
+          }
+        }
+      ],
+      "span": {
+        "start": 246,
+        "end": 292
+      }
+    }
+  ]
+}

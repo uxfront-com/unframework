@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add one' })",
+      "dom": [
+        "<section aria-label=\"Basket\" class=\"basket\">",
+        "  <p role=\"status\">",
+        "    \"Total: 8\"",
+        "  </p>",
+        "  <p>",
+        "    \"2 × 4 = 8\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add one\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Basket\":",
+        "  - status: \"Total: 8\"",
+        "  - paragraph: 2 × 4 = 8",
+        "  - button \"Add one\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Add one' })",
+      "dom": [
+        "<section aria-label=\"Basket\" class=\"basket\">",
+        "  <p role=\"status\">",
+        "    \"Total: 12\"",
+        "  </p>",
+        "  <p>",
+        "    \"3 × 4 = 12\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add one\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Basket\":",
+        "  - status: \"Total: 12\"",
+        "  - paragraph: 3 × 4 = 12",
+        "  - button \"Add one\""
+      ],
+      "events": {}
+    }
+  ]
+}

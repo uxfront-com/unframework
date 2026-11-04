@@ -58,13 +58,14 @@ const NAMED_OTHERWISE: Readonly<Record<string, string>> = {
 
 /**
  * The diagnostics cases whose code `compile()` reports after the analyser, which finds nothing:
- * the codegen scoper's (ADR-0063), the capability check's (ADR-0068), and the project graph's
- * (ADR-0071).
+ * the codegen scoper's (ADR-0063), the capability check's (ADR-0068, ADR-0069), and the project
+ * graph's (ADR-0071).
  */
 const AFTER_ANALYSIS: ReadonlySet<string> = new Set([
   "unscopable-selector",
   "generic-slot-props",
   "import-cycle",
+  "composable-effect-order",
 ]);
 
 /** The warnings the corpus's feature cases hold on purpose. */

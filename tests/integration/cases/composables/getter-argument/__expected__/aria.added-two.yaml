@@ -1,0 +1,4 @@
+- region "Basket":
+  - status: "Total: 12"
+  - paragraph: 3 × 4 = 12
+  - button "Add one"
