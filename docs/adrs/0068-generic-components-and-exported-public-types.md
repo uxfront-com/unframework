@@ -101,12 +101,12 @@ generic-slot-props gap.
 - Typed lists, selects and tables work on every target, with `T` checked for their consumers.
 - A design system's consumers import its public types by name, in every framework.
 - Every gap is a declared cell with its code, so no target differs only in a test (P4).
+- Qwik's generic arrow types `T` through `component$` with no assertion, so its checker types a
+  consumer's props by `T`, and L4's consumer fixtures check it like any other target's.
 
 **Negative:**
 
 - Angular consumers of a generic scoped slot see the constraint, not `T`.
-- Qwik's generic arrow types `T` through `component$` with no assertion, so its checker types a
-  consumer's props by `T`, and L4's consumer fixtures check it like any other target's.
 - Two new capabilities and their rows on the targets page, set once, in the change that adds M5's
   IR and capabilities.
 

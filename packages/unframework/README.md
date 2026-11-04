@@ -83,8 +83,8 @@ Stock tsgo with these types is layer 1 of plan §5.6. Props are in the component
 are checked for every consumer. Events, models and slots are declared by macros in the body, which
 TypeScript cannot see: the types accept every legitimate use of them and leave their checking to the
 compiler (layer 2) and the content mapper (layer 3), which is still to come: TypeScript 7.1
-refuses `.uf.tsx` as a content mapper's extension, so its own issue settles the extension first
-(ADR-0072). Each row below is pinned by a probe in
+refuses `.uf.tsx` as a content mapper's extension, so a separate issue settles the extension
+before the mapper is built (ADR-0072). Each row below is pinned by a probe in
 [`probes/caught`](probes/caught), with the exact TypeScript error code.
 
 | Where              | Caught                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |

@@ -46,20 +46,20 @@ in a real browser.
   Vue in the same engine: a report that gates no pull request, red until each engine's
   differences are fixed or declared, so read its matrix rather than its status. Documented on
   unframework.dev (`2.components/17.styles.md`, `18.styling-engines.md`).
-- **M5, cross-file types, consumer typing and composables, is done:** props types imported from
-  `.ts` modules, a child's module or a package, read through the type oracle
-  (`@unframework/type-oracle`, syntactic by default, and `@unframework/type-oracle-tsgo` on
-  TypeScript's checker), with `extends` chains, intersections and the five utility types; generic
-  components (`function List<T>`), whose scoped slots Angular types by the constraint (UF4004,
-  info); every type a module exports, exported by each output; shared `.ts` modules, copied into
-  each output tree unchanged, and a module's own top-level `const`s; `.uf.ts` composables, compiled
-  to one module per target in its idiom, whose effect order React and Solid declare (UF4005,
-  info); and the project graph (`createProject`), which recompiles only what an edit reaches and
-  reports an import cycle of components (UF1205). Layer 1 of the consumer checks (stock tsgo) is
-  pinned by probes. Layer 3, the content mapper, is left out: TypeScript 7.1 refuses `.uf.tsx` as
-  its extension (ADR-0072). Documented on unframework.dev (`2.components/19.types-and-generics.md`,
-  `20.composables.md`, `21.shared-modules.md`). **M6, build integration and distribution, is
-  next** (plan §9).
+- **M5, cross-file types, consumer typing and composables, is done:** a props type may come from a
+  `.ts` module, a child's module or a package, read through the type oracle
+  (`@unframework/type-oracle`, syntactic by default, or `@unframework/type-oracle-tsgo` on
+  TypeScript's checker), with `extends` chains, intersections and the five utility types. A
+  component may be generic (`function List<T>`), and Angular types its generic scoped slots by the
+  constraint (UF4004, info). Each output exports every type its module exports. Components read
+  shared `.ts` modules, copied into each output tree unchanged, and their module's own top-level
+  `const`s. A `.uf.ts` composable compiles to one module per target in that target's idiom, and
+  React and Solid declare its effect order (UF4005, info). The project graph (`createProject`)
+  recompiles only what an edit reaches, and reports an import cycle of components (UF1205). Probes
+  pin layer 1 of the consumer checks, stock tsgo. Layer 3, the content mapper, is left out:
+  TypeScript 7.1 refuses `.uf.tsx` as its extension (ADR-0072). Documented on unframework.dev
+  (`2.components/19.types-and-generics.md`, `20.composables.md`, `21.shared-modules.md`). **M6,
+  build integration and distribution, is next** (plan §9).
 - Anything outside the built subset is rejected as UF1002 (`unsupported-syntax`) until its
   milestone lands. The authoring types already accept the whole language (plan §4).
 - The plan describes the target state. The code is the truth for what is built:
