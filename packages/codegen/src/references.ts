@@ -344,8 +344,8 @@ function reachTypes(
       case "Inject":
         if (item.fallback) code(item.fallback);
         break;
-      // A composable's call: each target decides what it keeps live (ADR-0069), as Astro's
-      // `serverView` does, so this walk reads nothing of it.
+      // A composable's call: this walk reads nothing of it, so a type that only its arguments
+      // name gets no import on a target that doesn't hand it a `serverView` (ADR-0069).
       case "Use":
       case "TemplateRef":
       case "Id":
@@ -425,8 +425,8 @@ function serverCode(item: SetupItem): Code[] {
       return [item.value];
     case "Inject":
       return item.fallback ? [item.fallback] : [];
-    // A composable's call: each target decides what runs where it renders (ADR-0069), as
-    // Astro's `serverView` does, so this reads nothing of it.
+    // A composable's call (ADR-0069): this reads nothing of it. Only a render node's setup reaches
+    // it, which is empty.
     case "Use":
     case "TemplateRef":
     case "Id":

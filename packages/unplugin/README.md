@@ -84,10 +84,11 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
 - That error stops two components that share a type declared in their own file: each output
   declares the types its props reach, so `joinModules` reports the type as "declared by A.tsx and
   B.tsx" (ADR-0034). Two outputs that print the same inline helper, such as React's `cx`, clash
-  the same way, and so do two imports from one module that name different sets (Angular's
-  `Component` beside `input`, Solid's `Show` beside `For`, or two sets of types from a shared
-  `.ts` module): only an identical import is written once. Give each such component its own
-  `.uf.tsx` file.
+  the same way, and so do two imports from one module whose sets differ but share a name
+  (Angular's `Component` beside `Component` and `input`, Solid's `Show` beside `Show` and `For`,
+  or `{ CardProps }` beside `{ CardProps, Tone }` from a shared `.ts` module): only an identical
+  import is written once, and a name two imports bring in is declared twice. Give each such
+  component its own `.uf.tsx` file.
 - A script module keeps the `.uf.tsx` file's exports. A `.vue`, `.svelte` or `.astro` module has
   only a default export, so markup targets refuse a main component exported by name
   (`export function Hello`), rather than load a module where `import { Hello }` finds nothing.

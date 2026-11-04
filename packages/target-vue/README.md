@@ -210,5 +210,4 @@ Chromium (`test/behaviour.browser.test.ts`: reads after writes, watch timing, pr
 and cleanup, lifecycle, template refs, ids, listeners and their options, emits). Its composable
 test compiles the composable and module cases, in `tests/integration/cases/composables/` and
 `cases/modules/`, and runs L3 to L5 on their outputs (`test/composable.test.ts`), and
-`test/modules.test.ts` pins a
-composable's module, its call and a module's values.
+`test/modules.test.ts` pins a composable's module, its call and a module's values.

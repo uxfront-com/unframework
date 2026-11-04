@@ -1217,8 +1217,9 @@ describe("the project graph (ADR-0071)", () => {
   };
 
   /**
-   * A target that emits each component as a `.vue` file, which plugin-vue's stand-in claims, a
-   * composable's call included.
+   * A target that emits each component as a stub `.vue` file, which plugin-vue's stand-in claims,
+   * a composable's call included, so these tests judge the watch edges and the compiles rather
+   * than a framework's output.
    */
   const target = defineTarget({
     ...htmlTarget(),

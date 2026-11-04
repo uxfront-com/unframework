@@ -288,6 +288,7 @@ types' `DomElementFor` over lib.dom) on every element of the vocabulary.
 every attribute the IR can hold (the names its types lack are the IR's `UNDECLARED_ATTRIBUTES`,
 which the analyser rejects), and pins the one gap left: SVG's `<title>`, which React types as
 HTML's. `test/composable.test.ts` compiles every source of the composable and shared-module
-cases (`tests/integration/cases/composables/` and `cases/modules/`) through `compile()` and runs
-L3, L4 and L5 on
-each case's outputs, its components, hooks and copied `.ts` modules, with the shapes above.
+cases (`COMPOSABLE_CASES` in `../codegen/test/composable-cases.ts`: `cases/composables/`,
+`cases/modules/` and the three `semantics/composable-*` cases) through `compile()` and runs L3,
+L4 and L5 on each case's outputs, its components, hooks and copied `.ts` modules, with the
+shapes above.
