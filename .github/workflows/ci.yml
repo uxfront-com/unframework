@@ -64,10 +64,26 @@ jobs:
   # every package, two at a time: on the runner's four vCPUs, more at once starve the browser
   # and compiler-heavy suites (Angular's ngtsc, unframework's build and type probes) past
   # Vitest's timeouts. --continue reports every package that fails, not only the first.
+  # One job ran past its ten minutes as the suites grew, so the packages are split into shards of
+  # about the same length (the targets' suites are the longest). The `core` shard is every package
+  # but the integration corpus and the targets, so a new package lands there; the target shards
+  # name theirs. Together they run every package once.
   unit:
-    name: Unit tests
+    name: "Unit tests (${{ matrix.group }})"
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: core
+            filter: --filter='!@unframework/integration' --filter='!@unframework/target-*'
+          - group: react, solid, angular
+            filter: --filter=@unframework/target-react --filter=@unframework/target-solid --filter=@unframework/target-angular
+          - group: vue, qwik
+            filter: --filter=@unframework/target-vue --filter=@unframework/target-qwik
+          - group: svelte, astro
+            filter: --filter=@unframework/target-svelte --filter=@unframework/target-astro
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
     steps:
@@ -89,7 +105,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Test
-        run: pnpm exec turbo run test --filter='!@unframework/integration' --continue --concurrency=2
+        run: pnpm exec turbo run test ${{ matrix.filter }} --continue --concurrency=2
 
   # L1 and L2: every case compiled to all seven targets, against the golden outputs; and the
   # harness's own unit tests, the canaries' corruptions of every case among them.
