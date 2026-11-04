@@ -1,0 +1,360 @@
+{
+  "irVersion": 1,
+  "file": "semantics/composable-unmount-order/Panel.uf.tsx",
+  "components": [
+    {
+      "name": "Panel",
+      "span": {
+        "start": 96,
+        "end": 422
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 144,
+              "end": 150
+            }
+          },
+          "binding": "name@128",
+          "span": {
+            "start": 138,
+            "end": 150
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ name: string }",
+          "span": {
+            "start": 136,
+            "end": 152
+          }
+        },
+        "span": {
+          "start": 126,
+          "end": 152
+        }
+      },
+      "types": [],
+      "emits": {
+        "binding": "emit@164",
+        "type": {
+          "code": "{ closed: [entry: string] }",
+          "span": {
+            "start": 183,
+            "end": 210
+          }
+        },
+        "events": [
+          {
+            "name": "closed",
+            "parameters": [
+              {
+                "name": "entry",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 201,
+                    "end": 207
+                  }
+                },
+                "span": {
+                  "start": 194,
+                  "end": 207
+                }
+              }
+            ],
+            "span": {
+              "start": 185,
+              "end": 208
+            }
+          }
+        ],
+        "span": {
+          "start": 158,
+          "end": 214
+        }
+      },
+      "bindings": [
+        {
+          "id": "name@128",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 128,
+            "end": 132
+          }
+        },
+        {
+          "id": "emit@164",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 164,
+            "end": 168
+          }
+        },
+        {
+          "id": "title@225",
+          "name": "title",
+          "kind": "usedDerived",
+          "span": {
+            "start": 225,
+            "end": 230
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Use",
+          "composable": "useTeardown",
+          "arguments": [
+            {
+              "kind": "Getter",
+              "getter": {
+                "parameters": [],
+                "body": {
+                  "code": "name",
+                  "span": {
+                    "start": 258,
+                    "end": 262
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@128",
+                      "span": {
+                        "start": 258,
+                        "end": 262
+                      }
+                    }
+                  ]
+                },
+                "expression": true,
+                "span": {
+                  "start": 252,
+                  "end": 262
+                }
+              },
+              "span": {
+                "start": 252,
+                "end": 262
+              }
+            },
+            {
+              "kind": "Callback",
+              "callback": {
+                "parameters": [
+                  {
+                    "name": "entry",
+                    "span": {
+                      "start": 269,
+                      "end": 274
+                    }
+                  }
+                ],
+                "body": {
+                  "code": "emit(\"closed\", entry)",
+                  "span": {
+                    "start": 279,
+                    "end": 300
+                  },
+                  "refs": [
+                    {
+                      "kind": "Emit",
+                      "binding": "emit@164",
+                      "event": "closed",
+                      "span": {
+                        "start": 279,
+                        "end": 300
+                      },
+                      "arguments": [
+                        {
+                          "start": 294,
+                          "end": 299
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "expression": true,
+                "span": {
+                  "start": 268,
+                  "end": 300
+                }
+              },
+              "span": {
+                "start": 268,
+                "end": 300
+              }
+            }
+          ],
+          "members": [
+            {
+              "member": "title",
+              "binding": "title@225",
+              "span": {
+                "start": 225,
+                "end": 230
+              }
+            }
+          ],
+          "hasEffects": true,
+          "span": {
+            "start": 217,
+            "end": 306
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "panel",
+            "span": {
+              "start": 332,
+              "end": 345
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "title.value",
+              "span": {
+                "start": 358,
+                "end": 369
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "title@225",
+                  "span": {
+                    "start": 358,
+                    "end": 369
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 346,
+              "end": 370
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "title.value",
+                  "span": {
+                    "start": 383,
+                    "end": 394
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "title@225",
+                      "span": {
+                        "start": 383,
+                        "end": 394
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 382,
+                  "end": 395
+                }
+              }
+            ],
+            "span": {
+              "start": 378,
+              "end": 400
+            }
+          }
+        ],
+        "span": {
+          "start": 323,
+          "end": 415
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Panel",
+      "span": {
+        "start": 96,
+        "end": 422
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./useTeardown.uf.ts",
+      "file": "useTeardown.uf.ts",
+      "api": {
+        "file": "useTeardown.uf.ts",
+        "components": [],
+        "keys": [],
+        "composables": [
+          {
+            "name": "useTeardown",
+            "parameters": [
+              {
+                "name": "name",
+                "kind": "getter",
+                "type": "() => string"
+              },
+              {
+                "name": "report",
+                "kind": "callback",
+                "type": "(entry: string) => void"
+              }
+            ],
+            "members": [
+              {
+                "name": "title",
+                "kind": "derived",
+                "type": "string"
+              }
+            ],
+            "hasEffects": true
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Composable",
+          "imported": "useTeardown",
+          "local": "useTeardown",
+          "span": {
+            "start": 53,
+            "end": 64
+          }
+        }
+      ],
+      "span": {
+        "start": 44,
+        "end": 94
+      }
+    }
+  ]
+}

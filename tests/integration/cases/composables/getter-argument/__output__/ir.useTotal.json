@@ -1,0 +1,199 @@
+{
+  "irVersion": 1,
+  "file": "composables/getter-argument/useTotal.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "composables": [
+    {
+      "name": "useTotal",
+      "span": {
+        "start": 216,
+        "end": 450
+      },
+      "parameters": [
+        {
+          "name": "price",
+          "kind": "getter",
+          "type": {
+            "code": "() => number",
+            "span": {
+              "start": 248,
+              "end": 260
+            }
+          },
+          "binding": "price@241",
+          "span": {
+            "start": 241,
+            "end": 260
+          }
+        },
+        {
+          "name": "quantity",
+          "kind": "getter",
+          "type": {
+            "code": "() => number",
+            "span": {
+              "start": 272,
+              "end": 284
+            }
+          },
+          "binding": "quantity@262",
+          "span": {
+            "start": 262,
+            "end": 284
+          }
+        }
+      ],
+      "types": [],
+      "bindings": [
+        {
+          "id": "price@241",
+          "name": "price",
+          "kind": "argument",
+          "span": {
+            "start": 241,
+            "end": 246
+          }
+        },
+        {
+          "id": "quantity@262",
+          "name": "quantity",
+          "kind": "argument",
+          "span": {
+            "start": 262,
+            "end": 270
+          }
+        },
+        {
+          "id": "total@296",
+          "name": "total",
+          "kind": "derived",
+          "span": {
+            "start": 296,
+            "end": 301
+          }
+        },
+        {
+          "id": "label@350",
+          "name": "label",
+          "kind": "derived",
+          "span": {
+            "start": 350,
+            "end": 355
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Derived",
+          "binding": "total@296",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "price() * quantity()",
+              "span": {
+                "start": 319,
+                "end": 339
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "price@241",
+                  "span": {
+                    "start": 319,
+                    "end": 324
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "quantity@262",
+                  "span": {
+                    "start": 329,
+                    "end": 337
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 313,
+              "end": 339
+            }
+          },
+          "span": {
+            "start": 290,
+            "end": 341
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "label@350",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "`${quantity()} × ${price()} = ${total.value}`",
+              "span": {
+                "start": 373,
+                "end": 418
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "quantity@262",
+                  "span": {
+                    "start": 376,
+                    "end": 384
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "price@241",
+                  "span": {
+                    "start": 392,
+                    "end": 397
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "total@296",
+                  "span": {
+                    "start": 405,
+                    "end": 416
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 367,
+              "end": 418
+            }
+          },
+          "span": {
+            "start": 344,
+            "end": 420
+          }
+        }
+      ],
+      "returns": [
+        {
+          "name": "total",
+          "binding": "total@296",
+          "span": {
+            "start": 433,
+            "end": 438
+          }
+        },
+        {
+          "name": "label",
+          "binding": "label@350",
+          "span": {
+            "start": 440,
+            "end": 445
+          }
+        }
+      ]
+    }
+  ]
+}

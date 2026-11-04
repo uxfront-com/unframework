@@ -1,0 +1,65 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/invalid-composable/Theme.uf.tsx",
+  "components": [
+    {
+      "name": "Theme",
+      "span": {
+        "start": 242,
+        "end": 300
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Theme",
+            "span": {
+              "start": 288,
+              "end": 293
+            }
+          }
+        ],
+        "span": {
+          "start": 285,
+          "end": 297
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Theme",
+      "span": {
+        "start": 242,
+        "end": 300
+      }
+    }
+  ],
+  "types": [],
+  "keys": [
+    {
+      "name": "ThemeKey",
+      "description": "theme",
+      "type": {
+        "code": "string",
+        "span": {
+          "start": 214,
+          "end": 220
+        }
+      },
+      "span": {
+        "start": 178,
+        "end": 240
+      }
+    }
+  ]
+}

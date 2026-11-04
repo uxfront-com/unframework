@@ -7,7 +7,7 @@
       // outputs with what tests/toolchains/angular installs: its transit node carries that
       // package's tsconfig and the locked versions of its tools into this hash.
       // The composable test this target's composables lane adds compiles the composable and module
-      // cases, under pending/ or, once they land, under cases/ (../codegen/test/composable-cases.ts),
+      // cases under cases/ (../codegen/test/composable-cases.ts),
       // through the compiler's source, which is no dependency of this package: its transit node
       // carries it into this hash.
       "dependsOn": [
@@ -19,7 +19,6 @@
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/tests/integration/cases/**/*.uf.tsx",
         "$TURBO_ROOT$/tests/integration/cases/**/__output__/angular/**",
-        "$TURBO_ROOT$/tests/integration/pending/**",
         "$TURBO_ROOT$/tests/integration/cases/composables/**",
         "$TURBO_ROOT$/tests/integration/cases/modules/**",
         "$TURBO_ROOT$/tests/integration/cases/semantics/composable-*/**"

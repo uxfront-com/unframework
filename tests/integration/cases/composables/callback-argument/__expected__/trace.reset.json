@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Reset' })",
+      "dom": [
+        "<section aria-label=\"Clicker\" class=\"clicker\">",
+        "  <p role=\"status\">",
+        "    \"Count: 0\"",
+        "  </p>",
+        "  <p>",
+        "    \"Reached 3\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Add 1\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Reset\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Clicker\":",
+        "  - status: \"Count: 0\"",
+        "  - paragraph: Reached 3",
+        "  - button \"Add 1\"",
+        "  - button \"Reset\""
+      ],
+      "events": {}
+    }
+  ]
+}

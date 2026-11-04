@@ -1,0 +1,671 @@
+{
+  "irVersion": 1,
+  "file": "semantics/composable-effect-order/Timeline.uf.tsx",
+  "components": [
+    {
+      "name": "Timeline",
+      "span": {
+        "start": 104,
+        "end": 858
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "entries@149",
+          "name": "entries",
+          "kind": "state",
+          "span": {
+            "start": 149,
+            "end": 156
+          }
+        },
+        {
+          "id": "record@190",
+          "name": "record",
+          "kind": "localFn",
+          "span": {
+            "start": 190,
+            "end": 196
+          }
+        },
+        {
+          "id": "count@328",
+          "name": "count",
+          "kind": "usedState",
+          "span": {
+            "start": 328,
+            "end": 333
+          }
+        },
+        {
+          "id": "increment@335",
+          "name": "increment",
+          "kind": "usedFn",
+          "span": {
+            "start": 335,
+            "end": 344
+          }
+        },
+        {
+          "id": "entry@755",
+          "name": "entry",
+          "kind": "loopVar",
+          "span": {
+            "start": 755,
+            "end": 760
+          }
+        },
+        {
+          "id": "index@762",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 762,
+            "end": 767
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "entries@149",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 163,
+              "end": 171
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 173,
+              "end": 175
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 143,
+            "end": 177
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "record@190",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "entry",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 204,
+                    "end": 210
+                  }
+                },
+                "span": {
+                  "start": 197,
+                  "end": 210
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    entries.value = [...entries.value, entry];\n  }",
+              "span": {
+                "start": 212,
+                "end": 264
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "entries@149",
+                  "operator": "=",
+                  "span": {
+                    "start": 218,
+                    "end": 259
+                  },
+                  "target": {
+                    "start": 218,
+                    "end": 231
+                  },
+                  "value": {
+                    "start": 234,
+                    "end": 259
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "entries@149",
+                  "span": {
+                    "start": 238,
+                    "end": 251
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 196,
+              "end": 264
+            }
+          },
+          "span": {
+            "start": 181,
+            "end": 264
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "record(\"caller mounted first\")",
+              "span": {
+                "start": 284,
+                "end": 314
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "record@190",
+                  "span": {
+                    "start": 284,
+                    "end": 290
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 278,
+              "end": 314
+            }
+          },
+          "span": {
+            "start": 268,
+            "end": 316
+          }
+        },
+        {
+          "kind": "Use",
+          "composable": "useTracked",
+          "arguments": [
+            {
+              "kind": "Callback",
+              "callback": {
+                "parameters": [
+                  {
+                    "name": "entry",
+                    "span": {
+                      "start": 361,
+                      "end": 366
+                    }
+                  }
+                ],
+                "body": {
+                  "code": "record(entry)",
+                  "span": {
+                    "start": 371,
+                    "end": 384
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "record@190",
+                      "span": {
+                        "start": 371,
+                        "end": 377
+                      },
+                      "call": true
+                    }
+                  ]
+                },
+                "expression": true,
+                "span": {
+                  "start": 360,
+                  "end": 384
+                }
+              },
+              "span": {
+                "start": 360,
+                "end": 384
+              }
+            }
+          ],
+          "members": [
+            {
+              "member": "count",
+              "binding": "count@328",
+              "span": {
+                "start": 328,
+                "end": 333
+              }
+            },
+            {
+              "member": "increment",
+              "binding": "increment@335",
+              "span": {
+                "start": 335,
+                "end": 344
+              }
+            }
+          ],
+          "hasEffects": true,
+          "span": {
+            "start": 320,
+            "end": 386
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Getter",
+              "getter": {
+                "parameters": [],
+                "body": {
+                  "code": "count.value",
+                  "span": {
+                    "start": 407,
+                    "end": 418
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "count@328",
+                      "span": {
+                        "start": 407,
+                        "end": 418
+                      }
+                    }
+                  ]
+                },
+                "expression": true,
+                "span": {
+                  "start": 401,
+                  "end": 418
+                }
+              },
+              "span": {
+                "start": 401,
+                "end": 418
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "record(\"caller watcher\")",
+              "span": {
+                "start": 430,
+                "end": 454
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "record@190",
+                  "span": {
+                    "start": 430,
+                    "end": 436
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 424,
+              "end": 454
+            }
+          },
+          "span": {
+            "start": 390,
+            "end": 460
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "record(\"caller mounted last\")",
+              "span": {
+                "start": 480,
+                "end": 509
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "record@190",
+                  "span": {
+                    "start": 480,
+                    "end": 486
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 474,
+              "end": 509
+            }
+          },
+          "span": {
+            "start": 464,
+            "end": 511
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "timeline",
+            "span": {
+              "start": 537,
+              "end": 553
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Timeline",
+            "span": {
+              "start": 554,
+              "end": 575
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 586,
+                  "end": 599
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Count: ",
+                "span": {
+                  "start": 600,
+                  "end": 607
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "count.value",
+                  "span": {
+                    "start": 608,
+                    "end": 619
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "count@328",
+                      "span": {
+                        "start": 608,
+                        "end": 619
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 607,
+                  "end": 620
+                }
+              }
+            ],
+            "span": {
+              "start": 583,
+              "end": 624
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 639,
+                  "end": 652
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "increment()",
+                      "span": {
+                        "start": 668,
+                        "end": 679
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "increment@335",
+                          "span": {
+                            "start": 668,
+                            "end": 677
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 662,
+                      "end": 679
+                    }
+                  },
+                  "span": {
+                    "start": 662,
+                    "end": 679
+                  }
+                },
+                "span": {
+                  "start": 653,
+                  "end": 680
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Increment",
+                "span": {
+                  "start": 681,
+                  "end": 706
+                }
+              }
+            ],
+            "span": {
+              "start": 631,
+              "end": 715
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "entries.value",
+                  "span": {
+                    "start": 736,
+                    "end": 749
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "entries@149",
+                      "span": {
+                        "start": 736,
+                        "end": 749
+                      }
+                    }
+                  ]
+                },
+                "item": "entry@755",
+                "index": "index@762",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 793,
+                    "end": 798
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@762",
+                      "span": {
+                        "start": 793,
+                        "end": 798
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "entry",
+                        "span": {
+                          "start": 801,
+                          "end": 806
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "entry@755",
+                            "span": {
+                              "start": 801,
+                              "end": 806
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 800,
+                        "end": 807
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 784,
+                    "end": 812
+                  }
+                },
+                "span": {
+                  "start": 736,
+                  "end": 823
+                }
+              }
+            ],
+            "span": {
+              "start": 722,
+              "end": 836
+            }
+          }
+        ],
+        "span": {
+          "start": 528,
+          "end": 851
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Timeline",
+      "span": {
+        "start": 104,
+        "end": 858
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./useTracked.uf.ts",
+      "file": "useTracked.uf.ts",
+      "api": {
+        "file": "useTracked.uf.ts",
+        "components": [],
+        "keys": [],
+        "composables": [
+          {
+            "name": "useTracked",
+            "parameters": [
+              {
+                "name": "report",
+                "kind": "callback",
+                "type": "(entry: string) => void"
+              }
+            ],
+            "members": [
+              {
+                "name": "count",
+                "kind": "state",
+                "type": "number"
+              },
+              {
+                "name": "increment",
+                "kind": "function",
+                "client": true
+              }
+            ],
+            "hasEffects": true
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Composable",
+          "imported": "useTracked",
+          "local": "useTracked",
+          "span": {
+            "start": 63,
+            "end": 73
+          }
+        }
+      ],
+      "span": {
+        "start": 54,
+        "end": 102
+      }
+    }
+  ]
+}

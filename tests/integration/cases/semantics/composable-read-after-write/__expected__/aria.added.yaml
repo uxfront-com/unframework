@@ -1,0 +1,4 @@
+- region "Cart":
+  - status: "Items: 3"
+  - button "Add three"
+  - button "Clear"

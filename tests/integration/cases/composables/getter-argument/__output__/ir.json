@@ -1,0 +1,454 @@
+{
+  "irVersion": 1,
+  "file": "composables/getter-argument/Basket.uf.tsx",
+  "components": [
+    {
+      "name": "Basket",
+      "span": {
+        "start": 82,
+        "end": 508
+      },
+      "props": [
+        {
+          "name": "price",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 133,
+              "end": 139
+            }
+          },
+          "binding": "price@115",
+          "span": {
+            "start": 126,
+            "end": 139
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ price: number }",
+          "span": {
+            "start": 124,
+            "end": 141
+          }
+        },
+        "span": {
+          "start": 113,
+          "end": 141
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "price@115",
+          "name": "price",
+          "kind": "prop",
+          "span": {
+            "start": 115,
+            "end": 120
+          }
+        },
+        {
+          "id": "quantity@153",
+          "name": "quantity",
+          "kind": "state",
+          "span": {
+            "start": 153,
+            "end": 161
+          }
+        },
+        {
+          "id": "total@182",
+          "name": "total",
+          "kind": "usedDerived",
+          "span": {
+            "start": 182,
+            "end": 187
+          }
+        },
+        {
+          "id": "label@189",
+          "name": "label",
+          "kind": "usedDerived",
+          "span": {
+            "start": 189,
+            "end": 194
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "quantity@153",
+          "initial": {
+            "code": "1",
+            "span": {
+              "start": 168,
+              "end": 169
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 147,
+            "end": 171
+          }
+        },
+        {
+          "kind": "Use",
+          "composable": "useTotal",
+          "arguments": [
+            {
+              "kind": "Getter",
+              "getter": {
+                "parameters": [],
+                "body": {
+                  "code": "price",
+                  "span": {
+                    "start": 219,
+                    "end": 224
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "price@115",
+                      "span": {
+                        "start": 219,
+                        "end": 224
+                      }
+                    }
+                  ]
+                },
+                "expression": true,
+                "span": {
+                  "start": 213,
+                  "end": 224
+                }
+              },
+              "span": {
+                "start": 213,
+                "end": 224
+              }
+            },
+            {
+              "kind": "Getter",
+              "getter": {
+                "parameters": [],
+                "body": {
+                  "code": "quantity.value",
+                  "span": {
+                    "start": 236,
+                    "end": 250
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "quantity@153",
+                      "span": {
+                        "start": 236,
+                        "end": 250
+                      }
+                    }
+                  ]
+                },
+                "expression": true,
+                "span": {
+                  "start": 230,
+                  "end": 250
+                }
+              },
+              "span": {
+                "start": 230,
+                "end": 250
+              }
+            }
+          ],
+          "members": [
+            {
+              "member": "total",
+              "binding": "total@182",
+              "span": {
+                "start": 182,
+                "end": 187
+              }
+            },
+            {
+              "member": "label",
+              "binding": "label@189",
+              "span": {
+                "start": 189,
+                "end": 194
+              }
+            }
+          ],
+          "span": {
+            "start": 174,
+            "end": 256
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "basket",
+            "span": {
+              "start": 282,
+              "end": 296
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Basket",
+            "span": {
+              "start": 297,
+              "end": 316
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 327,
+                  "end": 340
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Total: ",
+                "span": {
+                  "start": 341,
+                  "end": 348
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "total.value",
+                  "span": {
+                    "start": 349,
+                    "end": 360
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "total@182",
+                      "span": {
+                        "start": 349,
+                        "end": 360
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 348,
+                  "end": 361
+                }
+              }
+            ],
+            "span": {
+              "start": 324,
+              "end": 365
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "label.value",
+                  "span": {
+                    "start": 376,
+                    "end": 387
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@189",
+                      "span": {
+                        "start": 376,
+                        "end": 387
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 375,
+                  "end": 388
+                }
+              }
+            ],
+            "span": {
+              "start": 372,
+              "end": 392
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 407,
+                  "end": 420
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "quantity.value++",
+                      "span": {
+                        "start": 436,
+                        "end": 452
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "quantity@153",
+                          "operator": "++",
+                          "span": {
+                            "start": 436,
+                            "end": 452
+                          },
+                          "target": {
+                            "start": 436,
+                            "end": 450
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 430,
+                      "end": 452
+                    }
+                  },
+                  "span": {
+                    "start": 430,
+                    "end": 452
+                  }
+                },
+                "span": {
+                  "start": 421,
+                  "end": 453
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add one",
+                "span": {
+                  "start": 454,
+                  "end": 477
+                }
+              }
+            ],
+            "span": {
+              "start": 399,
+              "end": 486
+            }
+          }
+        ],
+        "span": {
+          "start": 273,
+          "end": 501
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Basket",
+      "span": {
+        "start": 82,
+        "end": 508
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./useTotal.uf.ts",
+      "file": "useTotal.uf.ts",
+      "api": {
+        "file": "useTotal.uf.ts",
+        "components": [],
+        "keys": [],
+        "composables": [
+          {
+            "name": "useTotal",
+            "parameters": [
+              {
+                "name": "price",
+                "kind": "getter",
+                "type": "() => number"
+              },
+              {
+                "name": "quantity",
+                "kind": "getter",
+                "type": "() => number"
+              }
+            ],
+            "members": [
+              {
+                "name": "total",
+                "kind": "derived",
+                "type": "number"
+              },
+              {
+                "name": "label",
+                "kind": "derived",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Composable",
+          "imported": "useTotal",
+          "local": "useTotal",
+          "span": {
+            "start": 45,
+            "end": 53
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 80
+      }
+    }
+  ]
+}

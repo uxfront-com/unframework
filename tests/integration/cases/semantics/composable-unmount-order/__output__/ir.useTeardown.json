@@ -1,0 +1,166 @@
+{
+  "irVersion": 1,
+  "file": "semantics/composable-unmount-order/useTeardown.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "composables": [
+    {
+      "name": "useTeardown",
+      "span": {
+        "start": 235,
+        "end": 441
+      },
+      "parameters": [
+        {
+          "name": "name",
+          "kind": "getter",
+          "type": {
+            "code": "() => string",
+            "span": {
+              "start": 269,
+              "end": 281
+            }
+          },
+          "binding": "name@263",
+          "span": {
+            "start": 263,
+            "end": 281
+          }
+        },
+        {
+          "name": "report",
+          "kind": "callback",
+          "type": {
+            "code": "(entry: string) => void",
+            "span": {
+              "start": 291,
+              "end": 314
+            }
+          },
+          "binding": "report@283",
+          "span": {
+            "start": 283,
+            "end": 314
+          }
+        }
+      ],
+      "types": [],
+      "bindings": [
+        {
+          "id": "name@263",
+          "name": "name",
+          "kind": "argument",
+          "span": {
+            "start": 263,
+            "end": 267
+          }
+        },
+        {
+          "id": "report@283",
+          "name": "report",
+          "kind": "argument",
+          "span": {
+            "start": 283,
+            "end": 289
+          }
+        },
+        {
+          "id": "title@326",
+          "name": "title",
+          "kind": "derived",
+          "span": {
+            "start": 326,
+            "end": 331
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Derived",
+          "binding": "title@326",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "`Panel ${name()}`",
+              "span": {
+                "start": 349,
+                "end": 366
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "name@263",
+                  "span": {
+                    "start": 358,
+                    "end": 362
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 343,
+              "end": 366
+            }
+          },
+          "span": {
+            "start": 320,
+            "end": 368
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "unmounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "report(`${name()} closed`)",
+              "span": {
+                "start": 390,
+                "end": 416
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "report@283",
+                  "span": {
+                    "start": 390,
+                    "end": 396
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "name@263",
+                  "span": {
+                    "start": 400,
+                    "end": 404
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 384,
+              "end": 416
+            }
+          },
+          "span": {
+            "start": 372,
+            "end": 418
+          }
+        }
+      ],
+      "returns": [
+        {
+          "name": "title",
+          "binding": "title@326",
+          "span": {
+            "start": 431,
+            "end": 436
+          }
+        }
+      ]
+    }
+  ]
+}

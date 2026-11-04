@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Small' })",
+      "dom": [
+        "<fieldset class=\"size-picker\">",
+        "  <legend>",
+        "    \"Size\"",
+        "  </legend>",
+        "  <p role=\"status\">",
+        "    \"Picked: Small\"",
+        "  </p>",
+        "  <ul>",
+        "    <li>",
+        "      <button aria-pressed=\"true\" type=\"button\" uf:focused=\"\">",
+        "        \"Small\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button aria-pressed=\"false\" type=\"button\">",
+        "        \"Medium\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button aria-pressed=\"false\" type=\"button\">",
+        "        \"Large\"",
+        "      </button>",
+        "    </li>",
+        "  </ul>",
+        "</fieldset>"
+      ],
+      "aria": [
+        "- group \"Size\":",
+        "  - text: Size",
+        "  - status: \"Picked: Small\"",
+        "  - list:",
+        "    - listitem:",
+        "      - button \"Small\" [pressed]",
+        "    - listitem:",
+        "      - button \"Medium\"",
+        "    - listitem:",
+        "      - button \"Large\""
+      ],
+      "events": {}
+    }
+  ]
+}

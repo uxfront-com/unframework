@@ -1,0 +1,610 @@
+{
+  "irVersion": 1,
+  "file": "semantics/composable-unmount-order/Board.uf.tsx",
+  "components": [
+    {
+      "name": "Board",
+      "span": {
+        "start": 73,
+        "end": 704
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "showA@115",
+          "name": "showA",
+          "kind": "state",
+          "span": {
+            "start": 115,
+            "end": 120
+          }
+        },
+        {
+          "id": "showB@142",
+          "name": "showB",
+          "kind": "state",
+          "span": {
+            "start": 142,
+            "end": 147
+          }
+        },
+        {
+          "id": "entries@169",
+          "name": "entries",
+          "kind": "state",
+          "span": {
+            "start": 169,
+            "end": 176
+          }
+        },
+        {
+          "id": "record@210",
+          "name": "record",
+          "kind": "localFn",
+          "span": {
+            "start": 210,
+            "end": 216
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "showA@115",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 127,
+              "end": 131
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 109,
+            "end": 133
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "showB@142",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 154,
+              "end": 158
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 136,
+            "end": 160
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "entries@169",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 183,
+              "end": 191
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 193,
+              "end": 195
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 163,
+            "end": 197
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "record@210",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "entry",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 224,
+                    "end": 230
+                  }
+                },
+                "span": {
+                  "start": 217,
+                  "end": 230
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    entries.value = [...entries.value, entry];\n  }",
+              "span": {
+                "start": 232,
+                "end": 284
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "entries@169",
+                  "operator": "=",
+                  "span": {
+                    "start": 238,
+                    "end": 279
+                  },
+                  "target": {
+                    "start": 238,
+                    "end": 251
+                  },
+                  "value": {
+                    "start": 254,
+                    "end": 279
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "entries@169",
+                  "span": {
+                    "start": 258,
+                    "end": 271
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 216,
+              "end": 284
+            }
+          },
+          "span": {
+            "start": 201,
+            "end": 284
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "board",
+            "span": {
+              "start": 306,
+              "end": 319
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "showA.value",
+                  "span": {
+                    "start": 328,
+                    "end": 339
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "showA@115",
+                      "span": {
+                        "start": 328,
+                        "end": 339
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Component",
+                    "component": "Panel",
+                    "attributes": [
+                      {
+                        "kind": "Prop",
+                        "name": "name",
+                        "value": {
+                          "code": "\"a\"",
+                          "span": {
+                            "start": 355,
+                            "end": 358
+                          },
+                          "refs": []
+                        },
+                        "span": {
+                          "start": 350,
+                          "end": 358
+                        }
+                      },
+                      {
+                        "kind": "Listener",
+                        "event": "closed",
+                        "handler": {
+                          "kind": "Function",
+                          "binding": "record@210",
+                          "span": {
+                            "start": 369,
+                            "end": 375
+                          }
+                        },
+                        "span": {
+                          "start": 359,
+                          "end": 376
+                        }
+                      }
+                    ],
+                    "fills": [],
+                    "span": {
+                      "start": 343,
+                      "end": 379
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 328,
+                  "end": 379
+                }
+              }
+            ],
+            "span": {
+              "start": 328,
+              "end": 379
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "showB.value",
+                  "span": {
+                    "start": 388,
+                    "end": 399
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "showB@142",
+                      "span": {
+                        "start": 388,
+                        "end": 399
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Component",
+                    "component": "Panel",
+                    "attributes": [
+                      {
+                        "kind": "Prop",
+                        "name": "name",
+                        "value": {
+                          "code": "\"b\"",
+                          "span": {
+                            "start": 415,
+                            "end": 418
+                          },
+                          "refs": []
+                        },
+                        "span": {
+                          "start": 410,
+                          "end": 418
+                        }
+                      },
+                      {
+                        "kind": "Listener",
+                        "event": "closed",
+                        "handler": {
+                          "kind": "Function",
+                          "binding": "record@210",
+                          "span": {
+                            "start": 429,
+                            "end": 435
+                          }
+                        },
+                        "span": {
+                          "start": 419,
+                          "end": 436
+                        }
+                      }
+                    ],
+                    "fills": [],
+                    "span": {
+                      "start": 403,
+                      "end": 439
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 388,
+                  "end": 439
+                }
+              }
+            ],
+            "span": {
+              "start": 388,
+              "end": 439
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 455,
+                  "end": 468
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(showA.value = false)",
+                      "span": {
+                        "start": 484,
+                        "end": 505
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "showA@115",
+                          "operator": "=",
+                          "span": {
+                            "start": 484,
+                            "end": 505
+                          },
+                          "target": {
+                            "start": 485,
+                            "end": 496
+                          },
+                          "value": {
+                            "start": 499,
+                            "end": 504
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 478,
+                      "end": 505
+                    }
+                  },
+                  "span": {
+                    "start": 478,
+                    "end": 505
+                  }
+                },
+                "span": {
+                  "start": 469,
+                  "end": 506
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Hide a",
+                "span": {
+                  "start": 507,
+                  "end": 529
+                }
+              }
+            ],
+            "span": {
+              "start": 447,
+              "end": 538
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 553,
+                  "end": 566
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(showB.value = false)",
+                      "span": {
+                        "start": 582,
+                        "end": 603
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "showB@142",
+                          "operator": "=",
+                          "span": {
+                            "start": 582,
+                            "end": 603
+                          },
+                          "target": {
+                            "start": 583,
+                            "end": 594
+                          },
+                          "value": {
+                            "start": 597,
+                            "end": 602
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 576,
+                      "end": 603
+                    }
+                  },
+                  "span": {
+                    "start": 576,
+                    "end": 603
+                  }
+                },
+                "span": {
+                  "start": 567,
+                  "end": 604
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Hide b",
+                "span": {
+                  "start": 605,
+                  "end": 627
+                }
+              }
+            ],
+            "span": {
+              "start": 545,
+              "end": 636
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "entries.value.join(\", \")",
+                  "span": {
+                    "start": 652,
+                    "end": 676
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "entries@169",
+                      "span": {
+                        "start": 652,
+                        "end": 665
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 651,
+                  "end": 677
+                }
+              }
+            ],
+            "span": {
+              "start": 643,
+              "end": 686
+            }
+          }
+        ],
+        "span": {
+          "start": 301,
+          "end": 697
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Board",
+      "span": {
+        "start": 73,
+        "end": 704
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Panel.uf.tsx",
+      "file": "Panel.uf.tsx",
+      "api": {
+        "file": "Panel.uf.tsx",
+        "components": [
+          {
+            "name": "Panel",
+            "export": "default",
+            "props": [
+              {
+                "name": "name",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [
+              {
+                "name": "closed",
+                "parameters": [
+                  {
+                    "name": "entry",
+                    "type": "string"
+                  }
+                ]
+              }
+            ],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "section"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Panel",
+          "span": {
+            "start": 43,
+            "end": 48
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 71
+      }
+    }
+  ]
+}

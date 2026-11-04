@@ -1,0 +1,70 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "semantics/composable-unmount-order/Board.uf.tsx",
+    "start": {
+      "line": 16,
+      "column": 39,
+      "offset": 359
+    },
+    "end": {
+      "line": 16,
+      "column": 56,
+      "offset": 376
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support composable-effect-order: A composable's watchers, effects and hooks never run on Astro: components render on the server only, and nothing runs in the browser.",
+    "file": "semantics/composable-unmount-order/Panel.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 217
+    },
+    "end": {
+      "line": 10,
+      "column": 5,
+      "offset": 306
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4005",
+    "severity": "info",
+    "message": "The react target does not support composable-effect-order: A composable is a custom hook, and React runs a component's effects in its own order (ADR-0048): a hook's watchers, effects and hooks cannot take their place among the caller's own, so code that relies on that order may see another (ADR-0069).",
+    "file": "semantics/composable-unmount-order/Panel.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 217
+    },
+    "end": {
+      "line": 10,
+      "column": 5,
+      "offset": 306
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF4005",
+    "severity": "info",
+    "message": "The solid target does not support composable-effect-order: A composable's watchers coalesce in its own module's queue (`createWatcher`), apart from the caller's, so its watchers, effects and hooks cannot take their place among the caller's own, and code that relies on that order may see another (ADR-0069).",
+    "file": "semantics/composable-unmount-order/Panel.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 217
+    },
+    "end": {
+      "line": 10,
+      "column": 5,
+      "offset": 306
+    },
+    "target": "solid"
+  }
+]

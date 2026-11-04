@@ -11,7 +11,6 @@ export default defineConfig({
     "tests/integration/cases/**/__output__/**",
     // Diagnostic cases are deliberately wrong.
     "tests/integration/cases/diagnostics/**",
-    "tests/integration/pending/diagnostics/**",
     // Third-party types vendored verbatim (see packages/unframework/scripts/vendor-jsx.ts).
     "packages/unframework/src/vendor/**",
   ],

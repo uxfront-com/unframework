@@ -1,0 +1,529 @@
+{
+  "irVersion": 1,
+  "file": "modules/shared-constants/SizePicker.uf.tsx",
+  "components": [
+    {
+      "name": "SizePicker",
+      "span": {
+        "start": 135,
+        "end": 684
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "DEFAULT_SIZE@45",
+          "name": "DEFAULT_SIZE",
+          "kind": "import",
+          "span": {
+            "start": 45,
+            "end": 57
+          }
+        },
+        {
+          "id": "SIZE_ORDER@59",
+          "name": "SIZE_ORDER",
+          "kind": "import",
+          "span": {
+            "start": 59,
+            "end": 69
+          }
+        },
+        {
+          "id": "SIZES@71",
+          "name": "SIZES",
+          "kind": "import",
+          "span": {
+            "start": 71,
+            "end": 76
+          }
+        },
+        {
+          "id": "size@182",
+          "name": "size",
+          "kind": "state",
+          "span": {
+            "start": 182,
+            "end": 186
+          }
+        },
+        {
+          "id": "pick@226",
+          "name": "pick",
+          "kind": "localFn",
+          "span": {
+            "start": 226,
+            "end": 230
+          }
+        },
+        {
+          "id": "each@438",
+          "name": "each",
+          "kind": "loopVar",
+          "span": {
+            "start": 438,
+            "end": 442
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "size@182",
+          "type": {
+            "code": "Size",
+            "span": {
+              "start": 193,
+              "end": 197
+            }
+          },
+          "initial": {
+            "code": "DEFAULT_SIZE",
+            "span": {
+              "start": 199,
+              "end": 211
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "DEFAULT_SIZE@45",
+                "span": {
+                  "start": 199,
+                  "end": 211
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 176,
+            "end": 213
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "pick@226",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "next",
+                "type": {
+                  "code": "Size",
+                  "span": {
+                    "start": 237,
+                    "end": 241
+                  }
+                },
+                "span": {
+                  "start": 231,
+                  "end": 241
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    size.value = next;\n  }",
+              "span": {
+                "start": 243,
+                "end": 271
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "size@182",
+                  "operator": "=",
+                  "span": {
+                    "start": 249,
+                    "end": 266
+                  },
+                  "target": {
+                    "start": 249,
+                    "end": 259
+                  },
+                  "value": {
+                    "start": 262,
+                    "end": 266
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 230,
+              "end": 271
+            }
+          },
+          "span": {
+            "start": 217,
+            "end": 271
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "fieldset",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "size-picker",
+            "span": {
+              "start": 298,
+              "end": 317
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "legend",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Size",
+                "span": {
+                  "start": 333,
+                  "end": 337
+                }
+              }
+            ],
+            "span": {
+              "start": 325,
+              "end": 346
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 356,
+                  "end": 369
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Picked: ",
+                "span": {
+                  "start": 370,
+                  "end": 378
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "SIZES[size.value]",
+                  "span": {
+                    "start": 379,
+                    "end": 396
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "SIZES@71",
+                      "span": {
+                        "start": 379,
+                        "end": 384
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "size@182",
+                      "span": {
+                        "start": 385,
+                        "end": 395
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 378,
+                  "end": 397
+                }
+              }
+            ],
+            "span": {
+              "start": 353,
+              "end": 401
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "SIZE_ORDER",
+                  "span": {
+                    "start": 422,
+                    "end": 432
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "SIZE_ORDER@59",
+                      "span": {
+                        "start": 422,
+                        "end": 432
+                      }
+                    }
+                  ]
+                },
+                "item": "each@438",
+                "key": {
+                  "code": "each",
+                  "span": {
+                    "start": 468,
+                    "end": 472
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "each@438",
+                      "span": {
+                        "start": 468,
+                        "end": 472
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Element",
+                      "tag": "button",
+                      "attributes": [
+                        {
+                          "kind": "Static",
+                          "name": "type",
+                          "value": "button",
+                          "span": {
+                            "start": 495,
+                            "end": 508
+                          }
+                        },
+                        {
+                          "kind": "Bound",
+                          "name": "aria-pressed",
+                          "value": {
+                            "code": "size.value === each",
+                            "span": {
+                              "start": 523,
+                              "end": 542
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "size@182",
+                                "span": {
+                                  "start": 523,
+                                  "end": 533
+                                }
+                              },
+                              {
+                                "kind": "Binding",
+                                "binding": "each@438",
+                                "span": {
+                                  "start": 538,
+                                  "end": 542
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 509,
+                            "end": 543
+                          }
+                        },
+                        {
+                          "kind": "Event",
+                          "event": "click",
+                          "handler": {
+                            "kind": "Inline",
+                            "function": {
+                              "parameters": [],
+                              "body": {
+                                "code": "pick(each)",
+                                "span": {
+                                  "start": 559,
+                                  "end": 569
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "pick@226",
+                                    "span": {
+                                      "start": 559,
+                                      "end": 563
+                                    },
+                                    "call": true
+                                  },
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "each@438",
+                                    "span": {
+                                      "start": 564,
+                                      "end": 568
+                                    }
+                                  }
+                                ]
+                              },
+                              "expression": true,
+                              "span": {
+                                "start": 553,
+                                "end": 569
+                              }
+                            },
+                            "span": {
+                              "start": 553,
+                              "end": 569
+                            }
+                          },
+                          "span": {
+                            "start": 544,
+                            "end": 570
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "SIZES[each]",
+                            "span": {
+                              "start": 587,
+                              "end": 598
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "SIZES@71",
+                                "span": {
+                                  "start": 587,
+                                  "end": 592
+                                }
+                              },
+                              {
+                                "kind": "Binding",
+                                "binding": "each@438",
+                                "span": {
+                                  "start": 593,
+                                  "end": 597
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 586,
+                            "end": 599
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 487,
+                        "end": 621
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 459,
+                    "end": 637
+                  }
+                },
+                "span": {
+                  "start": 422,
+                  "end": 648
+                }
+              }
+            ],
+            "span": {
+              "start": 408,
+              "end": 661
+            }
+          }
+        ],
+        "span": {
+          "start": 288,
+          "end": 677
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SizePicker",
+      "span": {
+        "start": 135,
+        "end": 684
+      }
+    }
+  ],
+  "types": [],
+  "typeImports": [
+    {
+      "specifier": "./tokens",
+      "names": [
+        {
+          "imported": "Size",
+          "local": "Size",
+          "span": {
+            "start": 110,
+            "end": 114
+          }
+        }
+      ],
+      "span": {
+        "start": 96,
+        "end": 133
+      }
+    }
+  ],
+  "moduleImports": [
+    {
+      "specifier": "./tokens",
+      "file": "tokens.ts",
+      "names": [
+        {
+          "imported": "DEFAULT_SIZE",
+          "local": "DEFAULT_SIZE",
+          "span": {
+            "start": 45,
+            "end": 57
+          }
+        },
+        {
+          "imported": "SIZE_ORDER",
+          "local": "SIZE_ORDER",
+          "span": {
+            "start": 59,
+            "end": 69
+          }
+        },
+        {
+          "imported": "SIZES",
+          "local": "SIZES",
+          "span": {
+            "start": 71,
+            "end": 76
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 95
+      }
+    }
+  ]
+}

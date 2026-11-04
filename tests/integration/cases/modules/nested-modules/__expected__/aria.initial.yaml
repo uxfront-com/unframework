@@ -1,0 +1,3 @@
+- region "Distance":
+  - status: 42 kilometres
+  - button "Switch units"

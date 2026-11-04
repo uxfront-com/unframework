@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2035",
+    "severity": "error",
+    "message": "`inject` needs the component it runs in, and a composable runs in whichever component calls it: it calls no `useId`, `useTemplateRef`, `provide`, `inject` or `define*` macro.",
+    "file": "diagnostics/invalid-composable/useTheme.uf.ts",
+    "start": {
+      "line": 8,
+      "column": 17,
+      "offset": 321
+    },
+    "end": {
+      "line": 8,
+      "column": 23,
+      "offset": 327
+    },
+    "help": "Call `inject` in the component, and pass what the composable needs from it as an argument."
+  }
+]

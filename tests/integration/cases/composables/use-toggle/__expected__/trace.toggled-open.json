@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Shipping details' })",
+      "dom": [
+        "<section aria-label=\"Shipping\" class=\"disclosure\">",
+        "  <button aria-expanded=\"true\" type=\"button\" uf:focused=\"\">",
+        "    \"Shipping details\"",
+        "  </button>",
+        "  <div class=\"panel\">",
+        "    <p>",
+        "      \"Orders ship within two days.\"",
+        "    </p>",
+        "    <button type=\"button\">",
+        "      \"Close\"",
+        "    </button>",
+        "  </div>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Shipping\":",
+        "  - button \"Shipping details\" [expanded]",
+        "  - paragraph: Orders ship within two days.",
+        "  - button \"Close\""
+      ],
+      "events": {}
+    }
+  ]
+}
