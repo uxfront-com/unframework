@@ -273,8 +273,9 @@ in the template (a slot's fill included, which is a render prop), a getter or a 
 evaluates is UF1002, at the call.
 
 An argument whose code reads a member of its own call, itself or through the setup declarations
-it reads (`useCounter(3, () => reset())`), is UF1002 at the read: Qwik makes the argument's QRL or
-signal before the call returns, so it would capture the member before it exists.
+it reads, another call's arguments among them (`useCounter(3, () => reset())`), is UF1002 at the
+read: Qwik makes the argument's QRL or signal before the call returns, so it would capture the
+member before it exists.
 
 A module's values reach an output as module-level bindings, which a `$` scope reads without
 capturing them, since the optimizer imports them into the segments it writes (ADR-0070,

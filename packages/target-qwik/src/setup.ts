@@ -30,7 +30,6 @@ import type {
   ModelItem,
   Parameter,
   SetupItem,
-  UseArgument,
   UseItem,
   WatchEffectItem,
   WatchItem,
@@ -43,6 +42,7 @@ import { moduleTypeParameters } from "./generics.ts";
 import { inlineCalls, localDeclaration } from "./inline.ts";
 import type { InlineFunction, Inliner } from "./inline.ts";
 import {
+  argumentCode,
   eventCallees,
   inlinedAt,
   isPredicate,
@@ -241,20 +241,6 @@ function captured(plan: SetupPlan, item: SetupItem): Set<BindingId> {
       unreachable(item);
   }
   return found;
-}
-
-/** A composable's argument's code: a value's, or a getter's or a callback's body. */
-function argumentCode(argument: UseArgument): Code {
-  switch (argument.kind) {
-    case "Value":
-      return argument.value;
-    case "Getter":
-      return argument.getter.body;
-    case "Callback":
-      return argument.callback.body;
-    default:
-      return unreachable(argument);
-  }
 }
 
 /** An item that moves to module scope, as the source writes it: `undefined` for any other. */

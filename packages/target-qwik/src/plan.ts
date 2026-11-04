@@ -26,6 +26,7 @@ import type {
   UfComponent,
   UfComposable,
   UfModule,
+  UseArgument,
 } from "@unframework/ir";
 
 import { fillExpressions, planComposition } from "./composition.ts";
@@ -1172,8 +1173,8 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
 
 /**
  * The reads in a composable's arguments that reach a member of that same call, directly or
- * through the setup declarations they read (`useCounter(3, () => reset())`), each with the member
- * it reaches. Each argument's `$` scope is created before the call returns, so it captures the
+ * through the setup declarations they read (`useCounter(3, () => reset())`), another call's
+ * arguments among them, each with the member it reaches. Each argument's `$` scope is created before the call returns, so it captures the
  * member before it exists: Qwik's optimizer captures `undefined`, or a name declared after it.
  * These are reported (P2).
  */
@@ -1197,6 +1198,12 @@ export function selfReadingArguments(
       case "Variable":
         if (item.initial) declared.set(item.binding, [item.initial]);
         break;
+      // Another call's member exists once that call returns, after its own arguments are made:
+      // a cycle through it is a cycle too.
+      case "Use":
+        for (const { binding } of item.members)
+          declared.set(binding, item.arguments.map(argumentCode));
+        break;
       default:
         break;
     }
@@ -1206,13 +1213,7 @@ export function selfReadingArguments(
     if (item.kind !== "Use") continue;
     const members = new Set(item.members.map(({ binding }) => binding));
     for (const argument of item.arguments) {
-      const code =
-        argument.kind === "Value"
-          ? argument.value
-          : argument.kind === "Getter"
-            ? argument.getter.body
-            : argument.callback.body;
-      for (const reference of code.refs) {
+      for (const reference of argumentCode(argument).refs) {
         if (reference.kind !== "Binding") continue;
         const member = reachedMember(reference.binding, members, declared);
         if (member !== undefined) found.push({ reference, member });
@@ -1220,6 +1221,20 @@ export function selfReadingArguments(
     }
   }
   return found;
+}
+
+/** A composable's argument's code: a value's, or a getter's or a callback's body. */
+export function argumentCode(argument: UseArgument): Code {
+  switch (argument.kind) {
+    case "Value":
+      return argument.value;
+    case "Getter":
+      return argument.getter.body;
+    case "Callback":
+      return argument.callback.body;
+    default:
+      return unreachable(argument);
+  }
 }
 
 /** The first of `members` a binding is, or reaches through the declarations' code it reads. */

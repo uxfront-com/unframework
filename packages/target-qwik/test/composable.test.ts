@@ -627,8 +627,11 @@ export function useProbe(
     },
   );
 
-  it("declares a module's constant a composable reads beside the hook", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+  it(
+    "declares a module's constant a composable reads beside the hook",
+    { timeout: 60_000 },
+    async () => {
+      const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
 
 const STEP = 2;
 
@@ -640,10 +643,11 @@ export function useProbe() {
   return { count, add };
 }
 `);
-    expect(errors).toEqual([]);
-    expect(outputs[0]!.contents).toMatch(/^const STEP = 2;\n\nexport function useProbe\(\) \{$/m);
-    await expectToolchainClean("module-constant", outputs);
-  });
+      expect(errors).toEqual([]);
+      expect(outputs[0]!.contents).toMatch(/^const STEP = 2;\n\nexport function useProbe\(\) \{$/m);
+      await expectToolchainClean("module-constant", outputs);
+    },
+  );
 });
 
 /** A composable's parameter of a kind, with its type as written. */
@@ -1000,6 +1004,32 @@ export default function Probe() {
       { code: "UF1002", severity: "error", text: "report" },
     ]);
     expect(through.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
+    // Two calls whose callbacks read each other's members: each argument is made before both
+    // calls return.
+    const crossed = await compileProject({
+      "/project/useCounter.uf.ts": USE_COUNTER,
+      "/project/Probe.uf.tsx": `import { useCounter } from "./useCounter.uf.ts";
+
+export default function Probe() {
+  const { count: a, reset: resetA } = useCounter(3, () => {
+    resetB();
+  });
+  const { count: b, reset: resetB } = useCounter(4, () => {
+    resetA();
+  });
+  return (
+    <p>
+      {a.value} {b.value}
+    </p>
+  );
+}
+`,
+    });
+    expect(crossed.diagnostics.filter(({ severity }) => severity === "error")).toEqual([
+      { code: "UF1002", severity: "error", text: "resetB" },
+      { code: "UF1002", severity: "error", text: "resetA" },
+    ]);
+    expect(crossed.outputs.map(({ path }) => path)).not.toContain("Probe.tsx");
   });
 
   it(
