@@ -415,7 +415,41 @@ function useStatement(plan: SetupPlan, item: UseItem): string {
     return [member === local ? local : `${member}: ${local}`];
   });
   const call = `${item.composable}(${parts.join(", ")});`;
-  return members.length ? `const { ${members.join(", ")} } = ${call}` : call;
+  if (!members.length) return call;
+  // Qwik's optimizer captures a destructured call's members through an object it names after the
+  // hook. Where one call's argument reads another call's members, it can name two calls of one
+  // hook alike, and the argument captures the wrong one, or the server build declares the name
+  // twice. So once any call of a hook is read so, every call of that hook is a named object,
+  // destructured after it, and the optimizer names none of them.
+  if (namedHooks(plan).has(item.composable)) {
+    const result = names.fresh(lowerFirst(item.composable.replace(/^use/, "")));
+    return `const ${result} = ${call}\nconst { ${members.join(", ")} } = ${result};`;
+  }
+  return `const { ${members.join(", ")} } = ${call}`;
+}
+
+/** The composables one of whose calls has members another call's arguments read. */
+function namedHooks(plan: SetupPlan): Set<string> {
+  const calls = plan.component.setup.filter((item): item is UseItem => item.kind === "Use");
+  const found = new Set<string>();
+  for (const item of calls) {
+    const members = new Set(item.members.map(({ binding }) => binding));
+    const read = calls.some(
+      (other) =>
+        other !== item &&
+        other.arguments.some((argument) =>
+          argumentCode(argument).refs.some(
+            (reference) => reference.kind === "Binding" && members.has(reference.binding),
+          ),
+        ),
+    );
+    if (read) found.add(item.composable);
+  }
+  return found;
+}
+
+function lowerFirst(name: string): string {
+  return `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
 }
 
 /** The bindings the component's code reads anywhere: its setup's and its render's. */

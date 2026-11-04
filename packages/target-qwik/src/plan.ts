@@ -1097,8 +1097,9 @@ function functionRefs(fn: FunctionCode): CodeReference[] {
 
 /**
  * The calls of a function a composable's call destructures in code that is not client code: the
- * template (a slot's fill included), a getter, a value the setup evaluates. The hook returns each function as a `$()` QRL
- * (./composable.ts), whose call gives a promise, so these are reported (P2).
+ * template (a slot's fill included), a getter, a value the setup evaluates. The hook returns each
+ * function as a `$()` QRL (./composable.ts), whose call gives a promise, so these are reported
+ * (P2).
  */
 export function usedFunctionRenderCalls(component: UfComponent): BindingReference[] {
   const used = new Set(
@@ -1174,9 +1175,9 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
 /**
  * The reads in a composable's arguments that reach a member of that same call, directly or
  * through the setup declarations they read (`useCounter(3, () => reset())`), another call's
- * arguments among them, each with the member it reaches. Each argument's `$` scope is created before the call returns, so it captures the
- * member before it exists: Qwik's optimizer captures `undefined`, or a name declared after it.
- * These are reported (P2).
+ * arguments among them, each with the member it reaches. Each argument's `$` scope is created
+ * before the call returns, so it captures the member before it exists: Qwik's optimizer captures
+ * `undefined`, or a name declared after it. These are reported (P2).
  */
 export function selfReadingArguments(
   component: UfComponent,

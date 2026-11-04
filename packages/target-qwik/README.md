@@ -277,6 +277,12 @@ it reads, another call's arguments among them (`useCounter(3, () => reset())`), 
 read: Qwik makes the argument's QRL or signal before the call returns, so it would capture the
 member before it exists.
 
+Qwik's optimizer captures a destructured call's members through an object it names after the
+hook, and where one call's argument reads another call's members, it can name two calls of one
+hook alike. So once one call of a hook is read so, every call of that hook is an object of its
+own, destructured after it: `const counter_1 = useCounter(4, …);` then
+`const { reset: resetB } = counter_1;`.
+
 A module's values reach an output as module-level bindings, which a `$` scope reads without
 capturing them, since the optimizer imports them into the segments it writes (ADR-0070,
 `src/modules.ts`): a value imported from a relative `.ts` module is imported from the output

@@ -9,7 +9,8 @@ import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ImportSet } from "@unframework/codegen";
+import { createOptimizer } from "@qwik.dev/optimizer";
+import { ImportSet, parseCodeSource } from "@unframework/codegen";
 import type { OutputFile } from "@unframework/codegen";
 import { createComposableParameter, createTypeText } from "@unframework/ir";
 import type { ComposableParameter, ComposableParameterKind } from "@unframework/ir";
@@ -1074,6 +1075,64 @@ export default function Probe() {
       expect(announce).toBeLessThan(call);
       expect(call).toBeLessThan(bump);
       await expectToolchainClean("calls/order", project.outputs);
+    },
+  );
+
+  it(
+    "names every call of a hook one of whose calls another call's argument reads, so the server builds it",
+    { timeout: 60_000 },
+    async () => {
+      const project = await compileProject({
+        "/project/useCounter.uf.ts": USE_COUNTER,
+        "/project/Probe.uf.tsx": `import { ref } from "unframework";
+
+import { useCounter } from "./useCounter.uf.ts";
+
+export default function Probe() {
+  const message = ref("");
+  const { count: a, increment } = useCounter(3, () => {
+    resetB();
+  });
+  const { count: b, reset: resetB } = useCounter(4, () => {
+    message.value = "b";
+  });
+  return (
+    <button type="button" onClick={() => increment()}>
+      {a.value} {b.value} {message.value}
+    </button>
+  );
+}
+`,
+      });
+      expect(project.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+      const probe = project.output("Probe.tsx");
+      // The call another call's argument reads comes first, as an object of its own.
+      expect(probe).toMatch(
+        /const counter_1 = useCounter\(\s*4,[\s\S]*?\);\n\s*const \{ count: b, reset: resetB \} = counter_1;/,
+      );
+      expect(probe).toMatch(
+        /const counter = useCounter\(\s*3,\s*\$\(async \(\) => \{\s*await resetB\(\);[\s\S]*?\);\n\s*const \{ count: a, increment \} = counter;/,
+      );
+      expect(probe.indexOf("const counter_1 =")).toBeLessThan(probe.indexOf("const counter ="));
+      await expectToolchainClean("calls/same-hook", project.outputs);
+      // The server's build hoists every segment into the module (Qwik's Vite plugin runs the
+      // optimizer with `hoist` for every server transform), where two calls the optimizer named
+      // alike would be declared twice.
+      const optimizer = await createOptimizer();
+      const { modules } = await optimizer.transformModules({
+        input: [{ path: "Probe.tsx", code: probe }],
+        srcDir: scratch,
+        entryStrategy: { type: "hoist" },
+        minify: "simplify",
+        transpileTs: true,
+        transpileJsx: true,
+        explicitExtensions: true,
+        mode: "dev",
+        isServer: true,
+      });
+      expect(modules.length).toBeGreaterThan(0);
+      for (const { code } of modules)
+        expect(() => parseCodeSource(code, "statements")).not.toThrow();
     },
   );
 });
