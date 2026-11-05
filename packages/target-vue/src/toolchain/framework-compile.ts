@@ -113,6 +113,58 @@ export async function frameworkCompile(
   return results;
 }
 
+/**
+ * L15: each SFC as one module, as plugin-vue builds it for production: the template inlined in
+ * the script, or a render function for a component with no script. A `.ts` module beside them
+ * stays as it is, for the bundler's TypeScript transform.
+ */
+export async function frameworkEmit(
+  files: readonly ToolchainFile[],
+): Promise<Map<string, ToolchainFile[]>> {
+  assertFilesToCompile(files);
+  const loaded = await loadCompilers();
+  const tree = outputTree(files);
+  return new Map(
+    files.map((file) => {
+      const contents = file.path.endsWith(".ts") ? file.contents : emitSfc(loaded, file, tree);
+      return [file.path, [{ path: file.path, contents }]] as const;
+    }),
+  );
+}
+
+function emitSfc(vue: VueCompilers, file: ToolchainFile, fs: ScriptFs): string {
+  const sfc = vue.sfc();
+  const { descriptor } = sfc.parse(file.contents, { filename: file.path, sourceMap: false });
+  const id = createHash("sha256").update(file.path).digest("hex").slice(0, 8);
+  const lang = descriptor.scriptSetup?.lang ?? descriptor.script?.lang;
+  const expressionPlugins: "typescript"[] = lang && /tsx?$/.test(lang) ? ["typescript"] : [];
+  const compilerOptions = { expressionPlugins };
+  const sheets = descriptor.styles.flatMap((style) =>
+    style.src ? [`import ${JSON.stringify(style.src)};`] : [],
+  );
+  if (descriptor.script || descriptor.scriptSetup) {
+    const script = sfc.compileScript(descriptor, {
+      id,
+      isProd: true,
+      inlineTemplate: true,
+      sourceMap: false,
+      fs,
+      templateOptions: { transformAssetUrls: false, compilerOptions },
+    });
+    return [...sheets, script.content].join("\n");
+  }
+  const render = sfc.compileTemplate({
+    source: descriptor.template?.content ?? "",
+    filename: file.path,
+    id,
+    isProd: true,
+    transformAssetUrls: false,
+    compiler: vue.dom,
+    compilerOptions,
+  });
+  return [...sheets, render.code, "export default { render };"].join("\n");
+}
+
 /** The file system compileScript reads. */
 type ScriptFs = NonNullable<CompilerSfcModule.SFCScriptCompileOptions["fs"]>;
 

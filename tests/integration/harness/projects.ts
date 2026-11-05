@@ -7,6 +7,7 @@
 //   ssr:<target>        node     L6 L13    the target's server renderer, through the unplugin
 //   browser:<target>    chromium L7 L8 L9 L10 L11 L13  the shared specs, through the unplugin
 //                       (or UF_BROWSER's engine)
+//   bench               node     L15       the budgets, only when `--project bench` names it
 //
 // Every project sets `extends: false`: inheriting the root config merges its plugins into each
 // project (the browser-projects ADR), and a project must hold its own toolchain only. Toolchains
@@ -88,7 +89,10 @@ const LAYERS_OF: Record<"ssr" | "browser", LayerName[]> = {
   browser: ["L7", "L8", "L9", "L10", "L11", "L13"],
 };
 
-/** The name of every project, in order: what a run of all of them covers. */
+/** The budgets' project: left out of a run that does not name it, so `pnpm test` stays short. */
+export const BENCH_PROJECT = "bench";
+
+/** The name of every project of the default run, in order: what a run of all of them covers. */
 export function projectNames(targets: readonly string[]): string[] {
   return [
     "compile",
@@ -99,11 +103,25 @@ export function projectNames(targets: readonly string[]): string[] {
   ];
 }
 
+/** What CI's parity job requires: the default run's projects, and the `Bench` job's. */
+export function parityProjects(targets: readonly string[]): string[] {
+  return [...projectNames(targets), BENCH_PROJECT];
+}
+
 /** Every project of the harness. */
 export function harnessProjects(setup: HarnessSetup): TestProjectConfiguration[] {
   return [
     nodeProject(setup, "compile", "compile", undefined, ["harness/compile.test.ts"]),
     nodeProject(setup, "harness", "harness", undefined, ["harness/*.unit.test.ts"]),
+    // By its exact name: a wildcard that selects everything still means the default run.
+    ...(setup.projectFilter?.includes(BENCH_PROJECT)
+      ? [
+          nodeProject(setup, BENCH_PROJECT, "bench", undefined, ["harness/bench.test.ts"], {
+            // Every timed iteration, then each target's compile and bundle of the corpus.
+            hookTimeout: 1_800_000,
+          }),
+        ]
+      : []),
     ...setup.targets.map((target) =>
       nodeProject(
         setup,

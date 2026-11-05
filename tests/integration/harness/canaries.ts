@@ -14,6 +14,7 @@
 // change only elements every render shows, with attributes each element takes (an `<svg>` has
 // no `hidden`), and replace what an element already sets rather than set it twice;
 // `canaries.unit.test.ts` runs each canary on every case of the corpus.
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
@@ -201,6 +202,18 @@ const FRAMEWORK_RULES: Readonly<Record<TargetName, FrameworkRule>> = {
   qwik: { attribute: 'className="uf-canary"', rule: "qwik/no-react-props" },
   astro: { attribute: 'set:html="uf-canary"', rule: "astro/no-set-html-directive" },
 };
+
+/** The case L15-slow-compile slows down. */
+const SLOW_CASE = "basics/nested-and-void";
+
+/** `length` characters that gzip can't shrink to nothing, the same on every run (P8). */
+function padding(length: number): string {
+  let text = "";
+  for (let block = 0; text.length < length; block += 1) {
+    text += createHash("sha256").update(String(block)).digest("hex");
+  }
+  return text.slice(0, length);
+}
 
 /** How many compiles the L2-nondeterministic canary has numbered in this process. */
 let compiles = 0;
@@ -684,6 +697,45 @@ export const CANARIES: readonly Canary[] = [
                 `useOnDocument(${JSON.stringify(ACTION_EVENTS)}, $(async () => { await new Promise((resolve) => setTimeout(resolve)); throw new Error("${MARKER} L13 in ${target}"); }));`,
               ),
             })),
+    }),
+  },
+  {
+    id: "L15-output-bloat",
+    layer: "L15",
+    description:
+      "Adds a statement that keeps a long, hard-to-compress string to every emitted file, as long as the file itself: every bundle grows by more than the 5% a budget allows, raw and gzipped.",
+    evidence: {
+      bench: { "raw size": /raw size \d+ B is above/, "gzip size": /gzip size \d+ B is above/ },
+    },
+    plugin: () => ({
+      name: "uf-canary-L15-bloat",
+      output: (files, { target }) =>
+        files.map((file) => ({
+          ...file,
+          contents: injectScript(
+            file,
+            target,
+            // Assigned to a global, so the minifier cannot drop it as unused.
+            `const ufCanaryL15 = ((globalThis as any).ufCanaryL15 = "${padding(file.contents.length)}");`,
+            "module",
+          ),
+        })),
+    }),
+  },
+  {
+    id: "L15-slow-compile",
+    layer: "L15",
+    description:
+      "Waits half a second in the ir hook of one case's compile, far longer than twice its budget. One case, since every iteration waits, and never `basics/hello`, which every time is a ratio of.",
+    evidence: { bench: { "compile time": /compile time \d+\.\d+ × \S+ is above/ } },
+    appliesTo: (info) => info.id === SLOW_CASE,
+    plugin: () => ({
+      name: "uf-canary-L15-slow",
+      ir(module) {
+        if (!module.file.startsWith(`${SLOW_CASE}/`)) return;
+        const end = performance.now() + 500;
+        while (performance.now() < end);
+      },
     }),
   },
 ];

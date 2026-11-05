@@ -48,6 +48,7 @@ pnpm dev
 | `pnpm test:baselines`          | Rewrites the Linux screenshot baselines in Docker                                  |
 | `pnpm test:baselines:download` | Copies in the Linux screenshot baselines that CI generated for the branch          |
 | `pnpm test:canaries`           | Checks that every live test layer catches the corruption it exists for             |
+| `pnpm test:budgets:update`     | Rewrites the compile time and output size budgets (refused in CI)                  |
 | `pnpm lint`                    | Lints the repo with oxlint (type-aware)                                            |
 | `pnpm format`                  | Formats the repo with oxfmt                                                        |
 | `pnpm new:package`             | Creates a package from the package template                                        |

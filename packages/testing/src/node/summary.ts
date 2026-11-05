@@ -14,6 +14,7 @@ import {
   NO_OUTPUT_SKIP,
   NO_OUTPUT_TEST_SKIP,
   NO_SPEC_SKIP,
+  NOT_IN_THIS_RUN_SKIP,
   NOT_RENDERED_SKIP,
   REQUIRES_SKIP,
 } from "../layers.ts";
@@ -42,6 +43,12 @@ export interface SummaryExpectations {
   liveLayers: readonly LayerName[];
   /** The skip reason recorded for the layers that are not live yet. */
   notLiveReason: string;
+  /**
+   * A live layer only one project records, which the default run leaves out (L15, `bench`): a
+   * run without that project in full fills its cells as skipped, never missing. CI's parity job
+   * (`requireComplete`) requires them all the same.
+   */
+  recordedOnlyBy?: Partial<Record<LayerName, string>>;
   /**
    * Every capability name: a skip by capability on a live layer (`requires <name>: …`) must
    * name one. Without it, any kebab-case name passes.
@@ -210,8 +217,11 @@ export function summarise(
       for (const layer of LAYERS) {
         const cell = cells[layer];
         if (cell === undefined) {
+          const recordedBy = expected.recordedOnlyBy?.[layer];
           if (!live.has(layer)) cells[layer] = `skip(${expected.notLiveReason})`;
-          else if (checkMissing)
+          else if (!judgement.requireComplete && recordedBy && !ranInFull(merged, recordedBy))
+            cells[layer] = `skip(${NOT_IN_THIS_RUN_SKIP})`;
+          else if (checkMissing || recordedBy)
             problems.push(`${caseId} › ${target} › ${layer}: missing (no test recorded it).`);
           continue;
         }
@@ -251,6 +261,12 @@ export function summarise(
     problems,
     complete,
   };
+}
+
+/** Whether the merged runs cover every test of a project. */
+function ranInFull(merged: MergedMatrix, project: string): boolean {
+  const { missingProjects, partialProjects } = coverageOf(merged, [project]);
+  return !missingProjects.length && !partialProjects.size;
 }
 
 /**
@@ -444,6 +460,12 @@ export function renderMarkdown(
         ? `Every project has records, from ${matrix.runs.length} runs: every cell is checked, each layer against the newest run that recorded it.`
         : "Every project ran: every cell is checked.",
     `Layers that are not live (${LAYERS.filter((layer) => !layers.includes(layer)).join(", ")}) are recorded as skip(${expected.notLiveReason}).`,
+    ...Object.entries(expected.recordedOnlyBy ?? {})
+      .filter(([, project]) => !status.requireComplete && !ranInFull(matrix, project))
+      .map(
+        ([layer, project]) =>
+          `Only \`${project}\` records ${layer}, and it did not run in full, so those cells are skip(${NOT_IN_THIS_RUN_SKIP}).`,
+      ),
     "",
     `Merged from ${matrix.runs.length} run(s), oldest first; a newer run's records replace the older ones it re-judged:`,
     "",

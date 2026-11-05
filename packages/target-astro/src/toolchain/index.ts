@@ -10,7 +10,7 @@ import {
 
 import { astroBrowserRef } from "./browser.ts";
 import { astroTypecheck } from "./check.ts";
-import { astroFrameworkCompile } from "./compile.ts";
+import { astroFrameworkCompile, astroFrameworkEmit } from "./compile.ts";
 import { astroViteConfig } from "./config.ts";
 import { createAstroRenderCommand } from "./render.ts";
 
@@ -31,6 +31,8 @@ export const toolchain: Toolchain = {
   client: "@unframework/target-astro/toolchain/client",
   server: "@unframework/target-astro/toolchain/server",
   frameworkCompile: astroFrameworkCompile,
+
+  frameworkEmit: astroFrameworkEmit,
   typecheck: astroTypecheck,
   // L5 (ADR-0042): oxlint's shared baseline over the frontmatter, ESLint over the whole file.
   // ESLint reads only the `.astro` files: a `.ts` module beside them, a shared module

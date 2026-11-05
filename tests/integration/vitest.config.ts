@@ -1,4 +1,4 @@
-// The integration harness (plan §7.3): one Vitest run, five kinds of project, every
+// The integration harness (plan §7.3): one Vitest run, six kinds of project, every
 // layer recorded in the parity matrix. The mode comes from the environment (ADR-0019, ADR-0029):
 //
 //   UF_UPDATE=1          write artefacts (owners and the reference target only); refused in CI

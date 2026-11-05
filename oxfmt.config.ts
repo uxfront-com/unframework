@@ -22,5 +22,7 @@ export default defineConfig({
     // Written by Styleframe's transpiler for the corpus's configuration: the harness compares it
     // byte for byte (tests/integration/harness/styleframe.unit.test.ts).
     "tests/integration/styleframe.d.ts",
+    // Written by `pnpm test:budgets:update`, never by hand.
+    "tests/integration/budgets.json",
   ],
 });

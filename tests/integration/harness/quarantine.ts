@@ -52,7 +52,8 @@ export const QUARANTINE: readonly QuarantineEntry[] = joinQuarantine(QUARANTINE_
 
 /**
  * The layers a quarantine entry may name: the live ones, where a failure can occur. M1 made L5
- * (lint, ADR-0042) and L8 (behaviour, ADR-0043) live; M2 made L9 (interaction traces, ADR-0050).
+ * (lint, ADR-0042) and L8 (behaviour, ADR-0043) live; M2 made L9 (interaction traces, ADR-0050),
+ * and M6 made L15 (budgets, ADR-0078).
  */
 export const LIVE_LAYERS: readonly LayerName[] = [
   "L1",
@@ -67,6 +68,7 @@ export const LIVE_LAYERS: readonly LayerName[] = [
   "L10",
   "L11",
   "L13",
+  "L15",
 ];
 
 /**

@@ -39,6 +39,32 @@ export async function frameworkCompile(
   return results;
 }
 
+/**
+ * L15: each file's client module, as a production build compiles it. A shared `.ts` module stays
+ * as it is, for the bundler's TypeScript transform.
+ */
+export async function frameworkEmit(
+  files: readonly ToolchainFile[],
+): Promise<Map<string, ToolchainFile[]>> {
+  assertFilesToCompile(files);
+  const svelte = await (compiler ??= import("svelte/compiler"));
+  const emitted = new Map<string, ToolchainFile[]>();
+  for (const file of files) {
+    let contents = file.contents;
+    if (file.path.endsWith(".svelte.ts")) {
+      const { code, result } = await transformScriptModule(file);
+      if (code === undefined) {
+        throw new Error(`${file.path} did not transform: ${result.errors[0]?.message ?? ""}`);
+      }
+      contents = svelte.compileModule(code, { filename: file.path, generate: "client" }).js.code;
+    } else if (!file.path.endsWith(".ts")) {
+      contents = svelte.compile(file.contents, { filename: file.path, generate: "client" }).js.code;
+    }
+    emitted.set(file.path, [{ path: file.path, contents }]);
+  }
+  return emitted;
+}
+
 /** A `.svelte.ts` module: its TypeScript transform's report, then Svelte's for each generate. */
 async function compileRunesModule(
   compileModule: SvelteCompiler["compileModule"],

@@ -8,7 +8,7 @@ import {
   mergeLintResults,
 } from "@unframework/codegen/toolchain-node";
 
-import { frameworkCompile, typecheck } from "./check.ts";
+import { frameworkCompile, frameworkEmit, typecheck } from "./check.ts";
 import { viteConfig } from "./vite.ts";
 
 /** The Angular 22 toolchain: ngtsc AOT with strict templates for L3, L4 and every project. */
@@ -18,6 +18,7 @@ export const toolchain: Toolchain = {
   client: "@unframework/target-angular/toolchain/client",
   server: "@unframework/target-angular/toolchain/server",
   frameworkCompile,
+  frameworkEmit,
   typecheck,
   // L5 (ADR-0042): oxlint's shared baseline over the TypeScript, ESLint with angular-eslint over
   // the file and its inline template.

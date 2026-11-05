@@ -323,7 +323,9 @@ case)`); its projects run after the run's reference and before every other targe
   a mechanical cause: no output (`compile errors: no output` for the layers of a compile with
   errors, and `no output: <the expected errors>` for a browser test of such a case), no spec (the
   browser layers of a diagnostics case its target has output for), the live reference, a
-  component that did not render (L6), no scripted interaction. The Markdown lists each test a
+  component that did not render (L6), no scripted interaction. A live layer only one project
+  records (`SummaryExpectations.recordedOnlyBy`) reads `skip(not in this run)` in a run without
+  that project in full, unless every project must have reported. The Markdown lists each test a
   target skipped, by capability or for want of output, or ran against a stand-in, under its
   case's table.
 

@@ -5,9 +5,11 @@ import type { UserWorkspaceConfig } from "vitest/config";
 import { caseConfigs, listCases } from "./cases.ts";
 import { noOutputCases } from "./no-output.ts";
 import {
+  BENCH_PROJECT,
   harnessProjects,
   isSelected,
   noErrorBroadcast,
+  parityProjects,
   projectNames,
   projectPatterns,
   projectTest,
@@ -80,6 +82,29 @@ describe("projects", () => {
     expect(isSelected("browser:vue", ["Browser:Vue"])).toBe(true);
     expect(isSelected("browser:react", ["!BROWSER:*"])).toBe(false);
     expect(isSelected("ssr:vue", ["ssr.vue"])).toBe(false);
+  });
+});
+
+describe("the bench project", () => {
+  const names = (projectFilter?: string[]) =>
+    harnessProjects({ harness, mode, targets: ["vue"], projectFilter })
+      .filter((project) => typeof project === "object")
+      .map((project) => (project as UserWorkspaceConfig).test?.name);
+
+  it("stays out of the default run, and of a wildcard that selects everything", () => {
+    expect(names()).toEqual(["compile", "harness", "toolchain:vue"]);
+    expect(names(["*"])).toEqual(["compile", "harness", "toolchain:vue"]);
+    expect(names(["compile"])).toEqual(["compile", "harness", "toolchain:vue"]);
+    expect(projectNames(["vue"])).not.toContain(BENCH_PROJECT);
+  });
+
+  it("runs when a run names it", () => {
+    expect(names(["bench"])).toEqual(["compile", "harness", "bench", "toolchain:vue"]);
+    expect(names(projectPatterns(["vitest", "run", "--project=bench"]))).toContain("bench");
+  });
+
+  it("is what CI's parity job adds to the default run", () => {
+    expect(parityProjects(["vue"])).toEqual([...projectNames(["vue"]), "bench"]);
   });
 });
 

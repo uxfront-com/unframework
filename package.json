@@ -13,6 +13,7 @@
     "test": "turbo run test",
     "test:update": "pnpm --filter @unframework/integration test:update",
     "test:canaries": "pnpm --filter @unframework/integration test:canaries",
+    "test:budgets:update": "pnpm --filter @unframework/integration test:budgets:update",
     "test:baselines": "pnpm --filter @unframework/integration test:baselines",
     "test:baselines:check": "pnpm --filter @unframework/integration test:baselines:check",
     "test:baselines:download": "pnpm --filter @unframework/integration test:baselines:download",

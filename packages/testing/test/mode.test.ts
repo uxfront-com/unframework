@@ -172,6 +172,14 @@ describe("resolveHarnessMode", () => {
 });
 
 describe("groupOrder", () => {
+  it("runs the budgets in the first group, in every mode", () => {
+    for (const pixels of ["live", "baseline"] as const) {
+      for (const update of [false, true]) {
+        expect(groupOrder("bench", undefined, { update, pixels }, "vue")).toBe(0);
+      }
+    }
+  });
+
   const check: Pick<HarnessMode, "update" | "pixels"> = { update: false, pixels: "baseline" };
   const live: Pick<HarnessMode, "update" | "pixels"> = { update: false, pixels: "live" };
   const update: Pick<HarnessMode, "update" | "pixels"> = { update: true, pixels: "live" };
