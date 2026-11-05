@@ -112,3 +112,57 @@ and each piece of code in a place of its context and kind (statements or an expr
 analyser judges client code by looser rules than a getter or an initial value (ADR-0045), so a
 local function moved into a `computed` is refused. A module that breaks any of this is UF8001,
 and the hook's result is dropped.
+
+## Configuration
+
+`loadConfig` and `resolveConfig` read a project's `unframework.config.ts` (plan §8.1, ADR-0076). The
+bundler plugin doesn't call them: it takes explicit options.
+
+```ts
+import { loadConfig, resolveConfig } from "@unframework/compiler";
+
+async function readConfig(root: string) {
+  const loaded = await loadConfig(root);
+  // A file that failed to load leaves nothing to check.
+  if (loaded.diagnostics.length > 0) return { config: undefined, diagnostics: loaded.diagnostics };
+  return resolveConfig(loaded.raw, loaded);
+}
+```
+
+`loadConfig(root, file?)` imports `file`, relative to `root`, or the first of
+`unframework.config.ts`, `.mts`, `.js` and `.mjs` it finds in `root`. Node's type stripping loads a
+TypeScript config, so a loader isn't needed. A project with no config file gets `raw: {}` and no
+diagnostic, so it takes the defaults.
+
+A file it can't import, or one with no default export, is UF7001. `loadConfig` reports it in its own
+`diagnostics` and leaves `raw` as `undefined`, so read those first: `resolveConfig` would only say
+that `undefined` isn't an object.
+
+A `.ts` or `.js` file with no ES module syntax left once its types are stripped loads as CommonJS
+unless its package sets `"type": "module"`. Node gives such a file an empty `default` only when it
+exports nothing, and that counts as no default export. So does an explicit `module.exports = {}`,
+which reads the same. A CommonJS file that does export something keeps what it exports.
+
+`resolveConfig(raw, origin?)` checks the config and applies the defaults. It's asynchronous, because
+a Standard Schema may be. `origin` is what `loadConfig` returned: `directory`, which relative paths
+resolve against, and `file`, which diagnostics name. Each one has a default: the working directory,
+and `unframework.config.ts`.
+
+| Field                 | Default     | Checked                                                          |
+| --------------------- | ----------- | ---------------------------------------------------------------- |
+| `targets`             | all seven   | a list of at least one built-in name, none repeated              |
+| `srcDir`              | `src`       | a path that isn't empty, made absolute                           |
+| `outDir`              | `dist`      | a path that isn't empty, made absolute                           |
+| `targetOptions`       | `{}`        | each key a built-in name, each value through its target's schema |
+| `typeOracle`          | `syntactic` | `syntactic` or `tsgo`                                            |
+| `strict`              | `false`     | a boolean                                                        |
+| `package.targets`     | left out    | as `targets`, and each name also in `targets`                    |
+| `package.resolveFrom` | left out    | a path, or a path per built-in name, each made absolute          |
+
+A field of the wrong shape, or one the config doesn't have, is UF7002. A name that isn't a built-in
+target is UF7003, with a did-you-mean where one is close. Options a target's schema rejects are
+UF7004, and options a schema returns replace the ones written. No built-in target declares a schema
+yet, so their options pass through as written.
+
+Each message gives the field's JSON pointer, and `config` is `undefined` when there is any
+diagnostic. A known field set to `undefined` counts as left out.
