@@ -72,6 +72,7 @@ describe("workDir", () => {
     const repo = repository();
     expect(() => workDir(repo, repo)).toThrow("outside the repository");
     expect(() => workDir(join(repo, "tests/copies"), repo)).toThrow("outside the repository");
+    expect(existsSync(join(repo, "tests"))).toBe(false);
   });
 
   it("refuses a symlink that leads into the repository", () => {
