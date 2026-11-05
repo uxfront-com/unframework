@@ -53,11 +53,13 @@
     "@unframework/compiler": "workspace:*",
     "@unframework/diagnostics": "workspace:*",
     "@unframework/parser": "workspace:*",
+    "magic-string": "catalog:",
     "unplugin": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "@uxfront/typescript-config": "catalog:",
+    "astro": "catalog:",
     "tsdown": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"

@@ -7,6 +7,11 @@ packages:
   - "!packages/compiler-v1"
   - "tests/*"
   - "tests/toolchains/*"
+  # `tests/*` reaches one level only, so the design system needs its own glob. Apps under
+  # tests/e2e/apps stay out of the workspace, because they'll install from packed tarballs.
+  - "tests/e2e"
+  - "tests/e2e/design-system"
+  - "!tests/e2e/apps/**"
 allowBuilds:
   # Only an auto-installed peer of @nuxt/content: Docus reads content with the
   # built-in node:sqlite, so the native binding is never built.
@@ -95,6 +100,7 @@ catalog:
   "@angular-eslint/eslint-plugin-template": 22.5.0
   "@angular-eslint/template-parser": 22.5.0
   "@angular/build": 22.2.0
+  "@angular/cli": 22.2.0
   "@angular/common": 22.2.1
   "@angular/compiler": 22.2.1
   "@angular/compiler-cli": 22.2.1
@@ -106,12 +112,17 @@ catalog:
   "@babel/core": 7.29.7
   "@babel/preset-typescript": 7.29.7
   "@fontsource/inter": ^5.3.0
+  "@jridgewell/gen-mapping": 0.3.13
+  "@jridgewell/remapping": 2.3.5
+  "@jridgewell/trace-mapping": 0.3.31
   "@oxc-project/types": 0.152.0
+  "@playwright/test": 1.63.0
   "@qwik.dev/core": 2.0.0-beta.47
   "@qwik.dev/optimizer": 2.1.0-beta.9
   "@standard-schema/spec": ^1.1.0
   "@styleframe/runtime": 3.2.2
   "@styleframe/theme": 3.10.0
+  "@sveltejs/package": 3.0.2
   "@sveltejs/vite-plugin-svelte": 7.3.1
   "@types/babel__core": ^7.20.5
   "@types/node": ^24.19.0
@@ -138,6 +149,7 @@ catalog:
   eslint-plugin-vue: 10.11.1
   lightningcss: 1.33.0
   magic-string: ^1.4.2
+  ng-packagr: 22.2.1
   oxc-codegen: 0.152.0
   oxc-parser: 0.152.0
   oxc-resolver: 11.24.2
@@ -152,11 +164,13 @@ catalog:
   postcss-selector-parser: 7.1.6
   react: 19.3.0
   react-dom: 19.3.0
+  rolldown: 1.2.12
   rxjs: ^7.8.2
   solid-js: 1.9.15
   styleframe: 3.9.2
   svelte: 5.57.1
   svelte-check: 4.7.6
+  tinybench: ^6.2.3
   tsdown: ^0.23.0
   tslib: ^2.8.1
   typescript: 7.0.2

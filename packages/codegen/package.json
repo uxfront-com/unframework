@@ -47,6 +47,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@jridgewell/gen-mapping": "catalog:",
+    "@jridgewell/remapping": "catalog:",
+    "@jridgewell/trace-mapping": "catalog:",
     "@oxc-project/types": "catalog:",
     "@standard-schema/spec": "catalog:",
     "@unframework/diagnostics": "workspace:*",
