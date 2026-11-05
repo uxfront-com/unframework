@@ -39,20 +39,30 @@ built.
 - `pnpm --filter @unframework/e2e prepare-apps` does four things:
   1. It builds the workspace packages the apps consume, and runs the design system's `pack:dist`
      script if present.
-  2. It runs `pnpm pack` on each into the gitignored `tests/e2e/.tarballs/`, the design system from
+  2. It empties the gitignored `tests/e2e/.tarballs/` and runs `pnpm pack` into it on `unframework`,
+     `@unframework/unplugin`, every workspace package they reach, and the design system, from
      `dist/package` when that exists.
   3. It copies each app to `<work>/<app>`, where `<work>` is `$UF_E2E_WORK_DIR` or
-     `<os.tmpdir()>/unframework-e2e`. It adds `file:` tarball specifiers to the copy's dependencies,
-     and writes the copy's `pnpm-workspace.yaml`, with `overrides` for every packed package and
-     `allowBuilds`.
+     `<os.tmpdir()>/unframework-e2e`. It refuses a `<work>` inside the repository, and a directory
+     in the copy's place that it didn't make. It adds `file:` tarball specifiers to the copy's
+     dependencies, the design system always, and `unframework` and `@unframework/unplugin` when the
+     app has a plugin mode. It pins the repository's `packageManager` in the copy, so the install
+     runs on the pnpm the repository uses, not on whichever version is installed globally. It writes
+     the copy's `pnpm-workspace.yaml`, with `overrides` for every packed
+     package and `allowBuilds`.
   4. It runs `pnpm install --prefer-offline` inside the copy, and prints the copy's path.
-- `pnpm --filter @unframework/e2e e2e` runs Playwright on Chromium with `retries: 0`. A project is
-  `<app>:<mode>`, found from each app's `e2e/<mode>/` directory.
+- `pnpm --filter @unframework/e2e e2e` runs Playwright on Chromium with `retries: 0` and one worker,
+  because a project's specs share one working copy and an HMR spec edits it. A project is
+  `<app>:<mode>`, found from each app's `e2e/<mode>/` directory. The script drops the `--` that pnpm
+  passes on, since Playwright would ignore every flag after it and run all the projects.
 - A worker-scoped fixture starts each dev server from the working copy's own `vite` or `astro`
-  through `createRequire`, and stops it in teardown. A global teardown fails if a port still listens.
-- An `edit(file, from, to)` helper changes a file for an HMR test and restores it after.
-- The script is named `e2e`, not `test`, so the unit job skips it. The design system's script is
-  `pack:dist`, not `build`, so the required `Build` check never packages it.
+  through `createRequire`, on a free port of `127.0.0.1`, and stops it in teardown. It records the
+  port under `<work>/.ports`, and a global teardown fails if a recorded port still listens.
+- An `edit(file, from, to)` helper changes a file in the working copy for an HMR test and restores it
+  after. It throws when the file doesn't contain `from`.
+- The script is named `e2e`, not `test`, so the unit job skips it. The package's `test` script runs
+  only the harness's own unit tests. The design system's script is `pack:dist`, not `build`, so the
+  required `Build` check never packages it.
 
 ### Apps and the Angular exception
 

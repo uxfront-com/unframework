@@ -1,0 +1,18 @@
+{
+  "name": "e2e-app-vue",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:package": "vite --config vite.config.package.ts",
+    "dev:plugin": "vite --config vite.config.plugin.ts"
+  },
+  "dependencies": {
+    "vue": "3.5.43"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "6.0.9",
+    "typescript": "7.0.2",
+    "vite": "8.3.1"
+  }
+}
