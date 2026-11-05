@@ -121,15 +121,25 @@ bundler plugin doesn't call them: it takes explicit options.
 ```ts
 import { loadConfig, resolveConfig } from "@unframework/compiler";
 
-const loaded = await loadConfig(process.cwd());
-const { config, diagnostics } = await resolveConfig(loaded.raw, loaded);
+async function readConfig(root: string) {
+  const loaded = await loadConfig(root);
+  // A file that failed to load leaves nothing to check.
+  if (loaded.diagnostics.length > 0) return { config: undefined, diagnostics: loaded.diagnostics };
+  return resolveConfig(loaded.raw, loaded);
+}
 ```
 
 `loadConfig(root, file?)` imports `file`, relative to `root`, or the first of
 `unframework.config.ts`, `.mts`, `.js` and `.mjs` it finds in `root`. Node's type stripping loads a
-TypeScript config, so a loader isn't needed. A file it can't import, or one with no default export,
-is UF7001, and `raw` is then `undefined`. A project with no config file gets `raw: {}` and no
+TypeScript config, so a loader isn't needed. A project with no config file gets `raw: {}` and no
 diagnostic, so it takes the defaults.
+
+A file it can't import, or one with no default export, is UF7001. `loadConfig` reports it in its own
+`diagnostics` and leaves `raw` as `undefined`, so read those first: `resolveConfig` would only say
+that `undefined` isn't an object. A `.ts` or `.js` file with no ES module syntax left once its
+types are stripped loads as CommonJS unless its package sets `"type": "module"`, and Node gives it an
+empty `default`. That counts
+as no default export, and so does an explicit `module.exports = {}`, which reads the same.
 
 `resolveConfig(raw, origin?)` checks the config and applies the defaults. It's asynchronous, because
 a Standard Schema may be. `origin` is what `loadConfig` returned: `directory`, which relative paths
@@ -153,4 +163,4 @@ UF7004, and options a schema returns replace the ones written. No built-in targe
 yet, so their options pass through as written.
 
 Each message gives the field's JSON pointer, and `config` is `undefined` when there is any
-diagnostic. A field set to `undefined` counts as left out.
+diagnostic. A known field set to `undefined` counts as left out.

@@ -120,12 +120,39 @@ export default { targets } satisfies { targets: string[] };
   );
 
   it("takes the first file in the documented order", () => {
-    const { result } = load({
-      "unframework.config.mjs": `export default { outDir: "mjs" };\n`,
-      "unframework.config.js": `export default { outDir: "js" };\n`,
-      "unframework.config.mts": `export default { outDir: "mts" };\n`,
+    const ts = `export default { outDir: "ts" };\n`;
+    const mts = `export default { outDir: "mts" };\n`;
+    const js = `export default { outDir: "js" };\n`;
+    const mjs = `export default { outDir: "mjs" };\n`;
+    const raw = (files: Record<string, string>) => load(files).result.raw;
+    expect(
+      raw({
+        "unframework.config.mjs": mjs,
+        "unframework.config.js": js,
+        "unframework.config.mts": mts,
+        "unframework.config.ts": ts,
+      }),
+    ).toEqual({ outDir: "ts" });
+    expect(raw({ "unframework.config.ts": ts, "unframework.config.mts": mts })).toEqual({
+      outDir: "ts",
     });
-    expect(result.raw).toEqual({ outDir: "mts" });
+    expect(raw({ "unframework.config.mts": mts, "unframework.config.js": js })).toEqual({
+      outDir: "mts",
+    });
+    expect(raw({ "unframework.config.js": js, "unframework.config.mjs": mjs })).toEqual({
+      outDir: "js",
+    });
+  });
+
+  it.each([
+    ["unframework.config.js", `module.exports = { strict: true };\n`, { strict: true }],
+    ["unframework.config.js", `exports.a = 1;\n`, { a: 1 }],
+    ["unframework.config.js", `module.exports = [];\n`, []],
+    ["unframework.config.ts", `export default {};\n`, {}],
+  ])("keeps what %s exports: %j", (name, text, raw) => {
+    const { result } = load({ [name]: text });
+    expect(result.diagnostics).toEqual([]);
+    expect(result.raw).toEqual(raw);
   });
 
   it("gives an empty config when the project has no file", () => {
@@ -152,6 +179,7 @@ export default { targets } satisfies { targets: string[] };
       expect(message).toContain("unframework.config.ts could not be loaded");
       expect(message).toContain("stripping its types");
       expect(message).toContain("such as an enum");
+      expect(message).toMatch(/\. Node loads a TypeScript configuration/);
     });
 
     it("reports a named file that is missing", () => {
@@ -168,6 +196,18 @@ export default { targets } satisfies { targets: string[] };
       expect(message).not.toContain("stripping its types");
     });
 
+    it.each([
+      ["it ends here.", /it ends here\.$/],
+      ["it ends a line.\n", /it ends a line\.$/],
+      ["it has no stop", /it has no stop\.$/],
+      ["", /it threw an error with no message\.$/],
+    ])("ends the sentence of the message %j once", (text, ending) => {
+      const { message } = failure({
+        "unframework.config.mjs": `throw new Error(${JSON.stringify(text)});\n`,
+      });
+      expect(message).toMatch(ending);
+    });
+
     it("reports a file that throws something other than an error", () => {
       expect(failure({ "unframework.config.mjs": `throw null;\n` }).message).toContain("null");
     });
@@ -180,7 +220,45 @@ export default { targets } satisfies { targets: string[] };
       const { message } = failure({
         "unframework.config.mjs": `throw Object.create(null);\n`,
       });
-      expect(message).toContain("no text");
+      expect(message).toContain("can't be read");
+    });
+
+    it("reports a thrown error whose message is no string", () => {
+      const { message } = failure({
+        "unframework.config.mjs": `const error = new Error("x");
+error.message = Symbol("odd");
+throw error;
+`,
+      });
+      expect(message).toContain("Symbol(odd)");
+    });
+
+    it("reports a thrown error whose code can't be read", () => {
+      const { message } = failure({
+        "unframework.config.mjs": `const error = new Error("x");
+Object.defineProperty(error, "code", {
+  get() {
+    throw new Error("code broke");
+  },
+});
+throw error;
+`,
+      });
+      expect(message).toContain("can't be read");
+    });
+
+    // With no ES module syntax left once its types are stripped, Node loads each of these as
+    // CommonJS, and gives it a `default`.
+    it.each([
+      ["unframework.config.ts", `const config: { strict: boolean } = { strict: true };\n`],
+      [
+        "unframework.config.ts",
+        `import type { Config } from "./types.ts";\nconst config: Config = {};\n`,
+      ],
+      ["unframework.config.js", `const config = { strict: true };\n`],
+      ["unframework.config.js", `module.exports = {};\n`],
+    ])("reports %s with no default export: %j", (name, text) => {
+      expect(failure({ [name]: text }).message).toContain("no default export");
     });
 
     it("reports a file with no default export", () => {
@@ -302,6 +380,19 @@ describe("resolveConfig", () => {
       expect(reported).toHaveLength(1);
       expect(reported[0]![0]).toBe("UF7002");
       expect(reported[0]![1]).toContain("getter broke");
+    });
+
+    it("reports a field that throws an error whose message is no string", async () => {
+      const raw = {
+        get targets(): never {
+          const error = new Error("x");
+          error.message = Symbol("odd") as unknown as string;
+          throw error;
+        },
+      };
+      const [[code, message] = []] = await problems(raw);
+      expect(code).toBe("UF7002");
+      expect(message).toContain("Symbol(odd)");
     });
 
     it("suggests the field a misspelt one means, and escapes its pointer", async () => {

@@ -48,11 +48,13 @@ export default function Counter({ initial = 0, step = 1 }: CounterProps) {
 | `unframework/jsx-runtime`     | The `JSX` namespace TypeScript reads for `"jsxImportSource": "unframework"`. Types only.                                                                                                                                                                                                                       |
 | `unframework/jsx-dev-runtime` | The same types, for tools that pick the `react-jsxdev` transform.                                                                                                                                                                                                                                              |
 
-The functions are inert stubs. The compiler recognises them by binding and erases them, so no
-`unframework` import survives into any output. Calling one at runtime means the file was not compiled,
-so each throws ``unframework: `ref` is compile-time only…`` rather than pretending to work.
+The root entry's functions are inert stubs. The compiler recognises them by binding and erases them,
+so no `unframework` import survives into any output. Calling one at runtime means the file was not
+compiled, so each throws ``unframework: `ref` is compile-time only…`` rather than pretending to work.
+`defineConfig` isn't one of them: it's an ordinary function that returns its argument, because Node
+runs it when a config loads.
 
-The signatures are Vue 3.5's, narrowed to one canonical form each (ADR-0007): `defineModel` needs a
+The root entry's signatures are Vue 3.5's, narrowed to one canonical form each (ADR-0007): `defineModel` needs a
 name, `defineEmits` takes a map of named tuples, `computed` takes a getter, `useTemplateRef` takes no
 key, `provide` and `inject` take an `InjectionKey<T>`. A macro's type parameter defaults to `never`, so
 an un-parameterised macro is unusable.

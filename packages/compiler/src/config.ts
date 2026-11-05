@@ -91,16 +91,11 @@ export async function loadConfig(root: string, file?: string): Promise<LoadedCon
   });
   try {
     const loaded = (await import(pathToFileURL(path).href)) as { default?: unknown };
-    if (!("default" in loaded)) return failed("it has no default export.");
+    if (!("default" in loaded) || isEmptyCommonJs(loaded)) {
+      return failed("it has no default export.");
+    }
     return { raw: loaded.default, directory: dirname(path), file: shown, diagnostics: [] };
   } catch (error) {
-    if (error instanceof Error && "code" in error) {
-      if (error.code === "ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX") {
-        return failed(
-          `${error.message} Node loads a TypeScript configuration by stripping its types, so the file cannot use syntax that needs compiling, such as an enum or a parameter property.`,
-        );
-      }
-    }
     return failed(reasonOf(error));
   }
 }
@@ -184,12 +179,31 @@ async function checkConfig(
 /** Reports a problem with the field at a JSON pointer; `problem` finishes the sentence. */
 type Report = (code: DiagnosticCode, pointer: string, problem: string) => void;
 
-/** What a thrown value says. A value with no text of its own can't throw again here. */
+/**
+ * Node gives a CommonJS file a `default`, its `module.exports`, even when it exports nothing, and a
+ * `.ts` or `.js` file with no ES module syntax left once its types are stripped loads as CommonJS
+ * unless its package sets `"type": "module"`. An explicit `module.exports = {}` reads the same, so
+ * it counts too.
+ */
+function isEmptyCommonJs(loaded: { default?: unknown }): boolean {
+  return (
+    "module.exports" in loaded &&
+    isRecord(loaded.default) &&
+    Object.keys(loaded.default).length === 0
+  );
+}
+
+/** What a thrown value says. Whatever the value is, reading it here can't throw again. */
 function reasonOf(error: unknown): string {
   try {
-    return error instanceof Error ? error.message : String(error);
+    if (!(error instanceof Error)) return String(error);
+    // Node's own messages may end their sentence, or a line, or neither.
+    const text = String(error.message).trimEnd() || "it threw an error with no message";
+    const reason = text.replace(/\.?$/, ".");
+    if (!("code" in error) || error.code !== "ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX") return reason;
+    return `${reason} Node loads a TypeScript configuration by stripping its types, so the file cannot use syntax that needs compiling, such as an enum or a parameter property.`;
   } catch {
-    return "it threw a value with no text.";
+    return "it threw a value that can't be read.";
   }
 }
 

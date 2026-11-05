@@ -28,8 +28,9 @@ built.
 - `packages/compiler/src/config.ts` exports `loadConfig(root, file?)`, which imports `file`, or the
   first of `unframework.config.{ts,mts,js,mjs}` it finds in `root`, through Node's type stripping. A
   load failure, `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` included, reports UF7001 `config-not-loaded` with
-  the path, and so does a file with no default export. A project with no config file takes the
-  defaults, with no diagnostic.
+  the path, and so does a file with no default export. Node gives a CommonJS file an empty `default`
+  when it exports nothing, so an empty `module.exports` counts as no default export too. A project
+  with no config file takes the defaults, with no diagnostic.
 - It exports `resolveConfig(raw, origin?)`, which checks:
   - the shape of §8.1's fields and `package?: { targets?: TargetName[]; resolveFrom?: string | Partial<Record<TargetName, string>> }`,
     with relative paths resolved against the config's directory (UF7002 `config-invalid`, with a
