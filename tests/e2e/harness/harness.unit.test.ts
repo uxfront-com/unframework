@@ -1,8 +1,10 @@
 import { spawnSync } from "node:child_process";
+import { EventEmitter } from "node:events";
 import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   symlinkSync,
@@ -12,16 +14,16 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  clearCopy,
   copyManifest,
   copyMarker,
   copyWorkspace,
   designSystemSource,
   e2eRoot,
   findApps,
+  startCopy,
   workDir,
   workspaceClosure,
 } from "./apps.ts";
@@ -172,28 +174,106 @@ describe("the copy's manifest and workspace", () => {
 });
 
 describe("createEditor", () => {
-  it("applies an edit and restores the first version", () => {
-    writeFileSync(file(), "one two");
-    const editor = createEditor(scratch);
-    editor.edit("Hello.tsx", "one", "three");
-    expect(readFileSync(file(), "utf8")).toBe("three two");
-    editor.edit("Hello.tsx", "two", "four");
-    expect(readFileSync(file(), "utf8")).toBe("three four");
-    editor.restore();
-    expect(readFileSync(file(), "utf8")).toBe("one two");
+  const nextTask = (): Promise<void> => new Promise((done) => setImmediate(done));
+  // The fake watcher reports a change only when a test says so, which is what the waits rest on.
+  const settled = async (promise: Promise<void>): Promise<boolean> => {
+    let done = false;
+    void promise.then(() => (done = true));
+    await nextTask();
+    return done;
+  };
+  let watcher: EventEmitter;
+
+  beforeEach(() => {
+    watcher = new EventEmitter();
   });
 
-  it("takes the replacement literally", () => {
+  it("applies an edit and restores the first version", async () => {
+    writeFileSync(file(), "one two");
+    const editor = createEditor(scratch, watcher);
+    const first = editor.edit("Hello.tsx", "one", "three");
+    watcher.emit("change", file());
+    await first;
+    expect(readFileSync(file(), "utf8")).toBe("three two");
+    const second = editor.edit("Hello.tsx", "two", "four");
+    watcher.emit("change", file());
+    await second;
+    expect(readFileSync(file(), "utf8")).toBe("three four");
+    const restored = editor.restore();
+    watcher.emit("change", file());
+    await restored;
+    expect(readFileSync(file(), "utf8")).toBe("one two");
+    // Nothing is left to restore, so nothing waits for an event.
+    await editor.restore();
+  });
+
+  it("takes the replacement literally", async () => {
     writeFileSync(file(), "price");
-    const editor = createEditor(scratch);
-    editor.edit("Hello.tsx", "price", "$& and $1");
+    const editor = createEditor(scratch, watcher);
+    const edited = editor.edit("Hello.tsx", "price", "$& and $1");
+    watcher.emit("change", file());
+    await edited;
     expect(readFileSync(file(), "utf8")).toBe("$& and $1");
   });
 
-  it("fails when the text isn't in the file, and changes nothing", () => {
+  it("fails when the text isn't in the file, and changes nothing", async () => {
     writeFileSync(file(), "one");
-    const editor = createEditor(scratch);
-    expect(() => editor.edit("Hello.tsx", "absent", "x")).toThrow('does not contain "absent"');
+    const editor = createEditor(scratch, watcher);
+    await expect(editor.edit("Hello.tsx", "absent", "x")).rejects.toThrow(
+      'does not contain "absent"',
+    );
+    expect(readFileSync(file(), "utf8")).toBe("one");
+  });
+
+  it("waits for the watcher to report that file, then for Vite's listener to finish", async () => {
+    writeFileSync(file(), "one");
+    const edited = createEditor(scratch, watcher).edit("Hello.tsx", "one", "two");
+    expect(await settled(edited)).toBe(false);
+    watcher.emit("change", join(scratch, "Other.tsx"));
+    expect(await settled(edited)).toBe(false);
+    watcher.emit("change", file());
+    expect(await settled(edited)).toBe(false);
+    await edited;
+    expect(watcher.listenerCount("change")).toBe(0);
+  });
+
+  it("restores every file before it waits, and waits for each", async () => {
+    const other = join(scratch, "Other.tsx");
+    writeFileSync(file(), "one");
+    writeFileSync(other, "one");
+    const editor = createEditor(scratch, watcher);
+    const edits = [editor.edit("Hello.tsx", "one", "two"), editor.edit("Other.tsx", "one", "two")];
+    watcher.emit("change", file());
+    watcher.emit("change", other);
+    await Promise.all(edits);
+
+    const restored = editor.restore();
+    expect(readFileSync(file(), "utf8")).toBe("one");
+    expect(readFileSync(other, "utf8")).toBe("one");
+    watcher.emit("change", file());
+    await new Promise((done) => setTimeout(done, 80));
+    expect(await settled(restored)).toBe(false);
+    watcher.emit("change", other);
+    await restored;
+  });
+
+  it("leaves no timer behind once the write is reported", async () => {
+    vi.useFakeTimers();
+    writeFileSync(file(), "one");
+    const edited = createEditor(scratch, watcher).edit("Hello.tsx", "one", "two");
+    watcher.emit("change", file());
+    await vi.advanceTimersByTimeAsync(50);
+    await edited;
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
+  });
+
+  it("fails when the watcher never reports the write, and stops listening", async () => {
+    writeFileSync(file(), "one");
+    const editor = createEditor(scratch, watcher, 10);
+    await expect(editor.edit("Hello.tsx", "one", "two")).rejects.toThrow("never reported a change");
+    expect(watcher.listenerCount("change")).toBe(0);
+    await expect(editor.restore()).rejects.toThrow("never reported a change");
     expect(readFileSync(file(), "utf8")).toBe("one");
   });
 });
@@ -218,20 +298,27 @@ describe("the port ledger", () => {
   });
 });
 
-describe("clearCopy", () => {
-  it("removes an earlier copy", () => {
+describe("startCopy", () => {
+  it("replaces an earlier copy with an empty, marked one", () => {
     const copy = join(scratch, "react");
     mkdirSync(copy);
     writeFileSync(join(copy, copyMarker), "");
-    clearCopy(copy);
-    expect(existsSync(copy)).toBe(false);
+    writeFileSync(join(copy, "old.txt"), "");
+    startCopy(copy);
+    expect(readdirSync(copy)).toEqual([copyMarker]);
+  });
+
+  it("marks a new copy, so that one cut short can be replaced", () => {
+    const copy = join(scratch, "react");
+    startCopy(copy);
+    expect(() => startCopy(copy)).not.toThrow();
   });
 
   it("leaves a directory it didn't make", () => {
     const copy = join(scratch, "react");
     mkdirSync(copy);
     writeFileSync(join(copy, "keep.txt"), "mine");
-    expect(() => clearCopy(copy)).toThrow("isn't a working copy");
+    expect(() => startCopy(copy)).toThrow("isn't a working copy");
     expect(readFileSync(join(copy, "keep.txt"), "utf8")).toBe("mine");
   });
 });

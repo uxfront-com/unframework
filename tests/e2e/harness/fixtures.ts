@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 import { test as base } from "@playwright/test";
 
 import { workDir } from "./apps.ts";
-import { createEditor, type Edit } from "./edit.ts";
+import { createEditor, type Edit, type Watcher } from "./edit.ts";
 import { HOST, recordPort } from "./ports.ts";
 
 export { expect } from "@playwright/test";
@@ -17,11 +17,13 @@ interface ViteServer {
   listen(): Promise<unknown>;
   close(): Promise<void>;
   httpServer: { address(): AddressInfo };
+  watcher: Watcher;
 }
 
 interface DevServer {
   url: string;
   copy: string;
+  watcher: Watcher;
 }
 
 export const test = base.extend<{ edit: Edit }, { devServer: DevServer }>({
@@ -49,7 +51,7 @@ export const test = base.extend<{ edit: Edit }, { devServer: DevServer }>({
         await server.listen();
         const { port } = server.httpServer.address();
         recordPort(work, port);
-        await use({ url: `http://${HOST}:${port}`, copy });
+        await use({ url: `http://${HOST}:${port}`, copy, watcher: server.watcher });
       } finally {
         await server.close();
       }
@@ -62,8 +64,8 @@ export const test = base.extend<{ edit: Edit }, { devServer: DevServer }>({
   },
 
   edit: async ({ devServer }, use) => {
-    const editor = createEditor(devServer.copy);
+    const editor = createEditor(devServer.copy, devServer.watcher);
     await use(editor.edit);
-    editor.restore();
+    await editor.restore();
   },
 });

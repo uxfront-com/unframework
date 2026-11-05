@@ -5,7 +5,7 @@ test("hmr", async ({ page, edit }) => {
   await expect(page.getByRole("heading", { name: "Hello from Vue" })).toBeVisible();
   await page.evaluate(() => Object.assign(window, { marker: true }));
 
-  edit("src/package/Hello.vue", "Hello from", "Goodbye from");
+  await edit("src/package/Hello.vue", "Hello from", "Goodbye from");
 
   await expect(page.getByRole("heading", { name: "Goodbye from Vue" })).toBeVisible();
   // A full reload would have cleared it.

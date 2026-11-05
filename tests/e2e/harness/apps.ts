@@ -1,4 +1,12 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -60,14 +68,17 @@ export function workDir(
   return real;
 }
 
-/** Removes an earlier working copy. Anything else in its place belongs to someone. */
-export function clearCopy(copy: string): void {
+/** Replaces an earlier working copy with an empty one. Anything else in its place belongs to someone. */
+export function startCopy(copy: string): void {
   if (existsSync(copy) && !existsSync(join(copy, copyMarker))) {
     throw new Error(
       `${copy} isn't a working copy, so it was left alone. Choose another directory.`,
     );
   }
   rmSync(copy, { recursive: true, force: true });
+  // Before the copying, so that a copy cut short can still be replaced.
+  mkdirSync(copy, { recursive: true });
+  writeFileSync(join(copy, copyMarker), "");
 }
 
 /** Where the design system is packed from: its package once `pack:dist` has written one. */

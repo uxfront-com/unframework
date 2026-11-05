@@ -6,9 +6,7 @@ import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 
 import {
-  clearCopy,
   copyManifest,
-  copyMarker,
   copyWorkspace,
   designSystemDir,
   designSystemSource,
@@ -16,6 +14,7 @@ import {
   findApps,
   readManifest,
   repoRoot,
+  startCopy,
   tarballsDir,
   workDir,
   workspaceClosure,
@@ -66,9 +65,8 @@ const work = workDir();
 const { packageManager } = readManifest(repoRoot);
 for (const app of findApps()) {
   const copy = join(work, app.name);
-  clearCopy(copy);
+  startCopy(copy);
   cpSync(join(e2eRoot, "apps", app.name), copy, { recursive: true });
-  writeFileSync(join(copy, copyMarker), "");
   const manifest = copyManifest(
     readManifest(copy),
     app,

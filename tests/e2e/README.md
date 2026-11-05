@@ -1,6 +1,6 @@
 # End-to-end apps
 
-This suite shows that what we publish works in a real app. Each app under `apps/` installs the workspace's packed tarballs outside the repository, as a user's project would, and Playwright drives it in Chromium. So a wrong `files` or `exports` entry fails here, where a consumer would see it, rather than passing through a workspace link. [ADR-0079](../../docs/adrs/0079-the-e2e-apps-and-packed-tarballs.md) records why.
+This suite shows that what we publish works in a real app. Each app under `apps/` installs the workspace's packed tarballs outside the repository, as a user's project would, and Playwright drives it in Chromium. So an app runs on what a consumer would install, rather than on a workspace link. [ADR-0079](../../docs/adrs/0079-the-e2e-apps-and-packed-tarballs.md) records why.
 
 ## Run it
 
@@ -31,7 +31,7 @@ An install that stops with `ERR_PNPM_IGNORED_BUILDS` names a package that runs a
 
 ## An app's layout
 
-Each app keeps its files per mode, so that work on one mode edits nothing the other reads:
+Each app keeps its files per mode, so that work on one mode leaves the other's files alone. Only `package.json` is shared:
 
 | Path                                              | Holds                                                     |
 | ------------------------------------------------- | --------------------------------------------------------- |
@@ -51,7 +51,7 @@ import { expect, test } from "../../../../harness/fixtures.ts";
 
 test("hmr", async ({ page, edit }) => {
   await page.goto("/");
-  edit("src/package/Hello.tsx", "Hello from", "Goodbye from");
+  await edit("src/package/Hello.tsx", "Hello from", "Goodbye from");
   await expect(page.getByRole("heading", { name: "Goodbye from React" })).toBeVisible();
 });
 ```
@@ -64,10 +64,10 @@ The fixtures give you these:
 | `baseURL`   | test   | The dev server's `url`                                                                                                                     |
 | `edit`      | test   | `edit(file, from, to)` changes a file in the copy, by its path from the copy's root, and restores it when the test ends                    |
 
-`edit` throws when the file doesn't contain `from`, since the test would otherwise wait for an update that never comes.
+`edit` rejects when the file doesn't contain `from`, since the test would otherwise wait for an update that never comes. It and the restore also wait until the dev server's watcher reports the write, and reject after 5 seconds if it never does, so the file must be one the server watches, like a file under the mode's `src/`. Without that wait, the next page could load before Vite has seen the write and keep the old content.
 
 The run uses one worker and no retries. A project's specs share one copy and an HMR spec edits it, so nothing runs beside it. A flaky spec is a bug, so we never retry it.
 
 ## Servers and ports
 
-Each dev server belongs to its Playwright worker and takes a free port, which it records in `<work>/.ports`. The global teardown then connects to every recorded port and fails the run if one still answers. It prints the ports it checked, so you can look them up with `lsof -iTCP -sTCP:LISTEN`. Test results go to `<work>/.results`, outside the repository.
+Each dev server belongs to its Playwright worker and takes a free port, which it records in `<work>/.ports`. The global teardown then connects to every recorded port and fails the run if one still answers. On success it prints the ports it checked, so you can look them up with `lsof -iTCP -sTCP:LISTEN`. Test results go to `<work>/.results`, outside the repository.
