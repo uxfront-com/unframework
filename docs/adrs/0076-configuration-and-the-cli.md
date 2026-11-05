@@ -1,0 +1,107 @@
+# ADR-0076: Configuration and the CLI
+
+- **Status:** Proposed
+- **Date:** 2026-11-05
+- **Plan:** §5.2, §5.10, §8.1, §8.3, §9 M6; P2, P8; ADR-0016, ADR-0073, ADR-0077; defers ADR-0071's
+  open item on the IR cache, without editing that record
+
+## Context
+
+M6 adds `unframework.config.ts` (§8.1), and the CLI's `build`, `check`, `explain` and `init` (§8.3),
+with `create-unframework`. ADR-0016 puts `defineConfig` under `unframework/config` and the bin in
+`unframework`, whose root export stays types and stubs only. `LAYERS` already holds a slot for
+`@unframework/cli`, beside `unplugin`, and one for `create-unframework` above `testing`. Plan §5.2
+gives `create-unframework` no dependencies.
+
+The rest of §8.3 waits for later milestones: `test`, `visual` and `preview` (M7), `manifest` and
+`fix` (M9). This record differs from §8.3 in one point: `init` writes no test file, because
+`@unframework/testing` stays private until M7. It also leaves out the IR cache that ADR-0071's open
+item expected with the CLI (Alternatives).
+
+This record is proposed before M6 builds it. Each section below is amended in place as its part is
+built.
+
+## Decision
+
+### Configuration
+
+- `packages/compiler/src/config.ts` exports `loadConfig(root, file?)`, which finds
+  `unframework.config.{ts,mts,js,mjs}` and imports it through Node's type stripping. A load failure,
+  `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` included, reports UF7001 `config-not-loaded` with the path.
+- It exports `resolveConfig(raw)`, which checks:
+  - the shape of §8.1's fields and `package?: { targets?: TargetName[]; resolveFrom?: string | Partial<Record<TargetName, string>> }`,
+    with relative paths resolved against the config's directory (UF7002 `config-invalid`, with a
+    JSON pointer)
+  - the target names (UF7003 `unknown-target`, with a did-you-mean)
+  - `targetOptions[t]`, through the target's Standard Schema (UF7004 `target-options-invalid`)
+- The defaults are all seven targets, `src`, `dist`, `syntactic` and `strict: false`.
+- `unframework/config` exports an identity `defineConfig`, typed with `UnframeworkConfig` through a
+  type-only import, so importing it loads no compiler (ADR-0016).
+- Only the CLI reads the config. The bundler plugin takes explicit options, or detects the target
+  (ADR-0075).
+
+```ts
+// unframework.config.ts
+import { defineConfig } from "unframework/config";
+
+export default defineConfig({
+  targets: ["react", "vue"],
+  srcDir: "src",
+  outDir: "dist",
+});
+```
+
+### CLI
+
+- `@unframework/cli` exports `main(argv)` over a command table, parsed with `node:util`'s
+  `parseArgs`. `packages/unframework/bin/unframework.js` imports it lazily, and the umbrella's
+  `files` include `bin`.
+- The exit codes are 0 for success, 1 for error diagnostics and 2 for a usage or config error.
+- `build` globs `srcDir/**/*.uf.{tsx,ts}`, sorted (P8), and compiles through `createProject`
+  (ADR-0071). `--type-oracle tsgo` lazily imports the tsgo oracle. No sources reports UF7007
+  `no-sources`.
+- `build` cleans each `outDir/<target>`, then writes the outputs, `project.copies` and a barrel per
+  target. A JS or TS output also gets a `.map` sidecar and a trailing `//# sourceMappingURL=` comment.
+  Apart from that comment, each file equals `compile()`'s output byte for byte.
+- `check` takes `--format pretty|json|sarif`, through the renderers `@unframework/diagnostics`
+  already has (`formatDiagnostics`, `toJsonDiagnostics`, `toSarif`).
+- `explain` prints a code's catalogue entry and its `docsUrl()`. An unknown code exits 2.
+
+### init and create-unframework
+
+- `unframework init` writes `unframework.config.ts`, `src/Button.uf.tsx` with `Button.css`,
+  `tsconfig.uf.json` (ADR-0073) and an `AGENTS.md` that points at unframework.dev. It refuses to
+  overwrite a file without `--force`.
+- `create-unframework <dir>` writes a private `package.json` with `unframework` as a dependency, then
+  runs the project's own `unframework init`. It keeps no dependencies of its own (§5.2).
+
+## Consequences
+
+**Positive:**
+
+- A config runs on Node as it is, with no bundler or loader between it and the user's code.
+- `check` gives agents and CI the same diagnostics as a person, in JSON or SARIF, and its exit codes
+  tell a broken component from a broken command line.
+- `build`'s files equal `compile()`'s, so what the corpus verifies holds for them.
+
+**Negative:**
+
+- Type stripping refuses what it can't erase, so a config with an `enum` fails with UF7001 and not a
+  working default. The message has to say why.
+- `unframework.config.ts` has no effect on the plugin, and the docs have to say so.
+- `unframework` now depends on `compiler` and `cli`, so installing the authoring API installs the
+  tooling. Lazy imports protect the root export's load time, not the install's size.
+- The name `unframework` on npm belongs to a third party, so `create-unframework`'s dependency can't
+  resolve from the registry until a release plan settles the name. Nothing publishes in M6.
+
+## Alternatives considered
+
+- **A config loader such as `jiti` or `c12`.** It would accept any TypeScript syntax, at the cost of
+  a dependency, while the repository itself runs on Node's type stripping.
+- **The plugin reading `unframework.config.ts` too.** A plugin instance serves one target, so most
+  of the config's fields mean nothing to it, and it already takes explicit options.
+- **A CLI framework.** `parseArgs` covers four commands and a few flags, and needs no dependency.
+- **`init` scaffolding a test,** as §8.3 says. `@unframework/testing` isn't public until M7.
+- **§5.10's IR cache as JSON in M6.** ADR-0071 expected it to come with the CLI. It's left out, since
+  `build` runs through the project graph without it, and a later issue can add it.
+- **`build --watch`.** It's left out too, for a later issue.
