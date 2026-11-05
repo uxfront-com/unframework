@@ -32,23 +32,51 @@ This record is proposed before M6 builds it, and it's amended in place as it's b
 
 - It splits each IR `Code` at its `refs` into literal runs, and matches them in the output, longest
   first, in source order, never overlapping.
-- It emits a segment at each token boundary of a run and at each reference's start.
+- A run is one source line, trimmed, because a printer may re-indent code: Svelte's target indents
+  its block, and the markup printer moves an attribute's continuation lines.
+- A match takes whole tokens, so `a` is no match inside `data`, and the runs of one `Code` keep their
+  order. Punctuation alone (`);`) would match anywhere, so that run stays unmapped.
+- A run beside a reference matches only next to a spelling that holds the reference's name, so
+  `.map(` after `shelves` is no match in `books.map(`. A target that drops the name leaves it unmapped.
+- A run nothing checks that has fewer than eight word characters, like a type's `void`, needs the
+  output to hold as many places as the source holds runs of it. Otherwise it stays unmapped.
+- The text of a write that isn't its value, and of an emit that isn't its arguments, is no run: a
+  target may replace them whole (ADR-0045).
+- It emits a segment at each token boundary of a run and at each reference's start, with the
+  reference's identifier in `names`. A target respells a reference, so only its neighbours show where
+  it starts: right after the run before it, where the output holds its name or, where it keeps its
+  spelling, right before the run after it. Otherwise it stays unmapped.
 - A `Code` made only of references stays unmapped. It never guesses.
+
+`compile()` passes a module holding only the component the file is written for (or the composable),
+so another component's identical text can't take the place.
 
 **Remap through formatting.** `remapFormatted(before, after, map)` diffs the two texts over their
 non-whitespace characters and moves each segment:
 
 - In a markup file it works per script block or frontmatter, the only parts oxfmt touches (ADR-0026,
-  ADR-0041).
-- When fewer than 95% of the characters match, it returns UF9002 `sourcemap-not-remapped` and no map.
-  A remap that fails is a compiler bug, and a wrong map would be worse than none (P2).
+  ADR-0041). The markup around them must keep its bytes and the blocks their number, or it returns
+  UF9002 too, since oxfmt never touches them and a change there is the same compiler bug.
+- A segment survives only where its token is unchanged, so every mapped run reads the same in the
+  output and the source. oxfmt rewrites `'a'` to `"a"`: the quotes lose their segments, and `a` keeps
+  its own. A number whose form changes (`1E3` to `1e3`) goes unmapped.
+- When fewer than 95% of the file's characters match, it returns UF9002 `sourcemap-not-remapped` and no
+  map. A remap that fails is a compiler bug, and a wrong map would be worse than none (P2). What
+  formatting adds doesn't count, or code without semicolons would fail. Quotes don't count either,
+  since oxfmt drops them around an object's keys, and the diff reads `'` as `"` and letters in one
+  case, since oxfmt rewrites quotes and a number's form in place. The count is the whole file's: a small block beside
+  a large template may lose a few characters, and each token's own check still holds there.
 
 **The contract:**
 
 - `OutputFile` gains an optional `map`: version 3, with relative `sources`, `sourcesContent` and
   `names`.
 - `compile()` gains `sourceMap?: boolean`. It anchors after the `output` hook and before formatting.
-- A copy of a shared module (ADR-0070) gets an identity map.
+  The hooks see no map, and a `map` a hook or a target returns is dropped.
+- A copy of a shared module (ADR-0070) gets an identity map, whose source is the copy itself
+  (`identityMapped`).
+- A scoped sheet (ADR-0063) gets a map with no segments, because its text comes from a stylesheet, not
+  this source.
 - Maps never enter the golden files.
 - Maps are byte-identical across two compiles (P8).
 - A unit test fails if oxfmt's `format()` starts returning a map, so this record gets reopened when
@@ -73,6 +101,7 @@ chain on it. No printer or target changes.
 - Matching runs by text is a search. Two identical runs resolve by source order, so a target that
   reorders statements could cross them. The per-run check catches a wrong text, not a right text
   from the wrong place.
+- A run maps once, so a target that prints a `Code` twice maps the first place it finds.
 - The diff adds work to every compile with maps on.
 
 **Open:**

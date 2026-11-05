@@ -219,6 +219,23 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   lines) and an `.astro` file's frontmatter. The markup (Vue, Svelte, Astro, HTML, and Angular's
   inline template) keeps the printer's whitespace-safe layout (ADR-0026). Formatting is
   idempotent and never throws: a block that does not parse comes back as an error.
+- **Source maps** (`anchorOutput`, `remapFormatted`, `identityMapped`, ADR-0074): `OutputFile` has an
+  optional `map` (`SourceMapV3`), with `sources` relative to the file, `sourcesContent` and `names`.
+  No printer keeps a position, so `anchorOutput(file, module, source)` finds the source in the
+  output afterwards. It splits each IR `Code` at its references into literal runs, one per source
+  line since printers re-indent code, and finds them longest first, whole tokens only, never
+  overlapping, identical runs in source order and one `Code`'s runs in their order. A run of
+  punctuation alone would match anywhere, so it stays unmapped, as does a `Code` made only of
+  references. A run beside a reference matches only next to a spelling that holds its name, and a
+  short run nothing checks needs the output to hold as many places as the source holds runs of it. A segment marks each token of a run, and a named one the start of a reference beside
+  a run. Pass a module holding only the component the file is written for, or another's identical
+  text can take its place. A `.css` sheet's map has no segments. `remapFormatted(before, after,
+map)` carries a map through `formatOutput` by a diff over the non-whitespace characters, per
+  script block or frontmatter in a markup file, and a segment survives where its token is
+  unchanged, so a string's rewritten quotes lose theirs and its text keeps its own. It returns `{
+map }`, or `{ diagnostic }` with UF9002 where fewer than 95% of the file's characters match, not
+  counting quotes, which oxfmt rewrites and drops, or where the markup around a block changed. `identityMapped` maps a file copied unchanged
+  onto itself.
 - **Exports, imports and names:** `exportDeclaration` keeps the source's export shape, for a
   function, a class or an expression (`export const Card = component$(…)`), and `exportsOf`
   exports a component the module does not export by its name, a sibling file its siblings
