@@ -2,9 +2,18 @@
   "name": "@unframework/e2e",
   "version": "0.0.0",
   "private": true,
-  "description": "The end-to-end suite, which owns Playwright. It has no apps yet.",
+  "description": "The end-to-end suite: real apps that install the workspace's packed tarballs outside the repository, driven by Playwright.",
   "type": "module",
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "e2e": "node scripts/e2e.ts",
+    "prepare-apps": "node scripts/prepare-apps.ts",
+    "test": "vitest run --dir harness"
+  },
   "devDependencies": {
-    "@playwright/test": "catalog:"
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:",
+    "@uxfront/typescript-config": "catalog:",
+    "vitest": "catalog:"
   }
 }
