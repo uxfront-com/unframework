@@ -33,9 +33,11 @@ This record is proposed before M6 builds it, and it's amended in place as it's b
 - It splits each IR `Code` at its `refs` into literal runs, and matches them in the output, longest
   first, in source order, never overlapping.
 - A run is one source line, trimmed, because a printer may re-indent code: Svelte's target indents
-  its block, and the markup printer moves an attribute's continuation lines. It also stops at a
-  brace, because a target may print a block's statements without them, as Angular's methods do. A
-  brace between a run and a reference doesn't stop them being neighbours.
+  its block, and the markup printer moves an attribute's continuation lines.
+- Whole lines take their places first. Only a line the output doesn't hold is tried again between
+  its braces, because a target may print a block's statements without them, as Angular's methods do.
+  A piece is short and often like another, so splitting first would give a text to the wrong line,
+  and a piece with fewer than eight word characters, or a lone word, isn't tried at all.
 - A match takes whole tokens, so `a` is no match inside `data`, and the runs of one `Code` keep their
   order. Punctuation alone (`);`) would match anywhere, so that run stays unmapped.
 - A run beside a reference, other than a write or an emit, matches only next to a spelling that holds the reference's name, so
@@ -58,16 +60,18 @@ non-whitespace characters and moves each segment:
 
 - In a markup file it works per script block or frontmatter, the only parts oxfmt touches (ADR-0026,
   ADR-0041). The markup around them must keep its bytes and the blocks their number, or it returns
-  UF9002 too, since oxfmt never touches them and a change there is the same compiler bug.
+  UF9002 too, since oxfmt never touches them, so a change there means the formatter broke.
 - A segment survives only where its token is unchanged, so every mapped run reads the same in the
   output and the source. oxfmt rewrites `'a'` to `"a"`: the quotes lose their segments, and `a` keeps
   its own. A number whose form changes (`1E3` to `1e3`) goes unmapped.
-- When fewer than 95% of the file's characters match, it returns UF9002 `sourcemap-not-remapped` and no
-  map. A remap that fails is a compiler bug, and a wrong map would be worse than none (P2).
-- Only words count, because oxfmt leaves them alone. It removes punctuation (a redundant parenthesis,
-  the quotes around a key, an escape's backslash, a trailing comma, an empty statement), rewrites a
-  number's form (`1.50`, `1e0`) and sorts a regular expression's flags, so an ordinary small component
-  can lose more than 5% of its text. What it adds, like semicolons, was never in the file to count.
+- When fewer than 95% of the file's words match, it returns UF9002 `sourcemap-not-remapped` and no map,
+  because a wrong map would be worse than none (P2). A failure means that the formatter broke, or that
+  a target or a plugin printed what oxfmt rewrites, as it does `title="don&apos;t"`.
+- Only words count, not every character. oxfmt removes punctuation (a redundant parenthesis, the quotes
+  around a key, an escape's backslash, a trailing comma, an empty statement), rewrites a number's form
+  (`1.50`, `1e0`) and sorts a regular expression's flags, so an ordinary small component can lose more
+  than 5% of its text. A number, and a `/` with the lowercase letters after it, don't count, which takes
+  in those flags and also a lowercase closing tag's name or a path's segment. What it adds, like semicolons, was never in the file to count.
 - The diff reads `'` as `"` and letters in one case, so a rewrite in place still lines up, and the
   token check above then drops the segment.
 - The count is the whole file's: a small block beside a large template may lose a few characters, and

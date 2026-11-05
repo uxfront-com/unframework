@@ -223,9 +223,9 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   optional `map` (`SourceMapV3`), with `sources` relative to the file, `sourcesContent` and `names`.
   No printer keeps a position, so `anchorOutput(file, module, source)` finds the source in the
   output afterwards. It splits each IR `Code` at its references into literal runs, one per source
-  line and between braces, since printers re-indent code and unwrap blocks, and finds them longest
-  first, whole tokens only, never overlapping, identical runs in source order and one `Code`'s runs
-  in their order. A run of punctuation alone would match anywhere, so it stays unmapped, as does a
+  line since printers re-indent code, and finds them longest first, whole tokens only, never overlapping, identical runs in source order and one `Code`'s runs
+  in their order. A line the output doesn't hold is tried again between its braces, since a target
+  may unwrap a block, but for a lone word or a piece too short to tell apart. A run of punctuation alone would match anywhere, so it stays unmapped, as does a
   `Code` made only of references. A run beside a reference matches only next to a spelling that
   holds its name, and a short run nothing checks needs the output to hold as many places as the
   source holds runs of it. A segment marks each token of a run, and a named one the start of a
@@ -235,8 +235,10 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   non-whitespace characters, per script block or frontmatter in a markup file, and a segment
   survives where its token is unchanged, so a string's rewritten quotes lose theirs and its text
   keeps its own. It returns `{ map }`, or `{ diagnostic }` with UF9002 where fewer than 95% of the
-  file's words match, which oxfmt leaves alone, or where a code block has no end, their number
-  changed or the markup around them did. `identityMapped` maps a file copied unchanged onto itself.
+  file's words match, not counting a number or a `/` with the lowercase letters after it, or where a code block has no end, their
+  number changed or the markup around them did. oxfmt rewrites punctuation and numbers by itself, and
+  a word only in text like `title="don&apos;t"`, so a target or a plugin printing that can reach it.
+  `identityMapped` maps a file copied unchanged onto itself.
 - **Exports, imports and names:** `exportDeclaration` keeps the source's export shape, for a
   function, a class or an expression (`export const Card = component$(…)`), and `exportsOf`
   exports a component the module does not export by its name, a sibling file its siblings

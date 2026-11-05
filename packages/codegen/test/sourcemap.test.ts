@@ -372,6 +372,73 @@ describe("anchorOutput and remapFormatted", () => {
     expect(originOf(file, file.map!, source, "if")).toBe(0);
   });
 
+  it("takes a whole line's place before a piece of another line can", () => {
+    const source = "c.login;\n`at ${c.login}`;\n";
+    const refAt = source.lastIndexOf("c.login");
+    const dropped: Code = {
+      code: "c.login",
+      span: { start: 0, end: 7 },
+      refs: [{ kind: "Binding", binding: "c@0", span: { start: 0, end: 1 } }],
+    };
+    const printed: Code = {
+      code: "`at ${c.login}`",
+      span: { start: source.indexOf("`"), end: source.lastIndexOf("`") + 1 },
+      refs: [{ kind: "Binding", binding: "c@1", span: { start: refAt, end: refAt + 1 } }],
+    };
+    const file = anchorOutput(
+      { path: "a.js", contents: "`at ${c.login}`;\n" },
+      moduleOf("a.uf.tsx", [dropped, printed]),
+      source,
+    );
+    expect(originOf(file, file.map!, source, ".login")).toBe(source.lastIndexOf(".login"));
+  });
+
+  it("keeps a line whole where the output holds it, braces and all", () => {
+    const source = "if (a) { go(1); }\nif (b) { go(1); }\n";
+    const file = anchorOutput(
+      { path: "a.js", contents: "if (b) { go(1); }\n" },
+      moduleOf("a.uf.tsx", [code(source, "if (b) { go(1); }")]),
+      source,
+    );
+    expect(originOf(file, file.map!, source, "{")).toBe(source.lastIndexOf("{"));
+  });
+
+  it("tries a line's pieces in its place among the Code's runs", () => {
+    const source = "first(x); { secondCall(); } third(y);\n";
+    const text = "first(x); { secondCall(); } third(y)";
+    const file = anchorOutput(
+      {
+        path: "a.js",
+        contents: "secondCall();\nfirst(props.x);\nsecondCall();\nthird(props.y);\n",
+      },
+      moduleOf("a.uf.tsx", [code(source, text, ["x", "y"])]),
+      source,
+    );
+    expect(originOf(file, file.map!, source, "first")).toBe(0);
+    expect(originOf(file, file.map!, source, "secondCall")).toBeUndefined();
+    expect(originOf(file, file.map!, source, "secondCall", 1)).toBe(source.indexOf("secondCall"));
+  });
+
+  it("leaves a lone word unmapped where its line isn't held whole", () => {
+    const source = "`at ${someLongWord} now`;\n";
+    const file = anchorOutput(
+      { path: "a.js", contents: "const someLongWord = 1;\n" },
+      moduleOf("a.uf.tsx", [code(source, source.trim())]),
+      source,
+    );
+    expect(file.map!.mappings.replaceAll(";", "")).toBe("");
+  });
+
+  it("leaves a short piece unmapped where its line isn't held whole", () => {
+    const source = "if (x) { go(1); }\n";
+    const file = anchorOutput(
+      { path: "a.js", contents: "go(1);\n" },
+      moduleOf("a.uf.tsx", [code(source, source.trim())]),
+      source,
+    );
+    expect(file.map!.mappings.replaceAll(";", "")).toBe("");
+  });
+
   it("finds a one-line block's statement where a target prints it without the braces", () => {
     const source = 'function go() { throw new Error("boom"); }\n';
     const file = anchorOutput(
@@ -382,7 +449,33 @@ describe("anchorOutput and remapFormatted", () => {
     expect(originOf(file, file.map!, source, "throw")).toBe(source.indexOf("throw"));
   });
 
-  it("names a reference across a block's brace, either way a target prints it", () => {
+  it("names a reference by the run after it only where nothing sits between them", () => {
+    const source = "total, total + 1;\n";
+    const file = anchorOutput(
+      { path: "a.js", contents: "f(x, total + 1);\n" },
+      moduleOf("a.uf.tsx", [code(source, "total, total + 1", [])]),
+      source,
+    );
+    expect(file.map!.names).toEqual([]);
+    const second = source.lastIndexOf("total");
+    const both = anchorOutput(
+      { path: "a.js", contents: "f(x, total + 1);\n" },
+      moduleOf("a.uf.tsx", [
+        {
+          code: "total, total + 1",
+          span: { start: 0, end: 16 },
+          refs: [reference(source, "total"), reference(source, "total", second)],
+        },
+      ]),
+      source,
+    );
+    const named = decodedMappings(new TraceMap(both.map!))
+      .flat()
+      .filter((segment) => segment.length === 5);
+    expect(named.map((segment) => segment[3])).toEqual([second]);
+  });
+
+  it("names a reference after a run that ends in a brace", () => {
     const source = "try {\n  total();\n} catch {}\n";
     const module = moduleOf("a.uf.tsx", [code(source, "try {\n  total();\n}", ["total"])]);
     const kept = anchorOutput(

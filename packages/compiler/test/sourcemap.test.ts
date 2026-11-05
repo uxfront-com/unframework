@@ -1,9 +1,11 @@
+import { readFileSync } from "node:fs";
+
 import { CAPABILITY_NAMES, defineTarget } from "@unframework/codegen";
 import type { Capabilities } from "@unframework/codegen";
 import { describe, expect, it } from "vitest";
 
 import { compile, createProject, TARGET_NAMES } from "../src/index.ts";
-import type { CompilerPlugin } from "../src/index.ts";
+import type { CompilerPlugin, TargetName } from "../src/index.ts";
 
 const BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -61,6 +63,13 @@ function lineOf(contents: string, mappings: string, token: string): number | und
   const segment = decode(mappings)[before.length - 1]?.find(
     (candidate) => candidate[0] === before.at(-1)!.length,
   );
+  return segment && segment[2]! + 1;
+}
+
+/** The source line a position traces to, as a stack frame's lookup finds it: the segment before. */
+function tracedLine(mappings: string, line: number, column: number): number | undefined {
+  const segments = decode(mappings)[line - 1] ?? [];
+  const segment = segments.findLast((candidate) => candidate[0]! <= column);
   return segment && segment[2]! + 1;
 }
 
@@ -362,6 +371,59 @@ describe("compile with sourceMap", () => {
         }
       }
     }
+  });
+
+  // Each mapped right until its line was split at its braces first, which gave the text to another.
+  it.each<[string, TargetName, number, string, number]>([
+    ["control-flow/keyed-map/ContributorTable", "solid", 35, ".login", 26],
+    ["control-flow/keyed-map/ContributorTable", "astro", 40, ".login", 26],
+    ["lifecycle/teardown-order/SearchSession", "angular", 98, ".length", 53],
+    ["lifecycle/unmount-timers/AutoRefresh", "react", 52, "setInterval", 25],
+    ["state/array-replacement/TaskList", "qwik", 21, "tasks.value", 19],
+  ])(
+    "traces %s on %s, line %i, to its authored line",
+    async (name, target, line, token, authored) => {
+      const url = new URL(`../../../tests/integration/cases/${name}.uf.tsx`, import.meta.url);
+      const result = await compile(readFileSync(url, "utf8"), {
+        filename: `${name}.uf.tsx`,
+        targets: [target],
+        sourceMap: true,
+      });
+      const file = result.outputs[target]!.find(({ contents }) =>
+        contents.split("\n")[line - 1]?.includes(token),
+      )!;
+      const column = file.contents.split("\n")[line - 1]!.indexOf(token);
+      expect(tracedLine(file.map!.mappings, line, column)).toBe(authored);
+    },
+  );
+
+  it("reports UF9002, with its file and target, where a target prints what oxfmt rewrites", async () => {
+    const wordy = defineTarget({
+      name: "wordy",
+      framework: { package: "html", range: "*" },
+      capabilities: Object.fromEntries(
+        CAPABILITY_NAMES.map((name) => [name, { support: "native" }]),
+      ) as Capabilities,
+      emit: () => [
+        {
+          path: "a.tsx",
+          contents: `export const a = <>${'<p title="don&apos;t" />'.repeat(20)}</>;\n`,
+        },
+      ],
+    });
+    const result = await compile(SOURCE, {
+      filename: "src/Card.uf.tsx",
+      targets: [wordy],
+      sourceMap: true,
+    });
+    expect(
+      result.diagnostics
+        .filter(({ code }) => code === "UF9002")
+        .map(({ file, target, severity }) => [file, target, severity]),
+    ).toEqual([["src/Card.uf.tsx", "wordy", "error"]]);
+    const file = result.outputs.wordy![0]!;
+    expect(file.contents).toContain(`title="don't"`);
+    expect(file).not.toHaveProperty("map");
   });
 
   it("passes through a project's compile", async () => {

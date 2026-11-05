@@ -27,22 +27,29 @@ const WORD_CHARACTER = /[\p{ID_Continue}$]/u;
 const HAS_WORD = /[\p{L}\p{N}_$]/u;
 const WORD_CHARACTERS = /[\p{L}\p{N}_$]/gu;
 /**
- * What the threshold counts: words, the group here, which oxfmt leaves as they are. It passes over a
- * number, whose form oxfmt rewrites (`1e0` to `1`), and a regular expression's flags, which it sorts.
+ * What the threshold counts: words, the group here. It passes over a number, whose form oxfmt
+ * rewrites (`1e0` to `1`), and a `/` with the lowercase letters after it: a regular expression's
+ * flags, which it sorts, and so also a lowercase closing tag's name or a path's segment.
  */
 const COUNTED = /\d[\p{ID_Continue}.]*|\/[a-z]+\b|([\p{ID_Start}$_][\p{ID_Continue}$]*)/gu;
-/** What may sit between a run and the reference beside it: braces are no part of a run. */
-const BETWEEN = /^[\s{}]*$/;
+const BRACES = /[{}]/;
 const IDENTIFIERS = new RegExp(IDENTIFIER.source, "gu");
 /** What a target's spelling of a reference is made of, which binds as tightly as a member. */
 const SPELLING = /[\p{ID_Continue}$.()!?]/u;
 /** A run with this many word characters is text a target hardly writes on its own. */
 const DISTINCTIVE = 8;
 
-/** A literal run of a `Code`, trimmed to one source line, since printers re-indent code. */
-interface Run {
+/** A piece of a `Code`'s text, and where the source holds it. */
+interface Piece {
   start: number;
   text: string;
+}
+
+/**
+ * A literal run of a `Code`, trimmed to one source line, since printers re-indent code, or to a piece
+ * of that line between braces, where the output doesn't hold it whole.
+ */
+interface Run extends Piece {
   /** The `Code` it comes from, and its place among that `Code`'s runs. */
   owner: Owner;
   index: number;
@@ -101,10 +108,11 @@ export function identityMapped(file: OutputFile): OutputFile {
  * file, and in a markup file of each script block or frontmatter (ADR-0041), around markup that
  * keeps its bytes. A segment survives where its token is unchanged, so the text it maps stays
  * identical to its source (L14): a string's rewritten quotes and a number's rewritten form lose
- * theirs. When fewer than 95% of the file's characters match, it returns UF9002 instead of a map.
- * Only words count, since oxfmt leaves them alone: it removes punctuation (a redundant parenthesis,
- * a quote around a key, an escape's backslash) and rewrites a number's form, and an ordinary small
- * component can lose more than 5% of its text that way.
+ * theirs. When fewer than 95% of the file's words match, it returns UF9002 instead of a map. Only
+ * words count: oxfmt removes punctuation (a redundant parenthesis, a quote around a key, an escape's
+ * backslash) and rewrites a number's form, and an ordinary small component can lose more than 5% of
+ * its text that way. It rarely changes a word, but it does in `title="don&apos;t"`, so a target or a
+ * plugin that prints such text can reach UF9002.
  */
 export function remapFormatted(
   before: OutputFile,
@@ -258,8 +266,8 @@ function codesOf(text: string): Uint16Array {
 
 /**
  * A range's non-whitespace characters and each one's offset. It reads what oxfmt rewrites in place
- * as the same character, `'` as `"` and a number's `E` as `e`, so a rewrite never costs the threshold,
- * and each token's own check still drops what changed.
+ * as the same character, `'` as `"` and a number's `E` as `e`, so a rewrite still lines up, and each
+ * token's own check then drops what changed.
  */
 function significant(
   text: string,
@@ -276,10 +284,6 @@ function significant(
     offsets[length++] = offset;
   }
   return { codes: codes.subarray(0, length), offsets: offsets.subarray(0, length) };
-}
-
-function isBetween(code: number): boolean {
-  return isSpace(code) || code === 0x7b || code === 0x7d;
 }
 
 function isUpperCase(code: number): boolean {
@@ -377,51 +381,56 @@ function walkBack(
 /** Every position an output's text shows, from each `Code` of the module. */
 function findAnchors(output: string, module: UfModule, source: string): Anchor[] {
   const owners = collectOwners(module, source);
-  const runs = owners
-    .flatMap((owner) => owner.runs)
-    .toSorted((a, b) => b.text.length - a.text.length || a.start - b.start);
   const taken = new Uint8Array(output.length);
   const read = new Uint8Array(source.length);
-  const remaining = new Map<string, number>();
-  for (const { text } of runs) remaining.set(text, (remaining.get(text) ?? 0) + 1);
-  for (const run of runs) {
-    const same = remaining.get(run.text)!;
-    remaining.set(run.text, same - 1);
-    if (isTaken(read, run.start, run.start + run.text.length)) continue;
-    // A run beside a reference is checked by it. Nothing checks any other run, so a short one needs
-    // the output to hold as many places as the source holds runs, or it would be a guess (P2).
-    if (
-      !run.before &&
-      !run.after &&
-      (run.text.match(WORD_CHARACTERS) ?? []).length < DISTINCTIVE &&
-      countFree(output, run.text, taken) !== same
-    ) {
-      continue;
-    }
-    // The runs of one `Code` keep their order: a run belongs between its neighbours.
-    const { runs: siblings } = run.owner;
-    let from = 0;
-    for (let index = run.index - 1; index >= 0; index--) {
-      const sibling = siblings[index]!;
-      if (sibling.at !== undefined) {
-        from = sibling.at + sibling.text.length;
-        break;
+  const place = (unplaced: readonly Run[]): void => {
+    const runs = unplaced.toSorted((a, b) => b.text.length - a.text.length || a.start - b.start);
+    const remaining = new Map<string, number>();
+    for (const { text } of runs) remaining.set(text, (remaining.get(text) ?? 0) + 1);
+    for (const run of runs) {
+      const same = remaining.get(run.text)!;
+      remaining.set(run.text, same - 1);
+      if (isTaken(read, run.start, run.start + run.text.length)) continue;
+      // A run beside a reference is checked by it. Nothing checks any other run, so a short one needs
+      // the output to hold as many places as the source holds runs, or it would be a guess (P2).
+      if (
+        !run.before &&
+        !run.after &&
+        !isDistinctive(run.text) &&
+        countFree(output, run.text, taken) !== same
+      ) {
+        continue;
       }
-    }
-    let to = output.length;
-    for (let index = run.index + 1; index < siblings.length; index++) {
-      const sibling = siblings[index]!;
-      if (sibling.at !== undefined) {
-        to = sibling.at;
-        break;
+      // The runs of one `Code` keep their order: a run belongs between its neighbours.
+      const { runs: siblings } = run.owner;
+      let from = 0;
+      for (let index = run.index - 1; index >= 0; index--) {
+        const sibling = siblings[index]!;
+        if (sibling.at !== undefined) {
+          from = sibling.at + sibling.text.length;
+          break;
+        }
       }
+      let to = output.length;
+      for (let index = run.index + 1; index < siblings.length; index++) {
+        const sibling = siblings[index]!;
+        if (sibling.at !== undefined) {
+          to = sibling.at;
+          break;
+        }
+      }
+      const at = findRun(output, run, from, to, taken, source);
+      if (at < 0) continue;
+      run.at = at;
+      taken.fill(1, at, at + run.text.length);
+      read.fill(1, run.start, run.start + run.text.length);
     }
-    const at = findRun(output, run, from, to, taken, source);
-    if (at < 0) continue;
-    run.at = at;
-    taken.fill(1, at, at + run.text.length);
-    read.fill(1, run.start, run.start + run.text.length);
-  }
+  };
+  place(owners.flatMap((owner) => owner.runs));
+  // Whole lines take their places first, since a piece is short and often like another. Only a line
+  // the output doesn't hold is tried again between its braces: a target may print a block's
+  // statements without them, as Angular's methods do.
+  place(owners.flatMap((owner) => splitAtBraces(owner, source)));
   const anchors: Anchor[] = [];
   for (const owner of owners) {
     for (const run of owner.runs) {
@@ -456,17 +465,17 @@ function referenceStart(
     if (run.at === undefined) continue;
     const end = run.start + run.text.length;
     if (end > ref.span.start) break;
-    if (!BETWEEN.test(source.slice(end, ref.span.start))) continue;
+    if (source.slice(end, ref.span.start).trim()) continue;
     let at = run.at + run.text.length;
-    while (at < output.length && isBetween(output.charCodeAt(at))) at++;
+    while (at < output.length && isSpace(output.charCodeAt(at))) at++;
     return mentions(spellingAfter(output, at), ref, source) ? at : undefined;
   }
   const written = source.slice(ref.span.start, ref.span.end);
   for (const run of runs) {
     if (run.at === undefined || run.start < ref.span.end) continue;
-    if (!BETWEEN.test(source.slice(ref.span.end, run.start))) return undefined;
+    if (source.slice(ref.span.end, run.start).trim()) return undefined;
     let end = run.at;
-    while (end > 0 && isBetween(output.charCodeAt(end - 1))) end--;
+    while (end > 0 && isSpace(output.charCodeAt(end - 1))) end--;
     const at = end - written.length;
     return at >= 0 && output.startsWith(written, at) && isWhole(output, at, end) ? at : undefined;
   }
@@ -491,24 +500,10 @@ function collectOwners(module: UfModule, source: string): Owner[] {
       !owners.has(`${span.start}:${span.end}`)
     ) {
       const owner: Owner = { runs: [], refs: refs ?? [] };
-      for (const run of literalRuns(span, owner.refs, source)) {
-        const end = run.start + run.text.length;
-        const beside = owner.refs.filter((ref) => ref.kind !== "Write" && ref.kind !== "Emit");
-        const before = beside.find(
-          ({ span: { end: refEnd } }) =>
-            refEnd <= run.start && BETWEEN.test(source.slice(refEnd, run.start)),
-        );
-        const after = beside.find(
-          ({ span: { start } }) => start >= end && BETWEEN.test(source.slice(end, start)),
-        );
-        owner.runs.push({
-          ...run,
-          owner,
-          index: owner.runs.length,
-          ...(before ? { before } : {}),
-          ...(after ? { after } : {}),
-        });
-      }
+      owner.runs = literalRuns(span, owner.refs, source).map((piece) =>
+        ownedRun(owner, piece, source),
+      );
+      owner.runs.forEach((run, index) => (run.index = index));
       owners.set(`${span.start}:${span.end}`, owner);
     }
     for (const item of Object.values(value)) visit(item);
@@ -517,17 +512,65 @@ function collectOwners(module: UfModule, source: string): Owner[] {
   return [...owners.values()];
 }
 
+/** A piece of text as a run of `owner`, with the references right beside it, if any. */
+function ownedRun(owner: Owner, piece: Piece, source: string): Run {
+  const end = piece.start + piece.text.length;
+  const beside = owner.refs.filter((ref) => ref.kind !== "Write" && ref.kind !== "Emit");
+  const before = beside.find(
+    ({ span: { end: refEnd } }) =>
+      refEnd <= piece.start && !source.slice(refEnd, piece.start).trim(),
+  );
+  const after = beside.find(
+    ({ span: { start } }) => start >= end && !source.slice(end, start).trim(),
+  );
+  return {
+    ...piece,
+    owner,
+    index: 0,
+    ...(before ? { before } : {}),
+    ...(after ? { after } : {}),
+  };
+}
+
 /**
- * The text of a `Code` no reference covers, one piece per source line and between braces, since a
- * target may print a block's statements without them (Angular's method bodies). A write's target and
+ * Replaces each run of `owner` not found by its pieces between braces, and returns those. A short
+ * piece or a lone word stays out, reference beside it or not: `.login`, `-$` or `groupTotal` could be
+ * any line's, where `title: string` or a statement hardly could.
+ */
+function splitAtBraces(owner: Owner, source: string): Run[] {
+  const pieces: Run[] = [];
+  owner.runs = owner.runs.flatMap((run) => {
+    if (run.at !== undefined) return [run];
+    const own = piecesOf(run.text, run.start, BRACES)
+      .filter(({ text }) => isDistinctive(text) && text.match(TOKENS)!.length > 1)
+      .map((piece) => ownedRun(owner, piece, source));
+    pieces.push(...own);
+    return own;
+  });
+  owner.runs.forEach((run, index) => (run.index = index));
+  return pieces;
+}
+
+/** The trimmed parts of a text between separators, each with a word, and where each starts. */
+function piecesOf(text: string, start: number, separator: RegExp | string): Piece[] {
+  const pieces: Piece[] = [];
+  let at = start;
+  for (const part of text.split(separator)) {
+    const trimmed = part.trim();
+    if (HAS_WORD.test(trimmed)) {
+      pieces.push({ start: at + part.length - part.trimStart().length, text: trimmed });
+    }
+    at += part.length + 1;
+  }
+  return pieces;
+}
+
+/**
+ * The text of a `Code` no reference covers, one piece per source line. A write's target and
  * operator, and an emit's call, go when a target replaces them whole; what they hold of the author's
  * text is a value's or an argument's, which stays literal.
  */
-function literalRuns(
-  span: Span,
-  refs: readonly CodeReference[],
-  source: string,
-): { start: number; text: string }[] {
+function literalRuns(span: Span, refs: readonly CodeReference[], source: string): Piece[] {
   const cuts: Span[] = [];
   for (const ref of refs) {
     if (ref.kind === "Write" || ref.kind === "Emit") {
@@ -543,16 +586,9 @@ function literalRuns(
     }
   }
   cuts.sort((a, b) => a.start - b.start);
-  const runs: { start: number; text: string }[] = [];
+  const runs: Piece[] = [];
   const add = (start: number, end: number) => {
-    let at = start;
-    for (const line of source.slice(start, end).split(/[\n{}]/)) {
-      const text = line.trim();
-      if (HAS_WORD.test(text)) {
-        runs.push({ start: at + line.length - line.trimStart().length, text });
-      }
-      at += line.length + 1;
-    }
+    runs.push(...piecesOf(source.slice(start, end), start, "\n"));
   };
   let at = span.start;
   for (const cut of cuts) {
@@ -590,6 +626,10 @@ function findRun(
   return -1;
 }
 
+function isDistinctive(text: string): boolean {
+  return (text.match(WORD_CHARACTERS) ?? []).length >= DISTINCTIVE;
+}
+
 /** How many free places hold the text as whole tokens. */
 function countFree(output: string, text: string, taken: Uint8Array): number {
   let count = 0;
@@ -602,7 +642,7 @@ function countFree(output: string, text: string, taken: Uint8Array): number {
 /** The spelling that ends at `end`, past any whitespace. */
 function spellingBefore(output: string, end: number): string {
   let last = end;
-  while (last > 0 && isBetween(output.charCodeAt(last - 1))) last--;
+  while (last > 0 && isSpace(output.charCodeAt(last - 1))) last--;
   let first = last;
   while (first > 0 && SPELLING.test(output[first - 1]!)) first--;
   return output.slice(first, last);
@@ -611,7 +651,7 @@ function spellingBefore(output: string, end: number): string {
 /** The spelling that starts at `start`, past any whitespace. */
 function spellingAfter(output: string, start: number): string {
   let first = start;
-  while (first < output.length && isBetween(output.charCodeAt(first))) first++;
+  while (first < output.length && isSpace(output.charCodeAt(first))) first++;
   let last = first;
   while (last < output.length && SPELLING.test(output[last]!)) last++;
   return output.slice(first, last);

@@ -71,8 +71,8 @@ the source is mapped token by token, and each mapped token reads the same in bot
 punctuation alone, a short run the output holds in several places and a target's own code stay
 unmapped, so a frame there resolves to the nearest segment on its line, if there is one.
 
-A map that can't follow formatting is UF9002, which only a broken formatter reaches, and the file
-comes without one. A file that doesn't
+A map that can't follow formatting is UF9002, and the file comes without one: the formatter broke,
+or a target or a plugin printed what oxfmt rewrites, like `title="don&apos;t"`. A file that doesn't
 parse stays as printed, with the map of what was printed, and `format: false` keeps the anchored
 map as it is. Maps don't change the files' text, and they never enter the golden files.
 
