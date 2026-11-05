@@ -225,7 +225,7 @@ describe("createEditor", () => {
     expect(readFileSync(file(), "utf8")).toBe("one");
   });
 
-  it("waits for the watcher to report that file, then for Vite's listener to finish", async () => {
+  it("waits for the watcher to report that file, then a little longer", async () => {
     writeFileSync(file(), "one");
     const edited = createEditor(scratch, watcher).edit("Hello.tsx", "one", "two");
     expect(await settled(edited)).toBe(false);

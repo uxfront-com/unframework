@@ -68,7 +68,7 @@ export function workDir(
   return real;
 }
 
-/** Replaces an earlier working copy with an empty one. Anything else in its place belongs to someone. */
+/** Replaces an earlier working copy with an empty, marked one. Anything else in its place belongs to someone. */
 export function startCopy(copy: string): void {
   if (existsSync(copy) && !existsSync(join(copy, copyMarker))) {
     throw new Error(

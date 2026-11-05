@@ -60,8 +60,8 @@ built.
   port under `<work>/.ports`, and a global teardown fails if a recorded port still listens.
 - An `edit(file, from, to)` helper changes a file in the working copy for an HMR test and restores it
   after. It rejects when the file doesn't contain `from`. The edit and the restore each wait until
-  the dev server's watcher reports the write, and a little longer, so the next page load can't get
-  the old transform.
+  the dev server's watcher reports the write, and 50ms longer, because a page that loads before Vite
+  has seen a write gets the old transform.
 - The script is named `e2e`, not `test`, so the unit job skips it. The package's `test` script runs
   only the harness's own unit tests. The design system's script is `pack:dist`, not `build`, so the
   required `Build` check never packages it.

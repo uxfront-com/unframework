@@ -58,11 +58,11 @@ test("hmr", async ({ page, edit }) => {
 
 The fixtures give you these:
 
-| Fixture     | Scope  | What it does                                                                                                                               |
-| ----------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `devServer` | worker | Starts the copy's own Vite on a free port of `127.0.0.1`, through `createRequire`, and stops it in teardown. Its value is `url` and `copy` |
-| `baseURL`   | test   | The dev server's `url`                                                                                                                     |
-| `edit`      | test   | `edit(file, from, to)` changes a file in the copy, by its path from the copy's root, and restores it when the test ends                    |
+| Fixture     | Scope  | What it does                                                                                                                                          |
+| ----------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `devServer` | worker | Starts the copy's own Vite on a free port of `127.0.0.1`, through `createRequire`, and stops it in teardown. Its value is `url`, `copy` and `watcher` |
+| `baseURL`   | test   | The dev server's `url`                                                                                                                                |
+| `edit`      | test   | `edit(file, from, to)` changes a file in the copy, by its path from the copy's root, and restores it when the test ends                               |
 
 `edit` rejects when the file doesn't contain `from`, since the test would otherwise wait for an update that never comes. It and the restore also wait until the dev server's watcher reports the write, and reject after 5 seconds if it never does, so the file must be one the server watches, like a file under the mode's `src/`. Without that wait, the next page could load before Vite has seen the write and keep the old content.
 
@@ -70,4 +70,4 @@ The run uses one worker and no retries. A project's specs share one copy and an 
 
 ## Servers and ports
 
-Each dev server belongs to its Playwright worker and takes a free port, which it records in `<work>/.ports`. The global teardown then connects to every recorded port and fails the run if one still answers. On success it prints the ports it checked, so you can look them up with `lsof -iTCP -sTCP:LISTEN`. Test results go to `<work>/.results`, outside the repository.
+Each dev server belongs to its Playwright worker and takes a free port, which it records in `<work>/.ports`. The global teardown then connects to every recorded port and fails the run if one still answers. On success it prints the ports it checked, and `lsof -iTCP -sTCP:LISTEN` should show none of them. Test results go to `<work>/.results`, outside the repository.
