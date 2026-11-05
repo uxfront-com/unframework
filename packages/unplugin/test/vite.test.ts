@@ -15,7 +15,7 @@ import { isRunnableDevEnvironment, optimizeDeps, resolveConfig } from "vite";
 import type { Plugin } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { ID_SUFFIXES, SCAN_ID_PREFIX, unframeworkUnplugin } from "../src/index.ts";
+import { ID_SUFFIXES, SCAN_ID_PREFIX } from "../src/index.ts";
 import type { CompileEvent } from "../src/index.ts";
 import unframework from "../src/vite.ts";
 import { apiOf, codeOf, createProject, fakeVue, HELLO, startServer } from "./fixtures.ts";
@@ -155,12 +155,6 @@ describe("unframework()", () => {
     ]);
     // By default only `virtual:` passes through.
     expect((await compiles()).diagnostics.map(({ code }) => code)).toContain("UF1002");
-  });
-
-  it("refuses bundlers other than Vite until M6", () => {
-    expect(() => unframeworkUnplugin.rollup({ target: "vue" })).toThrow(
-      "@unframework/unplugin supports Vite only for now; rollup support is planned for M6.",
-    );
   });
 });
 

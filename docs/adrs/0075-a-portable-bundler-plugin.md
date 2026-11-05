@@ -29,16 +29,27 @@ built.
 
 ### Portable hooks
 
-- `resolveId`, `load` and the watch edges move to unplugin's generic hooks, and a new `watchChange`
-  calls `project.update`.
-- Only `configResolved`, the scan branch, environments and `api` stay under `vite:`.
+- `resolveId`, `load`, the watch edges and the guard's `transform` move to unplugin's generic hooks,
+  and a new `watchChange` calls `project.update` through the same hand-over a load does, so a file
+  no compile read, or one that holds what the project holds, changes nothing.
+- Only `configResolved`, the scan branch, environments and `api` stay under `vite:`. unplugin copies
+  `vite:` over the generic hooks, so a `vite:` `resolveId`, `load` and `transform` replace them there:
+  each calls the same function, with Vite's `scan` or its environment's verdicts. A bundler with no
+  environments has one set of verdicts.
+- The generic `resolveId` uses `this.resolve` where the context has one, as Rollup's, Rolldown's and
+  Vite's do. Without it, as on esbuild and webpack, a specifier must be a path to the file. An alias or a
+  package's specifier is left to the bundler.
+- `this.error` throws on Rollup's family, and fails webpack's build through `emitError`. esbuild only
+  records the message, and drops it when `load` returns no code or a `transform` follows, which would
+  build a failed module as the authored file. So `load` throws on esbuild too (P2).
 - The root comes from Vite's config, webpack's or Rspack's `compiler.context`, esbuild's
   `absWorkingDir`, or else `process.cwd()`.
 - The Vite-only throw goes.
 - There's one entry per factory unplugin 3.4 exports, each a one-line file: `./bun`, `./esbuild`,
   `./farm`, `./rolldown`, `./rollup`, `./rsbuild`, `./rspack`, `./unloader`, `./vite` and
-  `./webpack`.
-- A test creates a plugin from every entry. Only Vite runs end to end.
+  `./webpack`. `./vite` keeps its doc comment and its type exports, which the harness imports.
+- A test creates a plugin from every entry, with `Bun` stubbed, since unplugin's Bun factory refuses
+  to run outside Bun. Only Vite runs end to end.
 
 ### Detection and maps
 
