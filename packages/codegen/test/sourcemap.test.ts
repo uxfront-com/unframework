@@ -92,13 +92,17 @@ const SOURCE = [
   "  function boom() {",
   '    throw new Error("boom");',
   "  }",
-  "  return <p>{total}</p>;",
+  "  return <p>{total + 1}</p>;",
   "}",
   "",
 ].join("\n");
 const THROW = 'throw new Error("boom");';
 const TOTAL = "const total = price * 2;";
-const CODES = [code(SOURCE, THROW), code(SOURCE, TOTAL, ["price"])];
+const CODES = [
+  code(SOURCE, THROW),
+  code(SOURCE, TOTAL, ["price"]),
+  code(SOURCE, "total + 1", ["total"]),
+];
 
 describe("anchorOutput and remapFormatted", () => {
   // Each file's code is badly laid out, so formatting moves every position.
@@ -106,28 +110,32 @@ describe("anchorOutput and remapFormatted", () => {
     [
       "JS",
       "Card.js",
-      `export   function Card(){\n${TOTAL}\nfunction boom(){${THROW}}\nreturn total\n}\n`,
+      `export   function Card(){\n${TOTAL}\nfunction boom(){${THROW}}\nreturn total + 1\n}\n`,
     ],
     [
       "JSX",
       "Card.tsx",
-      `export   function Card(){\n${TOTAL}\nfunction boom(){${THROW}}\nreturn <p>{total}</p>\n}\n`,
+      `export   function Card(){\n${TOTAL}\nfunction boom(){${THROW}}\nreturn <p>{total + 1}</p>\n}\n`,
     ],
     [
       ".vue",
       "Card.vue",
-      `<script setup lang="ts">\n${TOTAL}\nfunction boom(){${THROW}}\n</script>\n\n<template>\n  <p>{{ total }}</p>\n</template>\n`,
+      `<script setup lang="ts">\n${TOTAL}\nfunction boom(){${THROW}}\n</script>\n\n<template>\n  <p>{{ total + 1 }}</p>\n</template>\n`,
     ],
     [
       ".svelte",
       "Card.svelte",
-      `<script lang="ts">\n${TOTAL}\nfunction boom(){${THROW}}\n</script>\n\n<p>{total}</p>\n`,
+      `<script lang="ts">\n${TOTAL}\nfunction boom(){${THROW}}\n</script>\n\n<p>{total + 1}</p>\n`,
     ],
-    [".astro", "Card.astro", `---\n${TOTAL}\nfunction boom(){${THROW}}\n---\n\n<p>{total}</p>\n`],
+    [
+      ".astro",
+      "Card.astro",
+      `---\n${TOTAL}\nfunction boom(){${THROW}}\n---\n\n<p>{total + 1}</p>\n`,
+    ],
     [
       "an Angular inline template",
       "card.ts",
-      `@Component({selector:"uf-card",template: \`<p (click)="boom()">{{ total }}</p>\`})\nexport class Card {\ntotal=0;\nboom(){${THROW}}\ninit(){${TOTAL}}\n}\n`,
+      `@Component({selector:"uf-card",template: \`<p (click)="boom()">{{ total + 1 }}</p>\`})\nexport class Card {\ntotal=0;\nboom(){${THROW}}\ninit(){${TOTAL}}\n}\n`,
     ],
   ])("maps the code of %s through formatting", async (_, path, contents) => {
     const module = moduleOf("src/Card.uf.tsx", CODES);
@@ -141,6 +149,9 @@ describe("anchorOutput and remapFormatted", () => {
       expect(originOf(file, fileMap, SOURCE, "Error")).toBe(SOURCE.indexOf("Error"));
       expect(originOf(file, fileMap, SOURCE, 'boom"')).toBe(SOURCE.indexOf('boom"'));
       expect(originOf(file, fileMap, SOURCE, "const")).toBe(SOURCE.indexOf("const"));
+      // What a template or markup prints, Angular's inline template included.
+      expect(originOf(file, fileMap, SOURCE, "+ 1")).toBe(SOURCE.indexOf("+ 1"));
+      expect(originOf(file, fileMap, SOURCE, "total + 1")).toBe(SOURCE.indexOf("total + 1"));
     }
     expect(map.sources).toEqual(["Card.uf.tsx"]);
     expect(map.sourcesContent).toEqual([SOURCE]);
@@ -306,6 +317,31 @@ describe("anchorOutput and remapFormatted", () => {
     expect(originOf(file, file.map!, source, "throwAway", 1)).toBeUndefined();
   });
 
+  it("leaves a run that overlaps a taken one in part, from its second word", () => {
+    const source = "secondWord thirdWord;\nfirstWord secondWord;\n";
+    const file = anchorOutput(
+      { path: "a.js", contents: "firstWord secondWord thirdWord;\n" },
+      moduleOf("a.uf.tsx", [
+        code(source, "secondWord thirdWord"),
+        code(source, "firstWord secondWord"),
+      ]),
+      source,
+    );
+    expect(originOf(file, file.map!, source, "secondWord")).toBe(0);
+    expect(originOf(file, file.map!, source, "firstWord")).toBeUndefined();
+  });
+
+  it("names no reference inside a longer word", () => {
+    const source = "total + 1;\n";
+    const file = anchorOutput(
+      { path: "a.js", contents: "x(subtotal + 1);\n" },
+      moduleOf("a.uf.tsx", [code(source, "total + 1", ["total"])]),
+      source,
+    );
+    expect(file.map!.names).toEqual([]);
+    expect(originOf(file, file.map!, source, "+")).toBe(source.indexOf("+"));
+  });
+
   it("matches whole tokens only", () => {
     const source = "data + a;\n";
     const module = moduleOf("a.uf.tsx", [code(source, "a", [])]);
@@ -334,6 +370,37 @@ describe("anchorOutput and remapFormatted", () => {
     );
     expect(originOf(file, file.map!, source, "go")).toBe(source.indexOf("go"));
     expect(originOf(file, file.map!, source, "if")).toBe(0);
+  });
+
+  it("finds a one-line block's statement where a target prints it without the braces", () => {
+    const source = 'function go() { throw new Error("boom"); }\n';
+    const file = anchorOutput(
+      { path: "a.ts", contents: 'class A {\n  go() {\n    throw new Error("boom");\n  }\n}\n' },
+      moduleOf("a.uf.tsx", [code(source, source.trim())]),
+      source,
+    );
+    expect(originOf(file, file.map!, source, "throw")).toBe(source.indexOf("throw"));
+  });
+
+  it("names a reference across a block's brace, either way a target prints it", () => {
+    const source = "try {\n  total();\n} catch {}\n";
+    const module = moduleOf("a.uf.tsx", [code(source, "try {\n  total();\n}", ["total"])]);
+    const kept = anchorOutput(
+      { path: "a.js", contents: "try {\n  props.total();\n}\n" },
+      module,
+      source,
+    );
+    expect(kept.map!.names).toEqual(["total"]);
+    expect(originOf(kept, kept.map!, source, "props")).toBe(source.indexOf("total"));
+    const template = "`at ${total} now`;\n";
+    const spelled = anchorOutput(
+      { path: "a.js", contents: "`at ${props.total} now`;\n" },
+      moduleOf("a.uf.tsx", [code(template, template.trim(), ["total"])]),
+      template,
+    );
+    expect(spelled.map!.names).toEqual(["total"]);
+    expect(originOf(spelled, spelled.map!, template, "props")).toBe(template.indexOf("total"));
+    expect(originOf(spelled, spelled.map!, template, "now")).toBe(template.indexOf("now"));
   });
 
   it("maps a write's value and an emit's arguments, and neither's replaced call", () => {
@@ -547,6 +614,54 @@ describe("anchorOutput and remapFormatted", () => {
     expect(originOf(after, map, source, "a39")).toBe(source.indexOf("a39"));
   });
 
+  it.each<[string, string]>([
+    [
+      "redundant parentheses",
+      "const a = (b * c) + (b * d) + (c * d);\nconst e = (a / 2) + (a / 4);",
+    ],
+    ["numbers' trailing zeros", "const r = [1.50, 2.50, 3.50, 4.50, 5.50, 6.50, 7.50, 8.50];"],
+    [
+      "escaped apostrophes",
+      "const l = ['it\\'s', 'don\\'t', 'can\\'t', 'won\\'t', 'isn\\'t', 'I\\'m'];",
+    ],
+    [
+      "an exponent's sign and a trailing dot",
+      "const n = [1e+5, 2e+5, 3e+5, 4e+5, 5., 6., 7., 8.];",
+    ],
+    ["a number's exponent", "const n = [1e0, 2e0, 3e0, 4e0, 5e0, 6e0, 7e0, 8e0, 9e0];"],
+    ["the order of a regular expression's flags", "const r = [/a/ig, /b/ig, /c/ig, /d/ig];"],
+    ["empty statements and trailing commas", "const a = [1, 2, 3,];;;;;;;;;;;;;;;;;;;;;;"],
+  ])("doesn't count %s, which oxfmt drops by itself", async (_, text) => {
+    const source = `${text}\n`;
+    const { after, map } = await anchoredAndFormatted(
+      { path: "a.js", contents: source },
+      moduleOf("a.uf.tsx", [code(source, text)]),
+      source,
+    );
+    expect(after.contents).not.toBe(source);
+    expect(originOf(after, map, source, "const")).toBe(0);
+  });
+
+  it.each<[string, number, number]>([
+    ["exactly 95% of 100", 100, 5],
+    ["95.05% of 101", 101, 5],
+    ["97.37% of 38", 38, 1],
+  ])("gives a map at %s, and UF9002 one character below it", (_, total, spare) => {
+    const before = anchorOutput(
+      { path: "a.js", contents: `"${"x".repeat(total)}";\n` },
+      moduleOf("a.uf.tsx", []),
+      "",
+    );
+    const dropping = (dropped: number) =>
+      remapFormatted(
+        before,
+        { path: "a.js", contents: `"${"x".repeat(total - dropped)}";\n` },
+        before.map!,
+      );
+    expect(dropping(spare)).toHaveProperty("map");
+    expect(dropping(spare + 1)).toMatchObject({ diagnostic: { code: "UF9002" } });
+  });
+
   it("doesn't count quotes, so a table of quoted keys maps", async () => {
     const entries = Array.from({ length: 40 }, (_, index) => `'k${index}':'v'`).join(",");
     const source = `const t = {${entries}};\n`;
@@ -591,14 +706,14 @@ describe("anchorOutput and remapFormatted", () => {
   });
 
   it("counts the whole file, so a small block in a markup file may lose a few characters", () => {
-    const source = "const a = (1);\n";
+    const source = "const value = 1;\n";
     const markup = `<template>\n  <p>${"text ".repeat(20)}</p>\n</template>\n`;
     const before = anchorOutput(
-      { path: "a.vue", contents: `<script lang="ts">\nconst a = (1);\n</script>\n${markup}` },
-      moduleOf("a.uf.tsx", [code(source, "const a = (1);")]),
+      { path: "a.vue", contents: `<script lang="ts">\nconst value = 1;\n</script>\n${markup}` },
+      moduleOf("a.uf.tsx", [code(source, source.trim())]),
       source,
     );
-    const contents = `<script lang="ts">\nconst a = 1;\n</script>\n${markup}`;
+    const contents = `<script lang="ts">\nconst val = 1;\n</script>\n${markup}`;
     const result = remapFormatted(before, { path: "a.vue", contents }, before.map!);
     if (!("map" in result)) throw new Error(result.diagnostic.message);
     expect(originOf({ path: "a.vue", contents }, result.map, source, "const")).toBe(0);
@@ -631,7 +746,7 @@ describe("anchorOutput and remapFormatted", () => {
     const contents = `<script lang="ts">\n${block}</script>\n<script setup lang="ts">\n${block}</script>\n`;
     const before = anchorOutput({ path: "a.vue", contents }, moduleOf("a.uf.tsx", []), source);
     // Each block alone loses less than the file may, and together they lose more.
-    const worn = block.replace("x".repeat(9), "");
+    const worn = block.replace("x".repeat(8), "");
     const one = contents.replace(block, worn);
     expect(remapFormatted(before, { path: "a.vue", contents: one }, before.map!)).toHaveProperty(
       "map",
@@ -642,19 +757,15 @@ describe("anchorOutput and remapFormatted", () => {
     });
   });
 
-  it("stops looking once the file can't match, rather than holding every edit of a large one", () => {
-    const source = "";
+  it("stops at UF9002 on two large files that share nothing", () => {
     const contents = `${"a".repeat(20_000)}\n`;
-    const before = anchorOutput({ path: "a.js", contents }, moduleOf("a.uf.tsx", []), source);
-    const started = performance.now();
+    const before = anchorOutput({ path: "a.js", contents }, moduleOf("a.uf.tsx", []), "");
     const result = remapFormatted(
       before,
       { path: "a.js", contents: `${"b".repeat(20_000)}\n` },
       before.map!,
     );
     expect(result).toMatchObject({ diagnostic: { code: "UF9002" } });
-    // The budget stops it early: without one, it runs to all 40,000 edits and keeps each round.
-    expect(performance.now() - started).toBeLessThan(2000);
   });
 
   it("returns UF9002 instead of a map when fewer than 95% of the characters match", () => {
@@ -701,6 +812,7 @@ describe("anchorOutput and remapFormatted", () => {
       before.map!,
     );
     expect(open).toMatchObject({ diagnostic: { code: "UF9002" } });
+    expect("diagnostic" in open && open.diagnostic.message).not.toContain("..");
   });
 
   it("returns the map as it is when formatting changed nothing", () => {

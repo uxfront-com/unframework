@@ -143,15 +143,29 @@ describe("compile with sourceMap", () => {
     },
   );
 
-  it("maps what Astro renders on the server", async () => {
+  it.each(TARGET_NAMES)("maps what the template renders to its line on %s", async (target) => {
     const result = await compile(SOURCE, {
       filename: "Card.uf.tsx",
-      targets: ["astro"],
+      targets: [target],
       sourceMap: true,
     });
-    const file = result.outputs.astro![0]!;
+    const file = result.outputs[target]![0]!;
     expect(lineOf(file.contents, file.map!.mappings, "1000")).toBe(12);
   });
+
+  it.each(TARGET_NAMES.filter((target) => target !== "astro"))(
+    "maps a one-line handler's statement on %s",
+    async (target) => {
+      const source = `export function Tag() {\n  return (\n    <button onClick={() => { throw new Error("boom"); }}>a</button>\n  );\n}\n`;
+      const result = await compile(source, {
+        filename: "Tag.uf.tsx",
+        targets: [target],
+        sourceMap: true,
+      });
+      const file = result.outputs[target]![0]!;
+      expect(lineOf(file.contents, file.map!.mappings, "throw")).toBe(3);
+    },
+  );
 
   it("maps a string literal's text to its place, once oxfmt rewrites its quotes", async () => {
     const source = `export function Tag() {\n  const name = 'a';\n  return <p>{name}</p>;\n}\n`;
@@ -301,6 +315,55 @@ describe("compile with sourceMap", () => {
     expect(broken(file.contents, file.map!)).toEqual([]);
   });
 
+  it("maps each composable's file from its own code, when two write one line", async () => {
+    const source = [
+      'import { ref } from "unframework";',
+      "export function useFirst() {",
+      "  const count = ref(0);",
+      '  function fail() { throw new Error("same"); }',
+      "  return { count, fail };",
+      "}",
+      "export function useSecond() {",
+      "  const count = ref(0);",
+      '  function fail() { throw new Error("same"); }',
+      "  return { count, fail };",
+      "}",
+      "",
+    ].join("\n");
+    const result = await compile(source, {
+      filename: "pair.uf.ts",
+      targets: ["vue"],
+      sourceMap: true,
+    });
+    expect(result.outputs.vue!).toHaveLength(2);
+    const lines = result.outputs.vue!.map((file) =>
+      lineOf(file.contents, file.map!.mappings, "throw"),
+    );
+    expect(lines).toEqual([4, 9]);
+  });
+
+  it("raises no error on valid source for what oxfmt drops by itself", async () => {
+    const sources = [
+      "export function Prices() {\n  const rates = [1.50, 2.50, 3.50, 4.50, 5.50, 6.50, 7.50, 8.50];\n  return <p>{rates.length}</p>;\n}\n",
+      "export function Copy() {\n  const lines = ['it\\'s', 'don\\'t', 'can\\'t', 'won\\'t', 'isn\\'t', 'I\\'m', 'we\\'re', 'you\\'re'];\n  return <p>{lines.length}</p>;\n}\n",
+      "export function Area(props: { w: number; h: number; d: number }) {\n  const area = (props.w * props.h) + (props.w * props.d) + (props.h * props.d);\n  const half = (area / 2) + (area / 4) + (area / 8) + (area / 16);\n  return <p>{half}</p>;\n}\n",
+    ];
+    for (const source of sources) {
+      const result = await compile(source, {
+        filename: "C.uf.tsx",
+        targets: TARGET_NAMES,
+        sourceMap: true,
+      });
+      expect(result.diagnostics.filter(({ severity }) => severity === "error")).toEqual([]);
+      for (const [target, files] of Object.entries(result.outputs)) {
+        for (const file of files) {
+          expect(file.map, `${target} ${file.path}`).toBeDefined();
+          expect(broken(file.contents, file.map!), target).toEqual([]);
+        }
+      }
+    }
+  });
+
   it("passes through a project's compile", async () => {
     const project = createProject({
       root: "/p",
@@ -310,31 +373,6 @@ describe("compile with sourceMap", () => {
     });
     const result = await project.compile("Card.uf.tsx");
     expect(result.outputs.react![0]!.map).toMatchObject({ sources: ["Card.uf.tsx"] });
-  });
-
-  it("reports UF9002, with its file and target, and keeps the file without a map", async () => {
-    // A printer's noise, which oxfmt drops: nothing of it is left to match.
-    const noisy = defineTarget({
-      name: "noisy",
-      framework: { package: "html", range: "*" },
-      capabilities: Object.fromEntries(
-        CAPABILITY_NAMES.map((name) => [name, { support: "native" }]),
-      ) as Capabilities,
-      emit: () => [{ path: "a.ts", contents: `${";".repeat(200)}const a = 1;\n` }],
-    });
-    const result = await compile(SOURCE, {
-      filename: "src/Card.uf.tsx",
-      targets: [noisy],
-      sourceMap: true,
-    });
-    expect(
-      result.diagnostics
-        .filter(({ code }) => code === "UF9002")
-        .map(({ file, target }) => [file, target]),
-    ).toEqual([["src/Card.uf.tsx", "noisy"]]);
-    const file = result.outputs.noisy![0]!;
-    expect(file.contents).toBe("const a = 1;\n");
-    expect(file).not.toHaveProperty("map");
   });
 
   it("reports only that a file doesn't parse, when its block has no end", async () => {

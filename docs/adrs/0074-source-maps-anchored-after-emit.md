@@ -33,10 +33,12 @@ This record is proposed before M6 builds it, and it's amended in place as it's b
 - It splits each IR `Code` at its `refs` into literal runs, and matches them in the output, longest
   first, in source order, never overlapping.
 - A run is one source line, trimmed, because a printer may re-indent code: Svelte's target indents
-  its block, and the markup printer moves an attribute's continuation lines.
+  its block, and the markup printer moves an attribute's continuation lines. It also stops at a
+  brace, because a target may print a block's statements without them, as Angular's methods do. A
+  brace between a run and a reference doesn't stop them being neighbours.
 - A match takes whole tokens, so `a` is no match inside `data`, and the runs of one `Code` keep their
   order. Punctuation alone (`);`) would match anywhere, so that run stays unmapped.
-- A run beside a reference matches only next to a spelling that holds the reference's name, so
+- A run beside a reference, other than a write or an emit, matches only next to a spelling that holds the reference's name, so
   `.map(` after `shelves` is no match in `books.map(`. A target that drops the name leaves it unmapped.
 - A run nothing checks that has fewer than eight word characters, like a type's `void`, needs the
   output to hold as many places as the source holds runs of it. Otherwise it stays unmapped.
@@ -61,11 +63,15 @@ non-whitespace characters and moves each segment:
   output and the source. oxfmt rewrites `'a'` to `"a"`: the quotes lose their segments, and `a` keeps
   its own. A number whose form changes (`1E3` to `1e3`) goes unmapped.
 - When fewer than 95% of the file's characters match, it returns UF9002 `sourcemap-not-remapped` and no
-  map. A remap that fails is a compiler bug, and a wrong map would be worse than none (P2). What
-  formatting adds doesn't count, or code without semicolons would fail. Quotes don't count either,
-  since oxfmt drops them around an object's keys, and the diff reads `'` as `"` and letters in one
-  case, since oxfmt rewrites quotes and a number's form in place. The count is the whole file's: a small block beside
-  a large template may lose a few characters, and each token's own check still holds there.
+  map. A remap that fails is a compiler bug, and a wrong map would be worse than none (P2).
+- Only words count, because oxfmt leaves them alone. It removes punctuation (a redundant parenthesis,
+  the quotes around a key, an escape's backslash, a trailing comma, an empty statement), rewrites a
+  number's form (`1.50`, `1e0`) and sorts a regular expression's flags, so an ordinary small component
+  can lose more than 5% of its text. What it adds, like semicolons, was never in the file to count.
+- The diff reads `'` as `"` and letters in one case, so a rewrite in place still lines up, and the
+  token check above then drops the segment.
+- The count is the whole file's: a small block beside a large template may lose a few characters, and
+  each token's own check still holds there.
 
 **The contract:**
 
@@ -77,6 +83,8 @@ non-whitespace characters and moves each segment:
   (`identityMapped`).
 - A scoped sheet (ADR-0063) gets a map with no segments, because its text comes from a stylesheet, not
   this source.
+- A segment with a name marks a reference, whose text a target may respell. Only a segment without
+  a name maps text that reads the same in both files, so only those can L14 compare.
 - Maps never enter the golden files.
 - Maps are byte-identical across two compiles (P8).
 - A unit test fails if oxfmt's `format()` starts returning a map, so this record gets reopened when
@@ -101,7 +109,11 @@ chain on it. No printer or target changes.
 - Matching runs by text is a search. Two identical runs resolve by source order, so a target that
   reorders statements could cross them. The per-run check catches a wrong text, not a right text
   from the wrong place.
-- A run maps once, so a target that prints a `Code` twice maps the first place it finds.
+- A target that drops a `Code` leaves a short run free to take a later identical text beside the
+  same reference: where Solid drops `key={member.id}`, its `.id` maps the `member.id` printed after it.
+  Two equal values can cross the same way, as the `null`s of two states do on Vue.
+- A run maps once, so a target that prints a `Code` twice maps the first place it finds. A short run
+  nothing checks stays unmapped there, since the output holds more places than the source holds runs.
 - The diff adds work to every compile with maps on.
 
 **Open:**

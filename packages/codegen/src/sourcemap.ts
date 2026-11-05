@@ -26,6 +26,13 @@ const WORD_CHARACTER = /[\p{ID_Continue}$]/u;
 /** What makes a run worth finding: punctuation alone, like `);`, matches anywhere. */
 const HAS_WORD = /[\p{L}\p{N}_$]/u;
 const WORD_CHARACTERS = /[\p{L}\p{N}_$]/gu;
+/**
+ * What the threshold counts: words, the group here, which oxfmt leaves as they are. It passes over a
+ * number, whose form oxfmt rewrites (`1e0` to `1`), and a regular expression's flags, which it sorts.
+ */
+const COUNTED = /\d[\p{ID_Continue}.]*|\/[a-z]+\b|([\p{ID_Start}$_][\p{ID_Continue}$]*)/gu;
+/** What may sit between a run and the reference beside it: braces are no part of a run. */
+const BETWEEN = /^[\s{}]*$/;
 const IDENTIFIERS = new RegExp(IDENTIFIER.source, "gu");
 /** What a target's spelling of a reference is made of, which binds as tightly as a member. */
 const SPELLING = /[\p{ID_Continue}$.()!?]/u;
@@ -95,8 +102,9 @@ export function identityMapped(file: OutputFile): OutputFile {
  * keeps its bytes. A segment survives where its token is unchanged, so the text it maps stays
  * identical to its source (L14): a string's rewritten quotes and a number's rewritten form lose
  * theirs. When fewer than 95% of the file's characters match, it returns UF9002 instead of a map.
- * Quotes don't count: oxfmt drops them around an object's keys, so a table of quoted keys is no
- * sign of a failed diff. What formatting adds doesn't count either, or code without semicolons fails.
+ * Only words count, since oxfmt leaves them alone: it removes punctuation (a redundant parenthesis,
+ * a quote around a key, an escape's backslash) and rewrites a number's form, and an ordinary small
+ * component can lose more than 5% of its text that way.
  */
 export function remapFormatted(
   before: OutputFile,
@@ -141,9 +149,10 @@ export function remapFormatted(
 /** The offset each character of `before` moved to, or -1, or why the diff failed. */
 function moveOffsets(path: string, before: string, after: string): Int32Array | string {
   const moved = new Int32Array(before.length).fill(-1);
-  const total = countedCharacters(before);
-  const count: MatchCount = { total, spare: total - Math.ceil(total * MATCH_THRESHOLD) };
-  const tooFew = `fewer than 95% of its ${total} characters match`;
+  const total = countedText(before).length;
+  // At least 95% match where at most one in twenty goes, in whole numbers, so no rounding decides.
+  const count: MatchCount = { spare: Math.floor(total / 20) };
+  const tooFew = `fewer than 95% of the ${total} word characters it counts match`;
   if (isFormatted(path)) {
     const whole = diffInto(moved, before, 0, before.length, after, 0, after.length, count);
     return whole ? moved : tooFew;
@@ -154,7 +163,7 @@ function moveOffsets(path: string, before: string, after: string): Int32Array | 
     beforeBlocks = codeBlocks(path, before);
     afterBlocks = codeBlocks(path, after);
   } catch (error) {
-    return error instanceof Error ? error.message : String(error);
+    return (error instanceof Error ? error.message : String(error)).replace(/\.$/, "");
   }
   if (beforeBlocks.length !== afterBlocks.length) {
     return `its ${beforeBlocks.length} code blocks became ${afterBlocks.length}`;
@@ -180,22 +189,15 @@ function moveOffsets(path: string, before: string, after: string): Int32Array | 
   return moved;
 }
 
-const MATCH_THRESHOLD = 0.95;
-
-/** The file's counted characters, and how many of them formatting may still drop. */
+/** How many of the file's counted characters formatting may still drop. */
 interface MatchCount {
-  total: number;
   spare: number;
 }
 
-/** The characters the threshold counts: neither whitespace nor quotes. */
-function countedCharacters(text: string): number {
-  let total = 0;
-  for (let offset = 0; offset < text.length; offset++) {
-    const code = text.charCodeAt(offset);
-    if (!isSpace(code) && code !== DOUBLE_QUOTE && code !== SINGLE_QUOTE) total++;
-  }
-  return total;
+function countedText(text: string): string {
+  let words = "";
+  for (const [, word] of text.matchAll(COUNTED)) if (word) words += word;
+  return words;
 }
 
 /** Moves markup that formatting keeps byte for byte, but for the whitespace ending the file. */
@@ -232,22 +234,27 @@ function diffInto(
 ): boolean {
   const a = significant(before, beforeStart, beforeEnd);
   const b = significant(after, afterStart, afterEnd);
-  const quotes = a.codes.filter((code) => code === DOUBLE_QUOTE).length;
-  // An edit drops a character of `a` or adds one of `b`, and only the drops count. A diff that
-  // drops `x` makes `2x + (b - a)` edits, which caps how far the search needs to go.
-  const budget = 2 * (count.spare + quotes) + (b.codes.length - a.codes.length);
-  const pairs = myers(a.codes, b.codes, budget);
-  if (!pairs) return false;
+  // The counted characters first, on their own: a file that can't reach the threshold stops here,
+  // and the edits a diff of `x` drops makes, `2x + (b - a)`, cap the search at exactly what's left.
+  const wordsA = codesOf(countedText(before.slice(beforeStart, beforeEnd)));
+  const wordsB = codesOf(countedText(after.slice(afterStart, afterEnd)));
+  const words = myers(wordsA, wordsB, 2 * count.spare + (wordsB.length - wordsA.length));
+  if (!words) return false;
+  for (const match of words) if (match < 0) count.spare--;
+  const pairs = myers(a.codes, b.codes, a.codes.length + b.codes.length)!;
   for (let index = 0; index < pairs.length; index++) {
     const match = pairs[index]!;
     if (match >= 0) moved[a.offsets[index]!] = b.offsets[match]!;
-    else if (a.codes[index] !== DOUBLE_QUOTE) count.spare--;
   }
-  return count.spare >= 0;
+  return true;
 }
 
 const DOUBLE_QUOTE = 0x22;
 const SINGLE_QUOTE = 0x27;
+
+function codesOf(text: string): Uint16Array {
+  return Uint16Array.from({ length: text.length }, (_, index) => text.charCodeAt(index));
+}
 
 /**
  * A range's non-whitespace characters and each one's offset. It reads what oxfmt rewrites in place
@@ -269,6 +276,10 @@ function significant(
     offsets[length++] = offset;
   }
   return { codes: codes.subarray(0, length), offsets: offsets.subarray(0, length) };
+}
+
+function isBetween(code: number): boolean {
+  return isSpace(code) || code === 0x7b || code === 0x7d;
 }
 
 function isUpperCase(code: number): boolean {
@@ -445,17 +456,17 @@ function referenceStart(
     if (run.at === undefined) continue;
     const end = run.start + run.text.length;
     if (end > ref.span.start) break;
-    if (source.slice(end, ref.span.start).trim()) continue;
+    if (!BETWEEN.test(source.slice(end, ref.span.start))) continue;
     let at = run.at + run.text.length;
-    while (at < output.length && isSpace(output.charCodeAt(at))) at++;
+    while (at < output.length && isBetween(output.charCodeAt(at))) at++;
     return mentions(spellingAfter(output, at), ref, source) ? at : undefined;
   }
   const written = source.slice(ref.span.start, ref.span.end);
   for (const run of runs) {
     if (run.at === undefined || run.start < ref.span.end) continue;
-    if (source.slice(ref.span.end, run.start).trim()) return undefined;
+    if (!BETWEEN.test(source.slice(ref.span.end, run.start))) return undefined;
     let end = run.at;
-    while (end > 0 && isSpace(output.charCodeAt(end - 1))) end--;
+    while (end > 0 && isBetween(output.charCodeAt(end - 1))) end--;
     const at = end - written.length;
     return at >= 0 && output.startsWith(written, at) && isWhole(output, at, end) ? at : undefined;
   }
@@ -485,10 +496,10 @@ function collectOwners(module: UfModule, source: string): Owner[] {
         const beside = owner.refs.filter((ref) => ref.kind !== "Write" && ref.kind !== "Emit");
         const before = beside.find(
           ({ span: { end: refEnd } }) =>
-            refEnd <= run.start && !source.slice(refEnd, run.start).trim(),
+            refEnd <= run.start && BETWEEN.test(source.slice(refEnd, run.start)),
         );
         const after = beside.find(
-          ({ span: { start } }) => start >= end && !source.slice(end, start).trim(),
+          ({ span: { start } }) => start >= end && BETWEEN.test(source.slice(end, start)),
         );
         owner.runs.push({
           ...run,
@@ -507,7 +518,8 @@ function collectOwners(module: UfModule, source: string): Owner[] {
 }
 
 /**
- * The text of a `Code` no reference covers, one piece per source line. A write's target and
+ * The text of a `Code` no reference covers, one piece per source line and between braces, since a
+ * target may print a block's statements without them (Angular's method bodies). A write's target and
  * operator, and an emit's call, go when a target replaces them whole; what they hold of the author's
  * text is a value's or an argument's, which stays literal.
  */
@@ -534,7 +546,7 @@ function literalRuns(
   const runs: { start: number; text: string }[] = [];
   const add = (start: number, end: number) => {
     let at = start;
-    for (const line of source.slice(start, end).split("\n")) {
+    for (const line of source.slice(start, end).split(/[\n{}]/)) {
       const text = line.trim();
       if (HAS_WORD.test(text)) {
         runs.push({ start: at + line.length - line.trimStart().length, text });
@@ -590,7 +602,7 @@ function countFree(output: string, text: string, taken: Uint8Array): number {
 /** The spelling that ends at `end`, past any whitespace. */
 function spellingBefore(output: string, end: number): string {
   let last = end;
-  while (last > 0 && isSpace(output.charCodeAt(last - 1))) last--;
+  while (last > 0 && isBetween(output.charCodeAt(last - 1))) last--;
   let first = last;
   while (first > 0 && SPELLING.test(output[first - 1]!)) first--;
   return output.slice(first, last);
@@ -599,7 +611,7 @@ function spellingBefore(output: string, end: number): string {
 /** The spelling that starts at `start`, past any whitespace. */
 function spellingAfter(output: string, start: number): string {
   let first = start;
-  while (first < output.length && isSpace(output.charCodeAt(first))) first++;
+  while (first < output.length && isBetween(output.charCodeAt(first))) first++;
   let last = first;
   while (last < output.length && SPELLING.test(output[last]!)) last++;
   return output.slice(first, last);

@@ -66,12 +66,13 @@ anchors each file after the `output` hooks, from its own component's code, and c
 through formatting. The hooks never see a map, and a `map` a hook or a target returns is dropped.
 
 A copy of a shared `.ts` module gets an identity map, whose source is the copy itself. A scoped
-sheet's map has no segments, since its text isn't this source's. What the targets copy from the
-source is mapped token by token, and each token reads the same in both files. A target's own code
-has no IR `Code` behind it, so a frame there resolves to the nearest segment on its line, if there
-is one.
+sheet's map has no segments, since its text isn't this source's. Most of what the targets copy from
+the source is mapped token by token, and each mapped token reads the same in both files. A run of
+punctuation alone, a short run the output holds in several places and a target's own code stay
+unmapped, so a frame there resolves to the nearest segment on its line, if there is one.
 
-A map that can't follow formatting is UF9002, and the file comes without one. A file that doesn't
+A map that can't follow formatting is UF9002, which only a broken formatter reaches, and the file
+comes without one. A file that doesn't
 parse stays as printed, with the map of what was printed, and `format: false` keeps the anchored
 map as it is. Maps don't change the files' text, and they never enter the golden files.
 
