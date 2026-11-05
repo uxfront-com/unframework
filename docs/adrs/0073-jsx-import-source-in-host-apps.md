@@ -58,8 +58,8 @@ proposed before M6 builds it, and it's amended in place as it's built.
 - A component's source stays free of tooling noise, and one setting serves every file. That keeps
   one canonical form (P3).
 - A new `.uf.tsx` file is covered with no edit, because the `.uf` infix selects it (ADR-0005).
-- The check reports a consumer's misuse of a child at its `.uf.tsx` line, as stock tsgo does in the
-  corpus (ADR-0023).
+- The check reports a consumer's misuse of a child at its `.uf.tsx` line, as stock tsgo does in
+  ADR-0023's probes.
 
 **Negative:**
 

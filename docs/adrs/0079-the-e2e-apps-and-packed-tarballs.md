@@ -62,11 +62,12 @@ built.
   API (§8.2) and Analog plugin mode is deferred (ADR-0075). Its HMR test edits the app's own component.
 - The fixture starts Astro's in-process `dev()`, and a spawned `ng serve` in its own process group,
   killed in teardown.
-- **The exception to `AGENTS.md`'s TypeScript 6 rule.** The Angular app declares `@angular/cli` 22.2.0,
-  which M6 adds to the catalog beside `@angular/build` 22.2.0, `@angular/compiler-cli` at its exact
-  catalog version, and TypeScript 6 as `npm:@typescript/typescript6@6.0.2`, the specifier the
-  toolchains use (ADR-0022). An Angular CLI app needs its compiler stack. The app sits outside the workspace, and it's installed only into its
-  working copy, so TypeScript 6 still reaches no workspace package.
+- The Angular app is the one exception to `AGENTS.md`'s TypeScript 6 rule. It declares
+  `@angular/cli` 22.2.0, which M6 adds to the catalog beside `@angular/build` 22.2.0,
+  `@angular/compiler-cli` at its exact catalog version, and TypeScript 6 as
+  `npm:@typescript/typescript6@6.0.2`, the specifier the toolchains use (ADR-0022). An Angular CLI
+  app needs its compiler stack. The app sits outside the workspace, and it's installed only into
+  its working copy, so TypeScript 6 still reaches no workspace package.
 
 ## Consequences
 
