@@ -60,6 +60,22 @@ relative to its root, and packages as `pkg:<name>`, a package that is not instal
 sorted (ADR-0071). It also lists each shared `.ts` module the resolver read, and each `.uf.ts`
 module whose composables the source imports, one that is missing included, named as `filename` is.
 
+**Source maps** (ADR-0074). With `sourceMap: true`, each output file has a `map`: version 3, whose
+`sources` name the source relative to the file and whose `sourcesContent` holds it. `compile()`
+anchors each file after the `output` hooks, from its own component's code, and carries the map
+through formatting. The hooks never see a map, and a `map` a hook or a target returns is dropped.
+
+A copy of a shared `.ts` module gets an identity map, whose source is the copy itself. A scoped
+sheet's map has no segments, since its text isn't this source's. Most of what the targets copy from
+the source is mapped token by token, and each mapped token reads the same in both files. A run of
+punctuation alone, a short run the output holds in several places and a target's own code stay
+unmapped, so a frame there resolves to the nearest segment on its line, if there is one.
+
+A map that can't follow formatting is UF9002, and the file comes without one: the formatter broke,
+or a target or a plugin printed what oxfmt rewrites, like `title="don&apos;t"`. A file that doesn't
+parse stays as printed, with the map of what was printed, and `format: false` keeps the anchored
+map as it is. Maps don't change the files' text, and they never enter the golden files.
+
 **The project graph** (ADR-0071). `createProject({ root, readFile, targets, typeOracle })` takes
 the files `createFileResolver` does and the options each compile takes, but `filename` and
 `resolve`. Its `compile(file)` compiles a module, named relative to `root`, through its own

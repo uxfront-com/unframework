@@ -6,8 +6,15 @@ import {
   stylesheetImports,
 } from "@unframework/analyzer";
 import type { SharedModule, StylesheetSource } from "@unframework/analyzer";
-import { formatOutput, kebabCase, scopeStylesheet } from "@unframework/codegen";
-import type { OutputFile, Target } from "@unframework/codegen";
+import {
+  anchorOutput,
+  formatOutput,
+  identityMapped,
+  kebabCase,
+  remapFormatted,
+  scopeStylesheet,
+} from "@unframework/codegen";
+import type { FormatOutcome, OutputFile, Target } from "@unframework/codegen";
 import { createDiagnostic, sortDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import { checkInvariants, validateModule } from "@unframework/ir";
@@ -66,6 +73,12 @@ export interface CompileOptions {
   targets: readonly (TargetName | Target)[];
   /** Formats the output with oxfmt. Defaults to `true`; the dev server may skip it. */
   format?: boolean;
+  /**
+   * Gives each output file a `map` back to the source (ADR-0074): anchored after the `output`
+   * hooks, then carried through formatting. Defaults to `false`. A map that can't follow formatting
+   * is UF9002, and the file comes without one.
+   */
+  sourceMap?: boolean;
   plugins?: readonly CompilerPlugin[];
   /** Each target's options, by target name. */
   targetOptions?: Readonly<Record<string, unknown>>;
@@ -525,14 +538,20 @@ async function emitTarget(
       }
     }
 
+    // Only this component's code: another's identical text must not claim its place.
+    if (options.sourceMap) {
+      const own = { ...module, components: [component], composables: [] };
+      files = files.map((output) => anchorOutput(output, own, source));
+    }
     if (options.format !== false) {
-      const formatted = await Promise.all(files.map((output) => formatOutput(output)));
-      files = formatted.map((outcome) => {
+      const unformatted = files;
+      const formatted = await Promise.all(unformatted.map((output) => formatOutput(output)));
+      files = formatted.map((outcome, index) => {
         if (outcome.error) {
           const what = `The ${target.name} target emitted ${outcome.file.path}, which does not parse`;
           diagnostics.push(internal(file, outcome.error, what, target.name));
         }
-        return outcome.file;
+        return remapped(unformatted[index]!, outcome, file, target.name, diagnostics);
       });
     }
 
@@ -584,14 +603,19 @@ async function emitTarget(
       diagnostics.push(internal(file, error, what, target.name));
       continue;
     }
+    if (options.sourceMap) {
+      const own = { ...module, components: [], composables: [composable] };
+      files = files.map((output) => anchorOutput(output, own, source));
+    }
     if (options.format !== false) {
-      const formatted = await Promise.all(files.map((output) => formatOutput(output)));
-      files = formatted.map((outcome) => {
+      const unformatted = files;
+      const formatted = await Promise.all(unformatted.map((output) => formatOutput(output)));
+      files = formatted.map((outcome, index) => {
         if (outcome.error) {
           const what = `The ${target.name} target emitted ${outcome.file.path}, which does not parse`;
           diagnostics.push(internal(file, outcome.error, what, target.name));
         }
-        return outcome.file;
+        return remapped(unformatted[index]!, outcome, file, target.name, diagnostics);
       });
     }
     for (const output of files) {
@@ -626,7 +650,7 @@ async function emitTarget(
       );
       continue;
     }
-    written.push({ path, contents });
+    written.push(options.sourceMap ? identityMapped({ path, contents }) : { path, contents });
   }
   return {
     files: written,
@@ -636,6 +660,26 @@ async function emitTarget(
         .map(({ path, component }) => [path, component]),
     ),
   };
+}
+
+/**
+ * A formatted file with its map carried across. Code that didn't parse stays as printed, and so
+ * does its map. A map that can't follow formatting is UF9002, and the file goes without one.
+ */
+function remapped(
+  before: OutputFile,
+  { file: after, error }: FormatOutcome,
+  file: string,
+  target: string,
+  diagnostics: Diagnostic[],
+): OutputFile {
+  if (!before.map || error) return after;
+  const { map: _stale, ...formatted } = after;
+  const result = remapFormatted(before, after, before.map);
+  if ("map" in result) return { ...formatted, map: result.map };
+  const { code, ...init } = result.diagnostic;
+  diagnostics.push(createDiagnostic(code, { ...init, file, target }));
+  return formatted;
 }
 
 /**
