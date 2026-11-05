@@ -19,8 +19,35 @@ import Hello from "./Hello.uf.tsx"; // a Vue component
 ```
 
 `unframework(options)` returns two plugins, `[pre, post]`. Put them before the framework's
-plugins. Only Vite is supported until M6; `unframeworkUnplugin` (the `.` entry) refuses any other
-bundler when the plugin is created.
+plugins.
+
+## Bundlers
+
+There's one entry per bundler unplugin offers, each with the same options: `./bun`, `./esbuild`,
+`./farm`, `./rolldown`, `./rollup`, `./rsbuild`, `./rspack`, `./unloader`, `./vite` and `./webpack`.
+`unframeworkUnplugin`, from the `.` entry, holds them all. We test only Vite end to end, and trust
+the rest to work through unplugin's generic hooks (ADR-0075), so a test only creates a plugin from
+each entry. Keep in mind that a module id still needs a plugin of that bundler's to claim it, like
+a Vue plugin for `.vue`, and that we recommend Vite until the other bundlers have been tried.
+
+`resolveId`, `load`, the watch edges and the guard are generic hooks, and `watchChange` hands an
+edit to the project's `update` as soon as the bundler reports it. unplugin maps no such hook onto
+esbuild or Bun, so there the next load's comparison finds the edit. Only what Vite alone has sits
+under `vite:`:
+
+- **Its config**, for the root (`configResolved`).
+- **Its dependency scan**, which sets `scan`, so `vite:` has a `resolveId` that replaces the generic one and calls the same function.
+- **Its environments**, which keep the guard's verdicts apart, so `vite:` has a `load` and a `transform` of its own in the same way. Any other bundler has one set of verdicts.
+- **The `api`**, which reads the compiled sources.
+
+The project's root is Vite's `root`, webpack's or Rspack's `compiler.context`, esbuild's
+`absWorkingDir`, or else `process.cwd()`, which Rsbuild, Rolldown, Rollup and the others get.
+
+A bundler whose hook context has `this.resolve`, like Rollup, Rolldown and Vite, resolves a specifier
+itself, so aliases work. Without it, as on esbuild and webpack, a specifier must be a path: `./Hello.uf`,
+`./Hello.uf.js` and `./Hello.uf.jsx` find `Hello.uf.tsx` or `Hello.uf.ts` beside the importer. A
+package's specifier and an alias are left to the bundler, and a `.uf.tsx` file they resolve to
+fails in `load` on a target whose ids have a suffix.
 
 Any styling engine works through the virtual modules its own Vite plugin registers (plan §4.4,
 ADR-0064). An import whose specifier starts with a `passThrough` prefix (`virtual:` by default)
@@ -95,7 +122,7 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
 - `moduleId`, `parseModuleId`, `componentId`, `parseComponentId` and `idSuffix` build and take
   these ids apart.
 - **The project** (ADR-0071). Every file compiles through one project graph (`createProject`, from
-  `@unframework/compiler`) rooted at Vite's root, shared by every module the plugin loads. Before
+  `@unframework/compiler`) at the project's root, shared by every module the plugin loads. Before
   a load, the plugin compares each file the module reaches through the project's edges, and
   each file of a package it read types from, with what the project holds of it, and hands the
   changed ones to the project's `update` under every name it knows them by: relative to the
@@ -104,8 +131,9 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   project compiles again only the modules whose inputs changed, those loaded for other ids
   included, and stops where a shape is unchanged. A first compile may reach a file the project
   still holds as it was for another module, so the plugin checks again after it. So a compile is
-  reused while its file and every file it reached hold what they held, with or without Vite's
-  watcher. The outputs a load sees hold the copies of the shared `.ts` modules the file reaches
+  reused while its file and every file it reached hold what they held, with or without the
+  bundler's watcher. Where the bundler has `watchChange`, it hands a changed file over before the
+  next load. The outputs a load sees hold the copies of the shared `.ts` modules the file reaches
   (ADR-0070), as `compile()`'s do, so the golden guard judges them.
 - **Children** (ADR-0053). The project resolves a file's imports, so a parent lowers its children
   by their APIs. An output imports a child's output by its file
@@ -114,7 +142,7 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   importer's compile and resolves to the child's module id, or its component id on a markup
   target where it is not its file's main component.
 - **Types** (ADR-0067). The project reads types through one syntactic type oracle created at
-  Vite's root (`createSyntacticOracle`, from `@unframework/compiler`): a props type may come from
+  the project's root (`createSyntacticOracle`, from `@unframework/compiler`): a props type may come from
   another file or a package, and a child's API from its types' shapes. The oracle follows the
   source's imports, so it may read a TypeScript file outside the root.
 
@@ -137,7 +165,8 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
 
 How `resolveId` answers:
 
-- **An import of a `.uf.tsx` file** resolves through Vite (so aliases work), then gets the suffix.
+- **An import of a `.uf.tsx` file** resolves through the bundler (so aliases work on Vite and
+  Rollup's family, see [Bundlers](#bundlers)), then gets the suffix.
   What decides is the file the specifier resolves to, so the forms TypeScript accepts for it,
   `./Hello.uf` (`moduleResolution: "bundler"`) and `./Hello.uf.js` or `./Hello.uf.jsx`
   (`"nodenext"`), compile like `./Hello.uf.tsx`. An import of a `.uf.ts` file, or a `./X.uf` that
@@ -202,7 +231,8 @@ bundles `node_modules` before any plugin runs) are M6's to support.
 
 - Warnings and info diagnostics go to `this.warn`, with their code frame.
 - Errors fail the module through `this.error`, with `formatDiagnostics` (uncoloured): every error's
-  `UF` code, message and code frame.
+  `UF` code, message and code frame. `this.error` only records the message on esbuild, which drops it, so
+  `load` throws the same message there.
 - When `onCompile` returns a message, `load` still returns the compiled code, so the framework's
   plugin compiles it, and the post plugin replaces the module's final code with
   `throw new Error(message); export default undefined;` (plus the module's named exports). Its
@@ -211,11 +241,11 @@ bundles `node_modules` before any plugin runs) are M6's to support.
   module". A check that throws, or returns an empty message, fails the module too.
 - Verdicts are kept per Vite environment. One plugin instance serves a server's client and ssr
   environments, which load the same id concurrently, and each environment's post plugin reads the
-  verdict on its own load.
+  verdict on its own load. A bundler with no environments has one set of verdicts.
 
 ## The `api`
 
-The pre plugin, named `unframework`, exposes `api.getCompiled(id)`: the code of the last load of
+On Vite, the pre plugin, named `unframework`, exposes `api.getCompiled(id)`: the code of the last load of
 a module id that finished, in any environment, or `undefined` when the id has not loaded or that
 load failed. A load in progress never clears it. Angular's `ngtscVirtual` reads the virtual
 sources of child components with it:

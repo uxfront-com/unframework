@@ -19,7 +19,7 @@ import type {
 import { formatDiagnostic, formatDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import { createUnplugin } from "unplugin";
-import type { UnpluginFactory, UnpluginInstance, UnpluginOptions } from "unplugin";
+import type { TransformResult, UnpluginFactory, UnpluginInstance, UnpluginOptions } from "unplugin";
 import type { Environment } from "vite";
 
 import { assembleModule } from "./assemble.ts";
@@ -139,17 +139,32 @@ interface FailedModule {
   exports: string[];
 }
 
+/** What loading a module calls on a hook's context, on every bundler. */
+interface LoadContext {
+  warn(message: string): void;
+  error(message: string): void;
+}
+
+/** What Rollup's family adds to a hook's context: a resolver, which no other bundler's has. */
+interface Resolver {
+  resolve(
+    source: string,
+    importer: string | undefined,
+    options: { skipSelf: boolean },
+  ): Promise<{ id: string; external?: unknown } | null>;
+}
+
+const resolves = (context: object): context is Resolver => "resolve" in context;
+
+/** A path with forward slashes, as ids and the project's root are written on every platform. */
+const toPosix = (path: string) => path.split(sep).join("/");
+
 /**
- * The hooks are Vite's (`vite:`), not unplugin's portable ones: they rely on Vite's environments,
- * its dependency scan and its framework plugins claiming module ids by extension. M6 ports them
- * to the other bundlers.
+ * The hooks are unplugin's generic ones, which it maps onto each bundler it offers (ADR-0075). Only
+ * what Vite alone has sits under `vite:`: its config, its dependency scan, its environments and
+ * `api`. Only Vite runs end to end: the rest are trusted to work by default.
  */
 const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
-  if (meta.framework !== "vite") {
-    throw new Error(
-      `@unframework/unplugin supports Vite only for now; ${meta.framework} support is planned for M6.`,
-    );
-  }
   const target = resolveTarget(options.target);
   // Checked once, so a bad prefix fails the server's start rather than each module's compile.
   if (options.passThrough) checkPassThrough(options.passThrough);
@@ -175,8 +190,9 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
   // `?container`), which loads like the bare id, whatever the process did before.
   const subRequest = new RegExp(`[?&]${extension.slice(1)}(?:[&=]|$)`);
 
-  // Vite's root, with forward slashes; configResolved sets it before any other hook runs.
-  let root = process.cwd().split(sep).join("/");
+  // The project's root, with forward slashes: Vite's config, webpack's or Rspack's context, or
+  // esbuild's working directory, each set before any other hook runs, or else the process's.
+  let root = toPosix(process.cwd());
   // What the project and its type oracle hold of each file they read, by the path they read it
   // at (`undefined` for one that did not exist): the text of the first read, or of the last
   // `update` that named the file. Only `update` moves it on, so a read for one module never hides
@@ -250,9 +266,11 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     }
     return failed;
   };
+  // The verdicts of a bundler with no environments.
+  const sharedFailures = new Map<string, FailedModule>();
 
   /** The file name diagnostics use: relative to the root, with forward slashes. */
-  const filenameOf = (file: string) => relative(root, file).split(sep).join("/");
+  const filenameOf = (file: string) => toPosix(relative(root, file));
 
   /**
    * A component id taken apart, unless the id is a module id: a suffix of several extensions
@@ -322,13 +340,11 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
   };
 
   /**
-   * Hands the project every change it has not seen among what a module reached, under every name
-   * the file has, so `update` compiles again the modules whose inputs changed, those compiled for
-   * other modules included. Gives whether anything changed.
+   * Hands the project every change it has not seen among the files at these paths, under every
+   * name each file has, so `update` compiles again the modules whose inputs changed, those compiled
+   * for other modules included. Gives whether anything changed.
    */
-  const refresh = async (filename: string): Promise<boolean> => {
-    const { files, packages } = reachedFrom(filename);
-    const paths = new Set([...files.map((file) => `${root}/${file}`), ...packageFiles(packages)]);
+  const handOver = async (paths: Iterable<string>): Promise<boolean> => {
     const changed = new Map<string, string | undefined>();
     for (const path of paths) {
       if (!seen.has(path)) continue;
@@ -349,11 +365,19 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     return true;
   };
 
+  /** Hands the project every change it has not seen among what a module reached. */
+  const refresh = (filename: string): Promise<boolean> => {
+    const { files, packages } = reachedFrom(filename);
+    return handOver(
+      new Set([...files.map((file) => `${root}/${file}`), ...packageFiles(packages)]),
+    );
+  };
+
   /**
    * The current compile of a `.uf.tsx` file or a `.uf.ts` module, shared by every id that loads
    * it, and the source it compiled. The changes the project has not seen go through its `update`
    * first, which compiles again only the modules whose inputs changed (ADR-0071), so an edit is
-   * seen without Vite's watcher too. A first compile may reach a file the project still holds
+   * seen without a bundler's watcher too. A first compile may reach a file the project still holds
    * as it was for another module: the changes it reached go through `update` after it, and the
    * compile is taken again. The result's outputs hold the copies of the shared `.ts` modules it
    * reaches, as `compile()`'s do (ADR-0070): the golden guard judges them.
@@ -405,6 +429,17 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
    * component's module id, and an optimizer plugin that refuses `.uf.tsx` files; until then this
    * is the loud failure.
    */
+  /**
+   * Fails a module through `error`, which throws on Rollup's family, and fails webpack's build
+   * through `emitError`. esbuild only records the message, and drops it when `load` returns no code
+   * or a `transform` follows (ADR-0075), so there the hook throws, which esbuild does report.
+   */
+  const failModule = (context: LoadContext, message: string) => {
+    context.error(message);
+    if (meta.framework === "esbuild") throw new Error(message);
+  };
+
+  const bundler = meta.framework === "vite" ? "Vite" : meta.framework;
   const bypassed = (file: string) => {
     // A module of composables loads under an id of its own on Svelte and Angular (ADR-0069).
     const composables = file.endsWith(COMPOSABLE_EXTENSION);
@@ -412,7 +447,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     const what = composables
       ? `plain TypeScript rather than as its ${target.name} composables`
       : `plain TSX rather than as its ${target.name} component`;
-    return `${filenameOf(file)} reached Vite as itself, which would load it as ${what}: the import that resolved to it does not name the file (a package's \`exports\` entry or a tsconfig path, say), so this plugin never saw it. Import it with a specifier that ends in ${extension}, such as "./${basename(file)}"; a package that ships ${extension} sources must export them under subpaths that do.`;
+    return `${filenameOf(file)} reached ${bundler} as itself, which would load it as ${what}: the import that resolved to it does not name the file (a package's \`exports\` entry or a tsconfig path, say), so this plugin never saw it. Import it with a specifier that ends in ${extension}, such as "./${basename(file)}"; a package that ships ${extension} sources must export them under subpaths that do.`;
   };
 
   /**
@@ -492,11 +527,11 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
    * resolves to this id.
    */
   async function loadComposables(
-    this: { environment: Environment; warn(message: string): void; error(message: string): never },
+    this: LoadContext,
     id: string,
     file: string,
+    failed: Map<string, FailedModule>,
   ) {
-    const failed = failuresIn(this.environment);
     const filename = filenameOf(file);
     const { result, source } = await compileFile(file);
     const files = result.outputs[target.name] ?? [];
@@ -514,7 +549,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     const fail = (message: string) => {
       compiled.delete(id);
       failed.delete(id);
-      return this.error(verdict ? `${message}\n\n${verdict}` : message);
+      return failModule(this, verdict ? `${message}\n\n${verdict}` : message);
     };
     const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
     if (errors.length > 0) return fail(formatDiagnostics(errors, { [filename]: source }));
@@ -539,233 +574,287 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     return { code: assembly.code };
   }
 
+  /**
+   * The authored file a specifier names, by the file it resolves to. Rollup's family resolves it
+   * through the bundler, so aliases work. The others' contexts have no resolver (ADR-0075), so
+   * there the specifier must be a path: `./X.uf`, `./X.uf.js` and `./X.uf.jsx` find `X.uf.tsx` or
+   * `X.uf.ts` as the bundler's resolver would, and a package's specifier is left to the bundler.
+   */
+  const fileOf = async (context: object, path: string, importer: string | undefined) => {
+    if (resolves(context)) {
+      const resolved = await context.resolve(path, importer, { skipSelf: true });
+      return resolved && !resolved.external ? resolved.id : undefined;
+    }
+    const [named] = moduleIdCandidates(path, root, importer);
+    if (named === undefined) return undefined;
+    const stem = /^(.*\.uf)(?:\.jsx?)?$/.exec(named)?.[1];
+    const candidates = stem === undefined ? [named] : [named, `${stem}.tsx`, `${stem}.ts`];
+    return candidates.find((candidate) => existsSync(candidate));
+  };
+
+  /** What `resolveId` answers (see the README), on every bundler. Only Vite's scan sets `scan`. */
+  const resolveModule = async (
+    context: object,
+    source: string,
+    importer: string | undefined,
+    scan: boolean,
+  ) => {
+    const index = source.indexOf("?");
+    const path = index === -1 ? source : source.slice(0, index);
+    const query = index === -1 ? "" : source.slice(index);
+    // A component's scoped sheet (ADR-0063): `./X.uf.tsx.css` from a module of ours, or
+    // from one a framework split off it (Qwik's `?inline` import), or its id coming back,
+    // with its query (plugin-vue's `?vue&type=style&index=0&src=true&lang.css`). It is no
+    // component's output, so it never reaches `childId`. Its id ends in `.css`, without a
+    // `\0`, so Vite's CSS pipeline handles it.
+    if (parseModuleId(path, SHEET_SUFFIX)) {
+      if (
+        RELATIVE.test(path) &&
+        !(
+          importer &&
+          (parseModuleId(importer, suffix) ?? componentRequest(importer) ?? splitFrom(importer))
+        )
+      ) {
+        return null;
+      }
+      const id = moduleIdCandidates(path, root, importer).find((candidate) =>
+        existsSync(parseModuleId(candidate, SHEET_SUFFIX)!.file),
+      );
+      return id === undefined ? null : `${id}${query}`;
+    }
+    // A component id coming back: from a framework plugin's sub-request, absolute.
+    const component = componentRequest(path);
+    if (component) {
+      const id = moduleIdCandidates(path, root, importer).find((candidate) =>
+        existsSync(componentRequest(candidate)!.file),
+      );
+      return id === undefined ? null : `${id}${query}`;
+    }
+    // An output's import of another output (ADR-0053): `./Field.vue` from a module of ours,
+    // or from one a framework split off it.
+    const from =
+      importer &&
+      (parseModuleId(importer, suffix) ??
+        componentRequest(importer) ??
+        composableRequest(importer) ??
+        splitFrom(importer));
+    if (
+      from &&
+      isAbsolute(from.file) &&
+      RELATIVE.test(path) &&
+      !specifierFilter(suffix).test(path)
+    ) {
+      const child = await childId(from.file, path);
+      if (child !== undefined) return `${child}${query}`;
+    }
+    if (!specifierFilter(suffix).test(source) && !composableIds.test(source)) return null;
+    // One of our module ids coming back: an absolute id from a plugin, a root-relative URL
+    // from the browser on a cold server (`/cases/hello/Hello.uf.tsx.vue`), or a path
+    // relative to its importer. `load` must receive the absolute id, and queries
+    // (sub-requests) stay on it.
+    if (suffix && path.endsWith(`${SOURCE_EXTENSION}${suffix}`)) {
+      return resolveModuleId(path, query, importer) ?? null;
+    }
+    if (composableSuffix && path.endsWith(`${COMPOSABLE_EXTENSION}${composableSuffix}`)) {
+      const id = moduleIdCandidates(path, root, importer).find((candidate) =>
+        existsSync(composableRequest(candidate)!.file),
+      );
+      return id === undefined ? null : `${id}${query}`;
+    }
+    if (VITE_FILE_QUERY.test(query)) return null;
+
+    // Decided by the file the specifier resolves to, so `./X.uf` and `./X.uf.js` compile
+    // like `./X.uf.tsx`, and a `./X.uf` that is a composable (`X.uf.ts`) loads as one.
+    const file = await fileOf(context, path, importer);
+    if (file === undefined) return null;
+    const composable = file.endsWith(COMPOSABLE_EXTENSION);
+    if (!composable && !file.endsWith(SOURCE_EXTENSION)) return null;
+    if (scan) return `${SCAN_ID_PREFIX}${file}`;
+    // `this.addWatchFile(file)` in `transform` makes Vite's import analysis resolve the
+    // file with our module as the importer. Answering with the real file gives the module
+    // graph a node for it whose importer is the module: the edge that makes an edit
+    // invalidate the module and `vitest --watch` rerun its tests. A module of ours imports
+    // no `.uf.tsx` or `.uf.ts` file but these: its own, and those its output depends on
+    // (ADR-0053, ADR-0071).
+    if (
+      importer !== undefined &&
+      (parseModuleId(importer, suffix) ?? componentRequest(importer) ?? composableRequest(importer))
+    ) {
+      return file;
+    }
+    return composable ? composableId(file, composableSuffix, query) : moduleId(file, suffix, query);
+  };
+
+  /** What `load` answers, keeping the guard's verdicts in `failed`. */
+  async function loadModule(this: LoadContext, id: string, failed: Map<string, FailedModule>) {
+    const sheet = parseModuleId(id, SHEET_SUFFIX);
+    if (sheet) {
+      if (!isAbsolute(sheet.file)) return null;
+      const loaded = await sheetOf(id, sheet.file);
+      return "error" in loaded ? failModule(this, loaded.error) : loaded;
+    }
+    const composables = composableRequest(id);
+    if (composables) {
+      if (!isAbsolute(composables.file) || VITE_FILE_QUERY.test(composables.query)) {
+        return null;
+      }
+      return loadComposables.call(this, id, composables.file, failed);
+    }
+    const component = componentRequest(id);
+    const request = component ?? parseModuleId(id, suffix);
+    if (!request) {
+      // An authored `.uf.tsx`, or a `.uf.ts` on a target whose composable ids have a suffix.
+      const authored = (parseModuleId(id, "") ?? parseComposableId(id, ""))!;
+      if (VITE_FILE_QUERY.test(authored.query)) return null;
+      return failModule(this, bypassed(authored.file));
+    }
+    if (!isAbsolute(request.file)) return null;
+    if (VITE_FILE_QUERY.test(request.query) || subRequest.test(request.query)) return null;
+
+    const filename = filenameOf(request.file);
+    const { result, source } = await compileFile(request.file);
+    const files = result.outputs[target.name] ?? [];
+    for (const diagnostic of result.diagnostics) {
+      if (diagnostic.severity !== "error") this.warn(formatDiagnostic(diagnostic, source));
+    }
+    const verdict = await guard({
+      id,
+      file: request.file,
+      target: target.name,
+      files,
+      diagnostics: result.diagnostics,
+      ...(result.ir ? { ir: result.ir } : {}),
+    });
+    const fail = (message: string) => {
+      compiled.delete(id);
+      failed.delete(id);
+      return failModule(this, verdict ? `${message}\n\n${verdict}` : message);
+    };
+
+    const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
+    if (errors.length > 0) return fail(formatDiagnostics(errors, { [filename]: source }));
+    const owners = result.owners[target.name] ?? {};
+    const main = mainComponent(result.ir);
+    // A component id loads its component's file; a main id, the main component's files,
+    // or every component's on a target that joins them (ADR-0053). A shared module's copy
+    // is no component's (ADR-0070): the output imports the module itself.
+    const owned = files.filter((file) => Object.hasOwn(owners, file.path));
+    const loaded = component
+      ? files.filter((file) => file.path === component.output)
+      : joins
+        ? owned
+        : files.filter((file) => owners[file.path] === main);
+    if (component && !loaded.length) {
+      return fail(
+        `The ${target.name} target emitted no ${component.output} for ${filename}, which the id ${id} loads.`,
+      );
+    }
+    const exports = (result.ir?.exports ?? []).filter(
+      (entry) => joins || component !== undefined || entry.local === main,
+    );
+    const assembly = assembleModule({
+      target: target.name,
+      filename,
+      extension: component ? extname(component.output) : extension,
+      files: loaded,
+      exports: component ? [] : exports,
+      siblings: owned.map((file) => file.path),
+    });
+    if ("error" in assembly) return fail(assembly.error);
+    compiled.set(id, assembly.code);
+    const emitted = files.find((file) => file.path === `${basename(request.file)}${SHEET_SUFFIX}`);
+    if (emitted) sheets.set(request.file, emitted.contents);
+    else sheets.delete(request.file);
+    if (verdict === undefined) {
+      failed.delete(id);
+    } else {
+      const named = exports.filter((entry) => entry.kind === "named");
+      failed.set(id, { message: verdict, exports: named.map((entry) => entry.name) });
+    }
+    return { code: assembly.code };
+  }
+
+  const resolveFilter = {
+    id: new RegExp(
+      [specifierFilter(suffix), COMPONENT_ID_FILTER, RELATIVE, SHEET_ID_FILTER, composableIds]
+        .map(({ source }) => source)
+        .join("|"),
+    ),
+  };
+
   const pre: UnpluginOptions = {
     name: PLUGIN_NAME,
     enforce: "pre",
+    resolveId: {
+      filter: resolveFilter,
+      handler(source, importer) {
+        return resolveModule(this, source, importer, false);
+      },
+    },
+    load: {
+      filter: { id: loadIds },
+      handler(id) {
+        return loadModule.call(this, id, sharedFailures);
+      },
+    },
+    transform: {
+      filter: { id: moduleIds },
+      handler(_code, id) {
+        // The watch edges (see resolveId): to the file, for every id but one that is the file
+        // itself, and to every file the project says the output depends on (ADR-0071): each
+        // child's `.uf.tsx`, each composable's `.uf.ts`, each shared `.ts` module and each file
+        // a type was read from, so an edit to one invalidates the module. They are added here
+        // rather than in `load`: Vite keeps the files a load adds only when the module is
+        // already in its graph, which a cold request's is not, while a transform always runs on
+        // a module the graph holds.
+        const composables = composableRequest(id);
+        const component = composables ? undefined : componentRequest(id);
+        const request = composables ?? component ?? parseModuleId(id, suffix);
+        if (!request || !isAbsolute(request.file)) return null;
+        // A module of composables' id is the file itself where it has no suffix (ADR-0069).
+        if (composables ? composableSuffix : suffix || component) {
+          this.addWatchFile(request.file);
+        }
+        for (const path of watchedFiles(request.file)) this.addWatchFile(path);
+        return null;
+      },
+    },
+    // Hands an edit to the project as soon as the bundler reports it, rather than at the next load
+    // (ADR-0075). A file no compile read is nothing to the project. A load that follows queues
+    // behind it, so the bundler has nothing to wait for. An update that fails leaves the change
+    // unseen, so the next load hands it over again and fails loudly.
+    watchChange(id) {
+      void exclusive(() => handOver([toPosix(id)]));
+    },
+    webpack(compiler) {
+      root = toPosix(compiler.context);
+    },
+    rspack(compiler) {
+      root = toPosix(compiler.context);
+    },
+    esbuild: {
+      config(buildOptions) {
+        if (buildOptions.absWorkingDir) root = toPosix(buildOptions.absWorkingDir);
+      },
+    },
     vite: {
       configResolved(config) {
         root = config.root;
       },
+      // Replaces the generic hook, for what only Vite has: its dependency scan, whose `scan` is
+      // missing from the public type.
       resolveId: {
-        filter: {
-          id: [
-            specifierFilter(suffix),
-            COMPONENT_ID_FILTER,
-            RELATIVE,
-            SHEET_ID_FILTER,
-            composableIds,
-          ],
-        },
-        async handler(source, importer, resolveOptions) {
-          const index = source.indexOf("?");
-          const path = index === -1 ? source : source.slice(0, index);
-          const query = index === -1 ? "" : source.slice(index);
-          // A component's scoped sheet (ADR-0063): `./X.uf.tsx.css` from a module of ours, or
-          // from one a framework split off it (Qwik's `?inline` import), or its id coming back,
-          // with its query (plugin-vue's `?vue&type=style&index=0&src=true&lang.css`). It is no
-          // component's output, so it never reaches `childId`. Its id ends in `.css`, without a
-          // `\0`, so Vite's CSS pipeline handles it.
-          if (parseModuleId(path, SHEET_SUFFIX)) {
-            if (
-              RELATIVE.test(path) &&
-              !(
-                importer &&
-                (parseModuleId(importer, suffix) ??
-                  componentRequest(importer) ??
-                  splitFrom(importer))
-              )
-            ) {
-              return null;
-            }
-            const id = moduleIdCandidates(path, root, importer).find((candidate) =>
-              existsSync(parseModuleId(candidate, SHEET_SUFFIX)!.file),
-            );
-            return id === undefined ? null : `${id}${query}`;
-          }
-          // A component id coming back: from a framework plugin's sub-request, absolute.
-          const component = componentRequest(path);
-          if (component) {
-            const id = moduleIdCandidates(path, root, importer).find((candidate) =>
-              existsSync(componentRequest(candidate)!.file),
-            );
-            return id === undefined ? null : `${id}${query}`;
-          }
-          // An output's import of another output (ADR-0053): `./Field.vue` from a module of ours,
-          // or from one a framework split off it.
-          const from =
-            importer &&
-            (parseModuleId(importer, suffix) ??
-              componentRequest(importer) ??
-              composableRequest(importer) ??
-              splitFrom(importer));
-          if (
-            from &&
-            isAbsolute(from.file) &&
-            RELATIVE.test(path) &&
-            !specifierFilter(suffix).test(path)
-          ) {
-            const child = await childId(from.file, path);
-            if (child !== undefined) return `${child}${query}`;
-          }
-          if (!specifierFilter(suffix).test(source) && !composableIds.test(source)) return null;
-          // One of our module ids coming back: an absolute id from a plugin, a root-relative URL
-          // from the browser on a cold server (`/cases/hello/Hello.uf.tsx.vue`), or a path
-          // relative to its importer. `load` must receive the absolute id, and queries
-          // (sub-requests) stay on it.
-          if (suffix && path.endsWith(`${SOURCE_EXTENSION}${suffix}`)) {
-            return resolveModuleId(path, query, importer) ?? null;
-          }
-          if (composableSuffix && path.endsWith(`${COMPOSABLE_EXTENSION}${composableSuffix}`)) {
-            const id = moduleIdCandidates(path, root, importer).find((candidate) =>
-              existsSync(composableRequest(candidate)!.file),
-            );
-            return id === undefined ? null : `${id}${query}`;
-          }
-          if (VITE_FILE_QUERY.test(query)) return null;
-
-          // Decided by the file the specifier resolves to, so `./X.uf` and `./X.uf.js` compile
-          // like `./X.uf.tsx`, and a `./X.uf` that is a composable (`X.uf.ts`) loads as one.
-          const resolved = await this.resolve(path, importer, { skipSelf: true });
-          if (!resolved || resolved.external) return null;
-          const composable = resolved.id.endsWith(COMPOSABLE_EXTENSION);
-          if (!composable && !resolved.id.endsWith(SOURCE_EXTENSION)) return null;
-          const file = resolved.id;
-          // `scan` is set by Vite's dependency scanner and missing from the public type.
-          if ("scan" in resolveOptions && resolveOptions.scan === true) {
-            return `${SCAN_ID_PREFIX}${file}`;
-          }
-          // `this.addWatchFile(file)` in `transform` makes Vite's import analysis resolve the
-          // file with our module as the importer. Answering with the real file gives the module
-          // graph a node for it whose importer is the module: the edge that makes an edit
-          // invalidate the module and `vitest --watch` rerun its tests. A module of ours imports
-          // no `.uf.tsx` or `.uf.ts` file but these: its own, and those its output depends on
-          // (ADR-0053, ADR-0071).
-          if (
-            importer !== undefined &&
-            (parseModuleId(importer, suffix) ??
-              componentRequest(importer) ??
-              composableRequest(importer))
-          ) {
-            return file;
-          }
-          return composable
-            ? composableId(file, composableSuffix, query)
-            : moduleId(file, suffix, query);
+        filter: resolveFilter,
+        handler(source, importer, resolveOptions) {
+          const scan = "scan" in resolveOptions && resolveOptions.scan === true;
+          return resolveModule(this, source, importer, scan);
         },
       },
+      // Replaces the generic hook, for what only Vite has: its environments.
       load: {
         filter: { id: loadIds },
-        async handler(id) {
-          const sheet = parseModuleId(id, SHEET_SUFFIX);
-          if (sheet) {
-            if (!isAbsolute(sheet.file)) return null;
-            const loaded = await sheetOf(id, sheet.file);
-            return "error" in loaded ? this.error(loaded.error) : loaded;
-          }
-          const composables = composableRequest(id);
-          if (composables) {
-            if (!isAbsolute(composables.file) || VITE_FILE_QUERY.test(composables.query)) {
-              return null;
-            }
-            return loadComposables.call(this, id, composables.file);
-          }
-          const component = componentRequest(id);
-          const request = component ?? parseModuleId(id, suffix);
-          if (!request) {
-            // An authored `.uf.tsx`, or a `.uf.ts` on a target whose composable ids have a suffix.
-            const authored = (parseModuleId(id, "") ?? parseComposableId(id, ""))!;
-            if (VITE_FILE_QUERY.test(authored.query)) return null;
-            return this.error(bypassed(authored.file));
-          }
-          if (!isAbsolute(request.file)) return null;
-          if (VITE_FILE_QUERY.test(request.query) || subRequest.test(request.query)) return null;
-
-          const failed = failuresIn(this.environment);
-          const filename = filenameOf(request.file);
-          const { result, source } = await compileFile(request.file);
-          const files = result.outputs[target.name] ?? [];
-          for (const diagnostic of result.diagnostics) {
-            if (diagnostic.severity !== "error") this.warn(formatDiagnostic(diagnostic, source));
-          }
-          const verdict = await guard({
-            id,
-            file: request.file,
-            target: target.name,
-            files,
-            diagnostics: result.diagnostics,
-            ...(result.ir ? { ir: result.ir } : {}),
-          });
-          const fail = (message: string) => {
-            compiled.delete(id);
-            failed.delete(id);
-            return this.error(verdict ? `${message}\n\n${verdict}` : message);
-          };
-
-          const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-          if (errors.length > 0) return fail(formatDiagnostics(errors, { [filename]: source }));
-          const owners = result.owners[target.name] ?? {};
-          const main = mainComponent(result.ir);
-          // A component id loads its component's file; a main id, the main component's files,
-          // or every component's on a target that joins them (ADR-0053). A shared module's copy
-          // is no component's (ADR-0070): the output imports the module itself.
-          const owned = files.filter((file) => Object.hasOwn(owners, file.path));
-          const loaded = component
-            ? files.filter((file) => file.path === component.output)
-            : joins
-              ? owned
-              : files.filter((file) => owners[file.path] === main);
-          if (component && !loaded.length) {
-            return fail(
-              `The ${target.name} target emitted no ${component.output} for ${filename}, which the id ${id} loads.`,
-            );
-          }
-          const exports = (result.ir?.exports ?? []).filter(
-            (entry) => joins || component !== undefined || entry.local === main,
-          );
-          const assembly = assembleModule({
-            target: target.name,
-            filename,
-            extension: component ? extname(component.output) : extension,
-            files: loaded,
-            exports: component ? [] : exports,
-            siblings: owned.map((file) => file.path),
-          });
-          if ("error" in assembly) return fail(assembly.error);
-          compiled.set(id, assembly.code);
-          const emitted = files.find(
-            (file) => file.path === `${basename(request.file)}${SHEET_SUFFIX}`,
-          );
-          if (emitted) sheets.set(request.file, emitted.contents);
-          else sheets.delete(request.file);
-          if (verdict === undefined) {
-            failed.delete(id);
-          } else {
-            const named = exports.filter((entry) => entry.kind === "named");
-            failed.set(id, { message: verdict, exports: named.map((entry) => entry.name) });
-          }
-          return { code: assembly.code };
-        },
-      },
-      transform: {
-        filter: { id: moduleIds },
-        handler(_code, id) {
-          // The watch edges (see resolveId): to the file, for every id but one that is the file
-          // itself, and to every file the project says the output depends on (ADR-0071): each
-          // child's `.uf.tsx`, each composable's `.uf.ts`, each shared `.ts` module and each file
-          // a type was read from, so an edit to one invalidates the module. They are added here
-          // rather than in `load`: Vite keeps the files a load adds only when the module is
-          // already in its graph, which a cold request's is not, while a transform always runs on
-          // a module the graph holds.
-          const composables = composableRequest(id);
-          const component = composables ? undefined : componentRequest(id);
-          const request = composables ?? component ?? parseModuleId(id, suffix);
-          if (!request || !isAbsolute(request.file)) return null;
-          // A module of composables' id is the file itself where it has no suffix (ADR-0069).
-          if (composables ? composableSuffix : suffix || component) {
-            this.addWatchFile(request.file);
-          }
-          for (const path of watchedFiles(request.file)) this.addWatchFile(path);
-          return null;
+        handler(id) {
+          return loadModule.call(this, id, failuresIn(this.environment));
         },
       },
       api: {
@@ -775,16 +864,22 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     },
   };
 
+  /** A module the guard failed, as the code that replaces it. */
+  const failing = (failure: FailedModule | undefined): TransformResult =>
+    failure ? { code: failingModule(failure), map: { mappings: "" } } : null;
+
   const post: UnpluginOptions = {
     name: `${PLUGIN_NAME}:guard`,
     enforce: "post",
+    transform: {
+      filter: { id: moduleIds },
+      handler: (_code, id) => failing(sharedFailures.get(id)),
+    },
     vite: {
       transform: {
         filter: { id: moduleIds },
         handler(_code, id) {
-          const failure = failures.get(this.environment)?.get(id);
-          if (!failure) return null;
-          return { code: failingModule(failure), map: { mappings: "" } };
+          return failing(failures.get(this.environment)?.get(id));
         },
       },
     },
@@ -818,9 +913,19 @@ function failingModule({ message, exports }: FailedModule): string {
   return `${lines.join("\n")}\n`;
 }
 
-/**
- * The unframework plugin for every bundler unplugin supports. Only Vite is supported until M6:
- * any other bundler throws when the plugin is created.
- */
+/** The unframework plugin for every bundler unplugin offers. Only Vite runs end to end. */
 export const unframeworkUnplugin: UnpluginInstance<UnframeworkOptions, true> =
   createUnplugin(factory);
+
+type Instance = UnpluginInstance<UnframeworkOptions, true>;
+
+// What the one-line entries export, one per factory unplugin has (ADR-0075).
+export const bun: Instance["bun"] = unframeworkUnplugin.bun;
+export const esbuild: Instance["esbuild"] = unframeworkUnplugin.esbuild;
+export const farm: Instance["farm"] = unframeworkUnplugin.farm;
+export const rolldown: Instance["rolldown"] = unframeworkUnplugin.rolldown;
+export const rollup: Instance["rollup"] = unframeworkUnplugin.rollup;
+export const rsbuild: Instance["rsbuild"] = unframeworkUnplugin.rsbuild;
+export const rspack: Instance["rspack"] = unframeworkUnplugin.rspack;
+export const unloader: Instance["unloader"] = unframeworkUnplugin.unloader;
+export const webpack: Instance["webpack"] = unframeworkUnplugin.webpack;
