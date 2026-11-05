@@ -136,10 +136,12 @@ diagnostic, so it takes the defaults.
 
 A file it can't import, or one with no default export, is UF7001. `loadConfig` reports it in its own
 `diagnostics` and leaves `raw` as `undefined`, so read those first: `resolveConfig` would only say
-that `undefined` isn't an object. A `.ts` or `.js` file with no ES module syntax left once its
-types are stripped loads as CommonJS unless its package sets `"type": "module"`, and Node gives it an
-empty `default`. That counts
-as no default export, and so does an explicit `module.exports = {}`, which reads the same.
+that `undefined` isn't an object.
+
+A `.ts` or `.js` file with no ES module syntax left once its types are stripped loads as CommonJS
+unless its package sets `"type": "module"`. Node gives such a file an empty `default` only when it
+exports nothing, and that counts as no default export. So does an explicit `module.exports = {}`,
+which reads the same. A CommonJS file that does export something keeps what it exports.
 
 `resolveConfig(raw, origin?)` checks the config and applies the defaults. It's asynchronous, because
 a Standard Schema may be. `origin` is what `loadConfig` returned: `directory`, which relative paths
