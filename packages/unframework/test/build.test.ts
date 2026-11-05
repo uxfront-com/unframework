@@ -31,24 +31,31 @@ const packageDirectory = (name: string): string => dirname(require.resolve(`${na
  */
 let consumer: string;
 
-beforeAll(() => {
-  consumer = mkdtempSync(join(tmpdir(), "uf-published-"));
-  const installed = join(consumer, "node_modules", "unframework");
+/** Builds a package into the consumer's `node_modules`, with its published manifest. */
+function installBuilt(directory: string, name: string): void {
+  const installed = join(consumer, "node_modules", name);
   const tsdown = join(packageDirectory("tsdown"), "dist", "run.mjs");
   const build = spawnSync(
     process.execPath,
     [tsdown, "--out-dir", join(installed, "dist"), "--logLevel", "error"],
-    { cwd: PACKAGE, encoding: "utf8" },
+    { cwd: directory, encoding: "utf8" },
   );
   if (build.error) throw build.error;
   if (build.status !== 0) throw new Error(`tsdown failed:\n${build.stdout}${build.stderr}`);
 
-  const manifest = JSON.parse(readFileSync(join(PACKAGE, "package.json"), "utf8")) as {
+  const manifest = JSON.parse(readFileSync(join(directory, "package.json"), "utf8")) as {
     exports: unknown;
     publishConfig: { exports: unknown };
   };
   manifest.exports = manifest.publishConfig.exports;
   writeFileSync(join(installed, "package.json"), JSON.stringify(manifest, null, 2));
+}
+
+beforeAll(() => {
+  consumer = mkdtempSync(join(tmpdir(), "uf-published-"));
+  installBuilt(PACKAGE, "unframework");
+  // `unframework/config` types its config through the compiler's published leaf of types.
+  installBuilt(packageDirectory("@unframework/compiler"), "@unframework/compiler");
   for (const dependency of ["csstype", "vue"]) {
     symlinkSync(packageDirectory(dependency), join(consumer, "node_modules", dependency), "dir");
   }
@@ -88,5 +95,10 @@ describe("the published package", { timeout: 30_000 }, () => {
     expect(readFileSync(join(dist, "jsx-runtime.d.ts"), "utf8")).toMatch(
       /^\/\/\/ <reference path="\.\/client\.d\.ts" \/>\n/,
     );
+  });
+
+  it("loads no compiler through unframework/config", () => {
+    const dist = join(consumer, "node_modules", "unframework", "dist");
+    expect(readFileSync(join(dist, "config.js"), "utf8")).not.toMatch(/\bimport\b/);
   });
 });

@@ -25,18 +25,30 @@ built.
 
 ### Configuration
 
-- `packages/compiler/src/config.ts` exports `loadConfig(root, file?)`, which finds
-  `unframework.config.{ts,mts,js,mjs}` and imports it through Node's type stripping. A load failure,
-  `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` included, reports UF7001 `config-not-loaded` with the path.
-- It exports `resolveConfig(raw)`, which checks:
+- `packages/compiler/src/config.ts` exports `loadConfig(root, file?)`, which imports `file`, or the
+  first of `unframework.config.{ts,mts,js,mjs}` it finds in `root`, through Node's type stripping. A
+  load failure, `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX` included, reports UF7001 `config-not-loaded` with
+  the path, and so does a file with no default export. A project with no config file takes the
+  defaults, with no diagnostic.
+- It exports `resolveConfig(raw, origin?)`, which checks:
   - the shape of §8.1's fields and `package?: { targets?: TargetName[]; resolveFrom?: string | Partial<Record<TargetName, string>> }`,
     with relative paths resolved against the config's directory (UF7002 `config-invalid`, with a
-    JSON pointer)
+    JSON pointer). A field the config doesn't have, an empty target list, a repeated target and a
+    `package.targets` entry outside `targets` report it too
   - the target names (UF7003 `unknown-target`, with a did-you-mean)
   - `targetOptions[t]`, through the target's Standard Schema (UF7004 `target-options-invalid`)
+- `origin` is what `loadConfig` returned: `directory` and `file`. `raw` alone doesn't say where the
+  config lives, and relative paths need it.
+- `resolveConfig` is asynchronous, because a Standard Schema's `validate` may return a promise. What
+  a schema returns replaces the options as written. A target without a schema takes its options as
+  written, as every built-in target does today, so §8.1's `targetOptions` example stays valid.
 - The defaults are all seven targets, `src`, `dist`, `syntactic` and `strict: false`.
 - `unframework/config` exports an identity `defineConfig`, typed with `UnframeworkConfig` through a
   type-only import, so importing it loads no compiler (ADR-0016).
+- The config's types live in `packages/compiler/src/config-types.ts`, which has no imports, behind the
+  subpath `@unframework/compiler/config-types`, and the compiler's index re-exports them. Through the
+  index, type-checking a config would read the compiler's whole type graph, and
+  `@typescript-eslint/types` doesn't check under `skipLibCheck: false`.
 - Only the CLI reads the config. The bundler plugin takes explicit options, or detects the target
   (ADR-0075).
 
