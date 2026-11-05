@@ -1,0 +1,47 @@
+{
+  "name": "create-unframework",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The `create-unframework` scaffolder. It scaffolds nothing yet.",
+  "keywords": [
+    "unframework"
+  ],
+  "homepage": "https://github.com/uxfront-com/unframework/tree/main/packages/create-unframework#readme",
+  "bugs": "https://github.com/uxfront-com/unframework/issues",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uxfront-com/unframework.git",
+    "directory": "packages/create-unframework"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@uxfront/typescript-config": "catalog:",
+    "tsdown": "catalog:",
+    "vitest": "catalog:"
+  }
+}

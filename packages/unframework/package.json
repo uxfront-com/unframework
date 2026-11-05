@@ -61,11 +61,12 @@
     "vendor:jsx": "node scripts/vendor-jsx.ts"
   },
   "dependencies": {
+    "@unframework/cli": "workspace:*",
+    "@unframework/compiler": "workspace:*",
     "csstype": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
-    "@unframework/compiler": "workspace:*",
     "@uxfront/typescript-config": "catalog:",
     "@vue/runtime-dom": "3.5.43",
     "tsdown": "catalog:",

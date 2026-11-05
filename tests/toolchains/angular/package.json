@@ -19,6 +19,7 @@
     "@angular/core": "catalog:",
     "@angular/platform-browser": "catalog:",
     "eslint": "catalog:",
+    "ng-packagr": "catalog:",
     "oxlint": "catalog:",
     "rxjs": "catalog:",
     "tslib": "catalog:",
