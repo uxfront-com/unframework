@@ -43,8 +43,10 @@ export function workDir(
   configured: string | undefined = process.env.UF_E2E_WORK_DIR,
   repository: string = repoRoot,
 ): string {
+  // The path as given and the real one can differ, so compare each with both of the repository's.
+  const roots = [resolve(repository), realpathSync(repository)];
   const refuseInside = (path: string): void => {
-    if (relative(realpathSync(repository), path).split(sep)[0] !== "..") {
+    if (roots.some((root) => relative(root, path).split(sep)[0] !== "..")) {
       throw new Error(`UF_E2E_WORK_DIR must be outside the repository, not ${path}.`);
     }
   };
