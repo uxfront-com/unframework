@@ -69,6 +69,21 @@ vi.mock("@unframework/compiler", async (original) => {
               dependencies: [],
             } as never;
           }
+          if (file === "src/a-copy.uf.tsx" || file === "src/b-output.uf.tsx") {
+            return {
+              filename: file,
+              ir: undefined,
+              diagnostics: [],
+              outputs: {
+                react:
+                  file === "src/b-output.uf.tsx"
+                    ? [{ path: "E.ts", contents: "export const shared = 1;\n" }]
+                    : [],
+              },
+              owners: { react: {} },
+              dependencies: [],
+            } as never;
+          }
           if (file === "src/copy-clash.uf.tsx" || file === "src/copy-case.uf.tsx") {
             return {
               filename: file,
@@ -126,6 +141,7 @@ vi.mock("@unframework/compiler", async (original) => {
         copies: (file: string) => {
           const contents = "export const shared = 1;\n";
           if (file === "src/copy-clash.uf.tsx") return [{ path: "C.ts", contents }];
+          if (file === "src/a-copy.uf.tsx") return [{ path: "E.ts", contents }];
           if (file === "src/copy-case.uf.tsx") {
             return [
               { path: "d.ts", contents },
@@ -181,8 +197,11 @@ describe("a shared module's copy", () => {
       "src/copy-case.uf.tsx",
       "would both write D.ts",
     ],
+    ["a later module's output of its text", "src/a-copy.uf.tsx", "would both write E.ts"],
   ])("is UF1104 beside %s", async (_name, source, message) => {
-    const root = project({ [source]: "", "unframework.config.mjs": CONFIG });
+    const later: Record<string, string> =
+      source === "src/a-copy.uf.tsx" ? { "src/b-output.uf.tsx": "" } : {};
+    const root = project({ [source]: "", ...later, "unframework.config.mjs": CONFIG });
     const { code, stderr } = await run(root, "build");
     expect(code).toBe(1);
     expect(stderr).toContain(message);
