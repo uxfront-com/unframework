@@ -6,7 +6,8 @@ import { createDiagnostic, formatDiagnostic } from "@unframework/diagnostics";
 
 /** What these checks read of a Vite plugin. */
 interface NamedPlugin {
-  name: string;
+  // Vite's type requires it, and Vite doesn't: a plain JavaScript plugin may have none.
+  name?: string;
   api?: unknown;
 }
 
@@ -35,9 +36,10 @@ export function detectTarget(
   plugins: readonly NamedPlugin[],
   file: string,
 ): { target: TargetName } | { error: string } {
+  const names = plugins.flatMap(({ name }) => (typeof name === "string" ? [name] : []));
   const found = Object.entries(FRAMEWORK_PLUGINS).flatMap(([target, belongs]) => {
-    const plugin = plugins.find(({ name }) => belongs(name));
-    return plugin ? [{ target: target as TargetName, plugin: plugin.name }] : [];
+    const plugin = names.find((name) => belongs(name));
+    return plugin ? [{ target: target as TargetName, plugin }] : [];
   });
   if (found.length === 1) return { target: found[0]!.target };
   const diagnostic = found.length

@@ -40,7 +40,8 @@ the rest to work through unplugin's generic hooks (ADR-0075), so a test only cre
 each entry. Keep in mind that a module id still needs a plugin of that bundler's to claim it, like
 a Vue plugin for `.vue`, and that we recommend Vite until the other bundlers have been tried.
 
-Only Vite has a plugin list to detect a target from, so every other entry throws without a `target`.
+Only Vite detects a target, from its configuration's plugins, so every other entry throws without a
+`target`.
 
 `resolveId`, `load`, the watch edges and the guard are generic hooks, and `watchChange` hands an
 edit to the project's `update` as soon as the bundler reports it. unplugin maps no such hook onto
@@ -111,10 +112,10 @@ name matches as this table writes it, so `vite:vue-jsx` and `vite-plugin-qwik-po
 | Astro   | `astro:*`                       | Astro's own plugins             |
 | Angular | `@analogjs/vite-plugin-angular` | `@analogjs/vite-plugin-angular` |
 
-No match fails the server's start with UF7005, and plugins of two frameworks with UF7006, which
-names them. Keep in mind that an Astro app that also adds a framework's plugin holds both, so pass
-`target` there. Until the target is known the hooks' filters match every target's suffix, and once
-it's known the hooks leave the other targets' ids alone. A third-party target is never detected.
+No match fails the start of a dev server or a build with UF7005, and plugins of two frameworks with
+UF7006, which names them. Keep in mind that an Astro app that also adds a framework's plugin holds both, so pass
+`target` there. Until the target is known the hooks' filters match every target's suffix, or only
+`extension` when you set it, and once it's known the hooks leave the other targets' ids alone. A third-party target is never detected.
 
 On Vue, whichever way the target was chosen, plugin-vue's `template.compilerOptions.whitespace` of
 `"preserve"` reports the warning UF7010 at the start, because outputs assume `"condense"`
@@ -135,9 +136,11 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
 - The code comes from `load`, never `transform`: nothing exists on disk at a module id, and every
   framework plugin compiles the code it is given. Ids never start with `\0`, which the framework
   plugins skip.
-- `load` returns `{ code, map }` from `compile({ sourceMap: true })` (ADR-0074), and Vite chains the
-  map through the plugins after it. An output with no map loads as `{ code }`. A scoped sheet's
-  load is `{ code }` too, since its map has no segments.
+- `load` returns `{ code, map }` from `compile({ sourceMap: true })` (ADR-0074), and that map traces
+  to the `.uf.tsx` line on every target. What it becomes after the framework's plugin differs. React
+  and Solid still reach the `.uf.tsx` in dev and in a build, and Vue does in dev, while a Vue build
+  traces to the `.vue` id and Svelte's chain ends with nothing to trace. An output with no map loads
+  as `{ code }`. A scoped sheet's load is `{ code }` too, since its map has no segments.
 - An id loads the target's output file with the id's extension (`Hello.vue`, `hello.ts`, and
   `Hello.tsx` for a `.uf.tsx` id). A file with several components emits one such file each:
   `.tsx` and `.ts` files are joined into one module (an import of a file of the join is left out,
@@ -273,7 +276,7 @@ bundles `node_modules` before any plugin runs) are M6's to support.
 - Errors fail the module through `this.error`, with `formatDiagnostics` (uncoloured): every error's
   `UF` code, message and code frame. `this.error` only records the message on esbuild, which drops it, so
   `load` throws the same message there.
-- UF7005 and UF7006 fail the server's start, and UF7010 is a warning (see
+- UF7005 and UF7006 fail the start of a dev server or a build, and UF7010 is a warning (see
   [Target detection](#target-detection)).
 - When `onCompile` returns a message, `load` still returns the compiled code, so the framework's
   plugin compiles it, and the post plugin replaces the module's final code with

@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { basename, extname, isAbsolute, posix, relative, sep } from "node:path";
 
-import type { OutputFile, SourceMapV3, Target } from "@unframework/codegen";
+import type { OutputFile, Target } from "@unframework/codegen";
 import {
   checkPassThrough,
   createProject,
@@ -56,7 +56,7 @@ export interface CompileEvent {
   file: string;
   /** The target's name. */
   target: string;
-  /** Every file the target emitted for the module: what the golden files hold, with its map. */
+  /** Every file the target emitted for the module: what the golden files hold. */
   files: OutputFile[];
   /** Every diagnostic of the compile, sorted. */
   diagnostics: Diagnostic[];
@@ -611,7 +611,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       const names = (result.ir?.composables ?? []).map(({ name }) => name);
       failed.set(id, { message: verdict, exports: names });
     }
-    return moduleOf(assembly);
+    return assembly;
   }
 
   /**
@@ -812,7 +812,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       const named = exports.filter((entry) => entry.kind === "named");
       failed.set(id, { message: verdict, exports: named.map((entry) => entry.name) });
     }
-    return moduleOf(assembly);
+    return assembly;
   }
 
   const resolveFilter = {
@@ -944,11 +944,6 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
 
   return [pre, post];
 };
-
-/** What a module's `load` returns: `{ code, map }`, or `{ code }` for an output with no map. */
-function moduleOf({ code, map }: { code: string; map?: SourceMapV3 }) {
-  return map ? { code, map } : { code };
-}
 
 /**
  * A file's main component (ADR-0053): its default export, or its only exported component;

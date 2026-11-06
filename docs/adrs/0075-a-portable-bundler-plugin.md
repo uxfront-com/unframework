@@ -57,12 +57,12 @@ built.
   `vite:vue`, `vite-plugin-svelte`, `vite:react-*`, `solid`, `vite-plugin-qwik`, `astro:*` and
   `@analogjs/vite-plugin-angular`. A name matches as written here, so `vite:vue-jsx` and
   `vite-plugin-qwik-post` name no framework, and several plugins of one framework name one target.
-- Until the target is known, the filters match every target's suffix, because a bundler may read a
-  hook's filter only once. Once it's known, the hooks leave the ids of the other targets alone.
+- Until the target is known, the filters match every target's suffix, or only `extension` when it's
+  set, because a bundler may read a hook's filter only once. Once it's known, the hooks leave the ids of the other targets alone.
 - No match reports UF7005 `target-not-detected`, and two matches UF7006 `target-ambiguous`. Both fail
-  the server's start. An Astro app that also adds a framework's plugin is two matches, so it passes
+  the start of a dev server or a build. An Astro app that also adds a framework's plugin is two matches, so it passes
   `target`.
-- Only Vite has a plugin list to read, so another bundler's entry throws without a `target`.
+- Only Vite detects a target, so another bundler's entry throws without a `target`.
 - On the Vue target, plugin-vue's `template.compilerOptions.whitespace` of `"preserve"`, read from its
   `api.options`, reports UF7010 `host-option-incompatible`, because the printer's layout assumes
   `condense` (ADR-0026). It's a warning, and modules still load.
@@ -118,6 +118,9 @@ built.
 
 - Whether the portable `load` keeps `this.error`'s behaviour on bundlers other than Vite. Nothing
   tests it.
+- How a loaded map reaches the `.uf.tsx` past every framework's plugin. vite-plugin-svelte gives
+  Svelte the combined map, and the map it returns already traces to the `.uf.tsx`. Vite then combines
+  it with the loaded map again, and in dev nothing is left to trace.
 
 ## Alternatives considered
 

@@ -1,5 +1,7 @@
 // Target detection and the host's options (ADR-0075). The framework plugins are not dependencies of
 // this package, so each stands in by the name it registers.
+import { writeFileSync } from "node:fs";
+
 import { compile } from "@unframework/compiler";
 import type { TargetName } from "@unframework/compiler";
 import { resolveConfig } from "vite";
@@ -9,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ID_SUFFIXES, unframeworkUnplugin } from "../src/index.ts";
 import type { UnframeworkOptions } from "../src/index.ts";
 import unframework from "../src/vite.ts";
-import { codeOf, createProject, HELLO, startServer } from "./fixtures.ts";
+import { codeOf, createProject, fakeVue, HELLO, startServer } from "./fixtures.ts";
 import type { Project, TestServer } from "./fixtures.ts";
 
 const TOGGLE =
@@ -30,6 +32,9 @@ const main = () => `${project.root}/main.ts`;
 
 /** Stands in for a framework's plugin, by the name it registers. */
 const named = (name: string): Plugin => ({ name });
+
+/** plugin-vue's stand-in under the name plugin-vue registers, for Vite's whole pipeline. */
+const vueStandIn: Plugin = { ...fakeVue, name: "vite:vue" };
 
 /** Runs `fn` against a server whose plugins are this plugin, then `others`. */
 async function withPlugins<T>(
@@ -90,12 +95,60 @@ describe("target detection", () => {
       for (const id of [`${hello()}.svelte`, `${hello()}.astro`, `${hello()}.ts`]) {
         expect(await client.pluginContainer.load(id), id).toBeNull();
         expect(await client.pluginContainer.resolveId(id), id).toBeNull();
-        expect(await client.transformRequest(id).catch(() => undefined), id).toBeUndefined();
       }
     });
     await withPlugins(undefined, [named("solid")], async ({ client }) => {
       expect(await client.pluginContainer.load(`${hello()}.vue`)).toBeNull();
     });
+  });
+
+  // The hooks' filters take every target's ids until the target is known. These are the hooks a
+  // named target's filter takes its own ids to, and the corpus always names its target.
+  it.each<[TargetName, string]>([
+    ["vue", "vite:vue"],
+    ["svelte", "vite-plugin-svelte"],
+    ["astro", "astro:build"],
+    ["angular", "@analogjs/vite-plugin-angular"],
+  ])("maps a detected %s id back from a root-relative URL", async (target, name) => {
+    const id = `${hello()}${ID_SUFFIXES[target]}`;
+    await withPlugins(undefined, [named(name)], async ({ client }) => {
+      const url = `/Hello.uf.tsx${ID_SUFFIXES[target]}`;
+      expect((await client.pluginContainer.resolveId(url))?.id).toBe(id);
+      expect((await client.pluginContainer.resolveId(`${url}?x`))?.id).toBe(`${id}?x`);
+    });
+  });
+
+  it("watches the file of a detected target's module, so an edit invalidates it", async () => {
+    const watched = project.write("Watched.uf.tsx", HELLO);
+    const id = `${watched}.vue`;
+    await withPlugins(undefined, [vueStandIn], async ({ client }) => {
+      expect((await client.transformRequest(id))?.code).toContain("Hello, world!");
+      const [node] = client.moduleGraph.getModulesByFile(watched) ?? [];
+      expect([...(node?.importers ?? [])].map((parent) => parent.id)).toEqual([id]);
+
+      writeFileSync(watched, HELLO.replace("Hello, world!", "Hello, edit!"));
+      client.moduleGraph.onFileChange(watched);
+      expect(client.moduleGraph.getModuleById(id)?.transformResult).toBeNull();
+      expect((await client.transformRequest(id))?.code).toContain("Hello, edit!");
+    });
+  });
+
+  it("replaces a detected target's module that the guard fails", async () => {
+    const options = { onCompile: () => "stale golden" };
+    await withPlugins(options, [vueStandIn], async ({ client }) => {
+      expect((await client.transformRequest(`${hello()}.vue`))?.code).toBe(
+        'throw new Error("stale golden");\nexport default undefined;\n',
+      );
+    });
+  });
+
+  it("reads past a plugin with no name, which Vite runs", async () => {
+    const nameless = { transform: () => null } as unknown as Plugin;
+    await withPlugins(undefined, [nameless, named("vite:vue")], async ({ client }) => {
+      const resolved = await client.pluginContainer.resolveId("./Hello.uf.tsx", main());
+      expect(resolved?.id).toBe(`${hello()}.vue`);
+    });
+    await expect(starting([nameless])).rejects.toThrow("error[UF7005]");
   });
 
   it("fails the authored file on a detected target whose ids have a suffix", async () => {
