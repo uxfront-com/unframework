@@ -75,8 +75,7 @@ export interface SpawnedNgServe {
   stop(): Promise<void>;
 }
 
-// Shorter than the fixture's own timeout: Playwright abandons a fixture whose setup times out, so
-// nothing would stop the process.
+// Shorter than the fixture's own timeout, so that a slow start reports what `ng serve` printed.
 const NG_READY_MS = 90_000;
 const NG_STOP_MS = 5000;
 const NG_ERRORS_MS = 200;
@@ -107,7 +106,7 @@ export function spawnNgServe(
       if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
     }
   };
-  // A worker that dies before its teardown still takes the server with it.
+  // A worker that exits before its teardown still takes the server with it.
   const killGroup = (): void => signal("SIGKILL");
   process.once("exit", killGroup);
   // Every pipe closes once the whole group has gone, so nothing it printed is lost.
@@ -140,7 +139,7 @@ export function spawnNgServe(
       // These also keep the pipes drained for as long as the server runs.
       createInterface({ input: stream }).on("line", (raw) => {
         if (started) return;
-        // Playwright's workers set `FORCE_COLOR`, and a colour code can split the URL.
+        // Under `FORCE_COLOR`, a colour code splits the URL before its port.
         const line = stripVTControlCharacters(raw);
         output.push(line);
         const listening = /Local:\s+http:\/\/[^:]+:(\d+)/.exec(line);

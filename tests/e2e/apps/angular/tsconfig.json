@@ -5,7 +5,9 @@
     "moduleResolution": "bundler",
     "strict": true,
     "skipLibCheck": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
   "angularCompilerOptions": { "strictTemplates": true },
   "files": ["src/package/main.ts"]

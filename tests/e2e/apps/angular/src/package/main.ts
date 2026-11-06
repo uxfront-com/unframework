@@ -1,5 +1,5 @@
 import { bootstrapApplication } from "@angular/platform-browser";
 
-import { Hello } from "./Hello";
+import { Hello } from "./Hello.ts";
 
 void bootstrapApplication(Hello);
