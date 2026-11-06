@@ -10,7 +10,7 @@ import { stripVTControlCharacters } from "node:util";
 import { rebuildWatcher, type Watcher } from "./edit.ts";
 import { HOST } from "./ports.ts";
 
-export interface StartedServer {
+interface StartedServer {
   port: number;
   watcher: Watcher;
   /** How long an edit waits for the server, when that's longer than the editor's default. */
@@ -69,7 +69,7 @@ async function startAstro(copy: string, mode: string): Promise<StartedServer> {
   return { port: server.address.port, watcher: server.watcher, stop: () => server.stop() };
 }
 
-export interface SpawnedNgServe {
+interface SpawnedNgServe {
   port: number;
   stdout: Readable;
   stop(): Promise<void>;
@@ -103,10 +103,13 @@ export function spawnNgServe(
     try {
       process.kill(-(child.pid as number), name);
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+      // A group that holds only a zombie answers EPERM on macOS: it's as gone as an empty one.
+      const { code } = error as NodeJS.ErrnoException;
+      if (code !== "ESRCH" && code !== "EPERM") throw error;
     }
   };
-  // A worker that exits before its teardown still takes the server with it.
+  // A worker that exits before its teardown still takes the server with it. One killed by a signal
+  // can't, and then the global teardown fails on the port.
   const killGroup = (): void => signal("SIGKILL");
   process.once("exit", killGroup);
   // Every pipe closes once the whole group has gone, so nothing it printed is lost.

@@ -1,5 +1,5 @@
-import { spawnSync } from "node:child_process";
-import { EventEmitter } from "node:events";
+import { spawn, spawnSync } from "node:child_process";
+import { EventEmitter, once } from "node:events";
 import {
   existsSync,
   mkdirSync,
@@ -13,6 +13,7 @@ import {
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createInterface } from "node:readline";
 import { PassThrough } from "node:stream";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -332,7 +333,7 @@ describe("rebuildWatcher", () => {
     await edited;
   });
 
-  it("restores on the next rebuild, and stops listening after it", async () => {
+  it("holds a restore until the next rebuild ends", async () => {
     const editor = createEditor(scratch, rebuildWatcher(output));
     const edited = editor.edit("Hello.tsx", "one", "two");
     await nextTask();
@@ -351,27 +352,34 @@ describe("rebuildWatcher", () => {
     ).rejects.toThrow("never reported a change");
   });
 
-  it("reaches only the watcher's own listeners, and each of them", () => {
+  it("stops reporting to a listener once it's removed", async () => {
     const watcher = rebuildWatcher(output);
     const seen: string[] = [];
     const listener = (path: string): void => {
       seen.push(path);
     };
     watcher.on("change", listener);
+    output.write(COMPLETE);
+    await nextTask();
+    expect(seen).toHaveLength(1);
     watcher.off("change", listener);
-    output.emit("data", COMPLETE);
-    expect(seen).toEqual([]);
+    output.write(COMPLETE);
+    await nextTask();
+    expect(seen).toHaveLength(1);
   });
 });
 
 describe("spawnNgServe", () => {
+  // Not `kill(pid, 0)`, which succeeds on a zombie: in CI's container, PID 1 never reaps the orphan
+  // of a killed process, so the process stays a zombie after it's gone. A missing `ps` throws, so
+  // that it can't pass as a dead process.
   const isAlive = (pid: number): boolean => {
-    try {
-      process.kill(pid, 0);
-      return true;
-    } catch {
-      return false;
-    }
+    const { error, stdout } = spawnSync("ps", ["-o", "stat=", "-p", String(pid)], {
+      encoding: "utf8",
+    });
+    if (error) throw error;
+    const state = stdout.trim();
+    return state !== "" && !state.startsWith("Z");
   };
   const until = async (done: () => boolean): Promise<void> => {
     for (let tries = 0; tries < 100 && !done(); tries += 1) {
@@ -386,6 +394,22 @@ describe("spawnNgServe", () => {
   };
   const LISTEN = 'console.log("  \\u279c  Local:   http://127.0.0.1:4321/");';
   const STAY = "setInterval(() => {}, 1000);";
+
+  it("counts a zombie as dead, in the helper these tests lean on", async () => {
+    // `exec` leaves a parent that never reaps its child, like PID 1 in CI's container.
+    const parent = spawn("sh", ["-c", "sleep 60 & echo $!; exec sleep 60"], {
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    const [line] = (await once(createInterface({ input: parent.stdout }), "line")) as [string];
+    const child = Number(line);
+    expect(isAlive(child)).toBe(true);
+    process.kill(child, "SIGKILL");
+    await until(() => !isAlive(child));
+    expect(isAlive(child)).toBe(false);
+    // Still a process table entry, which is what `kill(pid, 0)` would call alive.
+    expect(() => process.kill(child, 0)).not.toThrow();
+    parent.kill("SIGKILL");
+  });
 
   it("resolves with the port it prints, and passes the host and a free port", async () => {
     const seen = join(scratch, "args.json");
@@ -508,9 +532,9 @@ describe("spawnNgServe", () => {
           `require("node:fs").writeFileSync(${JSON.stringify(pidFile)}, String(process.pid));console.log("building");${STAY}`,
         ),
         scratch,
-        500,
+        2000,
       ),
-    ).rejects.toThrow(/didn't listen within 500ms[\s\S]*building/);
+    ).rejects.toThrow(/didn't listen within 2000ms[\s\S]*building/);
     expect(isAlive(Number(readFileSync(pidFile, "utf8")))).toBe(false);
   });
 
@@ -528,6 +552,32 @@ describe("spawnNgServe", () => {
     await new Promise((wait) => setTimeout(wait, 400));
     expect(isAlive(Number(readFileSync(pidFile, "utf8")))).toBe(true);
     await server.stop();
+  });
+
+  it("hands over the pipe that the rebuilds print to", async () => {
+    const server = await spawnNgServe(
+      fakeNg(`${LISTEN}
+      setInterval(() => console.log("Application bundle generation complete."), 20);`),
+      scratch,
+    );
+    writeFileSync(file(), "one");
+    await createEditor(scratch, rebuildWatcher(server.stdout), 1000).edit(
+      "Hello.tsx",
+      "one",
+      "two",
+    );
+    await server.stop();
+  });
+
+  it("stops a server that died before this process could reap it", async () => {
+    const server = await spawnNgServe(
+      fakeNg(`${LISTEN}setTimeout(() => process.exit(1), 50);`),
+      scratch,
+    );
+    // A busy event loop leaves the dead leader a zombie: macOS then answers a signal to its group
+    // with EPERM, where Linux delivers it to nothing.
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 300);
+    await expect(server.stop()).resolves.toBeUndefined();
   });
 
   it("stays usable when the server dies after it listened", async () => {
