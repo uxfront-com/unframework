@@ -6,7 +6,7 @@ project runs it as `unframework <command>`, from the directory that holds its
 
 | Exit code | Meaning                                                                             |
 | --------- | ----------------------------------------------------------------------------------- |
-| 0         | Success. Warnings and notes don't change it.                                        |
+| 0         | Success, warnings and notes included, but for what `strict` makes an error.         |
 | 1         | Error diagnostics, in a source or because no source was found.                      |
 | 2         | A usage error, a config that won't load or is invalid, or a failure writing a file. |
 
@@ -19,8 +19,9 @@ It never throws. `io` holds the working directory and where text goes, and defau
 unframework build [--type-oracle syntactic|tsgo]
 ```
 
-`build` compiles every `srcDir/**/*.uf.{tsx,ts}` through the project graph, in sorted order, skipping
-`node_modules` and `outDir`. Then it cleans each `outDir/<target>` of the config's `targets` and
+`build` compiles each `srcDir/**/*.uf.{tsx,ts}` that Node's `glob` finds through the project graph, in
+sorted order. It skips `node_modules` and `outDir`, and `glob` doesn't enter a symlinked or a dot
+directory, or one it can't read. Then it cleans each `outDir/<target>` of the config's `targets` and
 writes it:
 
 - **The outputs,** in the directories their sources have under `srcDir`. Each file equals what
@@ -45,8 +46,8 @@ good build stays in place. A failure while writing does exit 2 with the build ha
 - **UF1104:** two modules would write one file, without case and extension as an output imports
   it, or a target's barrel would export one name from two files. A module that would write the
   barrel's own `index.ts` counts too.
-- **UF7002** at `/outDir`: cleaning an `outDir/<target>` would delete the project or a
-  source.
+- **UF7002** at `/outDir`: cleaning an `outDir/<target>` would delete the project, a source, or a file
+  a source read.
 - **UF7002** at `/srcDir`: a source reaches a child or a shared module outside `srcDir`, which a tree
   can't hold beside it, so its relative import would break or its copy would leave `outDir/<target>`.
 

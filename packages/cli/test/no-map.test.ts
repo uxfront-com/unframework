@@ -1,7 +1,7 @@
 // A stubbed compile, since a file past the source-map diff's bound ships without a map, which no
 // real input does yet. It also gives the warning `strict` turns into an error, a file that doesn't
 // end in a newline, and the order of the compiles. The glob is reversed, as a file system may give
-// it (P8).
+// it (P8). The tsgo oracle can't load, so a command that doesn't choose it shows it stays unloaded.
 import { readFileSync } from "node:fs";
 import type * as FsPromises from "node:fs/promises";
 import { join } from "node:path";
@@ -26,6 +26,10 @@ vi.mock("node:fs/promises", async (original) => {
       yield* entries.toReversed();
     },
   };
+});
+
+vi.mock("@unframework/type-oracle-tsgo", () => {
+  throw new Error("the tsgo oracle was loaded");
 });
 
 const WARNING = {
@@ -55,6 +59,16 @@ vi.mock("@unframework/compiler", async (original) => {
       return {
         compile: async (file: string) => {
           compiles.push(file);
+          if (file === "src/setup-warning.uf.tsx") {
+            return {
+              filename: file,
+              ir: undefined,
+              diagnostics: [{ ...WARNING, code: "UF2007", file }],
+              outputs: { react: [{ path: "S.tsx", contents: "export default 4;\n" }] },
+              owners: { react: {} },
+              dependencies: [],
+            } as never;
+          }
           if (file === "src/case.uf.tsx") {
             const same = { contents: "export default 3;\n" };
             return {
@@ -95,6 +109,7 @@ vi.mock("@unframework/compiler", async (original) => {
           } as never;
         },
         copies: () => [],
+        dependencies: () => [],
       };
     },
   };
@@ -184,5 +199,39 @@ describe("strict", () => {
     const check = await run(root, "check", "--format", "json");
     expect(check.code).toBe(1);
     expect(JSON.parse(check.stdout)[0]).toMatchObject({ code: "UF4001", severity: "error" });
+  });
+
+  it("leaves any other warning a warning", async () => {
+    const root = project({ "src/setup-warning.uf.tsx": "", "unframework.config.mjs": STRICT });
+    const { code, stderr } = await run(root, "build");
+    expect(code).toBe(0);
+    expect(stderr).toContain("warning[UF2007]");
+  });
+});
+
+describe("the tsgo oracle", () => {
+  const TSGO = 'export default { targets: ["react"], typeOracle: "tsgo" };\n';
+
+  it("isn't loaded by default", async () => {
+    const root = project({ ...SOURCE, "unframework.config.mjs": CONFIG });
+    expect(await run(root, "check")).toMatchObject({ code: 0 });
+    expect(await run(root, "check", "--type-oracle", "syntactic")).toMatchObject({ code: 0 });
+  });
+
+  // Vitest reports the factory's throw as this error, whatever its message.
+  it("is loaded when the flag or the config chooses it", async () => {
+    const flag = project({ ...SOURCE, "unframework.config.mjs": CONFIG });
+    const chosen = await run(flag, "check", "--type-oracle", "tsgo");
+    expect(chosen.code).toBe(2);
+    expect(chosen.stderr).toContain("error when mocking a module");
+    const config = project({ ...SOURCE, "unframework.config.mjs": TSGO });
+    const configured = await run(config, "check");
+    expect(configured.code).toBe(2);
+    expect(configured.stderr).toContain("error when mocking a module");
+  });
+
+  it("gives way to --type-oracle syntactic", async () => {
+    const root = project({ ...SOURCE, "unframework.config.mjs": TSGO });
+    expect(await run(root, "check", "--type-oracle", "syntactic")).toMatchObject({ code: 0 });
   });
 });

@@ -73,7 +73,8 @@ export default defineConfig({
   lazily, and the umbrella's `files` include `bin`.
 - The exit codes are 0 for success, 1 for error diagnostics and 2 for a usage or config error, or a
   failure writing a file. UF7007 is an error diagnostic, so it exits 1.
-- `build` globs `srcDir/**/*.uf.{tsx,ts}`, sorted (P8), skips `node_modules` and `outDir`, and
+- `build` globs `srcDir/**/*.uf.{tsx,ts}`, sorted (P8), skips `node_modules` and `outDir` (`glob` itself
+  doesn't enter a symlinked or a dot directory, or one it can't read), and
   compiles through `createProject` (ADR-0071). `--type-oracle tsgo` lazily imports the tsgo oracle,
   and overrides the config's `typeOracle`. No sources reports UF7007 `no-sources`. Under `strict`, a
   `UF4xxx` warning counts as an error (§8.1).
@@ -88,10 +89,13 @@ export default defineConfig({
   last good build stays in place. A failure while writing exits 2 with the build half written.
 - `build` and `check` share a compilation, so `check` fails wherever `build`'s compile would. It holds source
   maps too, since a map that can't follow formatting is an error (UF9002). It reports what no single
-  compile can see, with the codes that already say so:
-  - UF1104, for two modules that would write one file, or one barrel name from two files.
-  - UF7002 at `/outDir`, for an `outDir/<target>` that holds the project or a source, since
-    cleaning it would delete them.
+  compile can see, with the nearest codes the PLAN's catalogue has. Their catalogue text doesn't name
+  these cases yet, so each message says what the problem is and how to fix it:
+  - UF1104, for two modules that would write one file, one barrel name from two files, or a module
+    that would write the barrel's `index.ts`. Equal outputs don't excuse two modules: only a shared
+    module reached from two importers is one file.
+  - UF7002 at `/outDir`, for an `outDir/<target>` that holds the project, a source, or a file a
+    source read, since cleaning it would delete them.
   - UF7002 at `/srcDir`, for a child or a shared module outside `srcDir`, which a tree mirroring
     `srcDir` can't hold beside its importer.
 - `check` takes `--format pretty|json|sarif`, through the renderers `@unframework/diagnostics`

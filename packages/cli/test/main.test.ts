@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { run } from "./helpers.ts";
+import { main } from "../src/index.ts";
+import { project, run } from "./helpers.ts";
 
 describe("main", () => {
   it("prints the usage on --help, and exits 0", async () => {
@@ -24,5 +25,19 @@ describe("main", () => {
     const { code, stderr } = await run(".", name);
     expect(code).toBe(2);
     expect(stderr).toContain(`unknown command "${name}"`);
+  });
+
+  it("reads the working directory when it runs", async () => {
+    const root = project({
+      "unframework.config.mjs": 'export default { targets: ["vue"] };\n',
+      "src/A.uf.tsx": "export default function A() {\n  return <i />;\n}\n",
+    });
+    const before = process.cwd();
+    process.chdir(root);
+    try {
+      expect(await main(["check"])).toBe(0);
+    } finally {
+      process.chdir(before);
+    }
   });
 });

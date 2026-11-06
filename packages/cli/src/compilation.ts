@@ -37,6 +37,16 @@ export interface Compilation {
   trees: ReadonlyMap<string, OutputFile[]>;
 }
 
+/** One source's compile, and where it sits under srcDir. */
+interface Compiled {
+  file: string;
+  directory: string;
+  result: CompileResult;
+  copies: OutputFile[];
+  /** Every file it read, relative to the root. */
+  read: string[];
+}
+
 /** A renderer's text as it goes to a terminal: nothing when there is nothing, else a whole line. */
 export function printable(text: string): string {
   return text && `${text}\n`;
@@ -118,12 +128,7 @@ export async function compileSources(io: Io, oracle: string | undefined): Promis
     (oracle ?? config.typeOracle) === "tsgo"
       ? (await import("@unframework/type-oracle-tsgo")).createTsgoOracle({ root })
       : createSyntacticOracle({ root, readFile: read });
-  const compiled: {
-    file: string;
-    directory: string;
-    result: CompileResult;
-    copies: OutputFile[];
-  }[] = [];
+  const compiled: Compiled[] = [];
   try {
     const project = createProject({
       root,
@@ -137,7 +142,13 @@ export async function compileSources(io: Io, oracle: string | undefined): Promis
     for (const file of files) {
       const result = await project.compile(file);
       const directory = posix.relative(srcDir, posix.dirname(file));
-      compiled.push({ file, directory, result, copies: project.copies(file) });
+      compiled.push({
+        file,
+        directory,
+        result,
+        copies: project.copies(file),
+        read: project.dependencies(file),
+      });
     }
   } finally {
     await typeOracle.dispose();
@@ -158,6 +169,18 @@ export async function compileSources(io: Io, oracle: string | undefined): Promis
     if (outside !== undefined) {
       const problem = `doesn't hold ${outside}, which ${file} imports. Set srcDir to a directory that holds both.`;
       return finish(2, [...diagnostics, configProblem("/srcDir", problem)], config);
+    }
+  }
+
+  // Nor what a source read, which the glob doesn't list: a child, a sheet, a shared module, a type.
+  for (const { file, read: readFiles } of compiled) {
+    for (const target of config.targets) {
+      const directory = join(config.outDir, target);
+      const held = readFiles.find((path) => within(directory, join(root, path)));
+      if (held !== undefined) {
+        const problem = `cleans ${named(directory)}, which holds ${held}, which ${file} reads. Set outDir to a directory of its own.`;
+        return finish(2, [...diagnostics, configProblem("/outDir", problem)], config);
+      }
     }
   }
 
@@ -203,24 +226,29 @@ function strictly(diagnostic: Diagnostic): Diagnostic {
  */
 function assembleTree(
   target: string,
-  compiled: readonly {
-    file: string;
-    directory: string;
-    result: CompileResult;
-    copies: OutputFile[];
-  }[],
+  compiled: readonly Compiled[],
   diagnostics: Diagnostic[],
 ): OutputFile[] {
   const collision = (file: string, span: Span, message: string) =>
     diagnostics.push(createDiagnostic("UF1104", { file, span, message, target }));
 
   // Keyed as UF1104 compares files: without case, and as an output imports them, with no extension.
-  const claimed = new Map<string, { output: OutputFile; module: string }>();
-  const claim = (output: OutputFile, module: string) => {
+  const claimed = new Map<string, { output: OutputFile; module: string; copy: boolean }>();
+  const claim = (output: OutputFile, module: string, copy = false) => {
     const key = output.path.replace(/\.tsx?$/, "").toLowerCase();
     const held = claimed.get(key);
-    if (!held) claimed.set(key, { output, module });
-    else if (held.output.path !== output.path || held.output.contents !== output.contents) {
+    if (!held) {
+      claimed.set(key, { output, module, copy });
+      return;
+    }
+    // Only a shared module reached from two importers is one file. Two modules with equal outputs
+    // are two sources, and only one of them would reach the tree or its map.
+    if (
+      !copy ||
+      !held.copy ||
+      held.output.path !== output.path ||
+      held.output.contents !== output.contents
+    ) {
       const message = `${module} and ${held.module} would both write ${output.path}. Rename one of them.`;
       collision(module, NO_SPAN, message);
     }
@@ -265,11 +293,21 @@ function assembleTree(
         barrelLine(name, whole || isDefault ? "default" : name, specifier, file, each.span);
       }
     }
-    for (const copy of copies) claim({ ...copy, path: posix.join(directory, copy.path) }, file);
+    for (const copy of copies)
+      claim({ ...copy, path: posix.join(directory, copy.path) }, file, true);
   }
 
   const lines = [...exported.values()].map(({ line }) => line).toSorted();
-  const held = claimed.get(BARREL.replace(/\.ts$/, ""));
-  claim({ path: BARREL, contents: `${lines.join("\n")}\n` }, held?.module ?? compiled[0]!.file);
+  const barrel = BARREL.replace(/\.ts$/, "");
+  const held = claimed.get(barrel);
+  if (held) {
+    const message = `${held.module} would write ${held.output.path}, which takes the place of the ${target} barrel, ${BARREL}. Rename it.`;
+    collision(held.module, NO_SPAN, message);
+  }
+  claimed.set(barrel, {
+    output: { path: BARREL, contents: `${lines.join("\n")}\n` },
+    module: BARREL,
+    copy: false,
+  });
   return [...claimed.values()].map(({ output }) => output);
 }

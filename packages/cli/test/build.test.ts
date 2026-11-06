@@ -135,6 +135,36 @@ describe("build", () => {
     expect(map.version).toBe(3);
   });
 
+  it("keeps compile()'s mappings in a sidecar", async () => {
+    const root = project(FIXTURE);
+    await run(root, "build");
+    const typeOracle = createSyntacticOracle({ root, readFile });
+    const { outputs } = await compile(FIXTURE["src/Card.uf.tsx"], {
+      filename: "src/Card.uf.tsx",
+      targets: ["react"],
+      resolve: createFileResolver({ root, readFile, typeOracle }),
+      typeOracle,
+      sourceMap: true,
+    });
+    await typeOracle.dispose();
+    const map = outputs.react!.find(({ path }) => path === "Card.tsx")!.map!;
+    expect(map.mappings).not.toBe("");
+    const sidecar = JSON.parse(readFileSync(join(root, "dist/react/Card.tsx.map"), "utf8"));
+    expect(sidecar.mappings).toBe(map.mappings);
+    expect(sidecar.names).toEqual(map.names);
+  });
+
+  it("gives a .ts output a sidecar and a comment too", async () => {
+    const root = project(FIXTURE);
+    await run(root, "build");
+    const react = tree(join(root, "dist/react"));
+    expect(react["useToggle.ts"]).toMatch(/\n\/\/# sourceMappingURL=useToggle\.ts\.map\n$/);
+    expect(JSON.parse(react["useToggle.ts.map"]!).sources).toEqual(["../../src/useToggle.uf.ts"]);
+    const angular = tree(join(root, "dist/angular"));
+    expect(angular["card.ts"]).toMatch(/\n\/\/# sourceMappingURL=card\.ts\.map\n$/);
+    expect(JSON.parse(angular["card.ts.map"]!).sources).toEqual(["../../src/Card.uf.tsx"]);
+  });
+
   it("gives identical bytes on a second run and in another directory (P8)", async () => {
     const first = project(FIXTURE);
     await run(first, "build");
@@ -280,6 +310,32 @@ export { Card };
     expect(existsSync(join(root, "dist"))).toBe(false);
   });
 
+  it("reports two modules with equal outputs as UF1104", async () => {
+    const root = project({
+      "unframework.config.mjs": 'export default { targets: ["react"] };\n',
+      "src/x.uf.tsx": "// x\nexport default function Card() {\n  return <i>x</i>;\n}\n",
+      "src/y.uf.tsx": "// y\nexport default function Card() {\n  return <i>x</i>;\n}\n",
+    });
+    const { code, stderr } = await run(root, "build");
+    expect(code).toBe(1);
+    expect(stderr).toContain("error[UF1104]");
+    expect(stderr).toContain("would both write Card.tsx");
+    expect(existsSync(join(root, "dist"))).toBe(false);
+  });
+
+  it("writes one shared module that two importers reach", async () => {
+    const importer = (name: string) =>
+      `import { h } from "./util.ts";\n\nexport default function ${name}() {\n  return <i>{h}</i>;\n}\n`;
+    const root = project({
+      "unframework.config.mjs": 'export default { targets: ["react"] };\n',
+      "src/A.uf.tsx": importer("A"),
+      "src/B.uf.tsx": importer("B"),
+      "src/util.ts": "export const h = 1;\n",
+    });
+    expect(await run(root, "build")).toMatchObject({ code: 0 });
+    expect(readFileSync(join(root, "dist/react/util.ts"), "utf8")).toBe("export const h = 1;\n");
+  });
+
   it("reports two modules that differ only in case as UF1104", async () => {
     const root = project({
       "unframework.config.mjs": 'export default { targets: ["react"] };\n',
@@ -298,8 +354,9 @@ export { Card };
     });
     const { code, stderr } = await run(root, "build");
     expect(code).toBe(1);
-    expect(stderr).toContain("would both write index.ts");
-    expect(stderr).toContain("src/Index.uf.tsx");
+    expect(stderr).toContain(
+      "src/Index.uf.tsx would write Index.tsx, which takes the place of the react barrel, index.ts.",
+    );
   });
 
   it("reports two components of one name in two directories as UF1104, from the barrel", async () => {
@@ -328,7 +385,9 @@ export default function Card() {
     const { code, stderr } = await run(root, "build");
     expect(code).toBe(1);
     expect(stderr).toContain("error[UF1104]");
-    expect(stderr).toContain("would both write index.ts");
+    expect(stderr).toContain(
+      "src/Card.uf.tsx would write index.ts, which takes the place of the react barrel, index.ts.",
+    );
   });
 
   it("refuses to clean a directory that holds the sources", async () => {
@@ -364,6 +423,47 @@ export default function Card() {
     expect(code).toBe(2);
     expect(stderr).toContain("holds the project");
     expect(existsSync(join(parent, "react/src/A.uf.tsx"))).toBe(true);
+  });
+
+  it.each([
+    [
+      "a shared module",
+      'export default { targets: ["react"], outDir: "src" };\n',
+      'import { h } from "./react/helper.ts";\n\nexport default function A() {\n  return <i>{h}</i>;\n}\n',
+      "src/react/helper.ts",
+      "export const h = 1;\n",
+    ],
+    [
+      "a sheet",
+      'export default { targets: ["react"], outDir: "src" };\n',
+      'import "./react/a.css";\n\nexport default function A() {\n  return <i class="a">x</i>;\n}\n',
+      "src/react/a.css",
+      ".a {\n  color: red;\n}\n",
+    ],
+    [
+      "a child",
+      'export default { targets: ["react"], srcDir: ".", outDir: "dist" };\n',
+      'import Kid from "./dist/react/Kid.uf.tsx";\n\nexport default function A() {\n  return <Kid />;\n}\n',
+      "dist/react/Kid.uf.tsx",
+      "export default function Kid() {\n  return <i>x</i>;\n}\n",
+    ],
+    [
+      "a declaration file",
+      'export default { targets: ["react"], outDir: "src" };\n',
+      'import type { P } from "./react/p.d.ts";\n\nexport default function A(props: P) {\n  return <i>{props.a}</i>;\n}\n',
+      "src/react/p.d.ts",
+      "export interface P {\n  a: string;\n}\n",
+    ],
+  ])("refuses to clean %s a source read", async (_name, config, source, input, text) => {
+    const file = config.includes('srcDir: "."') ? "A.uf.tsx" : "src/A.uf.tsx";
+    const root = project({ "unframework.config.mjs": config, [file]: source, [input]: text });
+    for (const command of ["check", "build"]) {
+      const { code, stdout, stderr } = await run(root, command);
+      expect(code).toBe(2);
+      expect(stdout + stderr).toContain(`holds ${input}, which ${file} reads`);
+      expect(stdout + stderr).toContain('"/outDir"');
+    }
+    expect(readFileSync(join(root, input), "utf8")).toBe(text);
   });
 
   it("refuses a shared module outside srcDir, which would leave the target's directory", async () => {
