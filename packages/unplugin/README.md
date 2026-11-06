@@ -262,3 +262,39 @@ reads its `styleUrl` itself, so `ngtscVirtual` hands it the sheet from here.
 
 The project caches each file's compile, so every id of a file shares one compile until the file,
 or a file it reached, changes.
+
+## Astro
+
+An Astro project adds the integration rather than the Vite plugin, so a page can import a `.uf.tsx`
+component like any `.astro` one. It's the `./astro` entry, and it takes the plugin's options except
+`target`, which it sets to `"astro"`:
+
+```ts
+// astro.config.mjs
+import unframework from "@unframework/unplugin/astro";
+import { defineConfig } from "astro/config";
+
+export default defineConfig({
+  integrations: [unframework()],
+});
+```
+
+```astro
+---
+import Hello from "../components/Hello.uf.tsx";
+---
+
+<Hello />
+```
+
+`astro dev` and `astro build` both render the component, with its children and its stylesheet. The
+output is static, as `@unframework/target-astro` describes. The integration uses two of Astro's hooks:
+
+- **`astro:config:setup`** adds the plugin. It also takes `.uf.tsx` files out of the dependency
+  scan's entries: Astro's entries match every `.tsx` file under `src`, and the scan would read one
+  as plain JSX. Without React's JSX runtime installed, the scan would fail with an error, and Vite
+  would lose the dependencies it would have found, pre-bundling those only as requests reach them.
+- **`astro:config:done`** reads the final `compressHTML`, after every integration's setup. Anything
+  but `"jsx"`, Astro's default, logs the warning UF7010, because a component can then render
+  different whitespace from the other targets, and no file can pin the option (ADR-0026). The build
+  carries on.
