@@ -58,7 +58,7 @@ built.
   `@analogjs/vite-plugin-angular`. A name matches as written here, so `vite:vue-jsx` and
   `vite-plugin-qwik-post` name no framework, and several plugins of one framework name one target.
 - Until the target is known, the filters match every target's suffix, or only `extension` when it's
-  set, because a bundler may read a hook's filter only once. Once it's known, the hooks leave the ids of the other targets alone.
+  set, because a bundler may read a hook's filter only once. Once it's known, the hooks leave the module ids of the other targets alone.
 - No match reports UF7005 `target-not-detected`, and two matches UF7006 `target-ambiguous`. Both fail
   the start of a dev server or a build. An Astro app that also adds a framework's plugin is two matches, so it passes
   `target`.

@@ -115,7 +115,7 @@ name matches as this table writes it, so `vite:vue-jsx` and `vite-plugin-qwik-po
 No match fails the start of a dev server or a build with UF7005, and plugins of two frameworks with
 UF7006, which names them. Keep in mind that an Astro app that also adds a framework's plugin holds both, so pass
 `target` there. Until the target is known the hooks' filters match every target's suffix, or only
-`extension` when you set it, and once it's known the hooks leave the other targets' ids alone. A third-party target is never detected.
+`extension` when you set it, and once it's known the hooks leave the other targets' module ids alone. A third-party target is never detected.
 
 On Vue, whichever way the target was chosen, plugin-vue's `template.compilerOptions.whitespace` of
 `"preserve"` reports the warning UF7010 at the start, because outputs assume `"condense"`
