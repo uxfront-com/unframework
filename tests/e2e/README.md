@@ -33,12 +33,16 @@ An install that stops with `ERR_PNPM_IGNORED_BUILDS` names a package that runs a
 
 Each app keeps its files per mode, so that work on one mode leaves the other's files alone. Only `package.json` is shared:
 
-| Path                                              | Holds                                                     |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| `package.json`                                    | Exact versions from the `catalog:` and no path specifier  |
-| `vite.config.package.ts`, `vite.config.plugin.ts` | Each mode's Vite config, whose `root` is its `src/<mode>` |
-| `src/package/`, `src/plugin/`                     | Each mode's `index.html` and components                   |
-| `e2e/package/`, `e2e/plugin/`                     | Each mode's specs                                         |
+| Path                                                  | Holds                                                            |
+| ----------------------------------------------------- | ---------------------------------------------------------------- |
+| `package.json`                                        | Exact versions from the `catalog:` and no path specifier         |
+| `vite.config.package.ts`, `vite.config.plugin.ts`     | Each mode's Vite config, whose `root` is its `src/<mode>`        |
+| `astro.config.package.mjs`, `astro.config.plugin.mjs` | Astro's config for each mode, whose `srcDir` is its `src/<mode>` |
+| `angular.json`, `tsconfig.json`                       | The Angular CLI's workspace, for the package mode                |
+| `src/package/`, `src/plugin/`                         | Each mode's entry and components                                 |
+| `e2e/package/`, `e2e/plugin/`                         | Each mode's specs                                                |
+
+Angular has the package mode only, because the Angular CLI has no plugin API. It's also the one app with TypeScript 6, since an Angular CLI app needs its compiler stack: [ADR-0079](../../docs/adrs/0079-the-e2e-apps-and-packed-tarballs.md) records the exception. Qwik has a `tsconfig.json` too, which points Vite's dependency scan at Qwik's JSX runtime.
 
 Each directory under `e2e/` is one Playwright project, named `<app>:<mode>`, so a new app or mode needs no change to `playwright.config.ts`. The `dev:package` and `dev:plugin` scripts start a mode by hand in a copy.
 
@@ -58,16 +62,26 @@ test("hmr", async ({ page, edit }) => {
 
 The fixtures give you these:
 
-| Fixture     | Scope  | What it does                                                                                                                                          |
-| ----------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `devServer` | worker | Starts the copy's own Vite on a free port of `127.0.0.1`, through `createRequire`, and stops it in teardown. Its value is `url`, `copy` and `watcher` |
-| `baseURL`   | test   | The dev server's `url`                                                                                                                                |
-| `edit`      | test   | `edit(file, from, to)` changes a file in the copy, by its path from the copy's root, and restores it when the test ends                               |
+| Fixture     | Scope  | What it does                                                                                                                                      |
+| ----------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `devServer` | worker | Starts the copy's own dev server on a free port of `127.0.0.1`, and stops it in teardown. Its value is `url`, `copy`, `watcher` and `editTimeout` |
+| `baseURL`   | test   | The dev server's `url`                                                                                                                            |
+| `edit`      | test   | `edit(file, from, to)` changes a file in the copy, by its path from the copy's root, and restores it when the test ends                           |
 
-`edit` rejects when the file doesn't contain `from`, since the test would otherwise wait for an update that never comes. It and the restore also wait until the dev server's watcher reports the write, and reject after 5 seconds if it never does, so the file must be one the server watches, like a file under the mode's `src/`. Without that wait, the next page could load before Vite has seen the write and keep the old content.
+Each app's server starts its own way, and that decides what `edit` waits for:
+
+| App                             | Server                                                          | `edit` waits for                                    | Timeout |
+| ------------------------------- | --------------------------------------------------------------- | --------------------------------------------------- | ------- |
+| React, Vue, Svelte, Solid, Qwik | Vite in the worker's process, loaded through `createRequire`    | Vite's watcher to report the write                  | 5s      |
+| Astro                           | `dev()` in the worker's process, loaded through `createRequire` | The watcher on `dev()`'s result to report the write | 5s      |
+| Angular                         | `ng serve`, spawned in its own process group                    | `rebuildWatcher`: the end of the next rebuild       | 20s     |
+
+`edit` rejects when the file doesn't contain `from`, since the test would otherwise wait for an update that never comes. It and the restore also wait as the table says, and reject if the wait runs out, so the file must be one the server watches, like a file under the mode's `src/`. Without that wait, the next page could load before the server has seen the write and keep the old content.
+
+`ng serve` runs in another process, so its watcher is out of reach, and a file event alone would come too early: until the rebuild ends, a page still loads the old bundle. `rebuildWatcher` reads the end of each rebuild from what `ng serve` prints, whether the rebuild failed, changed nothing or changed the bundle. Write one edit at a time there, because a file written during a rebuild is reported when that rebuild ends.
 
 The run uses one worker and no retries. A project's specs share one copy and an HMR spec edits it, so nothing runs beside it. A flaky spec is a bug, so we never retry it.
 
 ## Servers and ports
 
-Each dev server belongs to its Playwright worker and takes a free port, which it records in `<work>/.ports`. The global teardown then connects to every recorded port and fails the run if one still answers. On success it prints the ports it checked, and `lsof -iTCP -sTCP:LISTEN` should show none of them. Test results go to `<work>/.results`, outside the repository.
+Each dev server belongs to its Playwright worker and takes a free port, which it records in `<work>/.ports`. A spawned `ng serve` gets a polite signal to its whole process group in teardown, and a `SIGKILL` 5 seconds later if it's still there, so esbuild's service goes with it. The global teardown then connects to every recorded port and fails the run if one still answers. On success it prints the ports it checked, and `lsof -iTCP -sTCP:LISTEN` should show none of them. Test results go to `<work>/.results`, outside the repository.

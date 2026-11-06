@@ -73,7 +73,12 @@ built.
 - Six apps have both modes. `angular` has the package mode only, because the Angular CLI has no plugin
   API (§8.2) and Analog plugin mode is deferred (ADR-0075). Its HMR test edits the app's own component.
 - The fixture starts Astro's in-process `dev()`, and a spawned `ng serve` in its own process group,
-  killed in teardown.
+  killed in teardown. `ng serve` takes port 0, and the fixture reads the port it prints.
+- `edit` takes an in-process watcher. Vite's fits, and so does the `watcher` on Astro's `dev()`, each
+  with a 5 second limit. `ng serve` has none in reach, and a file event alone comes before its new
+  bundle. So `rebuildWatcher` adapts it: it reports the end of each rebuild that `ng serve` prints,
+  failed or not, as a change to any file, with a 20 second limit. A rebuild only runs once the server
+  has seen a write.
 - The Angular app is the one exception to `AGENTS.md`'s TypeScript 6 rule. It declares
   `@angular/cli` 22.2.0, which M6 adds to the catalog beside `@angular/build` 22.2.0,
   `@angular/compiler-cli` at its exact catalog version, and TypeScript 6 as
