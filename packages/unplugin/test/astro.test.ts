@@ -6,12 +6,15 @@ import { fileURLToPath } from "node:url";
 
 import { build, dev } from "astro";
 import type { AstroInlineConfig } from "astro";
+import type { ViteDevServer } from "vite";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import unframework from "../src/astro.ts";
 
 // Astro and Vite load and bundle a project here, which takes far longer than a unit test.
 const SLOW = 120_000;
+
+const HOST = "127.0.0.1";
 
 const FILES: Record<string, string> = {
   "src/pages/index.astro":
@@ -120,14 +123,36 @@ describe("the Astro integration", () => {
       const errors = captureErrors();
       // Astro's dev server adds no route handling while `VITEST` is set.
       vi.stubEnv("VITEST", "");
-      const server = await dev(configOf("dev", { server: { port: 0 } }));
+      let vite: ViteDevServer | undefined;
+      const server = await dev(
+        configOf("dev", {
+          // An address, not `localhost`: in a Linux container the server may bind `::1` while
+          // `fetch` connects to `127.0.0.1`.
+          server: { host: HOST, port: 0 },
+          integrations: [
+            unframework(),
+            {
+              name: "keeps-the-vite-server",
+              hooks: {
+                "astro:server:setup": ({ server: viteServer }) => {
+                  vite = viteServer;
+                },
+              },
+            },
+          ],
+        }),
+      );
       try {
-        const url = `http://localhost:${server.address.port}/`;
+        const url = `http://${HOST}:${server.address.port}/`;
         const html = await (await fetch(url)).text();
         expect(html).toContain("Hello, Astro!");
         expect(html).toContain("A child");
-        expect(html).toContain("rebeccapurple");
+        expect(html).toMatch(/<section[^>]* data-uf-\w+/);
+        expect(html).toMatch(/\.card\[data-uf-\w+\]\s*\{\s*color: rebeccapurple/);
         expect(output()).not.toContain("UF7010");
+        // The scan runs apart from the request, so its error may not have been logged yet.
+        expect(vite?.environments.client.depsOptimizer).toBeDefined();
+        await vite?.environments.client.depsOptimizer?.scanProcessing;
         expect(errors()).not.toContain("dependency scan");
       } finally {
         await server.stop();
@@ -143,7 +168,8 @@ describe("the Astro integration", () => {
     "reports UF7010 when compressHTML is %s",
     async (_name, compressHTML) => {
       const output = captureOutput();
-      await build(configOf(`compress-${String(compressHTML)}`, { compressHTML }));
+      // At `warn`, since a project may hide Astro's `info` lines, and the report must still show.
+      await build(configOf(`compress-${String(compressHTML)}`, { compressHTML, logLevel: "warn" }));
       expect(output()).toContain("warning[UF7010]");
       expect(output()).toContain(`compressHTML is ${String(compressHTML)}`);
       expect(builtPage(`compress-${String(compressHTML)}`)).toContain("Hello, Astro!");

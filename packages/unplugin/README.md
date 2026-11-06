@@ -292,8 +292,9 @@ output is static, as `@unframework/target-astro` describes. The integration uses
 
 - **`astro:config:setup`** adds the plugin. It also takes `.uf.tsx` files out of the dependency
   scan's entries: Astro's entries match every `.tsx` file under `src`, and the scan would read one
-  as plain JSX. Without React's JSX runtime installed, the scan would fail, and Vite would skip
-  pre-bundling for the whole project.
+  as plain JSX. Without React's JSX runtime installed, the scan would fail with an error, and Vite
+  would lose the dependencies it would have found, pre-bundling those only as requests reach them.
 - **`astro:config:done`** reads the final `compressHTML`, after every integration's setup. Anything
-  but `"jsx"`, Astro's default, logs the warning UF7010, because the printer's layout assumes it and
-  no file can pin it (ADR-0026). The build carries on.
+  but `"jsx"`, Astro's default, logs the warning UF7010, because a component can then render
+  different whitespace from the other targets, and no file can pin the option (ADR-0026). The build
+  carries on.

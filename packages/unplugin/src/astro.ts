@@ -20,8 +20,9 @@ export default function unframework(options: UnframeworkAstroOptions = {}): Astr
           vite: {
             plugins: [unframeworkVite({ target: "astro", ...options })],
             // Astro's scan entries match every `.tsx` under `src`, and the scan would read a
-            // `.uf.tsx` file as plain JSX. Without React's JSX runtime installed, it would fail,
-            // and Vite would skip pre-bundling for the whole project.
+            // `.uf.tsx` file as plain JSX. Without React's JSX runtime installed, it would fail
+            // with an error, and Vite would lose the dependencies it would have found,
+            // pre-bundling those only as requests reach them.
             optimizeDeps: { entries: ["!**/*.uf.tsx"] },
           },
         });
