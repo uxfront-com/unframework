@@ -69,6 +69,21 @@ vi.mock("@unframework/compiler", async (original) => {
               dependencies: [],
             } as never;
           }
+          if (file === "src/copy-clash.uf.tsx" || file === "src/copy-case.uf.tsx") {
+            return {
+              filename: file,
+              ir: undefined,
+              diagnostics: [],
+              outputs: {
+                react:
+                  file === "src/copy-clash.uf.tsx"
+                    ? [{ path: "C.ts", contents: "export const shared = 1;\n" }]
+                    : [],
+              },
+              owners: { react: {} },
+              dependencies: [],
+            } as never;
+          }
           if (file === "src/case.uf.tsx") {
             const same = { contents: "export default 3;\n" };
             return {
@@ -108,7 +123,17 @@ vi.mock("@unframework/compiler", async (original) => {
             dependencies: [],
           } as never;
         },
-        copies: () => [],
+        copies: (file: string) => {
+          const contents = "export const shared = 1;\n";
+          if (file === "src/copy-clash.uf.tsx") return [{ path: "C.ts", contents }];
+          if (file === "src/copy-case.uf.tsx") {
+            return [
+              { path: "d.ts", contents },
+              { path: "D.ts", contents },
+            ];
+          }
+          return [];
+        },
         dependencies: () => [],
       };
     },
@@ -145,6 +170,22 @@ describe("two files of one text whose paths differ only in case", () => {
     const { code, stderr } = await run(root, "build");
     expect(code).toBe(1);
     expect(stderr).toContain("would both write A.tsx");
+  });
+});
+
+describe("a shared module's copy", () => {
+  it.each([
+    ["a module's output of its text", "src/copy-clash.uf.tsx", "would both write C.ts"],
+    [
+      "another copy whose path differs only in case",
+      "src/copy-case.uf.tsx",
+      "would both write D.ts",
+    ],
+  ])("is UF1104 beside %s", async (_name, source, message) => {
+    const root = project({ [source]: "", "unframework.config.mjs": CONFIG });
+    const { code, stderr } = await run(root, "build");
+    expect(code).toBe(1);
+    expect(stderr).toContain(message);
   });
 });
 

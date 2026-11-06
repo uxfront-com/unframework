@@ -243,12 +243,7 @@ function assembleTree(
     }
     // Only a shared module reached from two importers is one file. Two modules with equal outputs
     // are two sources, and only one of them would reach the tree or its map.
-    if (
-      !copy ||
-      !held.copy ||
-      held.output.path !== output.path ||
-      held.output.contents !== output.contents
-    ) {
+    if (!copy || !held.copy || held.output.path !== output.path) {
       const message = `${module} and ${held.module} would both write ${output.path}. Rename one of them.`;
       collision(module, NO_SPAN, message);
     }
