@@ -324,6 +324,40 @@ jobs:
           overwrite: true
           retention-days: 7
 
+  # Decides whether the canaries run (ADR-0073). On a pull request it diffs the merge commit against
+  # its first parent: the PR's net change against the current base. --no-renames lists both sides
+  # of a move, so moving a file off the list still counts. `shell: bash` sets pipefail, which a step
+  # with no `shell` lacks: a failed diff turns this job red, and never passes as a skip (P2).
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      canaries: ${{ steps.filter.outputs.canaries }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Filter
+        id: filter
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            git diff --no-renames --name-only HEAD^1 HEAD | node tests/integration/scripts/canary-paths.ts >> "$GITHUB_OUTPUT"
+          else
+            echo "canaries=true" >> "$GITHUB_OUTPUT"
+          fi
+
   # Each live layer has a canary: a corruption that layer must catch. A job fails if any of its
   # canaries passes (plan §7.7). Each entry's `canaries` is what `pnpm test:canaries` takes: a
   # layer's canaries, or one canary where a layer has two that run the browser projects. A
@@ -331,8 +365,18 @@ jobs:
   # target, so it runs in shards, each on a part of the cases (ADR-0052).
   # harness/canaries.unit.test.ts holds the matrix to every canary, once or in every shard, at
   # most one browser canary per job, and shards for each whose browser specs run.
+  # A pull request runs them only when it changes a path that can change a canary's answer: the
+  # list is CANARY_PATHS in tests/integration/scripts/canary-paths.ts. A skipped job counts as
+  # passed. A push to main and workflow_dispatch run them all. The accepted risk (ADR-0073): a
+  # change to a compile package the list leaves out (ir, parser, diagnostics, analyzer,
+  # type-oracle, type-oracle-tsgo, codegen and the targets apart from their toolchain files,
+  # unframework) can change a canary's answer, most plainly a target-specific one such as
+  # L13-qwik-handler-throws. The harness's unit tests, which always run, and nightly.yml, which
+  # runs every canary, are the backstop.
   canaries:
     name: "Canaries (${{ matrix.canaries }}${{ matrix.shard && format(', shard {0}', matrix.shard) || '' }})"
+    needs: changes
+    if: ${{ needs.changes.outputs.canaries == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
