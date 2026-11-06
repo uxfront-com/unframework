@@ -1,0 +1,188 @@
+// A stubbed compile, since a file past the source-map diff's bound ships without a map, which no
+// real input does yet. It also gives the warning `strict` turns into an error, a file that doesn't
+// end in a newline, and the order of the compiles. The glob is reversed, as a file system may give
+// it (P8).
+import { readFileSync } from "node:fs";
+import type * as FsPromises from "node:fs/promises";
+import { join } from "node:path";
+
+import type * as Compiler from "@unframework/compiler";
+import type { Project } from "@unframework/compiler";
+import { describe, expect, it, vi } from "vitest";
+
+import { project, run, tree } from "./helpers.ts";
+
+const compiles = vi.hoisted((): string[] => []);
+const projects = vi.hoisted((): unknown[] => []);
+const disposals = vi.hoisted(() => ({ count: 0 }));
+
+vi.mock("node:fs/promises", async (original) => {
+  const actual = await original<typeof FsPromises>();
+  return {
+    ...actual,
+    glob: async function* (...args: Parameters<typeof actual.glob>) {
+      const entries = [];
+      for await (const entry of actual.glob(...args)) entries.push(entry);
+      yield* entries.toReversed();
+    },
+  };
+});
+
+const WARNING = {
+  code: "UF4001",
+  severity: "warning",
+  message: "A portability warning.",
+  file: "src/A.uf.tsx",
+  span: { start: 0, end: 0 },
+};
+
+vi.mock("@unframework/compiler", async (original) => {
+  const actual = await original<typeof Compiler>();
+  return {
+    ...actual,
+    createSyntacticOracle: (options: Parameters<typeof actual.createSyntacticOracle>[0]) => {
+      const oracle = actual.createSyntacticOracle(options);
+      return {
+        ...oracle,
+        dispose: async () => {
+          disposals.count += 1;
+          await oracle.dispose();
+        },
+      };
+    },
+    createProject: (options: unknown): Partial<Project> => {
+      projects.push(options);
+      return {
+        compile: async (file: string) => {
+          compiles.push(file);
+          if (file === "src/case.uf.tsx") {
+            const same = { contents: "export default 3;\n" };
+            return {
+              filename: file,
+              ir: undefined,
+              diagnostics: [],
+              outputs: {
+                react: [
+                  { path: "a.tsx", ...same },
+                  { path: "A.tsx", ...same },
+                ],
+              },
+              owners: { react: {} },
+              dependencies: [],
+            } as never;
+          }
+          return {
+            filename: "src/A.uf.tsx",
+            ir: undefined,
+            diagnostics: [WARNING],
+            outputs: {
+              react: [
+                { path: "A.tsx", contents: "export default null;\n" },
+                {
+                  path: "B.tsx",
+                  contents: "export default 1;\n",
+                  map: { version: 3, sources: ["A.uf.tsx"], names: [], mappings: "" },
+                },
+                {
+                  path: "C.tsx",
+                  contents: "export default 2;",
+                  map: { version: 3, sources: ["A.uf.tsx"], names: [], mappings: "" },
+                },
+              ],
+            },
+            owners: { react: {} },
+            dependencies: [],
+          } as never;
+        },
+        copies: () => [],
+      };
+    },
+  };
+});
+
+const CONFIG = 'export default { targets: ["react"] };\n';
+const STRICT = 'export default { targets: ["react"], strict: true };\n';
+const SOURCE = { "src/A.uf.tsx": "export default function A() {}\n" };
+
+describe("an output with no map", () => {
+  it("writes no sidecar and no comment, while a mapped one beside it does", async () => {
+    const root = project({ ...SOURCE, "unframework.config.mjs": CONFIG });
+    expect(await run(root, "build")).toMatchObject({ code: 0 });
+    const files = tree(join(root, "dist/react"));
+    expect(readFileSync(join(root, "dist/react/A.tsx"), "utf8")).toBe("export default null;\n");
+    expect(files["A.tsx.map"]).toBeUndefined();
+    expect(files["B.tsx"]).toContain("//# sourceMappingURL=B.tsx.map");
+    expect(files["B.tsx.map"]).toBeDefined();
+  });
+
+  it("puts the comment on a line of its own in a file with no final newline", async () => {
+    const root = project({ ...SOURCE, "unframework.config.mjs": CONFIG });
+    await run(root, "build");
+    expect(tree(join(root, "dist/react"))["C.tsx"]).toBe(
+      "export default 2;\n//# sourceMappingURL=C.tsx.map\n",
+    );
+  });
+});
+
+describe("two files of one text whose paths differ only in case", () => {
+  it("is UF1104, since the second would never be written", async () => {
+    const root = project({ "src/case.uf.tsx": "", "unframework.config.mjs": CONFIG });
+    const { code, stderr } = await run(root, "build");
+    expect(code).toBe(1);
+    expect(stderr).toContain("would both write A.tsx");
+  });
+});
+
+describe("what a project is given", () => {
+  it("holds the config's target options and source maps, and its oracle is disposed of", async () => {
+    const root = project({
+      ...SOURCE,
+      "unframework.config.mjs":
+        'export default { targets: ["react"], targetOptions: { react: { compiler: true } } };\n',
+    });
+    projects.length = 0;
+    disposals.count = 0;
+    await run(root, "check");
+    expect(projects).toEqual([
+      expect.objectContaining({
+        targets: ["react"],
+        targetOptions: { react: { compiler: true } },
+        sourceMap: true,
+      }),
+    ]);
+    expect(disposals.count).toBe(1);
+  });
+});
+
+describe("the order of the sources", () => {
+  it("is sorted, whatever order the file system gives", async () => {
+    const root = project({
+      ...SOURCE,
+      "src/b.uf.tsx": "",
+      "src/a/z.uf.ts": "",
+      "unframework.config.mjs": CONFIG,
+    });
+    compiles.length = 0;
+    await run(root, "check");
+    expect(compiles).toEqual(["src/A.uf.tsx", "src/a/z.uf.ts", "src/b.uf.tsx"]);
+  });
+});
+
+describe("strict", () => {
+  it("leaves a portability warning a warning by default", async () => {
+    const root = project({ ...SOURCE, "unframework.config.mjs": CONFIG });
+    const { code, stderr } = await run(root, "build");
+    expect(code).toBe(0);
+    expect(stderr).toContain("warning[UF4001]");
+  });
+
+  it("makes it an error", async () => {
+    const root = project({ ...SOURCE, "unframework.config.mjs": STRICT });
+    const { code, stderr, stdout } = await run(root, "build");
+    expect({ code, stdout }).toEqual({ code: 1, stdout: "" });
+    expect(stderr).toContain("error[UF4001]");
+    const check = await run(root, "check", "--format", "json");
+    expect(check.code).toBe(1);
+    expect(JSON.parse(check.stdout)[0]).toMatchObject({ code: "UF4001", severity: "error" });
+  });
+});

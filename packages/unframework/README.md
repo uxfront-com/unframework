@@ -48,6 +48,9 @@ export default function Counter({ initial = 0, step = 1 }: CounterProps) {
 | `unframework/jsx-runtime`     | The `JSX` namespace TypeScript reads for `"jsxImportSource": "unframework"`. Types only.                                                                                                                                                                                                                       |
 | `unframework/jsx-dev-runtime` | The same types, for tools that pick the `react-jsxdev` transform.                                                                                                                                                                                                                                              |
 
+The package's bin is `unframework` (`build`, `check` and `explain`): `@unframework/cli`'s README
+documents it.
+
 The root entry's functions are inert stubs. The compiler recognises them by binding and erases them,
 so no `unframework` import survives into any output. Calling one at runtime means the file was not
 compiled, so each throws ``unframework: `ref` is compile-time only…`` rather than pretending to work.

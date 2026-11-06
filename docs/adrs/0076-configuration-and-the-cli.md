@@ -66,18 +66,37 @@ export default defineConfig({
 
 ### CLI
 
-- `@unframework/cli` exports `main(argv)` over a command table, parsed with `node:util`'s
-  `parseArgs`. `packages/unframework/bin/unframework.js` imports it lazily, and the umbrella's
-  `files` include `bin`.
-- The exit codes are 0 for success, 1 for error diagnostics and 2 for a usage or config error.
-- `build` globs `srcDir/**/*.uf.{tsx,ts}`, sorted (P8), and compiles through `createProject`
-  (ADR-0071). `--type-oracle tsgo` lazily imports the tsgo oracle. No sources reports UF7007
-  `no-sources`.
-- `build` cleans each `outDir/<target>`, then writes the outputs, `project.copies` and a barrel per
-  target. A JS or TS output also gets a `.map` sidecar and a trailing `//# sourceMappingURL=` comment.
-  Apart from that comment, each file equals `compile()`'s output byte for byte.
+- `@unframework/cli` exports `main(argv, io?)` over a command table, parsed with `node:util`'s
+  `parseArgs`. `io` holds the working directory and the two output streams, and defaults to the
+  process's, so a test or a caller needs no child process. Each command loads when it runs, so
+  `explain` starts without the compiler. `packages/unframework/bin/unframework.js` imports the CLI
+  lazily, and the umbrella's `files` include `bin`.
+- The exit codes are 0 for success, 1 for error diagnostics and 2 for a usage or config error, or a
+  failure writing a file. UF7007 is an error diagnostic, so it exits 1.
+- `build` globs `srcDir/**/*.uf.{tsx,ts}`, sorted (P8), skips `node_modules` and `outDir`, and
+  compiles through `createProject` (ADR-0071). `--type-oracle tsgo` lazily imports the tsgo oracle,
+  and overrides the config's `typeOracle`. No sources reports UF7007 `no-sources`. Under `strict`, a
+  `UF4xxx` warning counts as an error (§8.1).
+- `build` cleans each `outDir/<target>`, then writes the outputs and `project.copies` in the
+  directories their sources have under `srcDir`, and a barrel per target, `index.ts`, which exports
+  each exported component and composable by name. A JS or TS output that has a map also gets a `.map`
+  sidecar and a trailing `//# sourceMappingURL=` comment. Apart from that comment, each file equals
+  `compile()`'s output byte for byte. A copy has no map, since a project's `copies` give none.
+- A sidecar's `sources` name the source relative to where the file was written, which `compile()`
+  can't know, so the map stays true outside `srcDir`.
+- A build with an error diagnostic, or with a config it refuses, cleans and writes nothing, so the
+  last good build stays in place. A failure while writing exits 2 with the build half written.
+- `build` and `check` share a compilation, so `check` fails wherever `build`'s compile would. It holds source
+  maps too, since a map that can't follow formatting is an error (UF9002). It reports what no single
+  compile can see, with the codes that already say so:
+  - UF1104, for two modules that would write one file, or one barrel name from two files.
+  - UF7002 at `/outDir`, for an `outDir/<target>` that holds the project or a source, since
+    cleaning it would delete them.
+  - UF7002 at `/srcDir`, for a child or a shared module outside `srcDir`, which a tree mirroring
+    `srcDir` can't hold beside its importer.
 - `check` takes `--format pretty|json|sarif`, through the renderers `@unframework/diagnostics`
-  already has (`formatDiagnostics`, `toJsonDiagnostics`, `toSarif`).
+  already has (`formatDiagnostics`, `toJsonDiagnostics`, `toSarif`). It prints a config's diagnostics
+  in that format too, on standard output.
 - `explain` prints a code's catalogue entry and its `docsUrl()`. An unknown code exits 2.
 
 ### init and create-unframework
