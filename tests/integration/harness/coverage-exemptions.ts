@@ -57,6 +57,7 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
   UF9001:
     "An internal compiler error: a case that triggers it is a compiler bug to fix, not to keep.",
   UF9002: "internal: a remap that fails is a compiler bug; tested in codegen",
+  UF9003: "raised past a size bound; tested in codegen",
 };
 
 /**

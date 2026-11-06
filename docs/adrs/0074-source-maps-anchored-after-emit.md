@@ -42,6 +42,8 @@ This record is proposed before M6 builds it, and it's amended in place as it's b
   order. Punctuation alone (`);`) would match anywhere, so that run stays unmapped.
 - A run beside a reference, other than a write or an emit, matches only next to a spelling that holds the reference's name, so
   `.map(` after `shelves` is no match in `books.map(`. A target that drops the name leaves it unmapped.
+  A piece keeps this check, and a piece beside a `${…}` reads the spelling across the substitution's
+  brace, in any case, since React's `currentDoubled()` capitalises `doubled`.
 - A run nothing checks that has fewer than eight word characters, like a type's `void`, needs the
   output to hold as many places as the source holds runs of it. Otherwise it stays unmapped.
 - The text of a write that isn't its value, and of an emit that isn't its arguments, is no run: a
@@ -76,6 +78,11 @@ non-whitespace characters and moves each segment:
   token check above then drops the segment.
 - The count is the whole file's: a small block beside a large template may lose a few characters, and
   each token's own check still holds there.
+- A diff's trace may hold 256 MB, which is about 8,000 edits. It grows with the square of the edits, so
+  a 250 KB table of numbers that oxfmt rewrites one by one would peak at about 10 GB. Past the cap it
+  returns the warning UF9003 `sourcemap-skipped` and no map, whichever of the diff's two passes reached
+  it: the source is valid, so this is no bug, and the file still works. A diff that stops there can't
+  say how much would have matched, so past the cap a broken formatter reads as UF9003 too.
 
 **The contract:**
 
@@ -119,6 +126,8 @@ chain on it. No printer or target changes.
 - A run maps once, so a target that prints a `Code` twice maps the first place it finds. A short run
   nothing checks stays unmapped there, since the output holds more places than the source holds runs.
 - The diff adds work to every compile with maps on.
+- A file past the cap has no map at all. A number whose form changes stays unmapped below the cap as
+  well, and mapping such a file by another algorithm is left out.
 
 **Open:**
 

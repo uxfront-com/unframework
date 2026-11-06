@@ -76,7 +76,8 @@ export interface CompileOptions {
   /**
    * Gives each output file a `map` back to the source (ADR-0074): anchored after the `output`
    * hooks, then carried through formatting. Defaults to `false`. A map that can't follow formatting
-   * is UF9002, and the file comes without one.
+   * is UF9002, and one whose diff passes its cap is UF9003, a warning: either way the file comes
+   * without one.
    */
   sourceMap?: boolean;
   plugins?: readonly CompilerPlugin[];
@@ -664,7 +665,8 @@ async function emitTarget(
 
 /**
  * A formatted file with its map carried across. Code that didn't parse stays as printed, and so
- * does its map. A map that can't follow formatting is UF9002, and the file goes without one.
+ * does its map. A map that can't follow formatting is UF9002, and one whose diff passes its cap
+ * UF9003: the file goes without one.
  */
 function remapped(
   before: OutputFile,

@@ -77,9 +77,16 @@ built.
 ### Astro integration
 
 - `@unframework/unplugin/astro` is an Astro integration, in `src/astro.ts`. In `astro:config:setup`
-  it calls `updateConfig({ vite: { plugins: [unframework({ target: "astro", ...options })] } })`.
+  it calls `updateConfig({ vite: { plugins: [unframework({ target: "astro", ...options })] } })`. Its
+  options are the plugin's, without `target`.
+- The same call adds `optimizeDeps: { entries: ["!**/*.uf.tsx"] }`. Astro's scan entries match every
+  `.tsx` file under `src`, and the scan would read a `.uf.tsx` file as plain JSX. Without React's JSX
+  runtime installed, the scan would fail with an error, and Vite would lose the dependencies it would
+  have found, pre-bundling those only as requests reach them.
 - In `astro:config:done` it reports UF7010 when the final `compressHTML` isn't `"jsx"`, Astro's
-  default, because the printer's layout assumes it (ADR-0026).
+  default, because the printer's layout assumes it (ADR-0026). The hook runs after every
+  integration's `astro:config:setup`, so it sees what a later integration set. The warning goes to
+  Astro's logger, with no span, because a configuration has no source to point at.
 
 ### Hot updates
 

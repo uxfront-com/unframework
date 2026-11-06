@@ -1,3 +1,5 @@
+import { spawnSync } from "node:child_process";
+
 import { decodedMappings, originalPositionFor, TraceMap } from "@jridgewell/trace-mapping";
 import type { Code, CodeReference, UfModule } from "@unframework/ir";
 import { format } from "oxfmt";
@@ -259,6 +261,16 @@ describe("anchorOutput and remapFormatted", () => {
     expect(originOf(file, file.map!, source, "go", 1)).toBeUndefined();
   });
 
+  it("reads a reference's name in its own case, right beside a run", () => {
+    const source = "total.reloadEverything(1);\n";
+    const file = anchorOutput(
+      { path: "a.js", contents: "currentTotal.reloadEverything(1);\n" },
+      moduleOf("a.uf.tsx", [code(source, source.trim(), ["total"])]),
+      source,
+    );
+    expect(file.map!.mappings.replaceAll(";", "")).toBe("");
+  });
+
   it("finds a run beside a reference only where the output spells it", () => {
     const source = "shelves.map(count);\nbooks.map(count);\n";
     const shelves = code(source, "shelves.map(count)", ["shelves", "count"]);
@@ -437,6 +449,122 @@ describe("anchorOutput and remapFormatted", () => {
       source,
     );
     expect(file.map!.mappings.replaceAll(";", "")).toBe("");
+  });
+
+  it("keeps a piece's reference check, so it takes no place beside another spelling", () => {
+    const source = "{ total.reloadEverything(1); }\n";
+    const module = moduleOf("a.uf.tsx", [code(source, source.trim(), ["total"])]);
+    const file = anchorOutput(
+      { path: "a.js", contents: "other.reloadEverything(1);\nprops.total.reloadEverything(1);\n" },
+      module,
+      source,
+    );
+    expect(originOf(file, file.map!, source, "reloadEverything")).toBeUndefined();
+    expect(originOf(file, file.map!, source, "reloadEverything", 1)).toBe(
+      source.indexOf("reloadEverything"),
+    );
+    const dropped = anchorOutput(
+      { path: "a.js", contents: "other.reloadEverything(1);\n" },
+      module,
+      source,
+    );
+    expect(dropped.map!.mappings.replaceAll(";", "")).toBe("");
+  });
+
+  it("checks a piece after a ${…} against its reference, across the brace", () => {
+    const source = "`${total}  second part here`;\n";
+    const module = moduleOf("a.uf.tsx", [code(source, source.trim(), ["total"])]);
+    const kept = anchorOutput(
+      { path: "a.js", contents: "`${props.total} second part here`;\n" },
+      module,
+      source,
+    );
+    expect(originOf(kept, kept.map!, source, "second")).toBe(source.indexOf("second"));
+    const mirror = anchorOutput(
+      { path: "a.js", contents: "`${currentTotal()} second part here`;\n" },
+      module,
+      source,
+    );
+    expect(originOf(mirror, mirror.map!, source, "second")).toBe(source.indexOf("second"));
+    const other = anchorOutput(
+      { path: "a.js", contents: "`${other} second part here`;\n" },
+      module,
+      source,
+    );
+    expect(originOf(other, other.map!, source, "second")).toBeUndefined();
+    const noBrace = anchorOutput(
+      { path: "a.js", contents: "props.total() second part here`;\n" },
+      module,
+      source,
+    );
+    expect(originOf(noBrace, noBrace.map!, source, "second")).toBeUndefined();
+  });
+
+  it("checks a piece before a ${…} against its reference, across the brace", () => {
+    const source = "`first part here ${total}`;\n";
+    const module = moduleOf("a.uf.tsx", [code(source, source.trim(), ["total"])]);
+    const kept = anchorOutput(
+      { path: "a.js", contents: "`first part here $ {props.total}`;\n" },
+      module,
+      source,
+    );
+    expect(originOf(kept, kept.map!, source, "first")).toBe(source.indexOf("first"));
+    const mirror = anchorOutput(
+      { path: "a.js", contents: "`first part here $ {currentTotal()}`;\n" },
+      module,
+      source,
+    );
+    expect(originOf(mirror, mirror.map!, source, "first")).toBe(source.indexOf("first"));
+    const other = anchorOutput(
+      { path: "a.js", contents: "`first part here ${other}`;\n" },
+      module,
+      source,
+    );
+    expect(originOf(other, other.map!, source, "first")).toBeUndefined();
+    const noBrace = anchorOutput(
+      { path: "a.js", contents: "`first part here $ props.total`;\n" },
+      module,
+      source,
+    );
+    expect(originOf(noBrace, noBrace.map!, source, "first")).toBeUndefined();
+  });
+
+  it("reads no reference across a brace for a whole line", () => {
+    const source = "`${total\n}\nsecond part here`;\n";
+    const file = anchorOutput(
+      { path: "a.js", contents: "other;\nsecond part here`;\n" },
+      moduleOf("a.uf.tsx", [code(source, source.trim(), ["total"])]),
+      source,
+    );
+    expect(originOf(file, file.map!, source, "second")).toBe(source.indexOf("second"));
+  });
+
+  it("leaves a piece after a block's brace unchecked, since a target may unwrap the block", () => {
+    const source = "{ return total } reloadEverything(1);\n";
+    const file = anchorOutput(
+      { path: "a.js", contents: "other;\nreloadEverything(1);\n" },
+      moduleOf("a.uf.tsx", [code(source, source.trim(), ["total"])]),
+      source,
+    );
+    expect(originOf(file, file.map!, source, "reloadEverything")).toBe(
+      source.indexOf("reloadEverything"),
+    );
+    const closed = "`${a}`; { return total } reloadEverything(1);\n";
+    const after = anchorOutput(
+      { path: "a.js", contents: "other;\nreloadEverything(1);\n" },
+      moduleOf("a.uf.tsx", [code(closed, closed.trim(), ["total"])]),
+      closed,
+    );
+    expect(originOf(after, after.map!, closed, "reloadEverything")).toBe(
+      closed.indexOf("reloadEverything"),
+    );
+    const opening = "reloadEverything(1); { total }\n";
+    const before = anchorOutput(
+      { path: "a.js", contents: "reloadEverything(1);\nother;\n" },
+      moduleOf("a.uf.tsx", [code(opening, opening.trim(), ["total"])]),
+      opening,
+    );
+    expect(originOf(before, before.map!, opening, "reloadEverything")).toBe(0);
   });
 
   it("finds a one-line block's statement where a target prints it without the braces", () => {
@@ -906,6 +1034,104 @@ describe("anchorOutput and remapFormatted", () => {
     );
     expect(open).toMatchObject({ diagnostic: { code: "UF9002" } });
     expect("diagnostic" in open && open.diagnostic.message).not.toContain("..");
+  });
+
+  describe("past the trace's cap", () => {
+    /** A file of `a,` whose commas `dropped` go, which is exactly that many edits of its diff. */
+    const dropping = (dropped: number) => {
+      const contents = `${"a,".repeat(9000)}\n`;
+      const before = anchorOutput({ path: "a.js", contents }, moduleOf("a.uf.tsx", []), "");
+      const after = `${"a".repeat(dropped)}${"a,".repeat(9000 - dropped)}\n`;
+      return remapFormatted(before, { path: "a.js", contents: after }, before.map!);
+    };
+
+    // The trace holds `4(e + 1)(e + 3)` bytes after `e` edits' rounds: 8,190 fit in 256 MB.
+    it("gives a map at the last edit the cap holds, and UF9003 at the next", () => {
+      expect(dropping(8190)).toHaveProperty("map");
+      const past = dropping(8191);
+      expect(past).toMatchObject({ diagnostic: { code: "UF9003", severity: "warning" } });
+      expect("map" in past).toBe(false);
+    }, 60_000);
+
+    it("gives UF9003, not UF9002, where the word diff reaches the cap", () => {
+      // 8,000 of 200,000 word characters replaced: 16,000 edits, within the budget of 20,000.
+      const table = (letter: string) => `${letter}${"y".repeat(24)}`.repeat(8000);
+      const contents = `${table("p")}\n`;
+      const before = anchorOutput({ path: "a.js", contents }, moduleOf("a.uf.tsx", []), "");
+      const result = remapFormatted(
+        before,
+        { path: "a.js", contents: `${table("q")}\n` },
+        before.map!,
+      );
+      expect(result).toMatchObject({ diagnostic: { code: "UF9003" } });
+    }, 60_000);
+
+    it("gives UF9003 in a markup file's block, with the map's source", () => {
+      const block = (text: string) => `<script lang="ts">\n${text}\n</script>\n<p></p>\n`;
+      const contents = block("a,".repeat(9000));
+      const before = anchorOutput(
+        { path: "a.vue", contents },
+        moduleOf("src/a.uf.tsx", []),
+        "source",
+      );
+      const result = remapFormatted(
+        before,
+        { path: "a.vue", contents: block("a".repeat(9000)) },
+        before.map!,
+      );
+      expect(result).toMatchObject({
+        diagnostic: { code: "UF9003", file: "a.uf.tsx", message: expect.stringContaining("a.vue") },
+      });
+    }, 60_000);
+
+    // A child's peak is its own: it fails on a diff that holds the whole trace, about 10 GB.
+    it("stays below 1 GB on a 250 KB table of numbers, with UF9003 and no map", () => {
+      const script = `
+        import { anchorOutput, formatOutput, remapFormatted } from ${JSON.stringify(new URL("../src/index.ts", import.meta.url).href)};
+        const contents = "export const table = [" + "1.50,".repeat(50_000) + "];\\n";
+        const module = { irVersion: 1, file: "a.uf.tsx", components: [], codes: [] };
+        const before = anchorOutput({ path: "a.js", contents }, module, contents);
+        const { file: after } = await formatOutput(before);
+        if (after.contents === contents) throw new Error("oxfmt rewrote nothing");
+        const result = remapFormatted(before, after, before.map);
+        console.log(JSON.stringify({
+          size: contents.length,
+          code: result.diagnostic?.code,
+          map: "map" in result,
+          maxRSS: process.resourceUsage().maxRSS * 1024,
+        }));
+      `;
+      const child = spawnSync(process.execPath, ["--input-type=module", "-e", script], {
+        encoding: "utf8",
+        timeout: 280_000,
+      });
+      expect(child.status, child.stderr).toBe(0);
+      const report = JSON.parse(child.stdout) as Record<string, unknown>;
+      expect(report).toMatchObject({ code: "UF9003", map: false });
+      expect(report.size).toBeGreaterThanOrEqual(250_000);
+      expect(report.maxRSS).toBeLessThan(1024 ** 3);
+    }, 300_000);
+  });
+
+  // Captured from the diff before it had a cap. `((fifthCustomerName)))` gains a comma between its
+  // closing parentheses, and either can match: a changed tie-break moves that segment.
+  it("keeps the mappings of a file that loses parentheses and gains commas", async () => {
+    const source = [
+      "const total = (price * 2) + (tax * 3);",
+      "const names = [(firstCustomerName), (secondCustomerName), (thirdCustomerName), (fourthCustomerName), (fifthCustomerName), (sixthCustomerName)];",
+      "register((firstCustomerName), (secondCustomerName), (thirdCustomerName), (fourthCustomerName), ((fifthCustomerName)));",
+      "go(((total)), names, (a) => (a), (b), 'c')",
+      "",
+    ].join("\n");
+    const { after, map } = await anchoredAndFormatted(
+      { path: "a.js", contents: source },
+      moduleOf("a.uf.tsx", [code(source, source.trimEnd())]),
+      source,
+    );
+    expect(after.contents).toContain("  fifthCustomerName,\n);\ngo(total, names, (a) => a, b,");
+    expect(map.mappings).toBe(
+      "AAAA,MAAM,MAAM,EAAG,MAAM,EAAE,EAAG,EAAG,IAAI,EAAE,CAAE;AACrC,MAAM,MAAM,EAAE;EAAE,iBAAkB;EAAG,kBAAmB;EAAG,iBAAkB;EAAG,kBAAmB;EAAG,iBAAkB;EAAG;AAAkB,CAAC;AAC9I,QAAQ;EAAE,iBAAkB;EAAG,kBAAmB;EAAG,iBAAkB;EAAG,kBAAmB;EAAI;AAAiB,CAAG;AACrH,EAAE,CAAG,KAAO,EAAE,KAAK,EAAE,CAAC,CAAC,EAAE,CAAC,EAAG,CAAE,EAAG,CAAE,GAAG,EAAE",
+    );
   });
 
   it("returns the map as it is when formatting changed nothing", () => {

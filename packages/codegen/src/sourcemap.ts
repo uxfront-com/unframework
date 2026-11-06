@@ -13,7 +13,7 @@ import type { CodeReference, Span, UfModule } from "@unframework/ir";
 import { codeBlocks, isFormatted } from "./format.ts";
 import type { OutputFile, SourceMapV3 } from "./target.ts";
 
-/** What {@link remapFormatted} gives: the moved map, or UF9002 instead of one. */
+/** What {@link remapFormatted} gives: the moved map, or UF9002 or UF9003 instead of one. */
 export type RemapResult = { map: SourceMapV3 } | { diagnostic: Diagnostic };
 
 /**
@@ -39,6 +39,14 @@ const IDENTIFIERS = new RegExp(IDENTIFIER.source, "gu");
 const SPELLING = /[\p{ID_Continue}$.()!?]/u;
 /** A run with this many word characters is text a target hardly writes on its own. */
 const DISTINCTIVE = 8;
+/**
+ * The bytes a diff's trace may hold. The trace grows with the square of the edits, so a table of
+ * numbers oxfmt rewrites one by one reaches gigabytes (ADR-0074). This is about 8,000 edits, far
+ * beyond what a component's formatting makes.
+ */
+const MAX_TRACE_BYTES = 256 * 1024 * 1024;
+/** A diff that gave up at {@link MAX_TRACE_BYTES}, which says nothing about how much would match. */
+const PAST_CAP = Symbol("past the cap");
 
 /** A piece of a `Code`'s text, and where the source holds it. */
 interface Piece {
@@ -113,7 +121,8 @@ export function identityMapped(file: OutputFile): OutputFile {
  * words count: oxfmt removes punctuation (a redundant parenthesis, a quote around a key, an escape's
  * backslash) and rewrites a number's form, and an ordinary small component can lose more than 5% of
  * its text that way. It rarely changes a word, but it does in `title="don&apos;t"`, so a target or a
- * plugin that prints such text can reach UF9002.
+ * plugin that prints such text can reach UF9002. A diff past {@link MAX_TRACE_BYTES} returns the
+ * warning UF9003 instead, since the source is valid and the output only goes without a map.
  */
 export function remapFormatted(
   before: OutputFile,
@@ -121,6 +130,15 @@ export function remapFormatted(
   map: SourceMapV3,
 ): RemapResult {
   const moved = moveOffsets(before.path, before.contents, after.contents);
+  if (moved === PAST_CAP) {
+    return {
+      diagnostic: createDiagnostic("UF9003", {
+        file: map.sources[0]!,
+        span: { start: 0, end: 0 },
+        message: `${before.path} has no source map: formatting changed it too much to diff in 256 MB. The file still works.`,
+      }),
+    };
+  }
   if (typeof moved === "string") {
     return {
       diagnostic: createDiagnostic("UF9002", {
@@ -155,8 +173,12 @@ export function remapFormatted(
   return { map: encode(generated, map.file) };
 }
 
-/** The offset each character of `before` moved to, or -1, or why the diff failed. */
-function moveOffsets(path: string, before: string, after: string): Int32Array | string {
+/** The offset each character of `before` moved to, or -1, or why the diff failed or gave up. */
+function moveOffsets(
+  path: string,
+  before: string,
+  after: string,
+): Int32Array | string | typeof PAST_CAP {
   const moved = new Int32Array(before.length).fill(-1);
   const total = countedText(before).length;
   // At least 95% match where at most one in twenty goes, in whole numbers, so no rounding decides.
@@ -164,6 +186,7 @@ function moveOffsets(path: string, before: string, after: string): Int32Array | 
   const tooFew = `fewer than 95% of the ${total} word characters it counts match`;
   if (isFormatted(path)) {
     const whole = diffInto(moved, before, 0, before.length, after, 0, after.length, count);
+    if (whole === PAST_CAP) return PAST_CAP;
     return whole ? moved : tooFew;
   }
   let beforeBlocks: Span[];
@@ -184,11 +207,18 @@ function moveOffsets(path: string, before: string, after: string): Int32Array | 
     if (!keptInto(moved, before, beforeAt, block.start, after, afterAt, formatted.start)) {
       return "the markup around a code block changed";
     }
-    if (
-      !diffInto(moved, before, block.start, block.end, after, formatted.start, formatted.end, count)
-    ) {
-      return tooFew;
-    }
+    const diffed = diffInto(
+      moved,
+      before,
+      block.start,
+      block.end,
+      after,
+      formatted.start,
+      formatted.end,
+      count,
+    );
+    if (diffed === PAST_CAP) return PAST_CAP;
+    if (!diffed) return tooFew;
     beforeAt = block.end;
     afterAt = formatted.end;
   }
@@ -229,7 +259,7 @@ function keptInto(
 
 /**
  * Diffs one range of code over its non-whitespace characters and moves those that match. Returns
- * `false` once the file has lost more characters than the threshold allows.
+ * `false` once the file has lost more characters than the threshold allows, or {@link PAST_CAP}.
  */
 function diffInto(
   moved: Int32Array,
@@ -240,7 +270,7 @@ function diffInto(
   afterStart: number,
   afterEnd: number,
   count: MatchCount,
-): boolean {
+): boolean | typeof PAST_CAP {
   const a = significant(before, beforeStart, beforeEnd);
   const b = significant(after, afterStart, afterEnd);
   // The counted characters first, on their own: a file that can't reach the threshold stops here,
@@ -249,8 +279,10 @@ function diffInto(
   const wordsB = codesOf(countedText(after.slice(afterStart, afterEnd)));
   const words = myers(wordsA, wordsB, 2 * count.spare + (wordsB.length - wordsA.length));
   if (!words) return false;
+  if (words === PAST_CAP) return PAST_CAP;
   for (const match of words) if (match < 0) count.spare--;
   const pairs = myers(a.codes, b.codes, a.codes.length + b.codes.length)!;
+  if (pairs === PAST_CAP) return PAST_CAP;
   for (let index = 0; index < pairs.length; index++) {
     const match = pairs[index]!;
     if (match >= 0) moved[a.offsets[index]!] = b.offsets[match]!;
@@ -300,9 +332,13 @@ function isSpace(code: number): boolean {
 
 /**
  * Myers' diff: for each item of `a`, the index of the item of `b` it matches, or -1. `undefined`
- * when it takes more than `budget` edits.
+ * when it takes more than `budget` edits, {@link PAST_CAP} when its trace outgrows the cap first.
  */
-function myers(a: Uint16Array, b: Uint16Array, budget: number): Int32Array | undefined {
+function myers(
+  a: Uint16Array,
+  b: Uint16Array,
+  budget: number,
+): Int32Array | undefined | typeof PAST_CAP {
   const pairs = new Int32Array(a.length).fill(-1);
   let prefix = 0;
   while (prefix < a.length && prefix < b.length && a[prefix] === b[prefix]) {
@@ -324,7 +360,10 @@ function myers(a: Uint16Array, b: Uint16Array, budget: number): Int32Array | und
   const furthest = new Int32Array(2 * limit + 3).fill(-1);
   furthest[offset + 1] = 0;
   const trace: Int32Array[] = [];
+  let traced = 0;
   for (let edits = 0; edits <= limit; edits++) {
+    traced += (2 * edits + 3) * Int32Array.BYTES_PER_ELEMENT;
+    if (traced > MAX_TRACE_BYTES) return PAST_CAP;
     // Only the diagonals this round can read, so memory grows with the edits, not the limit.
     trace.push(furthest.slice(offset - edits - 1, offset + edits + 2));
     for (let k = -edits; k <= edits; k += 2) {
@@ -513,17 +552,24 @@ function collectOwners(module: UfModule, source: string): Owner[] {
   return [...owners.values()];
 }
 
-/** A piece of text as a run of `owner`, with the references right beside it, if any. */
-function ownedRun(owner: Owner, piece: Piece, source: string): Run {
+/**
+ * A piece of text as a run of `owner`, with the references right beside it, if any. For a fallback
+ * piece, cut at braces, that takes in a reference across what reads as the brace of a `${…}`. Any
+ * other brace stays out, since a target may unwrap a block.
+ */
+function ownedRun(owner: Owner, piece: Piece, source: string, fallback = false): Run {
   const end = piece.start + piece.text.length;
   const beside = owner.refs.filter((ref) => ref.kind !== "Write" && ref.kind !== "Emit");
-  const before = beside.find(
-    ({ span: { end: refEnd } }) =>
-      refEnd <= piece.start && !source.slice(refEnd, piece.start).trim(),
-  );
-  const after = beside.find(
-    ({ span: { start } }) => start >= end && !source.slice(end, start).trim(),
-  );
+  const before = beside.find(({ span }) => {
+    if (span.end > piece.start) return false;
+    const gap = source.slice(span.end, piece.start).trim();
+    return !gap || (fallback && gap === "}" && inSubstitution(source, span.start));
+  });
+  const after = beside.find(({ span: { start } }) => {
+    if (start < end) return false;
+    const gap = source.slice(end, start).trim();
+    return !gap || (fallback && gap === "{" && piece.text.endsWith("$"));
+  });
   return {
     ...piece,
     owner,
@@ -531,6 +577,12 @@ function ownedRun(owner: Owner, piece: Piece, source: string): Run {
     ...(before ? { before } : {}),
     ...(after ? { after } : {}),
   };
+}
+
+/** Whether the text before an offset opens a `${` that no `}` has closed: it reads text, not syntax. */
+function inSubstitution(source: string, offset: number): boolean {
+  const open = source.lastIndexOf("${", offset);
+  return open >= 0 && !source.slice(open, offset).includes("}");
 }
 
 /**
@@ -544,7 +596,7 @@ function splitAtBraces(owner: Owner, source: string): Run[] {
     if (run.at !== undefined) return [run];
     const own = piecesOf(run.text, run.start, BRACES)
       .filter(({ text }) => isDistinctive(text) && text.match(TOKENS)!.length > 1)
-      .map((piece) => ownedRun(owner, piece, source));
+      .map((piece) => ownedRun(owner, piece, source, true));
     pieces.push(...own);
     return own;
   });
@@ -606,20 +658,23 @@ function literalRuns(span: Span, refs: readonly CodeReference[], source: string)
  */
 function findRun(
   output: string,
-  { text, before, after }: Run,
+  { start, text, before, after }: Run,
   from: number,
   to: number,
   taken: Uint8Array,
   source: string,
 ): number {
+  const gapBefore = before ? source.slice(before.span.end, start).trim() : "";
+  const gapAfter = after ? source.slice(start + text.length, after.span.start).trim() : "";
   for (let at = output.indexOf(text, from); at >= 0; at = output.indexOf(text, at + 1)) {
     const end = at + text.length;
     if (end > to) return -1;
     if (
       !isTaken(taken, at, end) &&
       isWhole(output, at, end) &&
-      (!before || mentions(spellingBefore(output, at), before, source)) &&
-      (!after || mentions(spellingAfter(output, end), after, source))
+      (!before ||
+        mentions(spellingBefore(output, at, gapBefore), before, source, gapBefore !== "")) &&
+      (!after || mentions(spellingAfter(output, end, gapAfter), after, source, gapAfter !== ""))
     ) {
       return at;
     }
@@ -640,19 +695,29 @@ function countFree(output: string, text: string, taken: Uint8Array): number {
   return count;
 }
 
-/** The spelling that ends at `end`, past any whitespace. */
-function spellingBefore(output: string, end: number): string {
+/** The spelling that ends at `end`, past whitespace and a brace the source holds there. */
+function spellingBefore(output: string, end: number, gap: string): string {
   let last = end;
   while (last > 0 && isSpace(output.charCodeAt(last - 1))) last--;
+  if (gap) {
+    if (output[last - 1] !== gap) return "";
+    last--;
+    while (last > 0 && isSpace(output.charCodeAt(last - 1))) last--;
+  }
   let first = last;
   while (first > 0 && SPELLING.test(output[first - 1]!)) first--;
   return output.slice(first, last);
 }
 
-/** The spelling that starts at `start`, past any whitespace. */
-function spellingAfter(output: string, start: number): string {
+/** The spelling that starts at `start`, past whitespace and a brace the source holds there. */
+function spellingAfter(output: string, start: number, gap = ""): string {
   let first = start;
   while (first < output.length && isSpace(output.charCodeAt(first))) first++;
+  if (gap) {
+    if (output[first] !== gap) return "";
+    first++;
+    while (first < output.length && isSpace(output.charCodeAt(first))) first++;
+  }
   let last = first;
   while (last < output.length && SPELLING.test(output[last]!)) last++;
   return output.slice(first, last);
@@ -661,15 +726,19 @@ function spellingAfter(output: string, start: number): string {
 /**
  * Whether a spelling names a reference. Targets keep the name in what they print (`props.label`,
  * `count()`, `this.count()`). One that doesn't leaves the reference and its neighbours unmapped.
+ * Across a `${…}`'s brace it may name it in any case: a target's own name for a value there can
+ * capitalise the source's, as React's `currentDoubled()` does for `doubled`.
  */
-function mentions(spelling: string, ref: CodeReference, source: string): boolean {
+function mentions(spelling: string, ref: CodeReference, source: string, anyCase = false): boolean {
   const written =
     ref.kind === "Write"
       ? source.slice(ref.target.start, ref.target.end)
       : ref.kind === "Emit"
         ? (identifierAt(source, ref.span.start) ?? "")
         : source.slice(ref.span.start, ref.span.end);
-  return (written.match(IDENTIFIERS) ?? []).some((name) => spelling.includes(name));
+  return (written.match(IDENTIFIERS) ?? []).some((name) =>
+    anyCase ? spelling.toLowerCase().includes(name.toLowerCase()) : spelling.includes(name),
+  );
 }
 
 /** Whether a range starts and ends at token edges: `a` is no match inside `data`. */

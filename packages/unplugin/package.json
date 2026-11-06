@@ -4,6 +4,7 @@
   "private": true,
   "description": "The Unframework bundler plugin: imports of .uf.tsx files compile to the selected framework, and that framework's own plugin finishes the job.",
   "keywords": [
+    "astro",
     "rolldown",
     "rollup",
     "unframework",
@@ -26,6 +27,7 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
+    "./astro": "./src/astro.ts",
     "./bun": "./src/bun.ts",
     "./esbuild": "./src/esbuild.ts",
     "./farm": "./src/farm.ts",
@@ -43,6 +45,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
+      },
+      "./astro": {
+        "types": "./dist/astro.d.ts",
+        "default": "./dist/astro.js"
       },
       "./bun": {
         "types": "./dist/bun.d.ts",
@@ -110,9 +116,13 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
+    "astro": "catalog:",
     "vite": "catalog:"
   },
   "peerDependenciesMeta": {
+    "astro": {
+      "optional": true
+    },
     "vite": {
       "optional": true
     }

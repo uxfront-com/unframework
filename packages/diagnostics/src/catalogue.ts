@@ -2706,6 +2706,22 @@ const entries: CatalogueEntry[] = [
       "https://github.com/uxfront-com/unframework/issues/new/choose",
     ].join("\n"),
   },
+  {
+    code: "UF9003",
+    name: "sourcemap-skipped",
+    severity: "warning",
+    title: "A file ships without a source map",
+    description: [
+      "The compiler carries each output's map through formatting with a diff, and that diff may hold",
+      "256 MB. Formatting changed this file too much to fit, so the compiler stopped and left the map",
+      "out.",
+      "",
+      "The file still works, only without a map: a stack frame in it shows the output's line, not the",
+      "source's. To map it, write the code as the formatter prints it, like `1.5` for `1.50`, so that",
+      "formatting changes less. Or move a large table to a shared `.ts` module, which the compiler",
+      "copies unchanged.",
+    ].join("\n"),
+  },
 ];
 
 /** Every catalogued diagnostic, by code. */
