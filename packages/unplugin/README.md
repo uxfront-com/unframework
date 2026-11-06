@@ -139,8 +139,9 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
 - `load` returns `{ code, map }` from `compile({ sourceMap: true })` (ADR-0074), and that map traces
   to the `.uf.tsx` line on every target. What it becomes after the framework's plugin differs. React
   and Solid still reach the `.uf.tsx` in dev and in a build, and Vue does in dev, while a Vue build
-  traces to the `.vue` id and Svelte's chain ends with nothing to trace. An output with no map loads
-  as `{ code }`. A scoped sheet's load is `{ code }` too, since its map has no segments.
+  traces to the `.vue` id. Svelte's map doesn't reach the `.uf.tsx`, in dev or in a build, because
+  Vite applies the loaded map twice, so most segments drop and the rest can point at a wrong line.
+  An output with no map loads as `{ code }`. A scoped sheet's load is `{ code }` too, since its map has no segments.
 - An id loads the target's output file with the id's extension (`Hello.vue`, `hello.ts`, and
   `Hello.tsx` for a `.uf.tsx` id). A file with several components emits one such file each:
   `.tsx` and `.ts` files are joined into one module (an import of a file of the join is left out,

@@ -119,8 +119,9 @@ built.
 - Whether the portable `load` keeps `this.error`'s behaviour on bundlers other than Vite. Nothing
   tests it.
 - How a loaded map reaches the `.uf.tsx` past every framework's plugin. vite-plugin-svelte gives
-  Svelte the combined map, and the map it returns already traces to the `.uf.tsx`. Vite then combines
-  it with the loaded map again, and in dev nothing is left to trace.
+  Svelte the combined map, and the map it returns already traces to the `.uf.tsx`. Vite then applies
+  the loaded map a second time, so the map doesn't reach the `.uf.tsx`, in dev or in a build: most
+  segments drop, and the rest can point at a wrong line.
 
 ## Alternatives considered
 
