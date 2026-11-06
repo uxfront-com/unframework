@@ -4,6 +4,7 @@
 // each position is then carried across by a diff. A position this can't show stays unmapped: a
 // frame that lands there resolves no better than the nearest segment, which beats a wrong line (P2).
 import { addSegment, GenMapping, setSourceContent, toEncodedMap } from "@jridgewell/gen-mapping";
+import remapping from "@jridgewell/remapping";
 import { decodedMappings, TraceMap } from "@jridgewell/trace-mapping";
 import { createDiagnostic } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
@@ -694,6 +695,31 @@ function tokenAt(text: string, offset: number): string {
 function identifierAt(text: string, offset: number): string | undefined {
   IDENTIFIER.lastIndex = offset;
   return IDENTIFIER.exec(text)?.[0];
+}
+
+/**
+ * The map of files joined into one module (the unplugin's script modules): `joined` maps the join
+ * to the files, whose `sources` are their paths, and each file's own map goes on to its source. A
+ * file with no map has nothing to go on to, so its text stays unmapped, and never points at a file
+ * that exists only in the compile's output.
+ */
+export function composeJoinedMap(
+  joined: Pick<SourceMapV3, "sources" | "names" | "mappings">,
+  files: readonly OutputFile[],
+): SourceMapV3 {
+  const maps = new Map(files.map(({ path, map }) => [path, map]));
+  const composed = remapping({ version: 3, ...joined }, (path, { depth }) =>
+    // Deeper than the files, a source is what it is.
+    depth === 1 ? (maps.get(path) ?? { version: 3, sources: [], names: [], mappings: "" }) : null,
+  );
+  return {
+    version: 3,
+    file: files.find(({ map }) => map)?.map?.file ?? "",
+    sources: composed.sources as string[],
+    sourcesContent: (composed.sourcesContent ?? []) as string[],
+    names: composed.names,
+    mappings: composed.mappings as string,
+  };
 }
 
 /**
