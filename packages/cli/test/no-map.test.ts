@@ -63,7 +63,10 @@ vi.mock("@unframework/compiler", async (original) => {
             return {
               filename: file,
               ir: undefined,
-              diagnostics: [{ ...WARNING, code: "UF2007", file }],
+              diagnostics: [
+                { ...WARNING, code: "UF2007", file },
+                { ...WARNING, code: "UF4002", severity: "info", file },
+              ],
               outputs: { react: [{ path: "S.tsx", contents: "export default 4;\n" }] },
               owners: { react: {} },
               dependencies: [],
@@ -261,11 +264,12 @@ describe("strict", () => {
     expect(JSON.parse(check.stdout)[0]).toMatchObject({ code: "UF4001", severity: "error" });
   });
 
-  it("leaves any other warning a warning", async () => {
+  it("leaves any other warning a warning, and a portability note a note", async () => {
     const root = project({ "src/setup-warning.uf.tsx": "", "unframework.config.mjs": STRICT });
     const { code, stderr } = await run(root, "build");
     expect(code).toBe(0);
     expect(stderr).toContain("warning[UF2007]");
+    expect(stderr).toContain("info[UF4002]");
   });
 });
 

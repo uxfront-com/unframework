@@ -43,7 +43,7 @@ interface Compiled {
   directory: string;
   result: CompileResult;
   copies: OutputFile[];
-  /** Every file it read, relative to the root. */
+  /** What its compile read: files relative to the root, and packages as `pkg:<name>`. */
   read: string[];
 }
 
@@ -159,19 +159,6 @@ export async function compileSources(io: Io, oracle: string | undefined): Promis
   );
   if (hasErrors(diagnostics)) return finish(1, diagnostics, config);
 
-  // Each tree mirrors srcDir, so an output's relative imports hold only for what srcDir holds.
-  for (const { file, directory, result, copies } of compiled) {
-    const reached = [
-      ...(result.ir?.imports ?? []).map((each) => each.file),
-      ...copies.map((each) => each.path),
-    ];
-    const outside = reached.find((path) => posix.join(directory, path).startsWith("../"));
-    if (outside !== undefined) {
-      const problem = `doesn't hold ${outside}, which ${file} imports. Set srcDir to a directory that holds both.`;
-      return finish(2, [...diagnostics, configProblem("/srcDir", problem)], config);
-    }
-  }
-
   // Nor what a source read, which the glob doesn't list: a child, a sheet, a shared module, a type.
   for (const { file, read: readFiles } of compiled) {
     for (const target of config.targets) {
@@ -181,6 +168,22 @@ export async function compileSources(io: Io, oracle: string | undefined): Promis
         const problem = `cleans ${named(directory)}, which holds ${held}, which ${file} reads. Set outDir to a directory of its own.`;
         return finish(2, [...diagnostics, configProblem("/outDir", problem)], config);
       }
+    }
+  }
+
+  // Each tree mirrors srcDir and holds only what the glob found, so an output's import of anything
+  // else breaks, and a copy above srcDir leaves its tree.
+  for (const { file, directory, result, copies } of compiled) {
+    const child = (result.ir?.imports ?? [])
+      .map((each) => each.file)
+      .find((path) => !files.includes(posix.join(posix.dirname(file), path)));
+    const copy = copies
+      .map((each) => each.path)
+      .find((path) => posix.join(directory, path).startsWith("../"));
+    const missed = child ?? copy;
+    if (missed !== undefined) {
+      const problem = `doesn't give the build ${missed}, which ${file} imports: it is outside srcDir, or in a directory the search skips. Set srcDir to a directory that holds both, or move the file.`;
+      return finish(2, [...diagnostics, configProblem("/srcDir", problem)], config);
     }
   }
 

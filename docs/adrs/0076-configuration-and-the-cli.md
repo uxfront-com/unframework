@@ -89,15 +89,15 @@ export default defineConfig({
   last good build stays in place. A failure while writing exits 2 with the build half written.
 - `build` and `check` share a compilation, so `check` fails wherever `build`'s compile would. It holds source
   maps too, since a map that can't follow formatting is an error (UF9002). It reports what no single
-  compile can see, with the nearest codes the PLAN's catalogue has. Their catalogue text doesn't name
-  these cases yet, so each message says what the problem is and how to fix it:
+  compile can see, with the nearest codes in the catalogue. Their catalogue text doesn't name these
+  cases, so each message says what the problem is and how to fix it:
   - UF1104, for two modules that would write one file, one barrel name from two files, or a module
     that would write the barrel's `index.ts`. Equal outputs don't excuse two modules: only a shared
     module reached from two importers is one file.
   - UF7002 at `/outDir`, for an `outDir/<target>` that holds the project, a source, or a file a
     source read, since cleaning it would delete them.
-  - UF7002 at `/srcDir`, for a child or a shared module outside `srcDir`, which a tree mirroring
-    `srcDir` can't hold beside its importer.
+  - UF7002 at `/srcDir`, for a child the glob didn't find, inside `srcDir` or not, or a shared module
+    above `srcDir`, which a tree mirroring `srcDir` can't hold beside its importer.
 - `check` takes `--format pretty|json|sarif`, through the renderers `@unframework/diagnostics`
   already has (`formatDiagnostics`, `toJsonDiagnostics`, `toSarif`). It prints a config's diagnostics
   in that format too, on standard output.

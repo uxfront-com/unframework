@@ -501,6 +501,27 @@ export default function A() {
     expect(stderr).toContain("../lib/Child.uf.tsx");
   });
 
+  it.each([
+    ["a dot directory", ".hidden/Kid.uf.tsx"],
+    ["node_modules", "node_modules/kid/Kid.uf.tsx"],
+  ])("refuses a child in %s, which the search skips", async (_name, child) => {
+    const root = project({
+      "unframework.config.mjs": 'export default { targets: ["react"] };\n',
+      "src/A.uf.tsx": `import Kid from "./${child}";
+
+export default function A() {
+  return <Kid />;
+}
+`,
+      [`src/${child}`]: "export default function Kid() {\n  return <i />;\n}\n",
+    });
+    const { code, stderr } = await run(root, "build");
+    expect(code).toBe(2);
+    expect(stderr).toContain('"/srcDir"');
+    expect(stderr).toContain(child);
+    expect(existsSync(join(root, "dist"))).toBe(false);
+  });
+
   it("exits 2 with a message when outDir can't be written", async () => {
     const root = project({
       ...FIXTURE,

@@ -44,18 +44,21 @@ const USAGE = [
   "",
 ].join("\n");
 
-/** Read when a command line runs, since a caller may change directory after importing this. */
-const processIo = (): Io => ({
-  cwd: process.cwd(),
+const PROCESS_IO: Io = {
+  // Read when a command needs it: a caller may change directory after importing this, and a working
+  // directory that has gone is an error for `main` to report.
+  get cwd() {
+    return process.cwd();
+  },
   stdout: (text) => void process.stdout.write(text),
   stderr: (text) => void process.stderr.write(text),
-});
+};
 
 /**
  * Runs a command line, `argv` without Node and the script, and gives the exit code: 0 for success,
  * 1 for error diagnostics, 2 for a usage or configuration error. It never throws.
  */
-export async function main(argv: readonly string[], io: Io = processIo()): Promise<number> {
+export async function main(argv: readonly string[], io: Io = PROCESS_IO): Promise<number> {
   const [name, ...args] = argv;
   if (argv.includes("--help") || argv.includes("-h")) {
     io.stdout(USAGE);

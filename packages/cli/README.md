@@ -48,8 +48,9 @@ good build stays in place. A failure while writing does exit 2 with the build ha
   barrel's own `index.ts` counts too.
 - **UF7002** at `/outDir`: cleaning an `outDir/<target>` would delete the project, a source, or a file
   a source read.
-- **UF7002** at `/srcDir`: a source reaches a child or a shared module outside `srcDir`, which a tree
-  can't hold beside it, so its relative import would break or its copy would leave `outDir/<target>`.
+- **UF7002** at `/srcDir`: a source imports a child the search didn't find, or a shared module above
+  `srcDir`. No tree can hold it beside the source, so the import would break or the copy would leave
+  `outDir/<target>`.
 
 ## check
 
