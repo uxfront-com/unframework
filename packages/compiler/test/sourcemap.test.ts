@@ -426,6 +426,32 @@ describe("compile with sourceMap", () => {
     expect(file).not.toHaveProperty("map");
   });
 
+  it("ships a file past the diff's cap without a map, with UF9003 and no error", async () => {
+    const table = Array.from({ length: 50_000 }, () => "1.50").join(", ");
+    const source = `const TABLE = [${table}];
+
+export function Table() {
+  return <p>{TABLE.length}</p>;
+}
+`;
+    const result = await compile(source, {
+      filename: "src/Table.uf.tsx",
+      targets: ["react"],
+      sourceMap: true,
+    });
+    const { errors, skipped } = {
+      errors: result.diagnostics.filter(({ severity }) => severity === "error"),
+      skipped: result.diagnostics.filter(({ code }) => code === "UF9003"),
+    };
+    expect(errors).toEqual([]);
+    expect(skipped.map(({ file, target, severity }) => [file, target, severity])).toEqual([
+      ["src/Table.uf.tsx", "react", "warning"],
+    ]);
+    const file = result.outputs.react![0]!;
+    expect(file.contents).toContain("1.5, 1.5");
+    expect(file).not.toHaveProperty("map");
+  }, 120_000);
+
   it("passes through a project's compile", async () => {
     const project = createProject({
       root: "/p",

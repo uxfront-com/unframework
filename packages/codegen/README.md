@@ -228,7 +228,8 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   may unwrap a block, but for a lone word or a piece too short to tell apart. A run of punctuation alone would match anywhere, so it stays unmapped, as does a
   `Code` made only of references. A run beside a reference matches only next to a spelling that
   holds its name, and a short run nothing checks needs the output to hold as many places as the
-  source holds runs of it. A segment marks each token of a run, and a named one the start of a
+  source holds runs of it. A piece of a line takes the same check, and beside a `${…}` it looks across
+  the brace and reads the name in any case. A segment marks each token of a run, and a named one the start of a
   reference beside a run. Pass a module holding only the component the file is written for, or
   another's identical text can take its place. A `.css` sheet's map has no segments.
   `remapFormatted(before, after, map)` carries a map through `formatOutput` by a diff over the
@@ -238,6 +239,8 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   file's words match, not counting a number or a `/` with the lowercase letters after it, or where a code block has no end, their
   number changed or the markup around them did. oxfmt rewrites punctuation and numbers by itself, and
   a word only in text like `title="don&apos;t"`, so a target or a plugin printing that can reach it.
+  A diff whose trace would pass 256 MB stops there and returns the warning UF9003 instead of a map,
+  since it grows with the square of the edits and a table of numbers oxfmt rewrites reaches gigabytes.
   `identityMapped` maps a file copied unchanged onto itself.
 - **Exports, imports and names:** `exportDeclaration` keeps the source's export shape, for a
   function, a class or an expression (`export const Card = component$(…)`), and `exportsOf`
