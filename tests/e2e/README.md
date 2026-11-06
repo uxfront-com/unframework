@@ -84,4 +84,6 @@ The run uses one worker and no retries. A project's specs share one copy and an 
 
 ## Servers and ports
 
-Each dev server belongs to its Playwright worker and takes a free port, which it records in `<work>/.ports`. A spawned `ng serve` gets a `SIGTERM` to its whole process group in teardown, and a `SIGKILL` 5 seconds later if it's still there, so esbuild's service goes with it. The global teardown then connects to every recorded port and fails the run if one still answers. On success it prints the ports it checked, and `lsof -iTCP -sTCP:LISTEN` should show none of them. Test results go to `<work>/.results`, outside the repository.
+Each dev server belongs to its Playwright worker and takes a free port, which it records in `<work>/.ports`. A spawned `ng serve` gets a `SIGTERM` to its whole process group in teardown, and a `SIGKILL` 5 seconds later if it's still there, so esbuild's service goes with it.
+
+The global teardown then connects to every recorded port and fails the run if one still answers. On success it prints the ports it checked, and `lsof -iTCP -sTCP:LISTEN` should show none of them. Test results go to `<work>/.results`, outside the repository.
