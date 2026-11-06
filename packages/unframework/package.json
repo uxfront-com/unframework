@@ -24,7 +24,11 @@
     "url": "git+https://github.com/uxfront-com/unframework.git",
     "directory": "packages/unframework"
   },
+  "bin": {
+    "unframework": "bin/unframework.js"
+  },
   "files": [
+    "bin",
     "dist"
   ],
   "type": "module",

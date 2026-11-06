@@ -24,7 +24,7 @@ export interface UnframeworkConfig {
   targetOptions?: Partial<Record<TargetName, unknown>>;
   /** Defaults to `syntactic`. */
   typeOracle?: "syntactic" | "tsgo";
-  /** Plan §8.1: `true` makes portability warnings errors, once the CLI reads it. Defaults to `false`. */
+  /** Plan §8.1: `true` makes portability warnings errors, in the CLI. Defaults to `false`. */
   strict?: boolean;
   package?: PackageConfig;
 }
