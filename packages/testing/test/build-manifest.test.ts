@@ -22,6 +22,7 @@ const manifest: BuildManifest = {
   failures: [
     { module: "/root/c/C.uf.tsx.vue", cause: "ngtsc refused it" },
     { module: "/root/d/D.uf.tsx.vue", cause: "plugin-vue refused it" },
+    { module: "/root/d/D.uf.tsx.vue", cause: "the unplugin refused it" },
   ],
 };
 

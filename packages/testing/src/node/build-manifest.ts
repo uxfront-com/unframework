@@ -37,7 +37,10 @@ export function writeBuildManifest(directory: string, manifest: BuildManifest): 
   const modules = Object.fromEntries(
     Object.entries(manifest.modules).toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
   );
-  const failures = manifest.failures.toSorted((a, b) => (a.module < b.module ? -1 : 1));
+  const failures = manifest.failures.toSorted((a, b) => {
+    const [first, second] = [`${a.module}\0${a.cause}`, `${b.module}\0${b.cause}`];
+    return first < second ? -1 : first > second ? 1 : 0;
+  });
   writeFileSync(
     join(directory, BUILD_MANIFEST),
     `${JSON.stringify({ ...manifest, modules, failures }, null, 2)}\n`,
