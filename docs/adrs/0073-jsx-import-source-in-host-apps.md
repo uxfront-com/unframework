@@ -20,8 +20,9 @@ proposed before M6 builds it, and it's amended in place as it's built.
   `tsconfig.uf.json`.** Its `include` is `["**/*.uf.tsx", "**/*.uf.ts"]`, with
   `"jsx": "preserve"` and `"jsxImportSource": "unframework"`.
 - **The host's root tsconfig excludes those files,** so they aren't roots of the host's program.
-- **`unframework init` writes `tsconfig.uf.json`,** and it runs as
-  `tsc --noEmit -p tsconfig.uf.json`.
+- **`unframework init` writes `tsconfig.uf.json`,** the example below as plain JSON, and it runs as
+  `tsc --noEmit -p tsconfig.uf.json`. It leaves the host's root tsconfig as it is, so the host adds
+  the `exclude` itself. It adds no dependency either, so the host adds `typescript`.
 - **It excludes the build output.** `**/` never walks into `node_modules`, but it does walk into
   `dist`, where a package ships its `.uf.tsx` sources.
 - **A `tsconfig.uf.json` that extends the root config sets its own `exclude`.** A config that sets
@@ -103,3 +104,7 @@ does not exist on type 'DetailedHTMLProps<…>'. Did you mean 'className'?` at `
   `tsc --listFilesOnly` lists the file despite `exclude`.
 - **A host import under the pragma, in one config:** `Greeting.uf.tsx` is clean, and `App.tsx`
   gives `TS2786: 'Greeting' cannot be used as a JSX component.`
+- **What `init` writes:** with `typescript` 7.0.2 linked in, `create-unframework`'s test runs
+  `tsc --noEmit -p tsconfig.uf.json` on the scaffold, before and after `unframework build`, and it
+  exits 0. `--listFilesOnly` names `src/Button.uf.tsx`, and a `<Button label={1} />` beside it fails
+  the check.

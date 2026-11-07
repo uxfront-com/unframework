@@ -4,11 +4,11 @@ The `unframework` command line (plan §8.3, ADR-0076). The `unframework` package
 project runs it as `unframework <command>`, from the directory that holds its
 `unframework.config.ts`. A project with no config takes the defaults.
 
-| Exit code | Meaning                                                                             |
-| --------- | ----------------------------------------------------------------------------------- |
-| 0         | Success, warnings and notes included, but for what `strict` makes an error.         |
-| 1         | Error diagnostics, in a source or because no source was found.                      |
-| 2         | A usage error, a config that won't load or is invalid, or a failure writing a file. |
+| Exit code | Meaning                                                                                               |
+| --------- | ----------------------------------------------------------------------------------------------------- |
+| 0         | Success, warnings and notes included, but for what `strict` makes an error.                           |
+| 1         | Error diagnostics, in a source or because no source was found.                                        |
+| 2         | A usage error, `init`'s refusal, a config that won't load or is invalid, or a failure writing a file. |
 
 `main(argv, io?)` runs a command line, `argv` without Node and the script, and gives the exit code.
 It never throws. `io` holds the working directory and where text goes, and defaults to the process's.
@@ -74,3 +74,39 @@ unframework explain UF1002
 
 `explain` prints a code's catalogue entry, with its name, severity, title and description, and its
 `docsUrl()`. An unknown code exits 2.
+
+## init
+
+```sh
+unframework init [--force]
+```
+
+`init` starts a project in the working directory, and names each file it writes:
+
+- **`unframework.config.ts`,** which names all seven targets, `src` and `dist`.
+- **`src/Button.uf.tsx` and `src/Button.css`,** an example component and its stylesheet.
+- **`tsconfig.uf.json`,** the scoped config from ADR-0073, for `tsc --noEmit -p tsconfig.uf.json`.
+  `init` adds no dependency, so add `typescript` to the project to run this.
+- **`AGENTS.md`,** which points agents at unframework.dev and names the commands that check and build.
+
+It refuses to overwrite anything without `--force`: it exits 2, names every file in the way, says
+what `--force` would do with each and writes nothing. A `unframework.config.mts`, `.js` or `.mjs`
+counts as in the way, because the `.ts` file would replace it without a word.
+
+With `--force`, `init` overwrites its own five files and leaves every other file alone. So such a
+config stays on disk, the new `.ts` file wins and `init` says so on standard error. A symlink is
+replaced, not written through. A directory where one of the five files should go exits 2 either way,
+and so does a file named `src`.
+
+`init` doesn't edit your own `tsconfig.json`. If you have one, add `**/*.uf.tsx` and `**/*.uf.ts` to
+its `exclude`, so your framework's JSX types don't check these files (ADR-0073).
+
+`check` exits 0 on the example, and prints UF4002 as an info for Angular and for Qwik, as it does for
+any stylesheet.
+
+The exception is a project whose `package.json` sets `"type": "commonjs"`, which `npm init -y` writes.
+The example's config is an ES module, so there `check` and `build` exit 2 with UF7001. Set
+`"type": "module"`, or rename the file `unframework.config.mts`. A `package.json` with no `type` works,
+with a warning from Node.
+
+`init` writes no test yet, because `@unframework/testing` stays private until M7.
