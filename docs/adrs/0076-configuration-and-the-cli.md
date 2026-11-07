@@ -37,12 +37,15 @@ built.
     JSON pointer). A field the config doesn't have, an empty target list, a repeated target and a
     `package.targets` entry outside `targets` report it too
   - the target names (UF7003 `unknown-target`, with a did-you-mean)
-  - `targetOptions[t]`, through the target's Standard Schema (UF7004 `target-options-invalid`)
+  - `targetOptions[t]`, through the target's Standard Schema (UF7004 `target-options-invalid`). A
+    schema that throws reports it too
 - `origin` is what `loadConfig` returned: `directory` and `file`. `raw` alone doesn't say where the
   config lives, and relative paths need it.
 - `resolveConfig` is asynchronous, because a Standard Schema's `validate` may return a promise. What
-  a schema returns replaces the options as written. A target without a schema takes its options as
-  written, as every built-in target does today, so §8.1's `targetOptions` example stays valid.
+  a schema returns replaces the options as written. A target without a schema takes no options, so
+  any key under it reports UF7004, whose message says so (`react` declares no options): nothing
+  would read them (P2). Every built-in target declares none today, so §8.1's
+  `react: { compiler: true }` reports UF7004 until React declares that option.
 - The defaults are all seven targets, `src`, `dist`, `syntactic` and `strict: false`.
 - `unframework/config` exports an identity `defineConfig`, typed with `UnframeworkConfig` through a
   type-only import, so importing it loads no compiler (ADR-0016).

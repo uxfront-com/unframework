@@ -56,7 +56,8 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
     "Raised by a crashing compiler plugin: the L1 canary triggers it, and no case installs plugins.",
   UF9001:
     "An internal compiler error: a case that triggers it is a compiler bug to fix, not to keep.",
-  UF9002: "internal: a remap that fails is a compiler bug; tested in codegen",
+  UF9002:
+    "internal: a map that can't follow formatting, with too few words matching or a markup file's blocks changed, is a compiler bug, and a file past the diff's bound is UF9003; tested in codegen",
   UF9003: "raised past a size bound; tested in codegen",
 };
 
