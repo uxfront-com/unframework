@@ -6,6 +6,7 @@
 // Ported from Vitest 5.0.3 (`vitest-dev/vitest@v5.0.3`, packages/vitest/src/integrations/chai and
 // packages/browser/src/client/tester/expect-element.ts). MIT License, Copyright (c) 2021-Present
 // VoidZero Inc. and Vitest contributors.
+import "./storybook-expect.ts";
 import {
   ASYMMETRIC_MATCHERS_OBJECT,
   chai,

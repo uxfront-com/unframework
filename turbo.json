@@ -37,10 +37,20 @@
     // which `transit` hashes, and the checkers installed in tests/toolchains, which are no
     // dependency of it: their transit nodes carry their tsconfigs and locked versions. Its own
     // tests also read CI's workflow (the baseline image, the jobs the parity job merges), so a
-    // change there alone must not replay a cached pass. The parity matrices are outputs, so a
-    // cached run still leaves them for the summary.
+    // change there alone must not replay a cached pass. Its Storybook tests build each target's
+    // Storybook from tests/storybook and packages/visual, which `transit` does not reach: the
+    // first is no dependency of it. The parity matrices are outputs, so a cached run still leaves
+    // them for the summary.
     "@unframework/integration#test": {
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.github/workflows/ci.yml"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/.github/workflows/ci.yml",
+        "$TURBO_ROOT$/packages/visual/**",
+        "!$TURBO_ROOT$/packages/visual/node_modules/**",
+        "$TURBO_ROOT$/tests/storybook/**",
+        "!$TURBO_ROOT$/tests/storybook/*/node_modules/**",
+        "!$TURBO_ROOT$/tests/storybook/*/storybook-static/**"
+      ],
       "dependsOn": [
         "transit",
         "@unframework/toolchain-angular#transit",

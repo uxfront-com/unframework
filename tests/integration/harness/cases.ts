@@ -6,6 +6,7 @@ import { basename, dirname, join, sep } from "node:path";
 import { TARGET_NAMES } from "@unframework/compiler";
 import { COLOR_SCHEMES, KEBAB_CASE, ssrScenarios } from "@unframework/testing/node";
 import type { CaseConfig } from "@unframework/testing/node";
+import type { Story } from "@unframework/visual";
 
 import { CASES_DIR } from "./paths.ts";
 import { REFERENCE } from "./targets.ts";
@@ -326,6 +327,22 @@ export interface SpecTest {
    * the first of each run of such steps, with what came next.
    */
   uncompared: UncomparedStep[];
+  /** Its `mount` and `mountScenario` calls, in order. */
+  mounts: SpecMount[];
+  /** The name its first `expectParity` gives, if a string literal does. */
+  firstScenario: string | undefined;
+}
+
+/** A `mount` or `mountScenario` call, as a spec's source reads. */
+export interface SpecMount {
+  /** The component it names: `Table` for `Table<Person>`. */
+  component: string | undefined;
+  /** The name `mountScenario` gives. A bare `mount` has none. */
+  scenario: string | undefined;
+  /** The options a bare `mount` gives, read as a literal, with `undefined` kept as it is. */
+  options: Readonly<Record<string, unknown>> | undefined;
+  /** Why the call can't be read: a story takes literals only. */
+  problem: string | undefined;
 }
 
 /** A step a test takes that no `expectParity` compares before an assertion or the test's end. */
@@ -390,8 +407,138 @@ export function specTests(source: string): SpecTest[] {
       rerenders: RERENDER.test(body),
       firstAssertion: assertion,
       uncompared: uncomparedSteps(code, start, body),
+      mounts: specMounts(body),
+      firstScenario: /\.expectParity\s*\(\s*(["'`])([^"'`$\\\n]*)\1/.exec(body)?.[2],
     };
   });
+}
+
+/** A `mount` or `mountScenario` call: not a method of something else. */
+const MOUNT_CALL = /(?<![.\w$])(mount|mountScenario)\s*\(/g;
+
+/** What a mount call names first: a component, with type arguments if it is generic. */
+const MOUNT_COMPONENT = /\s*([A-Za-z_$][\w$]*)(?:<[^()]*?>)?\s*(,|\))/y;
+
+/** The mount calls of a test's body. */
+function specMounts(body: string): SpecMount[] {
+  return [...body.matchAll(MOUNT_CALL)].map((call) => {
+    const start = call.index + call[0].length;
+    const mount: SpecMount = {
+      component: undefined,
+      scenario: undefined,
+      options: undefined,
+      problem: undefined,
+    };
+    MOUNT_COMPONENT.lastIndex = start;
+    const head = MOUNT_COMPONENT.exec(body);
+    if (!head) {
+      mount.problem = `${call[1]}(…) does not name a component it imports.`;
+      return mount;
+    }
+    mount.component = head[1]!;
+    if (head[2] === ")") return mount;
+    try {
+      const value = readLiteral(body, start + head[0].length);
+      if (call[1] === "mountScenario") {
+        if (typeof value !== "string") throw new Error("a scenario's name is a string literal");
+        mount.scenario = value;
+      } else if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+        mount.options = value as Record<string, unknown>;
+      } else {
+        throw new Error("its options are an object literal");
+      }
+    } catch (error) {
+      mount.problem = `${call[1]}(${head[1]}, …) can't be read: ${(error as Error).message}.`;
+    }
+    return mount;
+  });
+}
+
+/** The escapes a literal's string may hold. */
+const ESCAPES: Readonly<Record<string, string>> = {
+  '"': '"',
+  "'": "'",
+  "`": "`",
+  "\\": "\\",
+  n: "\n",
+  r: "\r",
+  t: "\t",
+};
+
+/**
+ * The JSON-like literal at an offset: strings, numbers, booleans, `null`, arrays and objects, with
+ * `undefined` kept, unquoted keys and trailing commas, as a spec writes them. Throws on anything
+ * else, since a story can't hold what only runs in a test.
+ */
+function readLiteral(code: string, start: number): unknown {
+  let at = start;
+  const skip = () => {
+    while (/\s/.test(code[at] ?? "")) at += 1;
+  };
+  const refuse = (): never => {
+    throw new Error(`\`${code.slice(at, at + 20).split("\n")[0]}\` is not a JSON literal`);
+  };
+  const string = (): string => {
+    const quote = code[at]!;
+    let text = "";
+    for (at += 1; code[at] !== quote; at += 1) {
+      if (at >= code.length || code[at] === "\n" || (quote === "`" && code[at] === "$")) refuse();
+      if (code[at] === "\\") {
+        at += 1;
+        const escaped = ESCAPES[code[at]!];
+        if (escaped === undefined) refuse();
+        text += escaped;
+      } else text += code[at];
+    }
+    at += 1;
+    return text;
+  };
+  const value = (): unknown => {
+    skip();
+    const char = code[at];
+    if (char === '"' || char === "'" || char === "`") return string();
+    if (char === "[") {
+      const items: unknown[] = [];
+      at += 1;
+      for (skip(); code[at] !== "]"; skip()) {
+        items.push(value());
+        skip();
+        if (code[at] === ",") at += 1;
+        else if (code[at] !== "]") refuse();
+      }
+      at += 1;
+      return items;
+    }
+    if (char === "{") {
+      const object: Record<string, unknown> = {};
+      at += 1;
+      for (skip(); code[at] !== "}"; skip()) {
+        let key: string | undefined;
+        if (code[at] === '"' || code[at] === "'") key = string();
+        else {
+          key = /^[A-Za-z_$][\w$]*/.exec(code.slice(at, at + 200))?.[0];
+          if (key === undefined) refuse();
+          at += key!.length;
+        }
+        skip();
+        if (code[at] !== ":") refuse();
+        at += 1;
+        object[key!] = value();
+        skip();
+        if (code[at] === ",") at += 1;
+        else if (code[at] !== "}") refuse();
+      }
+      at += 1;
+      return object;
+    }
+    const word = /^(?:-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?|true|false|null|undefined)(?![\w$.])/.exec(
+      code.slice(at, at + 40),
+    )?.[0];
+    if (word === undefined) return refuse();
+    at += word.length;
+    return word === "undefined" ? undefined : JSON.parse(word);
+  };
+  return value();
 }
 
 /** The capability names a test's options declare in `requires`, which must be string literals. */
@@ -545,6 +692,107 @@ export function specProblems(info: CaseInfo): string[] {
     );
   }
   return problems;
+}
+
+/** A story of a case, on any target: `@unframework/visual`'s input, without a target's reasons. */
+export type CaseStory = Pick<Story, "id" | "title" | "source" | "args">;
+
+/** A value as JavaScript, `undefined` kept, with its keys sorted when it is for a comparison. */
+function printLiteral(value: unknown, sorted = false): string {
+  if (value === undefined) return "undefined";
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => printLiteral(item, sorted)).join(", ")}]`;
+  }
+  if (typeof value !== "object" || value === null) return JSON.stringify(value);
+  const entries = Object.entries(value);
+  if (sorted) entries.sort(([a], [b]) => (a < b ? -1 : 1));
+  const fields = entries.map(
+    ([key, each]) => `${JSON.stringify(key)}: ${printLiteral(each, sorted)}`,
+  );
+  return fields.length ? `{ ${fields.join(", ")} }` : "{}";
+}
+
+/**
+ * A case's stories, sorted by id: each `case.json` scenario, and each mount of its spec. A
+ * `mountScenario` takes its scenario's name, and a bare `mount` its test's first `expectParity`
+ * literal, unique in the case. Throws when a mount can't give a story, or when one id would hold
+ * two sets of props or two components, so a story never renders what its test doesn't.
+ */
+export function caseStories(info: CaseInfo): CaseStory[] {
+  const [area, name] = info.id.split("/");
+  const stories = new Map<string, CaseStory & { fromSpec: boolean; props: string }>();
+  const fail = (message: string): never => {
+    throw new Error(`Case ${info.id}: ${message}`);
+  };
+  const add = (scenario: string, source: string, props: unknown, fromSpec: boolean) => {
+    if (!KEBAB_CASE.test(scenario))
+      fail(`the story ${JSON.stringify(scenario)} is not kebab-case.`);
+    const id = `${area}-${name}--${scenario}`;
+    const canonical = printLiteral(props ?? {}, true);
+    const known = stories.get(id);
+    if (known && known.props !== canonical) {
+      fail(`${id} has two sets of props: ${known.props} and ${canonical}.`);
+    }
+    if (known?.fromSpec && fromSpec && known.source !== source) {
+      fail(`${id} mounts two components: ${basename(known.source)} and ${basename(source)}.`);
+    }
+    if (known?.fromSpec && !fromSpec) return;
+    stories.set(id, {
+      id,
+      title: info.id,
+      source,
+      args: printLiteral(props ?? {}),
+      fromSpec,
+      props: canonical,
+    });
+  };
+  // The scenarios `case.json` declares: not the `default` the SSR project gives a case without one.
+  const scenarios = info.config.ssr ?? {};
+  for (const [scenario, value] of Object.entries(scenarios)) {
+    add(scenario, info.source, value?.props, false);
+  }
+  if (info.spec) {
+    const source = readFileSync(info.spec, "utf8");
+    const code = withoutComments(source);
+    const first = code.search(TEST_CALL);
+    if ((first === -1 ? code : code.slice(0, first)).search(MOUNT_CALL) !== -1) {
+      fail(`${basename(info.spec)} mounts outside a test, where no story can read it.`);
+    }
+    const imports = new Map(
+      [...code.matchAll(/\bimport\s+([A-Za-z_$][\w$]*)\s+from\s+["'](\.[^"']+)["']/g)].map(
+        (match) => [match[1]!, join(dirname(info.spec!), match[2]!)],
+      ),
+    );
+    for (const test of specTests(source)) {
+      for (const mount of test.mounts) {
+        if (mount.problem) fail(mount.problem);
+        const file = imports.get(mount.component!);
+        if (!file?.endsWith(".uf.tsx")) {
+          fail(
+            `${JSON.stringify(test.name)} mounts ${mount.component}, no default import of a .uf.tsx file.`,
+          );
+        }
+        if (mount.scenario !== undefined) {
+          if (!Object.hasOwn(scenarios, mount.scenario)) {
+            fail(
+              `mountScenario names ${JSON.stringify(mount.scenario)}, which case.json doesn't declare.`,
+            );
+          }
+          add(mount.scenario, file!, scenarios[mount.scenario]!.props, true);
+        } else {
+          if (test.firstScenario === undefined) {
+            fail(
+              `${JSON.stringify(test.name)} mounts with no scenario name, and calls no expectParity to take one from.`,
+            );
+          }
+          add(test.firstScenario!, file!, mount.options?.props, true);
+        }
+      }
+    }
+  }
+  return [...stories.values()]
+    .map(({ id, title, source, args }) => ({ id, title, source, args }))
+    .toSorted((a, b) => (a.id < b.id ? -1 : 1));
 }
 
 /**

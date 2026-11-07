@@ -7,6 +7,7 @@ packages:
   - "!packages/compiler-v1"
   - "tests/*"
   - "tests/toolchains/*"
+  - "tests/storybook/*"
 allowBuilds:
   # Only an auto-installed peer of @nuxt/content: Docus reads content with the
   # built-in node:sqlite, so the native binding is never built.
@@ -113,6 +114,7 @@ catalog:
   # same two functions.
   "@sinonjs/fake-timers": 15.4.0
   "@standard-schema/spec": ^1.1.0
+  "@storybook/html-vite": 10.6.6
   "@styleframe/runtime": 3.2.2
   "@styleframe/theme": 3.10.0
   "@sveltejs/vite-plugin-svelte": 7.3.1
@@ -163,6 +165,7 @@ catalog:
   react-dom: 19.3.0
   rxjs: ^7.8.2
   solid-js: 1.9.15
+  storybook: 10.6.6
   styleframe: 3.9.2
   svelte: 5.57.1
   svelte-check: 4.7.6

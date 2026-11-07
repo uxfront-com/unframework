@@ -18,6 +18,13 @@ export type {
   FocusCommandContext,
   InputCommandContext,
 } from "./commands.ts";
+export {
+  BUILD_MANIFEST,
+  manifestEvents,
+  readBuildManifest,
+  writeBuildManifest,
+} from "./build-manifest.ts";
+export type { BuildFailure, BuildManifest, BuildManifestModule } from "./build-manifest.ts";
 export { compiledEvents, eventsOfModule, recordCompiledModule } from "./events.ts";
 export type { CompiledModule } from "./events.ts";
 export { pageActions } from "./page-actions.ts";

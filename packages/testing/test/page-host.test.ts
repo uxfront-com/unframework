@@ -128,7 +128,7 @@ afterAll(async () => {
 /** Runs a stub spec in a page of its own, as the driver will, and waits for its file's record. */
 async function runSpec(
   spec: string,
-  options: { hookTimeout?: number; caseName?: string } = {},
+  options: { hookTimeout?: number; caseName?: string; beforeLoad?: string } = {},
 ): Promise<Run> {
   const context: BrowserContext = await browser.newContext({
     viewport: VIEWPORT,
@@ -140,6 +140,7 @@ async function runSpec(
     timezoneId: "UTC",
   });
   context.setDefaultTimeout(5_000);
+  if (options.beforeLoad) await context.addInitScript(options.beforeLoad);
   const page = await context.newPage();
   await page.goto(`${origin}/`);
   const frameElement = await page.waitForSelector(FRAME);
@@ -232,6 +233,24 @@ describe("with nothing around it", () => {
   it("refuses a command with no binding to reach Node through", async () => {
     await expect(callNode("ufInput", [])).rejects.toThrow("__ufPageHostCall");
   });
+});
+
+describe("under Storybook's preview", () => {
+  it("asserts when Storybook's own expect claimed the matchers' global first", async () => {
+    // What Storybook's copy of @vitest/expect leaves: `matchers-object` and the asymmetric matchers'
+    // global taken, and its state under a key of its own, so no `$$jest-matchers-object`.
+    const run = await runSpec("page-host/runner.page.spec.ts", {
+      beforeLoad: `{
+        const state = new WeakMap();
+        const asymmetric = Object.create(null);
+        Object.defineProperty(globalThis, Symbol.for("matchers-object"), { get: () => state });
+        Object.defineProperty(globalThis, Symbol.for("asymmetric-matchers-object"), {
+          get: () => asymmetric,
+        });
+      }`,
+    });
+    expect(run.tests.get("passes a test that asserted")?.state).toBe("pass");
+  }, 60_000);
 });
 
 describe("the page host, against Vitest's own answers", () => {

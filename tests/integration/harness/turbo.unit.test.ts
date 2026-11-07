@@ -46,6 +46,18 @@ describe("the integration test task", () => {
     expect(Object.keys(test.inputs)).toContain("../../.github/workflows/ci.yml");
   });
 
+  it("hashes the Storybook packages and the preset the Storybook tests build, not their output", () => {
+    const inputs = Object.keys(test.inputs);
+    for (const target of selectTargets(undefined)) {
+      expect(inputs).toContain(`../storybook/${target}/package.json`);
+      expect(inputs).toContain(`../storybook/${target}/.storybook/main.ts`);
+    }
+    expect(inputs).toContain("../../packages/visual/src/preset.ts");
+    expect(inputs.filter((path) => /storybook-static|\.uf-cache|node_modules/.test(path))).toEqual(
+      [],
+    );
+  });
+
   it("hashes every toolchain's tsconfig and lint configurations through its transit node", () => {
     for (const target of selectTargets(undefined)) {
       const id = `@unframework/toolchain-${target}#transit`;

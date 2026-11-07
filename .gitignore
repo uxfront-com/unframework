@@ -51,3 +51,6 @@ __screenshots__/**/*-darwin.png
 __screenshots__/**/*-win32.png
 .uf-tmp
 .vitest
+
+# Storybook builds
+storybook-static

@@ -13,6 +13,9 @@
     "test:baselines:check": "bash scripts/baselines.sh check",
     "test:baselines:download": "bash scripts/baselines.sh download",
     "summary": "node scripts/summary.ts",
+    "storybook": "node scripts/storybook.ts serve",
+    "storybook:build": "node scripts/storybook.ts build",
+    "storybook:check": "node scripts/storybook.ts check",
     "check-types": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.cases.json"
   },
   "devDependencies": {
@@ -42,6 +45,7 @@
     "@unframework/target-vue": "workspace:*",
     "@unframework/testing": "workspace:*",
     "@unframework/unplugin": "workspace:*",
+    "@unframework/visual": "workspace:*",
     "@uxfront/typescript-config": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "ajv": "catalog:",
@@ -52,6 +56,7 @@
     "react-dom": "catalog:",
     "rxjs": "catalog:",
     "solid-js": "catalog:",
+    "storybook": "catalog:",
     "styleframe": "catalog:",
     "svelte": "catalog:",
     "tslib": "catalog:",
