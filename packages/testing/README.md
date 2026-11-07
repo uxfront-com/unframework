@@ -181,7 +181,17 @@ errors>` on every layer, and the summary excuses it on that target alone. A case
   and Solid's `onChange`, Vue's `onChange` beside the props, Svelte's `onchange`, Angular's
   `outputBinding("change")` with the payload spread back by its shape, Qwik's `onChange$` QRL,
   none on Astro) and keeps them across `rerender`. `MountedComponent.interact(action)` runs a
-  user's action the framework's way.
+  user's action the framework's way. `MountOptions.renderCommand` is the server render of a target
+  with no client runtime, which `mount` passes from the host and Astro's adapter alone calls: a
+  target sits below this package in `LAYERS`, so it names no host.
+- **The host port** (`src/browser/host.ts`): everything the spec runtime needs from the runner
+  around it, namely the commands, the page's locators, `expect.element`, `userEvent`'s `unhover`,
+  `fill`, `clear`, `selectOptions` and `cleanup`, the clock, the current test, the setup's hooks,
+  the values from Node (`ufHarness`, `ufCapabilities`, `ufNoOutput`, `ufStandIn`, `target`), the
+  `expect.element` poll timeout, the test's metadata and the artefacts of a failed comparison.
+  Nothing in `src/browser`, `src/setup.ts` or `src/index.ts` imports Vitest directly. The Vitest host
+  (`src/hosts/vitest/`) implements the port, and a project with no host fails at its first read,
+  naming the setup file to load.
 
 ## Writing a spec
 
@@ -230,7 +240,9 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
 
 ## Setup files
 
-- **`@unframework/testing/setup`**, loaded first by every browser project: the bundled Inter font
+- **`@unframework/testing/hosts/vitest`**, loaded first by every Vitest browser project: installs
+  the Vitest host, which the next file reaches the runner through.
+- **`@unframework/testing/setup`**, loaded next: the bundled Inter font
   as "UF Test Sans", the motion and caret reset, the startup assertions (DPR 1, reduced motion,
   and the case's colour scheme: `case.json`'s `colorScheme`, `light` by default, which the file
   emulates through `ufColorScheme` before anything mounts, ADR-0061), console capture recorded

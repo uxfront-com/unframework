@@ -8,12 +8,10 @@
 // one task of such a framework, and a watcher would be called back once for both, or not at
 // all, by chance. A spec acts only through it: `userEvent` or a locator's own actions would skip
 // all of this.
-import { commands, userEvent } from "vitest/browser";
-import type { Locator, UserEventWheelOptions } from "vitest/browser";
-
-import "../commands.ts";
 import type { InputRequest } from "../commands.ts";
 import { assertInteractive } from "./capabilities.ts";
+import { host } from "./host.ts";
+import type { Locator } from "./host.ts";
 import { isCharacter, parseKeys } from "./keys.ts";
 import type { KeyInput } from "./keys.ts";
 
@@ -21,6 +19,12 @@ import type { KeyInput } from "./keys.ts";
 export interface ClickOptions {
   position?: { x: number; y: number };
 }
+
+/** How `view.user.wheel` turns the wheel: `delta` pixels, or a direction, `times` steps. */
+export type WheelOptions = { times?: number } & (
+  | { delta: { x: number; y?: number } | { x?: number; y: number }; direction?: undefined }
+  | { direction: "up" | "down" | "left" | "right"; delta?: undefined }
+);
 
 /** A person's input to one mounted view. Every target accepts a locator under the view's root. */
 export interface ViewUser {
@@ -52,7 +56,7 @@ export interface ViewUser {
   /** Selects the options of a `<select>` with these values or labels. */
   selectOptions(target: Locator, values: string | readonly string[]): Promise<void>;
   /** Moves the mouse onto the element, then turns the wheel, a step at a time. */
-  wheel(target: Locator, options: UserEventWheelOptions): Promise<void>;
+  wheel(target: Locator, options: WheelOptions): Promise<void>;
 }
 
 /** One input of an action: dispatched alone, then settled before the next. */
@@ -76,7 +80,7 @@ export interface UserHost {
 const held = new Set<string>();
 
 /** The user of a view. */
-export function createUser(host: UserHost): ViewUser {
+export function createUser(view: UserHost): ViewUser {
   // Async, so a refusal rejects as a failed action does.
   const act = async (
     kind: keyof ViewUser,
@@ -88,10 +92,10 @@ export function createUser(host: UserHost): ViewUser {
     assertInteractive(`view.user.${kind}`);
     const parts = [
       kind,
-      ...(target === undefined ? [] : [underRoot(host.testId, target, kind)]),
+      ...(target === undefined ? [] : [underRoot(view.testId, target, kind)]),
       ...args.filter((arg) => arg !== undefined).map((arg) => JSON.stringify(arg)),
     ];
-    return host.perform(parts.join(" "), inputs());
+    return view.perform(parts.join(" "), inputs());
   };
   return {
     click: (target, options) =>
@@ -102,9 +106,9 @@ export function createUser(host: UserHost): ViewUser {
       act("hover", target, [], () => [
         send({ kind: "move", locator: target.serialize(), check: "hover" }),
       ]),
-    unhover: (target) => act("unhover", target, [], () => [() => userEvent.unhover(target)]),
+    unhover: (target) => act("unhover", target, [], () => [() => host().userEvent.unhover(target)]),
     fill: (target, text) =>
-      act("fill", target, [text], () => [focus(target), () => userEvent.fill(target, text)]),
+      act("fill", target, [text], () => [focus(target), () => host().userEvent.fill(target, text)]),
     type: (target, text) =>
       act("type", target, [text], () => {
         const keys = parseKeys(text, "view.user.type", held);
@@ -116,7 +120,7 @@ export function createUser(host: UserHost): ViewUser {
         })();
       }),
     clear: (target) =>
-      act("clear", target, [], () => [focus(target), () => userEvent.clear(target)]),
+      act("clear", target, [], () => [focus(target), () => host().userEvent.clear(target)]),
     keyboard: (text) =>
       act("keyboard", undefined, [text], () => {
         const keys = parseKeys(text, "view.user.keyboard", held);
@@ -143,7 +147,7 @@ export function createUser(host: UserHost): ViewUser {
     selectOptions: (target, values) => {
       const list = typeof values === "string" ? [values] : [...values];
       return act("selectOptions", target, [list], () => [
-        () => userEvent.selectOptions(target, list),
+        () => host().userEvent.selectOptions(target, list),
       ]);
     },
     wheel: (target, options) =>
@@ -160,14 +164,14 @@ export function createUser(host: UserHost): ViewUser {
 /** An input `ufInput` dispatches. */
 function send(request: InputRequest): Input {
   return async () => {
-    await commands.ufInput(request);
+    await host().commands.ufInput(request);
   };
 }
 
 /** The focus moved to the element, as Playwright's `locator.focus()` does. */
 function focus(target: Locator): Input {
   return async () => {
-    await commands.ufFocus(target.serialize());
+    await host().commands.ufFocus(target.serialize());
   };
 }
 
@@ -196,7 +200,7 @@ function* press(keys: readonly KeyInput[]): Generator<Input> {
   for (const { key, text, press: down, release: up } of keys) {
     if (down) {
       yield async () => {
-        const { inserted } = await commands.ufInput({ kind: "keydown", key, text });
+        const { inserted } = await host().commands.ufInput({ kind: "keydown", key, text });
         if (!inserted) held.add(key);
       };
     }
@@ -207,7 +211,7 @@ function* press(keys: readonly KeyInput[]): Generator<Input> {
 /** A held key's release. */
 function release(key: string): Input {
   return async () => {
-    await commands.ufInput({ kind: "keyup", key, text: isCharacter(key) });
+    await host().commands.ufInput({ kind: "keyup", key, text: isCharacter(key) });
     held.delete(key);
   };
 }
@@ -221,7 +225,7 @@ export async function releaseKeys(): Promise<void> {
 }
 
 /** The wheel's steps, as Vitest's `wheel` reads its options: a direction is 100 pixels. */
-function wheelSteps(options: UserEventWheelOptions): {
+function wheelSteps(options: WheelOptions): {
   deltaX: number;
   deltaY: number;
   times: number;

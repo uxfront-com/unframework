@@ -1,9 +1,7 @@
-// Vitest 5 gives `expect.element` the test's remaining time unless the call names a timeout:
-// the project's `expect.poll.timeout` never reaches it (`resolveActionTimeout` in
-// @vitest/browser 5.0.3). A locator that never matches would then hold its test for the whole
-// test timeout (60 s), and a failing L8 cell, or a browser canary, for minutes.
-import { expect } from "vitest";
-import { server } from "vitest/browser";
+// Without a bound, `expect.element` waits for the test's remaining time unless the call names a
+// timeout. A locator that never matches would then hold its test for the whole test timeout
+// (60 s), and a failing L8 cell, or a browser canary, for minutes.
+import { host } from "./host.ts";
 
 /**
  * Gives every `expect.element` call that names no timeout the project's poll timeout. A locator
@@ -16,13 +14,13 @@ import { server } from "vitest/browser";
  * project without a poll timeout cannot bound its assertions, so that throws.
  */
 export function boundElementTimeout(): void {
-  const timeout = server.config.expect?.poll?.timeout;
+  const { expect, pollTimeout } = host();
+  const timeout = pollTimeout();
   if (timeout === undefined) {
     throw new Error(
       "[uf] The browser project sets no `expect.poll.timeout`: `expect.element` would wait for the whole test timeout.",
     );
   }
   const element = expect.element;
-  expect.element = ((subject, options) =>
-    element(subject, { timeout, ...options })) as typeof expect.element;
+  expect.element = (subject, options) => element(subject, { timeout, ...options });
 }

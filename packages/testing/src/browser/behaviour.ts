@@ -2,21 +2,17 @@
 // mounted, beyond the shared expectations. `expectParity` records L7, L10 and L11 and resolves,
 // so the assertions after it always run; the setup file's afterEach then records L8 from the
 // test's own errors and fails the test with every failed layer, in one error.
-import { expect, TestRunner } from "vitest";
-import type { RunnerTestCase } from "vitest";
-
 import { formatError } from "../errors.ts";
 import { LAYERS, LayerFailure, recordLayer } from "../layers.ts";
 import type { LayerName, LayerSubject } from "../layers.ts";
+import { host } from "./host.ts";
+import type { HostTest, HostTestError } from "./host.ts";
 
 /** The error Vitest records for a test without assertions under `expect.requireAssertions`. */
 const NO_ASSERTIONS = "expected any number of assertion, but got none";
 
 /** The layer failures each test consumed with `expectLayerFailure`. */
 const consumed = new WeakMap<object, Set<LayerName>>();
-
-/** A test's error as the afterEach sees it: serialised by Vitest. */
-type TestError = NonNullable<NonNullable<RunnerTestCase["result"]>["errors"]>[number];
 
 /**
  * For the testing package's own tests only: asserts that `layer` failed in the current test with
@@ -25,7 +21,8 @@ type TestError = NonNullable<NonNullable<RunnerTestCase["result"]>["errors"]>[nu
  * expects a layer to fail (a known failure is a quarantine entry).
  */
 export function expectLayerFailure(layer: LayerName, pattern: RegExp): string {
-  const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
+  const { expect, currentTest } = host();
+  const test = currentTest();
   if (!test) throw new Error("expectLayerFailure must be called inside a test.");
   const outcome = test.meta.uf?.layers[layer];
   expect(outcome, `${layer}'s recorded outcome`).toEqual({
@@ -53,7 +50,7 @@ export function expectLayerFailure(layer: LayerName, pattern: RegExp): string {
  * the test's last settle (a navigation the component did not prevent).
  */
 export function judgeTest(
-  task: RunnerTestCase,
+  task: HostTest,
   subject: LayerSubject,
   unmountError?: unknown,
   late: readonly string[] = [],
@@ -104,7 +101,7 @@ const PAGE_HTML = /\n+HTML:\n[\s\S]*$/;
  * One error of the test, for the L8 record: its name and message, as plain text, without the
  * page's HTML that an element error appends (its ARIA tree stays, which says what was there).
  */
-function describeTestError(error: TestError): string {
+function describeTestError(error: HostTestError): string {
   const message = error.message.replace(ANSI_COLOUR, "");
   if (message === NO_ASSERTIONS) {
     return "The test asserted nothing: every test asserts at least one fact about what it rendered (expect.requireAssertions).";

@@ -124,6 +124,21 @@ export interface MountEvent {
 /** A listener a test gives a mounted component: the arguments of one emit, as the source passed them. */
 export type MountListener = (...args: unknown[]) => void;
 
+/** What a {@link RenderCommand} is asked to render: a compiled component, by its id. */
+export interface RenderRequest {
+  id: string;
+  props: Record<string, unknown>;
+}
+
+/** What a {@link RenderCommand} returns: the server's HTML, and what the render logged. */
+export interface RenderResult {
+  html: string;
+  console: CapturedConsoleMessage[];
+}
+
+/** Renders a component on the server, from the page. */
+export type RenderCommand = (request: RenderRequest) => Promise<RenderResult>;
+
 /** What a test mounts a component with. */
 export interface MountOptions {
   props?: Readonly<Record<string, unknown>>;
@@ -137,6 +152,11 @@ export interface MountOptions {
   on?: Readonly<Record<string, MountListener>>;
   /** The events the component declares, every one `on` names among them (see {@link MountEvent}). */
   events?: readonly MountEvent[];
+  /**
+   * The server render of a target with no client runtime, which only its adapter calls. The test
+   * host passes it, because a target sits below the testing package (`LAYERS`) and names no host.
+   */
+  renderCommand?: RenderCommand;
 }
 
 /** A console message captured outside the page, such as during Astro's server render. */

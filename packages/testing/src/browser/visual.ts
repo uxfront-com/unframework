@@ -1,21 +1,17 @@
 // The browser half of L10: snapshot geometry, mark the container for the font audit, and hand
 // both to `ufVisualCapture`, which captures, compares and applies the write policy in Node. Both
 // see each run of adjacent text nodes as one node (./text-runs.ts, ADR-0044).
-import { recordArtifact } from "vitest";
-import type { RunnerTestCase } from "vitest";
-import { commands } from "vitest/browser";
-import type { Locator } from "vitest/browser";
-
-import "../commands.ts";
 import type { CaptureResult, PixelTolerance } from "../visual-types.ts";
 import { captureGeometry } from "./geometry.ts";
+import { host } from "./host.ts";
+import type { HostTest, Locator } from "./host.ts";
 import { withMergedTextRuns } from "./text-runs.ts";
 
 let markers = 0;
 
 /** Captures a settled container and compares it under the run's policy. */
 export async function captureVisual(
-  test: RunnerTestCase,
+  test: HostTest,
   input: {
     case: string;
     name: string;
@@ -30,7 +26,7 @@ export async function captureVisual(
     // Geometry and pixels of the same merged tree; the tree is restored before anything else
     // runs (L11, the spec's assertions, a rerender).
     const result = await withMergedTextRuns(input.container, () =>
-      commands.ufVisualCapture({
+      host().commands.ufVisualCapture({
         element: input.locator.serialize(),
         case: input.case,
         name: input.name,
@@ -40,10 +36,7 @@ export async function captureVisual(
       }),
     );
     if (!result.pass && result.attachments.length) {
-      // The artifact shape toMatchScreenshot uses, so reporters and the UI show the images.
-      await recordArtifact(test, {
-        type: "internal:toMatchScreenshot",
-        kind: "visual-regression",
+      await host().recordVisualFailure(test, {
         message: result.message,
         attachments: result.attachments,
       });

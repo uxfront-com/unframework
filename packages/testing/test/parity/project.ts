@@ -108,6 +108,8 @@ export function parityProject(
       name: "parity",
       root: packageRoot,
       include: [...include],
+      // The specs import the setup themselves; the host it reaches the runner through comes first.
+      setupFiles: [join(packageRoot, "src/hosts/vitest/setup.ts")],
       provide: {
         target: "dom",
         ufHarness: fixtureHarness(env),

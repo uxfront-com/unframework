@@ -13,7 +13,7 @@
 // against a frame, and Qwik queues microtasks and MessageChannel tasks; none of their runtimes
 // calls `setInterval`. Vitest's own waits keep the timers it saved at startup, and `Date`,
 // `performance`, `setTimeout` and the frames stay real.
-import { vi } from "vitest";
+import { host } from "./host.ts";
 
 /** The page's fake clock, as a view mounted with `{ clock: true }` advances it. */
 export interface ViewClock {
@@ -44,9 +44,7 @@ export function installClock(): void {
       "mount: a view of this test has a clock already. The clock is the page's, so one view of a test runs on it: a tick runs every view's intervals, but records a step of one view's trace.",
     );
   }
-  // A native interval started before the clock (Vite's client pings its server) and cleared
-  // while it runs reaches the native `clearInterval`, rather than a warning L13 would catch.
-  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"], shouldClearNativeTimers: true });
+  host().clock.install();
   installed = true;
 }
 
@@ -129,7 +127,7 @@ const MAX_INTERVALS = 1000;
 export function restoreClock(): void {
   if (!installed) return;
   installed = false;
-  vi.useRealTimers();
+  host().clock.restore();
 }
 
 /** Refuses a tick that is not a positive whole number of milliseconds. */

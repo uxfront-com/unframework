@@ -4,12 +4,12 @@
 // shows in the parity matrix. The options that would skip, repeat or reorder a test some other
 // way are refused: a known failure is a quarantine entry, and a flaky test is a bug (AGENTS.md).
 import type { CapabilityName } from "@unframework/codegen";
-import { it as vitestIt } from "vitest";
-import type { TestFunction, TestOptions } from "vitest";
 
 import { capabilityCell } from "./capabilities.ts";
+import { host } from "./host.ts";
+import type { HostTestFunction, HostTestOptions } from "./host.ts";
 
-/** The options of Vitest's that a corpus test may not set. */
+/** The options a runner has that a corpus test may not set. */
 const REFUSED = [
   "skip",
   "only",
@@ -21,8 +21,8 @@ const REFUSED = [
   "tags",
 ] as const;
 
-/** A corpus test's options: Vitest's (a timeout, metadata), and the capabilities it requires. */
-export interface SpecOptions extends Omit<TestOptions, (typeof REFUSED)[number]> {
+/** A corpus test's options: a timeout, metadata, and the capabilities it requires. */
+export interface SpecOptions extends HostTestOptions {
   /**
    * The capabilities the test needs: on a target whose cell for one of them is unsupported, the
    * test is skipped and every browser layer records `requires <capability>: <the reason>`. A
@@ -33,15 +33,15 @@ export interface SpecOptions extends Omit<TestOptions, (typeof REFUSED)[number]>
 
 /** `it(name, fn)` or `it(name, { requires }, fn)`. */
 export interface SpecTest {
-  (name: string, fn: TestFunction): void;
-  (name: string, options: SpecOptions, fn: TestFunction): void;
+  (name: string, fn: HostTestFunction): void;
+  (name: string, options: SpecOptions, fn: HostTestFunction): void;
 }
 
 /** Declares a corpus test, with the capabilities it requires (see {@link SpecOptions}). */
 export const it: SpecTest = (
   name: string,
-  optionsOrFn: SpecOptions | TestFunction,
-  maybeFn?: TestFunction,
+  optionsOrFn: SpecOptions | HostTestFunction,
+  maybeFn?: HostTestFunction,
 ): void => {
   const options = typeof optionsOrFn === "function" ? {} : optionsOrFn;
   const fn = typeof optionsOrFn === "function" ? optionsOrFn : maybeFn;
@@ -60,7 +60,7 @@ export const it: SpecTest = (
     // An unknown name throws here, when the tests are collected.
     for (const capability of requires) capabilityCell(capability);
   }
-  vitestIt(
+  host().it(
     name,
     { ...rest, meta: { ...meta, ...(requires ? { ufRequires: [...requires] } : {}) } },
     fn,
