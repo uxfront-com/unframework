@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach } from "vitest";
 
-import { project } from "../helpers.ts";
+import { project, write } from "../helpers.ts";
 
 const REPOSITORY = fileURLToPath(new URL("../../../../", import.meta.url));
 
@@ -56,13 +56,15 @@ export interface DesignSystem {
   frameworks?: readonly string[];
   /** Files beside or over the sources. */
   files?: Readonly<Record<string, string>>;
+  /** A directory to put the project in, for what its path does. */
+  under?: string;
   /** Replaces the project's `package.json`, or leaves it out with `null`. */
   manifest?: string | null;
 }
 
 /** A project that compiles a small design system, as a team would lay it out. */
 export function designSystem(options: DesignSystem): string {
-  const { config, frameworks = [], files = {}, manifest } = options;
+  const { config, frameworks = [], files = {}, under = "", manifest } = options;
   const owned: Record<string, string> =
     manifest === null
       ? {}
@@ -71,7 +73,8 @@ export function designSystem(options: DesignSystem): string {
             manifest ??
             JSON.stringify({ name: "demo-ds", version: "1.2.3", license: "MIT", private: true }),
         };
-  const root = project({
+  const root = join(project({}), under);
+  write(root, {
     ...SOURCES,
     ...owned,
     "unframework.config.ts": `export default ${JSON.stringify(config)};\n`,

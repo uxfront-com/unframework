@@ -6,10 +6,11 @@ import { describe, expect, it } from "vitest";
 import { run, tree } from "../helpers.ts";
 import { check, consumer, designSystem, inRepository, SOURCE_TREE } from "./helpers.ts";
 
-const packaged = async () => {
+const packaged = async (under?: string) => {
   const root = designSystem({
     config: { targets: ["react"], package: { resolveFrom: inRepository("packages/target-react") } },
     frameworks: ["react", "@types/react"],
+    ...(under ? { under } : {}),
   });
   const { code, stderr } = await run(root, "build", "--package");
   expect(stderr).toBe("");
@@ -50,6 +51,14 @@ describe("build --package: React", () => {
       "default",
     ]);
   });
+
+  it.each(["R&D", "C++", "a,b"])(
+    "gives the same package under a directory named %s",
+    async (under) => {
+      const expected = tree(join(await packaged(), "dist", "package"));
+      expect(tree(join(await packaged(under), "dist", "package"))).toEqual(expected);
+    },
+  );
 
   it("types a consumer that imports the subpath, and stops one that misuses it", async () => {
     const root = await packaged();

@@ -6,10 +6,11 @@ import { describe, expect, it } from "vitest";
 import { run, tree } from "../helpers.ts";
 import { check, consumer, designSystem, inRepository, SOURCE_TREE } from "./helpers.ts";
 
-const packaged = async () => {
+const packaged = async (under?: string) => {
   const root = designSystem({
     config: { targets: ["solid"], package: { resolveFrom: inRepository("packages/target-solid") } },
     frameworks: ["solid-js"],
+    ...(under ? { under } : {}),
   });
   const { code, stderr } = await run(root, "build", "--package");
   expect(stderr).toBe("");
@@ -60,6 +61,11 @@ describe("build --package: Solid", () => {
     });
     // Conditions match in order: `default` before `solid` would hide it.
     expect(Object.keys(exports["./solid"])).toEqual(["types", "solid", "default"]);
+  });
+
+  it.each(["R&D", "C++"])("gives the same package under a directory named %s", async (under) => {
+    const expected = tree(join(await packaged(), "dist", "package"));
+    expect(tree(join(await packaged(under), "dist", "package"))).toEqual(expected);
   });
 
   it("reports a compiler that fails as UF7009, with its error and no stack", async () => {

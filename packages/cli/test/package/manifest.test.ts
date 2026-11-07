@@ -17,6 +17,23 @@ import { designSystem, inRepository, SOURCE_TREE } from "./helpers.ts";
 
 const REACT = inRepository("packages/target-react");
 
+/** A shared module with a type a declaration can't name, which TS4023 names by its module. */
+const UNNAMEABLE = {
+  "src/shared/a.ts": `interface Hidden {
+  size: number;
+}
+
+export function make(): Hidden {
+  return { size: 1 };
+}
+`,
+  "src/shared/format.ts": `import { make } from "./a";
+
+export const formatLabel = (label: string): string => label.trim();
+export const made = make();
+`,
+};
+
 const manifestOf = (root: string) =>
   JSON.parse(readFileSync(join(root, "dist", "package", "package.json"), "utf8"));
 
@@ -137,6 +154,25 @@ export default function Toned(props: { tone?: Tone }) {
     expect(code).toBe(0);
     expect(existsSync(join(root, "dist", "package", "source", "Toned.uf.tsx"))).toBe(true);
     expect(Object.keys(tree(join(root, "dist", "package", "source"))).join()).not.toContain("pkg:");
+  });
+
+  it("cleans a module's own name, and leaves what the bundler adds working", async () => {
+    const root = designSystem({
+      config: { targets: ["react"], package: { resolveFrom: REACT } },
+      frameworks: ["react", "@types/react"],
+      files: {
+        "src/shared/a$b&c.ts": 'export const odd = "odd";\n',
+        // A namespace taken as a value brings in the bundler's own helper, under a null byte.
+        "src/shared/format.ts": `import * as names from "./a$b&c";
+
+export const formatLabel = (label: string): string => label.trim() + Object.keys(names).join();
+`,
+      },
+    });
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(stderr).toBe("");
+    expect(code).toBe(0);
+    expect(existsSync(join(root, "dist", "package", "react", "shared", "a_b_c.js"))).toBe(true);
   });
 
   it("gives equal packages for equal inputs, and leaves no scratch directory", async () => {
@@ -464,21 +500,7 @@ describe("build --package: UF7009", () => {
       const root = designSystem({
         config: { targets: [target], package: { resolveFrom: from } },
         frameworks,
-        files: {
-          "src/shared/a.ts": `interface Hidden {
-  size: number;
-}
-
-export function make(): Hidden {
-  return { size: 1 };
-}
-`,
-          "src/shared/format.ts": `import { make } from "./a";
-
-export const formatLabel = (label: string): string => label.trim();
-export const made = make();
-`,
-        },
+        files: UNNAMEABLE,
       });
       const { code, stderr } = await run(root, "build", "--package");
       expect(code).toBe(1);
@@ -493,26 +515,38 @@ export const made = make();
     const root = designSystem({
       config: { targets: ["react"], outDir: "in", package: { resolveFrom: REACT } },
       frameworks: ["react", "@types/react"],
-      files: {
-        "src/shared/a.ts": `interface Hidden {
-  size: number;
-}
-
-export function make(): Hidden {
-  return { size: 1 };
-}
-`,
-        "src/shared/format.ts": `import { make } from "./a";
-
-export const formatLabel = (label: string): string => label.trim();
-export const made = make();
-`,
-      },
+      files: UNNAMEABLE,
     });
     const { code, stderr } = await run(root, "build", "--package");
     expect(code).toBe(1);
     expect(stderr).toContain("in/react/shared/format.ts(");
     expect(stderr).toContain('from external module "in/react/shared/a"');
+  });
+
+  it("maps the scratch path under a directory ending like it", async () => {
+    const root = designSystem({
+      config: { targets: ["react"], package: { resolveFrom: REACT } },
+      frameworks: ["react", "@types/react"],
+      files: UNNAMEABLE,
+      under: "check in",
+    });
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(code).toBe(1);
+    expect(stderr).toContain('from external module "dist/react/shared/a"');
+    expect(stderr).toContain("dist/react/shared/format.ts(");
+    expect(stderr).not.toContain(".package-");
+    expect(stderr).not.toContain("check dist");
+  });
+
+  it("writes a tree's path as it is, whatever it holds", async () => {
+    const root = designSystem({
+      config: { targets: ["react"], outDir: "$&", package: { resolveFrom: REACT } },
+      frameworks: ["react", "@types/react"],
+      files: UNNAMEABLE,
+    });
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(code).toBe(1);
+    expect(stderr).toContain('from external module "$&/react/shared/a"');
   });
 
   it("carries what tsgo reports, on standard error and past no io", async () => {
