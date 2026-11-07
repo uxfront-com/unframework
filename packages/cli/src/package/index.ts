@@ -206,7 +206,7 @@ export async function planPackage(input: PackageInput): Promise<PackagePlan> {
     }
     // The stage is under outDir, and its declarations read the framework from there.
     if (packager.types && !isInstalled(realOutDir, packager.types)) {
-      const message = `The ${target} packager reads the framework's types from ${packager.types}, which doesn't resolve from ${realOutDir}, where the package is built. Without it a declaration's inferred types would be any. Install it where that directory can reach it, or leave ${target} out of package.targets.`;
+      const message = `The ${target} packager reads the framework's types from ${packager.types}, which doesn't resolve from ${relative(await realDirectory(root), realOutDir) || "the project's root"}, where the package is built. Without it a declaration's inferred types would be any. Install it where that directory can reach it, or leave ${target} out of package.targets.`;
       diagnostics.push(problem("UF7008", target, message));
     }
   }

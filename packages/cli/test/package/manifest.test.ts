@@ -329,6 +329,8 @@ describe("build --package: UF7008", () => {
       expect(code).toBe(1);
       expect(stderr).toContain("UF7008");
       expect(stderr).toContain("@types/react");
+      // Named from the project, as no machine's own path belongs in a report.
+      expect(stderr).toContain("doesn't resolve from ../");
       expect(existsSync(join(root, outDir, "package"))).toBe(false);
     },
   );

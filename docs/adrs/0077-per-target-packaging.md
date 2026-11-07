@@ -39,7 +39,7 @@ built, and the targets stay in this order so that two sections never share a lin
   a workspace hoists.
 - A packager that isn't installed reports UF7008 `packager-missing`, and one that fails UF7009
   `packager-failed`. UF7008 also covers a target with no packager yet, and a project without the
-  framework's types: the packagers write declarations with `--noCheck`, so a return type would
+  framework's types: tsgo and `vue-tsc` write declarations with `--noCheck`, so a return type would
   silently be `any`.
 - Whether each packager and the framework's types resolve is checked before anything is written. The package is built in a
   scratch directory under `outDir`, and replaces the last good one only once every packager has passed.
@@ -65,7 +65,7 @@ tsdown builds JS and `.d.ts`, one module to a file. Bare imports, passed-through
 stay as written, and each sheet is copied beside its importer: an output's imports aren't the package's
 to bundle (P7), and tsdown's CSS support is a separate package. The declarations run apart and last, so
 that a syntax error reaches Rolldown's error first. tsgo itself prints its errors and fails with only an
-exit code, so the same `tsc --declaration --noCheck` runs first with its output kept, for UF7009. Nothing
+exit code, so a `tsc --declaration --noCheck` runs first with its output kept, for UF7009. Nothing
 of the build's environment reaches the JS: `envPrefix` is empty (P8).
 
 ### Solid

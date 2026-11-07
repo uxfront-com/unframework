@@ -83,24 +83,23 @@ defaults to the project's root. It's never a dependency of the CLI. Each target 
   packager.
 - **Qwik:** not packaged yet, so `--package` reports UF7008.
 - **React:** tsdown builds JS and `.d.ts`, one module to a file, with each sheet beside its importer.
-  The project needs `@types/react`, since a declaration's inferred types come from it.
-- **Solid:** the same through tsdown, with the project's `solid-js` for the types. A `solid` export
+- **Solid:** the same through tsdown. A `solid` export
   condition points at preserved JSX, which a consumer's Solid compiler reads. Babel with
   `babel-preset-solid` compiles the plain JS for the DOM, so both must resolve beside tsdown.
 - **Svelte:** not packaged yet, so `--package` reports UF7008.
 - **Vue:** the SFC sources and `.ts` modules, with `vue-tsc`'s declarations beside them. Vue's compiler
   builds them in the consumer's app, and `vue-tsc` resolves its TypeScript from where it's installed.
-  The project needs `vue`.
 
-Packaged outputs ship with no source maps.
+A declaration's inferred types come from `@types/react`, `solid-js` or `vue`, so each must resolve from
+where the package is built, the real path of `outDir`. Packaged outputs ship with no source maps.
 
 `build --package` also reports:
 
-- **UF7008:** a packager or what it needs isn't installed, a target has no packager yet, or the
-  project has no types for React, Solid or Vue. Nothing is cleaned or written.
-- **UF7009:** a packager failed, and its message holds the packager's own error, with paths that name
-  the targets' trees, which are written by then. The packagers write declarations without
-  type-checking, so this is a syntax error, or a type a declaration can't name.
+- **UF7008:** a packager, or Solid's Babel, isn't installed, a target has no packager yet, or the
+  framework's types don't resolve from `outDir`. Nothing is cleaned or written.
+- **UF7009:** a packager failed, and its message holds the packager's own error. The targets' trees
+  are written by then. tsgo under tsdown and `vue-tsc` write declarations without type-checking, so
+  on them it's usually a syntax error, or a type a declaration can't name.
 - **UF7002** at `/outDir`: cleaning `outDir/package` would delete the project, a source, or a file a
   source read.
 

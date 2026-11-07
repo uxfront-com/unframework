@@ -38,7 +38,7 @@ const KEEP_IMPORTS = {
 };
 
 /**
- * What tsdown's declarations would report, as an error. On TypeScript 7, rolldown-plugin-dts runs tsgo
+ * What tsdown's declarations would report, as an error. On TypeScript 7.0, rolldown-plugin-dts runs tsgo
  * with inherited output and rejects with only its exit code, so the cause would reach standard output
  * past `main`'s `io`, naming a scratch path. Its other generators throw what they find.
  */
@@ -47,7 +47,7 @@ async function checkDeclarations(tsdown: string, work: string): Promise<void> {
   const { version, bin }: { version: string; bin: { tsc: string } } = JSON.parse(
     await readFile(manifest, "utf8"),
   );
-  if (!version.startsWith("7.")) return;
+  if (!version.startsWith("7.0")) return;
   await runScript(join(dirname(manifest), bin.tsc), ["--declaration", "--noCheck"], work);
 }
 
