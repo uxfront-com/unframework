@@ -179,8 +179,11 @@ and `unframework.config.ts`.
 
 A field of the wrong shape, or one the config doesn't have, is UF7002. A name that isn't a built-in
 target is UF7003, with a did-you-mean where one is close. Options a target's schema rejects are
-UF7004, and options a schema returns replace the ones written. No built-in target declares a schema
-yet, so their options pass through as written.
+UF7004, and options a schema returns replace the ones written.
+
+A target without a schema takes no options, so any key under it is UF7004 too. No built-in target
+declares a schema yet, so `react: { compiler: true }` reports "`react` declares no options" until
+React declares that option.
 
 Each message gives the field's JSON pointer, and `config` is `undefined` when there is any
 diagnostic. A known field set to `undefined` counts as left out.

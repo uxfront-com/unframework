@@ -15,6 +15,9 @@ import { project, run, tree } from "./helpers.ts";
 const compiles = vi.hoisted((): string[] => []);
 const projects = vi.hoisted((): unknown[] => []);
 const disposals = vi.hoisted(() => ({ count: 0 }));
+const lent = vi.hoisted((): { targetOptions: Record<string, unknown> | undefined } => ({
+  targetOptions: undefined,
+}));
 
 vi.mock("node:fs/promises", async (original) => {
   const actual = await original<typeof FsPromises>();
@@ -53,6 +56,13 @@ vi.mock("@unframework/compiler", async (original) => {
           await oracle.dispose();
         },
       };
+    },
+    // No built-in target declares options yet, so this stands in for a schema that returns some.
+    resolveConfig: async (...args: Parameters<typeof actual.resolveConfig>) => {
+      const resolved = await actual.resolveConfig(...args);
+      return lent.targetOptions && resolved.config
+        ? { ...resolved, config: { ...resolved.config, targetOptions: lent.targetOptions } }
+        : resolved;
     },
     createProject: (options: unknown): Partial<Project> => {
       projects.push(options);
@@ -215,12 +225,13 @@ describe("what a project is given", () => {
   it("holds the config's target options and source maps, and its oracle is disposed of", async () => {
     const root = project({
       ...SOURCE,
-      "unframework.config.mjs":
-        'export default { targets: ["react"], targetOptions: { react: { compiler: true } } };\n',
+      "unframework.config.mjs": 'export default { targets: ["react"] };\n',
     });
     projects.length = 0;
     disposals.count = 0;
+    lent.targetOptions = { react: { compiler: true } };
     await run(root, "check");
+    lent.targetOptions = undefined;
     expect(projects).toEqual([
       expect.objectContaining({
         targets: ["react"],

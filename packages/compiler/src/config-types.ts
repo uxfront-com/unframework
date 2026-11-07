@@ -20,7 +20,7 @@ export interface UnframeworkConfig {
   srcDir?: string;
   /** Defaults to `dist`, relative to the config's directory. */
   outDir?: string;
-  /** Each target's options, validated through the target's Standard Schema when it has one. */
+  /** Each target's options, validated through its Standard Schema. A target without one takes none. */
   targetOptions?: Partial<Record<TargetName, unknown>>;
   /** Defaults to `syntactic`. */
   typeOracle?: "syntactic" | "tsgo";
