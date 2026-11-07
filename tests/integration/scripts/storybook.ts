@@ -91,7 +91,8 @@ function stopGroup(child: ChildProcess, signal: NodeJS.Signals): void {
   }
 }
 
-async function build(target: string): Promise<number> {
+/** A target's static build, again for as long as an abort names a new module to fail. */
+export async function build(target: string): Promise<number> {
   const output = join(storybookDir(target), "storybook-static");
   // Beside the stories' directories, which a start empties, and gitignored with them.
   const aborts = join(ROOT, ".uf-cache", "storybook", `${target}.aborts.json`);

@@ -57,14 +57,18 @@ function addCase(name: string, source: string): string {
 }
 
 /** The preset's build of some stories files, as Storybook runs it, through Vite's own `build`. */
-async function build(entries: readonly string[], plugins: Plugin[] = [framework()]): Promise<void> {
+async function build(
+  entries: readonly string[],
+  plugins: Plugin[] = [framework()],
+  engines: Plugin[] = [],
+): Promise<void> {
   const final = await createStorybookConfig({
     target: "vue",
     root,
     stories: [],
     mainModules: new Set(),
     unplugin: { target: "vue", onCompile },
-    plugins: () => Promise.resolve([]),
+    plugins: () => Promise.resolve(engines),
     vite: () => ({ plugins }),
   }).viteFinal({});
   await viteBuild(
@@ -89,6 +93,8 @@ const chunk = (name: string) =>
 const manifest = () =>
   JSON.parse(readFileSync(join(root, "dist", BUILD_MANIFEST), "utf8")) as BuildManifest;
 const failedModules = () => manifest().failures.map(({ module }) => module.replace(`${root}/`, ""));
+const causeOf = (ending: string) =>
+  manifest().failures.find(({ module }) => module.endsWith(ending))?.cause;
 
 beforeEach(() => {
   root = realpathSync(mkdtempSync(join(tmpdir(), "uf-visual-isolate-")));
@@ -302,6 +308,28 @@ describe("the hooks it wraps", () => {
     expect(manifest().failures[0]?.cause).toBe("red");
   });
 
+  it("isolates a throw in an engine's plugin", async () => {
+    const good = addCase("Good", component("good"));
+    const bad = addCase("Bad", component("bad"));
+    await build(
+      [good, bad],
+      [framework(/$^/)],
+      [
+        {
+          name: "engine-throws",
+          enforce: "pre",
+          load(id) {
+            if (id.endsWith("Bad.uf.tsx.vue")) throw new Error("the engine threw");
+            return null;
+          },
+        },
+      ],
+    );
+    await expect(chunk(good)).resolves.toMatchObject({ story: { name: "story" } });
+    await expect(chunk(bad)).rejects.toThrow("the engine threw");
+    expect(failedModules()).toEqual(["cases/Bad/Bad.uf.tsx.vue"]);
+  });
+
   it("keeps a filter the plugin sets later on its own hook object", async () => {
     const seen: string[] = [];
     const plugin: Plugin = {
@@ -358,7 +386,7 @@ describe("the hooks it wraps", () => {
 });
 
 describe("a build that still aborts", () => {
-  /** Runs `build` as `storybook build` runs: in a process of its own, with its exit code. */
+  /** Runs `build` with an exit code, as `storybook build` gives, in this process. */
   const attempts = (entries: readonly string[], plugins: () => Plugin[]) => {
     const file = join(root, "aborts.json");
     let count = 0;
@@ -393,6 +421,7 @@ describe("a build that still aborts", () => {
     // The importer's failure says why the export has gone, not only that it has.
     await expect(chunk("Importer.stories")).rejects.toThrow(/MISSING_EXPORT[^]*UF1202/);
     expect(failedModules()).toEqual(["Importer.stories.ts", "cases/Failed/Failed.uf.tsx.vue"]);
+    expect(causeOf("Failed.uf.tsx.vue")).toContain("UF1202");
   });
 
   it("still names a guard's verdict on a module only a failed importer reached", async () => {
@@ -416,6 +445,63 @@ describe("a build that still aborts", () => {
       "cases/Failed/Failed.uf.tsx.vue",
       "cases/Guard/Guard.uf.tsx.vue",
     ]);
+    expect(causeOf("Guard.uf.tsx.vue")).toBe("guard: differs from its golden file");
+  });
+
+  it("rebuilds without a module with a syntax error, which Vite names only in its message", async () => {
+    write("Good.stories.ts", `export default { good: true };\n`);
+    write("Bad.stories.ts", `const = 1;\n`);
+    write("Tsx.stories.ts", `import part from "./part.tsx";\nexport default { part };\n`);
+    write("part.tsx", `const = <p />;\n`);
+    const { run, count } = attempts(["Good.stories", "Bad.stories", "Tsx.stories"], () => []);
+
+    await expect(run()).resolves.toBe(0);
+
+    expect(count()).toBe(2);
+    await expect(chunk("Good.stories")).resolves.toMatchObject({ default: { good: true } });
+    await expect(chunk("Bad.stories")).rejects.toThrow("Unexpected token");
+    await expect(chunk("Tsx.stories")).rejects.toThrow("Unexpected token");
+    expect(failedModules()).toEqual(["Bad.stories.ts", "part.tsx"]);
+    expect(causeOf("Bad.stories.ts")).toContain("Unexpected token");
+  });
+
+  it("rebuilds without each module with a bare import of a missing package", async () => {
+    write("Good.stories.ts", `export default { good: true };\n`);
+    write("Bad.stories.ts", `import "no-such-package-uf";\nexport default {};\n`);
+    write("Helped.stories.ts", `import "./helper.ts";\nexport default {};\n`);
+    write("helper.ts", `import "no-such-helper-uf";\n`);
+    const entries = ["Good.stories", "Bad.stories", "Helped.stories"];
+    const { run, count } = attempts(entries, () => []);
+
+    await expect(run()).resolves.toBe(0);
+
+    // Vite throws on the first miss it hears of, so each build finds one.
+    expect(count()).toBe(3);
+    await expect(chunk("Good.stories")).resolves.toMatchObject({ default: { good: true } });
+    await expect(chunk("Bad.stories")).rejects.toThrow("no-such-package-uf");
+    await expect(chunk("Helped.stories")).rejects.toThrow("no-such-helper-uf");
+    expect(failedModules()).toEqual(["Bad.stories.ts", "helper.ts"]);
+  });
+
+  it("hears only of an unresolved import, and only inside the root", () => {
+    const file = join(root, "aborts.json");
+    const { plugin } = isolateFailures(root, file);
+    const onLog = plugin.onLog as (level: string, log: unknown) => void;
+    onLog("warn", { code: "CIRCULAR", id: join(root, "a.ts"), message: "only a warning" });
+    onLog("warn", { code: "UNRESOLVED_IMPORT", id: "/outside/lib.js", message: "missed" });
+    expect(existsSync(file)).toBe(false);
+  });
+
+  it("stays aborted on an error whose message names no file", () => {
+    const file = join(root, "aborts.json");
+    const cwd = vi.spyOn(process, "cwd").mockReturnValue(root);
+    const { plugin } = isolateFailures(root, file);
+    const buildEnd = plugin.buildEnd as (error: unknown) => void;
+    buildEnd({ errors: [{ message: "[builtin:vite-json] plugin threw an error" }] });
+    // What a syntax error in a virtual module says: its banner isn't a path.
+    buildEnd({ errors: [{ message: "Unexpected token\n   ╭─[ virtual:engine.ts:1:7 ]\n" }] });
+    cwd.mockRestore();
+    expect(existsSync(file)).toBe(false);
   });
 
   it("rebuilds as long as each abort names another module", async () => {

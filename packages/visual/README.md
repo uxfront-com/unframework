@@ -20,9 +20,9 @@ Every build writes `uf-build-manifest.json` to its output directory, with each m
 
 One bad case fails the chunks that import it, and not the build. The preset wraps the `resolveId`, `load` and `transform` hooks of the unplugin, the framework's plugins and the engines' plugins, so a `this.error` or a throw there makes a module that throws the same message when it is imported.
 
-A guard's verdict is recorded too, and the unplugin's own `post` hook still replaces that module. The build exits 0 and prints each failure to stderr. A dev server keeps Vite's errors.
+A guard's verdict is recorded too, and the unplugin's own `post` hook still replaces that module. On a rebuild the isolation replaces it instead, like every module it carries over, and that module has no entry in `modules`, since it no longer compiles. The build exits 0 and prints each failure to stderr. A dev server keeps Vite's errors.
 
-Rolldown can still abort past every plugin, as on an import of an export a failed module no longer has. `buildIsolated(file, build)` from `@unframework/visual/preset` runs a build again with each module the abort names as failed, until no abort names a new one. It only fails a module inside the Vite root, so an abort with an error anywhere else keeps the build's exit code.
+A build can still abort past every plugin the preset wraps: Rolldown on an import of an export a failed module no longer has, and Vite on a syntax error in a `.ts` file or a bare import of a package that isn't installed. `buildIsolated(file, build)` from `@unframework/visual/preset` runs a build again with each module the abort names as failed, until no abort names a new one. It only fails a module inside the Vite root, so an abort with an error anywhere else, or one that names no module, keeps the build's exit code.
 
 ## The preview
 

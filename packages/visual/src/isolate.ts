@@ -6,6 +6,7 @@
 // a failed module no longer has, still aborts: the build then runs again with the module it names
 // failed.
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 
 import type { BuildFailure } from "@unframework/testing/node";
@@ -57,6 +58,19 @@ function readAborts(file: string | undefined): BuildFailure[] {
   return file && existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as BuildFailure[]) : [];
 }
 
+/**
+ * The module an abort's error names, by its id. Vite's built-in transform gives no id for a syntax
+ * error and says the module only in the banner of its message, so that's the one place left to read
+ * it. The banner is relative to the working directory, and a virtual module's isn't a file at all.
+ */
+function abortedModule({ id, message }: RaisedError): string | undefined {
+  if (id !== undefined) return id;
+  const banner = /╭─\[ (.+?):\d+:\d+ \]/.exec(stripVTControlCharacters(message))?.[1];
+  if (banner === undefined) return undefined;
+  const file = resolve(process.cwd(), banner);
+  return existsSync(file) ? file : undefined;
+}
+
 /** The part of a Vite option that holds plugins, flat. */
 async function flatten(option: PluginOption): Promise<Plugin[]> {
   const value = await option;
@@ -90,7 +104,8 @@ export function isolateFailures(
 ): Isolation {
   const causes = new Map(readAborts(abortsFile).map(({ module, cause }) => [module, cause]));
   // What this build replaces. A guard's verdict is only recorded: the unplugin's `post` hook
-  // replaces that module, after the framework's plugin has compiled it.
+  // replaces that module, after the framework's plugin has compiled it. On a rebuild the verdict
+  // comes back from the aborts file, so this replaces that module too, and it never compiles.
   const failed = new Set(causes.keys());
   let building = false;
 
@@ -144,7 +159,9 @@ export function isolateFailures(
     if (!abortsFile || !error) return;
     const { errors = [error as RaisedError] } = error as { errors?: RaisedError[] };
     const named = new Map<string, string>();
-    for (const { id, message, exporter } of errors) {
+    for (const raised of errors) {
+      const { message, exporter } = raised;
+      const id = abortedModule(raised);
       if (!id?.startsWith(`${root}/`)) return;
       const why = exporter === undefined ? undefined : causes.get(exporter);
       const text = stripVTControlCharacters(why === undefined ? message : `${message}\n\n${why}`);
@@ -182,6 +199,11 @@ export function isolateFailures(
       },
       buildEnd: recordAbort,
       renderError: recordAbort,
+      // Rolldown only warns of a bare import it can't resolve. Vite's own handler then throws,
+      // past `buildEnd` and with no `renderError`, so this is the last hook that sees it.
+      onLog(_level, log) {
+        if (log.code === "UNRESOLVED_IMPORT") recordAbort(log);
+      },
     },
     async wrap(option) {
       const plugins = await flatten(option);
