@@ -16,8 +16,12 @@ import {
 import type { FixtureLocator, FixtureRunner } from "./page-host/fixtures.ts";
 import recorded from "./page-host/vitest-results.json" with { type: "json" };
 
-/** Short enough to keep this file quick; the page host's context sets the same. */
+/** How long the actions meant to time out wait; the page host's fixtures bound theirs the same. */
 const ACTION_TIMEOUT = 300;
+
+/** Bounds only those: under CI's load, a real action can take longer than that. */
+const bounded = { timeout: ACTION_TIMEOUT };
+let actionOptions: { timeout: number } | undefined;
 
 const asVitest = (target: FixtureLocator) => target as unknown as Locator;
 
@@ -29,21 +33,22 @@ const runner: FixtureRunner = {
   stringMatching: (pattern) => expect.stringMatching(pattern),
   hover: (target) => userEvent.hover(asVitest(target)),
   unhover: (target) => userEvent.unhover(asVitest(target)),
-  fill: (target, text) => userEvent.fill(asVitest(target), text, { timeout: ACTION_TIMEOUT }),
-  clear: (target) => userEvent.clear(asVitest(target), { timeout: ACTION_TIMEOUT }),
+  fill: (target, text) => userEvent.fill(asVitest(target), text, actionOptions),
+  clear: (target) => userEvent.clear(asVitest(target)),
   selectOptions: (target, values) =>
-    userEvent.selectOptions(asVitest(target), values, { timeout: ACTION_TIMEOUT }),
+    userEvent.selectOptions(asVitest(target), values, actionOptions),
 };
 
 it("gives the verdicts, the messages and the strings the page host is compared with", async () => {
-  const results = {
+  const answers = {
     matchers: await runMatchers(runner),
     locators: serializeLocators(runner),
     resolved: resolveLocators(runner),
     called: await callLocators(runner),
     actions: await runActions(runner),
-    actionTimeouts: await runActionTimeouts(runner),
   };
+  actionOptions = bounded;
+  const results = { ...answers, actionTimeouts: await runActionTimeouts(runner) };
   if (import.meta.env["VITE_UF_RECORD"]) {
     await commands.writeFile(
       "./test/page-host/vitest-results.json",
