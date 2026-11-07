@@ -105,11 +105,26 @@ export default defineConfig({
 
 ### init and create-unframework
 
-- `unframework init` writes `unframework.config.ts`, `src/Button.uf.tsx` with `Button.css`,
-  `tsconfig.uf.json` (ADR-0073) and an `AGENTS.md` that points at unframework.dev. It refuses to
-  overwrite a file without `--force`.
-- `create-unframework <dir>` writes a private `package.json` with `unframework` as a dependency, then
-  runs the project's own `unframework init`. It keeps no dependencies of its own (§5.2).
+- `unframework init` writes `unframework.config.ts`, `src/Button.uf.tsx` with `src/Button.css`,
+  `tsconfig.uf.json` (ADR-0073) and an `AGENTS.md` that points at unframework.dev. It holds them as
+  strings in the CLI, so they ship in `dist` with no copy step.
+- It refuses to overwrite a file without `--force`. It checks before its first write, so a refusal
+  exits 2, names every file in the way and writes nothing. A dangling symlink counts as a
+  file, since writing through it would create one elsewhere. A `unframework.config.{mts,js,mjs}`
+  counts too, since `loadConfig` takes the `.ts` file first and would drop that config without a word.
+  `--force` overwrites the five files, replaces a symlink rather than writing through it, and touches
+  nothing else, so the `.ts` file then wins. A directory in a file's place exits 2 even with `--force`.
+- The example has a stylesheet, so `check` prints UF4002 as an info for Angular and for Qwik, and
+  exits 0. Any stylesheet does that.
+- `create-unframework <dir>` writes a private ES module `package.json` with `unframework` as a
+  dependency, at `latest`, then runs the project's own `unframework init`, passing on its output and
+  exit code. It keeps no dependencies of its own (§5.2). An existing `package.json` exits 2 and stays
+  as it is.
+- "The project's own" means the bin of `<dir>/node_modules/unframework`, and nothing else: an
+  ancestor's copy or one on `NODE_PATH`, which pnpm's bin shims set, isn't the project's.
+- `create-unframework` installs nothing, since the name on npm isn't ours yet (Consequences). With no
+  such bin it exits 1 once the `package.json` is written, and says to install the dependencies and
+  run `unframework init`.
 
 ## Consequences
 

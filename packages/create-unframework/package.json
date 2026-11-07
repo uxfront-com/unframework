@@ -2,7 +2,7 @@
   "name": "create-unframework",
   "version": "0.0.0",
   "private": true,
-  "description": "The `create-unframework` scaffolder. It scaffolds nothing yet.",
+  "description": "Create a new Unframework project: a `package.json`, then what `unframework init` writes.",
   "keywords": [
     "unframework"
   ],
@@ -14,7 +14,11 @@
     "url": "git+https://github.com/uxfront-com/unframework.git",
     "directory": "packages/create-unframework"
   },
+  "bin": {
+    "create-unframework": "bin/create-unframework.js"
+  },
   "files": [
+    "bin",
     "dist"
   ],
   "type": "module",
