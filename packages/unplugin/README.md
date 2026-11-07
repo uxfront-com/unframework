@@ -21,6 +21,16 @@ import Hello from "./Hello.uf.tsx"; // a Vue component
 `unframework(options)` returns two plugins, `[pre, post]`. Put them before the framework's
 plugins.
 
+On Vite you can leave `target` out, and the framework's plugin in your configuration decides it:
+
+```ts
+export default {
+  plugins: [unframework(), vue()],
+};
+```
+
+See [Target detection](#target-detection) for what it looks for.
+
 ## Bundlers
 
 There's one entry per bundler unplugin offers, each with the same options: `./bun`, `./esbuild`,
@@ -30,12 +40,15 @@ the rest to work through unplugin's generic hooks (ADR-0075), so a test only cre
 each entry. Keep in mind that a module id still needs a plugin of that bundler's to claim it, like
 a Vue plugin for `.vue`, and that we recommend Vite until the other bundlers have been tried.
 
+Only Vite detects a target, from its configuration's plugins, so every other entry throws without a
+`target`.
+
 `resolveId`, `load`, the watch edges and the guard are generic hooks, and `watchChange` hands an
 edit to the project's `update` as soon as the bundler reports it. unplugin maps no such hook onto
 esbuild or Bun, so there the next load's comparison finds the edit. Only what Vite alone has sits
 under `vite:`:
 
-- **Its config**, for the root (`configResolved`).
+- **Its config**, for the root, target detection and UF7010 (`configResolved`).
 - **Its dependency scan**, which sets `scan`, so `vite:` has a `resolveId` that replaces the generic one and calls the same function.
 - **Its environments**, which keep the guard's verdicts apart, so `vite:` has a `load` and a `transform` of its own in the same way. Any other bundler has one set of verdicts.
 - **The `api`**, which reads the compiled sources.
@@ -77,12 +90,36 @@ integration harness does (`sourceUtilities` in `tests/integration/harness/stylef
 
 | Option        | Meaning                                                                                                                                                                                                                                                                                                      |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `target`      | A built-in target's name (`"react"`, `"vue"`, `"svelte"`, `"solid"`, `"angular"`, `"qwik"`, `"astro"`) or a third-party `Target`.                                                                                                                                                                            |
+| `target`      | A built-in target's name (`"react"`, `"vue"`, `"svelte"`, `"solid"`, `"angular"`, `"qwik"`, `"astro"`) or a third-party `Target`. Optional on Vite, which detects a built-in target. Required on every other bundler.                                                                                        |
 | `extension`   | What module ids append to the `.uf.tsx` path. Built-in targets have one; a third-party target must set it.                                                                                                                                                                                                   |
 | `onCompile`   | Called each time a module loads, with `{ id, file, target, files, diagnostics }`. Returning a string (or a promise of one) fails that module with it: the integration harness's golden guard.                                                                                                                |
 | `plugins`     | Compiler plugins, passed to `compile()` (the harness's canaries).                                                                                                                                                                                                                                            |
 | `format`      | Formats the output with oxfmt. Defaults to `true`, so a module's code equals the golden file byte for byte.                                                                                                                                                                                                  |
 | `passThrough` | The specifier prefixes whose imports pass through to every output as written, passed to `compile()`. Defaults to `["virtual:"]`; a list replaces it, as `["virtual:", "styled-system/"]` adds an engine that generates files. A prefix that is empty, relative or absolute fails when the plugin is created. |
+
+## Target detection
+
+With `target` left out, Vite's `configResolved` reads the plugin names in your configuration. A
+name matches as this table writes it, so `vite:vue-jsx` and `vite-plugin-qwik-post` name no framework:
+
+| Target  | Plugin name                     | Plugin                          |
+| ------- | ------------------------------- | ------------------------------- |
+| Vue     | `vite:vue`                      | `@vitejs/plugin-vue`            |
+| Svelte  | `vite-plugin-svelte`            | `@sveltejs/vite-plugin-svelte`  |
+| React   | `vite:react-*`                  | `@vitejs/plugin-react`          |
+| Solid   | `solid`                         | `vite-plugin-solid`             |
+| Qwik    | `vite-plugin-qwik`              | `qwikVite` from Qwik            |
+| Astro   | `astro:*`                       | Astro's own plugins             |
+| Angular | `@analogjs/vite-plugin-angular` | `@analogjs/vite-plugin-angular` |
+
+No match fails the start of a dev server or a build with UF7005, and plugins of two frameworks with
+UF7006, which names them. Keep in mind that an Astro app that also adds a framework's plugin holds both, so pass
+`target` there. Until the target is known the hooks' filters match every target's suffix, or only
+`extension` when you set it, and once it's known the hooks leave the other targets' module ids alone. A third-party target is never detected.
+
+On Vue, whichever way the target was chosen, plugin-vue's `template.compilerOptions.whitespace` of
+`"preserve"` reports the warning UF7010 at the start, because outputs assume `"condense"`
+(ADR-0026).
 
 ## Module ids
 
@@ -99,11 +136,18 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
 - The code comes from `load`, never `transform`: nothing exists on disk at a module id, and every
   framework plugin compiles the code it is given. Ids never start with `\0`, which the framework
   plugins skip.
+- `load` returns `{ code, map }` from `compile({ sourceMap: true })` (ADR-0074), and that map traces
+  to the `.uf.tsx` line on every target. What it becomes after the framework's plugin differs. React
+  and Solid still reach the `.uf.tsx` in dev and in a build, and Vue does in dev, while a Vue build
+  traces to the `.vue` id. Svelte's map doesn't reach the `.uf.tsx`, in dev or in a build, because
+  Vite applies the loaded map twice, so most segments drop and the rest can point at a wrong line.
+  An output with no map loads as `{ code }`. A scoped sheet's load is `{ code }` too, since its map has no segments.
 - An id loads the target's output file with the id's extension (`Hello.vue`, `hello.ts`, and
   `Hello.tsx` for a `.uf.tsx` id). A file with several components emits one such file each:
   `.tsx` and `.ts` files are joined into one module (an import of a file of the join is left out,
   an import an earlier file already made is written once, and any other name two files declare
-  or export is an error). A shared `.ts` module's copy (ADR-0070) is no component's file, so no
+  or export is an error). The joined module's map goes through each file's own to its source, and
+  a file with no map stays unmapped in it. A shared `.ts` module's copy (ADR-0070) is no component's file, so no
   join holds it: the output imports the module itself. On a markup target the module id loads the file's main component (its
   default export, or its only exported component), and each other component loads under a
   component id, `<abs>/X.uf.tsx.<output file>` (`/src/Card.uf.tsx.CardIcon.vue`, ADR-0053),
@@ -229,10 +273,12 @@ bundles `node_modules` before any plugin runs) are M6's to support.
 
 ## Diagnostics and the guard
 
-- Warnings and info diagnostics go to `this.warn`, with their code frame.
+- Warnings and info diagnostics go to `this.warn`, with their code frame, and fail no module.
 - Errors fail the module through `this.error`, with `formatDiagnostics` (uncoloured): every error's
   `UF` code, message and code frame. `this.error` only records the message on esbuild, which drops it, so
   `load` throws the same message there.
+- UF7005 and UF7006 fail the start of a dev server or a build, and UF7010 is a warning (see
+  [Target detection](#target-detection)).
 - When `onCompile` returns a message, `load` still returns the compiled code, so the framework's
   plugin compiles it, and the post plugin replaces the module's final code with
   `throw new Error(message); export default undefined;` (plus the module's named exports). Its

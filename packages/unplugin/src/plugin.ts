@@ -23,13 +23,16 @@ import type { TransformResult, UnpluginFactory, UnpluginInstance, UnpluginOption
 import type { Environment } from "vite";
 
 import { assembleModule } from "./assemble.ts";
+import { detectTarget, hostOptionWarning } from "./detect.ts";
 import {
   COMPONENT_ID_FILTER,
   COMPOSABLE_EXTENSION,
+  COMPOSABLE_ID_SUFFIXES,
   componentId,
   composableFilter,
   composableId,
   composableIdSuffix,
+  ID_SUFFIXES,
   idSuffix,
   moduleId,
   moduleIdCandidates,
@@ -66,8 +69,12 @@ export interface CompileEvent {
 
 /** Options of the unframework plugin. */
 export interface UnframeworkOptions {
-  /** The framework to compile to: a built-in target's name, or a third-party target. */
-  target: TargetName | Target;
+  /**
+   * The framework to compile to: a built-in target's name, or a third-party target. On Vite it may
+   * be left out, and the framework's plugin in the configuration decides (ADR-0075). Every other
+   * bundler needs it.
+   */
+  target?: TargetName | Target;
   /**
    * What module ids append to the `.uf.tsx` path: the extension the framework's own Vite plugin
    * claims, such as `".vue"`, or `""` to keep the `.uf.tsx` id. Defaults to the built-in
@@ -164,31 +171,63 @@ const toPosix = (path: string) => path.split(sep).join("/");
  * what Vite alone has sits under `vite:`: its config, its dependency scan, its environments and
  * `api`. Only Vite runs end to end: the rest are trusted to work by default.
  */
-const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
-  const target = resolveTarget(options.target);
+const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options = {}, meta) => {
+  if (options.target === undefined && meta.framework !== "vite") {
+    throw new TypeError(
+      `The plugin has no \`target\` option. Only Vite detects a target, from its framework's plugin: pass \`target\` on ${meta.framework}.`,
+    );
+  }
   // Checked once, so a bad prefix fails the server's start rather than each module's compile.
   if (options.passThrough) checkPassThrough(options.passThrough);
-  const suffix = idSuffix(options.target, options.extension);
+
+  // What the target decides. It is set here when `target` is given, and otherwise by Vite's
+  // `configResolved`, which runs before any hook that reads these.
+  let target!: Target;
+  let suffix!: string;
   // A module of composables loads under its own ids (ADR-0069): `/abs/useToggle.uf.ts` plus the
   // suffix the framework's plugin claims for a TypeScript module, if any.
-  const composableSuffix = composableIdSuffix(options.target);
-  const composableIds = composableFilter(composableSuffix);
-  const composableRequest = (id: string) => parseComposableId(id, composableSuffix);
+  let composableSuffix!: string;
+  let composableIds!: RegExp;
   // The output file a module id loads has the id's extension: `.tsx` when the id is the
   // `.uf.tsx` file itself.
-  const extension = extname(`${SOURCE_EXTENSION}${suffix}`);
-  // A file's main component loads under its module id, and each other component under a
-  // component id (ADR-0053); a script target joins them all under the module id.
-  const moduleIds = [moduleIdFilter(suffix), COMPONENT_ID_FILTER, composableIds];
-  // With a suffix, the authored file is never a module id. One that reaches `load` came through
-  // an import `resolveId` never saw, and must fail rather than load as plain TSX.
-  const loadIds = [...(suffix ? [...moduleIds, moduleIdFilter("")] : moduleIds), SHEET_ID_FILTER];
-  const joins = SCRIPT.test(extension);
+  let extension!: string;
+  let joins!: boolean;
   // A framework plugin requests parts of a module with a query parameter named after its
   // extension (`?vue&type=style…`, `?svelte&type=style…`, `?astro&type=script…`), and serves
   // them from its own compile of the module. Any other query is a module of its own (Astro's
   // `?container`), which loads like the bare id, whatever the process did before.
-  const subRequest = new RegExp(`[?&]${extension.slice(1)}(?:[&=]|$)`);
+  let subRequest!: RegExp;
+  const selectTarget = (selected: TargetName | Target) => {
+    target = resolveTarget(selected);
+    suffix = idSuffix(selected, options.extension);
+    composableSuffix = composableIdSuffix(selected);
+    composableIds = composableFilter(composableSuffix);
+    extension = extname(`${SOURCE_EXTENSION}${suffix}`);
+    joins = SCRIPT.test(extension);
+    subRequest = new RegExp(`[?&]${extension.slice(1)}(?:[&=]|$)`);
+  };
+  if (options.target !== undefined) selectTarget(options.target);
+  const composableRequest = (id: string) => parseComposableId(id, composableSuffix);
+
+  // Every suffix an id may have: a bundler may read a hook's filter only once, so until the target
+  // is known they take every target's ids, and the hooks leave those of the others alone.
+  const suffixes =
+    options.target !== undefined
+      ? [suffix]
+      : options.extension !== undefined
+        ? [idSuffix("vue", options.extension)]
+        : [...new Set(Object.values(ID_SUFFIXES))];
+  const composableFilters = (
+    options.target !== undefined
+      ? [composableSuffix]
+      : [...new Set(Object.values(COMPOSABLE_ID_SUFFIXES))]
+  ).map(composableFilter);
+  // A file's main component loads under its module id, and each other component under a
+  // component id (ADR-0053); a script target joins them all under the module id.
+  const moduleIds = [...suffixes.map(moduleIdFilter), COMPONENT_ID_FILTER, ...composableFilters];
+  // With a suffix, the authored file is never a module id. One that reaches `load` came through
+  // an import `resolveId` never saw, and must fail rather than load as plain TSX.
+  const loadIds = [...moduleIds, moduleIdFilter(""), SHEET_ID_FILTER];
 
   // The project's root, with forward slashes: Vite's config, webpack's or Rspack's context, or
   // esbuild's working directory, each set before any other hook runs, or else the process's.
@@ -233,6 +272,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
       typeOracle: createSyntacticOracle({ root, readFile: read }),
       targets: [target],
       format: options.format !== false,
+      sourceMap: true,
       plugins: options.plugins,
       ...(options.passThrough ? { passThrough: options.passThrough } : {}),
     }));
@@ -571,7 +611,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
       const names = (result.ir?.composables ?? []).map(({ name }) => name);
       failed.set(id, { message: verdict, exports: names });
     }
-    return { code: assembly.code };
+    return assembly;
   }
 
   /**
@@ -704,8 +744,9 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     const request = component ?? parseModuleId(id, suffix);
     if (!request) {
       // An authored `.uf.tsx`, or a `.uf.ts` on a target whose composable ids have a suffix.
-      const authored = (parseModuleId(id, "") ?? parseComposableId(id, ""))!;
-      if (VITE_FILE_QUERY.test(authored.query)) return null;
+      const authored = parseModuleId(id, "") ?? parseComposableId(id, "");
+      // Or another target's id, which the filters let through before the target was known.
+      if (!authored || VITE_FILE_QUERY.test(authored.query)) return null;
       return failModule(this, bypassed(authored.file));
     }
     if (!isAbsolute(request.file)) return null;
@@ -771,12 +812,18 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
       const named = exports.filter((entry) => entry.kind === "named");
       failed.set(id, { message: verdict, exports: named.map((entry) => entry.name) });
     }
-    return { code: assembly.code };
+    return assembly;
   }
 
   const resolveFilter = {
     id: new RegExp(
-      [specifierFilter(suffix), COMPONENT_ID_FILTER, RELATIVE, SHEET_ID_FILTER, composableIds]
+      [
+        ...suffixes.map(specifierFilter),
+        COMPONENT_ID_FILTER,
+        RELATIVE,
+        SHEET_ID_FILTER,
+        ...composableFilters,
+      ]
         .map(({ source }) => source)
         .join("|"),
     ),
@@ -840,6 +887,16 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     vite: {
       configResolved(config) {
         root = config.root;
+        const file = config.configFile
+          ? filenameOf(config.configFile)
+          : "inline Vite configuration";
+        if (options.target === undefined) {
+          const detected = detectTarget(config.plugins, file);
+          if ("error" in detected) this.error(detected.error);
+          else selectTarget(detected.target);
+        }
+        const warning = target.name === "vue" && hostOptionWarning(config.plugins, file);
+        if (warning) this.warn(warning);
       },
       // Replaces the generic hook, for what only Vite has: its dependency scan, whose `scan` is
       // missing from the public type.
@@ -914,10 +971,10 @@ function failingModule({ message, exports }: FailedModule): string {
 }
 
 /** The unframework plugin for every bundler unplugin offers. Only Vite runs end to end. */
-export const unframeworkUnplugin: UnpluginInstance<UnframeworkOptions, true> =
+export const unframeworkUnplugin: UnpluginInstance<UnframeworkOptions | undefined, true> =
   createUnplugin(factory);
 
-type Instance = UnpluginInstance<UnframeworkOptions, true>;
+type Instance = UnpluginInstance<UnframeworkOptions | undefined, true>;
 
 // What the one-line entries export, one per factory unplugin has (ADR-0075).
 export const bun: Instance["bun"] = unframeworkUnplugin.bun;
