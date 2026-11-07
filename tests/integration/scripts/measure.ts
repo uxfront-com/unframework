@@ -1,9 +1,8 @@
 // `node tests/integration/scripts/measure.ts <label> [--max-rss-gib 32] -- <command>`: runs one
 // command and writes its wall time, peak memory, exit status and leftover processes to
 // `.reports/measure/<label>.json`. The memory is the process tree's summed RSS, sampled at 1 Hz
-// with `ps`, and the tree is stopped at the ceiling, so a measurement cannot take the machine
-// down. Summed RSS counts shared pages once per process: it is a method to repeat, before and
-// after a change, not the memory the machine lost.
+// with `ps`, and the tool stops the tree at the ceiling. Summed RSS counts shared pages once per
+// process: it is a method to repeat, before and after a change, not the memory the machine lost.
 import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { constants } from "node:os";
