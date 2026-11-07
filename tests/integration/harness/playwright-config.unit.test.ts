@@ -1,8 +1,8 @@
+// What a Playwright run obeys, from the plain module `playwright.config.ts` imports, so this test
+// never loads `@playwright/test`.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-// C3's rules: what a Playwright run obeys, from the plain module `playwright.config.ts` imports, so
-// this test never loads `@playwright/test`.
 import { TARGET_NAMES } from "@unframework/compiler";
 import { describe, expect, it } from "vitest";
 
