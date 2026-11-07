@@ -182,7 +182,7 @@ export {
 export type { Namespace } from "./html.ts";
 export { formatOutput, isFormatted, OUTPUT_FORMAT } from "./format.ts";
 export type { FormatOutcome } from "./format.ts";
-export { anchorOutput, identityMapped, remapFormatted } from "./sourcemap.ts";
+export { anchorOutput, composeJoinedMap, identityMapped, remapFormatted } from "./sourcemap.ts";
 export type { RemapResult } from "./sourcemap.ts";
 export {
   addPassThroughImports,

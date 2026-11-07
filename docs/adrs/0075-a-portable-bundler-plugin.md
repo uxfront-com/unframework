@@ -55,12 +55,24 @@ built.
 
 - With `target` omitted, Vite's `configResolved` detects the target from the plugin names:
   `vite:vue`, `vite-plugin-svelte`, `vite:react-*`, `solid`, `vite-plugin-qwik`, `astro:*` and
-  `@analogjs/vite-plugin-angular`. Until the target is known, the filters match every target's suffix.
-- No match reports UF7005 `target-not-detected`, and two matches UF7006 `target-ambiguous`.
-- plugin-vue's resolved `template.compilerOptions.whitespace` of `"preserve"` reports UF7010
-  `host-option-incompatible`, because the printer's layout assumes `condense` (ADR-0026).
-- `load` returns `{ code, map }` from `compile({ sourceMap: true })` (ADR-0074). `assemble.ts` moves
-  to MagicString to join modules, so the maps stay valid.
+  `@analogjs/vite-plugin-angular`. A name matches as written here, so `vite:vue-jsx` and
+  `vite-plugin-qwik-post` name no framework, and several plugins of one framework name one target.
+- Until the target is known, the filters match every target's suffix, or only `extension` when it's
+  set, because a bundler may read a hook's filter only once. Once it's known, the hooks leave the module ids of the other targets alone.
+- No match reports UF7005 `target-not-detected`, and two matches UF7006 `target-ambiguous`. Both fail
+  the start of a dev server or a build. An Astro app that also adds a framework's plugin is two matches, so it passes
+  `target`.
+- Only Vite detects a target, so another bundler's entry throws without a `target`.
+- On the Vue target, plugin-vue's `template.compilerOptions.whitespace` of `"preserve"`, read from its
+  `api.options`, reports UF7010 `host-option-incompatible`, because the printer's layout assumes
+  `condense` (ADR-0026). It's a warning, and modules still load.
+- `load` returns `{ code, map }` from `compile({ sourceMap: true })` (ADR-0074). An output with no map
+  loads with `{ code }`, and a warning fails no module. UF9002 is an error, so it fails its module as
+  any error does.
+- `assemble.ts` joins modules through MagicString, and `composeJoinedMap` in `@unframework/codegen`
+  carries the join's map on through each file's, so the maps stay valid. The text of a file with no
+  map stays unmapped in the join's map, so it never points at an output that isn't on disk.
+- A scoped sheet's map has no segments (ADR-0074), so its load stays `{ code }`.
 
 ### Astro integration
 
@@ -105,7 +117,7 @@ built.
 
 - Nine of the ten entries are untested, so one can fail at build time with no diagnostic of ours.
 - Detection reads plugin names, which are a framework plugin's own and can change. The detection
-  tests fail if one does.
+  tests stand in for each plugin by its name, so a rename shows up as UF7005 in an app, not in a test.
 - `tests/integration` runs the corpus through the plugin, so a port that changes `load` shows up in
   every browser project.
 
@@ -113,6 +125,10 @@ built.
 
 - Whether the portable `load` keeps `this.error`'s behaviour on bundlers other than Vite. Nothing
   tests it.
+- How a loaded map reaches the `.uf.tsx` past every framework's plugin. vite-plugin-svelte gives
+  Svelte the combined map, and the map it returns already traces to the `.uf.tsx`. Vite then applies
+  the loaded map a second time, so the map doesn't reach the `.uf.tsx`, in dev or in a build: most
+  segments drop, and the rest can point at a wrong line.
 
 ## Alternatives considered
 

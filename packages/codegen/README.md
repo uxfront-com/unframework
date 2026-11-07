@@ -219,7 +219,7 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   lines) and an `.astro` file's frontmatter. The markup (Vue, Svelte, Astro, HTML, and Angular's
   inline template) keeps the printer's whitespace-safe layout (ADR-0026). Formatting is
   idempotent and never throws: a block that does not parse comes back as an error.
-- **Source maps** (`anchorOutput`, `remapFormatted`, `identityMapped`, ADR-0074): `OutputFile` has an
+- **Source maps** (`anchorOutput`, `remapFormatted`, `identityMapped`, `composeJoinedMap`, ADR-0074): `OutputFile` has an
   optional `map` (`SourceMapV3`), with `sources` relative to the file, `sourcesContent` and `names`.
   No printer keeps a position, so `anchorOutput(file, module, source)` finds the source in the
   output afterwards. It splits each IR `Code` at its references into literal runs, one per source
@@ -241,7 +241,9 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   a word only in text like `title="don&apos;t"`, so a target or a plugin printing that can reach it.
   A diff whose trace would pass 256 MB stops there and returns the warning UF9003 instead of a map,
   since it grows with the square of the edits and a table of numbers oxfmt rewrites reaches gigabytes.
-  `identityMapped` maps a file copied unchanged onto itself.
+  `identityMapped` maps a file copied unchanged onto itself. `composeJoinedMap(joined, files)` gives
+  the map of files joined into one module, from the join's map to the files and each file's own, and
+  the text of a file with no map stays unmapped.
 - **Exports, imports and names:** `exportDeclaration` keeps the source's export shape, for a
   function, a class or an expression (`export const Card = component$(…)`), and `exportsOf`
   exports a component the module does not export by its name, a sibling file its siblings
