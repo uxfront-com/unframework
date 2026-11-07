@@ -489,6 +489,32 @@ export const made = make();
     },
   );
 
+  it("maps a path once, for a tree that starts like the scratch copy", async () => {
+    const root = designSystem({
+      config: { targets: ["react"], outDir: "in", package: { resolveFrom: REACT } },
+      frameworks: ["react", "@types/react"],
+      files: {
+        "src/shared/a.ts": `interface Hidden {
+  size: number;
+}
+
+export function make(): Hidden {
+  return { size: 1 };
+}
+`,
+        "src/shared/format.ts": `import { make } from "./a";
+
+export const formatLabel = (label: string): string => label.trim();
+export const made = make();
+`,
+      },
+    });
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(code).toBe(1);
+    expect(stderr).toContain("in/react/shared/format.ts(");
+    expect(stderr).toContain('from external module "in/react/shared/a"');
+  });
+
   it("carries what tsgo reports, on standard error and past no io", async () => {
     const root = designSystem({
       config: { targets: ["react"], package: { resolveFrom: REACT } },

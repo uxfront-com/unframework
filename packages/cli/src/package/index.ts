@@ -124,15 +124,15 @@ async function projectFields(root: string): Promise<Record<string, string>> {
   };
 }
 
-/** A packager's own error: no stack, and its scratch paths as the tree the build has just written. */
+/** A packager's own error: no stack, and its paths into the scratch copy as the tree just written. */
 function failure(error: unknown, work: string, tree: string): string {
   const text = stripVTControlCharacters(error instanceof Error ? error.message : String(error));
   return (
     text
+      // A tool names a file relative to where it ran. First, as a tree may itself start with `in/`.
+      .replace(/(?<![\w./-])in\//g, `${tree}/`)
       // TypeScript names another module by its absolute path, as in TS4023.
       .replaceAll(join(work, "in"), tree)
-      // Rolldown names a file relative to where it ran.
-      .replace(/(?<![\w./-])in\//g, `${tree}/`)
       .split("\n")
       .filter((line) => !/^\s+at /.test(line))
       .join("\n")
