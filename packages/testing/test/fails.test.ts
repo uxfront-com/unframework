@@ -72,3 +72,17 @@ it("leaves a rejection with no reason to L13, with nothing uncaught", async () =
   expect(specs[0]?.file.uncaught).toEqual([]);
   expect(matrix.cases["stub/page-null-rejection"]?.dom?.L13).toMatch(/^fail: .*console\.error/s);
 }, 180_000);
+
+it("keeps a spec whose every test update mode leaves out, which would fail with no test", async () => {
+  const { status, output, fileProblems } = await runStubs(
+    [
+      "fonts/fonts.parity.spec.ts",
+      "mismatch/mismatch.parity.spec.ts",
+      "quarantine/quarantine.parity.spec.ts",
+      "trace-mismatch/trace-mismatch.parity.spec.ts",
+    ],
+    { update: true },
+  );
+  expect(fileProblems, output).toEqual([]);
+  expect(status, output).toBe(0);
+}, 180_000);

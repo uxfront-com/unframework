@@ -26,10 +26,17 @@ export function siblingNames(): string[] {
 }
 
 /**
- * A test that update mode leaves out: it would write the artefacts the test expects to be missing,
- * or overwrite those written by hand.
+ * A test whose body update mode leaves out: it would write the artefacts the test expects to be
+ * missing, or overwrite those written by hand. The test stays, passing, since a spec file with no
+ * test fails.
  */
-export const itUnlessUpdate: SpecTest = host().inject("ufHarness").update ? () => undefined : it;
+export const itUnlessUpdate: SpecTest = host().inject("ufHarness").update
+  ? (name: string) => {
+      it(name, () => {
+        host().expect(true).toEqual(true);
+      });
+    }
+  : it;
 
 /** The container's pixels, as a PNG in base64: the stub project's own binding. */
 export async function screenshot(view: View): Promise<string> {

@@ -33,7 +33,7 @@ const CLI = join(
 /** Runs specs by their globs under `cases/stub`. */
 export async function runStubs(
   specs: readonly string[],
-  options: { complete?: boolean } = {},
+  options: { complete?: boolean; update?: boolean } = {},
 ): Promise<StubRun> {
   const reports = mkdtempSync(join(tmpdir(), "uf-stub-"));
   try {
@@ -49,6 +49,8 @@ export async function runStubs(
             UF_STUB_SPECS: specs.join(","),
             UF_STUB_REPORTS: reports,
             ...(options.complete ? { UF_STUB_COMPLETE: "1" } : {}),
+            // `CI` refuses update mode. These specs leave out whatever would write.
+            ...(options.update ? { UF_UPDATE: "1", CI: "" } : {}),
           },
         },
         (error, stdout, stderr) => {
