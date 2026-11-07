@@ -21,13 +21,16 @@
   ],
   "type": "module",
   "sideEffects": [
+    "./src/hosts/vitest/setup.ts",
     "./src/setup.ts",
     "./src/targets/*.ts",
+    "./dist/hosts/vitest/setup.js",
     "./dist/setup.js",
     "./dist/targets/*.js"
   ],
   "exports": {
     ".": "./src/index.ts",
+    "./hosts/vitest": "./src/hosts/vitest/setup.ts",
     "./setup": "./src/setup.ts",
     "./normalize": "./src/normalize/index.ts",
     "./node": "./src/node/index.ts",
@@ -45,6 +48,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
+      },
+      "./hosts/vitest": {
+        "types": "./dist/hosts/vitest/setup.d.ts",
+        "default": "./dist/hosts/vitest/setup.js"
       },
       "./setup": {
         "types": "./dist/setup.d.ts",

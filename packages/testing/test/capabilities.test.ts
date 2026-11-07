@@ -11,6 +11,8 @@ import {
   noOutputReason,
   requiredSkip,
 } from "../src/browser/capabilities.ts";
+import { installHost } from "../src/browser/host.ts";
+import type { Host } from "../src/browser/host.ts";
 
 const inert: CapabilityCell = {
   support: "unsupported",
@@ -59,6 +61,7 @@ describe("noOutputReason", () => {
     expect(noOutputReason("events/keys", cases)).toBeUndefined();
     expect(noOutputReason("constructor", cases)).toBeUndefined();
     // Outside the harness nothing is provided: every case has output.
+    installHost({ inject: () => undefined } as unknown as Host);
     expect(noOutputReason("events/keys", undefined)).toBeUndefined();
   });
 });

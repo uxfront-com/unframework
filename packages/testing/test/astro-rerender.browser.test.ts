@@ -7,6 +7,7 @@ import type { MountedComponent } from "@unframework/codegen";
 // its default again: a rerender is a new server render. Nothing is logged, on the server or here.
 import { mount } from "@unframework/target-astro/toolchain/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { commands } from "vitest/browser";
 
 /** What the test reads back: the text, the attributes, the branch and the list. */
 function read(container: HTMLElement) {
@@ -45,6 +46,7 @@ it("replaces the props whole with a new server render", { timeout: 60_000 }, asy
   const { default: Badge } = (await import(/* @vite-ignore */ fixture)) as { default: unknown };
   mounted = await mount(Badge, container, {
     props: { label: "A", tone: "warn", items: ["x", "y"], count: 3 },
+    renderCommand: commands.ufAstroRender,
   });
   expect(mounted.console).toEqual([]);
   expect(read(container)).toEqual({
@@ -78,10 +80,21 @@ it("replaces the props whole with a new server render", { timeout: 60_000 }, asy
   expect(logged).toEqual([]);
 });
 
+it("refuses to mount without the render command the host passes", async () => {
+  const fixture = new URL("./fixtures/Badge.uf.tsx.astro", import.meta.url).pathname;
+  const { default: Badge } = (await import(/* @vite-ignore */ fixture)) as { default: unknown };
+  await expect(mount(Badge, container, { props: { label: "A" } })).rejects.toThrow(
+    "options.renderCommand",
+  );
+});
+
 it("refuses props that cannot travel to the server as JSON, at a rerender as at mount", async () => {
   const fixture = new URL("./fixtures/Badge.uf.tsx.astro", import.meta.url).pathname;
   const { default: Badge } = (await import(/* @vite-ignore */ fixture)) as { default: unknown };
-  mounted = await mount(Badge, container, { props: { label: "A" } });
+  mounted = await mount(Badge, container, {
+    props: { label: "A" },
+    renderCommand: commands.ufAstroRender,
+  });
   await expect(mounted.rerender({ label: "A", count: Number.NaN })).rejects.toThrow(
     "Astro renders on the server, so props must be JSON values; `count` is NaN.",
   );

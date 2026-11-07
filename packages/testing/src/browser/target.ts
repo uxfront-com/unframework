@@ -1,8 +1,9 @@
-// The per-project mount adapter seam. A browser project's second setup file
+// The per-project mount adapter seam. A browser project's last setup file
 // (`@unframework/testing/<target>`) registers its target's adapter; the shared specs only call
 // `mount()`, which dispatches here.
 import type { MountAdapter, MountEvent } from "@unframework/codegen";
-import { inject } from "vitest";
+
+import { host } from "./host.ts";
 
 /** What a registration may add to its adapter. */
 export interface TargetOptions {
@@ -37,7 +38,7 @@ export function registerTarget(
 
 /** The target this project verifies (`test.provide.target`). */
 export function currentTarget(): string {
-  const target = inject("target");
+  const target = host().inject("target");
   if (!target) {
     throw new Error("No target is provided: the project must set test.provide.target.");
   }

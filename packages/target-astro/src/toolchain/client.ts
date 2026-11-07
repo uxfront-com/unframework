@@ -1,18 +1,10 @@
 // The browser half of the Astro toolchain: a static mount. Astro has no client runtime, so the
-// server renders the component (the `ufAstroRender` command) and this adapter only inserts the
-// HTML. Nothing is hydrated and no handler is attached; `<script>` elements parsed from HTML
+// server renders the component (the `ufAstroRender` command, which the test host passes as
+// `options.renderCommand`) and this adapter only inserts the HTML. Nothing is hydrated and no handler is attached; `<script>` elements parsed from HTML
 // never run.
 import type { MountAdapter } from "@unframework/codegen";
-import { commands } from "vitest/browser";
 
 import { assertSerialisableProps, isAstroComponentRef } from "./protocol.ts";
-import type { AstroRenderRequest, AstroRenderResult } from "./protocol.ts";
-
-declare module "vitest/browser" {
-  interface BrowserCommands {
-    ufAstroRender(request: AstroRenderRequest): Promise<AstroRenderResult>;
-  }
-}
 
 /**
  * Mounts what `import X from "./X.uf.tsx"` yields in an Astro browser project. The component's
@@ -30,10 +22,16 @@ export const mount: MountAdapter = async (component, container, options) => {
       "Astro mount: expected what a `.uf.tsx` import yields in an Astro browser project ({ __ufTarget: 'astro', id, name }).",
     );
   }
+  const { renderCommand } = options;
+  if (!renderCommand) {
+    throw new TypeError(
+      "Astro mount: expected the `ufAstroRender` command as options.renderCommand: Astro renders on the server.",
+    );
+  }
   const render = async (props: Readonly<Record<string, unknown>>) => {
     const copy = { ...props };
     assertSerialisableProps(copy);
-    return commands.ufAstroRender({ id: component.id, props: copy });
+    return renderCommand({ id: component.id, props: copy });
   };
   const rendered = await render(options.props ?? {});
   let styles = insert(container, component.name, rendered.html);

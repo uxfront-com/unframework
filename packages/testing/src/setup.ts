@@ -1,4 +1,4 @@
-// The setup file every browser project loads first (plan §7.3):
+// The setup file every browser project loads after its host's (plan §7.3):
 // - determinism: the case's colour scheme, the bundled font, the motion and caret reset, and the
 //   startup assertions;
 // - console capture from the moment this file loads, recorded as L13 for every test of a case,
@@ -18,11 +18,6 @@
 // - behaviour: the test's own errors (its assertions, its hooks, a test without assertions, a
 //   failed unmount) recorded as L8, then one error with every failed layer (ADR-0043);
 // - bounds: `expect.element` waits the project's poll timeout, not the whole test's.
-import { afterAll, afterEach, aroundEach, beforeAll, beforeEach, inject } from "vitest";
-import type { RunnerTestCase } from "vitest";
-import { commands, userEvent } from "vitest/browser";
-
-import "./commands.ts";
 import { judgeTest } from "./browser/behaviour.ts";
 import { noOutputReason, requiredSkip, standInCause } from "./browser/capabilities.ts";
 import { restoreClock } from "./browser/clock.ts";
@@ -35,6 +30,8 @@ import {
 } from "./browser/console.ts";
 import { installDeterminism } from "./browser/determinism.ts";
 import { boundElementTimeout } from "./browser/element-timeout.ts";
+import { host } from "./browser/host.ts";
+import type { HostTest } from "./browser/host.ts";
 import { installNavigationGuard, takePreventedNavigations } from "./browser/navigation.ts";
 import { currentTarget } from "./browser/target.ts";
 import { closeTraces } from "./browser/trace.ts";
@@ -45,14 +42,14 @@ import type { ColorScheme } from "./harness.ts";
 import { BROWSER_LAYERS, recordLayer, recordStandIn } from "./layers.ts";
 import type { LayerSubject } from "./layers.ts";
 
+const { commands, hooks, inject, userEvent } = host();
+
 installConsoleCapture();
 boundElementTimeout();
 installNavigationGuard();
 
-// The first parameter is the file's fixtures, a destructuring pattern (see the afterAll below).
-// oxlint-disable-next-line no-empty-pattern
-beforeAll(async ({}, suite) => {
-  await installDeterminism(await emulateColorScheme(suite.file.filepath));
+hooks.beforeAll(async (file) => {
+  await installDeterminism(await emulateColorScheme(file.filepath));
 });
 
 /**
@@ -66,7 +63,7 @@ async function emulateColorScheme(file: string): Promise<ColorScheme> {
   return scheme;
 }
 
-beforeEach(({ task, skip }) => {
+hooks.beforeEach((task, skip) => {
   beginTestConsole();
   // A trace a test before this one left behind is that test's, judged already.
   closeTraces();
@@ -95,16 +92,15 @@ beforeEach(({ task, skip }) => {
 /** The tests this file's afterEach has judged. */
 const judged = new WeakSet<object>();
 
-afterEach(async ({ task }) => {
+hooks.afterEach(async (task) => {
   judged.add(task);
   await afterTest(task);
 });
 
 // A spec's own afterEach that throws stops Vitest from running the afterEach hooks after it,
 // this file's among them. The test would then keep its views mounted and record neither L13
-// nor L8, so this hook, around every test, judges it when the afterEach could not. Its first
-// parameter is the test's, the second its fixtures, which Vitest needs as a destructuring pattern.
-aroundEach(async (runTest, { task }) => {
+// nor L8, so this hook, around every test, judges it when the afterEach could not.
+hooks.aroundEach(async (runTest, task) => {
   await runTest();
   if (!judged.has(task)) await afterTest(task);
 });
@@ -116,7 +112,7 @@ aroundEach(async (runTest, { task }) => {
  * skipped by capability ran nothing: it has recorded every layer, and the console's entries are
  * the next test's to judge.
  */
-async function afterTest(task: RunnerTestCase): Promise<void> {
+async function afterTest(task: HostTest): Promise<void> {
   if (task.meta.uf?.skipped !== undefined) return;
   let cleanupError: unknown;
   try {
@@ -147,7 +143,7 @@ async function afterTest(task: RunnerTestCase): Promise<void> {
 }
 
 /** The case and target a test verifies, with the run's quarantine. */
-function subjectOf(task: RunnerTestCase): LayerSubject {
+function subjectOf(task: HostTest): LayerSubject {
   const harness = inject("ufHarness");
   return {
     case: caseOfFile(task.file.filepath, harness),
@@ -172,15 +168,11 @@ async function resetInput(): Promise<void> {
 }
 
 // Registered before any spec's hooks, so it runs after them (Vitest runs after-hooks as a stack).
-// Vitest reads a hook's fixtures from its first parameter, which must be a destructuring
-// pattern even when, as here, the hook only needs the suite (the second).
-// oxlint-disable-next-line no-empty-pattern
-afterAll(async ({}, suite) => {
+hooks.afterAll(async (file) => {
   await settleTeardown();
   const late = unexpectedConsole();
   endTestConsole();
   if (!late.length) return;
-  const file = suite.file;
   const harness = inject("ufHarness");
   // The last test has recorded L13 already; the file's own record reaches the parity reporter
   // with the file's result, and the quarantine applies to it as to any record.

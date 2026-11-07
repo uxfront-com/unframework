@@ -8,18 +8,15 @@
 // when a layer fails (ADR-0043): the spec's own assertions after it still run and are recorded as
 // L8, and the setup file's afterEach then fails the test with every failed layer.
 import axe from "axe-core";
-import { inject, TestRunner } from "vitest";
-import type { RunnerTestCase } from "vitest";
-import { commands } from "vitest/browser";
-import type { Locator } from "vitest/browser";
 
-import "../commands.ts";
 import { caseOfFile } from "../harness.ts";
 import { NO_INTERACTION_SKIP, recordLayerChecks, recordScenario } from "../layers.ts";
 import { KEBAB_CASE } from "../node/names.ts";
 import { renameGeneratedIds } from "../normalize/rules/generated-ids.ts";
 import { LIVE_REFERENCE_SKIP } from "../visual-types.ts";
 import type { PixelTolerance } from "../visual-types.ts";
+import { host } from "./host.ts";
+import type { Locator } from "./host.ts";
 import { traceFile } from "./trace.ts";
 import type { TraceStep } from "./trace.ts";
 import { captureVisual } from "./visual.ts";
@@ -77,7 +74,8 @@ export async function expectParity(
   if (options.tolerance && !options.tolerance.reason.trim()) {
     throw new Error(`expectParity("${name}"): a pixel tolerance needs a reason.`);
   }
-  const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
+  const { commands, currentTest, inject } = host();
+  const test = currentTest();
   if (!test) throw new Error("expectParity must be called inside a test.");
   // One scenario, one name: a second check under a name would settle the same trace (and DOM)
   // twice, maybe once with steps and once without.

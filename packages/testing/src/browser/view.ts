@@ -7,12 +7,7 @@ import type {
   MountOptions,
   RenderReport,
 } from "@unframework/codegen";
-import { inject, TestRunner } from "vitest";
-import type { RunnerTestCase } from "vitest";
-import { commands, page } from "vitest/browser";
-import type { Locator } from "vitest/browser";
 
-import "../commands.ts";
 import { normalizeDomWithIds } from "../dom/serialize.ts";
 import { formatError } from "../errors.ts";
 import { caseOfFile } from "../harness.ts";
@@ -26,6 +21,8 @@ import { captureExternalConsole } from "./console.ts";
 import { installDeterminism, ROOT_ATTRIBUTE, settleFrame } from "./determinism.ts";
 import { copyPayload, renumberIds } from "./events.ts";
 import type { EmittedEvent } from "./events.ts";
+import { host } from "./host.ts";
+import type { Locator } from "./host.ts";
 import { takePreventedNavigations } from "./navigation.ts";
 import { expectParity } from "./parity.ts";
 import type { ParityOptions } from "./parity.ts";
@@ -171,7 +168,7 @@ export async function mountScenario(
   options: ViewOptions = {},
 ): Promise<View<never>> {
   const caseId = currentCase("mountScenario");
-  const harness = inject("ufHarness");
+  const harness = host().inject("ufHarness");
   const scenarios = harness.cases[caseId]?.ssr ?? {};
   if (!Object.hasOwn(scenarios, name)) {
     const declared = Object.keys(scenarios);
@@ -186,9 +183,9 @@ export async function mountScenario(
 
 /** The current test's case. */
 function currentCase(caller: string): string {
-  const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
+  const test = host().currentTest();
   if (!test) throw new Error(`${caller} must be called inside a test.`);
-  return caseOfFile(test.file.filepath, inject("ufHarness"));
+  return caseOfFile(test.file.filepath, host().inject("ufHarness"));
 }
 
 /**
@@ -200,7 +197,7 @@ async function declaredEvents(
   component: unknown,
 ): Promise<readonly MountEvent[]> {
   if (registration.events) return registration.events(component);
-  const { events } = await commands.ufComponentEvents({ case: currentCase("mount") });
+  const { events } = await host().commands.ufComponentEvents({ case: currentCase("mount") });
   return events;
 }
 
@@ -246,6 +243,7 @@ async function mountWith(
       ...(initial ? { props: initial } : {}),
       on,
       events: declared,
+      renderCommand: host().commands.ufAstroRender,
     });
   } catch (error) {
     container.remove();
@@ -253,7 +251,7 @@ async function mountWith(
   }
   report(instance);
 
-  const locator = page.getByTestId(testId);
+  const locator = host().page.getByTestId(testId);
   const normalizeOptions = isNormalizeTarget(target) ? { target } : {};
   // A target the normaliser does not know (a test stub) has no framework noise to remove.
   const dom = () => normalizeDomWithIds(container, normalizeOptions);
@@ -262,7 +260,7 @@ async function mountWith(
     // Angular's hosts are inline for the snapshot alone, so they add no space (ADR-0060).
     const restore = inlineHosts(container, isNormalizeTarget(target) ? target : undefined);
     try {
-      return await commands.ufAriaSnapshot(locator.serialize());
+      return await host().commands.ufAriaSnapshot(locator.serialize());
     } finally {
       restore();
     }
@@ -422,9 +420,9 @@ async function mountWith(
 
 /** Records an L9 failure on the current test: a step that never settled cannot be compared. */
 function failTrace(target: string, message: string): void {
-  const test = TestRunner.getCurrentTest<RunnerTestCase | undefined>();
+  const test = host().currentTest();
   if (!test) throw new Error(message);
-  const harness = inject("ufHarness");
+  const harness = host().inject("ufHarness");
   recordLayer(
     test,
     { case: caseOfFile(test.file.filepath, harness), target, quarantine: harness.quarantine },

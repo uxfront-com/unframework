@@ -325,6 +325,7 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
               .map((info) => relative(ROOT, info.spec!).split(sep).join("/"))
           : ["cases/**/*.test.ts"],
         setupFiles: [
+          resolveModule("@unframework/testing/hosts/vitest"),
           resolveModule("@unframework/testing/setup"),
           resolveModule(`@unframework/testing/${target}`),
         ],

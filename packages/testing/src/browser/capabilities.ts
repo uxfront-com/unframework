@@ -4,14 +4,16 @@
 // every layer it would have recorded, and so is a test of a case the target has no output for;
 // an interaction where nothing runs is refused.
 import type { CapabilityCell } from "@unframework/codegen";
-import { inject } from "vitest";
 
 import { noOutputSkip, requiresSkip } from "../layers.ts";
+import { host } from "./host.ts";
 import { currentTarget } from "./target.ts";
 
 /** The target's capability matrix, as the project provides it. */
 export function capabilityCells(): Readonly<Record<string, CapabilityCell>> {
-  const cells = inject("ufCapabilities") as Readonly<Record<string, CapabilityCell>> | undefined;
+  const cells = host().inject("ufCapabilities") as
+    | Readonly<Record<string, CapabilityCell>>
+    | undefined;
   if (!cells) {
     throw new Error(
       "No capabilities are provided: the browser project must set test.provide.ufCapabilities to its target's capability matrix.",
@@ -58,7 +60,7 @@ export function requiredSkip(
  */
 export function noOutputReason(
   caseId: string,
-  cases: Readonly<Record<string, string>> | undefined = inject("ufNoOutput"),
+  cases: Readonly<Record<string, string>> | undefined = host().inject("ufNoOutput"),
 ): string | undefined {
   const errors = cases && Object.hasOwn(cases, caseId) ? cases[caseId] : undefined;
   return errors === undefined ? undefined : noOutputSkip(errors);
@@ -72,7 +74,7 @@ export function noOutputReason(
  */
 export function standInCause(
   caseId: string,
-  cases: Readonly<Record<string, string>> | undefined = inject("ufStandIn"),
+  cases: Readonly<Record<string, string>> | undefined = host().inject("ufStandIn"),
 ): string | undefined {
   return cases && Object.hasOwn(cases, caseId) ? cases[caseId] : undefined;
 }

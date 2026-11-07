@@ -99,38 +99,42 @@ export interface HarnessContext {
   cases: Record<string, CaseConfig>;
 }
 
+/** The values a project provides from Node, which the page and the Node drivers read. */
+export interface HarnessProvided {
+  /** The target this project verifies, such as `"vue"`. */
+  target: string;
+  ufHarness: HarnessContext;
+  /**
+   * Browser projects: the target's capability matrix, as plain data. The browser reads it to
+   * skip a test that requires an unsupported capability (`it(name, { requires }, fn)`) and to
+   * refuse interactions where nothing runs; it never imports a target, whose compiler code
+   * does not run in a browser.
+   */
+  ufCapabilities: Capabilities;
+  /**
+   * Browser projects: the cases the target has no output for (their expected diagnostics hold
+   * an error for it, the one it declares for a capability it lacks), by case id, each with
+   * those errors. Their specs load against a stand-in for the component, and each test is
+   * skipped with `no output: <the errors>`. Absent outside the harness.
+   */
+  ufNoOutput: Record<string, string>;
+  /**
+   * Browser projects: the cases the target cannot compile yet (ADR-0068), by case id, each with
+   * the cause: the case's L3 is quarantined on the target, whose browser build type-checks its
+   * output. Their specs load against a stand-in for the component, and each test runs and
+   * records every browser layer as failed with the cause. Absent outside the harness.
+   */
+  ufStandIn?: Record<string, string>;
+  /**
+   * SSR projects of a target the run adds only as some case's reference (ADR-0057): the ids
+   * of those cases, which it renders alone. Absent everywhere else.
+   */
+  ufOnly?: string[];
+}
+
 declare module "vitest" {
-  interface ProvidedContext {
-    /** The target this project verifies, such as `"vue"`. */
-    target: string;
-    ufHarness: HarnessContext;
-    /**
-     * Browser projects: the target's capability matrix, as plain data. The browser reads it to
-     * skip a test that requires an unsupported capability (`it(name, { requires }, fn)`) and to
-     * refuse interactions where nothing runs; it never imports a target, whose compiler code
-     * does not run in a browser.
-     */
-    ufCapabilities: Capabilities;
-    /**
-     * Browser projects: the cases the target has no output for (their expected diagnostics hold
-     * an error for it, the one it declares for a capability it lacks), by case id, each with
-     * those errors. Their specs load against a stand-in for the component, and each test is
-     * skipped with `no output: <the errors>`. Absent outside the harness.
-     */
-    ufNoOutput: Record<string, string>;
-    /**
-     * Browser projects: the cases the target cannot compile yet (ADR-0068), by case id, each with
-     * the cause: the case's L3 is quarantined on the target, whose browser build type-checks its
-     * output. Their specs load against a stand-in for the component, and each test runs and
-     * records every browser layer as failed with the cause. Absent outside the harness.
-     */
-    ufStandIn?: Record<string, string>;
-    /**
-     * SSR projects of a target the run adds only as some case's reference (ADR-0057): the ids
-     * of those cases, which it renders alone. Absent everywhere else.
-     */
-    ufOnly?: string[];
-  }
+  // oxlint-disable-next-line typescript/no-empty-object-type -- the heritage is the declaration
+  interface ProvidedContext extends HarnessProvided {}
 }
 
 /** The SSR scenarios of a case: its declared ones, or `default` with no props. */

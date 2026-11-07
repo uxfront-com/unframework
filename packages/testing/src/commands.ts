@@ -1,6 +1,6 @@
 // The browser commands the parity layers call (`@unframework/testing/node` implements them).
-// Types only: the browser side imports them through the `vitest/browser` augmentation.
-import type { MountEvent } from "@unframework/codegen";
+// Types only: the browser side reaches them through the host port (`./browser/host.ts`).
+import type { MountEvent, RenderCommand } from "@unframework/codegen";
 
 import type { ColorScheme } from "./harness.ts";
 import type { CaptureRequest, CaptureResult } from "./visual-types.ts";
@@ -26,7 +26,7 @@ export interface ArtefactResult {
   message: string;
 }
 
-/** A Vitest locator as commands receive it. */
+/** A locator as commands receive it. */
 export interface SerializedLocatorLike {
   selector: string;
   locator: string;
@@ -67,23 +67,29 @@ export interface InputResult {
   inserted: boolean;
 }
 
+/** The commands the page calls. */
+export interface UfCommands {
+  /** Settles a shared `__expected__` artefact under the run's write policy. */
+  ufArtefact: (request: ArtefactRequest) => Promise<ArtefactResult>;
+  /** Playwright's ARIA snapshot of the element a locator points at. */
+  ufAriaSnapshot: (locator: SerializedLocatorLike) => Promise<string>;
+  /** L10: font audit, stable capture, geometry then pixels, under the write policy. */
+  ufVisualCapture: (request: CaptureRequest) => Promise<CaptureResult>;
+  /** Moves the focus to the element a locator points at, as Playwright's `focus` does. */
+  ufFocus: (locator: SerializedLocatorLike) => Promise<void>;
+  /** Dispatches one input of a `view.user` action through Playwright's mouse or keyboard. */
+  ufInput: (request: InputRequest) => Promise<InputResult>;
+  /** Moves the mouse to the corner of the viewport, off every mount root, between tests. */
+  ufResetInput: () => Promise<void>;
+  /** Emulates the `prefers-color-scheme` a case opts into, for the page its spec runs in. */
+  ufColorScheme: (scheme: ColorScheme) => Promise<void>;
+  /** The events a case's component declares, as the project's compile of it says (ADR-0050). */
+  ufComponentEvents: (request: ComponentEventsRequest) => Promise<ComponentEventsResult>;
+  /** Astro's server render: an Astro project alone implements it, and its adapter alone calls it. */
+  ufAstroRender: RenderCommand;
+}
+
 declare module "vitest/browser" {
-  interface BrowserCommands {
-    /** Settles a shared `__expected__` artefact under the run's write policy. */
-    ufArtefact: (request: ArtefactRequest) => Promise<ArtefactResult>;
-    /** Playwright's ARIA snapshot of the element a locator points at. */
-    ufAriaSnapshot: (locator: SerializedLocatorLike) => Promise<string>;
-    /** L10: font audit, stable capture, geometry then pixels, under the write policy. */
-    ufVisualCapture: (request: CaptureRequest) => Promise<CaptureResult>;
-    /** Moves the focus to the element a locator points at, as Playwright's `focus` does. */
-    ufFocus: (locator: SerializedLocatorLike) => Promise<void>;
-    /** Dispatches one input of a `view.user` action through Playwright's mouse or keyboard. */
-    ufInput: (request: InputRequest) => Promise<InputResult>;
-    /** Moves the mouse to the corner of the viewport, off every mount root, between tests. */
-    ufResetInput: () => Promise<void>;
-    /** Emulates the `prefers-color-scheme` a case opts into, for the page its spec runs in. */
-    ufColorScheme: (scheme: ColorScheme) => Promise<void>;
-    /** The events a case's component declares, as the project's compile of it says (ADR-0050). */
-    ufComponentEvents: (request: ComponentEventsRequest) => Promise<ComponentEventsResult>;
-  }
+  // oxlint-disable-next-line typescript/no-empty-object-type -- the heritage is the declaration
+  interface BrowserCommands extends UfCommands {}
 }
