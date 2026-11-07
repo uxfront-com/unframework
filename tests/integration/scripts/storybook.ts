@@ -23,6 +23,8 @@ import {
   parseCommand,
   runnerProblems,
   storyProblem,
+  UNFINISHED_STORY,
+  within,
 } from "../harness/storybook-check.ts";
 import type { StoryPage } from "../harness/storybook-check.ts";
 import { CASES_ENV, selectCases, storybookDir, targetStories } from "../harness/storybook.ts";
@@ -165,8 +167,8 @@ function serveStatic(directory: string): Promise<{ server: Server; origin: strin
 
 /** Waits for the story on the page to finish rendering, and reads what it shows. */
 async function readStory(page: Page, id: string): Promise<StoryPage> {
-  const finished = await page
-    .waitForFunction(
+  const rendered = await within(
+    page.waitForFunction(
       (story) => {
         const render = (
           window as unknown as {
@@ -182,24 +184,26 @@ async function readStory(page: Page, id: string): Promise<StoryPage> {
       },
       id,
       { timeout: STORY_MS },
-    )
-    .then(
-      () => true,
-      () => false,
-    );
-  const found = await page.evaluate(() => {
-    const root = document.querySelector<HTMLElement>("#storybook-root");
-    const { classList } = document.body;
-    return {
-      showsError: classList.contains("sb-show-errordisplay"),
-      errorMessage: document.querySelector("#error-message")?.textContent ?? undefined,
-      noPreview: classList.contains("sb-show-nopreview"),
-      root: root ? { elements: root.childElementCount, content: root.textContent } : undefined,
-      noOutput: Boolean(root?.querySelector("[data-uf-no-output]")),
-      text: root?.innerText ?? "",
-    };
-  });
-  return { ...found, finished };
+    ),
+    STORY_MS,
+  );
+  if (!rendered) return UNFINISHED_STORY;
+  const found = await within(
+    page.evaluate(() => {
+      const root = document.querySelector<HTMLElement>("#storybook-root");
+      const { classList } = document.body;
+      return {
+        showsError: classList.contains("sb-show-errordisplay"),
+        errorMessage: document.querySelector("#error-message")?.textContent ?? undefined,
+        noPreview: classList.contains("sb-show-nopreview"),
+        root: root ? { elements: root.childElementCount, content: root.textContent } : undefined,
+        noOutput: Boolean(root?.querySelector("[data-uf-no-output]")),
+        text: root?.innerText ?? "",
+      };
+    }),
+    STORY_MS,
+  );
+  return found ? { ...found, finished: true } : UNFINISHED_STORY;
 }
 
 /** Opens the next story in the same page, as the manager does. */

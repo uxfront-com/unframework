@@ -62,6 +62,34 @@ export interface StoryPage {
   text: string;
 }
 
+/** A story that didn't finish: the page may be blocked, so nothing was read from it. */
+export const UNFINISHED_STORY: StoryPage = {
+  finished: false,
+  showsError: false,
+  errorMessage: undefined,
+  noPreview: false,
+  root: undefined,
+  noOutput: false,
+  text: "",
+};
+
+/**
+ * What `work` gives within `ms`, or nothing if it fails or takes longer. A deadline of its own,
+ * because a page whose main thread is blocked can hold Playwright's calls for ever: `evaluate` has
+ * no timeout, and `waitForFunction`'s can wait on the page too.
+ */
+export async function within<T>(work: Promise<T>, ms: number): Promise<T | undefined> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<undefined>((resolve) => {
+    timer = setTimeout(() => resolve(undefined), ms);
+  });
+  try {
+    return await Promise.race([work.catch(() => undefined), deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Why a story didn't render, if it didn't. */
 function renderError(page: StoryPage): string | undefined {
   if (page.showsError) return page.errorMessage ?? "the error display is showing";

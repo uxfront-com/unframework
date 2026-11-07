@@ -1,6 +1,6 @@
 // C12's detectors, on pages made up here: the `harness` project has no browser, and CI runs
 // `storybook:check` itself only from a later layer.
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   catalogueProblems,
@@ -9,6 +9,8 @@ import {
   parseCommand,
   runnerProblems,
   storyProblem,
+  UNFINISHED_STORY,
+  within,
 } from "./storybook-check.ts";
 import type { StoryPage } from "./storybook-check.ts";
 
@@ -56,6 +58,62 @@ describe("storyProblem", () => {
   it("names why it didn't render ahead of what that left empty", () => {
     const root = { elements: 0, content: "" };
     expect(storyProblem(page({ root, showsError: true, errorMessage: "boom" }))).toBe("boom");
+  });
+});
+
+describe("an unfinished story", () => {
+  it("says so, with nothing read from the page", () => {
+    expect(storyProblem(UNFINISHED_STORY)).toBe("it did not finish rendering");
+    expect(UNFINISHED_STORY.text).toBe("");
+  });
+
+  it("is a problem in a walk, and in the runner story", () => {
+    expect(
+      catalogueProblems({
+        stories: [{ id: "a-b--one", title: "a/b" }],
+        pages: new Map([["a-b--one", UNFINISHED_STORY]]),
+        noOutput: [],
+        specChunks: [],
+      }),
+    ).toEqual(["a-b--one: it did not finish rendering"]);
+    expect(runnerProblems("r", UNFINISHED_STORY, "__run", false)).toEqual([
+      "r: it did not finish rendering",
+      "r: it doesn't set __run",
+    ]);
+  });
+});
+
+describe("within", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("gives what the work gives", async () => {
+    await expect(within(Promise.resolve("done"), 1000)).resolves.toBe("done");
+  });
+
+  it("gives nothing when the work fails, as Playwright's timeout does", async () => {
+    await expect(within(Promise.reject(new Error("timed out")), 1000)).resolves.toBeUndefined();
+  });
+
+  it("gives nothing at its deadline for work that never settles, as on a blocked page", async () => {
+    vi.useFakeTimers();
+    const result = within(new Promise(() => {}), 30_000);
+    await vi.advanceTimersByTimeAsync(29_999);
+    let settled = false;
+    void result.then(() => {
+      settled = true;
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(settled).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(result).resolves.toBeUndefined();
+  });
+
+  it("leaves no timer behind, which would hold the command open", async () => {
+    vi.useFakeTimers();
+    await within(Promise.resolve("done"), 30_000);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
 
