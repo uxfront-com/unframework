@@ -102,7 +102,7 @@ describe("createStorybookConfig", () => {
       (manifest.closeBundle as () => void)();
       const written = JSON.parse(readFileSync(join(outDir, BUILD_MANIFEST), "utf8"));
       expect(written.target).toBe("vue");
-      expect(written.failures).toEqual([]);
+      expect(written.failures).toEqual([{ module: "/cases/c/Bad.uf.tsx", cause: "guard says no" }]);
       expect(Object.keys(written.modules)).toEqual(["/cases/a/A.uf.tsx", "/cases/b/Mixed.uf.tsx"]);
       expect(written.modules["/cases/a/A.uf.tsx"]).toEqual({
         events: [{ name: "change", optional: [] }],
