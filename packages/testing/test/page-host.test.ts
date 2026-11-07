@@ -541,7 +541,7 @@ describe("a locator made before anything has queried the page", () => {
     expect(record?.errors).toBeUndefined();
     expect(record?.state).toBe("pass");
     expect(record?.meta.uf?.layers.L8).toEqual({ status: "pass" });
-    expect((record?.meta as { results?: unknown }).results).toEqual({
+    expect((record!.meta as { results?: unknown }).results).toEqual({
       selector: 'internal:testid=[data-testid="uf-root-1"s] >> internal:text="Shipping"i',
       locator: "getByTestId('uf-root-1').getByText('Shipping', { exact: false })",
     });

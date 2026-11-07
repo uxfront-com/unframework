@@ -36,10 +36,9 @@ const runner: FixtureRunner = {
 
 /** Bounds what the context waits for, around the actions that are to time out. */
 function setActionTimeout(ms: number): Promise<void> {
-  const { setActionTimeout: command } = host().commands as unknown as {
-    setActionTimeout(ms: number): Promise<void>;
-  };
-  return command(ms);
+  return (
+    host().commands as unknown as { setActionTimeout(ms: number): Promise<void> }
+  ).setActionTimeout(ms);
 }
 
 /** What the page sends Node when the tests are done, through the test's own metadata. */
