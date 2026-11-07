@@ -1,6 +1,6 @@
 # ADR-0052: A canary whose browser specs run is sharded by case in CI
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0073
 - **Date:** 2026-10-08
 - **Plan:** §7.7, §7.9, §9 M2; P2; ADR-0043, ADR-0050; amends ADR-0043
 

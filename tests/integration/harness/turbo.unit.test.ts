@@ -42,8 +42,9 @@ describe("the integration test task", () => {
   const tasks = dryRun();
   const test = tasks.find((task) => task.taskId === "@unframework/integration#test")!;
 
-  it("hashes CI's workflow, which the harness's own tests read", () => {
+  it("hashes CI's workflow and the nightly's, which the harness's own tests read", () => {
     expect(Object.keys(test.inputs)).toContain("../../.github/workflows/ci.yml");
+    expect(Object.keys(test.inputs)).toContain("../../.github/workflows/nightly.yml");
   });
 
   it("hashes every toolchain's tsconfig and lint configurations through its transit node", () => {

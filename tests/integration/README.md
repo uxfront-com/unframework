@@ -382,7 +382,10 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   browser projects in each. A canary whose browser specs run waits out a timeout at most of
   their failures, so it runs in shards (`--shard 1/2`, ADR-0052): each holds a part of the cases,
   runs its specs in the browser projects and every other project whole, and is judged on its
-  cases alone.
+  cases alone. A pull request runs the matrix only when it changes a path that can change a
+  canary's answer: `CANARY_PATHS` in `scripts/canary-paths.ts` lists them, and a skipped job counts
+  as passed. A push to `main` and `workflow_dispatch` run all of it, and `nightly.yml` runs it whole
+  every night, in Chromium (ADR-0073).
 - **Qwik's listeners run as they do once each has run, and none is ordered by the harness.** A
   Qwik handler, task or local function runs once its QRL has resolved, and a QRL resolves on its
   first run, through the `import()` of its segment, which the browser answers in a later task,
