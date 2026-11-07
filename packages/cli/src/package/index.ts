@@ -62,6 +62,18 @@ const packageOf = (module: string) =>
     .slice(0, module.startsWith("@") ? 2 : 1)
     .join("/");
 
+/**
+ * The path a directory that may not exist yet will have: a build follows a symbolic link in `outDir`,
+ * so what resolves from there depends on where the link goes.
+ */
+async function realDirectory(directory: string): Promise<string> {
+  for (let at = directory; ; at = dirname(at)) {
+    const real = await realpath(at).catch(() => undefined);
+    if (real !== undefined) return join(real, relative(at, directory));
+    if (dirname(at) === at) return directory;
+  }
+}
+
 /** Whether a package is in the `node_modules` of a directory or of one of its parents. */
 function isInstalled(directory: string, name: string): boolean {
   for (let at = directory; ; at = dirname(at)) {
@@ -113,11 +125,10 @@ async function projectFields(root: string): Promise<Record<string, string>> {
 }
 
 /** A packager's own error: no stack, and its scratch paths as the tree the build has just written. */
-function failure(error: unknown, work: string, tree: string): string {
+function failure(error: unknown, tree: string): string {
   const text = stripVTControlCharacters(error instanceof Error ? error.message : String(error));
   return (
     text
-      .replaceAll(join(work, "in"), tree)
       // Rolldown names a file relative to where it ran.
       .replace(/(?<![\w./-])in\//g, `${tree}/`)
       .split("\n")
@@ -174,6 +185,7 @@ export async function planPackage(input: PackageInput): Promise<PackagePlan> {
     const each = config.package?.resolveFrom;
     return (typeof each === "string" ? each : each?.[target]) ?? root;
   };
+  const built = await realDirectory(config.outDir);
   const diagnostics: Diagnostic[] = [];
   for (const target of requested) {
     const packager = PACKAGERS[target];
@@ -193,8 +205,8 @@ export async function planPackage(input: PackageInput): Promise<PackagePlan> {
       }
     }
     // The stage is under outDir, and its declarations read the framework from there.
-    if (packager.types && !isInstalled(config.outDir, packager.types)) {
-      const message = `The ${target} packager reads the framework's types from ${packager.types}, which doesn't resolve from ${relative(root, config.outDir) || "the project's root"}. Without it a declaration's inferred types would be any. Install it in the project, or leave ${target} out of package.targets.`;
+    if (packager.types && !isInstalled(built, packager.types)) {
+      const message = `The ${target} packager reads the framework's types from ${packager.types}, which doesn't resolve from ${built}, where the package is built. Without it a declaration's inferred types would be any. Install it where that directory can reach it, or leave ${target} out of package.targets.`;
       diagnostics.push(problem("UF7008", target, message));
     }
   }
@@ -211,33 +223,35 @@ export async function planPackage(input: PackageInput): Promise<PackagePlan> {
       // Built beside the last good package, and swapped in only once every packager has passed.
       // The real path: tsgo roots itself at what it's given, and Rolldown names files by real paths.
       const stage = await realpath(await mkdtemp(join(config.outDir, ".package-")));
+      // A directory of its own, as `mkdtemp`'s mode is private and would survive the rename.
+      const built = join(stage, PACKAGE_DIRECTORY);
       try {
         for (const [target, packager] of packagers) {
-          const work = join(stage, ".work", target);
-          const tree = relative(root, join(config.outDir, target)) || target;
+          const work = join(stage, "work", target);
+          const tree = relative(root, join(config.outDir, target));
           await mkdir(work, { recursive: true });
           try {
             await packager.run({
               files: trees.get(target) ?? [],
-              out: join(stage, target),
+              out: join(built, target),
               work,
               resolve: resolverFrom(from(target)),
             });
           } catch (error) {
-            const message = `The ${target} packager failed: ${failure(error, work, tree)}`;
+            const message = `The ${target} packager failed: ${failure(error, tree)}`;
             return [problem("UF7009", target, message)];
           }
         }
-        await rm(join(stage, ".work"), { recursive: true, force: true });
-        await writeFile(join(stage, "package.json"), manifest(fields, packagers));
+        await mkdir(built, { recursive: true });
+        await writeFile(join(built, "package.json"), manifest(fields, packagers));
         for (const [file, path] of shipped) {
-          const to = join(stage, "source", path);
+          const to = join(built, "source", path);
           await mkdir(dirname(to), { recursive: true });
           await copyFile(join(root, file), to);
         }
         const directory = join(config.outDir, PACKAGE_DIRECTORY);
         await rm(directory, { recursive: true, force: true });
-        await rename(stage, directory);
+        await rename(built, directory);
         return [];
       } finally {
         await rm(stage, { recursive: true, force: true });

@@ -26,7 +26,7 @@ built, and the targets stay in this order so that two sections never share a lin
 - `build --package` writes a publishable package to `<outDir>/package/`. Its manifest takes the
   `name`, `version` and `license` from the project's own `package.json`.
 - The manifest has subpath `exports` (`./react`, `./vue`, …, and `./source/*` for the `.uf.tsx`
-  sources), each framework as an optional peer, and a barrel per target.
+  sources), each packaged target's framework as an optional peer, and a barrel per target.
 - A registry, `packages/cli/src/package/index.ts`, holds one line per target, each with a file of its
   own. The manifest lists the packaged targets in the registry's order, whatever order the config
   gives, and each packaged target's framework is its optional peer.
@@ -39,8 +39,8 @@ built, and the targets stay in this order so that two sections never share a lin
   a workspace hoists.
 - A packager that isn't installed reports UF7008 `packager-missing`, and one that fails UF7009
   `packager-failed`. UF7008 also covers a target with no packager yet, and a project without the
-  framework's types: tsgo writes tsdown's declarations with `--noCheck`, so a return type would
-  silently be `any`, and vue-tsc would fail only after the trees are written.
+  framework's types: the packagers write declarations with `--noCheck`, so a return type would
+  silently be `any`.
 - Whether each packager and the framework's types resolve is checked before anything is written. The package is built in a
   scratch directory under `outDir`, and replaces the last good one only once every packager has passed.
 
@@ -63,8 +63,10 @@ A Vite library build with `qwikVite()` emits `.qwik.mjs` under the `qwik` export
 
 tsdown builds JS and `.d.ts`, one module to a file. Bare imports, passed-through modules and sheets
 stay as written, and each sheet is copied beside its importer: an output's imports aren't the package's
-to bundle (P7), and tsdown's CSS support is a separate package. The declarations run apart and last,
-because tsgo prints its errors and fails with only an exit code.
+to bundle (P7), and tsdown's CSS support is a separate package. The declarations run apart and last, so
+that a syntax error reaches Rolldown's error first. tsgo itself prints its errors and fails with only an
+exit code, so the same `tsc --declaration --noCheck` runs first with its output kept, for UF7009. Nothing
+of the build's environment reaches the JS: `envPrefix` is empty (P8).
 
 ### Solid
 
@@ -81,15 +83,17 @@ Both resolve from `package.resolveFrom`, beside tsdown.
 
 The package holds the SFC sources and `.ts` modules, with `vue-tsc` declarations beside them. `./vue`
 names the declarations under `types`, and the barrel as written otherwise: an SFC needs the consumer's
-compiler anyway, which also reads the TypeScript it imports. `vue-tsc` does check, so a type error is
-UF7009.
+compiler anyway, which also reads the TypeScript it imports. `vue-tsc` writes with `noCheck`, as tsgo
+does for React and Solid: its scratch project can't see what the project declares, like a `virtual:`
+module (ADR-0064) or a global, so a check there would refuse correct sources. A type a declaration can't
+name is still UF7009.
 
 ## Consequences
 
 **Positive:**
 
 - A consumer installs one package and imports `<pkg>/vue`, with that framework's own types.
-- Every framework is an optional peer, so a React app installs no Svelte.
+- Every packaged framework is an optional peer, so a React app installs no Svelte.
 - `./source/*` lets one tarball serve both modes: a built target, or plugin mode through
   `@unframework/unplugin` (ADR-0075).
 - TypeScript 6 stays where `AGENTS.md` allows it, because a project names where its packagers live.

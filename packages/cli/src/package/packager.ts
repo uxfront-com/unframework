@@ -1,5 +1,7 @@
+import { execFile } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { promisify } from "node:util";
 
 import type { OutputFile } from "@unframework/compiler";
 
@@ -23,14 +25,34 @@ export interface Packager {
   needs: readonly string[];
   /**
    * The package whose types a declaration's inferred types come from, which must be in the project.
-   * Without it tsdown's declarations, which tsgo writes with `--noCheck`, type a return as `any`,
-   * silently, and vue-tsc fails only after the trees are written.
+   * Declarations are written with `--noCheck`, so without it a return type is `any`, silently.
    */
   types?: string;
   /** The target's subpath in the manifest's `exports`. */
   exports: string | Readonly<Record<string, string>>;
   /** Fills `out`. What it throws is the packager's failure (UF7009). */
   run(input: PackagerInput): Promise<void>;
+}
+
+/**
+ * A declaration's side-effect imports gone. One holds no types, and one a declaration keeps is an
+ * error (TS2882) in a consumer with `skipLibCheck` off, since nothing declares a sheet's module there.
+ */
+export const dropSideEffectImports = (code: string): string =>
+  code.replace(/^import "[^"]+";\n/gm, "");
+
+/** Runs a tool's script in `cwd`. A failure throws what the tool printed: tsc prints to stdout. */
+export async function runScript(
+  script: string,
+  args: readonly string[],
+  cwd: string,
+): Promise<void> {
+  await promisify(execFile)(process.execPath, [script, ...args], {
+    cwd,
+    maxBuffer: 2 ** 28,
+  }).catch((error: { stdout?: string; stderr?: string; message: string }) => {
+    throw new Error(error.stdout || error.stderr || error.message);
+  });
 }
 
 export async function writeFiles(directory: string, files: readonly OutputFile[]): Promise<void> {

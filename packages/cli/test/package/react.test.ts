@@ -44,6 +44,11 @@ describe("build --package: React", () => {
       types: "./react/index.d.ts",
       default: "./react/index.js",
     });
+    // Conditions match in order: `default` before `types` would hide the declarations.
+    expect(Object.keys(JSON.parse(files["package.json"] ?? "").exports["./react"])).toEqual([
+      "types",
+      "default",
+    ]);
   });
 
   it("types a consumer that imports the subpath, and stops one that misuses it", async () => {
@@ -81,9 +86,9 @@ export function Consumer() {
       },
       { skipLibCheck: false },
     );
-    const { output } = check("packages/cli", "tsc", ["-p", directory]);
-    expect(output).not.toContain("TS2882");
-    expect(output).not.toContain("dist/package");
+    const { code, output } = check("packages/cli", "tsc", ["-p", directory]);
+    expect(output).toBe("");
+    expect(code).toBe(0);
   });
 
   it("writes the file a build would, with no absolute path and no map", async () => {

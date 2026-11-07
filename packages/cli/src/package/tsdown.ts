@@ -1,11 +1,12 @@
-import { writeFile } from "node:fs/promises";
-import { isAbsolute, join } from "node:path";
+import { readFile, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
+import { dirname, isAbsolute, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import type { OutputFile } from "@unframework/compiler";
 
 import type { PackagerInput } from "./packager.ts";
-import { writeFiles } from "./packager.ts";
+import { dropSideEffectImports, runScript, writeFiles } from "./packager.ts";
 
 /** What a target's tsconfig says about its JSX. */
 export interface JsxOptions {
@@ -37,18 +38,22 @@ const KEEP_IMPORTS = {
 };
 
 /**
- * A side-effect import holds no types, and one a declaration keeps is an error (TS2882) in a
- * consumer with `skipLibCheck` off, since nothing declares a sheet's module there.
+ * What tsdown's declarations would report, as an error. On TypeScript 7, rolldown-plugin-dts runs tsgo
+ * with inherited output and rejects with only its exit code, so the cause would reach standard output
+ * past `main`'s `io`, naming a scratch path. Its other generators throw what they find.
  */
-const DROP_SIDE_EFFECT_IMPORTS = {
-  name: "unframework:drop-side-effect-imports",
-  renderChunk: (code: string) => code.replace(/^import "[^"]+";\n/gm, ""),
-};
+async function checkDeclarations(tsdown: string, work: string): Promise<void> {
+  const manifest = createRequire(tsdown).resolve("typescript/package.json");
+  const { version, bin }: { version: string; bin: { tsc: string } } = JSON.parse(
+    await readFile(manifest, "utf8"),
+  );
+  if (!version.startsWith("7.")) return;
+  await runScript(join(dirname(manifest), bin.tsc), ["--declaration", "--noCheck"], work);
+}
 
 /**
  * Runs tsdown over the tree in `work/in`, one module to a file, then again for its declarations, and
- * copies its sheets to `out`. The declarations run last and apart because tsgo prints its errors to
- * standard output and fails with only an exit code, where Rolldown's error says what is wrong.
+ * copies its sheets to `out`. A syntax error reaches the JS first, whose error names the file.
  */
 export async function buildWithTsdown(
   { files, out, work, resolve }: PackagerInput,
@@ -74,8 +79,9 @@ export async function buildWithTsdown(
       include: ["in"],
     }),
   );
+  const tsdownPath = resolve("tsdown");
   const tsdown: { build(config: object): Promise<unknown> } = await import(
-    /* @vite-ignore */ pathToFileURL(resolve("tsdown")).href
+    /* @vite-ignore */ pathToFileURL(tsdownPath).href
   );
   const common = {
     config: false,
@@ -89,6 +95,8 @@ export async function buildWithTsdown(
     tsconfig: "tsconfig.json",
     clean: false,
     logLevel: "silent",
+    // Off: `TSDOWN_` variables would reach the published JS, against P8.
+    envPrefix: [],
   };
   for (const { extension, plugins = [] } of runs) {
     await tsdown.build({
@@ -98,11 +106,15 @@ export async function buildWithTsdown(
       plugins: [KEEP_IMPORTS, ...plugins],
     });
   }
+  await checkDeclarations(tsdownPath, work);
   await tsdown.build({
     ...common,
     dts: { emitDtsOnly: true },
     outExtensions: () => ({ dts: ".d.ts" }),
-    plugins: [KEEP_IMPORTS, DROP_SIDE_EFFECT_IMPORTS],
+    plugins: [
+      KEEP_IMPORTS,
+      { name: "unframework:declarations", renderChunk: dropSideEffectImports },
+    ],
   });
   const sheets: OutputFile[] = files.filter((file) => !SCRIPT.test(file.path));
   await writeFiles(out, sheets);

@@ -44,7 +44,8 @@ describe("build --package: Solid", () => {
     );
     // Solid's compiler ran on the JS, and left the JSX for the consumer's.
     expect(files["solid/CardTitle.js"]).toContain('from "solid-js/web"');
-    expect(files["solid/CardTitle.js"]).not.toContain("<h2>{");
+    expect(files["solid/CardTitle.js"]).toContain("template");
+    expect(files["solid/CardTitle.js"]).not.toContain("ssr");
     expect(files["solid/CardTitle.jsx"]).toContain("<h2");
     expect(files["solid/CardTitle.jsx"]).not.toContain("solid-js/web");
     // Each stays on its own side of the condition.

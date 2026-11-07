@@ -1,7 +1,8 @@
-import { existsSync, readdirSync, readFileSync, symlinkSync } from "node:fs";
-import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, symlinkSync } from "node:fs";
+import { dirname, join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { project, run, tree, write } from "../helpers.ts";
 import { designSystem, inRepository, SOURCE_TREE } from "./helpers.ts";
@@ -142,6 +143,32 @@ export default function Toned(props: { tone?: Tone }) {
     expect(readdirSync(join(root, "dist")).toSorted()).toEqual(["package", "react"]);
   });
 
+  it("keeps the build's environment out of the JS (P8)", async () => {
+    const root = designSystem({
+      config: { targets: ["react"], package: { resolveFrom: REACT } },
+      frameworks: ["react", "@types/react"],
+      files: {
+        "src/shared/format.ts": `export const formatLabel = (label: string): string =>
+  label.trim() + (process.env.TSDOWN_LEAK ?? "");
+`,
+      },
+    });
+    expect((await run(root, "build", "--package")).code).toBe(0);
+    const unset = tree(join(root, "dist", "package"));
+    vi.stubEnv("TSDOWN_LEAK", "leak-value");
+    expect((await run(root, "build", "--package")).code).toBe(0);
+    vi.unstubAllEnvs();
+    expect(tree(join(root, "dist", "package"))).toEqual(unset);
+  });
+
+  it("gives the package a directory's usual mode", async () => {
+    const root = designSystem({ config: { targets: ["astro"] } });
+    expect((await run(root, "build", "--package")).code).toBe(0);
+    expect(statSync(join(root, "dist", "package")).mode).toBe(
+      statSync(join(root, "dist", "astro")).mode,
+    );
+  });
+
   it("replaces an earlier package, so a target left out goes", async () => {
     const root = designSystem({
       config: { targets: ["astro"] },
@@ -249,7 +276,7 @@ describe("build --package: UF7008", () => {
     expect(existsSync(join(root, "dist"))).toBe(false);
   });
 
-  it("names each module Solid needs beside tsdown", async () => {
+  it("names babel-preset-solid, which Solid needs beside tsdown", async () => {
     const root = designSystem({
       config: { targets: ["solid"], package: { resolveFrom: REACT } },
       frameworks: ["solid-js"],
@@ -258,6 +285,77 @@ describe("build --package: UF7008", () => {
     expect(code).toBe(1);
     expect(stderr).toContain("UF7008");
     expect(stderr).toContain("babel-preset-solid");
+    expect(stderr).not.toContain("@babel/core");
+  });
+
+  it("names @babel/core, which Solid also needs", async () => {
+    const root = designSystem({ config: { targets: ["solid"] }, frameworks: ["solid-js"] });
+    const installed = inRepository("packages/target-solid/node_modules");
+    for (const name of ["tsdown", "babel-preset-solid"]) {
+      const link = join(root, "node_modules", name);
+      mkdirSync(dirname(link), { recursive: true });
+      symlinkSync(join(installed, name), link);
+    }
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(code).toBe(1);
+    expect(stderr).toContain("UF7008");
+    expect(stderr).toContain("@babel/core");
+    expect(existsSync(join(root, "dist"))).toBe(false);
+  });
+
+  it("names solid-js when the project has no Solid", async () => {
+    const root = designSystem({
+      config: {
+        targets: ["solid"],
+        package: { resolveFrom: inRepository("packages/target-solid") },
+      },
+    });
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(code).toBe(1);
+    expect(stderr).toContain("UF7008");
+    expect(stderr).toContain("solid-js");
+    expect(existsSync(join(root, "dist"))).toBe(false);
+  });
+
+  it.each(["dist", "dist/nested"])(
+    "reads the types from where a link leads, for %s",
+    async (outDir) => {
+      const root = designSystem({
+        config: { targets: ["react"], outDir, package: { resolveFrom: REACT } },
+        frameworks: ["react", "@types/react"],
+      });
+      symlinkSync(project({}), join(root, "dist"));
+      const { code, stderr } = await run(root, "build", "--package");
+      expect(code).toBe(1);
+      expect(stderr).toContain("UF7008");
+      expect(stderr).toContain("@types/react");
+      expect(existsSync(join(root, outDir, "package"))).toBe(false);
+    },
+  );
+
+  it("reads the types from outDir, not the project's root", async () => {
+    const root = designSystem({
+      config: { targets: ["react"], outDir: "../built", package: { resolveFrom: REACT } },
+      frameworks: ["react", "@types/react"],
+    });
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(code).toBe(1);
+    expect(stderr).toContain("@types/react");
+  });
+
+  it("follows a link inside the project, and finds the types", async () => {
+    const root = designSystem({
+      config: { targets: ["react"], package: { resolveFrom: REACT } },
+      frameworks: ["react", "@types/react"],
+    });
+    mkdirSync(join(root, "out"));
+    symlinkSync(join(root, "out"), join(root, "dist"));
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(stderr).toBe("");
+    expect(code).toBe(0);
+    expect(readFileSync(join(root, "out", "package", "react", "Card.d.ts"), "utf8")).toContain(
+      "JSX.Element",
+    );
   });
 
   it("reads a per-target resolveFrom, with the project's root for the rest", async () => {
@@ -326,5 +424,48 @@ describe("build --package: UF7009", () => {
     expect(stderr).not.toMatch(/^\s+at /m);
     expect(tree(join(root, "dist", "package"))).toEqual(before);
     expect(readdirSync(join(root, "dist")).toSorted()).toEqual(["package", "react"]);
+  });
+
+  it("leaves another TypeScript's errors to tsdown", async () => {
+    const root = designSystem({
+      config: { targets: ["react"] },
+      frameworks: ["@types/react"],
+      files: {
+        "node_modules/typescript/package.json":
+          '{ "name": "typescript", "version": "6.0.2", "bin": { "tsc": "missing.js" } }',
+        "node_modules/tsdown/package.json": '{ "name": "tsdown", "main": "index.mjs" }',
+        "node_modules/tsdown/index.mjs": `export async function build(config) {
+  if (config.dts) throw new Error("the generator's own error");
+}
+`,
+      },
+    });
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(code).toBe(1);
+    expect(stderr).toContain("the generator's own error");
+  });
+
+  it("carries what tsgo reports, on standard error and past no io", async () => {
+    const root = designSystem({
+      config: { targets: ["react"], package: { resolveFrom: REACT } },
+      frameworks: ["react", "@types/react"],
+      files: {
+        "src/shared/format.ts": `export const formatLabel = (label: string): string => label.trim();
+export const Klass = class {
+  private y = 1;
+};
+`,
+      },
+    });
+    const { status, stdout, stderr } = spawnSync(
+      process.execPath,
+      [inRepository("packages/unframework/bin/unframework.js"), "build", "--package"],
+      { cwd: root, encoding: "utf8" },
+    );
+    expect(status).toBe(1);
+    expect(stdout).toBe("");
+    expect(stderr).toContain("UF7009");
+    expect(stderr).toContain("dist/react/shared/format.ts(2,14): error TS4094");
+    expect(stderr).not.toContain(".package-");
   });
 });

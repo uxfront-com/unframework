@@ -4,11 +4,11 @@ The `unframework` command line (plan §8.3, ADR-0076). The `unframework` package
 project runs it as `unframework <command>`, from the directory that holds its
 `unframework.config.ts`. A project with no config takes the defaults.
 
-| Exit code | Meaning |
-| --------- | ------- |
-| 0 | Success, warnings and notes included, but for what `strict` makes an error. |
-| 1 | Error diagnostics, in a source, because no source was found, or from a packager. |
-| 2 | A usage error, `init`'s refusal, a config that won't load or is invalid, a project `--package` can't ship, or a failure writing a file. |
+| Exit code | Meaning                                                                                                                                 |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 0         | Success, warnings and notes included, but for what `strict` makes an error.                                                             |
+| 1         | Error diagnostics, in a source, because no source was found, or from a packager.                                                        |
+| 2         | A usage error, `init`'s refusal, a config that won't load or is invalid, a project `--package` can't ship, or a failure writing a file. |
 
 `main(argv, io?)` runs a command line, `argv` without Node and the script, and gives the exit code.
 It never throws. `io` holds the working directory and where text goes, and defaults to the process's.
@@ -37,8 +37,10 @@ writes it:
 `--type-oracle` overrides the config's `typeOracle`. `tsgo` loads `@unframework/type-oracle-tsgo`
 only then. With `strict` in the config, a portability warning (`UF4xxx`) counts as an error.
 
-A successful build prints only its warnings and notes, on standard error. A build with an error diagnostic, or with a config it refuses, cleans and writes nothing, so the last
-good build stays in place. A failure while writing does exit 2 with the build half written.
+A successful build prints only its warnings and notes, on standard error. A build with an error diagnostic from a compile or from what `--package` checks first, or with a
+config it refuses, cleans and writes nothing, so the last good build stays in place. A failure while
+writing does exit 2 with the build half written. A packager that fails (UF7009) has the trees written,
+and keeps the last good package.
 
 `build` and `check` also report what no single compile can see:
 
@@ -58,7 +60,8 @@ good build stays in place. A failure while writing does exit 2 with the build ha
 replaces any earlier package once every packager has passed, so a failure keeps the last good one. A
 `build` without the flag leaves that directory alone. Point `pnpm pack` or `npm publish` at it.
 
-Its `package.json` takes `name`, `version` and `license` from the project's own, and adds:
+Its `package.json` takes `name`, `version` and `license` from the project's own, sets `"type": "module"`,
+and adds:
 
 - **`exports`:** one subpath per packaged target (`./react`, `./vue`, …), whose entry is that target's
   barrel, then `./source/*`, which reaches the `.uf.tsx` sources and the files under `srcDir` they
@@ -87,6 +90,7 @@ defaults to the project's root. It's never a dependency of the CLI. Each target 
 - **Svelte:** not packaged yet, so `--package` reports UF7008.
 - **Vue:** the SFC sources and `.ts` modules, with `vue-tsc`'s declarations beside them. Vue's compiler
   builds them in the consumer's app, and `vue-tsc` resolves its TypeScript from where it's installed.
+  The project needs `vue`.
 
 Packaged outputs ship with no source maps.
 
@@ -95,8 +99,8 @@ Packaged outputs ship with no source maps.
 - **UF7008:** a packager or what it needs isn't installed, a target has no packager yet, or the
   project has no types for React, Solid or Vue. Nothing is cleaned or written.
 - **UF7009:** a packager failed, and its message holds the packager's own error, with paths that name
-  the targets' trees, which are written by then. tsgo only exits with a code: it prints its errors on
-  standard output, above the diagnostic.
+  the targets' trees, which are written by then. The packagers write declarations without
+  type-checking, so this is a syntax error, or a type a declaration can't name.
 - **UF7002** at `/outDir`: cleaning `outDir/package` would delete the project, a source, or a file a
   source read.
 
