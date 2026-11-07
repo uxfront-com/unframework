@@ -2,8 +2,14 @@
   "name": "@unframework/e2e-design-system",
   "version": "0.0.0",
   "private": true,
-  "description": "The sample design system for the end-to-end apps. Its `src` is empty for now.",
+  "description": "The sample design system the end-to-end apps consume, written in the built subset.",
+  "files": [
+    "src"
+  ],
   "type": "module",
+  "exports": {
+    "./source/*": "./src/*"
+  },
   "devDependencies": {
     "@angular/common": "catalog:",
     "@angular/core": "catalog:",
