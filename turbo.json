@@ -33,6 +33,13 @@
       "dependsOn": ["transit"],
       "cache": false
     },
+    // Its test links the umbrella into a temporary project and runs its bin, but this package keeps
+    // no dependencies (plan §5.2), so `transit` alone doesn't hash them: a change to `init` must not
+    // replay a cached pass.
+    "create-unframework#test": {
+      "dependsOn": ["transit", "unframework#transit"],
+      "env": ["CI", "UF_*"]
+    },
     // The harness exercises its workspace dependencies (compiler, targets, unplugin, testing),
     // which `transit` hashes, and the checkers installed in tests/toolchains, which are no
     // dependency of it: their transit nodes carry their tsconfigs and locked versions. Its own

@@ -35,6 +35,14 @@ const COMMANDS: ReadonlyMap<string, Command> = new Map([
       load: () => import("./explain.ts"),
     },
   ],
+  [
+    "init",
+    {
+      usage: "init [--force]",
+      summary: "Scaffold a config, an example component, a tsconfig and AGENTS.md.",
+      load: () => import("./init.ts"),
+    },
+  ],
 ]);
 
 const USAGE = [
