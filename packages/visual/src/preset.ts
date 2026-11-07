@@ -1,14 +1,18 @@
 // The Storybook configuration every target's `.storybook/main.ts` shares, on `@storybook/html-vite`
 // with no addons: the components compile through the unplugin (ADR-0021), the build is a development
-// build as a Vitest browser project's is, and it leaves a manifest of what it compiled.
+// build as a Vitest browser project's is, and it leaves a manifest of what it compiled and failed.
 import { fileURLToPath } from "node:url";
 
 import { eventsOfModule, writeBuildManifest } from "@unframework/testing/node";
-import type { BuildManifest, BuildManifestModule } from "@unframework/testing/node";
+import type { BuildFailure, BuildManifest, BuildManifestModule } from "@unframework/testing/node";
 import unframework from "@unframework/unplugin/vite";
 import type { CompileEvent, UnframeworkOptions } from "@unframework/unplugin/vite";
 import { mergeConfig } from "vite";
 import type { InlineConfig, Plugin, UserConfig } from "vite";
+
+import { isolateFailures } from "./isolate.ts";
+
+export { buildIsolated } from "./isolate.ts";
 
 /** What a target's Storybook is made of. */
 export interface StorybookOptions {
@@ -39,7 +43,10 @@ export interface StorybookConfig {
 }
 
 /** Records each main module's events, and writes the manifest when the build has finished. */
-function manifestPlugin(options: StorybookOptions): {
+function manifestPlugin(
+  options: StorybookOptions,
+  failures: () => BuildFailure[],
+): {
   plugin: Plugin;
   record(event: CompileEvent): void;
 } {
@@ -68,9 +75,13 @@ function manifestPlugin(options: StorybookOptions): {
           target: options.target,
           root: options.root,
           modules: Object.fromEntries(modules),
-          failures: [],
+          failures: failures(),
         };
         writeBuildManifest(outDir, manifest);
+        // A build with failures still exits 0, so it says what it failed.
+        for (const { module, cause } of manifest.failures) {
+          console.error(`[uf] ${module}: ${cause.split("\n")[0]}`);
+        }
       },
     },
   };
@@ -101,19 +112,25 @@ export function createStorybookConfig(options: StorybookOptions): StorybookConfi
     core: { disableTelemetry: true, disableWhatsNewNotifications: true },
     features: FEATURES,
     async viteFinal(config) {
-      const manifest = manifestPlugin(options);
-      const merged = mergeConfig(mergeConfig(config, await options.vite()), {
+      const isolation = isolateFailures(options.root);
+      const manifest = manifestPlugin(options, isolation.failures);
+      const toolchain = await options.vite();
+      const framework = { ...toolchain, plugins: await isolation.wrap(toolchain.plugins) };
+      const merged = mergeConfig(mergeConfig(config, framework), {
         root: options.root,
         mode: "development",
         plugins: [
-          ...(await options.plugins()),
-          ...unframework({
-            ...options.unplugin,
-            onCompile(event) {
-              manifest.record(event);
-              return options.unplugin.onCompile?.(event);
-            },
-          }),
+          ...(await isolation.wrap([
+            ...(await options.plugins()),
+            ...unframework({
+              ...options.unplugin,
+              onCompile: isolation.guarded((event) => {
+                manifest.record(event);
+                return options.unplugin.onCompile?.(event);
+              }),
+            }),
+          ])),
+          isolation.plugin,
           manifest.plugin,
         ],
         resolve: { alias: hostAliases() },

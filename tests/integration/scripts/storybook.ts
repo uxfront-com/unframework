@@ -10,6 +10,7 @@ import type { Server } from "node:http";
 import { extname, join, normalize } from "node:path";
 
 import { RUN_SPEC, RUNNER_STORY } from "@unframework/visual";
+import { buildIsolated } from "@unframework/visual/preset";
 import { chromium } from "playwright";
 import type { Page } from "playwright";
 
@@ -92,8 +93,13 @@ function stopGroup(child: ChildProcess, signal: NodeJS.Signals): void {
 
 async function build(target: string): Promise<number> {
   const output = join(storybookDir(target), "storybook-static");
-  const child = storybook(target, ["build", "--quiet", "--output-dir", output], process.env);
-  return exited(child);
+  // Beside the stories' directories, which a start empties, and gitignored with them.
+  const aborts = join(ROOT, ".uf-cache", "storybook", `${target}.aborts.json`);
+  return buildIsolated(aborts, (env) =>
+    exited(
+      storybook(target, ["build", "--quiet", "--output-dir", output], { ...process.env, ...env }),
+    ),
+  );
 }
 
 /** A port nothing listens on now. */
