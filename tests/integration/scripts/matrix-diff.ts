@@ -6,7 +6,9 @@
 //
 // `matrix-diff.ts --stable <a1> <a2> <b1> <b2> [--case <id>]…`: the same over two runs of each
 // runner, for engines whose own cells change from run to run (ADR-0066). Only a cell whose status
-// is the same in both runs of each runner is compared, and only its status.
+// is the same in both runs of each runner is compared, and only its status. A cell absent from
+// one run of a runner is unstable, and one stable on a runner and absent from both runs of the
+// other differs.
 //
 // Exit 2 is a bad argument or a file that is not a matrix.
 import { readFileSync } from "node:fs";
@@ -210,6 +212,8 @@ export function parseDiffArgs(argv: readonly string[]): {
   return { files, stable, cases };
 }
 
+// `console.log`, not `process.stdout.write`: it ignores a reader that closes early (`| head`),
+// which would otherwise end the run on an unhandled EPIPE, with the wrong exit status.
 function list(heading: string, lines: readonly string[]): void {
   console.log(`${heading}: ${lines.length}`);
   for (const line of lines) console.log(`  ${line}`);
