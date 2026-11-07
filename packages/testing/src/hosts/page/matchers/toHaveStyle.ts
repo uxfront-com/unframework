@@ -99,7 +99,7 @@ function getStyleFromObjectCSS(css: Record<string, unknown>): Record<string, unk
   });
 
   const styles: Record<string, unknown> = {};
-  // to get normalized colors (blue -> rgb(0, 0, 255))
+  // to get normalised colours (blue -> rgb(0, 0, 255))
   const computedStyles = window.getComputedStyle(copy);
   keys.forEach((property) => {
     const styleSheet = usedValuesProps.has(property) ? copy.style : computedStyles;

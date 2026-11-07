@@ -38,10 +38,7 @@ export interface PageError {
 /** A command's answer. A thrown error crosses as data, since a binding's rejection loses its name. */
 export type PageCallResult = { ok: true; value: unknown } | { ok: false; error: PageError };
 
-/**
- * The input a command does not dispatch: the actions Playwright runs as one, with what Vitest's
- * `userEvent` calls them with (`locator` and `selector`, as a `SerializedLocatorLike`).
- */
+/** The actions Playwright runs as one, which Vitest's `userEvent` runs through its provider. */
 export type PageActionName = "ufUnhover" | "ufFill" | "ufClear" | "ufSelectOptions";
 
 /** A test's record, when it has finished. */

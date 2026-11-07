@@ -1,6 +1,6 @@
 // The page host's runner and clock, through the setup's judge: each test here that fails does so
 // on purpose, and `test/page-host.test.ts` reads each test's record.
-import { describe, expect, inject } from "vitest";
+import { expect, inject } from "vitest";
 
 import "../../../../../src/setup.ts";
 import { advanceClock } from "../../../../../src/browser/clock.ts";
@@ -108,7 +108,7 @@ describeTargets("stub/page-host", () => {
     expect(inject("target")).toBe("dom");
   });
 
-  describe("a nested suite", () => {
+  host().describe("a nested suite", () => {
     it("names the test by every suite", () => {
       expect(1).toBe(1);
     });

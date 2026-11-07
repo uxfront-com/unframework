@@ -1,7 +1,7 @@
 // The page host's `expect`: `@vitest/expect` with the plugins Vitest 5.0.3 uses that the corpus
 // needs, and `expect.element` over the ported matchers. An assertion's count, verdict and message
-// stay Vitest's, because L8 records them. Nothing else of Vitest's `expect` is here: the corpus
-// calls `expect` and `expect.element`, and the runtime `expect.stringMatching`.
+// stay Vitest's, because L8 records them. Nothing else of Vitest's `expect` is here: the corpus and
+// the runtime call `expect`, `expect.element` and `expect.stringMatching`.
 //
 // Ported from Vitest 5.0.3 (`vitest-dev/vitest@v5.0.3`, packages/vitest/src/integrations/chai and
 // packages/browser/src/client/tester/expect-element.ts). MIT License, Copyright (c) 2021-Present
