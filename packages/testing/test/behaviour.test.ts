@@ -8,7 +8,7 @@ import { runStubs } from "./parity/run-stubs.ts";
 
 it("records L8 in the parity matrix, and fails a stale L8 quarantine entry", async () => {
   // The run is of every project the reporter knows: complete, so staleness is judged.
-  const { status, output, tests, matrix } = await runStubs(
+  const { status, output, failed, fileProblems, matrix } = await runStubs(
     [
       "behaviour/behaviour.fails.spec.ts",
       "behaviour-known/behaviour-known.fails.spec.ts",
@@ -16,10 +16,6 @@ it("records L8 in the parity matrix, and fails a stale L8 quarantine entry", asy
     ],
     { complete: true },
   );
-  const failed = [...tests.values()]
-    .filter(({ state }) => state === "fail")
-    .map(({ name }) => name)
-    .toSorted();
   expect(failed, output).toEqual([
     "fails L8 when the test asserts nothing",
     "fails L8 when the unmount fails",
@@ -28,6 +24,7 @@ it("records L8 in the parity matrix, and fails a stale L8 quarantine entry", asy
     "fails L8 with the test's own failed assertion",
     "still fails when another layer fails too",
   ]);
+  expect(fileProblems, output).toEqual([]);
   const cells = matrix.cases;
   // Every failure of the cell's tests, each once, in the order of the tests.
   expect(cells["stub/behaviour"]?.dom?.L8, output).toMatch(

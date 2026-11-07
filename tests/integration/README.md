@@ -439,7 +439,9 @@ pnpm --filter @unframework/integration test:browser vue                         
 pnpm --filter @unframework/integration test:browser vue basics/hello state/counter # some cases
 ```
 
-`test:browser` reads the build `storybook:build` left, and makes one if there is none, so run `storybook:build` after you change a case or the compiler. The line it prints names the build it read. A canary (`UF_CANARY=<id>`) always builds, under `.canary/<id>/`, with only the cases you name, and its matrix goes beside that build. `UF_WORKERS` sets how many pages run at once, 3 by default, and `harness/playwright-rules.ts` holds the rules: no retries and no tolerance of its own. The Vitest `browser:<target>` projects stay, and `pnpm test` stays on them.
+`test:browser` reads the build `storybook:build` left, and makes one if there is none, so run `storybook:build` after you change a case or the compiler. The line it prints names the build it read.
+
+A canary (`UF_CANARY=<id>`) always builds, under `.canary/<id>/`, with only the cases you name, and its matrix goes beside that build. `UF_WORKERS` sets how many pages run at once, 3 by default, and `harness/playwright-rules.ts` holds the rules: no retries and no tolerance of its own. The Vitest `browser:<target>` projects stay, and `pnpm test` stays on them.
 
 ## Where things live
 

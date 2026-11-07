@@ -1,6 +1,7 @@
-// The browser commands the parity layers call. They run in Vitest's main process and read the
-// calling project's target and harness context per call (`test.provide`), so one set serves
-// every project of a run. Register them with `test.browser.commands: browserCommands`.
+// The browser commands the parity layers call. They run in Vitest's main process, or a Playwright
+// worker (`../driver/commands.ts`), and read the calling project's target and harness context per
+// call (`test.provide`), so one set serves every project of a run. Register them with
+// `test.browser.commands: browserCommands`.
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 

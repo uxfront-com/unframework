@@ -17,7 +17,7 @@ import { failureOf, runSpec, stallLimit } from "../src/driver/run.ts";
 import type { DriverBrowser, RunSpecOptions } from "../src/driver/run.ts";
 import { serveStatic } from "../src/driver/server.ts";
 import { PAGE_CALL, PAGE_REPORT } from "../src/hosts/page/protocol.ts";
-import type { PageEvent, PageHostConfig } from "../src/hosts/page/protocol.ts";
+import type { PageEvent, PageHostConfig, PageTestRecord } from "../src/hosts/page/protocol.ts";
 import { ACTION_TIMEOUT, CHROMIUM_ARGS, CONTEXT_OPTIONS } from "../src/node/browser-options.ts";
 import { VIEWPORT } from "../src/node/viewport.ts";
 import { fixtureHarness, casesDir, STUB_CAPABILITIES } from "./parity/project.ts";
@@ -340,6 +340,26 @@ describe("what nothing caught", () => {
     expect(outcome.tests[0]?.state).toBe("pass");
     expect(outcome.file.state).toBe("pass");
     expect(failureOf(outcome)).toBe("uncaught (page listener): Error: uf-probe");
+  });
+
+  it("names a failed test's images, and leaves a passing test's alone", async () => {
+    const artifacts = [
+      {
+        message: "uf-probe-visual",
+        attachments: [{ name: "diff" as const, path: "/diffs/a.png", width: 1, height: 1 }],
+      },
+    ];
+    const [browser] = fakeBrowser(async (page) => {
+      page.emit({ ...(passed("quarantined") as PageTestRecord), artifacts });
+      page.emit(fileRecord());
+    });
+    // A quarantined L10 leaves its images behind, and its test passes.
+    const outcome = await runSpec(options(browser));
+    expect(failureOf(outcome)).toBeUndefined();
+    const [test] = outcome.tests;
+    expect(failureOf({ ...outcome, tests: [{ ...test!, state: "fail" }] })).toContain(
+      "diff image: /diffs/a.png",
+    );
   });
 
   it("has nothing to say of a clean file", async () => {

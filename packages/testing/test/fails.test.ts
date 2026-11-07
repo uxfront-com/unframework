@@ -1,14 +1,15 @@
 // The stub tests that fail on purpose, which nothing inside a test can stand in for: L8, L9 and L13
 // are judged after the body. Each run expects exit 1, and reads each test's state from the
 // reporter's records, since a matrix test holds none. The 14 are the ones `it.fails` marked under
-// Vitest: this file runs the 7 no other test reaches, and counts them all. Also the page errors
-// (C3): nothing logged, on no layer, and still a failed run.
+// Vitest: `test/behaviour.test.ts` and `test/interactions.test.ts` read what 7 of them record, and
+// this file reads the others, and runs them all to count them. Also the page errors (C3): nothing
+// logged, on no layer, and still a failed run.
 import { expect, it } from "vitest";
 
 import { runStubs } from "./parity/run-stubs.ts";
 
-/** The 7 `test/behaviour.test.ts` and `test/interactions.test.ts` run, by name. */
-const ELSEWHERE = [
+/** Every test that fails on purpose, by name: a list, since the suffix's glob holds C3's stubs too. */
+const ON_PURPOSE = [
   "fails L8 with the test's own failed assertion",
   "fails L8 with an action on an element that is not there",
   "fails L8 when the test asserts nothing",
@@ -16,10 +17,6 @@ const ELSEWHERE = [
   "fails L8 with the error its afterEach threw",
   "still fails when another layer fails too",
   "fails L9 with a step no expectParity compared",
-];
-
-/** The 7 of this file. */
-const HERE = [
   "fails the test on an unexpected console.warn",
   "fails the test on an unexpected console.error with printf arguments",
   "fails the test on a message from the adapter's server render",
@@ -29,25 +26,20 @@ const HERE = [
   "fails the test, after its own assertions, with a layer that failed",
 ];
 
-it("counts the 14 tests that fail on purpose", () => {
-  expect(new Set([...ELSEWHERE, ...HERE]).size).toBe(14);
-});
-
-it("fails exactly the 7 of this file, and passes what reads their records", async () => {
-  const { status, output, tests } = await runStubs([
+it("fails exactly the 14, and passes every test that reads what they record", async () => {
+  expect(new Set(ON_PURPOSE).size).toBe(14);
+  const { status, output, tests, failed, fileProblems } = await runStubs([
+    "behaviour/behaviour.fails.spec.ts",
+    "behaviour-known/behaviour-known.fails.spec.ts",
+    "interactions/interactions.fails.spec.ts",
     "console/console.fails.spec.ts",
     "console-outside/console-outside.fails.spec.ts",
     "match/match.fails.spec.ts",
   ]);
-  expect(
-    [...tests.values()]
-      .filter(({ state }) => state === "fail")
-      .map(({ name }) => name)
-      .toSorted(),
-    output,
-  ).toEqual(HERE.toSorted());
+  expect(failed, output).toEqual(ON_PURPOSE.toSorted());
+  expect(fileProblems, output).toEqual([]);
   // The rest of each file read what those recorded, and passed.
-  expect(tests.size).toBeGreaterThan(HERE.length);
+  expect(tests.size).toBeGreaterThan(ON_PURPOSE.length);
   expect(status).toBe(1);
 }, 180_000);
 

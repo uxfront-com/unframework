@@ -14,15 +14,13 @@ const SKIP = "requires listbox: the stub target renders no list box";
 const SKIPPED = "skips a test that requires a list box, which the stub lacks";
 
 it("records each test's scenarios and capability skip, and L9, in the parity matrix", async () => {
-  const { status, output, tests, matrix } = await runStubs([
+  const { status, output, tests, failed, fileProblems, matrix } = await runStubs([
     "interactions/*.spec.ts",
     "requires/*.parity.spec.ts",
   ]);
   // The one test that leaves a step uncompared fails on purpose, and it alone.
-  expect(
-    [...tests.values()].filter(({ state }) => state === "fail").map(({ name }) => name),
-    output,
-  ).toEqual(["fails L9 with a step no expectParity compared"]);
+  expect(failed, output).toEqual(["fails L9 with a step no expectParity compared"]);
+  expect(fileProblems, output).toEqual([]);
   expect(status).toBe(1);
   // A skipped test that recorded why is no problem for the reporter.
   expect(output).not.toContain("problem(s) beyond the failed tests");

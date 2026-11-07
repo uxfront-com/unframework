@@ -255,6 +255,7 @@ export function failureOf({ tests, file }: SpecOutcome): string | undefined {
       ({ source, name, message }) => `uncaught (${source}): ${name ?? "Error"}: ${message}`,
     ),
     ...tests
+      .filter(({ state }) => state === "fail")
       .flatMap(({ artifacts }) => artifacts ?? [])
       .flatMap(({ attachments }) => attachments)
       .map(({ name, path }) => `${name} image: ${path}`),

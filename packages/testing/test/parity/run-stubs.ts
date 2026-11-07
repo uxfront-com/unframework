@@ -18,6 +18,10 @@ export interface StubRun {
   specs: ReportedSpec[];
   /** Every test's record, by its name: a stub file's names are its own. */
   tests: Map<string, PageTestRecord>;
+  /** The names of the tests that failed, sorted. */
+  failed: string[];
+  /** What failed outside any test: a hook's error, a load, a late L13 or an uncaught error. */
+  fileProblems: string[];
   matrix: PartialMatrix;
 }
 
@@ -66,6 +70,14 @@ export async function runStubs(
       output,
       specs: reported,
       tests: new Map(reported.flatMap(({ tests }) => tests.map((test) => [test.name, test]))),
+      failed: reported
+        .flatMap(({ tests }) => tests)
+        .filter(({ state }) => state === "fail")
+        .map(({ name }) => name)
+        .toSorted(),
+      fileProblems: reported.flatMap(({ file }) =>
+        [...(file.errors ?? []), ...file.uncaught].map(({ message }) => message),
+      ),
       matrix: JSON.parse(readFileSync(join(reports, matrixFile), "utf8")) as PartialMatrix,
     };
   } finally {
