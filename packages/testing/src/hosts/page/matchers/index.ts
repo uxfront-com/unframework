@@ -1,8 +1,9 @@
 // The `expect.element` matchers the corpus uses, ported from Vitest 5.0.3's browser client
 // (`vitest-dev/vitest@v5.0.3`, packages/browser/src/client/tester/expect), which ported them from
 // jest-dom. Each keeps Vitest's verdict and message, which L8 records (`test/page-host.test.ts`
-// compares both with what Vitest gives). A spec on any other matcher fails with chai's "not a
-// function", on the page host alone, so a new one gets ported here first.
+// compares both with what Vitest gives). Any other of Vitest's element matchers fails with chai's
+// "Invalid Chai property" on the page host alone, so a new one gets ported here first. A matcher of
+// chai's or `@vitest/expect`'s runs on the element, as on Vitest.
 //
 // Vitest: MIT License, Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors. jest-dom:
 // the MIT notice each file holds.

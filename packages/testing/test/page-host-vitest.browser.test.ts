@@ -26,6 +26,7 @@ const runner: FixtureRunner = {
   element: (subject, options) =>
     expect.element(subject as never, options) as unknown as Record<string, unknown>,
   expect: (actual) => expect(actual) as unknown as Record<string, unknown>,
+  stringMatching: (pattern) => expect.stringMatching(pattern),
   hover: (target) => userEvent.hover(asVitest(target)),
   unhover: (target) => userEvent.unhover(asVitest(target)),
   fill: (target, text) => userEvent.fill(asVitest(target), text, { timeout: ACTION_TIMEOUT }),

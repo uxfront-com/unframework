@@ -187,7 +187,13 @@ async function runTest({ test, fn, timeout }: TestEntry): Promise<void> {
     } catch (error) {
       fail(result, error);
     }
-    for (const check of test.onFinished?.toReversed() ?? []) check();
+    for (const check of test.onFinished?.toReversed() ?? []) {
+      try {
+        check();
+      } catch (error) {
+        fail(result, error);
+      }
+    }
     test.onFinished = undefined;
   };
   const wrapped = aroundEachs.reduceRight<() => Promise<void>>(
@@ -236,7 +242,7 @@ export async function runSpecFile(options: {
   const result: Failable = { state: "run" };
   try {
     await options.load();
-    if (!entries.length) throw new Error(`No test found in suite ${current.name}`);
+    if (!entries.length) throw new Error(`No test suite found in file ${current.filepath}`);
   } catch (error) {
     fail(result, error);
     return finishFile(current, result);

@@ -424,6 +424,62 @@
       "name": "Error",
       "message": "expect(element).not.toHaveAccessibleDescription()\n\nExpected element not to have accessible description:\n  About it\nReceived:\n  About it"
     },
+    "length-two": {
+      "verdict": "pass"
+    },
+    "length-one": {
+      "verdict": "pass"
+    },
+    "length-none": {
+      "verdict": "pass"
+    },
+    "length-element-wrong": {
+      "verdict": "fail",
+      "name": "AssertionError",
+      "message": "expected [ <p data-testid=\"subject\"></p>, …(1) ] to have a length of 3 but got 2"
+    },
+    "chai-truthy": {
+      "verdict": "pass"
+    },
+    "chai-unknown": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "Invalid Chai property: toBeNonsense"
+    },
+    "text-spaces-kept": {
+      "verdict": "pass"
+    },
+    "text-spaces-kept-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveTextContent()\n\nExpected element to have text content:\n  a b\nReceived:\n  a  b "
+    },
+    "attribute-matching": {
+      "verdict": "pass"
+    },
+    "attribute-matching-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveAttribute(\"title\", StringMatching /z/) // element.getAttribute(\"title\") === StringMatching /z/\n\nExpected the element to have attribute:\n  title=StringMatching /z/\nReceived:\n  title=\"abc\""
+    },
+    "attribute-not-absent": {
+      "verdict": "pass"
+    },
+    "checked-not-pass": {
+      "verdict": "pass"
+    },
+    "disabled-not-pass": {
+      "verdict": "pass"
+    },
+    "enabled-not-pass": {
+      "verdict": "pass"
+    },
+    "required-not-pass": {
+      "verdict": "pass"
+    },
+    "style-several": {
+      "verdict": "pass"
+    },
     "equal": {
       "verdict": "pass"
     },
@@ -497,6 +553,22 @@
     "textExact": {
       "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:text=\"Hello\"s",
       "locator": "getByTestId('uf-root-1').getByText('Hello')"
+    },
+    "textNotExact": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:text=\"Hello\"i",
+      "locator": "getByTestId('uf-root-1').getByText('Hello', { exact: false })"
+    },
+    "roleNotExact": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=button[name=\"Save\"i]",
+      "locator": "getByTestId('uf-root-1').getByRole('button', { name: 'Save', exact: false })"
+    },
+    "labelNotExact": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:label=\"Name\"i",
+      "locator": "getByTestId('uf-root-1').getByLabel('Name', { exact: false })"
+    },
+    "roleLevelName": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=heading[level=2][name=\"Title\"s]",
+      "locator": "getByTestId('uf-root-1').getByRole('heading', { name: 'Title', level: 2 })"
     },
     "textRegex": {
       "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:text=/hel+o/i",

@@ -52,6 +52,7 @@ describeTargets("stub/page-host", () => {
   it("fails a test that left an assertion unawaited", async () => {
     const view = await mount(hello);
     void expect.element(view.getByText("Hello")).toBeVisible();
+    void expect.element(view.getByText("Hello")).toHaveTextContent("Hello");
     expect(1).toBe(1);
   });
 
@@ -129,6 +130,18 @@ describeTargets("stub/page-host", () => {
     expect(name).toBe("VitestBrowserElementError");
     expect(message).toContain("\n\nHTML:\n");
     expect(message.endsWith("...")).toBe(true);
+  });
+
+  it("tries again until the assertion holds", async () => {
+    const view = await mount({ html: "<p>before</p>" } satisfies StubComponent);
+    setTimeout(() => {
+      view.container.querySelector("p")!.textContent = "after";
+    }, 100);
+    const start = Date.now();
+    await expect
+      .element(view.getByText(/before|after/), { timeout: 2_000 })
+      .toHaveTextContent("after");
+    expect(Date.now() - start).toBeLessThan(1_500);
   });
 
   it("moves the clock only through tick", async () => {

@@ -24,6 +24,7 @@ const runner: FixtureRunner = {
   element: (subject, options) =>
     expect.element(subject as never, options) as unknown as Record<string, unknown>,
   expect: (actual) => expect(actual) as unknown as Record<string, unknown>,
+  stringMatching: (pattern) => expect.stringMatching(pattern),
   hover: async (target) => {
     await host().commands.ufInput({ kind: "move", locator: target.serialize(), check: "hover" });
   },
@@ -33,19 +34,27 @@ const runner: FixtureRunner = {
   selectOptions: (target, values) => host().userEvent.selectOptions(asHost(target), values),
 };
 
+/** Bounds what the context waits for, around the actions that are to time out. */
+function setActionTimeout(ms: number): Promise<void> {
+  const { setActionTimeout: command } = host().commands as unknown as {
+    setActionTimeout(ms: number): Promise<void>;
+  };
+  return command(ms);
+}
+
 /** What the page sends Node when the tests are done, through the test's own metadata. */
 function record(task: { meta: object }, results: object): void {
   (task.meta as { results?: object }).results = results;
 }
 
 describeTargets("stub/page-host", () => {
-  it("matchers", async ({ task }) => {
-    record(task, await runMatchers(runner));
+  it("locators", ({ task }) => {
+    record(task, serializeLocators(runner));
     expect(1).toBe(1);
   });
 
-  it("locators", ({ task }) => {
-    record(task, serializeLocators(runner));
+  it("matchers", async ({ task }) => {
+    record(task, await runMatchers(runner));
     expect(1).toBe(1);
   });
 
@@ -65,12 +74,16 @@ describeTargets("stub/page-host", () => {
   });
 
   it("action timeouts", async ({ task }) => {
+    await setActionTimeout(300);
     record(task, await runActionTimeouts(runner));
+    await setActionTimeout(5_000);
     expect(1).toBe(1);
   });
 
   it("clear timeout", async ({ task }) => {
+    await setActionTimeout(300);
     record(task, await runClearTimeout(runner));
+    await setActionTimeout(5_000);
     expect(1).toBe(1);
   });
 });

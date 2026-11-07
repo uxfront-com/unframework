@@ -128,7 +128,7 @@ afterAll(async () => {
 /** Runs a stub spec in a page of its own, as the driver will, and waits for its file's record. */
 async function runSpec(
   spec: string,
-  options: { actionTimeout?: number; hookTimeout?: number; caseName?: string } = {},
+  options: { hookTimeout?: number; caseName?: string } = {},
 ): Promise<Run> {
   const context: BrowserContext = await browser.newContext({
     viewport: VIEWPORT,
@@ -139,7 +139,7 @@ async function runSpec(
     locale: "en-US",
     timezoneId: "UTC",
   });
-  context.setDefaultTimeout(options.actionTimeout ?? 5_000);
+  context.setDefaultTimeout(5_000);
   const page = await context.newPage();
   await page.goto(`${origin}/`);
   const frameElement = await page.waitForSelector(FRAME);
@@ -173,6 +173,7 @@ async function runSpec(
       ufFocus: (locator: never) => ufFocus(commandContext as never, locator),
       ufInput: (request: never) => ufInput(commandContext as never, request),
       ufResetInput: () => ufResetInput(commandContext as never),
+      setActionTimeout: (ms: never) => context.setDefaultTimeout(ms),
       ufUnhover: () => pageActions.ufUnhover(commandContext as never),
       ufFill: (locator: never, text: never) =>
         pageActions.ufFill(commandContext as never, locator, text),
@@ -237,11 +238,32 @@ describe("the page host, against Vitest's own answers", () => {
   let run: Run;
 
   beforeAll(async () => {
-    run = await runSpec("page-host/fixtures.page.spec.ts", { actionTimeout: 300 });
+    run = await runSpec("page-host/fixtures.page.spec.ts");
   }, 120_000);
 
   it("holds Vitest's answer to every fixture of the 14 matchers", () => {
-    expect(new Set(MATCHER_FIXTURES.map(({ matcher }) => matcher)).size).toBe(14);
+    expect(new Set(MATCHER_FIXTURES.map(({ matcher }) => matcher))).toEqual(
+      new Set([
+        "toBeChecked",
+        "toBeDisabled",
+        "toBeEnabled",
+        "toBeInTheDocument",
+        "toBeRequired",
+        "toBeVisible",
+        "toHaveAccessibleDescription",
+        "toHaveAttribute",
+        "toHaveClass",
+        "toHaveFocus",
+        "toHaveStyle",
+        "toHaveTextContent",
+        "toHaveValue",
+        "toMatchTextContent",
+        // Not ported: `toHaveLength` reads every match, and the other two are chai's business.
+        "toHaveLength",
+        "toBeTruthy",
+        "toBeNonsense",
+      ]),
+    );
     expect(Object.keys(recorded.matchers)).toEqual([
       ...MATCHER_FIXTURES.map(({ id }) => id),
       ...VALUE_FIXTURES.map(({ id }) => id),
@@ -342,9 +364,11 @@ describe("the page host's runner", () => {
   it("fails an assertion nobody awaited", () => {
     const record = test("fails a test that left an assertion unawaited");
     expect(record.state).toBe("fail");
-    expect(record.errors?.at(-1)?.message).toContain(
-      "expect.element(locator).toBeVisible() was not awaited.",
-    );
+    // Each one, as Vitest records both.
+    expect(record.errors?.map(({ message }) => message.split(" was ")[0])).toEqual([
+      "expect.element(locator).toHaveTextContent()",
+      "expect.element(locator).toBeVisible()",
+    ]);
   });
 
   it("fails a test past its time, naming the setting", () => {
@@ -413,6 +437,12 @@ describe("the page host's runner", () => {
   it("cuts a long page out of an element error", () => {
     const record = test("cuts a long page out of an element error at Vitest's limit");
     expect(record.meta.uf?.layers.L8).toEqual({ status: "pass" });
+  });
+
+  it("tries an assertion again, at Vitest's interval", () => {
+    const record = test("tries again until the assertion holds");
+    expect(record.errors).toBeUndefined();
+    expect(record.state).toBe("pass");
   });
 
   it("moves the clock only through tick", () => {
@@ -504,6 +534,20 @@ describe("a test the setup skips", () => {
   }, 60_000);
 });
 
+describe("a locator made before anything has queried the page", () => {
+  it("is exact, as Vitest's, and keeps its strings", async () => {
+    const run = await runSpec("page-first-query/page-first-query.fails.spec.ts");
+    const record = run.tests.get("names a button whose name another holds");
+    expect(record?.errors).toBeUndefined();
+    expect(record?.state).toBe("pass");
+    expect(record?.meta.uf?.layers.L8).toEqual({ status: "pass" });
+    expect((record?.meta as { results?: unknown }).results).toEqual({
+      selector: 'internal:testid=[data-testid="uf-root-1"s] >> internal:text="Shipping"i',
+      locator: "getByTestId('uf-root-1').getByText('Shipping', { exact: false })",
+    });
+  }, 60_000);
+});
+
 describe("a test with a quarantined L8", () => {
   it("passes, with its own errors gone from its result", async () => {
     const run = await runSpec("page-quarantine/page-quarantine.fails.spec.ts", {
@@ -546,7 +590,7 @@ describe("a file's own failures", () => {
   it("fails a file with no tests", async () => {
     const run = await runSpec("page-empty/page-empty.fails.spec.ts");
     expect(run.file.state).toBe("fail");
-    expect(run.file.errors?.[0]?.message).toBe("No test found in suite page-empty.fails.spec.ts");
+    expect(run.file.errors?.[0]?.message).toBe(`No test suite found in file ${run.file.filepath}`);
   }, 60_000);
 
   it("skips the tests of a beforeAll that throws, with no records", async () => {

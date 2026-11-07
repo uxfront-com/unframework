@@ -41,6 +41,7 @@ export interface FixtureRunner {
   >;
   element(subject: unknown, options: { timeout: number }): Record<string, unknown>;
   expect(actual: unknown): Record<string, unknown>;
+  stringMatching(expected: RegExp): unknown;
   hover(target: FixtureLocator): Promise<void>;
   unhover(target: FixtureLocator): Promise<void>;
   fill(target: FixtureLocator, text: string): Promise<void>;
@@ -59,6 +60,8 @@ export interface MatcherFixture {
   subject?: "element" | "null" | "detached" | "text" | "object";
   /** Moves the focus to the subject first. */
   focus?: boolean;
+  /** Appended to the arguments, as `expect.stringMatching` of this pattern. */
+  matching?: RegExp;
 }
 
 const input = '<input data-testid="subject" value="text">';
@@ -550,6 +553,88 @@ export const MATCHER_FIXTURES: readonly MatcherFixture[] = [
     args: ["About it"],
     not: true,
   },
+  // What isn't one of the 14: `toHaveLength` reads every match, chai's own matchers read the
+  // element, and an unknown name is refused.
+  {
+    id: "length-two",
+    html: '<p data-testid="subject">a</p><p data-testid="subject">b</p>',
+    matcher: "toHaveLength",
+    args: [2],
+  },
+  { id: "length-one", html: '<p data-testid="subject">a</p>', matcher: "toHaveLength", args: [1] },
+  { id: "length-none", html: "<p>x</p>", matcher: "toHaveLength", args: [0] },
+  {
+    id: "length-element-wrong",
+    html: '<p data-testid="subject">a</p><p data-testid="subject">b</p>',
+    matcher: "toHaveLength",
+    args: [3],
+  },
+  { id: "chai-truthy", html: '<p data-testid="subject">a</p>', matcher: "toBeTruthy" },
+  { id: "chai-unknown", html: '<p data-testid="subject">a</p>', matcher: "toBeNonsense" },
+  // Forms of the 14 that the corpus uses.
+  {
+    id: "text-spaces-kept",
+    html: '<p data-testid="subject">  a  b </p>',
+    matcher: "toHaveTextContent",
+    args: ["  a  b ", { normalizeWhitespace: false }],
+  },
+  {
+    id: "text-spaces-kept-wrong",
+    html: '<p data-testid="subject">  a  b </p>',
+    matcher: "toHaveTextContent",
+    args: ["a b", { normalizeWhitespace: false }],
+  },
+  {
+    id: "attribute-matching",
+    html: '<p data-testid="subject" title="abc">x</p>',
+    matcher: "toHaveAttribute",
+    args: ["title"],
+    matching: /b/,
+  },
+  {
+    id: "attribute-matching-wrong",
+    html: '<p data-testid="subject" title="abc">x</p>',
+    matcher: "toHaveAttribute",
+    args: ["title"],
+    matching: /z/,
+  },
+  {
+    id: "attribute-not-absent",
+    html: '<p data-testid="subject">x</p>',
+    matcher: "toHaveAttribute",
+    args: ["title"],
+    not: true,
+  },
+  {
+    id: "checked-not-pass",
+    html: '<input data-testid="subject" type="checkbox">',
+    matcher: "toBeChecked",
+    not: true,
+  },
+  {
+    id: "disabled-not-pass",
+    html: '<button data-testid="subject">x</button>',
+    matcher: "toBeDisabled",
+    not: true,
+  },
+  {
+    id: "enabled-not-pass",
+    html: '<button data-testid="subject" disabled>x</button>',
+    matcher: "toBeEnabled",
+    not: true,
+  },
+  {
+    id: "required-not-pass",
+    html: '<input data-testid="subject">',
+    matcher: "toBeRequired",
+    not: true,
+  },
+  {
+    id: "style-several",
+    html: '<p data-testid="subject" style="color:red;display:block;width:10px">x</p>',
+    matcher: "toHaveStyle",
+    args: [{ color: "rgb(255, 0, 0)", display: "block", width: "10px" }],
+  },
 ];
 
 /** The assertions the runtime and the corpus make on plain values, which `@vitest/expect` gives. */
@@ -627,7 +712,8 @@ export async function runMatchers(runner: FixtureRunner): Promise<Record<string,
         string,
         (...args: readonly unknown[]) => unknown
       >;
-      return target[fixture.matcher]!(...(fixture.args ?? []));
+      const asymmetric = fixture.matching ? [runner.stringMatching(fixture.matching)] : [];
+      return target[fixture.matcher]!(...(fixture.args ?? []), ...asymmetric);
     });
     box.remove();
     (document.activeElement as HTMLElement | null)?.blur();
@@ -658,6 +744,10 @@ export function serializeLocators(runner: FixtureRunner): Record<string, unknown
     roleSelected: root.getByRole("option", { selected: true }),
     text: root.getByText("Hello"),
     textExact: root.getByText("Hello", { exact: true }),
+    textNotExact: root.getByText("Hello", { exact: false }),
+    roleNotExact: root.getByRole("button", { name: "Save", exact: false }),
+    labelNotExact: root.getByLabelText("Name", { exact: false }),
+    roleLevelName: root.getByRole("heading", { level: 2, name: "Title" }),
     textRegex: root.getByText(/hel+o/i),
     textQuotes: root.getByText(`it's "quoted"`),
     label: root.getByLabelText("Name"),
@@ -761,7 +851,9 @@ export async function runActions(runner: FixtureRunner): Promise<Record<string, 
   const seen: string[] = [];
   // Only the fixture's own elements: where the mouse lands on the body depends on the page's CSS,
   // which the setup's reset changes on the page host's run.
-  for (const type of ["input", "change", "mouseenter", "mouseleave"]) {
+  // No `mouseenter`: on Vitest's frame the button sits under the resting mouse at (0,0), and Linux
+  // sends it when the button appears.
+  for (const type of ["input", "change", "mouseleave"]) {
     box.addEventListener(
       type,
       (event) => {

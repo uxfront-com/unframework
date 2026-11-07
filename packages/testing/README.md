@@ -194,11 +194,9 @@ errors>` on every layer, and the summary excuses it on that target alone. A case
   naming the setup file to load.
 - **The page host** (`src/hosts/page/`) implements the same port with no Vitest in the page, on
   `@vitest/expect`, `ivya` and `@sinonjs/fake-timers`. It holds a runner for `describeTargets` and
-  `it` (`runSpecFile`, from `@unframework/testing/hosts/page/run`), in Vitest's order and with its
-  error texts, and without retries, repeats or concurrency. It also holds the 14 `expect.element` matchers
+  `it` (`runSpecFile`, from `@unframework/testing/hosts/page/run`), in Vitest's order and with its error texts, apart from the operation a timed-out test was waiting for, and without retries, repeats or concurrency. It also holds the 14 `expect.element` matchers
   the corpus uses, which keep Vitest's verdicts and messages, and locators that keep the strings
-  a trace holds. A matcher the corpus doesn't use fails as not a function, so a new one is
-  ported first. Unlike Vitest's, its `expect.element` never advances a view's clock when it tries
+  a trace holds. Any other of Vitest's element matchers fails with `Invalid Chai property`, so a new one is ported first, while a matcher of `@vitest/expect`'s runs on the element, or on every match for `toHaveLength`, as on Vitest. Unlike Vitest's, its `expect.element` never advances a view's clock when it tries
   again, so the clock moves only through `tick`. Its listeners report an error or a rejection
   that has a value, which nothing caught in the page, on the file's record, and pass one with no
   value to `console.error`, so L13 judges it. `@unframework/testing/hosts/page/vitest` is what a
@@ -431,4 +429,4 @@ them in Chromium with the `playwright` library. It compares the matchers, the lo
 actions on `test/page-host/fixtures.ts` with `test/page-host/vitest-results.json`.
 `test/page-host-vitest.browser.test.ts` holds that file to Vitest's own answers, and
 `VITE_UF_RECORD=1 pnpm exec vitest run --project browser test/page-host-vitest.browser.test.ts`
-rewrites it, for `pnpm exec oxfmt` to format. The `*.fails.spec.ts` stubs fail on purpose, so the parity suite's glob skips them.
+rewrites it, for `pnpm exec oxfmt` to format. The `*.fails.spec.ts` stubs are for that test alone, and most fail on purpose, so the parity suite's glob skips them.

@@ -222,6 +222,7 @@ function element(
     const isNot = chai.util.flag(this, "negate") as boolean;
     const name = chai.util.flag(this, "_name") as string;
     if (isNot && name === "toBeInTheDocument") return subject.query();
+    if (name === "toHaveLength") return subject.elements();
     return subject.findElement({
       ...options,
       ...(deadline === undefined ? {} : { timeout: Math.max(deadline - Date.now(), 0) }),

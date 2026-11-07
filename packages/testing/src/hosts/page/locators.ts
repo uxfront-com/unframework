@@ -37,18 +37,17 @@ const WAIT_INTERVALS = [0, 20, 50, 100, 100, 500];
 /** The most of the page's HTML an element error prints, as Vitest's default `DEBUG_PRINT_LIMIT`. */
 const PRINT_LIMIT = 7000;
 
-let engine: Ivya | undefined;
-
-/** The selector engine. Made on first use, when the driver's config is there to read. */
-function selectorEngine(): Ivya {
-  engine ??= Ivya.create({
-    // Vitest's default `browser.locators.exact`, which the strings a trace holds were made under.
-    exact: true,
-    browser: pageBrowser(),
-    testIdAttribute: TEST_ID_ATTRIBUTE,
-  });
-  return engine;
-}
+/**
+ * The selector engine. Made as this module loads, as Vitest's is, because `Ivya.create` also sets
+ * what the `getBy*` helpers read when a locator is built: a locator made before it would be neither
+ * exact nor name itself as Vitest's does.
+ */
+const selectorEngine: Ivya = Ivya.create({
+  // Vitest's default `browser.locators.exact`, which the strings a trace holds were made under.
+  exact: true,
+  browser: pageBrowser(),
+  testIdAttribute: TEST_ID_ATTRIBUTE,
+});
 
 /** What marks a locator for `expect.element`, whichever copy of this module made it. */
 export const LOCATOR_MARK: unique symbol = Symbol.for("$$vitest:locator");
@@ -124,7 +123,7 @@ export class PageLocator {
   }
 
   query(): HTMLElement | SVGElement | null {
-    return selectorEngine().querySelector(this.parsedSelector(), document.documentElement, true) as
+    return selectorEngine.querySelector(this.parsedSelector(), document.documentElement, true) as
       | HTMLElement
       | SVGElement
       | null;
@@ -137,7 +136,7 @@ export class PageLocator {
   }
 
   elements(): (HTMLElement | SVGElement)[] {
-    return selectorEngine().querySelectorAll(this.parsedSelector(), document.documentElement) as (
+    return selectorEngine.querySelectorAll(this.parsedSelector(), document.documentElement) as (
       | HTMLElement
       | SVGElement
     )[];
@@ -149,7 +148,7 @@ export class PageLocator {
 
   all(): PageLocator[] {
     return this.elements().map(
-      (element) => new PageLocator(selectorEngine().generateSelectorSimple(element), element),
+      (element) => new PageLocator(selectorEngine.generateSelectorSimple(element), element),
     );
   }
 
@@ -202,7 +201,7 @@ export class PageLocator {
   }
 
   private parsedSelector(): ParsedSelector {
-    this.parsed ??= selectorEngine().parseSelector(this.selector);
+    this.parsed ??= selectorEngine.parseSelector(this.selector);
     return this.parsed;
   }
 }
@@ -229,8 +228,8 @@ function elementError(locator: PageLocator, container: Element): Error {
 
 function strictModeError(locator: PageLocator, matches: readonly Element[]): Error {
   const lines = matches.slice(0, 10).map((match, index) => {
-    const preview = selectorEngine().previewNode(match);
-    const selector = selectorEngine().generateSelectorSimple(match);
+    const preview = selectorEngine.previewNode(match);
+    const selector = selectorEngine.generateSelectorSimple(match);
     return `\n    ${index + 1}) ${preview} aka ${asLocator("javascript", selector)}`;
   });
   if (matches.length > 10) lines.push("\n    ...");
