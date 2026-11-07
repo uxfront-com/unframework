@@ -142,11 +142,10 @@ describe("createPreview", () => {
     expect(showMain).toHaveBeenCalledOnce();
   });
 
-  it("empties the canvas when a mount throws, so the error display is all that shows", async () => {
+  it("keeps nothing to unmount when a mount throws, so the next story mounts", async () => {
     const { mount, render } = setup();
     mount.mockRejectedValueOnce(new Error("boom"));
     await expect(render("a--one", {}, { forceRemount: true })).rejects.toThrow("boom");
-    // Nothing is left to unmount: the next story mounts on a clean slate.
     await render("a--two", {});
     expect(mount).toHaveBeenCalledTimes(2);
   });

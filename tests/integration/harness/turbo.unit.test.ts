@@ -27,10 +27,10 @@ interface DryTask {
   dependencies: string[];
 }
 
-function dryRun(): DryTask[] {
+function dryRun(task = "test"): DryTask[] {
   const result = spawnSync(
     join(REPO_ROOT, "node_modules", ".bin", "turbo"),
-    ["run", "test", "--dry=json", "--filter=@unframework/integration"],
+    ["run", task, "--dry=json", "--filter=@unframework/integration"],
     { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
   );
   if (result.error) throw result.error;
@@ -53,9 +53,11 @@ describe("the integration test task", () => {
       expect(inputs).toContain(`../storybook/${target}/.storybook/main.ts`);
     }
     expect(inputs).toContain("../../packages/visual/src/preset.ts");
-    expect(inputs.filter((path) => /storybook-static|\.uf-cache|node_modules/.test(path))).toEqual(
-      [],
-    );
+    expect(
+      inputs.filter((path) =>
+        /storybook-static|\.uf-cache|node_modules|packages\/visual\/(?:dist|\.turbo)\//.test(path),
+      ),
+    ).toEqual([]);
   });
 
   it("hashes every toolchain's tsconfig and lint configurations through its transit node", () => {
@@ -73,6 +75,19 @@ describe("the integration test task", () => {
       expect(transit?.dependencies, id).toContain(`${host}#transit`);
       const hostTransit = tasks.find((task) => task.taskId === `${host}#transit`);
       expect(Object.keys(hostTransit?.inputs ?? {}), host).toContain("eslint.config.js");
+    }
+  });
+});
+
+describe("the integration type check", () => {
+  it("hashes each target's .storybook files, which its program includes", () => {
+    const task = dryRun("check-types").find(
+      ({ taskId }) => taskId === "@unframework/integration#check-types",
+    )!;
+    const inputs = Object.keys(task.inputs);
+    for (const target of selectTargets(undefined)) {
+      expect(inputs).toContain(`../storybook/${target}/.storybook/main.ts`);
+      expect(inputs).toContain(`../storybook/${target}/.storybook/preview.ts`);
     }
   });
 });

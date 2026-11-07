@@ -32,14 +32,15 @@ export interface BuildManifest {
   failures: BuildFailure[];
 }
 
-/** Writes a build's manifest, its modules sorted, so two equal builds write one text. */
+/** Writes a build's manifest, its modules and failures sorted, so two equal builds write one text. */
 export function writeBuildManifest(directory: string, manifest: BuildManifest): void {
   const modules = Object.fromEntries(
     Object.entries(manifest.modules).toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
   );
+  const failures = manifest.failures.toSorted((a, b) => (a.module < b.module ? -1 : 1));
   writeFileSync(
     join(directory, BUILD_MANIFEST),
-    `${JSON.stringify({ ...manifest, modules }, null, 2)}\n`,
+    `${JSON.stringify({ ...manifest, modules, failures }, null, 2)}\n`,
   );
 }
 

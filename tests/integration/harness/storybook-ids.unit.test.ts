@@ -60,8 +60,8 @@ describe("the stories of the corpus", () => {
     const listbox = stories.filter(({ title }) => title === "semantics/listbox");
     expect(listbox.length).toBeGreaterThan(0);
     for (const story of listbox) expect(story.noOutput).toContain("has no output for this target");
-    expect(stories.filter((story) => story.noOutput).map(({ title }) => title)).toEqual(
-      listbox.map(({ title }) => title),
+    expect([...new Set(stories.flatMap((story) => (story.noOutput ? [story.title] : [])))]).toEqual(
+      Object.keys(missing).filter((id) => stories.some((story) => story.title === id)),
     );
     const others = targetStories(corpus, "react").filter(
       ({ title }) => title === "semantics/listbox",
@@ -129,9 +129,11 @@ describe("storiesDir", () => {
   it("keeps a start that names cases apart from a whole build, which it would otherwise empty", () => {
     expect(storiesDir("vue", undefined, "/root")).toBe("/root/.uf-cache/storybook/vue");
     expect(storiesDir("vue", "", "/root")).toBe("/root/.uf-cache/storybook/vue");
-    expect(storiesDir("vue", "basics/hello,state/counter", "/root")).toBe(
-      "/root/.uf-cache/storybook/vue--basics-hello-state-counter",
-    );
+    const kept = storiesDir("vue", "basics/hello,state/counter", "/root");
+    expect(kept).toMatch(/^\/root\/\.uf-cache\/storybook\/vue--[0-9a-f]{12}$/);
+    expect(storiesDir("vue", "basics/hello", "/root")).not.toBe(kept);
+    // However many cases it names, it stays a file name.
+    expect(storiesDir("vue", "basics/hello,".repeat(100), "/root").length).toBe(kept.length);
   });
 });
 

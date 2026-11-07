@@ -3,9 +3,9 @@
 // when `matchers-object` is free, so the copy this page host uses would find no
 // `$$jest-matchers-object`, and its first `expect` would throw. This module runs ahead of that copy,
 // and gives it the one global it can't have made. Storybook's copy keeps its own.
-const MATCHERS_OBJECT = Symbol.for("matchers-object");
-const JEST_MATCHERS_OBJECT = Symbol.for("$$jest-matchers-object");
-const GLOBAL_EXPECT = Symbol.for("expect-global");
+const MATCHERS_OBJECT: symbol = Symbol.for("matchers-object");
+const JEST_MATCHERS_OBJECT: symbol = Symbol.for("$$jest-matchers-object");
+const GLOBAL_EXPECT: symbol = Symbol.for("expect-global");
 
 const page = globalThis as unknown as Record<symbol, unknown>;
 

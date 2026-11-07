@@ -63,6 +63,7 @@ describe("createStorybookConfig", () => {
     const final = await createStorybookConfig(options()).viteFinal({});
     const names = flat(final).map((plugin) => plugin.name);
     expect(names).toContain("framework");
+    expect(names).toContain("engine");
     expect(names.indexOf("engine")).toBeLessThan(names.indexOf("unframework"));
     expect(final.resolve?.dedupe).toEqual(["vue"]);
   });

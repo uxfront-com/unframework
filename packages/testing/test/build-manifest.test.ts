@@ -19,7 +19,10 @@ const manifest: BuildManifest = {
     "/root/b/B.uf.tsx": { events: [{ name: "change", optional: [false] }] },
     "/root/a/A.uf.tsx": { error: "two components declare different events" },
   },
-  failures: [{ module: "/root/c/C.uf.tsx.vue", cause: "ngtsc refused it" }],
+  failures: [
+    { module: "/root/c/C.uf.tsx.vue", cause: "ngtsc refused it" },
+    { module: "/root/d/D.uf.tsx.vue", cause: "plugin-vue refused it" },
+  ],
 };
 
 describe("the build manifest", () => {
@@ -36,6 +39,7 @@ describe("the build manifest", () => {
   it("reads what it wrote", () => {
     writeBuildManifest(directory, manifest);
     expect(readBuildManifest(directory)).toEqual(manifest);
+    expect(readBuildManifest(directory).failures).toEqual(manifest.failures);
   });
 
   it("writes one text for two equal builds, whatever order they compiled in", () => {
@@ -44,6 +48,7 @@ describe("the build manifest", () => {
     writeBuildManifest(directory, {
       ...manifest,
       modules: Object.fromEntries(Object.entries(manifest.modules).toReversed()),
+      failures: manifest.failures.toReversed(),
     });
     expect(readFileSync(join(directory, BUILD_MANIFEST), "utf8")).toBe(text);
     expect(text.indexOf("/root/a/A.uf.tsx")).toBeLessThan(text.indexOf("/root/b/B.uf.tsx"));

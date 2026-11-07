@@ -16,18 +16,21 @@ import type { Page } from "playwright";
 import { listCases } from "../harness/cases.ts";
 import { noOutputCases } from "../harness/no-output.ts";
 import { ROOT } from "../harness/paths.ts";
+import {
+  catalogueProblems,
+  isSpecChunk,
+  noOutputStories,
+  parseCommand,
+  runnerProblems,
+  storyProblem,
+} from "../harness/storybook-check.ts";
+import type { StoryPage } from "../harness/storybook-check.ts";
 import { CASES_ENV, selectCases, storybookDir, targetStories } from "../harness/storybook.ts";
-import { selectTargets } from "../harness/targets.ts";
 
-const USAGE =
-  "Usage: storybook.ts serve <target> [--cases <id>[,<id>…]] | build <target> | check <target> [--story <id>]";
 /** How long a dev server has to answer, and a story to render. */
 const READY_MS = 90_000;
 const STORY_MS = 30_000;
 const STOP_GRACE_MS = 3000;
-
-/** The chunk a spec builds to: `counter.test-<hash>.js`. */
-const SPEC_CHUNK = /\/assets\/[^/]*\.test-[^/]*\.js$/;
 
 const TYPES: Record<string, string> = {
   ".css": "text/css",
@@ -38,17 +41,19 @@ const TYPES: Record<string, string> = {
   ".woff2": "font/woff2",
 };
 
-/** Storybook's CLI, in the target's own package, run from the Vite root. */
+/**
+ * Storybook's CLI, in the target's own package, run from the Vite root. It sits in a group of its
+ * own, so what it starts stops with it, and a signal to this process reaches it only from here.
+ */
 function storybook(target: string, args: readonly string[], env: NodeJS.ProcessEnv): ChildProcess {
   const directory = storybookDir(target);
-  return spawn(
+  const child = spawn(
     join(directory, "node_modules", ".bin", "storybook"),
     [...args, "--config-dir", join(directory, ".storybook")],
     {
       cwd: ROOT,
       // The stdout is the command's own: one line says where the server is.
       stdio: ["ignore", process.stderr, "inherit"],
-      // A group of its own, so what the CLI starts stops with it.
       detached: true,
       env: {
         ...env,
@@ -59,6 +64,13 @@ function storybook(target: string, args: readonly string[], env: NodeJS.ProcessE
       },
     },
   );
+  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
+    process.on(signal, () => {
+      stopGroup(child, "SIGTERM");
+      setTimeout(() => stopGroup(child, "SIGKILL"), STOP_GRACE_MS).unref();
+    });
+  }
+  return child;
 }
 
 function exited(child: ChildProcess): Promise<number> {
@@ -106,12 +118,6 @@ async function serve(target: string, cases: string | undefined): Promise<number>
     { ...process.env, ...(cases ? { [CASES_ENV]: cases } : {}) },
   );
   const exit = exited(child);
-  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
-    process.on(signal, () => {
-      stopGroup(child, "SIGTERM");
-      setTimeout(() => stopGroup(child, "SIGKILL"), STOP_GRACE_MS).unref();
-    });
-  }
   const deadline = Date.now() + READY_MS;
   let ready = false;
   let ended = false;
@@ -157,18 +163,10 @@ function serveStatic(directory: string): Promise<{ server: Server; origin: strin
   });
 }
 
-/** What opening a story found. */
-interface StoryResult {
-  error: string | undefined;
-  empty: boolean;
-  noOutput: boolean;
-  text: string;
-}
-
-/** Waits for the story on the page to finish rendering, and reads its root. */
-async function readStory(page: Page, id: string): Promise<StoryResult> {
-  try {
-    await page.waitForFunction(
+/** Waits for the story on the page to finish rendering, and reads what it shows. */
+async function readStory(page: Page, id: string): Promise<StoryPage> {
+  const finished = await page
+    .waitForFunction(
       (story) => {
         const render = (
           window as unknown as {
@@ -184,25 +182,24 @@ async function readStory(page: Page, id: string): Promise<StoryResult> {
       },
       id,
       { timeout: STORY_MS },
+    )
+    .then(
+      () => true,
+      () => false,
     );
-  } catch {
-    return { error: "it did not finish rendering", empty: true, noOutput: false, text: "" };
-  }
-  return page.evaluate(() => {
+  const found = await page.evaluate(() => {
     const root = document.querySelector<HTMLElement>("#storybook-root");
     const { classList } = document.body;
-    const error = classList.contains("sb-show-errordisplay")
-      ? (document.querySelector("#error-message")?.textContent ?? "the error display is showing")
-      : classList.contains("sb-show-nopreview")
-        ? "Storybook has no preview of it"
-        : undefined;
     return {
-      error,
-      empty: !root || (root.childElementCount === 0 && !root.textContent.trim()),
+      showsError: classList.contains("sb-show-errordisplay"),
+      errorMessage: document.querySelector("#error-message")?.textContent ?? undefined,
+      noPreview: classList.contains("sb-show-nopreview"),
+      root: root ? { elements: root.childElementCount, content: root.textContent } : undefined,
       noOutput: Boolean(root?.querySelector("[data-uf-no-output]")),
       text: root?.innerText ?? "",
     };
   });
+  return { ...found, finished };
 }
 
 /** Opens the next story in the same page, as the manager does. */
@@ -220,16 +217,12 @@ async function selectStory(page: Page, id: string): Promise<void> {
 /** The runner story, in a page of its own load: nothing rendered, and ready to run a spec. */
 async function checkRunner(page: Page, origin: string): Promise<string[]> {
   await page.goto(`${origin}/iframe.html?id=${RUNNER_STORY}&viewMode=story`);
-  const result = await readStory(page, RUNNER_STORY);
+  const found = await readStory(page, RUNNER_STORY);
   const ready = await page.evaluate(
     (name) => typeof (globalThis as Record<string, unknown>)[name] === "function",
     RUN_SPEC,
   );
-  return [
-    ...(result.error === undefined ? [] : [`${RUNNER_STORY}: ${result.error}`]),
-    ...(result.empty ? [] : [`${RUNNER_STORY}: it rendered something`]),
-    ...(ready ? [] : [`${RUNNER_STORY}: it doesn't set ${RUN_SPEC}`]),
-  ];
+  return runnerProblems(RUNNER_STORY, found, RUN_SPEC, ready);
 }
 
 /** The ids of a build's stories, without the runner's. */
@@ -243,11 +236,6 @@ function builtStories(directory: string): string[] {
     .toSorted();
 }
 
-function difference(a: readonly string[], b: readonly string[]): string[] {
-  const other = new Set(b);
-  return a.filter((each) => !other.has(each));
-}
-
 /** `--story`: prints a story's text. Otherwise walks every story of the build in one page. */
 async function check(target: string, story: string | undefined): Promise<number> {
   const directory = join(storybookDir(target), "storybook-static");
@@ -258,7 +246,6 @@ async function check(target: string, story: string | undefined): Promise<number>
   const built = builtStories(directory);
   const cases = listCases();
   const stories = targetStories(cases, target);
-  const expected = stories.map(({ id }) => id).toSorted();
   if (story !== undefined && !built.includes(story)) {
     console.error(`[uf] The ${target} build holds no story ${story}.`);
     return 1;
@@ -269,46 +256,32 @@ async function check(target: string, story: string | undefined): Promise<number>
     const page = await browser.newPage();
     const specChunks: string[] = [];
     page.on("request", (request) => {
-      if (SPEC_CHUNK.test(new URL(request.url()).pathname)) specChunks.push(request.url());
+      if (isSpecChunk(new URL(request.url()).pathname)) specChunks.push(request.url());
     });
     const open = (id: string) => page.goto(`${origin}/iframe.html?id=${id}&viewMode=story`);
     if (story !== undefined) {
       await open(story);
-      const result = await readStory(page, story);
-      console.log(result.text);
-      if (result.error !== undefined) console.error(`[uf] ${story}: ${result.error}`);
-      return result.error === undefined ? 0 : 1;
+      const found = await readStory(page, story);
+      console.log(found.text);
+      const problem = storyProblem(found);
+      if (problem !== undefined) console.error(`[uf] ${story}: ${problem}`);
+      return problem === undefined ? 0 : 1;
     }
-    const problems = [
-      ...difference(expected, built).map(
-        (id) => `${id}: the generator lists it, the build lacks it`,
-      ),
-      ...difference(built, expected).map(
-        (id) => `${id}: the build holds it, the generator lacks it`,
-      ),
-    ];
-    const noOutput: string[] = [];
+    const pages = new Map<string, StoryPage>();
     for (const [index, id] of built.entries()) {
       if (index === 0) await open(id);
       else await selectStory(page, id);
-      const result = await readStory(page, id);
-      if (result.error !== undefined) problems.push(`${id}: ${result.error}`);
-      else if (result.empty) problems.push(`${id}: its root is empty`);
-      if (result.noOutput) noOutput.push(id);
+      pages.set(id, await readStory(page, id));
     }
-    const wanted = new Set(Object.keys(noOutputCases(cases, target)));
-    const shown = new Set(
-      stories.filter(({ id }) => noOutput.includes(id)).map(({ title }) => title),
-    );
-    for (const id of wanted) {
-      if (!shown.has(id)) problems.push(`${id}: it has no output, and no story says so`);
-    }
-    for (const id of shown) {
-      if (!wanted.has(id)) problems.push(`${id}: a story says it has no output, and it has`);
-    }
-    for (const url of specChunks) problems.push(`the catalogue loaded a spec: ${url}`);
+    const problems = catalogueProblems({
+      stories,
+      pages,
+      noOutput: Object.keys(noOutputCases(cases, target)),
+      specChunks,
+    });
     problems.push(...(await checkRunner(page, origin)));
-    console.log(`stories: ${built.length} (the generator lists ${expected.length})`);
+    const noOutput = noOutputStories(pages);
+    console.log(`stories: ${built.length} (the generator lists ${stories.length})`);
     console.log(`no output: ${noOutput.length ? noOutput.join(", ") : "none"}`);
     for (const problem of problems) console.error(`[uf] ${problem}`);
     return problems.length ? 1 : 0;
@@ -318,27 +291,10 @@ async function check(target: string, story: string | undefined): Promise<number>
   }
 }
 
-/** The value of a flag, comma- or space-separated up to the next flag. */
-function flagValue(args: readonly string[], flag: string): string | undefined {
-  const index = args.indexOf(flag);
-  if (index === -1) return undefined;
-  const end = args.findIndex((arg, at) => at > index && arg.startsWith("--"));
-  const values = args.slice(index + 1, end === -1 ? undefined : end);
-  if (!values.length) throw new Error(`${flag} needs a value.\n${USAGE}`);
-  return values.join(",");
-}
-
 async function main(argv: readonly string[]): Promise<number> {
-  const args = argv.filter((arg) => arg !== "--");
-  const [command, target] = args;
-  if (!command || !target) throw new Error(USAGE);
-  // Throws on a name that isn't a target.
-  selectTargets(target);
-  const rest = args.slice(2);
-  if (command === "build" && !rest.length) return build(target);
-  if (command === "serve") return serve(target, flagValue(rest, "--cases"));
-  if (command === "check") return check(target, flagValue(rest, "--story"));
-  throw new Error(USAGE);
+  const { command, target, value } = parseCommand(argv);
+  if (command === "build") return build(target);
+  return command === "serve" ? serve(target, value) : check(target, value);
 }
 
 if (import.meta.main) {

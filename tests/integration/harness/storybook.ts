@@ -1,6 +1,7 @@
 // What the harness gives a target's Storybook (`tests/storybook/<target>/.storybook/main.ts`): the
 // stories, generated from the corpus on every start, and the compile options. There is no second
 // list of cases: a new case or scenario is a new story with no other edit.
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
@@ -37,7 +38,8 @@ export function storybookDir(target: string): string {
  * cases has a directory of its own, or it would delete the stories of a build running beside it.
  */
 export function storiesDir(target: string, cases?: string, root: string = ROOT): string {
-  const kept = cases?.replaceAll(/[^\w-]+/g, "-");
+  // A hash, since a dozen case ids would be longer than a file name may be.
+  const kept = cases && createHash("sha256").update(cases).digest("hex").slice(0, 12);
   return join(root, ".uf-cache", "storybook", kept ? `${target}--${kept}` : target);
 }
 

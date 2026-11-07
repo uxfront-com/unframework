@@ -21,6 +21,11 @@
     "check-types": {
       "dependsOn": ["transit"]
     },
+    // Its program includes each target's `.storybook` files, whose packages have no type check.
+    "@unframework/integration#check-types": {
+      "dependsOn": ["transit"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tests/storybook/*/.storybook/*.ts"]
+    },
     "test": {
       "dependsOn": ["transit"],
       "env": ["CI", "UF_*"]
@@ -47,6 +52,8 @@
         "$TURBO_ROOT$/.github/workflows/ci.yml",
         "$TURBO_ROOT$/packages/visual/**",
         "!$TURBO_ROOT$/packages/visual/node_modules/**",
+        "!$TURBO_ROOT$/packages/visual/dist/**",
+        "!$TURBO_ROOT$/packages/visual/.turbo/**",
         "$TURBO_ROOT$/tests/storybook/**",
         "!$TURBO_ROOT$/tests/storybook/*/node_modules/**",
         "!$TURBO_ROOT$/tests/storybook/*/storybook-static/**"

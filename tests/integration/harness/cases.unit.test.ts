@@ -812,6 +812,14 @@ describe("caseStories", () => {
     ).toThrow("two sets of props");
   });
 
+  it("fails when two mounts of a spec would give one id two sets of props", () => {
+    expect(() =>
+      storiesOf(
+        `${IMPORTS}it("t", async () => {\n  await mount(Main, { props: { a: 1 } });\n  const view = await mount(Main, { props: { a: 2 } });\n  await view.expectParity("shown");\n});\n`,
+      ),
+    ).toThrow("area-name--shown has two sets of props");
+  });
+
   it("fails when two mounts of one id name two components", () => {
     expect(() =>
       storiesOf(

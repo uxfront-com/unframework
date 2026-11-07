@@ -12,9 +12,10 @@ import { STORYBOOK_TARGETS } from "./storybook.ts";
 const TIMEOUT_MS = 120_000;
 
 describe.each(STORYBOOK_TARGETS)("storybook %s --cases basics/hello", (target) => {
-  it(
-    "serves the catalogue at the URL it prints, and leaves nothing behind",
-    async () => {
+  // SIGINT is the README's Ctrl-C.
+  it.each(["SIGTERM", "SIGINT"] as const)(
+    "serves the catalogue at the URL it prints, and leaves nothing behind on %s",
+    async (signal) => {
       // In a group of its own, as a terminal runs it, so a signal reaches the whole command.
       const child = spawn(
         "pnpm",
@@ -22,7 +23,7 @@ describe.each(STORYBOOK_TARGETS)("storybook %s --cases basics/hello", (target) =
         { cwd: REPO_ROOT, detached: true, stdio: ["ignore", "pipe", "pipe"] },
       );
       const exit = new Promise<void>((resolve) => child.on("exit", () => resolve()));
-      const stop = (signal: NodeJS.Signals) => {
+      const stop = () => {
         try {
           process.kill(-child.pid!, signal);
         } catch {
@@ -31,6 +32,7 @@ describe.each(STORYBOOK_TARGETS)("storybook %s --cases basics/hello", (target) =
       };
       let output = "";
       let errors = "";
+      let started: ReadonlySet<string> = new Set();
       child.stderr.on("data", (chunk: Buffer) => {
         errors += chunk.toString();
       });
@@ -56,8 +58,8 @@ describe.each(STORYBOOK_TARGETS)("storybook %s --cases basics/hello", (target) =
         const tree = membersOf(listProcesses(), child.pid!, new Set());
         // The command, the script, Storybook: more than the one process it spawned.
         expect(tree.length).toBeGreaterThan(2);
-        const started = new Set(tree.map(identityOf));
-        stop("SIGTERM");
+        started = new Set(tree.map(identityOf));
+        stop();
         await exit;
         const deadline = Date.now() + 10_000;
         let alive = started;
@@ -68,7 +70,15 @@ describe.each(STORYBOOK_TARGETS)("storybook %s --cases basics/hello", (target) =
         }
         expect([...alive]).toEqual([]);
       } finally {
-        stop("SIGKILL");
+        // By pid, on a failure too: Storybook sits in a group of its own, which a signal to the
+        // command's misses.
+        for (const { pid } of membersOf(listProcesses(), child.pid!, started)) {
+          try {
+            process.kill(pid, "SIGKILL");
+          } catch {
+            // It has gone.
+          }
+        }
       }
     },
     TIMEOUT_MS,
