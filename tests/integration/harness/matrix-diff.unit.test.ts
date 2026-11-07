@@ -14,7 +14,7 @@ import { diffMatrices, diffStable, parseDiffArgs, readMatrix } from "../scripts/
 
 const SCRIPT = fileURLToPath(new URL("../scripts/matrix-diff.ts", import.meta.url));
 
-/** A matrix of the given cells, with one target and one layer unless a test needs more. */
+/** A matrix of the given cells. */
 function matrix(cells: MatrixCells = {}, extra: Partial<ParityMatrix> = {}): ParityMatrix {
   return {
     version: MATRIX_VERSION,
@@ -27,7 +27,7 @@ function matrix(cells: MatrixCells = {}, extra: Partial<ParityMatrix> = {}): Par
   };
 }
 
-/** One (case, vue, L7) cell of each status. */
+/** One case's (vue, L7) cell. */
 const cell = (value: string, id = "basics/hello"): MatrixCells => ({
   [id]: { vue: { L7: value } },
 });
@@ -343,6 +343,24 @@ describe("the script", () => {
     expect(result.out).toContain("failure messages differ: 1");
   });
 
+  it("survives a reader that closes early", () => {
+    const cells = (value: string) =>
+      Object.assign(
+        {},
+        ...Array.from({ length: 5000 }, (_, n) => cell(value, `a/case-${n}`)),
+      ) as MatrixCells;
+    const one = file("one.json", matrix(cells("pass")));
+    const other = file("other.json", matrix(cells("fail: no")));
+    const { stderr } = spawnSync(
+      "sh",
+      ["-c", `"${process.execPath}" "${SCRIPT}" "${one}" "${other}" | true`],
+      {
+        encoding: "utf8",
+      },
+    );
+    expect(stderr).not.toContain("EPIPE");
+  });
+
   it("exits 1 when there is no cell to compare, so two crashed runs do not pass", () => {
     const result = run(file("one.json", matrix()), file("two.json", matrix()));
     expect(result.status).toBe(1);
@@ -386,6 +404,17 @@ describe("the script", () => {
     expect(run("--stable", mixed, mixed, pass, pass).out).toContain(
       "a/other › vue › L7: a pass, b absent",
     );
+  });
+
+  it("in --stable, reads only the named cases", () => {
+    const one = file("one.json", matrix({ ...cell("pass", "a/one"), ...cell("pass", "a/two") }));
+    const two = file(
+      "two.json",
+      matrix({ ...cell("pass", "a/one"), ...cell("fail: no", "a/two") }),
+    );
+    const result = run("--stable", one, one, two, two, "--case", "a/one");
+    expect(result.status).toBe(0);
+    expect(result.out).toMatch(/^stable cells: 1$/m);
   });
 
   it("in --stable, exits 1 on empty matrices", () => {

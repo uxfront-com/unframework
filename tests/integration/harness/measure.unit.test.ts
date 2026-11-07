@@ -1,8 +1,9 @@
 // scripts/measure.ts: which processes a sampled tree holds, on fake `ps` output, then the script
 // itself on real commands, some of which leave a sleeper behind.
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
 import { afterAll, afterEach, describe, expect, it } from "vitest";
@@ -104,6 +105,7 @@ describe("parseArgs", () => {
     [[]],
     [["vue"]],
     [["vue", "--"]],
+    [["vue", "--", ""]],
     [["--", "sleep", "1"]],
     [["vue", "extra", "--", "sleep", "1"]],
     [["vue", "--max-rss-gib", "--", "sleep", "1"]],
@@ -127,25 +129,43 @@ describe("the script", () => {
   const reportFile = join(REPORTS_DIR, "measure", `${LABEL}.json`);
   const sleepers: number[] = [];
 
-  /** Runs a command through the tool, with the sleeper's PID on the command's first line. */
+  /** Runs a command through the tool, and reads the report it leaves. */
   function measure(command: readonly string[], ...flags: string[]) {
     rmSync(reportFile, { force: true });
+    // The limit ends a command the tool failed to stop, which would otherwise hang the suite.
     const result = spawnSync(process.execPath, [SCRIPT, LABEL, ...flags, "--", ...command], {
       encoding: "utf8",
+      timeout: 30_000,
     });
     const report = existsSync(reportFile)
       ? (JSON.parse(readFileSync(reportFile, "utf8")) as MeasureReport)
       : undefined;
     return { status: result.status, out: result.stdout, err: result.stderr, report };
   }
+  /** `kill(pid, 0)` also succeeds on a zombie. */
   const isAlive = (pid: number) => {
-    try {
-      process.kill(pid, 0);
-      return true;
-    } catch {
-      return false;
-    }
+    const { stdout } = spawnSync("ps", ["-o", "stat=", "-p", String(pid)], { encoding: "utf8" });
+    return stdout.trim() !== "" && !stdout.trim().startsWith("Z");
   };
+  /** Runs a command through the tool, and sends the signals once the command has printed. */
+  async function interrupt(command: readonly string[], ...signals: NodeJS.Signals[]) {
+    rmSync(reportFile, { force: true });
+    const tool = spawn(process.execPath, [SCRIPT, LABEL, "--", ...command], {
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    const closed = new Promise<number | null>((resolve) => {
+      tool.once("close", (code) => resolve(code));
+    });
+    const out = await new Promise<string>((resolve) => {
+      tool.stdout.once("data", (chunk: Buffer) => resolve(chunk.toString()));
+    });
+    for (const signal of signals) {
+      tool.kill(signal);
+      // Two signals of a kind sent at once may arrive as one.
+      await delay(100);
+    }
+    return { status: await closed, out };
+  }
   const node = (script: string) => [process.execPath, "-e", script];
   /** Passes the ceiling these tests set, once the script has set up what it needs. */
   const HOG = "globalThis.hog = Buffer.alloc(300 * 1024 * 1024, 1);";
@@ -176,18 +196,18 @@ describe("the script", () => {
   });
 
   it("forwards stdout and the exit status, and writes the report", () => {
-    const { status, out, report } = measure(["sh", "-c", "sleep 1.2; echo measured; exit 3"]);
+    const { status, out, report } = measure(["sh", "-c", "sleep 2.2; echo measured; exit 3"]);
     expect(out).toContain("measured");
     expect(status).toBe(3);
     expect(report).toMatchObject({
       label: LABEL,
-      command: ["sh", "-c", "sleep 1.2; echo measured; exit 3"],
+      command: ["sh", "-c", "sleep 2.2; echo measured; exit 3"],
       outcome: "completed",
       exitStatus: 3,
       maxRssGib: 32,
       leftover: 0,
     });
-    expect(report!.wallSeconds).toBeGreaterThanOrEqual(1.2);
+    expect(report!.wallSeconds).toBeGreaterThanOrEqual(2.2);
     expect(report!.wallSeconds).toBeLessThan(30);
     expect(report!.samples).toBeGreaterThanOrEqual(2);
     expect(report!.peakRssGib).toBeGreaterThan(0);
@@ -203,16 +223,29 @@ describe("the script", () => {
     expect(report!.peakRssGib).toBeGreaterThan(0.2);
   });
 
-  it("counts an orphan left in its process group as leftover", () => {
+  it("reports the peak, not the last sample", () => {
+    const { report } = measure(
+      node(`const { spawnSync } = require("node:child_process");
+        spawnSync(process.execPath, ["-e", ${JSON.stringify(`${HOG} setTimeout(() => {}, 2500);`)}]);
+        setTimeout(() => {}, 2500);`),
+    );
+    expect(report!.peakRssGib).toBeGreaterThan(0.2);
+  });
+
+  it("counts an orphan left in its process group as leftover, outside the wall time", () => {
+    const before = performance.now();
     const { status, out, report } = measure(["sh", "-c", "sleep 60 >/dev/null 2>&1 & echo $!"]);
+    const elapsed = (performance.now() - before) / 1000;
     const sleeper = sleeperOf(out);
+    // A leftover that stays takes the whole 2 s grace, after the command's exit.
+    expect(report!.wallSeconds).toBeLessThanOrEqual(elapsed - 1.9);
     expect(status).toBe(0);
     expect(report).toMatchObject({ outcome: "completed", exitStatus: 0, leftover: 1 });
     expect(isAlive(sleeper)).toBe(true);
   });
 
   it("counts a sleeper it saw that left the process group as leftover", () => {
-    const { out, report } = measure(node(`${DETACHED_SLEEPER} setTimeout(() => {}, 1500);`));
+    const { out, report } = measure(node(`${DETACHED_SLEEPER} setTimeout(() => {}, 2500);`));
     const sleeper = sleeperOf(out);
     expect(report).toMatchObject({ outcome: "completed", leftover: 1 });
     expect(isAlive(sleeper)).toBe(true);
@@ -237,38 +270,56 @@ describe("the script", () => {
   });
 
   it("kills a process that ignores SIGTERM at the ceiling", () => {
-    const { status, report } = measure(
+    const { status, report, err } = measure(
       node(`process.on("SIGTERM", () => {}); ${HOG} setInterval(() => {}, 1000);`),
       ...CEILING,
     );
+    expect(err).toContain("ceiling");
     expect(status).toBe(137);
     expect(report).toMatchObject({ outcome: "did-not-complete", exitStatus: 137, leftover: 0 });
   });
 
   it("does not call a command that exits 0 on SIGTERM a success at the ceiling", () => {
-    const { status, report } = measure(
+    const { status, report, err } = measure(
       node(`process.on("SIGTERM", () => process.exit(0)); ${HOG} setInterval(() => {}, 1000);`),
       ...CEILING,
     );
+    expect(err).toContain("ceiling");
     expect(status).toBe(1);
     expect(report).toMatchObject({ outcome: "did-not-complete", exitStatus: 0 });
   });
 
-  it("stops the tree when it is itself interrupted", () => {
-    rmSync(reportFile, { force: true });
-    const { status, stdout } = spawnSync(
-      "sh",
-      [
-        "-c",
-        `"${process.execPath}" "${SCRIPT}" ${LABEL} -- sh -c 'sleep 60 >/dev/null 2>&1 & echo $!; wait' & tool=$!; sleep 1.5; kill -TERM $tool; wait $tool`,
-      ],
-      { encoding: "utf8" },
+  it.each(["SIGTERM", "SIGINT", "SIGHUP"] as const)(
+    "stops the tree when it is itself interrupted by %s",
+    async (signal) => {
+      const { status, out } = await interrupt(
+        ["sh", "-c", "sleep 60 >/dev/null 2>&1 & echo $!; wait"],
+        signal,
+      );
+      const sleeper = sleeperOf(out);
+      expect(status).not.toBe(0);
+      expect(isAlive(sleeper)).toBe(false);
+      expect(JSON.parse(readFileSync(reportFile, "utf8"))).toMatchObject({
+        outcome: "did-not-complete",
+        leftover: 0,
+      });
+    },
+  );
+
+  it("still kills a tree that ignores SIGTERM when it is interrupted twice", async () => {
+    const { status, out } = await interrupt(
+      node(
+        `process.on("SIGTERM", () => {}); console.log(process.pid); setInterval(() => {}, 1000);`,
+      ),
+      "SIGTERM",
+      "SIGTERM",
     );
-    const sleeper = sleeperOf(stdout);
-    expect(status).not.toBe(0);
-    expect(isAlive(sleeper)).toBe(false);
+    const stubborn = sleeperOf(out);
+    expect(status).toBe(137);
+    expect(isAlive(stubborn)).toBe(false);
     expect(JSON.parse(readFileSync(reportFile, "utf8"))).toMatchObject({
       outcome: "did-not-complete",
+      exitStatus: 137,
       leftover: 0,
     });
   });

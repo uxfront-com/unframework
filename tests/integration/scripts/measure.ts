@@ -113,7 +113,7 @@ export function parseArgs(argv: readonly string[]): {
   const maxRssGib = flag === undefined ? DEFAULT_MAX_RSS_GIB : Number(value);
   const valid =
     separator !== -1 &&
-    command.length > 0 &&
+    Boolean(command[0]) &&
     // The label names a file: nothing that leaves the directory.
     label !== undefined &&
     /^\w[\w.:-]*$/.test(label) &&
@@ -140,8 +140,8 @@ const round = (value: number) => Math.round(value * 1000) / 1000;
 async function measure(options: ReturnType<typeof parseArgs>): Promise<number> {
   const { label, maxRssGib, command } = options;
   const started = performance.now();
-  // A process group of its own, so the tree can be stopped without touching this process. Stdin
-  // is closed, since a background group that reads the terminal is stopped.
+  // A session and a process group of its own, so the tree can be stopped without touching this
+  // process. A measured run takes no input.
   const child = spawn(command[0]!, command.slice(1), {
     detached: true,
     stdio: ["ignore", "inherit", "inherit"],
@@ -195,7 +195,8 @@ async function measure(options: ReturnType<typeof parseArgs>): Promise<number> {
 
   if (root !== undefined) {
     for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
-      process.once(signal, () => stop(root, `interrupted by ${signal}`));
+      // Not `once`: a second signal in the grace must not end this process before its SIGKILL.
+      process.on(signal, () => stop(root, `interrupted by ${signal}`));
     }
     sample(root);
     if (!stopping) timer = setInterval(() => sample(root), SAMPLE_MS);
