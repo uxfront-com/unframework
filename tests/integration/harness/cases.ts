@@ -716,7 +716,7 @@ function printLiteral(value: unknown, sorted = false): string {
  * A case's stories, sorted by id: each `case.json` scenario, and each mount of its spec. A
  * `mountScenario` takes its scenario's name, and a bare `mount` its test's first `expectParity`
  * literal, unique in the case. Throws when a mount can't give a story, or when one id would hold
- * two sets of props or two components, so a story never renders what its test doesn't.
+ * two sets of props, or two mounts name two components, so a story renders what its test does.
  */
 export function caseStories(info: CaseInfo): CaseStory[] {
   const [area, name] = info.id.split("/");

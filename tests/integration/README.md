@@ -426,7 +426,9 @@ pnpm --filter @unframework/integration storybook:check vue --story state-counter
 
 Leave out `--cases` to serve every case. It takes case ids, separated by commas or spaces.
 
-A story's id is `<area>-<name>--<scenario>`, the same on all seven targets. `case.json`'s scenarios each make a story, as does each mount of the spec. A `mountScenario` takes its scenario's name, and a bare `mount` takes its test's first `expectParity` name. Generation fails on two sets of props under one id, on two components under one id, and on a mount whose arguments aren't JSON literals (`undefined` is allowed). A case the target has no output for keeps its ids, and its stories show the reason as text.
+A story's id is `<area>-<name>--<scenario>`, the same on all seven targets. `case.json`'s scenarios each make a story, as does each mount of the spec. A `mountScenario` takes its scenario's name, and a bare `mount` takes its test's first `expectParity` name.
+
+Generation fails on two sets of props under one id, on two mounts of one id that name different components, and on a mount it can't read: a scenario name that isn't a string literal, or a bare `mount`'s options that aren't JSON literals (`undefined` is allowed). A case the target has no output for keeps its ids, and its stories show the reason as text.
 
 `storybook:check` exits 1 on a story with an empty root or Storybook's error display, on a build that differs from the generator's list, on a no-output list that differs from `noOutputCases`, and on a catalogue page that loaded a spec. The specs don't run on these builds yet: the hidden `uf-runner--spec` story is the page they will run in.
 
@@ -454,9 +456,9 @@ A story's id is `<area>-<name>--<scenario>`, the same on all seven targets. `cas
   builds it for production with no licence key (`scripts/styleframe-build.ts`), and a
   configuration flagged as Pro fails the same build.
 - `harness/storybook.ts`: what a target's `.storybook/main.ts` loads, the stories it generates
-  under `.uf-cache/storybook/<target>`, and its compile options; `scripts/storybook.ts`: the
-  `storybook`, `storybook:build` and `storybook:check` commands; `@unframework/visual`: the preset
-  and the generator.
+  under `.uf-cache/storybook/<target>`, and its compile options. `scripts/storybook.ts` holds the
+  `storybook`, `storybook:build` and `storybook:check` commands, and `@unframework/visual` the
+  preset and the generator.
 - `harness/no-output.ts`: the browser projects' stand-ins for the components a target has no
   output for, or cannot compile yet.
 - `harness/canaries.ts`, `canary-verdict.ts`, `load-failures.ts`: the canaries, how

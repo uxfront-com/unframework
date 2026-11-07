@@ -46,7 +46,7 @@ describe("the integration test task", () => {
     expect(Object.keys(test.inputs)).toContain("../../.github/workflows/ci.yml");
   });
 
-  it("hashes the Storybook packages and the preset the Storybook tests build, not their output", () => {
+  it("hashes the Storybook packages and the preset the Storybook test starts, not their output", () => {
     const inputs = Object.keys(test.inputs);
     for (const target of selectTargets(undefined)) {
       expect(inputs).toContain(`../storybook/${target}/package.json`);

@@ -47,7 +47,7 @@ export function createPreview(mount: MountAdapter): VisualPreview {
       const { id, args, component, parameters } = storyContext;
       const teardown = () => unmount(canvas);
       showMain();
-      // The same story with new args, as the Controls panel or a driver updates them.
+      // The same story with new args, which an `updateStoryArgs` event gives it.
       if (mounted?.id === id && !forceRemount) {
         await mounted.instance.rerender(args);
         return teardown;
