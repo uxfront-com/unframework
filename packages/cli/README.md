@@ -7,7 +7,7 @@ project runs it as `unframework <command>`, from the directory that holds its
 | Exit code | Meaning                                                                             |
 | --------- | ----------------------------------------------------------------------------------- |
 | 0         | Success, warnings and notes included, but for what `strict` makes an error.         |
-| 1         | Error diagnostics, in a source or because no source was found.                      |
+| 1         | Error diagnostics, in a source, because no source was found, or from a packager.    |
 | 2         | A usage error, a config that won't load or is invalid, or a failure writing a file. |
 
 `main(argv, io?)` runs a command line, `argv` without Node and the script, and gives the exit code.
@@ -16,7 +16,7 @@ It never throws. `io` holds the working directory and where text goes, and defau
 ## build
 
 ```sh
-unframework build [--type-oracle syntactic|tsgo]
+unframework build [--package] [--type-oracle syntactic|tsgo]
 ```
 
 `build` compiles each `srcDir/**/*.uf.{tsx,ts}` that Node's `glob` finds through the project graph, in
@@ -51,6 +51,50 @@ good build stays in place. A failure while writing does exit 2 with the build ha
 - **UF7002** at `/srcDir`: a source imports a child the search didn't find, or a shared module above
   `srcDir`. No tree can hold it beside the source, so the import would break or the copy would leave
   `outDir/<target>`.
+
+## Packaging
+
+`build --package` also writes a publishable package to `<outDir>/package/` (plan §8.4, ADR-0077). It
+replaces any earlier package once every packager has passed, so a failure keeps the last good one. A
+`build` without the flag leaves that directory alone. Point `pnpm pack` or `npm publish` at it.
+
+Its `package.json` takes `name`, `version` and `license` from the project's own, and adds:
+
+- **`exports`:** one subpath per packaged target (`./react`, `./vue`, …), whose entry is that target's
+  barrel, then `./source/*`, which reaches the `.uf.tsx` sources and the files under `srcDir` they
+  read, and `./package.json`.
+- **`peerDependencies`:** each packaged target's framework, every one optional in
+  `peerDependenciesMeta`, so a React app installs no Vue.
+
+A project with no `package.json`, or one with no `name` or `version`, exits 2 and writes nothing.
+
+`package.targets` limits which targets are packaged, and defaults to `targets`. Every target in
+`targets` still gets its tree. Each target's packager resolves from `package.resolveFrom`, which is
+one path or a path per target and defaults to the project's root. It's never a dependency of the CLI.
+
+- **Angular:** not packaged yet, so `--package` reports UF7008.
+- **Astro:** the emitted sources, which Astro's compiler builds in the consumer's app. It needs no
+  packager.
+- **Qwik:** not packaged yet, so `--package` reports UF7008.
+- **React:** tsdown builds JS and `.d.ts`, one module to a file, with each sheet beside its importer.
+  The project needs `@types/react`, since a declaration's inferred types come from it.
+- **Solid:** the same through tsdown, with the project's `solid-js` for the types. A `solid` export
+  condition points at preserved JSX, which a consumer's Solid compiler reads. Babel with
+  `babel-preset-solid` compiles the plain JS for the DOM, so both must resolve beside tsdown.
+- **Svelte:** not packaged yet, so `--package` reports UF7008.
+- **Vue:** the SFC sources and `.ts` modules, with `vue-tsc`'s declarations beside them. Vue's compiler
+  builds them in the consumer's app, and `vue-tsc` resolves its TypeScript from where it's installed.
+
+Packaged outputs ship with no source maps.
+
+`build --package` also reports:
+
+- **UF7008:** a packager or what it needs isn't installed, a target has no packager yet, or the
+  project has no types for React or Solid. Nothing is cleaned or written.
+- **UF7009:** a packager failed, and its message holds the packager's own error. The targets' trees
+  are written by then, and its paths name them.
+- **UF7002** at `/outDir`: cleaning `outDir/package` would delete the project, a source, or a file a
+  source read.
 
 ## check
 

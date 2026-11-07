@@ -28,12 +28,21 @@ built, and the targets stay in this order so that two sections never share a lin
 - The manifest has subpath `exports` (`./react`, `./vue`, …, and `./source/*` for the `.uf.tsx`
   sources), each framework as an optional peer, and a barrel per target.
 - A registry, `packages/cli/src/package/index.ts`, holds one line per target, each with a file of its
-  own.
+  own. The manifest lists the packaged targets in the registry's order, whatever order the config
+  gives, and each packaged target's framework is its optional peer.
+- `./source/*` holds the sources and the files under `srcDir` they read, so that they compile in a
+  consumer's app.
 - `package.targets` limits which targets are packaged.
 - Each packager resolves from `package.resolveFrom` with `createRequire`: one path, or a path per
-  target, with the project's root as the default. It's never a dependency of the CLI.
+  target, with the project's root as the default. It's never a dependency of the CLI. Only that
+  directory's `node_modules` chain counts, because pnpm's bin shims set `NODE_PATH` to every package
+  a workspace hoists.
 - A packager that isn't installed reports UF7008 `packager-missing`, and one that fails UF7009
-  `packager-failed`.
+  `packager-failed`. UF7008 also covers a target with no packager yet, and a project without the types
+  tsdown's declarations infer from: they run with `--noCheck`, so a return type would silently be
+  `any`.
+- Everything that can be checked is checked before anything is written. The package is built in a
+  scratch directory under `outDir`, and replaces the last good one only once every packager has passed.
 
 ### Angular
 
@@ -44,6 +53,7 @@ with ngc from `tests/toolchains/angular`.
 ### Astro
 
 Astro ships the emitted sources, as §8.4 says. Astro's compiler builds them in the consumer's app.
+`./astro` is the barrel itself, since Astro's own tooling reads the types from the sources.
 
 ### Qwik
 
@@ -51,12 +61,17 @@ A Vite library build with `qwikVite()` emits `.qwik.mjs` under the `qwik` export
 
 ### React
 
-tsdown builds JS and `.d.ts`.
+tsdown builds JS and `.d.ts`, one module to a file. Bare imports, passed-through modules and sheets
+stay as written, and each sheet is copied beside its importer: an output's imports aren't the package's
+to bundle (P7), and tsdown's CSS support is a separate package. The declarations run apart and last,
+because tsgo prints its errors and fails with only an exit code.
 
 ### Solid
 
-tsdown builds JS and `.d.ts`. A `"solid"` export condition also points at preserved JSX, which the
-consumer's Solid compiler reads.
+tsdown builds JS and `.d.ts`, as React's do. A `"solid"` export condition also points at preserved
+JSX, which the consumer's Solid compiler reads, on the server too. JSX means nothing without that
+compiler and tsdown has none, so Babel with `babel-preset-solid` compiles the plain JS for the DOM.
+Both resolve from `package.resolveFrom`, beside tsdown.
 
 ### Svelte
 
@@ -64,7 +79,10 @@ consumer's Solid compiler reads.
 
 ### Vue
 
-The package holds the SFC sources, with `vue-tsc` declarations beside them.
+The package holds the SFC sources and `.ts` modules, with `vue-tsc` declarations beside them. `./vue`
+names the declarations under `types`, and the barrel as written otherwise: an SFC needs the consumer's
+compiler anyway, which also reads the TypeScript it imports. `vue-tsc` does check, so a type error is
+UF7009.
 
 ## Consequences
 

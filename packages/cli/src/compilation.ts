@@ -1,5 +1,5 @@
 // What `build` and `check` share, so `check` fails wherever `build`'s compile would.
-import { glob, readFile } from "node:fs/promises";
+import { glob, readFile, stat } from "node:fs/promises";
 import { isAbsolute, join, posix, relative, sep } from "node:path";
 
 import {
@@ -35,6 +35,12 @@ export interface Compilation {
   config?: ResolvedConfig;
   /** Each target's files, at their paths in `outDir/<target>`. Empty unless `status` is 0. */
   trees: ReadonlyMap<string, OutputFile[]>;
+  /** The directory relative paths resolve against. */
+  root: string;
+  /** The config file as diagnostics name it. */
+  configFile: string;
+  /** The sources, and the files under srcDir they read, relative to the root. Sorted. */
+  authored: string[];
 }
 
 /** One source's compile, and where it sits under srcDir. */
@@ -65,7 +71,11 @@ function within(directory: string, path: string): boolean {
  * graph (ADR-0071). Source maps are on for `check` too, because a map that can't follow formatting
  * is an error (UF9002) that `build` would fail on.
  */
-export async function compileSources(io: Io, oracle: string | undefined): Promise<Compilation> {
+export async function compileSources(
+  io: Io,
+  oracle: string | undefined,
+  alsoCleans: readonly string[] = [],
+): Promise<Compilation> {
   if (oracle !== undefined && !TYPE_ORACLES.includes(oracle)) {
     throw new Error(`--type-oracle takes syntactic or tsgo, not "${oracle}".`);
   }
@@ -76,6 +86,7 @@ export async function compileSources(io: Io, oracle: string | undefined): Promis
     diagnostics: Diagnostic[],
     config?: ResolvedConfig,
     trees: ReadonlyMap<string, OutputFile[]> = new Map(),
+    authored: string[] = [],
   ): Promise<Compilation> => {
     const sources = new Map<string, string>();
     for (const { file } of diagnostics) {
@@ -87,6 +98,9 @@ export async function compileSources(io: Io, oracle: string | undefined): Promis
       sources,
       ...(config ? { config } : {}),
       trees,
+      root,
+      configFile: loaded.file ?? "unframework.config.ts",
+      authored,
     };
   };
 
@@ -114,7 +128,8 @@ export async function compileSources(io: Io, oracle: string | undefined): Promis
   }
 
   // Cleaning a tree must never delete what it was compiled from.
-  for (const target of config.targets) {
+  const cleaned = [...config.targets, ...alsoCleans];
+  for (const target of cleaned) {
     const directory = join(config.outDir, target);
     const holds = [root, ...files.map((file) => join(root, file))];
     const held = holds.find((path) => within(directory, path));
@@ -161,7 +176,7 @@ export async function compileSources(io: Io, oracle: string | undefined): Promis
 
   // Nor what a source read, which the glob doesn't list: a child, a sheet, a shared module, a type.
   for (const { file, read: readFiles } of compiled) {
-    for (const target of config.targets) {
+    for (const target of cleaned) {
       const directory = join(config.outDir, target);
       const held = readFiles.find((path) => within(directory, join(root, path)));
       if (held !== undefined) {
@@ -192,9 +207,30 @@ export async function compileSources(io: Io, oracle: string | undefined): Promis
     const tree = assembleTree(target, compiled, diagnostics);
     trees.set(target, tree);
   }
-  return hasErrors(diagnostics)
-    ? finish(1, diagnostics, config)
-    : finish(0, diagnostics, config, trees);
+  if (hasErrors(diagnostics)) return finish(1, diagnostics, config);
+  return finish(0, diagnostics, config, trees, await authoredFiles(files, compiled, root, config));
+}
+
+/** What a package's `source/` needs for its sources to compile in a consumer's app (ADR-0077). */
+async function authoredFiles(
+  files: readonly string[],
+  compiled: readonly Compiled[],
+  root: string,
+  config: ResolvedConfig,
+): Promise<string[]> {
+  const authored = new Set(files);
+  for (const each of compiled.flatMap(({ read: readFiles }) => readFiles)) {
+    const path = join(root, each);
+    // A read list also holds packages, and what a compile looked for and didn't find.
+    const found = await stat(path).then(
+      (entry) => entry.isFile(),
+      () => false,
+    );
+    if (found && within(config.srcDir, path) && !each.split("/").includes("node_modules")) {
+      authored.add(each);
+    }
+  }
+  return [...authored].toSorted();
 }
 
 /** Every source under srcDir, relative to the root, in an order that holds on any file system (P8). */

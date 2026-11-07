@@ -7,23 +7,40 @@ import { formatDiagnostics } from "@unframework/diagnostics";
 
 import type { RunCommand } from "./command.ts";
 import { compileSources, printable, TYPE_ORACLE_OPTION } from "./compilation.ts";
+import { PACKAGE_DIRECTORY, planPackage } from "./package/index.ts";
 
 /** The outputs a `sourceMappingURL` comment can sit in: a sheet or a template has another syntax. */
 const JS_OR_TS = /\.[cm]?[jt]sx?$/;
 
 export const run: RunCommand = async (args, io) => {
-  const { values } = parseArgs({ args, options: TYPE_ORACLE_OPTION });
-  const compilation = await compileSources(io, values["type-oracle"]);
-  const { status, diagnostics, sources, config, trees } = compilation;
+  const { values } = parseArgs({
+    args,
+    options: { ...TYPE_ORACLE_OPTION, package: { type: "boolean" } },
+  });
+  const compilation = await compileSources(
+    io,
+    values["type-oracle"],
+    values.package ? [PACKAGE_DIRECTORY] : [],
+  );
+  const { status, diagnostics, sources, config, trees, root, authored, configFile } = compilation;
   io.stderr(printable(formatDiagnostics(diagnostics, sources)));
   // A failed build leaves the last good one in place: nothing is cleaned or written.
   if (status !== 0 || !config) return status;
+  const plan = values.package
+    ? await planPackage({ root, config, trees, authored, configFile })
+    : undefined;
+  if (plan && plan.diagnostics.length > 0) {
+    io.stderr(printable(formatDiagnostics(plan.diagnostics, sources)));
+    return 1;
+  }
   for (const [target, files] of trees) {
     const directory = join(config.outDir, target);
     await rm(directory, { recursive: true, force: true });
     for (const file of files) await writeOutput(directory, file, config.srcDir);
   }
-  return 0;
+  const failed = (await plan?.run()) ?? [];
+  io.stderr(printable(formatDiagnostics(failed, sources)));
+  return failed.length > 0 ? 1 : 0;
 };
 
 async function writeOutput(directory: string, file: OutputFile, srcDir: string): Promise<void> {
