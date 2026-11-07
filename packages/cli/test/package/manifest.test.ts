@@ -109,6 +109,27 @@ describe("build --package: the manifest", () => {
     );
   });
 
+  it("leaves a package a source reads types from to its own install", async () => {
+    const root = designSystem({
+      config: { targets: ["astro"] },
+      files: {
+        "node_modules/tones/package.json": '{ "name": "tones", "types": "index.d.ts" }',
+        "node_modules/tones/index.d.ts": 'export type Tone = "calm" | "loud";\n',
+        "src/Toned.uf.tsx": `import type { Tone } from "tones";
+
+export default function Toned(props: { tone?: Tone }) {
+  return <p>{props.tone}</p>;
+}
+`,
+      },
+    });
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(stderr).toBe("");
+    expect(code).toBe(0);
+    expect(existsSync(join(root, "dist", "package", "source", "Toned.uf.tsx"))).toBe(true);
+    expect(Object.keys(tree(join(root, "dist", "package", "source"))).join()).not.toContain("pkg:");
+  });
+
   it("gives equal packages for equal inputs, and leaves no scratch directory", async () => {
     const root = designSystem({
       config: { targets: ["react"], package: { resolveFrom: REACT } },

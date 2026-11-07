@@ -41,10 +41,9 @@ export const solid: Packager = {
     default: "./solid/index.js",
   },
   run: async (input) => {
-    const inputOptions = { transform: { jsx: "preserve" } };
     await buildWithTsdown(input, { jsx: "preserve", jsxImportSource: "solid-js" }, [
-      { extension: ".jsx", inputOptions },
-      { extension: ".js", inputOptions, plugins: [await solidCompiler(input)] },
+      { extension: ".jsx" },
+      { extension: ".js", plugins: [await solidCompiler(input)] },
     ]);
   },
 };

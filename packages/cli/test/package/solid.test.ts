@@ -1,4 +1,5 @@
-import { join } from "node:path";
+import { existsSync, mkdirSync, symlinkSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -58,6 +59,29 @@ describe("build --package: Solid", () => {
     });
     // Conditions match in order: `default` before `solid` would hide it.
     expect(Object.keys(exports["./solid"])).toEqual(["types", "solid", "default"]);
+  });
+
+  it("reports a compiler that fails as UF7009, with its error and no stack", async () => {
+    const root = designSystem({
+      config: { targets: ["solid"] },
+      frameworks: ["solid-js"],
+      files: {
+        "node_modules/babel-preset-solid/package.json": '{ "name": "babel-preset-solid" }',
+        "node_modules/babel-preset-solid/index.js": 'throw new Error("the preset broke");\n',
+      },
+    });
+    const installed = inRepository("packages/target-solid/node_modules");
+    for (const name of ["tsdown", "@babel/core"]) {
+      const link = join(root, "node_modules", name);
+      mkdirSync(dirname(link), { recursive: true });
+      symlinkSync(join(installed, name), link);
+    }
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(code).toBe(1);
+    expect(stderr).toContain("UF7009");
+    expect(stderr).toContain("the preset broke");
+    expect(stderr).not.toMatch(/^\s+at /m);
+    expect(existsSync(join(root, "dist", "package"))).toBe(false);
   });
 
   it("types a consumer that imports the subpath, and stops one that misuses it", async () => {

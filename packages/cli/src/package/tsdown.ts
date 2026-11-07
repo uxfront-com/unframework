@@ -17,8 +17,6 @@ export interface JsxOptions {
 export interface TsdownRun {
   /** The extension of what it writes. */
   extension: ".js" | ".jsx";
-  /** Rolldown's options for a run that keeps its JSX. */
-  inputOptions?: object;
   plugins?: readonly object[];
 }
 
@@ -83,13 +81,12 @@ export async function buildWithTsdown(
     clean: false,
     logLevel: "silent",
   };
-  for (const { extension, inputOptions, plugins = [] } of runs) {
+  for (const { extension, plugins = [] } of runs) {
     await tsdown.build({
       ...common,
       dts: false,
       outExtensions: () => ({ js: extension }),
       plugins: [KEEP_IMPORTS, ...plugins],
-      ...(inputOptions ? { inputOptions } : {}),
     });
   }
   await tsdown.build({
