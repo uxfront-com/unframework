@@ -2,12 +2,31 @@
 // output. Node only; the main entry never imports it.
 import type { Toolchain } from "@unframework/codegen";
 import { lintWithOxlint, typecheckWithTsgo } from "@unframework/codegen/toolchain-node";
-import type { UserConfig } from "vite";
+import type { Plugin, UserConfig } from "vite";
 
 import { compileWithSolid } from "./compile.ts";
 
 /** The runtime modules compiled output and the mount adapter import in the browser. */
 const BROWSER_RUNTIME = ["solid-js", "solid-js/web"];
+
+/**
+ * In a Vitest project with no browser, vite-plugin-solid adds `@testing-library/jest-dom/vitest` to
+ * the setup files as soon as its own `require.resolve` finds a copy, and any package in the install
+ * can bring one (Storybook does). Vitest then resolves that bare name from the project's root, which
+ * holds no such dependency, and every file of the project fails to start. No test here uses it.
+ */
+const noJestDom: Plugin = {
+  name: "uf:solid-no-jest-dom",
+  enforce: "pre",
+  config(config) {
+    const files = config.test?.setupFiles;
+    if (Array.isArray(files) && config.test) {
+      config.test.setupFiles = files.filter(
+        (file) => !file.startsWith("@testing-library/jest-dom"),
+      );
+    }
+  },
+};
 
 /** The Solid 1.9 toolchain. */
 export const toolchain: Toolchain = {
@@ -28,6 +47,8 @@ export const toolchain: Toolchain = {
           // solid-refresh would wrap the code under test in HMR proxies.
           hot: false,
         }),
+        // After Solid's: each `pre` plugin's `config` sees what the one before it returned.
+        noJestDom,
       ],
       resolve: { dedupe: ["solid-js"] },
       // Vite's dependency scanner never sees compiled modules (the unplugin hides them from

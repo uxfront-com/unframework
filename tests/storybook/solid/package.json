@@ -1,0 +1,14 @@
+{
+  "name": "@unframework/storybook-solid",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The solid Storybook: the corpus's generated stories, compiled through the unplugin and rendered with the solid mount adapter. It has no build or test script, so it joins neither the Build job nor a unit shard: `pnpm --filter @unframework/integration storybook:build solid` builds it.",
+  "type": "module",
+  "devDependencies": {
+    "@storybook/html-vite": "catalog:",
+    "@unframework/target-solid": "workspace:*",
+    "@unframework/visual": "workspace:*",
+    "solid-js": "catalog:",
+    "storybook": "catalog:"
+  }
+}

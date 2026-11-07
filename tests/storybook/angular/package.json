@@ -1,0 +1,17 @@
+{
+  "name": "@unframework/storybook-angular",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The angular Storybook: the corpus's generated stories, compiled through the unplugin and rendered with the angular mount adapter. It has no build or test script, so it joins neither the Build job nor a unit shard: `pnpm --filter @unframework/integration storybook:build angular` builds it.",
+  "type": "module",
+  "devDependencies": {
+    "@angular/common": "catalog:",
+    "@angular/compiler": "catalog:",
+    "@angular/core": "catalog:",
+    "@angular/platform-browser": "catalog:",
+    "@storybook/html-vite": "catalog:",
+    "@unframework/target-angular": "workspace:*",
+    "@unframework/visual": "workspace:*",
+    "storybook": "catalog:"
+  }
+}

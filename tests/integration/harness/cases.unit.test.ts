@@ -8,6 +8,7 @@ import { settleArtefactDirectory } from "@unframework/testing/node";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  caseStories,
   listCases,
   parityScenarios,
   removeStaleArtefacts,
@@ -460,6 +461,10 @@ describe("the spec rules", () => {
         rerenders: false,
         firstAssertion: undefined,
         uncompared: [],
+        mounts: [
+          { component: "Card", scenario: undefined, options: undefined, problem: undefined },
+        ],
+        firstScenario: "initial",
       },
       {
         name: "clicks",
@@ -469,6 +474,10 @@ describe("the spec rules", () => {
         rerenders: false,
         firstAssertion: undefined,
         uncompared: [],
+        mounts: [
+          { component: "Card", scenario: undefined, options: undefined, problem: undefined },
+        ],
+        firstScenario: "after-click",
       },
       {
         name: "rerenders",
@@ -479,6 +488,10 @@ describe("the spec rules", () => {
         rerenders: true,
         firstAssertion: undefined,
         uncompared: [],
+        mounts: [
+          { component: "Card", scenario: undefined, options: undefined, problem: undefined },
+        ],
+        firstScenario: "rerendered",
       },
       {
         name: "types",
@@ -488,6 +501,8 @@ describe("the spec rules", () => {
         rerenders: false,
         firstAssertion: undefined,
         uncompared: [],
+        mounts: [],
+        firstScenario: undefined,
       },
     ]);
   });
@@ -645,5 +660,203 @@ ${renders}`;
   it("have nothing to say of a case without a spec", () => {
     const [info] = listCases(makeCorpus({ "basics/card/Card.uf.tsx": input }));
     expect(specProblems(info!)).toEqual([]);
+  });
+});
+
+describe("specTests' mount arguments", () => {
+  const body = (statement: string) =>
+    `it("a", async () => {\n  const view = ${statement};\n  await view.expectParity("first");\n  await view.expectParity("second");\n});`;
+
+  it("reads a mountScenario's name, through a component's type arguments", () => {
+    const [test] = specTests(body('await mountScenario(Table<Person>, "people")'));
+    expect(test!.mounts).toEqual([
+      { component: "Table", scenario: "people", options: undefined, problem: undefined },
+    ]);
+  });
+
+  it("reads a bare mount, with no options, and its test's first scenario", () => {
+    const [test] = specTests(body("await mount(Hello)"));
+    expect(test!.mounts).toEqual([
+      { component: "Hello", scenario: undefined, options: undefined, problem: undefined },
+    ]);
+    expect(test!.firstScenario).toBe("first");
+  });
+
+  it("reads a mount's options as JSON literals, with undefined kept", () => {
+    const [test] = specTests(
+      body(`await mount(Hello, {
+        props: {
+          title: 'it\\'s "a"',
+          "quoted-key": null,
+          none: undefined,
+          count: -1.5e2,
+          list: [{ id: 1 }, undefined, true,],
+        },
+        clock: true,
+      })`),
+    );
+    const options = test!.mounts[0]!.options as { props: Record<string, unknown>; clock: boolean };
+    expect(test!.mounts[0]!.problem).toBeUndefined();
+    expect(options.clock).toBe(true);
+    expect(options.props).toStrictEqual({
+      title: `it's "a"`,
+      "quoted-key": null,
+      none: undefined,
+      count: -150,
+      list: [{ id: 1 }, undefined, true],
+    });
+    expect(Object.keys(options.props)).toContain("none");
+  });
+
+  it.each([
+    ["a variable", "await mount(Hello, options)"],
+    ["a function in its props", "await mount(Hello, { props: { pick: () => 1 } })"],
+    ["a call in its props", "await mount(Hello, { props: { at: now() } })"],
+    ["an interpolation", "await mount(Hello, { props: { at: `${now}` } })"],
+    ["a spread", "await mount(Hello, { ...options })"],
+    ["a scenario in a variable", "await mountScenario(Hello, name)"],
+    ["a component it can't name", "await mount(components.Hello)"],
+  ])("records a problem for %s, rather than throwing for every project", (_what, statement) => {
+    const [test] = specTests(body(statement));
+    expect(test!.mounts).toHaveLength(1);
+    expect(test!.mounts[0]!.problem).toEqual(expect.any(String));
+  });
+
+  it("is not fooled by a method named mount, or a mount in a comment", () => {
+    const [test] = specTests(body("await other.mount(Hello) // mount(Hello)"));
+    expect(test!.mounts).toEqual([]);
+  });
+});
+
+describe("caseStories", () => {
+  /** A case in a corpus of its own, with its spec and its `case.json`. */
+  function storiesOf(spec: string | undefined, config: unknown = {}) {
+    const dir = mkdtempSync(join(tmpdir(), "uf-case-stories-"));
+    try {
+      const directory = join(dir, "area", "name");
+      mkdirSync(directory, { recursive: true });
+      writeFileSync(join(directory, "Main.uf.tsx"), "export default function Main() {}\n");
+      writeFileSync(join(directory, "Other.uf.tsx"), "export default function Other() {}\n");
+      writeFileSync(
+        join(directory, "case.json"),
+        JSON.stringify({ main: "Main.uf.tsx", ...(config as object) }),
+      );
+      if (spec !== undefined) writeFileSync(join(directory, "name.test.ts"), spec);
+      const [info] = listCases(dir);
+      return caseStories(info!).map((story) => ({
+        ...story,
+        source: story.source.slice(story.source.lastIndexOf("/") + 1),
+      }));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  const IMPORTS = `import Main from "./Main.uf.tsx";\nimport Other from "./Other.uf.tsx";\n`;
+  const test = (statement: string, scenario = "shown") =>
+    `it("t ${statement.length} ${scenario}", async () => {\n  const view = ${statement};\n  await view.expectParity("${scenario}");\n});\n`;
+
+  it("gives a case with nothing declared and no spec no story, not the SSR project's default", () => {
+    expect(storiesOf(undefined)).toEqual([]);
+  });
+
+  it("gives each scenario of case.json a story of the main source, sorted by id", () => {
+    expect(storiesOf(undefined, { ssr: { open: { props: { a: 1 } }, closed: {} } })).toEqual([
+      { id: "area-name--closed", title: "area/name", source: "Main.uf.tsx", args: "{}" },
+      { id: "area-name--open", title: "area/name", source: "Main.uf.tsx", args: '{ "a": 1 }' },
+    ]);
+  });
+
+  it("names a mountScenario's story after its scenario, with the component it mounts", () => {
+    expect(
+      storiesOf(`${IMPORTS}${test('await mountScenario(Other, "open")', "else")}`, {
+        ssr: { open: { props: { a: 1 } } },
+      }),
+    ).toEqual([
+      { id: "area-name--open", title: "area/name", source: "Other.uf.tsx", args: '{ "a": 1 }' },
+    ]);
+  });
+
+  it("names a bare mount's story after its test's first expectParity", () => {
+    expect(
+      storiesOf(`${IMPORTS}${test('await mount(Main, { props: { a: undefined, b: "x" } })')}`),
+    ).toEqual([
+      {
+        id: "area-name--shown",
+        title: "area/name",
+        source: "Main.uf.tsx",
+        args: '{ "a": undefined, "b": "x" }',
+      },
+    ]);
+  });
+
+  it("takes one story for two mounts of one id with the same props, in any key order", () => {
+    expect(
+      storiesOf(
+        `${IMPORTS}${test("await mount(Main, { props: { a: 1, b: 2 } })")}it("again", async () => {\n  const view = await mountScenario(Main, "shown");\n});\n`,
+        { ssr: { shown: { props: { b: 2, a: 1 } } } },
+      ).map(({ id }) => id),
+    ).toEqual(["area-name--shown"]);
+  });
+
+  it("fails when one id would hold two sets of props", () => {
+    expect(() =>
+      storiesOf(`${IMPORTS}${test("await mount(Main, { props: { a: 2 } })")}`, {
+        ssr: { shown: { props: { a: 1 } } },
+      }),
+    ).toThrow(/Case area\/name: area-name--shown has two sets of props/);
+    // `undefined` is a prop's value to a mount: absent takes the default again.
+    expect(() =>
+      storiesOf(`${IMPORTS}${test("await mount(Main, { props: { a: undefined } })")}`, {
+        ssr: { shown: {} },
+      }),
+    ).toThrow("two sets of props");
+  });
+
+  it("fails when two mounts of a spec would give one id two sets of props", () => {
+    expect(() =>
+      storiesOf(
+        `${IMPORTS}it("t", async () => {\n  await mount(Main, { props: { a: 1 } });\n  const view = await mount(Main, { props: { a: 2 } });\n  await view.expectParity("shown");\n});\n`,
+      ),
+    ).toThrow("area-name--shown has two sets of props");
+  });
+
+  it("fails when two mounts of one id name two components", () => {
+    expect(() =>
+      storiesOf(
+        `${IMPORTS}${test('await mountScenario(Main, "shown")')}${test('await mountScenario(Other, "shown")', "next")}`,
+        { ssr: { shown: {} } },
+      ),
+    ).toThrow("area-name--shown mounts two components: Main.uf.tsx and Other.uf.tsx");
+  });
+
+  it.each([
+    ["a mount it can't read", test("await mount(Main, options)"), "can't be read"],
+    [
+      "a mount outside a test",
+      `${IMPORTS}const made = mount(Main);\n${test("await mount(Main)")}`,
+      "mounts outside a test",
+    ],
+    [
+      "a component it doesn't import",
+      test("await mount(Main)"),
+      "no default import of a .uf.tsx file",
+    ],
+    [
+      "an undeclared scenario",
+      `${IMPORTS}${test('await mountScenario(Main, "absent")')}`,
+      'names "absent", which case.json doesn\'t declare',
+    ],
+    [
+      "a scenario that isn't kebab-case",
+      `${IMPORTS}${test("await mount(Main)", "NotKebab")}`,
+      "not kebab-case",
+    ],
+    [
+      "a bare mount with no scenario",
+      `${IMPORTS}it("a", async () => {\n  await mount(Main);\n});\n`,
+      "calls no expectParity",
+    ],
+  ])("fails on %s", (_what, spec, message) => {
+    expect(() => storiesOf(spec)).toThrow(message);
   });
 });

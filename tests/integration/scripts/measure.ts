@@ -125,7 +125,8 @@ export function parseArgs(argv: readonly string[]): {
   return { label, maxRssGib, command };
 }
 
-function listProcesses(): ProcessInfo[] {
+/** Every live process. */
+export function listProcesses(): ProcessInfo[] {
   const fields = ["pid", "ppid", "pgid", "rss", "stat", "lstart"];
   // One -o per field: POSIX reads everything after `=` in one as that field's header.
   const args = ["-A", ...fields.flatMap((field) => ["-o", `${field}=`])];

@@ -77,6 +77,17 @@ describe("solid toolchain", () => {
     expect(ssr.optimizeDeps).toBeUndefined();
   });
 
+  it("takes vite-plugin-solid's jest-dom setup file back out, and leaves the project's own", async () => {
+    const { plugins } = await toolchain.vite("ssr", context);
+    const names = (plugins as Plugin[]).map((plugin) => plugin.name);
+    expect(names.indexOf("uf:solid-no-jest-dom")).toBeGreaterThan(names.indexOf("solid"));
+    expect(names).toContain("solid");
+    const plugin = (plugins as Plugin[]).find((entry) => entry.name === "uf:solid-no-jest-dom")!;
+    const config = { test: { setupFiles: ["@testing-library/jest-dom/vitest", "./own.ts"] } };
+    (plugin.config as (config: object) => void)(config);
+    expect(config.test.setupFiles).toEqual(["./own.ts"]);
+  });
+
   it("compiles DOM code without Solid's HMR wrapper in the browser", async () => {
     const code = await transformed("browser", "client");
     expect(code).toContain("template(");

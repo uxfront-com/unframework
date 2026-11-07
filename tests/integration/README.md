@@ -413,6 +413,25 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   (`harness/coverage.ts`). `harness/coverage-exemptions.ts` excuses the ones that have none yet,
   each with a reason; an exemption that the corpus covers fails the gate.
 
+## The Storybooks
+
+Each target has a static Storybook under `../storybook/<target>`, generated from the corpus. There is no second list of cases: a new case or scenario is a new story with no other edit. Vue's is proved so far.
+
+```sh
+pnpm --filter @unframework/integration storybook vue --cases basics/hello   # a dev server: prints its URL, and stops on Ctrl-C
+pnpm --filter @unframework/integration storybook:build vue                  # the static build, in ../storybook/vue/storybook-static
+pnpm --filter @unframework/integration storybook:check vue                  # walks every story of the build in one page
+pnpm --filter @unframework/integration storybook:check vue --story state-counter--initial   # prints one story's text
+```
+
+Leave out `--cases` to serve every case. It takes case ids, separated by commas or spaces.
+
+A story's id is `<area>-<name>--<scenario>`, the same on all seven targets. `case.json`'s scenarios each make a story, as does each mount of the spec. A `mountScenario` takes its scenario's name, and a bare `mount` takes its test's first `expectParity` name.
+
+Generation fails on two sets of props under one id, on two mounts of one id that name different components, and on a mount it can't read: a scenario name that isn't a string literal, or a bare `mount`'s options that aren't JSON literals (`undefined` is allowed). A case the target has no output for keeps its ids, and its stories show the reason as text.
+
+`storybook:check` exits 1 on a story with an empty root or Storybook's error display, on a build that differs from the generator's list, on a no-output list that differs from `noOutputCases`, and on a catalogue page that loaded a spec. The specs don't run on these builds yet: the hidden `uf-runner--spec` story is the page they will run in.
+
 ## Where things live
 
 - `harness/projects.ts`: the Vitest projects (`compile`, `harness`, and `toolchain:`, `ssr:` and
@@ -436,6 +455,10 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   Styleframe writes for it (`pnpm test:update` rewrites them). `harness/styleframe.unit.test.ts`
   builds it for production with no licence key (`scripts/styleframe-build.ts`), and a
   configuration flagged as Pro fails the same build.
+- `harness/storybook.ts`: what a target's `.storybook/main.ts` loads, the stories it generates
+  under `.uf-cache/storybook/<target>`, and its compile options. `scripts/storybook.ts` holds the
+  `storybook`, `storybook:build` and `storybook:check` commands, and `@unframework/visual` the
+  preset and the generator.
 - `harness/no-output.ts`: the browser projects' stand-ins for the components a target has no
   output for, or cannot compile yet.
 - `harness/canaries.ts`, `canary-verdict.ts`, `load-failures.ts`: the canaries, how

@@ -15,7 +15,7 @@
 import { relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { Toolchain, ToolchainContext } from "@unframework/codegen";
+import type { Toolchain } from "@unframework/codegen";
 import { builtinTargets } from "@unframework/compiler";
 import type { TargetName } from "@unframework/compiler";
 import {
@@ -39,10 +39,10 @@ import type { TestProjectConfiguration, UserWorkspaceConfig, ViteUserConfig } fr
 import { canaryPlugins, guardsGoldens } from "./canaries.ts";
 import "./context.ts";
 import { listCases } from "./cases.ts";
-import { ENGINE_DECLARATIONS, enginePlugins } from "./engines.ts";
+import { enginePlugins, toolchainContext } from "./engines.ts";
 import { goldenGuard } from "./guard.ts";
 import { noOutputCases, noOutputPlugin, standInCases, standInReasons } from "./no-output.ts";
-import { FAILURE_SCREENSHOTS_DIR, ROOT, toolchainDir } from "./paths.ts";
+import { FAILURE_SCREENSHOTS_DIR, ROOT } from "./paths.ts";
 import { loadToolchain, REFERENCE } from "./targets.ts";
 
 /** What every project factory needs. */
@@ -218,20 +218,6 @@ function unpluginOptions(setup: HarnessSetup, target: string): UnframeworkOption
         ),
       ),
     ),
-  };
-}
-
-/**
- * Where a target's toolchain runs the ssr and browser projects: its checkers read the styling
- * engines' virtual modules beside the outputs (ADR-0064), Angular's ngtsc compiles with them,
- * and a server of the toolchain's own (Astro's render server) loads the engines' plugins too.
- */
-function toolchainContext(target: string): ToolchainContext {
-  return {
-    toolchainDir: toolchainDir(target),
-    root: ROOT,
-    declarations: ENGINE_DECLARATIONS,
-    plugins: enginePlugins,
   };
 }
 

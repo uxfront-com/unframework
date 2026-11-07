@@ -287,6 +287,9 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
 - **The page host's Node side:** `exposePageHost(page, { config, commands, onEvent })` makes a
   Playwright page ready before it navigates, and `pageActions` holds the four actions Vitest's
   provider runs in one call of Playwright (`ufUnhover`, `ufFill`, `ufClear`, `ufSelectOptions`).
+- **A Storybook build's manifest:** `writeBuildManifest(directory, manifest)` and
+  `readBuildManifest(directory)` hold what a build compiled, in `uf-build-manifest.json`, and
+  `manifestEvents(manifest, file)` gives a main module's events.
 - **The write policy** (DESIGN §4.4), as plain functions every driver shares:
   `settleArtefact(path, actual, context)` and `settleArtefactDirectory(dir, files, context)`.
   Check mode compares and never writes; in update mode owners and the reference target write,
