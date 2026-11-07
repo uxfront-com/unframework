@@ -7,6 +7,7 @@ import { TARGET_NAMES } from "@unframework/compiler";
 import { describe, expect, it } from "vitest";
 
 import { BROWSER_CASES_ENV, browserRun } from "./browser-run.ts";
+import { listCases } from "./cases.ts";
 import { CANARY_DIR, ROOT, storybookDir, storybookOutput } from "./paths.ts";
 import {
   browserProjectName,
@@ -68,7 +69,20 @@ describe("the config", () => {
     expect(config).toContain("...PLAYWRIGHT_RULES");
     expect(config).toContain("workers: workersOf(process.env)");
     expect(config).toContain("browserProjectName(target)");
-    for (const word of ["maxDiffPixels", "maxDiffPixelRatio", "threshold", "toHaveScreenshot"]) {
+    // Firefox and WebKit get no Chromium switches: `launchArguments` is tested in its package.
+    expect(config).toContain("browserName: browser");
+    expect(config).toContain("launchOptions: { args: launchArguments(browser) }");
+    // A later key would override the rules unseen, and no tolerance belongs here.
+    for (const word of [
+      "retries",
+      "fullyParallel",
+      "forbidOnly",
+      "timeout",
+      "maxDiffPixels",
+      "maxDiffPixelRatio",
+      "threshold",
+      "toHaveScreenshot",
+    ]) {
       expect(config, word).not.toContain(word);
     }
     expect(JSON.stringify(PLAYWRIGHT_RULES)).not.toMatch(/maxDiffPixel|threshold/);
@@ -77,11 +91,13 @@ describe("the config", () => {
 
 describe("a run", () => {
   const run = (env: NodeJS.ProcessEnv) => browserRun({ UF_RUN_ID: "fixture-1", ...env }, []);
+  // From the corpus, not a number: a new case is a new spec file with no other edit.
+  const corpus = listCases().filter((info) => info.spec).length;
 
   it("declares every spec file of the corpus, with nothing narrowing it", () => {
     const { specs, specCount, filter, targets } = run({});
-    expect(specs).toHaveLength(209);
-    expect(specCount).toBe(209);
+    expect(specs).toHaveLength(corpus);
+    expect(specCount).toBe(corpus);
     expect(filter).toBeUndefined();
     expect(targets).toHaveLength(7);
   });
@@ -94,7 +110,7 @@ describe("a run", () => {
       "/cases/basics/hello/hello.test.ts",
       "/cases/state/counter/counter.test.ts",
     ]);
-    expect(specCount).toBe(209);
+    expect(specCount).toBe(corpus);
     expect(filter).toBe("cases basics/hello,state/counter");
   });
 

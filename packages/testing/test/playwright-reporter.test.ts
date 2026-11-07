@@ -159,7 +159,10 @@ it("writes no matrix of a run that found no test", async () => {
 
 it("writes no matrix of an interrupted run, and says so", async () => {
   const reporter = new PlaywrightParityReporter({ reportsDir, harness });
-  reporter.onBegin({ shard: null } as FullConfig, { suites: [] } as unknown as Suite);
+  reporter.onBegin(
+    { shard: null } as FullConfig,
+    { suites: [{ title: "browser:vue", allTests: () => [{}] }] } as unknown as Suite,
+  );
   await reporter.onEnd({ status: "interrupted" } as never);
   expect(readdirSync(reportsDir)).toEqual([]);
   expect(logged.join("\n")).toContain("interrupted");

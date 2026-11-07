@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 
 import { defineConfig } from "@playwright/test";
 import type { PlaywrightTestConfig, ReporterDescription } from "@playwright/test";
-import { CHROMIUM_ARGS } from "@unframework/testing/node";
+import { launchArguments } from "@unframework/testing/node";
 
 import { browserRun } from "./harness/browser-run.ts";
 import { LOAD_FAILURES } from "./harness/load-failures.ts";
@@ -45,7 +45,7 @@ const config: PlaywrightTestConfig = defineConfig({
     // Headed runs inherit the host's device pixel ratio; the captures need DPR 1.
     headless: true,
     // Firefox and WebKit have no such switches; their captures compare live within the engine.
-    launchOptions: { args: browser === "chromium" ? [...CHROMIUM_ARGS] : [] },
+    launchOptions: { args: launchArguments(browser) },
   },
   projects: run.targets.map((target) => ({
     name: browserProjectName(target),

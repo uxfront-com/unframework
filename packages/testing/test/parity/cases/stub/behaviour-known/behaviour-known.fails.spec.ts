@@ -1,7 +1,7 @@
 // L8 under a quarantine entry (project.ts): the test's own failed assertion is recorded as
 // quarantined and removed from the test's result, which then passes, unless another layer
 // failed. A known failure still runs, and still fails (plan §7.7). One test fails on purpose, so
-// only test/behaviour.test.ts runs this.
+// only test/behaviour.test.ts and test/fails.test.ts run this.
 import { expect, it } from "vitest";
 
 import "../../../../../src/setup.ts";

@@ -1,4 +1,4 @@
-// C12: Storybook's markup stays out of the checks, since no test opens a corpus story. Static, with
+// Storybook's markup stays out of the checks, since no test opens a corpus story. Static, with
 // no browser, since the `harness` project runs in `Integration: compile`: every URL the driver goes
 // to, and the one the host page's frame opens. The stub spec `stub/match` asserts at run time that
 // a view's root sits directly in the `<body>`, and `matrix-diff` compares DOM, ARIA and axe on a

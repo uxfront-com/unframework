@@ -1,7 +1,7 @@
 // @unframework/testing/node: the Node side of the testing API (plan §7.3, §7.4). The browser
 // commands, the artefact write policy as plain functions for the Node drivers (compile, SSR),
 // the run's mode and project ordering, the parity reporter and the summary writer.
-export { CHROMIUM_ARGS, CONTEXT_OPTIONS } from "./browser-options.ts";
+export { launchArguments } from "./browser-options.ts";
 export { ACTION_TIMEOUT, parityBrowser, VIEWPORT } from "./browser.ts";
 export type { AnyBrowserCommand, ParityBrowserOptions } from "./browser.ts";
 export {

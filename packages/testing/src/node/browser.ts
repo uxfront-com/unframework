@@ -7,7 +7,7 @@ import { playwright } from "@vitest/browser-playwright";
 import type { BrowserConfigOptions } from "vitest/node";
 
 import type { BrowserEngine } from "../harness.ts";
-import { ACTION_TIMEOUT, CHROMIUM_ARGS, CONTEXT_OPTIONS } from "./browser-options.ts";
+import { ACTION_TIMEOUT, CONTEXT_OPTIONS, launchArguments } from "./browser-options.ts";
 import { browserCommands } from "./commands.ts";
 import { VIEWPORT } from "./viewport.ts";
 
@@ -56,7 +56,7 @@ export function parityBrowser(options: ParityBrowserOptions): BrowserConfigOptio
       // own timeouts.
       actionTimeout: ACTION_TIMEOUT,
       // Firefox and WebKit have no such switches; their captures compare live within the engine.
-      launchOptions: { args: browser === "chromium" ? [...CHROMIUM_ARGS] : [] },
+      launchOptions: { args: launchArguments(browser) },
       contextOptions: { ...CONTEXT_OPTIONS },
     }),
     instances: [{ browser, name: options.name }],

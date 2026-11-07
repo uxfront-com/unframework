@@ -1,7 +1,7 @@
 // The document a spec file runs in, and the page around it. As under Vitest, the document is a frame
 // of a host page, at Vitest's size. It is always the build's hidden runner story, which renders
 // nothing: a test mounts into the frame's `<body>` itself, so no story's markup reaches a DOM, ARIA
-// or axe check, and no test opens a corpus story (C12).
+// or axe check, and no test opens a corpus story.
 import { VIEWPORT } from "../node/viewport.ts";
 
 /** The path a static build's server answers with {@link HOST_HTML}. */

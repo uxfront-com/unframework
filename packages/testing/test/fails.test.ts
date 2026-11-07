@@ -2,13 +2,13 @@
 // are judged after the body. Each run expects exit 1, and reads each test's state from the
 // reporter's records, since a matrix test holds none. The 14 are the ones `it.fails` marked under
 // Vitest: `test/behaviour.test.ts` and `test/interactions.test.ts` read what 7 of them record, and
-// this file reads the others, and runs them all to count them. Also the page errors (C3): nothing
+// this file reads the others, and runs them all to count them. Also the page errors: nothing
 // logged, on no layer, and still a failed run.
 import { expect, it } from "vitest";
 
 import { runStubs } from "./parity/run-stubs.ts";
 
-/** Every test that fails on purpose, by name: a list, since the suffix's glob holds C3's stubs too. */
+/** Every test that fails on purpose, by name: a list, since the suffix's glob holds the page errors' stubs too. */
 const ON_PURPOSE = [
   "fails L8 with the test's own failed assertion",
   "fails L8 with an action on an element that is not there",

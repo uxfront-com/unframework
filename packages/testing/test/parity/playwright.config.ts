@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "@playwright/test";
 import type { PlaywrightTestConfig } from "@playwright/test";
 
-import { CHROMIUM_ARGS, sharedRunId } from "../../src/node/index.ts";
+import { launchArguments, sharedRunId } from "../../src/node/index.ts";
 import { fixtureHarness, scratch } from "./project.ts";
 
 /** A directory of this run alone. */
@@ -47,7 +47,7 @@ const config: PlaywrightTestConfig = defineConfig({
   use: {
     browserName: "chromium",
     headless: true,
-    launchOptions: { args: [...CHROMIUM_ARGS] },
+    launchOptions: { args: launchArguments("chromium") },
   },
   projects: [{ name: "parity", metadata: { target: "dom" } }],
 });

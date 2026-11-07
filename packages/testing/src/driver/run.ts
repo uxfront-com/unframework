@@ -260,5 +260,8 @@ export function failureOf({ tests, file }: SpecOutcome): string | undefined {
       .flatMap(({ attachments }) => attachments)
       .map(({ name, path }) => `${name} image: ${path}`),
   ];
-  return lines.length ? lines.join("\n") : undefined;
+  if (lines.length) return lines.join("\n");
+  return file.state === "fail"
+    ? `${file.filepath}: the file failed, with no error of its own.`
+    : undefined;
 }

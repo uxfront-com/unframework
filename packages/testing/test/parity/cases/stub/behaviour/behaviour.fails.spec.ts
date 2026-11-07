@@ -1,7 +1,7 @@
 // L8, the spec's own behaviour (ADR-0043): the setup file records it after each test, from the
 // errors of the test itself (its assertions, its hooks, Vitest's assertion count) and a failed
-// unmount. They fail on purpose, so only test/behaviour.test.ts runs them, and reads each test's
-// state and the parity matrix they make.
+// unmount. They fail on purpose, so only test/behaviour.test.ts, which reads each test's state and
+// the parity matrix they make, and test/fails.test.ts run them.
 import { expect, it } from "vitest";
 
 import "../../../../../src/setup.ts";

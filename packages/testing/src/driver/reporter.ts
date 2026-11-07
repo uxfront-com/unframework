@@ -45,7 +45,7 @@ export interface ReportedSpec {
 }
 
 /** What a file's test left, read back from its attachments, with what a dead worker never wrote. */
-export function readSpec(
+function readSpec(
   project: string,
   title: string,
   result: Pick<TestResult, "attachments" | "errors">,
@@ -91,7 +91,7 @@ export function readSpec(
   };
 }
 
-/** The `browser:<target>` a project name holds, or the name itself for a stub project. */
+/** The target a `browser:<target>` project names, or the reference for a stub project. */
 function targetOf(project: string, harness: HarnessContext): string {
   return project.startsWith("browser:") ? project.slice("browser:".length) : harness.reference;
 }
@@ -111,7 +111,7 @@ function reportedFile(spec: ReportedSpec): ReportedFile {
 }
 
 /** The lines an uncaught error prints, naming where it was seen. */
-export function uncaughtLine(project: string, file: string, error: UncaughtError): string {
+function uncaughtLine(project: string, file: string, error: UncaughtError): string {
   const during = error.test === undefined ? "" : ` during "${error.test}"`;
   return `${project}: ${file}: uncaught, seen by the ${error.source}${during}: ${error.name ?? "Error"}: ${error.message}`;
 }

@@ -18,7 +18,7 @@ import type { DriverBrowser, RunSpecOptions } from "../src/driver/run.ts";
 import { serveStatic } from "../src/driver/server.ts";
 import { PAGE_CALL, PAGE_REPORT } from "../src/hosts/page/protocol.ts";
 import type { PageEvent, PageHostConfig, PageTestRecord } from "../src/hosts/page/protocol.ts";
-import { ACTION_TIMEOUT, CHROMIUM_ARGS, CONTEXT_OPTIONS } from "../src/node/browser-options.ts";
+import { ACTION_TIMEOUT, CONTEXT_OPTIONS, launchArguments } from "../src/node/browser-options.ts";
 import { VIEWPORT } from "../src/node/viewport.ts";
 import { fixtureHarness, casesDir, STUB_CAPABILITIES } from "./parity/project.ts";
 
@@ -269,6 +269,7 @@ describe("a document that can't run its spec", () => {
     // No reason was given: the tests stay as they were, and the file's state says it didn't pass.
     expect(outcome.file.state).toBe("fail");
     expect(outcome.tests).toEqual([]);
+    expect(failureOf(outcome)).toBe(`${filepath}: the file failed, with no error of its own.`);
   });
 });
 
@@ -393,7 +394,15 @@ describe("the browser a spec file opens", () => {
 
   it("launches Chromium without font hinting and with whole-tile raster, for the captures", () => {
     // Partial raster made a capture depend on what was repainted before it (stub/raster).
-    expect(CHROMIUM_ARGS).toEqual(["--font-render-hinting=none", "--disable-partial-raster"]);
+    expect(launchArguments("chromium")).toEqual([
+      "--font-render-hinting=none",
+      "--disable-partial-raster",
+    ]);
+  });
+
+  it("launches Firefox and WebKit without Chromium's switches", () => {
+    expect(launchArguments("firefox")).toEqual([]);
+    expect(launchArguments("webkit")).toEqual([]);
   });
 
   it("opens the host page alone, whose frame is the runner story at Vitest's size", async () => {
@@ -512,6 +521,7 @@ describe("a static build's server", () => {
       expect((await get("/missing.js")).status).toBe(404);
       // Above the directory, a path stays inside it.
       expect((await get("/%2e%2e/%2e%2e/etc/hosts")).status).toBe(404);
+      expect((await get(`/${"..%2f".repeat(20)}etc/hosts`)).status).toBe(404);
     } finally {
       await server.close();
       rmSync(directory, { recursive: true, force: true });

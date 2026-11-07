@@ -1,5 +1,5 @@
 // A step the test never compares fails L9 when it ends: the setup records it. On purpose, so only
-// test/interactions.test.ts runs this.
+// test/interactions.test.ts and test/fails.test.ts run this.
 import { expect, it } from "vitest";
 
 import "../../../../../src/setup.ts";

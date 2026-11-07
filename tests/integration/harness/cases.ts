@@ -90,7 +90,7 @@ export function caseConfigs(cases: readonly CaseInfo[]): Record<string, CaseConf
   return Object.fromEntries(cases.map((info) => [info.id, info.config]));
 }
 
-/** The cases a value of {@link CASES_ENV} names. Throws on one the corpus doesn't hold. */
+/** The cases a comma-separated list names, or every case. Throws on one the corpus doesn't hold. */
 export function selectCases(cases: readonly CaseInfo[], value: string | undefined): CaseInfo[] {
   const names = value
     ?.split(",")

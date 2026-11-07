@@ -1,15 +1,14 @@
+// What a Playwright run of the browser layers knows, the same in its config and in each worker:
+// the mode from the environment (ADR-0019, ADR-0029), the targets, the cases and their spec files.
 import { createHarnessRun, resolveHarnessMode, sharedRunId } from "@unframework/testing/node";
 import type { HarnessContext, HarnessMode } from "@unframework/testing/node";
 
 import { findCanary } from "./canaries.ts";
-// What a Playwright run of the browser layers knows, the same in its config and in each worker:
-// the mode from the environment (ADR-0019, ADR-0029), the targets, the cases and their spec files.
 import type { CaseInfo } from "./cases.ts";
 import { caseConfigs, listCases, selectCases } from "./cases.ts";
 import { CASES_DIR, ROOT } from "./paths.ts";
 import { QUARANTINE, validateQuarantine } from "./quarantine.ts";
-import { selectTargets } from "./targets.ts";
-import { REFERENCE } from "./targets.ts";
+import { REFERENCE, selectTargets } from "./targets.ts";
 
 /** The cases a `test:browser <target> <case>…` keeps, comma-separated. */
 export const BROWSER_CASES_ENV = "UF_BROWSER_CASES";
@@ -28,7 +27,7 @@ export interface BrowserRun {
   filter: string | undefined;
 }
 
-/** Whether a case has a spec, and the spec's file. */
+/** The spec files of some cases. */
 function specsOf(cases: readonly CaseInfo[]): string[] {
   return cases.flatMap((info) => (info.spec ? [info.spec] : []));
 }
