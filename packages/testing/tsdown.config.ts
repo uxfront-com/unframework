@@ -4,6 +4,9 @@ import type { UserConfig } from "tsdown";
 const config: UserConfig = defineConfig({
   entry: [
     "src/index.ts",
+    "src/hosts/page/setup.ts",
+    "src/hosts/page/runner.ts",
+    "src/hosts/page/vitest.ts",
     "src/hosts/vitest/setup.ts",
     "src/setup.ts",
     "src/normalize/index.ts",

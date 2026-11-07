@@ -1,0 +1,60 @@
+// What the page host is held to: Vitest's own verdicts, messages and strings on the page host's
+// fixtures. `./page-host.test.ts` compares the page host with the same file, so a Vitest bump that
+// moves an answer fails here, and a port that drifts fails there. `VITE_UF_RECORD=1` writes the file.
+import { expect, it } from "vitest";
+import { commands, page, userEvent } from "vitest/browser";
+import type { Locator } from "vitest/browser";
+
+import {
+  callLocators,
+  resolveLocators,
+  runActions,
+  runActionTimeouts,
+  runMatchers,
+  serializeLocators,
+} from "./page-host/fixtures.ts";
+import type { FixtureLocator, FixtureRunner } from "./page-host/fixtures.ts";
+import recorded from "./page-host/vitest-results.json" with { type: "json" };
+
+/** How long the actions meant to time out wait; the page host's fixtures bound theirs the same. */
+const ACTION_TIMEOUT = 300;
+
+/** Bounds only those: under CI's load, a real action can take longer than that. */
+const bounded = { timeout: ACTION_TIMEOUT };
+let actionOptions: { timeout: number } | undefined;
+
+const asVitest = (target: FixtureLocator) => target as unknown as Locator;
+
+const runner: FixtureRunner = {
+  page: page as unknown as FixtureRunner["page"],
+  element: (subject, options) =>
+    expect.element(subject as never, options) as unknown as Record<string, unknown>,
+  expect: (actual) => expect(actual) as unknown as Record<string, unknown>,
+  stringMatching: (pattern) => expect.stringMatching(pattern),
+  hover: (target) => userEvent.hover(asVitest(target)),
+  unhover: (target) => userEvent.unhover(asVitest(target)),
+  fill: (target, text) => userEvent.fill(asVitest(target), text, actionOptions),
+  clear: (target) => userEvent.clear(asVitest(target)),
+  selectOptions: (target, values) =>
+    userEvent.selectOptions(asVitest(target), values, actionOptions),
+};
+
+it("gives the verdicts, the messages and the strings the page host is compared with", async () => {
+  const answers = {
+    matchers: await runMatchers(runner),
+    locators: serializeLocators(runner),
+    resolved: resolveLocators(runner),
+    called: await callLocators(runner),
+    actions: await runActions(runner),
+  };
+  actionOptions = bounded;
+  const results = { ...answers, actionTimeouts: await runActionTimeouts(runner) };
+  if (import.meta.env["VITE_UF_RECORD"]) {
+    await commands.writeFile(
+      "./test/page-host/vitest-results.json",
+      `${JSON.stringify(results, null, 2)}\n`,
+    );
+    return;
+  }
+  expect(results).toEqual(recorded);
+}, 60_000);

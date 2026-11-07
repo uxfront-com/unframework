@@ -1,0 +1,758 @@
+{
+  "matchers": {
+    "visible": {
+      "verdict": "pass"
+    },
+    "visible-none": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toBeVisible()\n\nReceived element is not visible:\n  <p\n  data-testid=\"subject\"\n  style=\"display:none\"\n/>"
+    },
+    "visible-hidden": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toBeVisible()\n\nReceived element is not visible:\n  <p\n  data-testid=\"subject\"\n  style=\"visibility:hidden\"\n/>"
+    },
+    "visible-empty": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toBeVisible()\n\nReceived element is not visible:\n  <p\n  data-testid=\"subject\"\n/>"
+    },
+    "visible-not": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toBeVisible()\n\nReceived element is visible:\n  <p\n  data-testid=\"subject\"\n/>"
+    },
+    "visible-not-none": {
+      "verdict": "pass"
+    },
+    "visible-detached": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toBeVisible()\n\nReceived element is not visible (element is not in the document):\n  <p />"
+    },
+    "visible-missing": {
+      "verdict": "fail",
+      "name": "VitestBrowserElementError",
+      "message": "Cannot find element with locator: getByTestId('subject')\n\nARIA tree:\n- paragraph: x"
+    },
+    "visible-not-missing": {
+      "verdict": "fail",
+      "name": "VitestBrowserElementError",
+      "message": "Cannot find element with locator: getByTestId('subject')\n\nARIA tree:\n- paragraph: x"
+    },
+    "visible-text": {
+      "verdict": "fail",
+      "name": "TypeError",
+      "message": "Cannot use 'in' operator to search for 'Symbol($$vitest:locator)' in text"
+    },
+    "visible-object": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "Invalid element or locator: [object Object]. Expected an instance of HTMLElement, SVGElement or Locator, received Object"
+    },
+    "visible-strict-many": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "strict mode violation: getByTestId('subject') resolved to 11 elements:\n    1) <p data-testid=\"subject\">x</p> aka locator('p').first()\n    2) <p data-testid=\"subject\">x</p> aka locator('p:nth-child(2)')\n    3) <p data-testid=\"subject\">x</p> aka locator('p:nth-child(3)')\n    4) <p data-testid=\"subject\">x</p> aka locator('p:nth-child(4)')\n    5) <p data-testid=\"subject\">x</p> aka locator('p:nth-child(5)')\n    6) <p data-testid=\"subject\">x</p> aka locator('p:nth-child(6)')\n    7) <p data-testid=\"subject\">x</p> aka locator('p:nth-child(7)')\n    8) <p data-testid=\"subject\">x</p> aka locator('p:nth-child(8)')\n    9) <p data-testid=\"subject\">x</p> aka locator('p:nth-child(9)')\n    10) <p data-testid=\"subject\">x</p> aka locator('p:nth-child(10)')\n    ...\n"
+    },
+    "visible-strict": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "strict mode violation: getByTestId('subject') resolved to 2 elements:\n    1) <p data-testid=\"subject\">a</p> aka getByText('a', { exact: false })\n    2) <p data-testid=\"subject\">b</p> aka getByText('b', { exact: false })\n"
+    },
+    "document": {
+      "verdict": "pass"
+    },
+    "document-missing": {
+      "verdict": "fail",
+      "name": "VitestBrowserElementError",
+      "message": "Cannot find element with locator: getByTestId('subject')\n\nARIA tree:\n- paragraph: x"
+    },
+    "document-not-missing": {
+      "verdict": "pass"
+    },
+    "document-not": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toBeInTheDocument()\n\nexpected document not to contain element, found <p\n  data-testid=\"subject\"\n>\n  x\n</p> instead"
+    },
+    "document-null": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toBeInTheDocument()\n\nelement could not be found in the document"
+    },
+    "document-not-null": {
+      "verdict": "pass"
+    },
+    "document-detached": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toBeInTheDocument()\n\nelement could not be found in the document"
+    },
+    "document-element": {
+      "verdict": "pass"
+    },
+    "text": {
+      "verdict": "pass"
+    },
+    "text-part": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveTextContent()\n\nExpected element to have text content:\n  2\nReceived:\n  Count: 2"
+    },
+    "text-regex": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveTextContent()\n\nExpected element to have text content:\n  /\\d/\nReceived:\n  Count: 2"
+    },
+    "text-spaces": {
+      "verdict": "pass"
+    },
+    "text-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveTextContent()\n\nExpected element to have text content:\n  3\nReceived:\n  Count: 2"
+    },
+    "text-regex-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveTextContent()\n\nExpected element to have text content:\n  /^\\d$/\nReceived:\n  Count: 2"
+    },
+    "text-empty-string": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveTextContent()\n\nExpected element to have text content:\n\nReceived:\n  x"
+    },
+    "text-none": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveTextContent()\n\nExpected element to have text content:\n  undefined\nReceived:\n"
+    },
+    "text-not": {
+      "verdict": "pass"
+    },
+    "text-not-pass": {
+      "verdict": "pass"
+    },
+    "match-text": {
+      "verdict": "pass"
+    },
+    "match-text-regex": {
+      "verdict": "pass"
+    },
+    "match-text-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toMatchTextContent()\n\nExpected element to match text content:\n  3\nReceived:\n  Count: 2"
+    },
+    "match-text-not": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toMatchTextContent()\n\nExpected element not to match text content:\n  2\nReceived:\n  Count: 2"
+    },
+    "attribute": {
+      "verdict": "pass"
+    },
+    "attribute-value": {
+      "verdict": "pass"
+    },
+    "attribute-empty": {
+      "verdict": "pass"
+    },
+    "attribute-absent": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveAttribute(\"title\") // element.hasAttribute(\"title\")\n\nExpected the element to have attribute:\n  title\nReceived:\n  null"
+    },
+    "attribute-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveAttribute(\"title\", \"b\") // element.getAttribute(\"title\") === \"b\"\n\nExpected the element to have attribute:\n  title=\"b\"\nReceived:\n  title=\"a\""
+    },
+    "attribute-not": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toHaveAttribute(\"title\") // element.hasAttribute(\"title\")\n\nExpected the element not to have attribute:\n  title\nReceived:\n  title=\"a\""
+    },
+    "attribute-not-value": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toHaveAttribute(\"title\", \"a\") // element.getAttribute(\"title\") === \"a\"\n\nExpected the element not to have attribute:\n  title=\"a\"\nReceived:\n  title=\"a\""
+    },
+    "value": {
+      "verdict": "pass"
+    },
+    "value-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveValue(other)\n\nExpected the element to have value:\n  other\nReceived:\n  text"
+    },
+    "value-not": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toHaveValue(text)\n\nExpected the element not to have value:\n  text\nReceived:\n  text"
+    },
+    "value-number": {
+      "verdict": "pass"
+    },
+    "value-number-empty": {
+      "verdict": "pass"
+    },
+    "value-checkbox": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "input with type=checkbox or type=radio cannot be used with .toHaveValue(). Use .toBeChecked() for type=checkbox or .toHaveFormValues() instead"
+    },
+    "value-select": {
+      "verdict": "pass"
+    },
+    "value-multiple": {
+      "verdict": "pass"
+    },
+    "value-textarea": {
+      "verdict": "pass"
+    },
+    "value-role": {
+      "verdict": "pass"
+    },
+    "value-none": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveValue(x)\n\nExpected the element to have value:\n  x\nReceived:\n  undefined"
+    },
+    "class": {
+      "verdict": "pass"
+    },
+    "class-two": {
+      "verdict": "pass"
+    },
+    "class-joined": {
+      "verdict": "pass"
+    },
+    "class-regex": {
+      "verdict": "pass"
+    },
+    "class-exact": {
+      "verdict": "pass"
+    },
+    "class-exact-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveClass(\"a\")\n\nExpected the element to have EXACTLY defined classes:\n  a\nReceived:\n  a b"
+    },
+    "class-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveClass(\"c\")\n\nExpected the element to have class:\n  c\nReceived:\n  a b"
+    },
+    "class-none": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveClass(expected)\nAt least one expected class must be provided."
+    },
+    "class-not": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toHaveClass(\"a\")\n\nExpected the element not to have class:\n  a\nReceived:\n  a b"
+    },
+    "class-not-any": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toHaveClass()\n\nExpected the element to have classes:\n  (none)\nReceived:\n  a b"
+    },
+    "style-object": {
+      "verdict": "pass"
+    },
+    "style-string": {
+      "verdict": "pass"
+    },
+    "style-named": {
+      "verdict": "pass"
+    },
+    "style-camel": {
+      "verdict": "pass"
+    },
+    "style-custom": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveStyle()\n\nExpected styles could not be parsed by the browser. Did you make a typo?"
+    },
+    "style-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveStyle()\n\n- Expected\n+ Received\n\n- color: rgb(0, 0, 255);\n+ color: rgb(255, 0, 0);"
+    },
+    "style-string-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveStyle()\n\n- Expected\n+ Received\n\n- color: rgb(0, 0, 255);\n+ color: rgb(255, 0, 0);"
+    },
+    "style-not": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toHaveStyle()\n\n"
+    },
+    "focus": {
+      "verdict": "pass"
+    },
+    "focus-none": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveFocus()\n\nExpected element with focus:\n  <input\n  data-testid=\"subject\"\n  value=\"text\"\n/>\nReceived element with focus:\n  <body>········\n  <div>\n    <input\n      data-testid=\"subject\"\n      value=\"text\"\n    />\n  </div>\n</body>"
+    },
+    "focus-not": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toHaveFocus()\n\nReceived element is focused:\n  <input\n  data-testid=\"subject\"\n  value=\"text\"\n/>"
+    },
+    "focus-not-pass": {
+      "verdict": "pass"
+    },
+    "checked": {
+      "verdict": "pass"
+    },
+    "checked-radio": {
+      "verdict": "pass"
+    },
+    "checked-aria": {
+      "verdict": "pass"
+    },
+    "checked-not-yet": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toBeChecked()\n\nReceived element is not checked:\n  <input\n  data-testid=\"subject\"\n  type=\"checkbox\"\n/>"
+    },
+    "checked-not": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toBeChecked()\n\nReceived element is checked:\n  <input\n  checked=\"\"\n  data-testid=\"subject\"\n  type=\"checkbox\"\n/>"
+    },
+    "checked-invalid": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "only inputs with type=\"checkbox\" or type=\"radio\" or elements with role=\"checkbox\", role=\"menuitemcheckbox\", role=\"option\", role=\"radio\", role=\"switch\", role=\"menuitemradio\" or role=\"treeitem\" and a valid aria-checked attribute can be used with .toBeChecked(). Use .toHaveValue() instead"
+    },
+    "checked-aria-invalid": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "only inputs with type=\"checkbox\" or type=\"radio\" or elements with role=\"checkbox\", role=\"menuitemcheckbox\", role=\"option\", role=\"radio\", role=\"switch\", role=\"menuitemradio\" or role=\"treeitem\" and a valid aria-checked attribute can be used with .toBeChecked(). Use .toHaveValue() instead"
+    },
+    "disabled": {
+      "verdict": "pass"
+    },
+    "disabled-fieldset": {
+      "verdict": "pass"
+    },
+    "disabled-aria": {
+      "verdict": "pass"
+    },
+    "disabled-custom": {
+      "verdict": "pass"
+    },
+    "disabled-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toBeDisabled()\n\nReceived element is not disabled:\n  <button\n  data-testid=\"subject\"\n/>"
+    },
+    "disabled-not": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toBeDisabled()\n\nReceived element is disabled:\n  <button\n  data-testid=\"subject\"\n  disabled=\"\"\n/>"
+    },
+    "enabled": {
+      "verdict": "pass"
+    },
+    "enabled-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toBeEnabled()\n\nReceived element is not enabled:\n  <button\n  data-testid=\"subject\"\n  disabled=\"\"\n/>"
+    },
+    "enabled-not": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toBeEnabled()\n\nReceived element is enabled:\n  <button\n  data-testid=\"subject\"\n/>"
+    },
+    "required": {
+      "verdict": "pass"
+    },
+    "required-aria": {
+      "verdict": "pass"
+    },
+    "required-select": {
+      "verdict": "pass"
+    },
+    "required-unsupported": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toBeRequired()\n\nReceived element is not required:\n  <input\n  data-testid=\"subject\"\n  required=\"\"\n  type=\"color\"\n/>"
+    },
+    "required-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toBeRequired()\n\nReceived element is not required:\n  <input\n  data-testid=\"subject\"\n  value=\"text\"\n/>"
+    },
+    "required-not": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toBeRequired()\n\nReceived element is required:\n  <input\n  data-testid=\"subject\"\n  required=\"\"\n/>"
+    },
+    "description": {
+      "verdict": "pass"
+    },
+    "description-any": {
+      "verdict": "pass"
+    },
+    "description-regex": {
+      "verdict": "pass"
+    },
+    "description-title": {
+      "verdict": "pass"
+    },
+    "description-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveAccessibleDescription()\n\nExpected element to have accessible description:\n  Other\nReceived:\n  About it"
+    },
+    "description-none": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveAccessibleDescription()\n\nExpected element to have accessible description:\n  undefined\nReceived:\n"
+    },
+    "description-not": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).not.toHaveAccessibleDescription()\n\nExpected element not to have accessible description:\n  About it\nReceived:\n  About it"
+    },
+    "length-two": {
+      "verdict": "pass"
+    },
+    "length-one": {
+      "verdict": "pass"
+    },
+    "length-none": {
+      "verdict": "pass"
+    },
+    "length-element-wrong": {
+      "verdict": "fail",
+      "name": "AssertionError",
+      "message": "expected [ <p data-testid=\"subject\"></p>, …(1) ] to have a length of 3 but got 2"
+    },
+    "chai-truthy": {
+      "verdict": "pass"
+    },
+    "chai-unknown": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "Invalid Chai property: toBeNonsense"
+    },
+    "text-spaces-kept": {
+      "verdict": "pass"
+    },
+    "text-spaces-kept-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveTextContent()\n\nExpected element to have text content:\n  a b\nReceived:\n  a  b "
+    },
+    "attribute-matching": {
+      "verdict": "pass"
+    },
+    "attribute-matching-wrong": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "expect(element).toHaveAttribute(\"title\", StringMatching /z/) // element.getAttribute(\"title\") === StringMatching /z/\n\nExpected the element to have attribute:\n  title=StringMatching /z/\nReceived:\n  title=\"abc\""
+    },
+    "attribute-not-absent": {
+      "verdict": "pass"
+    },
+    "checked-not-pass": {
+      "verdict": "pass"
+    },
+    "disabled-not-pass": {
+      "verdict": "pass"
+    },
+    "enabled-not-pass": {
+      "verdict": "pass"
+    },
+    "required-not-pass": {
+      "verdict": "pass"
+    },
+    "style-several": {
+      "verdict": "pass"
+    },
+    "equal": {
+      "verdict": "pass"
+    },
+    "equal-wrong": {
+      "verdict": "fail",
+      "name": "AssertionError",
+      "message": "expected [ [ 5 ] ] to deeply equal [ [ 6 ] ]"
+    },
+    "be": {
+      "verdict": "pass"
+    },
+    "be-wrong": {
+      "verdict": "fail",
+      "name": "AssertionError",
+      "message": "expected 1 to be 2 // Object.is equality"
+    },
+    "length": {
+      "verdict": "pass"
+    },
+    "length-wrong": {
+      "verdict": "fail",
+      "name": "AssertionError",
+      "message": "expected [ 1, 2 ] to have a length of 3 but got 2"
+    }
+  },
+  "locators": {
+    "testId": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s]",
+      "locator": "getByTestId('uf-root-1')"
+    },
+    "testIdRegex": {
+      "selector": "internal:testid=[data-testid=/uf-root/]",
+      "locator": "getByTestId(/uf-root/)"
+    },
+    "role": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=button",
+      "locator": "getByTestId('uf-root-1').getByRole('button')"
+    },
+    "roleName": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=button[name=\"+3\"s]",
+      "locator": "getByTestId('uf-root-1').getByRole('button', { name: '+3' })"
+    },
+    "roleExact": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=button[name=\"Save\"s]",
+      "locator": "getByTestId('uf-root-1').getByRole('button', { name: 'Save' })"
+    },
+    "roleRegex": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=button[name=/save/i]",
+      "locator": "getByTestId('uf-root-1').getByRole('button', { name: /save/i })"
+    },
+    "roleStates": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=checkbox[checked=true][disabled=false]",
+      "locator": "getByTestId('uf-root-1').getByRole('checkbox', { checked: true, disabled: false })"
+    },
+    "roleExpanded": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=button[expanded=true][pressed=false]",
+      "locator": "getByTestId('uf-root-1').getByRole('button', { expanded: true, pressed: false })"
+    },
+    "roleLevel": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=heading[include-hidden=true][level=2]",
+      "locator": "getByTestId('uf-root-1').getByRole('heading', { includeHidden: true, level: 2 })"
+    },
+    "roleSelected": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=option[selected=true]",
+      "locator": "getByTestId('uf-root-1').getByRole('option', { selected: true })"
+    },
+    "text": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:text=\"Hello\"s",
+      "locator": "getByTestId('uf-root-1').getByText('Hello')"
+    },
+    "textExact": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:text=\"Hello\"s",
+      "locator": "getByTestId('uf-root-1').getByText('Hello')"
+    },
+    "textNotExact": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:text=\"Hello\"i",
+      "locator": "getByTestId('uf-root-1').getByText('Hello', { exact: false })"
+    },
+    "roleNotExact": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=button[name=\"Save\"i]",
+      "locator": "getByTestId('uf-root-1').getByRole('button', { name: 'Save', exact: false })"
+    },
+    "labelNotExact": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:label=\"Name\"i",
+      "locator": "getByTestId('uf-root-1').getByLabel('Name', { exact: false })"
+    },
+    "roleLevelName": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=heading[level=2][name=\"Title\"s]",
+      "locator": "getByTestId('uf-root-1').getByRole('heading', { name: 'Title', level: 2 })"
+    },
+    "textRegex": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:text=/hel+o/i",
+      "locator": "getByTestId('uf-root-1').getByText(/hel+o/i)"
+    },
+    "textQuotes": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:text=\"it's \\\"quoted\\\"\"s",
+      "locator": "getByTestId('uf-root-1').getByText('it\\'s \"quoted\"')"
+    },
+    "label": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:label=\"Name\"s",
+      "locator": "getByTestId('uf-root-1').getByLabel('Name')"
+    },
+    "labelExact": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:label=\"Name\"s",
+      "locator": "getByTestId('uf-root-1').getByLabel('Name')"
+    },
+    "labelRegex": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:label=/name/",
+      "locator": "getByTestId('uf-root-1').getByLabel(/name/)"
+    },
+    "alt": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:attr=[alt=\"Logo\"s]",
+      "locator": "getByTestId('uf-root-1').getByAltText('Logo')"
+    },
+    "altExact": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:attr=[alt=\"Logo\"s]",
+      "locator": "getByTestId('uf-root-1').getByAltText('Logo')"
+    },
+    "placeholder": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:attr=[placeholder=\"Search\"s]",
+      "locator": "getByTestId('uf-root-1').getByPlaceholder('Search')"
+    },
+    "placeholderExact": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:attr=[placeholder=\"Search\"s]",
+      "locator": "getByTestId('uf-root-1').getByPlaceholder('Search')"
+    },
+    "title": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:attr=[title=\"Tip\"s]",
+      "locator": "getByTestId('uf-root-1').getByTitle('Tip')"
+    },
+    "titleExact": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:attr=[title=\"Tip\"s]",
+      "locator": "getByTestId('uf-root-1').getByTitle('Tip')"
+    },
+    "nested": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:testid=[data-testid=\"inner\"s]",
+      "locator": "getByTestId('uf-root-1').getByTestId('inner')"
+    },
+    "nth": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=listitem >> nth=1",
+      "locator": "getByTestId('uf-root-1').getByRole('listitem').nth(1)"
+    },
+    "first": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=listitem >> nth=0",
+      "locator": "getByTestId('uf-root-1').getByRole('listitem').first()"
+    },
+    "last": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=listitem >> nth=-1",
+      "locator": "getByTestId('uf-root-1').getByRole('listitem').last()"
+    },
+    "and": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=button >> internal:and=\"internal:testid=[data-testid=\\\"uf-root-1\\\"s] >> internal:attr=[title=\\\"Tip\\\"s]\"",
+      "locator": "getByTestId('uf-root-1').getByRole('button').and(getByTestId('uf-root-1').getByTitle('Tip'))"
+    },
+    "or": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=button >> internal:or=\"internal:testid=[data-testid=\\\"uf-root-1\\\"s] >> internal:role=link\"",
+      "locator": "getByTestId('uf-root-1').getByRole('button').or(getByTestId('uf-root-1').getByRole('link'))"
+    },
+    "hasText": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=listitem >> internal:has-text=\"one\"i",
+      "locator": "getByTestId('uf-root-1').getByRole('listitem').filter({ hasText: 'one' })"
+    },
+    "hasTextRegex": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=listitem >> internal:has-text=/o\\'n\\\"e/",
+      "locator": "getByTestId('uf-root-1').getByRole('listitem').filter({ hasText: /o'n\"e/ })"
+    },
+    "hasNotText": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=listitem >> internal:has-not-text=\"one\"i",
+      "locator": "getByTestId('uf-root-1').getByRole('listitem').filter({ hasNotText: 'one' })"
+    },
+    "has": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=listitem >> internal:has=\"internal:testid=[data-testid=\\\"uf-root-1\\\"s] >> internal:role=link\"",
+      "locator": "getByTestId('uf-root-1').getByRole('listitem').filter({ has: getByTestId('uf-root-1').getByRole('link') })"
+    },
+    "hasNot": {
+      "selector": "internal:testid=[data-testid=\"uf-root-1\"s] >> internal:role=listitem >> internal:has-not=\"internal:testid=[data-testid=\\\"uf-root-1\\\"s] >> internal:role=link\"",
+      "locator": "getByTestId('uf-root-1').getByRole('listitem').filter({ hasNot: getByTestId('uf-root-1').getByRole('link') })"
+    }
+  },
+  "resolved": {
+    "button": 2,
+    "named": 1,
+    "prefix": 0,
+    "exact": 0,
+    "heading": 1,
+    "checked": 1,
+    "text": 0,
+    "label": 1,
+    "alt": 1,
+    "placeholder": 1,
+    "title": 1,
+    "second": 1,
+    "filtered": 1,
+    "has": 0,
+    "either": 3,
+    "none": 0
+  },
+  "called": {
+    "all": [
+      {
+        "selector": "internal:role=button[name=\"a\"i]",
+        "locator": "getByRole('button', { name: 'a', exact: false })"
+      },
+      {
+        "selector": "internal:role=button[name=\"b\"i]",
+        "locator": "getByRole('button', { name: 'b', exact: false })"
+      }
+    ],
+    "string": "internal:testid=[data-testid=\"root\"s] >> internal:role=button",
+    "json": {
+      "selector": "internal:testid=[data-testid=\"root\"s] >> internal:role=button",
+      "locator": "getByTestId('root').getByRole('button')"
+    },
+    "elements": ["a", "b"],
+    "query": "a",
+    "queryMissing": null,
+    "queryStrict": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "strict mode violation: getByTestId('root').getByRole('button') resolved to 2 elements:\n    1) <button>a</button> aka getByRole('button', { name: 'a', exact: false })\n    2) <button>b</button> aka getByRole('button', { name: 'b', exact: false })\n"
+    },
+    "element": "b",
+    "elementMissing": {
+      "verdict": "fail",
+      "name": "VitestBrowserElementError",
+      "message": "Cannot find element with locator: getByTestId('root').getByTestId('nothing')\n\nARIA tree:\n- button \"a\"\n- button \"b\""
+    },
+    "filterNothing": {
+      "verdict": "fail",
+      "name": "Error",
+      "message": "Locator.filter expects at least one filter. None provided."
+    }
+  },
+  "actions": {
+    "fill": {
+      "value": "new",
+      "events": ["input field"]
+    },
+    "fillArea": {
+      "value": "line\nline",
+      "events": ["change field", "input area", "input area", "input area"]
+    },
+    "clear": {
+      "value": "",
+      "events": ["change area", "input field"]
+    },
+    "selectValue": {
+      "value": "b",
+      "events": ["input one", "change one"]
+    },
+    "selectLabel": {
+      "value": "a",
+      "events": ["input one", "change one"]
+    },
+    "selectMany": {
+      "value": ["a", "c"],
+      "events": ["input many", "change many"]
+    },
+    "unhover": {
+      "events": ["mouseleave hovered"],
+      "hovered": false
+    }
+  },
+  "actionTimeouts": {
+    "fill": {
+      "verdict": "fail",
+      "name": "TimeoutError",
+      "message": "locator.fill: Timeout 300ms exceeded.\nCall log:\n  - waiting for locator('[data-vitest=\"true\"]').contentFrame().getByTestId('uf-root-9').getByRole('textbox', { name: 'Nothing', exact: true })\n"
+    },
+    "selectOptions": {
+      "verdict": "fail",
+      "name": "TimeoutError",
+      "message": "locator.selectOption: Timeout 300ms exceeded.\nCall log:\n  - waiting for locator('[data-vitest=\"true\"]').contentFrame().getByTestId('uf-root-9').getByRole('textbox', { name: 'Nothing', exact: true })\n"
+    }
+  }
+}

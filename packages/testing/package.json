@@ -21,15 +21,20 @@
   ],
   "type": "module",
   "sideEffects": [
+    "./src/hosts/page/setup.ts",
     "./src/hosts/vitest/setup.ts",
     "./src/setup.ts",
     "./src/targets/*.ts",
+    "./dist/hosts/page/setup.js",
     "./dist/hosts/vitest/setup.js",
     "./dist/setup.js",
     "./dist/targets/*.js"
   ],
   "exports": {
     ".": "./src/index.ts",
+    "./hosts/page": "./src/hosts/page/setup.ts",
+    "./hosts/page/run": "./src/hosts/page/runner.ts",
+    "./hosts/page/vitest": "./src/hosts/page/vitest.ts",
     "./hosts/vitest": "./src/hosts/vitest/setup.ts",
     "./setup": "./src/setup.ts",
     "./normalize": "./src/normalize/index.ts",
@@ -48,6 +53,18 @@
       ".": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
+      },
+      "./hosts/page": {
+        "types": "./dist/hosts/page/setup.d.ts",
+        "default": "./dist/hosts/page/setup.js"
+      },
+      "./hosts/page/run": {
+        "types": "./dist/hosts/page/runner.d.ts",
+        "default": "./dist/hosts/page/runner.js"
+      },
+      "./hosts/page/vitest": {
+        "types": "./dist/hosts/page/vitest.d.ts",
+        "default": "./dist/hosts/page/vitest.js"
       },
       "./hosts/vitest": {
         "types": "./dist/hosts/vitest/setup.d.ts",
@@ -104,6 +121,7 @@
   },
   "dependencies": {
     "@fontsource/inter": "catalog:",
+    "@sinonjs/fake-timers": "catalog:",
     "@unframework/codegen": "workspace:*",
     "@unframework/ir": "workspace:*",
     "@unframework/target-angular": "workspace:*",
@@ -113,7 +131,10 @@
     "@unframework/target-solid": "workspace:*",
     "@unframework/target-svelte": "workspace:*",
     "@unframework/target-vue": "workspace:*",
+    "@vitest/expect": "catalog:",
+    "@vitest/utils": "catalog:",
     "axe-core": "catalog:",
+    "ivya": "catalog:",
     "parse5": "catalog:",
     "pixelmatch": "catalog:",
     "pngjs": "catalog:"
@@ -121,6 +142,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/pngjs": "catalog:",
+    "@types/sinonjs__fake-timers": "catalog:",
     "@uxfront/typescript-config": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "playwright": "catalog:",
