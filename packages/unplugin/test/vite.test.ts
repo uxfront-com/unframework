@@ -3,7 +3,7 @@ import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { defineTarget } from "@unframework/codegen";
-import type { Capabilities, CapabilityCell } from "@unframework/codegen";
+import type { Capabilities, CapabilityCell, OutputFile } from "@unframework/codegen";
 import {
   compile,
   createFileResolver,
@@ -957,7 +957,11 @@ describe("the golden guard (onCompile)", () => {
     ];
     await withServer(plugins, async ({ client }) => {
       const result = await client.transformRequest(vueId());
-      const expected = await compile(HELLO, { filename: "Hello.uf.tsx", targets: ["vue"] });
+      const expected = await compile(HELLO, {
+        filename: "Hello.uf.tsx",
+        targets: ["vue"],
+        sourceMap: true,
+      });
       expect(result?.code).toBe(
         `export default ${JSON.stringify(expected.outputs.vue![0]!.contents)};\n`,
       );
@@ -1424,9 +1428,14 @@ describe("the project graph (ADR-0071)", () => {
         targets: [target],
         resolve: createFileResolver({ root: graph.root, readFile, typeOracle }),
         typeOracle,
+        sourceMap: true,
       });
       await typeOracle.dispose();
-      expect(filesOf()).toEqual(direct.outputs.html);
+      // The guard judges their text. Only the module's own file loads, so only that keeps its map.
+      const texts = (files: readonly OutputFile[]) =>
+        files.map(({ path, contents }) => ({ path, contents }));
+      expect(texts(filesOf())).toEqual(texts(direct.outputs.html!));
+      expect(filesOf()[0]!.map).toEqual(direct.outputs.html![0]!.map);
       expect(filesOf().map(({ path }) => path)).toEqual(["B.vue", "a.ts", "tokens.ts"]);
       // An edit that leaves the types alone compiles nothing, and the copy holds the new text.
       compiled.length = 0;
