@@ -125,10 +125,12 @@ async function projectFields(root: string): Promise<Record<string, string>> {
 }
 
 /** A packager's own error: no stack, and its scratch paths as the tree the build has just written. */
-function failure(error: unknown, tree: string): string {
+function failure(error: unknown, work: string, tree: string): string {
   const text = stripVTControlCharacters(error instanceof Error ? error.message : String(error));
   return (
     text
+      // TypeScript names another module by its absolute path, as in TS4023.
+      .replaceAll(join(work, "in"), tree)
       // Rolldown names a file relative to where it ran.
       .replace(/(?<![\w./-])in\//g, `${tree}/`)
       .split("\n")
@@ -238,7 +240,7 @@ export async function planPackage(input: PackageInput): Promise<PackagePlan> {
               resolve: resolverFrom(from(target)),
             });
           } catch (error) {
-            const message = `The ${target} packager failed: ${failure(error, tree)}`;
+            const message = `The ${target} packager failed: ${failure(error, work, tree)}`;
             return [problem("UF7009", target, message)];
           }
         }

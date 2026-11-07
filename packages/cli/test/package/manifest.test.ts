@@ -1,5 +1,13 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, symlinkSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+  symlinkSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
@@ -446,6 +454,40 @@ describe("build --package: UF7009", () => {
     expect(code).toBe(1);
     expect(stderr).toContain("the generator's own error");
   });
+
+  it.each([
+    ["react", REACT, ["react", "@types/react"]],
+    ["vue", inRepository("tests/toolchains/vue"), ["vue"]],
+  ] as const)(
+    "names another module in the %s tree, not the scratch one",
+    async (target, from, frameworks) => {
+      const root = designSystem({
+        config: { targets: [target], package: { resolveFrom: from } },
+        frameworks,
+        files: {
+          "src/shared/a.ts": `interface Hidden {
+  size: number;
+}
+
+export function make(): Hidden {
+  return { size: 1 };
+}
+`,
+          "src/shared/format.ts": `import { make } from "./a";
+
+export const formatLabel = (label: string): string => label.trim();
+export const made = make();
+`,
+        },
+      });
+      const { code, stderr } = await run(root, "build", "--package");
+      expect(code).toBe(1);
+      expect(stderr).toContain("UF7009");
+      expect(stderr).toContain(`from external module "dist/${target}/shared/a"`);
+      expect(stderr).not.toContain(".package-");
+      expect(stderr).not.toContain(realpathSync(root));
+    },
+  );
 
   it("carries what tsgo reports, on standard error and past no io", async () => {
     const root = designSystem({
