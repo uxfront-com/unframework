@@ -70,9 +70,10 @@ A project with no `package.json`, or one with no `name` or `version`, exits 2 an
 does a source that reads a file above `srcDir`, like a sheet, since `./source/*` couldn't hold it.
 
 `package.targets` limits which targets are packaged, and defaults to `targets`. Every target in
-`targets` still gets its tree. Each target's packager resolves from `package.resolveFrom`, which is
-one path or a path per target and defaults to the project's root. It's never a dependency of the CLI.
-Each target ships like this:
+`targets` still gets its tree.
+
+Each target's packager resolves from `package.resolveFrom`, which is one path or a path per target and
+defaults to the project's root. It's never a dependency of the CLI. Each target ships like this:
 
 - **Angular:** not packaged yet, so `--package` reports UF7008.
 - **Astro:** the emitted sources, which Astro's compiler builds in the consumer's app. It needs no
