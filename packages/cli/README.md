@@ -83,9 +83,9 @@ defaults to the project's root. It's never a dependency of the CLI. Each target 
   packager.
 - **Qwik:** not packaged yet, so `--package` reports UF7008.
 - **React:** tsdown builds JS and `.d.ts`, one module to a file, with each sheet beside its importer.
-- **Solid:** the same through tsdown. A `solid` export
-  condition points at preserved JSX, which a consumer's Solid compiler reads. Babel with
-  `babel-preset-solid` compiles the plain JS for the DOM, so both must resolve beside tsdown.
+- **Solid:** the same through tsdown. A `solid` export condition points at preserved JSX, which a
+  consumer's Solid compiler reads. Babel with `babel-preset-solid` compiles the plain JS for the DOM,
+  so both must resolve beside tsdown.
 - **Svelte:** not packaged yet, so `--package` reports UF7008.
 - **Vue:** the SFC sources and `.ts` modules, with `vue-tsc`'s declarations beside them. Vue's compiler
   builds them in the consumer's app, and `vue-tsc` resolves its TypeScript from where it's installed.
