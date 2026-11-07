@@ -140,6 +140,15 @@ const round = (value: number) => Math.round(value * 1000) / 1000;
 async function measure(options: ReturnType<typeof parseArgs>): Promise<number> {
   const { label, maxRssGib, command } = options;
   const started = performance.now();
+  // Before the spawn: a command may print at once, and whoever reads that line may signal this
+  // process, which must not then die and leave the tree running. A handler runs from the event
+  // loop, after this synchronous setup. Not `once`: a second signal in the grace must not end this
+  // process before its SIGKILL.
+  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
+    process.on(signal, () => {
+      if (child.pid !== undefined) stop(child.pid, `interrupted by ${signal}`);
+    });
+  }
   // A session and a process group of its own, so the tree can be stopped without touching this
   // process. A measured run takes no input.
   const child = spawn(command[0]!, command.slice(1), {
@@ -194,10 +203,6 @@ async function measure(options: ReturnType<typeof parseArgs>): Promise<number> {
   };
 
   if (root !== undefined) {
-    for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
-      // Not `once`: a second signal in the grace must not end this process before its SIGKILL.
-      process.on(signal, () => stop(root, `interrupted by ${signal}`));
-    }
     sample(root);
     if (!stopping) timer = setInterval(() => sample(root), SAMPLE_MS);
   }

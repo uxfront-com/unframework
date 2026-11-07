@@ -147,24 +147,48 @@ describe("the script", () => {
     const { stdout } = spawnSync("ps", ["-o", "stat=", "-p", String(pid)], { encoding: "utf8" });
     return stdout.trim() !== "" && !stdout.trim().startsWith("Z");
   };
-  /** Runs a command through the tool, and sends the signals once the command has printed. */
-  async function interrupt(command: readonly string[], ...signals: NodeJS.Signals[]) {
+  /**
+   * Holds the tool right after it spawns the command, whose first line may by then be out. The
+   * natural race is too narrow to hit on demand.
+   */
+  const SLOW_SPAWN = `data:text/javascript,${encodeURIComponent(`
+    import childProcess from "node:child_process";
+    import { syncBuiltinESMExports } from "node:module";
+    const { spawn } = childProcess;
+    childProcess.spawn = (...args) => {
+      const child = spawn(...args);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 300);
+      return child;
+    };
+    syncBuiltinESMExports();
+  `)}`;
+  /**
+   * Runs a command through the tool, and sends the signals once the command has printed a PID,
+   * kept to kill after the test. It waits for the tool's exit, not its pipe, which a tree the tool
+   * failed to stop would hold open.
+   */
+  async function interrupt(
+    command: readonly string[],
+    signals: readonly NodeJS.Signals[],
+    nodeArgs: readonly string[] = [],
+  ) {
     rmSync(reportFile, { force: true });
-    const tool = spawn(process.execPath, [SCRIPT, LABEL, "--", ...command], {
+    const tool = spawn(process.execPath, [...nodeArgs, SCRIPT, LABEL, "--", ...command], {
       stdio: ["ignore", "pipe", "ignore"],
     });
-    const closed = new Promise<number | null>((resolve) => {
-      tool.once("close", (code) => resolve(code));
+    const exited = new Promise<number | null>((resolve) => {
+      tool.once("exit", (code) => resolve(code));
     });
     const out = await new Promise<string>((resolve) => {
       tool.stdout.once("data", (chunk: Buffer) => resolve(chunk.toString()));
     });
+    const pid = sleeperOf(out);
     for (const signal of signals) {
       tool.kill(signal);
       // Two signals of a kind sent at once may arrive as one.
       await delay(100);
     }
-    return { status: await closed, out };
+    return { status: await exited, pid };
   }
   const node = (script: string) => [process.execPath, "-e", script];
   /** Passes the ceiling these tests set, once the script has set up what it needs. */
@@ -177,6 +201,7 @@ describe("the script", () => {
     sleepers.push(pid);
     return pid;
   };
+  const SLEEPER_AND_WAIT = ["sh", "-c", "sleep 60 >/dev/null 2>&1 & echo $!; wait"];
   const DETACHED_SLEEPER = `const { spawn } = require("node:child_process");
     const sleeper = spawn("sleep", ["60"], { detached: true, stdio: "ignore" });
     sleeper.unref();
@@ -292,13 +317,9 @@ describe("the script", () => {
   it.each(["SIGTERM", "SIGINT", "SIGHUP"] as const)(
     "stops the tree when it is itself interrupted by %s",
     async (signal) => {
-      const { status, out } = await interrupt(
-        ["sh", "-c", "sleep 60 >/dev/null 2>&1 & echo $!; wait"],
-        signal,
-      );
-      const sleeper = sleeperOf(out);
+      const { status, pid } = await interrupt(SLEEPER_AND_WAIT, [signal]);
       expect(status).not.toBe(0);
-      expect(isAlive(sleeper)).toBe(false);
+      expect(isAlive(pid)).toBe(false);
       expect(JSON.parse(readFileSync(reportFile, "utf8"))).toMatchObject({
         outcome: "did-not-complete",
         leftover: 0,
@@ -306,17 +327,29 @@ describe("the script", () => {
     },
   );
 
+  it("stops the tree when it is interrupted on the command's first line", async () => {
+    const { status, pid } = await interrupt(
+      SLEEPER_AND_WAIT,
+      ["SIGTERM"],
+      ["--import", SLOW_SPAWN],
+    );
+    expect(status).not.toBe(0);
+    expect(isAlive(pid)).toBe(false);
+    expect(JSON.parse(readFileSync(reportFile, "utf8"))).toMatchObject({
+      outcome: "did-not-complete",
+      leftover: 0,
+    });
+  });
+
   it("still kills a tree that ignores SIGTERM when it is interrupted twice", async () => {
-    const { status, out } = await interrupt(
+    const { status, pid } = await interrupt(
       node(
         `process.on("SIGTERM", () => {}); console.log(process.pid); setInterval(() => {}, 1000);`,
       ),
-      "SIGTERM",
-      "SIGTERM",
+      ["SIGTERM", "SIGTERM"],
     );
-    const stubborn = sleeperOf(out);
     expect(status).toBe(137);
-    expect(isAlive(stubborn)).toBe(false);
+    expect(isAlive(pid)).toBe(false);
     expect(JSON.parse(readFileSync(reportFile, "utf8"))).toMatchObject({
       outcome: "did-not-complete",
       exitStatus: 137,
