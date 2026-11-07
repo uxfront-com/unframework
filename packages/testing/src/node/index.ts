@@ -20,6 +20,10 @@ export type {
 } from "./commands.ts";
 export { compiledEvents, eventsOfModule, recordCompiledModule } from "./events.ts";
 export type { CompiledModule } from "./events.ts";
+export { pageActions } from "./page-actions.ts";
+export type { PageActionContext } from "./page-actions.ts";
+export { exposePageHost } from "./page-host.ts";
+export type { PageHostOptions, PageHostPage } from "./page-host.ts";
 export { caseDirectory, displayRoot, projectHarness, sharedArtefactContext } from "./context.ts";
 export type { CommandProject } from "./context.ts";
 export {

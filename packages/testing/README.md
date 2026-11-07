@@ -192,6 +192,18 @@ errors>` on every layer, and the summary excuses it on that target alone. A case
   Nothing in `src/browser`, `src/setup.ts` or `src/index.ts` imports Vitest directly. The Vitest host
   (`src/hosts/vitest/`) implements the port, and a project with no host fails at its first read,
   naming the setup file to load.
+- **The page host** (`src/hosts/page/`) implements the same port with no Vitest in the page, on
+  `@vitest/expect`, `ivya` and `@sinonjs/fake-timers`. It holds a runner for `describeTargets` and
+  `it` (`runSpecFile`, from `@unframework/testing/hosts/page/run`), in Vitest's order and with its
+  error texts, and without retries, repeats or concurrency. It also holds the 14 `expect.element` matchers
+  the corpus uses, which keep Vitest's verdicts and messages, and locators that keep the strings
+  a trace holds. A matcher the corpus doesn't use fails as not a function, so a new one is
+  ported first. Unlike Vitest's, its `expect.element` never advances a view's clock when it tries
+  again, so the clock moves only through `tick`. Its listeners report an error or a rejection
+  that has a value, which nothing caught in the page, on the file's record, and pass one with no
+  value to `console.error`, so L13 judges it. `@unframework/testing/hosts/page/vitest` is what a
+  build for this host resolves `vitest` to. The driver hands the page its config in an init script
+  and answers its commands through one binding (`exposePageHost`, `src/hosts/page/protocol.ts`).
 
 ## Writing a spec
 
@@ -241,7 +253,9 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
 ## Setup files
 
 - **`@unframework/testing/hosts/vitest`**, loaded first by every Vitest browser project: installs
-  the Vitest host, which the next file reaches the runner through.
+  the Vitest host, which the next file reaches the runner through. A page with no Vitest loads
+  **`@unframework/testing/hosts/page`** there instead, which installs the page host and its
+  listeners.
 - **`@unframework/testing/setup`**, loaded next: the bundled Inter font
   as "UF Test Sans", the motion and caret reset, the startup assertions (DPR 1, reduced motion,
   and the case's colour scheme: `case.json`'s `colorScheme`, `light` by default, which the file
@@ -272,6 +286,9 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
 
 ## Node (`@unframework/testing/node`)
 
+- **The page host's Node side:** `exposePageHost(page, { config, commands, onEvent })` makes a
+  Playwright page ready before it navigates, and `pageActions` holds the four actions Vitest's
+  provider runs in one call of Playwright (`ufUnhover`, `ufFill`, `ufClear`, `ufSelectOptions`).
 - **The write policy** (DESIGN §4.4), as plain functions every driver shares:
   `settleArtefact(path, actual, context)` and `settleArtefactDirectory(dir, files, context)`.
   Check mode compares and never writes; in update mode owners and the reference target write,
@@ -408,3 +425,10 @@ trace; `stub/requires` a capability skip (the stub lacks a list box), which
 `test/interactions.test.ts` reads in the matrix. The DOM tests also run Astro's mount
 adapter, whose rerender needs the toolchain's render command (`vitest.config.ts`).
 `UF_UPDATE=1 pnpm exec vitest run --config test/parity/vitest.config.ts` rewrites the artefacts.
+
+`test/page-host.test.ts` builds the `stub/page-*` specs with the page host through Vite and runs
+them in Chromium with the `playwright` library. It compares the matchers, the locators and the
+actions on `test/page-host/fixtures.ts` with `test/page-host/vitest-results.json`.
+`test/page-host-vitest.browser.test.ts` holds that file to Vitest's own answers, and
+`VITE_UF_RECORD=1 pnpm exec vitest run --project browser test/page-host-vitest.browser.test.ts`
+rewrites it, for `pnpm exec oxfmt` to format. The `*.fails.spec.ts` stubs fail on purpose, so the parity suite's glob skips them.
