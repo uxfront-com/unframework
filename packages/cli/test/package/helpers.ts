@@ -100,6 +100,7 @@ export function consumer(
   root: string,
   target: string,
   files: Readonly<Record<string, string>>,
+  compilerOptions: Readonly<Record<string, unknown>> = {},
 ): string {
   const parent = join(inRepository(`tests/toolchains/${target}`), ".uf-tmp");
   mkdirSync(parent, { recursive: true });
@@ -109,7 +110,11 @@ export function consumer(
   symlinkSync(join(root, "dist", "package"), join(directory, "node_modules", "demo-ds"));
   writeFileSync(
     join(directory, "tsconfig.json"),
-    JSON.stringify({ extends: "../../tsconfig.json", include: Object.keys(files) }),
+    JSON.stringify({
+      extends: "../../tsconfig.json",
+      compilerOptions,
+      include: Object.keys(files),
+    }),
   );
   for (const [path, contents] of Object.entries(files)) {
     writeFileSync(join(directory, path), contents);

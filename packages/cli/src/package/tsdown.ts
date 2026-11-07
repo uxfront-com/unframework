@@ -37,6 +37,15 @@ const KEEP_IMPORTS = {
 };
 
 /**
+ * A side-effect import holds no types, and one a declaration keeps is an error (TS2882) in a
+ * consumer with `skipLibCheck` off, since nothing declares a sheet's module there.
+ */
+const DROP_SIDE_EFFECT_IMPORTS = {
+  name: "unframework:drop-side-effect-imports",
+  renderChunk: (code: string) => code.replace(/^import "[^"]+";\n/gm, ""),
+};
+
+/**
  * Runs tsdown over the tree in `work/in`, one module to a file, then again for its declarations, and
  * copies its sheets to `out`. The declarations run last and apart because tsgo prints its errors to
  * standard output and fails with only an exit code, where Rolldown's error says what is wrong.
@@ -93,7 +102,7 @@ export async function buildWithTsdown(
     ...common,
     dts: { emitDtsOnly: true },
     outExtensions: () => ({ dts: ".d.ts" }),
-    plugins: [KEEP_IMPORTS],
+    plugins: [KEEP_IMPORTS, DROP_SIDE_EFFECT_IMPORTS],
   });
   const sheets: OutputFile[] = files.filter((file) => !SCRIPT.test(file.path));
   await writeFiles(out, sheets);

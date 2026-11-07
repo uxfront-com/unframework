@@ -68,6 +68,24 @@ export function Consumer() {
     expect(code).toBe(0);
   });
 
+  it("keeps no sheet in a declaration, which a strict consumer would reject", async () => {
+    const root = await packaged();
+    const files = tree(join(root, "dist", "package"));
+    expect(files["react/Card.d.ts"]).not.toContain(".css");
+    const directory = consumer(
+      root,
+      "react",
+      {
+        "Consumer.tsx":
+          'import { Card } from "demo-ds/react";\n\nexport const app = <Card label="Hi" />;\n',
+      },
+      { skipLibCheck: false },
+    );
+    const { output } = check("packages/cli", "tsc", ["-p", directory]);
+    expect(output).not.toContain("TS2882");
+    expect(output).not.toContain("dist/package");
+  });
+
   it("writes the file a build would, with no absolute path and no map", async () => {
     const root = await packaged();
     const files = tree(join(root, "dist", "package"));
