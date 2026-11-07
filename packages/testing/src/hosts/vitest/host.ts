@@ -1,5 +1,5 @@
-// The Vitest host: the host port (`../../browser/host.ts`) over Vitest's browser mode. The only
-// module of the spec runtime that imports Vitest; `./setup.ts` installs it.
+// The Vitest host: the host port (`../../browser/host.ts`) over Vitest's browser mode. At run time,
+// the only module of the spec runtime that imports Vitest. `./setup.ts` installs it.
 import {
   afterAll,
   afterEach,

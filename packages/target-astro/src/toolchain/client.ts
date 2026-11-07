@@ -1,7 +1,7 @@
 // The browser half of the Astro toolchain: a static mount. Astro has no client runtime, so the
 // server renders the component (the `ufAstroRender` command, which the test host passes as
-// `options.renderCommand`) and this adapter only inserts the HTML. Nothing is hydrated and no handler is attached; `<script>` elements parsed from HTML
-// never run.
+// `options.renderCommand`) and this adapter only inserts the HTML. Nothing is hydrated and no
+// handler is attached; `<script>` elements parsed from HTML never run.
 import type { MountAdapter } from "@unframework/codegen";
 
 import { assertSerialisableProps, isAstroComponentRef } from "./protocol.ts";

@@ -85,7 +85,7 @@ export interface UfCommands {
   ufColorScheme: (scheme: ColorScheme) => Promise<void>;
   /** The events a case's component declares, as the project's compile of it says (ADR-0050). */
   ufComponentEvents: (request: ComponentEventsRequest) => Promise<ComponentEventsResult>;
-  /** Astro's server render: an Astro project alone implements it, and its adapter alone calls it. */
+  /** Astro's server render: only a project with Astro's toolchain implements it. */
   ufAstroRender: RenderCommand;
 }
 

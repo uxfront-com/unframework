@@ -189,7 +189,7 @@ errors>` on every layer, and the summary excuses it on that target alone. A case
   `fill`, `clear`, `selectOptions` and `cleanup`, the clock, the current test, the setup's hooks,
   the values from Node (`ufHarness`, `ufCapabilities`, `ufNoOutput`, `ufStandIn`, `target`), the
   `expect.element` poll timeout, the test's metadata and the artefacts of a failed comparison.
-  Nothing in `src/browser`, `src/setup.ts` or `src/index.ts` imports Vitest. The Vitest host
+  Nothing in `src/browser`, `src/setup.ts` or `src/index.ts` imports Vitest directly. The Vitest host
   (`src/hosts/vitest/`) implements the port, and a project with no host fails at its first read,
   naming the setup file to load.
 
