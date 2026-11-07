@@ -481,14 +481,14 @@ describe("build --package: UF7009", () => {
           '{ "name": "typescript", "version": "6.0.2", "bin": { "tsc": "missing.js" } }',
         "node_modules/tsdown/package.json": '{ "name": "tsdown", "main": "index.mjs" }',
         "node_modules/tsdown/index.mjs": `export async function build(config) {
-  if (config.dts) throw new Error("the generator's own error");
+  if (config.dts) throw new Error("the generator failed in a module");
 }
 `,
       },
     });
     const { code, stderr } = await run(root, "build", "--package");
     expect(code).toBe(1);
-    expect(stderr).toContain("the generator's own error");
+    expect(stderr).toContain("the generator failed in a module");
   });
 
   it.each([
@@ -523,19 +523,42 @@ describe("build --package: UF7009", () => {
     expect(stderr).toContain('from external module "in/react/shared/a"');
   });
 
-  it("maps the scratch path under a directory ending like it", async () => {
+  it.each(["check in", "C++"])(
+    "maps the scratch path under a directory named %s",
+    async (under) => {
+      const root = designSystem({
+        config: { targets: ["react"], package: { resolveFrom: REACT } },
+        frameworks: ["react", "@types/react"],
+        files: UNNAMEABLE,
+        under,
+      });
+      const { code, stderr } = await run(root, "build", "--package");
+      expect(code).toBe(1);
+      expect(stderr).toContain('from external module "dist/react/shared/a"');
+      expect(stderr).toContain("dist/react/shared/format.ts(");
+      expect(stderr).not.toContain(".package-");
+      expect(stderr).not.toContain(realpathSync(root));
+      expect(stderr).not.toContain("check dist");
+    },
+  );
+
+  it("leaves a directory alone that only ends like the scratch copy", async () => {
     const root = designSystem({
       config: { targets: ["react"], package: { resolveFrom: REACT } },
       frameworks: ["react", "@types/react"],
-      files: UNNAMEABLE,
-      under: "check in",
+      files: {
+        "src/shared/plugin/a.ts": UNNAMEABLE["src/shared/a.ts"],
+        "src/shared/plugin/b.ts": 'import { make } from "./a";\n\nexport const made = make();\n',
+        "src/shared/format.ts": `export { made } from "./plugin/b";
+
+export const formatLabel = (label: string): string => label.trim();
+`,
+      },
     });
     const { code, stderr } = await run(root, "build", "--package");
     expect(code).toBe(1);
-    expect(stderr).toContain('from external module "dist/react/shared/a"');
-    expect(stderr).toContain("dist/react/shared/format.ts(");
-    expect(stderr).not.toContain(".package-");
-    expect(stderr).not.toContain("check dist");
+    expect(stderr).toContain("dist/react/shared/plugin/b.ts(");
+    expect(stderr).toContain('from external module "dist/react/shared/plugin/a"');
   });
 
   it("writes a tree's path as it is, whatever it holds", async () => {

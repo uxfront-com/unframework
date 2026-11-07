@@ -131,7 +131,7 @@ function failure(error: unknown, work: string, tree: string): string {
   // TypeScript names another module by its absolute path, as in TS4023, and a tool names a file
   // relative to where it ran.
   const scratch = join(work, "in").replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
-  const paths = new RegExp(`${scratch}(?![\\w.-])|(?<![\\w./-])in(?=/)`, "g");
+  const paths = new RegExp(`${scratch}|(?<![\\w./-])in(?=/)`, "g");
   return text
     .replace(paths, () => tree)
     .split("\n")
