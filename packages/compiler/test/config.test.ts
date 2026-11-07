@@ -476,9 +476,50 @@ describe("resolveConfig", () => {
       expect(config?.targetOptions).toEqual({ react: { compiler: true, normalized: true } });
     });
 
-    it("passes the options of a target without a schema through", async () => {
-      const { config } = await resolveConfig({ targetOptions: { solid: { any: "thing" } } });
-      expect(config?.targetOptions).toEqual({ solid: { any: "thing" } });
+    it("reports each option of a target that declares none", async () => {
+      const { config, diagnostics } = await resolveConfig({
+        targetOptions: { solid: { typo: 1, "a/b": 2 } },
+      });
+      expect(config).toBeUndefined();
+      expect(diagnostics.map(({ code, message }) => [code, message])).toEqual([
+        [
+          "UF7004",
+          'The configuration at "/targetOptions/solid/typo" is not valid: `solid` declares no options.',
+        ],
+        [
+          "UF7004",
+          'The configuration at "/targetOptions/solid/a~1b" is not valid: `solid` declares no options.',
+        ],
+      ]);
+    });
+
+    it("reports a symbol key, which a list of names would pass over", async () => {
+      expect(await problems({ targetOptions: { solid: { [Symbol("typo")]: 1 } } })).toEqual([
+        [
+          "UF7004",
+          'The configuration at "/targetOptions/solid/Symbol(typo)" is not valid: `solid` declares no options.',
+        ],
+      ]);
+    });
+
+    it.each([[1], ["compiler"], [false], [null], [[]]])(
+      "reports %j, which isn't an object of options, for a target that declares none",
+      async (options) => {
+        expect(await problems({ targetOptions: { solid: options } })).toEqual([
+          [
+            "UF7004",
+            'The configuration at "/targetOptions/solid" is not valid: `solid` declares no options.',
+          ],
+        ]);
+      },
+    );
+
+    it("takes an entry with no options for a target that declares none", async () => {
+      const { config, diagnostics } = await resolveConfig({
+        targetOptions: { solid: {}, svelte: undefined },
+      });
+      expect(diagnostics).toEqual([]);
+      expect(config?.targetOptions).toEqual({});
     });
   });
 });

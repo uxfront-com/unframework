@@ -102,8 +102,9 @@ export async function loadConfig(root: string, file?: string): Promise<LoadedCon
 
 /**
  * Checks a configuration and applies its defaults. It never throws: a field of the wrong shape is
- * UF7002, a name that is no built-in target UF7003, and options the target's schema rejects UF7004,
- * each with the field's JSON pointer. It is asynchronous because a Standard Schema may be.
+ * UF7002, a name that is no built-in target UF7003, and options the target's schema rejects, or a
+ * target without a schema is given, UF7004, each with the field's JSON pointer. It is asynchronous
+ * because a Standard Schema may be.
  */
 export async function resolveConfig(
   raw: unknown,
@@ -310,7 +311,14 @@ async function resolveTargetOptions(
     if (options === undefined) continue;
     const schema = builtinTargets[name].options;
     if (!schema) {
-      resolved[name] = options;
+      // Nothing would read them, so they would be ignored in silence (P2, ADR-0076).
+      const problem = `is not valid: \`${name}\` declares no options.`;
+      if (!isRecord(options)) report("UF7004", pointer, problem);
+      else {
+        for (const key of Reflect.ownKeys(options)) {
+          report("UF7004", `${pointer}${segment(String(key))}`, problem);
+        }
+      }
       continue;
     }
     try {
