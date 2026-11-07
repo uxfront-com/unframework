@@ -89,16 +89,24 @@ unframework init [--force]
   `init` adds no dependency, so add `typescript` to the project to run this.
 - **`AGENTS.md`,** which points agents at unframework.dev and names the commands that check and build.
 
-It refuses to overwrite anything without `--force`: it exits 2, names every file in the way and
-writes nothing. A `unframework.config.mts`, `.js` or `.mjs` counts as in the way, because the `.ts`
-file would replace it without a word.
+It refuses to overwrite anything without `--force`: it exits 2, names every file in the way, says
+what `--force` would do with each and writes nothing. A `unframework.config.mts`, `.js` or `.mjs`
+counts as in the way, because the `.ts` file would replace it without a word.
 
 With `--force`, `init` overwrites its own five files and leaves every other file alone. So such a
-config stays on disk, and the new `.ts` file wins. A symlink is replaced, not written through. A
-directory where one of the five files should go exits 2 either way, and so does a file named `src`.
+config stays on disk, the new `.ts` file wins and `init` says so on standard error. A symlink is
+replaced, not written through. A directory where one of the five files should go exits 2 either way,
+and so does a file named `src`.
 
 `init` doesn't edit your own `tsconfig.json`. If you have one, add `**/*.uf.tsx` and `**/*.uf.ts` to
 its `exclude`, so your framework's JSX types don't check these files (ADR-0073).
 
 `check` exits 0 on the example, and prints UF4002 as an info for Angular and for Qwik, as it does for
-any stylesheet. `init` writes no test yet, because `@unframework/testing` stays private until M7.
+any stylesheet.
+
+The exception is a project whose `package.json` sets `"type": "commonjs"`, which `npm init -y` writes.
+The example's config is an ES module, so there `check` and `build` exit 2 with UF7001. Set
+`"type": "module"`, or rename the file `unframework.config.mts`. A `package.json` with no `type` works,
+with a warning from Node.
+
+`init` writes no test yet, because `@unframework/testing` stays private until M7.

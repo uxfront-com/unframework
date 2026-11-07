@@ -1,4 +1,12 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -22,9 +30,20 @@ describe("init", () => {
     const files = tree(root);
     expect(Object.keys(files)).toEqual(SCAFFOLD);
     for (const file of SCAFFOLD) expect(stdout).toContain(`Wrote ${file}\n`);
-    expect(files["AGENTS.md"]).toContain("https://unframework.dev");
     expect(files["src/Button.uf.tsx"]).toContain('import "./Button.css";');
     expect(files["unframework.config.ts"]).toContain('from "unframework/config"');
+    for (const target of ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"]) {
+      expect(files["unframework.config.ts"]).toContain(`"${target}"`);
+    }
+    for (const line of [
+      "https://unframework.dev",
+      "`unframework check`",
+      "`unframework explain <code>`",
+      "`unframework build`",
+      "`tsc --noEmit -p tsconfig.uf.json`",
+    ]) {
+      expect(files["AGENTS.md"]).toContain(line);
+    }
   });
 
   it("writes the tsconfig ADR-0073 settles", async () => {
@@ -65,22 +84,28 @@ describe("init", () => {
     const { code, stdout, stderr } = await run(root, "init");
     expect(code).toBe(2);
     expect(stdout).toBe("");
-    expect(stderr).toContain(file);
-    expect(stderr).toContain("--force");
+    expect(stderr).toContain(`In the way: ${file}.`);
+    expect(stderr).toContain(`--force overwrites ${file}.`);
     expect(tree(root)).toEqual({ [file]: "mine\n" });
+    // `tree` lists files, so a directory left behind takes its own look.
+    expect(readdirSync(root)).toEqual([file.split("/")[0]]);
   });
 
   it("names every file it refuses to overwrite", async () => {
     const root = project({ "AGENTS.md": "mine\n", "tsconfig.uf.json": "{}\n" });
     const { stderr } = await run(root, "init");
-    expect(stderr).toContain("AGENTS.md, tsconfig.uf.json");
+    expect(stderr).toContain("In the way: AGENTS.md, tsconfig.uf.json.");
   });
 
   it("names a directory in a file's place with the rest", async () => {
     const root = project({ "AGENTS.md": "mine\n" });
     mkdirSync(join(root, "tsconfig.uf.json"));
     const { stderr } = await run(root, "init");
-    expect(stderr).toContain("AGENTS.md, tsconfig.uf.json");
+    expect(stderr).toContain("In the way: AGENTS.md, tsconfig.uf.json.");
+    expect(stderr).toContain("--force overwrites AGENTS.md.");
+    expect(stderr).toContain(
+      "--force can't replace a directory, so remove tsconfig.uf.json first.",
+    );
   });
 
   it("counts a dangling symlink as a file", async () => {
@@ -96,10 +121,25 @@ describe("init", () => {
       const root = project({ [config]: "export default {};\n" });
       const { code, stderr } = await run(root, "init");
       expect(code).toBe(2);
-      expect(stderr).toContain(config);
+      expect(stderr).toContain(`In the way: ${config}.`);
+      expect(stderr).toContain(
+        `--force keeps ${config}, but unframework.config.ts takes precedence.`,
+      );
+      expect(stderr).not.toContain("--force overwrites");
       expect(tree(root)).toEqual({ [config]: "export default {};\n" });
+      expect(readdirSync(root)).toEqual([config]);
     },
   );
+
+  it("lists every config it keeps", async () => {
+    const root = project({
+      "unframework.config.js": "export default {};\n",
+      "unframework.config.mjs": "export default {};\n",
+    });
+    const kept = "unframework.config.js, unframework.config.mjs, but unframework.config.ts";
+    expect((await run(root, "init")).stderr).toContain(`--force keeps ${kept}`);
+    expect((await run(root, "init", "--force")).stderr).toContain(`Kept ${kept}`);
+  });
 
   it("overwrites with --force, and leaves other files alone", async () => {
     const root = project({
@@ -110,7 +150,9 @@ describe("init", () => {
     });
     const { code, stderr } = await run(root, "init", "--force");
     expect(code).toBe(0);
-    expect(stderr).toBe("");
+    expect(stderr).toBe(
+      "Kept unframework.config.mjs, but unframework.config.ts takes precedence.\n",
+    );
     const files = tree(root);
     expect(Object.keys(files)).toEqual([
       "AGENTS.md",
@@ -135,6 +177,11 @@ describe("init", () => {
     expect(readFileSync(join(root, "AGENTS.md"), "utf8")).toContain("https://unframework.dev");
   });
 
+  it("says nothing on standard error with --force and no other config", async () => {
+    const root = project({ "AGENTS.md": "mine\n" });
+    expect((await run(root, "init", "--force")).stderr).toBe("");
+  });
+
   it("gives the same files with and without --force", async () => {
     const root = project({});
     await run(root, "init");
@@ -150,7 +197,9 @@ describe("init", () => {
     const { code, stderr } = await run(root, "init", ...flags);
     expect(code).toBe(2);
     expect(stderr).toContain("tsconfig.uf.json");
+    expect(stderr).toContain("--force can't replace a directory");
     expect(tree(root)).toEqual({});
+    expect(readdirSync(root)).toEqual(["tsconfig.uf.json"]);
   });
 
   it.each([[[]], [["--force"]]])("exits 2 when src is a file, %j", async (flags) => {
@@ -159,13 +208,14 @@ describe("init", () => {
     const { code } = await run(root, "init", ...flags);
     expect(code).toBe(2);
     expect(tree(root)).toEqual({ src: "mine\n" });
+    expect(readdirSync(root)).toEqual(["src"]);
   });
 
   it("exits 2 on anything but --force", async () => {
     const root = project({});
     expect((await run(root, "init", "here")).code).toBe(2);
     expect((await run(root, "init", "--nope")).code).toBe(2);
-    expect(tree(root)).toEqual({});
+    expect(readdirSync(root)).toEqual([]);
   });
 
   it("appears in the usage", async () => {

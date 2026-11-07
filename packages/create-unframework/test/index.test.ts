@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -102,8 +103,17 @@ describe("create-unframework", () => {
     expect(node(project, tsc, "-p", "tsconfig.uf.json", "--listFilesOnly").output).toContain(
       "src/Button.uf.tsx",
     );
-    // `tsconfig.uf.json` leaves out what `build` writes, and the sources compile there too.
+    // The sources still type-check once `build` has written `dist`.
     expect(node(project, bin, "build")).toMatchObject({ status: 0 });
+    expect(readdirSync(join(project, "dist")).toSorted()).toEqual([
+      "angular",
+      "astro",
+      "qwik",
+      "react",
+      "solid",
+      "svelte",
+      "vue",
+    ]);
     expect(existsSync(join(project, "dist", "vue", "Button.vue"))).toBe(true);
     expect(node(project, tsc, "--noEmit", "-p", "tsconfig.uf.json")).toEqual({
       status: 0,
@@ -146,13 +156,14 @@ describe("create-unframework", () => {
   });
 
   it.each([
-    ["a string", '"cli.js"'],
-    ["no entry for it", "{}"],
-  ])("treats an unframework whose bin is %s as not installed", (_, bin) => {
+    ["no bin field", "{}"],
+    ["a string for its bin", '{ "bin": "cli.js" }'],
+    ["no entry in its bin", '{ "bin": {} }'],
+  ])("treats an unframework with %s as not installed", (_, manifest) => {
     const root = temporary();
     const installed = join(root, "app", "node_modules", "unframework");
     mkdirSync(installed, { recursive: true });
-    writeFileSync(join(installed, "package.json"), `{ "bin": ${bin} }\n`);
+    writeFileSync(join(installed, "package.json"), `${manifest}\n`);
     const { code, stderr } = run(root, "app");
     expect(code).toBe(1);
     expect(stderr).toContain('run "unframework init"');
@@ -166,6 +177,15 @@ describe("create-unframework", () => {
     writeFileSync(join(installed, "package.json"), '{ "bin": { "unframework": "bin.js" } }\n');
     writeFileSync(join(installed, "bin.js"), "process.exit(7);\n");
     expect(run(root, "app").code).toBe(7);
+  });
+
+  it("exits 2 when a signal kills the bin", () => {
+    const root = temporary();
+    const installed = join(root, "app", "node_modules", "unframework");
+    mkdirSync(installed, { recursive: true });
+    writeFileSync(join(installed, "package.json"), '{ "bin": { "unframework": "bin.js" } }\n');
+    writeFileSync(join(installed, "bin.js"), 'process.kill(process.pid, "SIGKILL");\n');
+    expect(run(root, "app").code).toBe(2);
   });
 
   it("reports a bin it can't start", () => {
@@ -189,6 +209,14 @@ describe("create-unframework", () => {
     expect(stderr).toContain("package.json");
     expect(readFileSync(join(root, "package.json"), "utf8")).toBe("{}\n");
     expect(existsSync(join(root, "AGENTS.md"))).toBe(false);
+  });
+
+  it("refuses a dangling package.json symlink, and writes nothing through it", () => {
+    const root = temporary();
+    const target = join(root, "elsewhere.json");
+    symlinkSync(target, join(root, "package.json"));
+    expect(run(root, ".").code).toBe(2);
+    expect(existsSync(target)).toBe(false);
   });
 
   it("passes on init's refusal and exit code", () => {
@@ -217,6 +245,30 @@ describe("create-unframework", () => {
       expect(readdirSync(root)).toEqual([]);
     },
   );
+
+  it.each([
+    ["no directory", [], 2],
+    ["no unframework yet", ["app"], 1],
+    ["a package.json already there", ["."], 2],
+  ])("exits with main's code through the bin, on %s", (_, argv, status) => {
+    const root = temporary();
+    if (status === 2 && argv.length > 0) writeFileSync(join(root, "package.json"), "{}\n");
+    const bin = join(packageDirectory, "bin", "create-unframework.js");
+    expect(node(root, bin, ...argv).status).toBe(status);
+  });
+
+  // The README and ADR-0076 name this exception to `check` exiting 0 on the example, and its fixes.
+  it("fails on the example's ES module config under commonjs, until the file is renamed", () => {
+    const project = linked();
+    writeFileSync(join(project, "package.json"), '{ "type": "commonjs" }\n');
+    const bin = join(project, "node_modules", "unframework", "bin", "unframework.js");
+    expect(node(project, bin, "init")).toMatchObject({ status: 0 });
+    const refused = node(project, bin, "check");
+    expect(refused.status).toBe(2);
+    expect(refused.output).toContain("UF7001");
+    renameSync(join(project, "unframework.config.ts"), join(project, "unframework.config.mts"));
+    expect(node(project, bin, "check")).toMatchObject({ status: 0 });
+  }, 60_000);
 
   it.each(["--help", "-h"])("prints the usage on %s, and exits 0", (flag) => {
     const { code, stdout, stderr } = run(temporary(), flag);

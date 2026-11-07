@@ -65,7 +65,7 @@ code, so read https://unframework.dev/docs before you change one.
 
 - \`unframework check\` reports diagnostics and writes no file. Add \`--format json\` to parse them.
 - \`unframework explain <code>\` prints what a diagnostic means, with a link to its documentation.
-- \`tsc --noEmit -p tsconfig.uf.json\` type-checks the sources.
+- \`tsc --noEmit -p tsconfig.uf.json\` type-checks the sources, once the project has \`typescript\`.
 - \`unframework build\` writes each target to \`dist/<target>\`. It cleans that directory first, so
   change the source and build again instead of editing an output.
 `;
@@ -89,23 +89,34 @@ export const run: RunCommand = async (args, io) => {
   const found = (path: string): Stats | undefined =>
     lstatSync(join(root, path), { throwIfNoEntry: false });
 
-  // Everything that can refuse comes before the first write, so a refusal writes nothing.
+  // Everything that can refuse comes before the first write, so a refusal writes nothing. `--force`
+  // treats each kind of file differently, so the message says what it would do with each.
   const paths = FILES.map(([path]) => path);
-  const taken = [...paths, ...OTHER_CONFIGS].filter((path) => found(path)).toSorted();
+  const directories = paths.filter((path) => found(path)?.isDirectory());
+  const files = paths.filter((path) => found(path) && !directories.includes(path));
+  const configs = OTHER_CONFIGS.filter((path) => found(path));
+  const taken = [...directories, ...files, ...configs].toSorted();
+  const noDirectory = `--force can't replace a directory, so remove ${directories.join(", ")} first.`;
+  const kept = `${configs.join(", ")}, but unframework.config.ts takes precedence.`;
   if (taken.length > 0 && !values.force) {
-    throw new Error(`Refusing to overwrite ${taken.join(", ")}. Pass --force to overwrite.`);
+    const lines = [`In the way: ${taken.join(", ")}.`];
+    if (files.length > 0) lines.push(`--force overwrites ${files.join(", ")}.`);
+    if (configs.length > 0) lines.push(`--force keeps ${kept}`);
+    if (directories.length > 0) lines.push(noDirectory);
+    throw new Error(lines.join(" "));
   }
-  const directory = paths.find((path) => found(path)?.isDirectory());
-  if (directory) throw new Error(`${directory} is a directory.`);
+  if (directories.length > 0) throw new Error(noDirectory);
   for (const path of new Set(paths.map(dirname))) {
     mkdirSync(join(root, path), { recursive: true });
   }
 
   for (const [path, contents] of FILES) {
-    // A symlink is replaced: writing through it would overwrite a file outside the project.
+    // A file's own symlink is replaced, so this can't overwrite what it points at. A symlinked `src`
+    // is followed, as `check` and `build` follow it.
     rmSync(join(root, path), { force: true });
     writeFileSync(join(root, path), contents);
     io.stdout(`Wrote ${path}\n`);
   }
+  if (configs.length > 0) io.stderr(`Kept ${kept}\n`);
   return 0;
 };

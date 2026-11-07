@@ -109,13 +109,17 @@ export default defineConfig({
   `tsconfig.uf.json` (ADR-0073) and an `AGENTS.md` that points at unframework.dev. It holds them as
   strings in the CLI, so they ship in `dist` with no copy step.
 - It refuses to overwrite a file without `--force`. It checks before its first write, so a refusal
-  exits 2, names every file in the way and writes nothing. A dangling symlink counts as a
+  exits 2, names every file in the way, says what `--force` would do with each and writes nothing. A dangling symlink counts as a
   file, since writing through it would create one elsewhere. A `unframework.config.{mts,js,mjs}`
   counts too, since `loadConfig` takes the `.ts` file first and would drop that config without a word.
   `--force` overwrites the five files, replaces a symlink rather than writing through it, and touches
-  nothing else, so the `.ts` file then wins. A directory in a file's place exits 2 even with `--force`.
+  nothing else, so the `.ts` file then wins, and `init` says so on standard error. A directory in a file's place exits 2 even with `--force`.
 - The example has a stylesheet, so `check` prints UF4002 as an info for Angular and for Qwik, and
   exits 0. Any stylesheet does that.
+- The example's config is an ES module, and `loadConfig` can't change how Node reads a `.ts` file. So
+  in a project whose `package.json` sets `"type": "commonjs"`, which `npm init -y` writes, `check` and
+  `build` exit 2 with UF7001. The fix is `"type": "module"`, or renaming the file
+  `unframework.config.mts`. The `package.json` that `create-unframework` writes sets `"type": "module"`.
 - `create-unframework <dir>` writes a private ES module `package.json` with `unframework` as a
   dependency, at `latest`, then runs the project's own `unframework init`, passing on its output and
   exit code. It keeps no dependencies of its own (§5.2). An existing `package.json` exits 2 and stays
