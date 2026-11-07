@@ -108,6 +108,16 @@ describe("createPreview", () => {
     expect(canvas.children).toEqual([]);
   });
 
+  it("mounts again after its teardown, rather than rerender what it unmounted", async () => {
+    const { instance, mount, render } = setup();
+    const teardown = await render("a--one", {}, { forceRemount: true });
+    await teardown();
+    await render("a--one", {});
+    expect(mount).toHaveBeenCalledTimes(2);
+    expect(instance.rerender).not.toHaveBeenCalled();
+    expect(instance.unmount).toHaveBeenCalledOnce();
+  });
+
   it("shows a story's reason as text, and calls no adapter, for a case without output", async () => {
     const { mount, render, canvas } = setup();
     await render("a--one", { step: 3 }, { parameters: { ufNoOutput: "no output: UF4001" } });

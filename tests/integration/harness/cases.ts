@@ -736,7 +736,6 @@ export function caseStories(info: CaseInfo): CaseStory[] {
     if (known?.fromSpec && fromSpec && known.source !== source) {
       fail(`${id} mounts two components: ${basename(known.source)} and ${basename(source)}.`);
     }
-    if (known?.fromSpec && !fromSpec) return;
     stories.set(id, {
       id,
       title: info.id,
