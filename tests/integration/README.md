@@ -430,7 +430,16 @@ A story's id is `<area>-<name>--<scenario>`, the same on all seven targets. `cas
 
 Generation fails on two sets of props under one id, on two mounts of one id that name different components, and on a mount it can't read: a scenario name that isn't a string literal, or a bare `mount`'s options that aren't JSON literals (`undefined` is allowed). A case the target has no output for keeps its ids, and its stories show the reason as text.
 
-`storybook:check` exits 1 on a story with an empty root or Storybook's error display, on a build that differs from the generator's list, on a no-output list that differs from `noOutputCases`, and on a catalogue page that loaded a spec. The specs don't run on these builds yet: the hidden `uf-runner--spec` story is the page they will run in.
+`storybook:check` exits 1 on a story with an empty root or Storybook's error display, on a build that differs from the generator's list, on a no-output list that differs from `noOutputCases`, and on a catalogue page that loaded a spec.
+
+The specs run on these builds with Playwright, in the hidden `uf-runner--spec` story, so no test opens a corpus story:
+
+```sh
+pnpm --filter @unframework/integration test:browser vue                            # every case of a target
+pnpm --filter @unframework/integration test:browser vue basics/hello state/counter # some cases
+```
+
+`test:browser` reads the build `storybook:build` left, and makes one if there is none, so run `storybook:build` after you change a case or the compiler. The line it prints names the build it read. A canary (`UF_CANARY=<id>`) always builds, under `.canary/<id>/`, with only the cases you name, and its matrix goes beside that build. `UF_WORKERS` sets how many pages run at once, 3 by default, and `harness/playwright-rules.ts` holds the rules: no retries and no tolerance of its own. The Vitest `browser:<target>` projects stay, and `pnpm test` stays on them.
 
 ## Where things live
 

@@ -227,7 +227,16 @@ export function ufComponentEvents(
   context: CommandProject,
   request: ComponentEventsRequest,
 ): ComponentEventsResult {
-  const { target, harness } = projectHarness(context);
+  const { target } = projectHarness(context);
+  return { events: compiledEvents(mainSource(context, request), target) };
+}
+
+/**
+ * The file of the component a case's spec mounts: the case's only `.uf.tsx`, or the one its
+ * `case.json` names.
+ */
+export function mainSource(context: CommandProject, request: ComponentEventsRequest): string {
+  const { harness } = projectHarness(context);
   const directory = caseDirectory(harness, request.case);
   const main = harness.cases[request.case]?.main;
   const sources = readdirSync(directory).filter((file) => file.endsWith(".uf.tsx"));
@@ -238,7 +247,7 @@ export function ufComponentEvents(
         : `[uf] Case ${request.case} names ${main} as its main input, which it does not hold.`,
     );
   }
-  return { events: compiledEvents(join(directory, main ?? sources[0]!), target) };
+  return join(directory, main ?? sources[0]!);
 }
 
 /** Every command the testing API needs, keyed by the name the browser calls. */

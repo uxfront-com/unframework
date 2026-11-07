@@ -1,6 +1,7 @@
 // @unframework/testing/node: the Node side of the testing API (plan §7.3, §7.4). The browser
 // commands, the artefact write policy as plain functions for the Node drivers (compile, SSR),
 // the run's mode and project ordering, the parity reporter and the summary writer.
+export { CHROMIUM_ARGS, CONTEXT_OPTIONS } from "./browser-options.ts";
 export { ACTION_TIMEOUT, parityBrowser, VIEWPORT } from "./browser.ts";
 export type { AnyBrowserCommand, ParityBrowserOptions } from "./browser.ts";
 export {
@@ -67,6 +68,8 @@ export {
   groupOrder,
   resolveBrowser,
   resolveHarnessMode,
+  RUN_ID_ENV,
+  sharedRunId,
 } from "./mode.ts";
 export type { HarnessMode, HarnessRunOptions, ModeInput, ProjectKind } from "./mode.ts";
 export { KEBAB_CASE } from "./names.ts";

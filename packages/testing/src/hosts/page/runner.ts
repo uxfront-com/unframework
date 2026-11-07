@@ -247,6 +247,15 @@ export async function runSpecFile(options: {
     fail(result, error);
     return finishFile(current, result);
   }
+  await report({
+    kind: "collected",
+    filepath: current.filepath,
+    tests: entries.map(({ test, timeout }) => ({
+      name: test.name,
+      fullName: test.fullName,
+      timeout,
+    })),
+  });
   const { hookTimeout } = pageConfig();
   let started = true;
   try {

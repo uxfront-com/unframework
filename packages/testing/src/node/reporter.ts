@@ -75,6 +75,155 @@ export interface ParityReporterOptions {
   canaryDir?: string;
 }
 
+/** One test as {@link settleRun} reads it. */
+export interface ReportedFileTest {
+  project: string;
+  fullName: string;
+  skipped: boolean;
+  record?: UfLayerMeta | undefined;
+}
+
+/** One spec file as {@link settleRun} reads it: what it recorded itself, and its tests. */
+export interface ReportedFile {
+  project: string;
+  record?: UfLayerMeta | undefined;
+  tests: readonly ReportedFileTest[];
+}
+
+/** What a run of either runner gives {@link settleRun}. */
+export interface ReportedRun {
+  /** The selected projects' names, sorted. */
+  projects: readonly string[];
+  harness: HarnessContext | undefined;
+  filtered: string | null;
+  shard: Shard | null;
+  files: readonly ReportedFile[];
+  /** Whether a skip with no reason is a problem: a filter may skip what it leaves out. */
+  checksSkips: boolean;
+  /** The cases a project includes file by file, or nothing (see `scopesOf`). */
+  casesOf: (project: string) => readonly string[] | undefined;
+  log: (message: string) => void;
+  error: (message: string) => void;
+}
+
+/** What {@link settleRun} found. */
+export interface SettledRun {
+  matrix: PartialMatrix;
+  /** Everything beyond the failed tests that fails the run, already printed. */
+  problems: string[];
+}
+
+/**
+ * Judges a finished run, either runner's: its matrix, written where the options say, and what fails
+ * the run beyond its failed tests.
+ */
+export function settleRun(run: ReportedRun, options: ParityReporterOptions): SettledRun {
+  const { projects, harness, filtered, shard } = run;
+  // A shard runs whole files: its skips are real, but it may hold no file of a project.
+  const narrowed = narrowing({ filtered, shard });
+  const problems: string[] = [];
+  const counts = new Map<string, number>(projects.map((name) => [name, 0]));
+  const records: ProjectRecord[] = [];
+  const named = new Set<string>();
+  for (const file of run.files) {
+    if (file.record) records.push({ project: file.project, record: file.record });
+    for (const test of file.tests) {
+      counts.set(test.project, (counts.get(test.project) ?? 0) + 1);
+      // A record carries the parity scenarios the test checked too: a scenario one target
+      // leaves out shows in no cell, so the summary compares each target's with the reference's,
+      // test by test, by a name every target gives the test alike.
+      const meta = test.record;
+      const record = meta && { ...meta, test: testKey(test.fullName, meta.target) };
+      if (record) {
+        records.push({ project: test.project, record });
+        const identity = JSON.stringify([test.project, record.case, record.test]);
+        if (named.has(identity)) {
+          problems.push(
+            `${test.project}: two tests of ${record.case} are named "${record.test}". Each test of a case has a name of its own: the summary compares each target's tests with the reference's by name.`,
+          );
+        }
+        named.add(identity);
+      }
+      if (run.checksSkips && test.skipped && !skipsWithReasons(record)) {
+        problems.push(
+          `${test.project}: "${test.fullName}" was skipped without recording why. A harness test never skips silently (plan §7.7): record each layer it skips, with the reason, before skipping.`,
+        );
+      }
+    }
+  }
+
+  const empty = projects.filter((name) => !counts.get(name));
+  if (empty.length) {
+    if (narrowed) {
+      run.log(
+        `[uf:parity] Not checking for empty projects: the run covers only ${narrowed}. Empty: ${empty.join(", ")}.`,
+      );
+    } else {
+      problems.push(
+        `${empty.length} selected project(s) collected zero tests: ${empty.join(", ")}. A project that runs nothing verifies nothing.`,
+      );
+    }
+  }
+
+  const all = runName(projects, options.allProjects);
+  const complete = !narrowed && all === "all" && options.allProjects !== undefined;
+  const matrix = buildPartialMatrix({
+    // Each shard's matrix has a name of its own: CI's parity job downloads them side by side.
+    run: [
+      all,
+      ...(shard ? [`shard-${shard.index}-of-${shard.count}`] : []),
+      ...(filtered ? [`filtered-${hash(filtered)}`] : []),
+    ].join("+"),
+    projects: [...projects],
+    records,
+    finishedAt: new Date().toISOString(),
+    mode: harness
+      ? { update: harness.update, pixels: harness.pixels, canary: harness.canary }
+      : null,
+    filtered,
+    shard,
+    empty,
+    quarantine: harness?.quarantine ?? [],
+    reference: harness?.reference ?? null,
+    references: Object.fromEntries(
+      Object.entries(harness?.cases ?? {}).flatMap(([id, config]) =>
+        config.reference ? [[id, config.reference]] : [],
+      ),
+    ),
+  });
+  if (complete) {
+    // Every record of every cell is here: a quarantined cell that no longer fails is stale.
+    problems.push(...settleQuarantine(matrix.cases, matrix.quarantine, { stale: true }));
+  } else if (matrix.quarantine.length) {
+    run.log(
+      "[uf:parity] Quarantine entries are checked for staleness when every project runs (or in the merged summary).",
+    );
+  }
+
+  if (options.canaryDir) {
+    mkdirSync(options.canaryDir, { recursive: true });
+    writeFileSync(join(options.canaryDir, "parity-matrix.json"), stringifyMatrix(matrix));
+  } else {
+    mkdirSync(options.reportsDir, { recursive: true });
+    const file = join(options.reportsDir, `parity-matrix.${matrix.run}.json`);
+    writeFileSync(file, stringifyMatrix(matrix));
+    if (!narrowed) {
+      const scopes = scopesOf(projects, records, run.casesOf);
+      for (const line of supersede(options.reportsDir, file, new Set(projects), scopes)) {
+        run.log(`[uf:parity] ${line}`);
+      }
+    }
+    run.log(`[uf:parity] ${records.length} record(s) from ${projects.length} project(s) → ${file}`);
+  }
+
+  if (problems.length) {
+    run.error(
+      `[uf:parity] ${problems.length} problem(s) beyond the failed tests:\n  ${problems.join("\n  ")}`,
+    );
+  }
+  return { matrix, problems };
+}
+
 /** The parity reporter. Add it to `test.reporters` next to Vitest's own. */
 export class ParityReporter {
   readonly #options: ParityReporterOptions;
@@ -101,121 +250,40 @@ export class ParityReporter {
       vitest.logger.error("[uf:parity] The run was interrupted: no parity matrix written.");
       return;
     }
-    const projects = [...new Set(vitest.projects.map((project) => project.name))].sort();
     const harness = vitest.projects
       .map((project) => project.getProvidedContext().ufHarness)
       .find((context) => context !== undefined);
     const filtered = filterOf(vitest);
-    const shard: Shard | null = vitest.config.shard
-      ? { index: vitest.config.shard.index, count: vitest.config.shard.count }
-      : null;
-    // A shard runs whole files: its skips are real, but it may hold no file of a project.
-    const narrowed = narrowing({ filtered, shard });
-    const problems: string[] = [];
-    const counts = new Map<string, number>(projects.map((name) => [name, 0]));
-    const records: ProjectRecord[] = [];
-    const named = new Set<string>();
-    for (const module of testModules) {
-      const fileRecord = module.meta().uf;
-      if (fileRecord) records.push({ project: module.project.name, record: fileRecord });
-      for (const test of module.children.allTests()) {
-        counts.set(test.project.name, (counts.get(test.project.name) ?? 0) + 1);
-        // A record carries the parity scenarios the test checked too: a scenario one target
-        // leaves out shows in no cell, so the summary compares each target's with the reference's,
-        // test by test, by a name every target gives the test alike.
-        const meta = test.meta().uf;
-        const record = meta && { ...meta, test: testKey(test.fullName, meta.target) };
-        if (record) {
-          records.push({ project: test.project.name, record });
-          const identity = JSON.stringify([test.project.name, record.case, record.test]);
-          if (named.has(identity)) {
-            problems.push(
-              `${test.project.name}: two tests of ${record.case} are named "${record.test}". Each test of a case has a name of its own: the summary compares each target's tests with the reference's by name.`,
-            );
-          }
-          named.add(identity);
-        }
-        if (!filtered && test.result().state === "skipped" && !skipsWithReasons(record)) {
-          problems.push(
-            `${test.project.name}: "${test.fullName}" was skipped without recording why. A harness test never skips silently (plan §7.7): record each layer it skips, with the reason, before skipping.`,
-          );
-        }
-      }
-    }
-
-    const empty = projects.filter((name) => !counts.get(name));
-    if (empty.length) {
-      if (narrowed) {
-        vitest.logger.log(
-          `[uf:parity] Not checking for empty projects: the run covers only ${narrowed}. Empty: ${empty.join(", ")}.`,
-        );
-      } else {
-        problems.push(
-          `${empty.length} selected project(s) collected zero tests: ${empty.join(", ")}. A project that runs nothing verifies nothing.`,
-        );
-      }
-    }
-
-    const all = runName(projects, this.#options.allProjects);
-    const complete = !narrowed && all === "all" && this.#options.allProjects !== undefined;
-    const matrix = buildPartialMatrix({
-      // Each shard's matrix has a name of its own: CI's parity job downloads them side by side.
-      run: [
-        all,
-        ...(shard ? [`shard-${shard.index}-of-${shard.count}`] : []),
-        ...(filtered ? [`filtered-${hash(filtered)}`] : []),
-      ].join("+"),
-      projects,
-      records,
-      finishedAt: new Date().toISOString(),
-      mode: harness
-        ? { update: harness.update, pixels: harness.pixels, canary: harness.canary }
-        : null,
-      filtered,
-      shard,
-      empty,
-      quarantine: harness?.quarantine ?? [],
-      reference: harness?.reference ?? null,
-      references: Object.fromEntries(
-        Object.entries(harness?.cases ?? {}).flatMap(([id, config]) =>
-          config.reference ? [[id, config.reference]] : [],
-        ),
-      ),
-    });
-    if (complete) {
-      // Every record of every cell is here: a quarantined cell that no longer fails is stale.
-      problems.push(...settleQuarantine(matrix.cases, matrix.quarantine, { stale: true }));
-    } else if (matrix.quarantine.length) {
-      vitest.logger.log(
-        "[uf:parity] Quarantine entries are checked for staleness when every project runs (or in the merged summary).",
-      );
-    }
+    const { matrix, problems } = settleRun(
+      {
+        projects: [...new Set(vitest.projects.map((project) => project.name))].sort(),
+        harness,
+        filtered,
+        shard: vitest.config.shard
+          ? { index: vitest.config.shard.index, count: vitest.config.shard.count }
+          : null,
+        files: testModules.map((module) => ({
+          project: module.project.name,
+          record: module.meta().uf,
+          tests: [...module.children.allTests()].map((test) => ({
+            project: test.project.name,
+            fullName: test.fullName,
+            skipped: test.result().state === "skipped",
+            record: test.meta().uf,
+          })),
+        })),
+        checksSkips: !filtered,
+        casesOf: (name) => {
+          const project = vitest.projects.find((candidate) => candidate.name === name)!;
+          return project.getProvidedContext().ufOnly ?? includedCases(project, harness);
+        },
+        log: (message) => vitest.logger.log(message),
+        error: (message) => vitest.logger.error(message),
+      },
+      this.#options,
+    );
     this.matrix = matrix;
-
-    if (this.#options.canaryDir) {
-      mkdirSync(this.#options.canaryDir, { recursive: true });
-      writeFileSync(join(this.#options.canaryDir, "parity-matrix.json"), stringifyMatrix(matrix));
-    } else {
-      mkdirSync(this.#options.reportsDir, { recursive: true });
-      const file = join(this.#options.reportsDir, `parity-matrix.${matrix.run}.json`);
-      writeFileSync(file, stringifyMatrix(matrix));
-      if (!narrowed) {
-        const scopes = scopesOf(vitest.projects, records, harness);
-        for (const line of supersede(this.#options.reportsDir, file, new Set(projects), scopes)) {
-          vitest.logger.log(`[uf:parity] ${line}`);
-        }
-      }
-      vitest.logger.log(
-        `[uf:parity] ${records.length} record(s) from ${projects.length} project(s) → ${file}`,
-      );
-    }
-
-    if (problems.length) {
-      vitest.logger.error(
-        `[uf:parity] ${problems.length} problem(s) beyond the failed tests:\n  ${problems.join("\n  ")}`,
-      );
-      process.exitCode = 1;
-    }
+    if (problems.length) process.exitCode = 1;
   }
 }
 
@@ -314,17 +382,17 @@ export function readPartialMatrices(reportsDir: string): Map<string, PartialMatr
  * and names no cases re-judged all of it.
  */
 function scopesOf(
-  projects: readonly ReportedProject[],
+  projects: readonly string[],
   records: readonly ProjectRecord[],
-  harness: HarnessContext | undefined,
+  casesOf: (project: string) => readonly string[] | undefined,
 ): Map<string, ProjectScope> {
   const scopes = new Map<string, ProjectScope>();
   for (const project of projects) {
     const targets = new Set(
-      records.filter((entry) => entry.project === project.name).map((entry) => entry.record.target),
+      records.filter((entry) => entry.project === project).map((entry) => entry.record.target),
     );
-    const cases = project.getProvidedContext().ufOnly ?? includedCases(project, harness);
-    scopes.set(project.name, {
+    const cases = casesOf(project);
+    scopes.set(project, {
       ...(targets.size ? { targets } : {}),
       ...(cases ? { cases: new Set(cases) } : {}),
     });

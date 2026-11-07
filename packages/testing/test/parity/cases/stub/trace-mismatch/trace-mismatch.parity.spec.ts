@@ -1,13 +1,14 @@
 // L9 against a trace that differs from the run (committed by hand): a step whose DOM, ARIA tree
 // and events differ fails with the diff of the trace file; and a scenario no step led to fails
 // when a trace for it is committed all the same, which no test would read otherwise.
-import { expect, inject, it } from "vitest";
+import { expect } from "vitest";
 
 import "../../../../../src/setup.ts";
 import { expectLayerFailure } from "../../../../../src/browser/behaviour.ts";
 import { describeTargets, mount } from "../../../../../src/index.ts";
 import type { StubComponent } from "../../../dom-target.ts";
 import "../../../dom-target.ts";
+import { itUnlessUpdate } from "../../../stub-api.ts";
 
 /** A counter: a status and a button that counts and emits the count. */
 const counter: StubComponent = {
@@ -28,7 +29,7 @@ const counter: StubComponent = {
 
 // Update mode would overwrite the hand-written traces this case compares against.
 describeTargets("stub/trace-mismatch", () => {
-  it.skipIf(inject("ufHarness").update)(
+  itUnlessUpdate(
     "fails L9 with the diff of a step that differs from the trace",
     async ({ task }) => {
       const view = await mount(counter);
@@ -50,16 +51,13 @@ describeTargets("stub/trace-mismatch", () => {
     },
   );
 
-  it.skipIf(inject("ufHarness").update)(
-    "fails L9 on a trace committed for a scenario that no step led to",
-    async () => {
-      const view = await mount(counter);
-      await view.expectParity("no-steps");
-      expectLayerFailure("L7", /Missing artefact/);
-      expectLayerFailure(
-        "L9",
-        /^Stale artefact cases\/stub\/trace-mismatch\/__expected__\/trace\.no-steps\.json: this run no longer produces it/,
-      );
-    },
-  );
+  itUnlessUpdate("fails L9 on a trace committed for a scenario that no step led to", async () => {
+    const view = await mount(counter);
+    await view.expectParity("no-steps");
+    expectLayerFailure("L7", /Missing artefact/);
+    expectLayerFailure(
+      "L9",
+      /^Stale artefact cases\/stub\/trace-mismatch\/__expected__\/trace\.no-steps\.json: this run no longer produces it/,
+    );
+  });
 });

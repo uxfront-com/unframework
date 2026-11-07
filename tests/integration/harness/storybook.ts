@@ -12,12 +12,13 @@ import type { GeneratedFile, Story } from "@unframework/visual";
 import { createStorybookConfig } from "@unframework/visual/preset";
 import type { StorybookConfig } from "@unframework/visual/preset";
 
-import { caseStories, listCases } from "./cases.ts";
+import { canaryPlugins, guardsGoldens } from "./canaries.ts";
+import { caseConfigs, caseStories, listCases, selectCases } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
 import { enginePlugins, toolchainContext } from "./engines.ts";
 import { goldenGuard } from "./guard.ts";
 import { noOutputCases, noOutputPlugin, standInCases, standInReasons } from "./no-output.ts";
-import { CASES_DIR, REPO_ROOT, ROOT } from "./paths.ts";
+import { CASES_DIR, ROOT } from "./paths.ts";
 import { QUARANTINE } from "./quarantine.ts";
 import { loadToolchain } from "./targets.ts";
 
@@ -26,11 +27,6 @@ export const STORYBOOK_TARGETS: readonly string[] = ["vue"];
 
 /** The cases a `storybook <target> --cases …` keeps, comma-separated. */
 export const CASES_ENV = "UF_STORYBOOK_CASES";
-
-/** A target's Storybook package. */
-export function storybookDir(target: string): string {
-  return join(REPO_ROOT, "tests", "storybook", target);
-}
 
 /**
  * Where a target's stories files are written: gitignored, and outside what Turborepo hashes, since
@@ -41,18 +37,6 @@ export function storiesDir(target: string, cases?: string, root: string = ROOT):
   // A hash, since a dozen case ids would be longer than a file name may be.
   const kept = cases && createHash("sha256").update(cases).digest("hex").slice(0, 12);
   return join(root, ".uf-cache", "storybook", kept ? `${target}--${kept}` : target);
-}
-
-/** The cases a value of {@link CASES_ENV} names. Throws on one the corpus doesn't hold. */
-export function selectCases(cases: readonly CaseInfo[], value: string | undefined): CaseInfo[] {
-  const names = value
-    ?.split(",")
-    .map((name) => name.trim())
-    .filter(Boolean);
-  if (!names?.length) return [...cases];
-  const unknown = names.filter((name) => !cases.some((info) => info.id === name));
-  if (unknown.length) throw new Error(`No such case: ${unknown.join(", ")}.`);
-  return cases.filter((info) => names.includes(info.id));
 }
 
 /** A target's stories. Every target has the same ids: a case without output keeps its own. */
@@ -103,6 +87,8 @@ export async function storybookConfig(
   const toolchain = await loadToolchain(target);
   // A spec of a case the target can't compile still loads, against a stand-in (ADR-0068).
   const reasons = standInReasons(noOutputCases(all, target), standInCases(all, target, QUARANTINE));
+  const canary = env.UF_CANARY?.trim() || null;
+  const guard = guardsGoldens(canary);
   return createStorybookConfig({
     target,
     root: ROOT,
@@ -110,8 +96,18 @@ export async function storybookConfig(
     mainModules: new Set(cases.map((info) => info.source)),
     unplugin: {
       target: target as UnframeworkOptions["target"],
-      // The browser tests run the reviewed code: a module that isn't its golden output throws.
-      onCompile: (event) => goldenGuard(event),
+      // The browser tests run the reviewed code: a module that isn't its golden output throws, but
+      // under a canary that changes the output on purpose, unless the guard is the canary's own.
+      onCompile: (event) => (guard ? goldenGuard(event) : undefined),
+      plugins: canaryPlugins(
+        canary,
+        target,
+        Object.fromEntries(
+          Object.entries(caseConfigs(all)).flatMap(([id, config]) =>
+            config.reference ? [[id, config.reference]] : [],
+          ),
+        ),
+      ),
     },
     plugins: async () => [noOutputPlugin(all, reasons), ...(await enginePlugins())],
     vite: () => toolchain.vite("browser", toolchainContext(target)),

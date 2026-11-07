@@ -357,6 +357,18 @@ case)`); its projects run after the run's reference and before every other targe
   target skipped, by capability or for want of output, or ran against a stand-in, under its
   case's table.
 
+## Driver (`@unframework/testing/driver`)
+
+The driver runs a target's specs on Playwright against a static build, so one spec text can leave Vitest without changing. Playwright owns the run, the pages, real input, ARIA and screenshots, and each spec's tests run in the page through the page host.
+
+- **`declareSpecTests({ specs, root, project })`** declares one Playwright test per spec file, in the file that calls it. `project(target)` gives a worker the build's directory, the page's config, a target's own commands and the events a build compiled. A project names its target in its `metadata`.
+- **One context and one host page per spec file.** The host page (`src/driver/host.ts`) holds one frame on `iframe.html?id=uf-runner--spec&viewMode=story`, at Vitest's size. A test mounts into that frame's `<body>`, so no story's markup reaches a check, and no test opens a corpus story.
+- **The commands** are bindings to the Node code Vitest's provider calls (`driverCommands`), with the same launch switches, context options and 5-second action timeout (`src/node/browser-options.ts`). A target's command may not take the name of one of the testing API's: it would replace the write policy or the visual comparison without a word.
+- **A page that stops answering** fails its remaining tests by name, on L8. The page names its tests as soon as they load, and a page that says nothing for a test's time, its hooks' and 30 seconds has stopped (`stallLimit`). That also bounds a file with no Playwright timeout of its own.
+- **What nothing catches in a page** is recorded on its spec file, and fails the run whatever its cells say. The page host's listeners report it, and so does Playwright's `pageerror`, which also sees what those can't, such as an error before they load. An event with no value goes to L13 alone.
+
+`@unframework/testing/driver/reporter` is the parity reporter on Playwright's API. It writes the same matrix as `ParityReporter`, through the same rules (`settleRun`), and logs `workers used:` per project. Name its file in Playwright's `reporter` option. It returns false from `printsToStdio()`, so `--list` still prints its `Total:`, and it writes nothing in list mode.
+
 ## Normalisation (`@unframework/testing/normalize`)
 
 `normalizeHtml(html, { target })` turns any target's HTML into one canonical text (plan §7.5).
@@ -411,8 +423,9 @@ namespace, `viewbox`, a table row without its `<tbody>`, a carriage return).
 ## Tests
 
 `pnpm test` runs the unit tests in Node, the DOM tests in Chromium, and then the parity suite
-(`test/parity/`): the browser API end to end against a framework-free stub target, with its
-own committed artefacts and the corpus's `requireAssertions`. Its self-tests that expect a
+(`test/parity/`): the browser API end to end against a framework-free stub target, on the page host
+and the driver, with its own committed artefacts and the corpus's `requireAssertions`. It builds a
+document with Vite rather than a Storybook, since this package sits below `@unframework/visual`. Its self-tests that expect a
 layer to fail consume the failure with `expectLayerFailure(layer, pattern)`
 (`src/browser/behaviour.ts`, not exported: a corpus spec quarantines a known failure instead);
 the `stub/behaviour*` cases prove L8's pass, failure, quarantine, staleness and assertion rule,
@@ -425,11 +438,13 @@ pass and skip and a step left at the end of a test; `stub/trace-mismatch` an L9 
 trace; `stub/requires` a capability skip (the stub lacks a list box), which
 `test/interactions.test.ts` reads in the matrix. The DOM tests also run Astro's mount
 adapter, whose rerender needs the toolchain's render command (`vitest.config.ts`).
-`UF_UPDATE=1 pnpm exec vitest run --config test/parity/vitest.config.ts` rewrites the artefacts.
+`UF_UPDATE=1 pnpm exec playwright test --config test/parity/playwright.config.ts` rewrites the artefacts.
+
+Stubs named `*.fails.spec.ts` or `*.late.spec.ts` fail on purpose, so the parity suite's glob skips them. L8, L9 and L13 are judged after a test's body, so nothing inside a test can stand in for a failure. `test/behaviour.test.ts`, `test/interactions.test.ts`, `test/late-console.test.ts` and `test/fails.test.ts` run them through `test/parity/run-stubs.ts`, each expecting exit 1, and read each test's state from the reporter's records. `test/fails.test.ts` names the 14 tests that fail on purpose, and runs the page-error stubs through the driver too.
 
 `test/page-host.test.ts` builds the `stub/page-*` specs with the page host through Vite and runs
 them in Chromium with the `playwright` library. It compares the matchers, the locators and the
 actions on `test/page-host/fixtures.ts` with `test/page-host/vitest-results.json`.
 `test/page-host-vitest.browser.test.ts` holds that file to Vitest's own answers, and
 `VITE_UF_RECORD=1 pnpm exec vitest run --project browser test/page-host-vitest.browser.test.ts`
-rewrites it, for `pnpm exec oxfmt` to format. The `*.fails.spec.ts` stubs are for that test alone, and most fail on purpose, so the parity suite's glob skips them.
+rewrites it, for `pnpm exec oxfmt` to format.

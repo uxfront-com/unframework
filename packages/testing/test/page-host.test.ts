@@ -10,7 +10,6 @@ import { fileURLToPath } from "node:url";
 
 import { chromium } from "playwright";
 import type { Browser, BrowserContext } from "playwright";
-import { build } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { callNode, pageConfig } from "../src/hosts/page/config.ts";
@@ -32,6 +31,7 @@ import { exposePageHost } from "../src/node/page-host.ts";
 import { VIEWPORT } from "../src/node/viewport.ts";
 import { MATCHER_FIXTURES, VALUE_FIXTURES } from "./page-host/fixtures.ts";
 import recorded from "./page-host/vitest-results.json" with { type: "json" };
+import { buildStubDocument } from "./parity/build.ts";
 import { fixtureHarness, packageRoot, STUB_CAPABILITIES } from "./parity/project.ts";
 
 const here = fileURLToPath(new URL("./page-host/", import.meta.url));
@@ -63,37 +63,7 @@ let origin: string;
 let browser: Browser;
 
 beforeAll(async () => {
-  await build({
-    root: here,
-    configFile: false,
-    logLevel: "error",
-    mode: "development",
-    plugins: [
-      {
-        // The package's `sideEffects` names its setup files, not the stub specs and their target,
-        // which a build would drop: they only register tests.
-        name: "uf-stub-side-effects",
-        enforce: "pre",
-        transform: (code, id) =>
-          id.includes("/test/") ? { code, moduleSideEffects: true, map: null } : undefined,
-      },
-    ],
-    resolve: {
-      alias: [
-        {
-          find: /^vitest$/,
-          replacement: join(packageRoot, "src/hosts/page/vitest.ts"),
-        },
-      ],
-    },
-    build: {
-      outDir,
-      emptyOutDir: true,
-      minify: false,
-      target: "esnext",
-      rolldownOptions: { input: join(here, "iframe.html") },
-    },
-  });
+  await buildStubDocument(here, outDir);
   server = createServer((request, response) => {
     const path = new URL(request.url!, "http://stub").pathname;
     if (path === "/") {
@@ -341,6 +311,18 @@ describe("the page host's runner", () => {
     run = await runSpec("page-host/runner.page.spec.ts");
   }, 120_000);
 
+  it("names its tests before it runs them, for a driver to fail by name", () => {
+    const [first] = run.events;
+    expect(first?.kind).toBe("collected");
+    const tests = first?.kind === "collected" ? first.tests : [];
+    expect(tests).toContainEqual({
+      name: "passes a test that asserted",
+      fullName: "stub/page-host [dom] > passes a test that asserted",
+      timeout: 30_000,
+    });
+    expect(tests).toHaveLength(run.tests.size);
+  });
+
   it("runs a passing test, recording every layer it reached", () => {
     const record = test("passes a test that asserted");
     expect(record.state).toBe("pass");
@@ -523,6 +505,11 @@ describe("what nothing catches in a page (C3 page errors, the page side)", () =>
   it("leaves a rejection with no reason to L13", async () => {
     const run = await runSpec("page-null-rejection/page-null-rejection.fails.spec.ts");
     expect(run.unhandled).toEqual([]);
+    // Words each as `pageerror` does, so the driver can tell it's accounted for.
+    expect(run.events.filter(({ kind }) => kind === "logged-error")).toEqual([
+      { kind: "logged-error", message: "undefined" },
+      { kind: "logged-error", message: "uf-probe-observer" },
+    ]);
     const record = run.tests.get("rejects with no reason");
     expect(record?.state).toBe("fail");
     expect(record?.meta.uf?.layers.L13).toMatchObject({

@@ -7,6 +7,7 @@
   "scripts": {
     "postinstall": "node scripts/ensure-browser.ts",
     "test": "node scripts/run.ts",
+    "test:browser": "node scripts/test-browser.ts",
     "test:update": "node scripts/run.ts --update",
     "test:canaries": "node scripts/canaries.ts",
     "test:baselines": "bash scripts/baselines.sh update",
@@ -25,6 +26,7 @@
     "@angular/platform-browser": "catalog:",
     "@angular/platform-server": "catalog:",
     "@fontsource/inter": "catalog:",
+    "@playwright/test": "catalog:",
     "@qwik.dev/core": "catalog:",
     "@styleframe/runtime": "catalog:",
     "@styleframe/theme": "catalog:",

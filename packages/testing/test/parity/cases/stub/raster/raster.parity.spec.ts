@@ -7,12 +7,12 @@
 // Chromium with whole-tile raster (`parityBrowser`), so a capture is a function of the DOM,
 // whatever was repainted before it. Without `--disable-partial-raster`, this test fails.
 import { expect, it } from "vitest";
-import { page } from "vitest/browser";
 
 import "../../../../../src/setup.ts";
 import { describeTargets, mount } from "../../../../../src/index.ts";
 import type { View } from "../../../../../src/index.ts";
 import "../../../dom-target.ts";
+import { screenshot } from "../../../stub-api.ts";
 
 const BOX = "display: block; height: 20px; border: 1px solid #767676; border-radius: 4px";
 
@@ -31,8 +31,7 @@ const ROWS = [0, 1, 2, 3, 4, 5, 6, 7]
 /** The container's pixels, as a PNG in base64. */
 async function capture(view: View): Promise<string> {
   await view.settle();
-  // Not saved, a screenshot is returned as base64.
-  return page.screenshot({ element: view.container, save: false });
+  return screenshot(view);
 }
 
 describeTargets("stub/raster", () => {

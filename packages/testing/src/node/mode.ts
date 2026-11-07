@@ -205,6 +205,19 @@ export interface HarnessRunOptions {
   mode: HarnessMode;
   quarantine: QuarantineEntry[];
   cases: Record<string, CaseConfig>;
+  /** The run's id where more than one process shares the run ({@link sharedRunId}). */
+  runId?: string;
+}
+
+/** The environment variable a run's processes share its id through. */
+export const RUN_ID_ENV = "UF_RUN_ID";
+
+/**
+ * The run's id, the same in each of its processes: the first to ask sets it in the environment its
+ * workers inherit, since a Playwright worker evaluates the config again, with a pid of its own.
+ */
+export function sharedRunId(env: NodeJS.ProcessEnv = process.env): string {
+  return (env[RUN_ID_ENV] ??= `${Date.now().toString(36)}-${process.pid}`);
 }
 
 const RUN = Symbol.for("unframework.harness.run");
@@ -226,7 +239,7 @@ export function createHarnessRun(options: HarnessRunOptions): HarnessContext {
     existing.quarantine = quarantine;
     return existing;
   }
-  const runId = `${Date.now().toString(36)}-${process.pid}`;
+  const runId = options.runId ?? `${Date.now().toString(36)}-${process.pid}`;
   const scratch = {
     ledger: join(options.root, ".reports", "ledger"),
     live: join(options.root, ".live"),

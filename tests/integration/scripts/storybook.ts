@@ -4,18 +4,17 @@
 import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
-import type { Server } from "node:http";
-import { extname, join, normalize } from "node:path";
+import { join } from "node:path";
 
+import { serveStatic } from "@unframework/testing/driver/server";
 import { RUN_SPEC, RUNNER_STORY } from "@unframework/visual";
 import { chromium } from "playwright";
 import type { Page } from "playwright";
 
-import { listCases } from "../harness/cases.ts";
+import { listCases, selectCases } from "../harness/cases.ts";
 import { noOutputCases } from "../harness/no-output.ts";
-import { ROOT } from "../harness/paths.ts";
+import { ROOT, storybookDir, storybookOutput } from "../harness/paths.ts";
 import {
   catalogueProblems,
   isSpecChunk,
@@ -27,21 +26,12 @@ import {
   within,
 } from "../harness/storybook-check.ts";
 import type { StoryPage } from "../harness/storybook-check.ts";
-import { CASES_ENV, selectCases, storybookDir, targetStories } from "../harness/storybook.ts";
+import { CASES_ENV, targetStories } from "../harness/storybook.ts";
 
 /** How long a dev server has to answer, and a story to render. */
 const READY_MS = 90_000;
 const STORY_MS = 30_000;
 const STOP_GRACE_MS = 3000;
-
-const TYPES: Record<string, string> = {
-  ".css": "text/css",
-  ".html": "text/html",
-  ".js": "text/javascript",
-  ".json": "application/json",
-  ".svg": "image/svg+xml",
-  ".woff2": "font/woff2",
-};
 
 /**
  * Storybook's CLI, in the target's own package, run from the Vite root. It sits in a group of its
@@ -90,9 +80,13 @@ function stopGroup(child: ChildProcess, signal: NodeJS.Signals): void {
   }
 }
 
-async function build(target: string): Promise<number> {
-  const output = join(storybookDir(target), "storybook-static");
-  const child = storybook(target, ["build", "--quiet", "--output-dir", output], process.env);
+/** The target's static build, of some cases where they're given. A canary's has its own directory. */
+export async function buildStorybook(target: string, cases?: string): Promise<number> {
+  const output = storybookOutput(target, process.env.UF_CANARY?.trim() || null);
+  const child = storybook(target, ["build", "--quiet", "--output-dir", output], {
+    ...process.env,
+    ...(cases ? { [CASES_ENV]: cases } : {}),
+  });
   return exited(child);
 }
 
@@ -140,29 +134,6 @@ async function serve(target: string, cases: string | undefined): Promise<number>
     return 1;
   }
   return exit;
-}
-
-/** Serves a static build on a free port. */
-function serveStatic(directory: string): Promise<{ server: Server; origin: string }> {
-  const server = createServer((request, response) => {
-    const path = normalize(decodeURIComponent(new URL(request.url!, "http://build").pathname));
-    readFile(join(directory, path)).then(
-      (contents) => {
-        response.setHeader("content-type", TYPES[extname(path)] ?? "application/octet-stream");
-        response.end(contents);
-      },
-      () => {
-        response.statusCode = 404;
-        response.end();
-      },
-    );
-  });
-  return new Promise((resolve) => {
-    server.listen(0, "127.0.0.1", () => {
-      const { port } = server.address() as { port: number };
-      resolve({ server, origin: `http://127.0.0.1:${port}` });
-    });
-  });
 }
 
 /** Waits for the story on the page to finish rendering, and reads what it shows. */
@@ -242,7 +213,7 @@ function builtStories(directory: string): string[] {
 
 /** `--story`: prints a story's text. Otherwise walks every story of the build in one page. */
 async function check(target: string, story: string | undefined): Promise<number> {
-  const directory = join(storybookDir(target), "storybook-static");
+  const directory = storybookOutput(target, process.env.UF_CANARY?.trim() || null);
   if (!existsSync(join(directory, "index.json"))) {
     console.error(`[uf] No build at ${directory}: run storybook:build ${target} first.`);
     return 1;
@@ -254,7 +225,8 @@ async function check(target: string, story: string | undefined): Promise<number>
     console.error(`[uf] The ${target} build holds no story ${story}.`);
     return 1;
   }
-  const { server, origin } = await serveStatic(directory);
+  const server = await serveStatic(directory);
+  const { origin } = server;
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage();
@@ -291,13 +263,13 @@ async function check(target: string, story: string | undefined): Promise<number>
     return problems.length ? 1 : 0;
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
+    await server.close();
   }
 }
 
 async function main(argv: readonly string[]): Promise<number> {
   const { command, target, value } = parseCommand(argv);
-  if (command === "build") return build(target);
+  if (command === "build") return buildStorybook(target);
   return command === "serve" ? serve(target, value) : check(target, value);
 }
 

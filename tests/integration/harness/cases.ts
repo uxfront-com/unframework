@@ -90,6 +90,18 @@ export function caseConfigs(cases: readonly CaseInfo[]): Record<string, CaseConf
   return Object.fromEntries(cases.map((info) => [info.id, info.config]));
 }
 
+/** The cases a value of {@link CASES_ENV} names. Throws on one the corpus doesn't hold. */
+export function selectCases(cases: readonly CaseInfo[], value: string | undefined): CaseInfo[] {
+  const names = value
+    ?.split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+  if (!names?.length) return [...cases];
+  const unknown = names.filter((name) => !cases.some((info) => info.id === name));
+  if (unknown.length) throw new Error(`No such case: ${unknown.join(", ")}.`);
+  return cases.filter((info) => names.includes(info.id));
+}
+
 function readCase(casesDir: string, id: string): CaseInfo {
   const dir = join(casesDir, id);
   const files = readdirSync(dir).toSorted();

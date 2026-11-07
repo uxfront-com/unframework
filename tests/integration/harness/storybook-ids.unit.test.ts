@@ -8,9 +8,9 @@ import { TARGET_NAMES } from "@unframework/compiler";
 import { RUNNER_STORY } from "@unframework/visual";
 import { describe, expect, it } from "vitest";
 
-import { listCases, specTests } from "./cases.ts";
+import { listCases, selectCases, specTests } from "./cases.ts";
 import { noOutputCases } from "./no-output.ts";
-import { selectCases, storiesDir, storyFiles, targetStories } from "./storybook.ts";
+import { storiesDir, storyFiles, targetStories } from "./storybook.ts";
 
 const corpus = listCases();
 

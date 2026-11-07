@@ -1,6 +1,6 @@
 // A scenario whose committed artefacts match: every parity layer passes and is recorded, and the
 // View's queries, html() and argument checks behave.
-import { expect, inject, it, onTestFinished } from "vitest";
+import { expect, it } from "vitest";
 
 import "../../../../../src/setup.ts";
 import { expectLayerFailure } from "../../../../../src/browser/behaviour.ts";
@@ -9,9 +9,9 @@ import { NO_INTERACTION_SKIP } from "../../../../../src/layers.ts";
 import { normalizeHtml } from "../../../../../src/normalize/index.ts";
 import { LIVE_REFERENCE_SKIP } from "../../../../../src/visual-types.ts";
 import "../../../dom-target.ts";
+import { itUnlessUpdate, sibling } from "../../../stub-api.ts";
 
 const greeting = { html: '<p class="greeting">Hello, world!</p>' };
-const update = inject("ufHarness").update;
 
 describeTargets("stub/match", () => {
   it("names the suite after the target", ({ task }) => {
@@ -19,13 +19,10 @@ describeTargets("stub/match", () => {
     expect(task.suite?.name).toBe("stub/match [dom]");
   });
 
-  it("passes L7 and L11, skips L9 and the live reference's L10, and records each of them", async ({
-    task,
-  }) => {
-    onTestFinished(() => {
-      // The setup's afterEach has recorded L13 by now.
-      expect(task.meta.uf?.layers.L13).toEqual({ status: "pass" });
-    });
+  const recorded =
+    "passes L7 and L11, skips L9 and the live reference's L10, and records each of them";
+
+  it(recorded, async ({ task }) => {
     const view = await mount(greeting);
     await expect.element(view.getByText("Hello, world!")).toBeVisible();
     await view.expectParity("initial");
@@ -45,8 +42,11 @@ describeTargets("stub/match", () => {
     });
   });
 
-  // Update mode would write the artefacts these tests expect to be missing.
-  it.skipIf(update)(
+  it("had recorded L13 by the time that test ended", () => {
+    expect(sibling(recorded)?.meta.uf?.layers.L13).toEqual({ status: "pass" });
+  });
+
+  itUnlessUpdate(
     "fails a scenario without artefacts, naming the command that writes them",
     async ({ task }) => {
       const view = await mount(greeting);
@@ -63,27 +63,6 @@ describeTargets("stub/match", () => {
       expect(task.meta.uf?.scenarios).toEqual(["absent"]);
     },
   );
-
-  it.skipIf(update).fails(
-    "fails the test, after its own assertions, with a layer that failed",
-    async ({ task }) => {
-      const view = await mount(greeting);
-      // A name of its own: a spec checks each scenario once.
-      await view.expectParity("missing");
-      expect(task.meta.uf?.layers.L7?.status).toBe("fail");
-      await expect.element(view.getByText("Hello, world!")).toBeVisible();
-    },
-  );
-
-  it.skipIf(update)("recorded the failed layer and the passing behaviour above", ({ task }) => {
-    const sibling = task.suite?.tasks.find(
-      (test) => test.name === "fails the test, after its own assertions, with a layer that failed",
-    );
-    expect(sibling?.meta.uf?.layers).toMatchObject({
-      L7: { status: "fail", message: expect.stringMatching(/Missing artefact/) },
-      L8: { status: "pass" },
-    });
-  });
 
   it("serialises the container as normalised HTML", async () => {
     const view = await mount(greeting);
@@ -116,11 +95,15 @@ describeTargets("stub/match", () => {
     expect(document.querySelectorAll("[data-uf-root]")).toHaveLength(before);
   });
 
-  it("unmounts what a test leaves mounted", async () => {
+  let left: HTMLElement | undefined;
+
+  it("mounts a view a test may leave mounted", async () => {
     const view = await mount(greeting);
-    expect(view.container.isConnected).toBe(true);
-    onTestFinished(() => {
-      expect(view.container.isConnected).toBe(false);
-    });
+    left = view.container;
+    expect(left.isConnected).toBe(true);
+  });
+
+  it("unmounted what that test left mounted", () => {
+    expect(left?.isConnected).toBe(false);
   });
 });

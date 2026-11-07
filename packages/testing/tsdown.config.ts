@@ -4,6 +4,10 @@ import type { UserConfig } from "tsdown";
 const config: UserConfig = defineConfig({
   entry: [
     "src/index.ts",
+    "src/driver/index.ts",
+    "src/driver/host.ts",
+    "src/driver/reporter.ts",
+    "src/driver/server.ts",
     "src/hosts/page/setup.ts",
     "src/hosts/page/runner.ts",
     "src/hosts/page/vitest.ts",

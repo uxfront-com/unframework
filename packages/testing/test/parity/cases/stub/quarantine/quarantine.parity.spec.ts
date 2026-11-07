@@ -3,17 +3,18 @@
 // A quarantined layer that fails is recorded as quarantined and does not fail the test; one
 // that passes is recorded as a pass, and the run's reporter fails the entry once every record of
 // the cell is in (test/reporter.test.ts).
-import { expect, inject, it } from "vitest";
+import { expect } from "vitest";
 
 import "../../../../../src/setup.ts";
 import { describeTargets, mount } from "../../../../../src/index.ts";
 import { NO_INTERACTION_SKIP } from "../../../../../src/layers.ts";
 import { LIVE_REFERENCE_SKIP } from "../../../../../src/visual-types.ts";
 import "../../../dom-target.ts";
+import { itUnlessUpdate } from "../../../stub-api.ts";
 
 // Update mode would write the artefacts whose absence makes L7 fail here.
 describeTargets("stub/quarantine", () => {
-  it.skipIf(inject("ufHarness").update)(
+  itUnlessUpdate(
     "records a quarantined failure, and a pass under an entry as it is",
     async ({ task }) => {
       const view = await mount({ html: "<p>Known differences</p>" });

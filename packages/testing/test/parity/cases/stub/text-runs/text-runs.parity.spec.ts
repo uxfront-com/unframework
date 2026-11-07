@@ -5,8 +5,7 @@
 // run of adjacent text nodes into one (src/browser/text-runs.ts), so a split captures exactly as
 // one node does, while text, elements, styles and white space that render differently still
 // differ, and the tree is restored, the same nodes, for what runs next.
-import { expect, inject, it } from "vitest";
-import { page } from "vitest/browser";
+import { expect, it } from "vitest";
 
 import "../../../../../src/setup.ts";
 import { expectLayerFailure } from "../../../../../src/browser/behaviour.ts";
@@ -16,6 +15,7 @@ import { describeTargets, mount } from "../../../../../src/index.ts";
 import type { View } from "../../../../../src/index.ts";
 import { LIVE_REFERENCE_SKIP } from "../../../../../src/visual-types.ts";
 import "../../../dom-target.ts";
+import { itUnlessUpdate, screenshot } from "../../../stub-api.ts";
 
 /** Texts as frameworks split them: one piece per text node. */
 const SAMPLES: Record<string, string[]> = {
@@ -58,15 +58,7 @@ function render(view: View, { pieces, anchors = false, width = "", whiteSpace = 
 async function capture(view: View, merged: boolean) {
   await view.settle();
   const shoot = async () => {
-    const shot: unknown = await page.screenshot({
-      element: view.container,
-      base64: true,
-      save: false,
-    });
-    return {
-      geometry: captureGeometry(view.container),
-      png: typeof shot === "string" ? shot : (shot as { base64: string }).base64,
-    };
+    return { geometry: captureGeometry(view.container), png: await screenshot(view) };
   };
   return merged ? withMergedTextRuns(view.container, shoot) : shoot();
 }
@@ -113,7 +105,7 @@ describeTargets("stub/text-runs", () => {
     }
   });
 
-  it.each([
+  for (const [what, html] of [
     ["different text", "<p>Price: 13 EUR</p>"],
     ["an element boundary", "<p>Price: <span>12</span> EUR</p>"],
     [
@@ -121,15 +113,17 @@ describeTargets("stub/text-runs", () => {
       '<p>Price: <span style="color: rgb(200, 0, 0)">12</span> EUR</p>',
     ],
     ["a different weight on one part", "<p>Price: <b>12</b> EUR</p>"],
-  ])("still tells apart %s", async (_, html) => {
-    const view = await mount({ html: "" });
-    render(view, { pieces: SAMPLES.price! });
-    const split = await capture(view, true);
-    view.container.innerHTML = html;
-    const other = await capture(view, true);
-    expect(other.geometry).not.toEqual(split.geometry);
-    expect(other.png).not.toBe(split.png);
-  });
+  ] as const) {
+    it(`still tells apart ${what}`, async () => {
+      const view = await mount({ html: "" });
+      render(view, { pieces: SAMPLES.price! });
+      const split = await capture(view, true);
+      view.container.innerHTML = html;
+      const other = await capture(view, true);
+      expect(other.geometry).not.toEqual(split.geometry);
+      expect(other.png).not.toBe(split.png);
+    });
+  }
 
   it("still tells apart white space that renders differently, and only that", async () => {
     const view = await mount({ html: "" });
@@ -147,9 +141,8 @@ describeTargets("stub/text-runs", () => {
     expect(kept.geometry).not.toEqual(one.geometry);
   });
 
-  it.each(["normal", "pre", "pre-wrap", "pre-line", "nowrap", "break-spaces"])(
-    "lays out split white space as one node does, in white-space: %s",
-    async (whiteSpace) => {
+  for (const whiteSpace of ["normal", "pre", "pre-wrap", "pre-line", "nowrap", "break-spaces"]) {
+    it(`lays out split white space as one node does, in white-space: ${whiteSpace}`, async () => {
       const view = await mount({ html: "" });
       const cases = [
         ["one ", " two"],
@@ -184,8 +177,8 @@ describeTargets("stub/text-runs", () => {
         expect(merged.geometry, JSON.stringify(pieces)).toEqual(reference.geometry);
         expect(merged.png === reference.png, `${JSON.stringify(pieces)}: pixels`).toBe(true);
       }
-    },
-  );
+    });
+  }
 
   it("merges runs across comments, never across elements, and restores the same nodes", async () => {
     const view = await mount({ html: "" });
@@ -227,7 +220,7 @@ describeTargets("stub/text-runs", () => {
     });
   });
 
-  it.skipIf(inject("ufHarness").update)(
+  itUnlessUpdate(
     "merges inside expectParity's capture, then restores what a framework rerenders",
     async ({ task }) => {
       const view = await mount(
