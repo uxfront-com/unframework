@@ -92,9 +92,10 @@ Packaged outputs ship with no source maps.
 `build --package` also reports:
 
 - **UF7008:** a packager or what it needs isn't installed, a target has no packager yet, or the
-  project has no types for React or Solid. Nothing is cleaned or written.
-- **UF7009:** a packager failed, and its message holds the packager's own error. The targets' trees
-  are written by then, and its paths name them.
+  project has no types for React, Solid or Vue. Nothing is cleaned or written.
+- **UF7009:** a packager failed, and its message holds the packager's own error, with paths that name
+  the targets' trees, which are written by then. tsgo only exits with a code: it prints its errors on
+  standard output, above the diagnostic.
 - **UF7002** at `/outDir`: cleaning `outDir/package` would delete the project, a source, or a file a
   source read.
 

@@ -40,7 +40,7 @@ describe("build --package: the manifest", () => {
     });
   });
 
-  it("leaves out a license the project doesn't have", async () => {
+  it("leaves out the license field when the project has none", async () => {
     const root = designSystem({
       config: { targets: ["astro"] },
       manifest: JSON.stringify({ name: "ds", version: "1.0.0" }),
@@ -281,6 +281,17 @@ describe("build --package: UF7008", () => {
     expect(code).toBe(1);
     expect(stderr).toContain("UF7008");
     expect(stderr).toContain("@types/react");
+    expect(existsSync(join(root, "dist"))).toBe(false);
+  });
+
+  it("fires when the project has no Vue, before anything is written", async () => {
+    const root = designSystem({
+      config: { targets: ["vue"], package: { resolveFrom: inRepository("tests/toolchains/vue") } },
+    });
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(code).toBe(1);
+    expect(stderr).toContain("UF7008");
+    expect(stderr).toContain("(vue)");
     expect(existsSync(join(root, "dist"))).toBe(false);
   });
 

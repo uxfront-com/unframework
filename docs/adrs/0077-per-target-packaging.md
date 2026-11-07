@@ -38,10 +38,10 @@ built, and the targets stay in this order so that two sections never share a lin
   directory's `node_modules` chain counts, because pnpm's bin shims set `NODE_PATH` to every package
   a workspace hoists.
 - A packager that isn't installed reports UF7008 `packager-missing`, and one that fails UF7009
-  `packager-failed`. UF7008 also covers a target with no packager yet, and a project without the types
-  tsdown's declarations infer from: they run with `--noCheck`, so a return type would silently be
-  `any`.
-- Everything that can be checked is checked before anything is written. The package is built in a
+  `packager-failed`. UF7008 also covers a target with no packager yet, and a project without the
+  framework's types: tsgo writes tsdown's declarations with `--noCheck`, so a return type would
+  silently be `any`, and vue-tsc would fail only after the trees are written.
+- Whether each packager and the framework's types resolve is checked before anything is written. The package is built in a
   scratch directory under `outDir`, and replaces the last good one only once every packager has passed.
 
 ### Angular

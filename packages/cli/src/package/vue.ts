@@ -15,6 +15,7 @@ const VUE_TSC = "vue-tsc/bin/vue-tsc.js";
 export const vue: Packager = {
   peer: { name: "vue", range: "^3.5.0" },
   needs: [VUE_TSC],
+  types: "vue",
   exports: { types: "./vue/index.d.ts", default: "./vue/index.ts" },
   run: async ({ files, out, work, resolve }) => {
     await writeFiles(out, files);

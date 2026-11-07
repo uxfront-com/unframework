@@ -23,7 +23,8 @@ export interface Packager {
   needs: readonly string[];
   /**
    * The package whose types a declaration's inferred types come from, which must be in the project.
-   * tsdown's declarations run with `--noCheck`, so without it a return type is `any`, silently.
+   * Without it tsdown's declarations, which tsgo writes with `--noCheck`, type a return as `any`,
+   * silently, and vue-tsc fails only after the trees are written.
    */
   types?: string;
   /** The target's subpath in the manifest's `exports`. */

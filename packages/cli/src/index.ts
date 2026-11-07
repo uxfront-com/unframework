@@ -15,7 +15,7 @@ const COMMANDS: ReadonlyMap<string, Command> = new Map([
     "build",
     {
       usage: "build [--package] [--type-oracle syntactic|tsgo]",
-      summary: "Compile srcDir into outDir/<target>, and package them into outDir/package.",
+      summary: "Compile srcDir into outDir/<target>, and with --package into outDir/package.",
       load: () => import("./build.ts"),
     },
   ],
