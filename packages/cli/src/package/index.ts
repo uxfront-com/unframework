@@ -41,7 +41,7 @@ export interface PackageInput {
   config: ResolvedConfig;
   /** Each target's files. */
   trees: ReadonlyMap<string, OutputFile[]>;
-  /** The sources and what they read, relative to the root. */
+  /** The sources and the files they read, relative to the root. */
   authored: readonly string[];
   /** The config file, which a diagnostic with no source of its own names. */
   configFile: string;
@@ -115,12 +115,16 @@ async function projectFields(root: string): Promise<Record<string, string>> {
 /** A packager's own error: no stack, and its scratch paths as the tree the build has just written. */
 function failure(error: unknown, work: string, tree: string): string {
   const text = stripVTControlCharacters(error instanceof Error ? error.message : String(error));
-  return text
-    .replaceAll(join(work, "in"), tree)
-    .split("\n")
-    .filter((line) => !/^\s+at /.test(line))
-    .join("\n")
-    .trim();
+  return (
+    text
+      .replaceAll(join(work, "in"), tree)
+      // Rolldown names a file relative to where it ran.
+      .replace(/(?<![\w./-])in\//g, `${tree}/`)
+      .split("\n")
+      .filter((line) => !/^\s+at /.test(line))
+      .join("\n")
+      .trim()
+  );
 }
 
 function manifest(
@@ -153,6 +157,15 @@ function manifest(
 export async function planPackage(input: PackageInput): Promise<PackagePlan> {
   const { root, config, trees, authored, configFile } = input;
   const fields = await projectFields(root);
+  const shipped = authored.map(
+    (file) => [file, relative(config.srcDir, join(root, file))] as const,
+  );
+  const outside = shipped.find(([, path]) => path.startsWith(`..${sep}`));
+  if (outside) {
+    throw new Error(
+      `--package can't ship ${outside[0]}, which a source reads from outside srcDir, under ./source/*. Move it into srcDir.`,
+    );
+  }
   const problem = (code: DiagnosticCode, target: TargetName, message: string) =>
     createDiagnostic(code, { file: configFile, span: { start: 0, end: 0 }, message, target });
 
@@ -217,8 +230,8 @@ export async function planPackage(input: PackageInput): Promise<PackagePlan> {
         }
         await rm(join(stage, ".work"), { recursive: true, force: true });
         await writeFile(join(stage, "package.json"), manifest(fields, packagers));
-        for (const file of authored) {
-          const to = join(stage, "source", relative(config.srcDir, join(root, file)));
+        for (const [file, path] of shipped) {
+          const to = join(stage, "source", path);
           await mkdir(dirname(to), { recursive: true });
           await copyFile(join(root, file), to);
         }

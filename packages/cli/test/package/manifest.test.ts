@@ -1,9 +1,9 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { run, tree, write } from "../helpers.ts";
+import { project, run, tree, write } from "../helpers.ts";
 import { designSystem, inRepository, SOURCE_TREE } from "./helpers.ts";
 
 const REACT = inRepository("packages/target-react");
@@ -150,6 +150,58 @@ describe("build --package: the manifest", () => {
     expect(existsSync(join(root, "dist"))).toBe(false);
   });
 
+  it("refuses a source that reads a file ./source/* couldn't hold", async () => {
+    const root = designSystem({
+      config: { targets: ["astro"] },
+      files: {
+        "theme.css": ".theme {\n  color: red;\n}\n",
+        "src/Themed.uf.tsx": `import "../theme.css";
+
+export default function Themed() {
+  return <p class="theme">Hi</p>;
+}
+`,
+      },
+    });
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(code).toBe(2);
+    expect(stderr).toContain("theme.css");
+    expect(existsSync(join(root, "dist"))).toBe(false);
+  });
+
+  it("packages a project reached through a symbolic link", async () => {
+    const root = designSystem({
+      config: { targets: ["react"], package: { resolveFrom: REACT } },
+      frameworks: ["react", "@types/react"],
+    });
+    const link = join(project({}), "linked");
+    symlinkSync(root, link);
+    const { code, stderr } = await run(link, "build", "--package");
+    expect(stderr).toBe("");
+    expect(code).toBe(0);
+    expect(existsSync(join(root, "dist", "package", "react", "Card.d.ts"))).toBe(true);
+  });
+
+  it("refuses to clean a package directory that holds a file a source reads", async () => {
+    const root = designSystem({
+      config: { targets: ["astro"] },
+      files: {
+        "dist/package/held.css": ".held {\n  color: red;\n}\n",
+        "src/Held.uf.tsx": `import "../dist/package/held.css";
+
+export default function Held() {
+  return <p class="held">Hi</p>;
+}
+`,
+      },
+    });
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(code).toBe(2);
+    expect(stderr).toContain("UF7002");
+    expect(stderr).toContain("held.css");
+    expect(existsSync(join(root, "dist", "package", "held.css"))).toBe(true);
+  });
+
   it("refuses to clean a package directory that holds a source", async () => {
     const root = designSystem({
       config: { targets: ["astro"], srcDir: "dist/package" },
@@ -236,7 +288,10 @@ describe("build --package: UF7009", () => {
     expect(code).toBe(1);
     expect(stderr).toContain("UF7009");
     expect(stderr).toContain("(react)");
-    expect(stderr).toContain("format.ts");
+    // Its own error, naming the tree the build wrote, without a stack or the scratch directory.
+    expect(stderr).toContain("dist/react/shared/format.ts");
+    expect(stderr).not.toContain(".package-");
+    expect(stderr).not.toMatch(/^\s+at /m);
     expect(tree(join(root, "dist", "package"))).toEqual(before);
     expect(readdirSync(join(root, "dist")).toSorted()).toEqual(["package", "react"]);
   });

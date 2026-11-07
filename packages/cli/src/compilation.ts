@@ -39,7 +39,7 @@ export interface Compilation {
   root: string;
   /** The config file as diagnostics name it. */
   configFile: string;
-  /** The sources, and the files under srcDir they read, relative to the root. Sorted. */
+  /** The sources, and the files they read, relative to the root. Sorted. */
   authored: string[];
 }
 
@@ -208,7 +208,7 @@ export async function compileSources(
     trees.set(target, tree);
   }
   if (hasErrors(diagnostics)) return finish(1, diagnostics, config);
-  return finish(0, diagnostics, config, trees, await authoredFiles(files, compiled, root, config));
+  return finish(0, diagnostics, config, trees, await authoredFiles(files, compiled, root));
 }
 
 /** What a package's `source/` needs for its sources to compile in a consumer's app (ADR-0077). */
@@ -216,19 +216,15 @@ async function authoredFiles(
   files: readonly string[],
   compiled: readonly Compiled[],
   root: string,
-  config: ResolvedConfig,
 ): Promise<string[]> {
   const authored = new Set(files);
   for (const each of compiled.flatMap(({ read: readFiles }) => readFiles)) {
-    const path = join(root, each);
-    // A read list also holds packages, and what a compile looked for and didn't find.
-    const found = await stat(path).then(
+    // A read list also holds packages, as `pkg:<name>`, and what a compile looked for and missed.
+    const found = await stat(join(root, each)).then(
       (entry) => entry.isFile(),
       () => false,
     );
-    if (found && within(config.srcDir, path) && !each.split("/").includes("node_modules")) {
-      authored.add(each);
-    }
+    if (found) authored.add(each);
   }
   return [...authored].toSorted();
 }
