@@ -295,7 +295,8 @@ import Same from "@acme/ui/button";
 
 Both imports load one module, on Vite and Rollup's family. What decides is the file a bare specifier
 resolves to, so an entry that hides the extension works, and so does a `#` subpath import. A bare
-specifier that resolves to anything else stays the bundler's.
+specifier that resolves to anything else stays the bundler's. A shipped source differs from a local
+one in these ways:
 
 - **The dependency optimiser never sees the file.** `this.resolve` would register a file of
   `node_modules` with Vite's optimiser, which bundles it as plain TSX, so on Vite a bare specifier
