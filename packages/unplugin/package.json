@@ -108,12 +108,24 @@
     "unplugin": "catalog:"
   },
   "devDependencies": {
+    "@qwik.dev/core": "catalog:",
     "@types/node": "catalog:",
+    "@unframework/target-qwik": "workspace:*",
+    "@unframework/target-react": "workspace:*",
+    "@unframework/target-solid": "workspace:*",
+    "@unframework/target-svelte": "workspace:*",
+    "@unframework/target-vue": "workspace:*",
     "@uxfront/typescript-config": "catalog:",
     "astro": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "solid-js": "catalog:",
+    "svelte": "catalog:",
     "tsdown": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vite-plugin-solid": "catalog:",
+    "vitest": "catalog:",
+    "vue": "catalog:"
   },
   "peerDependencies": {
     "astro": "catalog:",
