@@ -46,9 +46,21 @@ built, and the targets stay in this order so that two sections never share a lin
 
 ### Angular
 
-ng-packagr builds a standalone Angular Package Format into `dist/angular`. Its `exports["."]` merges
-into the root manifest as `./angular`, with the paths prefixed again. A consumer fixture compiles
-with ngc from `tests/toolchains/angular`.
+ng-packagr builds a standalone Angular Package Format into `<outDir>/package/angular`, since
+`<outDir>/angular` is the target's tree. It compiles partially, so a consumer's linker finishes the
+job. Its `exports["."]` merges into the root manifest as `./angular`, with the paths prefixed again.
+Reading them from what ng-packagr wrote keeps the manifest true if the format's layout moves. A
+consumer fixture compiles with ngc from `tests/toolchains/angular`.
+
+- The format has one entry point, so it also exports the slot directives of the components the
+  barrel exports (ADR-0056). A consumer can't fill a named slot without importing one.
+- `@angular/common` is an optional peer beside `@angular/core`, since a component that renders a
+  slot imports `NgTemplateOutlet` from it.
+- It writes with `noCheck`, as the other packagers do. The scratch project can't see what the
+  project declares, like a `virtual:` module or a global.
+- ng-packagr always writes source maps, so the packager deletes them: a package ships none.
+- A sheet's `url()` stays as written, as on the other targets, because the scratch copy holds no
+  assets for ng-packagr to inline.
 
 ### Astro
 
