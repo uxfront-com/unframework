@@ -1143,6 +1143,9 @@ importers:
       '@angular/core':
         specifier: 'catalog:'
         version: 22.2.1(@angular/compiler@22.2.1)(rxjs@7.8.2)
+      '@babel/core':
+        specifier: 'catalog:'
+        version: 7.29.7(supports-color@10.2.2)
       '@qwik.dev/core':
         specifier: 'catalog:'
         version: 2.0.0-beta.47(@oxc-project/types@0.152.0)(esbuild@0.28.2)(prettier@3.9.9)(rolldown@1.2.12)(rollup@4.63.5)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)(yaml@2.9.1))(vitest@5.0.3)
@@ -1155,6 +1158,9 @@ importers:
       astro:
         specifier: 'catalog:'
         version: 7.3.5(@types/node@24.19.0)(db0@0.4.1)(ioredis@5.11.1(supports-color@10.2.2))(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)(yaml@2.9.1)
+      babel-preset-solid:
+        specifier: 'catalog:'
+        version: 1.9.15(@babel/core@7.29.7(supports-color@10.2.2))(solid-js@1.9.15)
       react:
         specifier: 'catalog:'
         version: 19.3.0
