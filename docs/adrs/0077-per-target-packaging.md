@@ -38,9 +38,8 @@ built, and the targets stay in this order so that two sections never share a lin
   directory's `node_modules` chain counts, because pnpm's bin shims set `NODE_PATH` to every package
   a workspace hoists.
 - A packager that isn't installed reports UF7008 `packager-missing`, and one that fails UF7009
-  `packager-failed`. UF7008 also covers a target with no packager yet, and a project without the
-  framework's types: tsgo and `vue-tsc` write declarations with `--noCheck`, so a return type would
-  silently be `any`.
+  `packager-failed`. UF7008 also covers a project without the framework's types: tsgo and `vue-tsc`
+  write declarations with `--noCheck`, so a return type would silently be `any`.
 - Whether each packager and the framework's types resolve is checked before anything is written. The package is built in a
   scratch directory under `outDir`, and replaces the last good one only once every packager has passed.
 
@@ -88,9 +87,9 @@ build's values into the package, `VITE_` variables included (P8). The Qwik plugi
 manifest and bundle graph is left out, since a library has neither and it warns on the console that
 it found none.
 
-The build reads none of the project's own configuration: no Vite config, `.env`, `tsconfig.json` or
-PostCSS config. So the inlined sheet is the one the other targets ship, and the package depends only
-on the sources and the Unframework config (P8).
+The build shuts out the project's Vite config, `.env`, `tsconfig.json` and PostCSS config, so the
+inlined sheet is the one the other targets ship (P8). The project's `package.json` still applies:
+`sideEffects` shapes the tree-shaking, as it does for React's package.
 
 `tsc`, resolved from `package.resolveFrom` too, writes the declarations with `noCheck`, for the reason
 Vue's have it.

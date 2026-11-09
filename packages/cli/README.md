@@ -103,7 +103,7 @@ Packaged outputs ship with no source maps.
 `build --package` also reports:
 
 - **UF7008:** a packager, Solid's Babel, or the `typescript` that Svelte's and Qwik's declarations need
-  isn't installed, a target has no packager yet, or the framework's types don't resolve from `outDir`.
+  isn't installed, or the framework's types don't resolve from `outDir`.
   Nothing is cleaned or written.
 - **UF7009:** a packager failed, and its message holds the packager's own error. The targets' trees
   are written by then. Every packager writes declarations without type-checking, so it's usually a

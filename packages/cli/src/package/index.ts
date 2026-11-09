@@ -31,7 +31,7 @@ import { vue } from "./vue.ts";
 export const PACKAGE_DIRECTORY = "package";
 
 /** One line per target, in the order Angular, Astro, Qwik, React, Solid, Svelte, Vue. */
-const PACKAGERS: Partial<Record<TargetName, Packager>> = {
+const PACKAGERS: Record<TargetName, Packager> = {
   angular,
   astro,
   qwik,
@@ -198,11 +198,6 @@ export async function planPackage(input: PackageInput): Promise<PackagePlan> {
   const diagnostics: Diagnostic[] = [];
   for (const target of requested) {
     const packager = PACKAGERS[target];
-    if (!packager) {
-      const message = `Unframework has no ${target} packager yet. Leave ${target} out of package.targets.`;
-      diagnostics.push(problem("UF7008", target, message));
-      continue;
-    }
     const resolve = resolverFrom(from(target));
     for (const need of packager.needs) {
       try {
