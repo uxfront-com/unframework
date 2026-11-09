@@ -1,22 +1,22 @@
 // L11 against a case that declares the axe rules it breaks (case.json: ["image-alt"]).
-import { expect, inject, it } from "vitest";
-import type { RunnerTestCase } from "vitest";
+import { expect, it } from "vitest";
 
 import "../../../../../src/setup.ts";
 import { expectLayerFailure } from "../../../../../src/browser/behaviour.ts";
+import type { HostTest } from "../../../../../src/browser/host.ts";
 import { describeTargets, mount } from "../../../../../src/index.ts";
 import "../../../dom-target.ts";
+import { itUnlessUpdate } from "../../../stub-api.ts";
 
 const PIXEL =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='%23345'/%3E%3C/svg%3E";
-const update = inject("ufHarness").update;
 
 /**
  * Runs a scenario and returns its L11 failure, if any. The other layers are not the subject:
  * the scenario has no committed artefacts, so its L7 failure is consumed.
  */
 async function l11Failure(
-  task: RunnerTestCase,
+  task: HostTest,
   html: string,
   scenario: string,
 ): Promise<string | undefined> {
@@ -35,7 +35,7 @@ describeTargets("stub/axe", () => {
   });
 
   // Update mode would write artefacts for these scenarios, which must stay absent.
-  it.skipIf(update)("fails on a rule the case did not declare", async ({ task }) => {
+  itUnlessUpdate("fails on a rule the case did not declare", async ({ task }) => {
     const failure = await l11Failure(
       task,
       `<img src="${PIXEL}" width="8" height="8"><div role="uf-invalid">x</div>`,
@@ -46,7 +46,7 @@ describeTargets("stub/axe", () => {
     expect(failure).not.toMatch(/image-alt/);
   });
 
-  it.skipIf(update)(
+  itUnlessUpdate(
     "lets a component render its own landmarks, a <main> among them",
     async ({ task }) => {
       // The mount root sits in <body>, outside any harness landmark: the component's <main> is the
@@ -60,7 +60,7 @@ describeTargets("stub/axe", () => {
     },
   );
 
-  it.skipIf(update)("still reports a landmark nested where it may not be", async ({ task }) => {
+  itUnlessUpdate("still reports a landmark nested where it may not be", async ({ task }) => {
     const failure = await l11Failure(
       task,
       `<img src="${PIXEL}" width="8" height="8"><main><main>Nested</main></main>`,
@@ -69,7 +69,7 @@ describeTargets("stub/axe", () => {
     expect(failure).toMatch(/landmark-main-is-top-level|landmark-no-duplicate-main/);
   });
 
-  it.skipIf(update)("fails when a declared rule is not reported", async ({ task }) => {
+  itUnlessUpdate("fails when a declared rule is not reported", async ({ task }) => {
     const failure = await l11Failure(
       task,
       `<img src="${PIXEL}" width="8" height="8" alt="A square">`,

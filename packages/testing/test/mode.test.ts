@@ -11,6 +11,8 @@ import {
   createHarnessRun,
   groupOrder,
   resolveHarnessMode,
+  RUN_ID_ENV,
+  sharedRunId,
 } from "../src/node/mode.ts";
 import type { HarnessMode } from "../src/node/mode.ts";
 
@@ -313,5 +315,41 @@ describe("createHarnessRun", () => {
     expect(() => run("live", [{ ...l10("live"), layer: "L7" }])).toThrow(
       /names pixels: "live": only L10 depends on the pixel mode/,
     );
+  });
+});
+
+describe("createHarnessRun with a shared id", () => {
+  it("names its scratch directories by that id", () => {
+    const store = globalThis as Record<symbol, unknown>;
+    const key = Symbol.for("unframework.harness.run");
+    const before = store[key];
+    delete store[key];
+    try {
+      const root = mkdtempSync(join(tmpdir(), "uf-run-id-"));
+      const run = createHarnessRun({
+        root,
+        casesDir: join(root, "cases"),
+        reference: "vue",
+        mode: { update: false, pixels: "live", canary: null, ci: false },
+        quarantine: [],
+        cases: {},
+        runId: "given-1",
+      });
+      expect(run.runId).toBe("given-1");
+      expect(run.liveDir).toBe(join(root, ".live", "given-1"));
+    } finally {
+      store[key] = before;
+    }
+  });
+});
+
+describe("sharedRunId", () => {
+  it("sets the id once, for the workers that inherit the environment", () => {
+    const env: NodeJS.ProcessEnv = {};
+    const id = sharedRunId(env);
+    expect(id).toMatch(/^[0-9a-z]+-\d+$/);
+    expect(env[RUN_ID_ENV]).toBe(id);
+    expect(sharedRunId(env)).toBe(id);
+    expect(sharedRunId({ [RUN_ID_ENV]: "given-1" })).toBe("given-1");
   });
 });

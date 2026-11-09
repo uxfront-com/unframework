@@ -4,7 +4,7 @@
 // due one at a time and settles after each, so a render in a frame of its own comes between
 // them; after the unmount a tick records no step; `Date` and `setTimeout` stay real; and the
 // page has its real intervals back when the test ends.
-import { expect, vi } from "vitest";
+import { expect } from "vitest";
 
 import "../../../../../src/setup.ts";
 import { describeTargets, it, mount } from "../../../../../src/index.ts";
@@ -148,7 +148,8 @@ describeTargets("stub/clock", () => {
   );
 
   it("gives the page its real intervals back when the test ends", async () => {
-    expect(vi.isFakeTimers()).toBe(false);
+    // The fake keeps its clock there (`src/browser/clock.ts`).
+    expect("clock" in setInterval).toBe(false);
     await new Promise<void>((resolve) => {
       const timer = setInterval(() => {
         clearInterval(timer);

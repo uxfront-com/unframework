@@ -34,6 +34,10 @@
   ],
   "exports": {
     ".": "./src/index.ts",
+    "./driver": "./src/driver/index.ts",
+    "./driver/host": "./src/driver/host.ts",
+    "./driver/reporter": "./src/driver/reporter.ts",
+    "./driver/server": "./src/driver/server.ts",
     "./hosts/page": "./src/hosts/page/setup.ts",
     "./hosts/page/run": "./src/hosts/page/runner.ts",
     "./hosts/page/vitest": "./src/hosts/page/vitest.ts",
@@ -55,6 +59,22 @@
       ".": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
+      },
+      "./driver": {
+        "types": "./dist/driver/index.d.ts",
+        "default": "./dist/driver/index.js"
+      },
+      "./driver/host": {
+        "types": "./dist/driver/host.d.ts",
+        "default": "./dist/driver/host.js"
+      },
+      "./driver/reporter": {
+        "types": "./dist/driver/reporter.d.ts",
+        "default": "./dist/driver/reporter.js"
+      },
+      "./driver/server": {
+        "types": "./dist/driver/server.d.ts",
+        "default": "./dist/driver/server.js"
       },
       "./hosts/page": {
         "types": "./dist/hosts/page/setup.d.ts",
@@ -119,7 +139,7 @@
   "scripts": {
     "build": "tsdown",
     "check-types": "tsc --noEmit",
-    "test": "vitest run && vitest run --config test/parity/vitest.config.ts"
+    "test": "vitest run && playwright test --config test/parity/playwright.config.ts"
   },
   "dependencies": {
     "@fontsource/inter": "catalog:",
@@ -142,6 +162,7 @@
     "pngjs": "catalog:"
   },
   "devDependencies": {
+    "@playwright/test": "catalog:",
     "@types/node": "catalog:",
     "@types/pngjs": "catalog:",
     "@types/sinonjs__fake-timers": "catalog:",
@@ -153,6 +174,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
+    "@playwright/test": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "vitest": "catalog:"
   }

@@ -41,6 +41,24 @@ export type PageCallResult = { ok: true; value: unknown } | { ok: false; error: 
 /** The actions Playwright runs as one, which Vitest's `userEvent` runs through its provider. */
 export type PageActionName = "ufUnhover" | "ufFill" | "ufClear" | "ufSelectOptions";
 
+/** One test the page has loaded, before anything has run. */
+export interface PageCollectedTest {
+  name: string;
+  fullName: string;
+  /** How long it may run. */
+  timeout: number;
+}
+
+/**
+ * The tests of the spec file, once it has loaded: a driver fails the ones with no record by name
+ * when the page stops answering.
+ */
+export interface PageCollectedRecord {
+  kind: "collected";
+  filepath: string;
+  tests: PageCollectedTest[];
+}
+
 /** A test's record, when it has finished. */
 export interface PageTestRecord {
   kind: "test";
@@ -65,6 +83,16 @@ export interface PageUnhandledRecord extends PageError {
   test?: string;
 }
 
+/**
+ * An error event with no value, which goes to the console for L13 to judge: Chromium reports it as
+ * a page error as well, and that report fails no run on its own (`src/driver/page-errors.ts`).
+ */
+export interface PageLoggedErrorRecord {
+  kind: "logged-error";
+  /** The event's message, or the rejection's reason as text, as `pageerror` words it. */
+  message: string;
+}
+
 /** A spec file's record, once its tests and hooks have finished. */
 export interface PageFileRecord {
   kind: "file";
@@ -77,4 +105,9 @@ export interface PageFileRecord {
 }
 
 /** What the page reports, as it happens. */
-export type PageEvent = PageTestRecord | PageUnhandledRecord | PageFileRecord;
+export type PageEvent =
+  | PageCollectedRecord
+  | PageTestRecord
+  | PageUnhandledRecord
+  | PageLoggedErrorRecord
+  | PageFileRecord;

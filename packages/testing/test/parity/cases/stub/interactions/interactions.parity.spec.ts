@@ -2,10 +2,10 @@
 // settles until the page is quiet and records a step; `emitted` and `events` read what the
 // component emitted, as plain data; `expectParity` compares the steps with the committed trace
 // (L9), and records L9 as skipped where no step led to the scenario.
-import { expect, inject, it as vitestIt } from "vitest";
-import { page } from "vitest/browser";
+import { expect } from "vitest";
 
 import "../../../../../src/setup.ts";
+import { PageLocator } from "../../../../../src/hosts/page/locators.ts";
 import { describeTargets, it, mount } from "../../../../../src/index.ts";
 import { NO_INTERACTION_SKIP } from "../../../../../src/layers.ts";
 import type { StubComponent } from "../../../dom-target.ts";
@@ -101,8 +101,6 @@ function scheduled(): StubComponent {
     },
   };
 }
-
-const update = inject("ufHarness").update;
 
 describeTargets("stub/interactions", () => {
   it("renders the initial count, with no trace to compare", async ({ task }) => {
@@ -208,7 +206,9 @@ describeTargets("stub/interactions", () => {
       const view = await mount(counter);
       const other = await mount(counter);
       const button = view.getByRole("button", { name: "Add one" });
-      await expect(view.user.click(page.getByRole("button"))).rejects.toThrow(
+      await expect(
+        view.user.click(new PageLocator("internal:role=button") as never),
+      ).rejects.toThrow(
         /view\.user\.click: act on a locator of this view, .* not getByRole\('button'\)/,
       );
       await expect(view.user.click(other.getByRole("button", { name: "Add one" }))).rejects.toThrow(
@@ -292,26 +292,4 @@ describeTargets("stub/interactions", () => {
       expect(view.emitted("submitted")).toEqual([[]]);
     },
   );
-
-  // A step the test never compares fails L9 when it ends: the setup records it. Vitest's own
-  // `it`, as the corpus's refuses `fails`.
-  vitestIt.skipIf(update).fails("fails L9 with a step no expectParity compared", async () => {
-    const view = await mount(counter);
-    await view.user.click(view.getByRole("button", { name: "Add one" }));
-    await expect.element(view.getByRole("status")).toHaveTextContent("1");
-  });
-
-  vitestIt.skipIf(update)("recorded the step left at the end of the test above", ({ task }) => {
-    const sibling = task.suite?.tasks.find(
-      (test) => test.name === "fails L9 with a step no expectParity compared",
-    );
-    expect(sibling?.meta.uf?.layers.L9).toEqual({
-      status: "fail",
-      message: expect.stringMatching(
-        /^1 step\(s\) of uf-root-\d+ were never compared \(click getByRole\('button', \{ name: 'Add one' \}\)\): every view\.user action and rerender is followed by an expectParity/,
-      ),
-    });
-    // L8 passes: the test's own assertions held.
-    expect(sibling?.meta.uf?.layers.L8).toEqual({ status: "pass" });
-  });
 });

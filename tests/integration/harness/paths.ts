@@ -33,6 +33,18 @@ export const CANARY_DIR: string = join(ROOT, ".canary");
 /** The repository root. */
 export const REPO_ROOT: string = realpathSync(join(ROOT, "..", ".."));
 
+/** A target's Storybook package. */
+export function storybookDir(target: string): string {
+  return join(REPO_ROOT, "tests", "storybook", target);
+}
+
+/** Where a target's static Storybook goes: a canary's build, which holds its compile, is its own. */
+export function storybookOutput(target: string, canary: string | null): string {
+  return canary
+    ? join(CANARY_DIR, canary, "storybook-static", target)
+    : join(storybookDir(target), "storybook-static");
+}
+
 /** A target's test toolchain package: its checkers and their TypeScript 6 (ADR-0022). */
 export function toolchainDir(target: string): string {
   return join(REPO_ROOT, "tests", "toolchains", target);

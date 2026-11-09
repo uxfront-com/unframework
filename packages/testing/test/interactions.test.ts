@@ -1,79 +1,46 @@
 // Interactions, traces and capability skips end to end (ADR-0050): the interaction stubs run in
-// Chromium, through Vitest's runner and its task updates to the parity reporter, which must
-// record each test by its name, its scenarios and its capability skip in the matrix (version 5),
-// and L9 as it was judged; the summary then accepts every skip they recorded.
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
-import { Writable } from "node:stream";
-
-import { afterEach, expect, it } from "vitest";
-import { startVitest } from "vitest/node";
+// Chromium on the page host, through the driver and its records to the parity reporter, which must
+// record each test by its name, its scenarios and its capability skip in the matrix (version 5), and
+// L9 as it was judged; the summary then accepts every skip they recorded.
+import { expect, it } from "vitest";
 
 import { LAYERS } from "../src/layers.ts";
 import { MATRIX_VERSION } from "../src/node/matrix.ts";
-import { ParityReporter } from "../src/node/reporter.ts";
 import { summarise } from "../src/node/summary.ts";
-import { packageRoot, parityProject, STUB_CAPABILITIES } from "./parity/project.ts";
-
-const exitCode = process.exitCode;
-const reportsDir = mkdtempSync(join(tmpdir(), "uf-interactions-"));
-
-afterEach(() => {
-  process.exitCode = exitCode;
-  rmSync(reportsDir, { recursive: true, force: true });
-});
+import { STUB_CAPABILITIES } from "./parity/project.ts";
+import { runStubs } from "./parity/run-stubs.ts";
 
 const SKIP = "requires listbox: the stub target renders no list box";
+const SKIPPED = "skips a test that requires a list box, which the stub lacks";
 
 it("records each test's scenarios and capability skip, and L9, in the parity matrix", async () => {
-  let output = "";
-  const sink = new Writable({
-    write(chunk, _encoding, done) {
-      output += String(chunk);
-      done();
-    },
-  });
-  const reporter = new ParityReporter({ reportsDir, allProjects: ["parity"] });
-  const vitest = await startVitest(
-    [],
-    {
-      root: packageRoot,
-      config: false,
-      watch: false,
-      reporters: [reporter],
-      projects: [
-        parityProject(process.env, [
-          "test/parity/cases/stub/interactions/*.parity.spec.ts",
-          "test/parity/cases/stub/requires/*.parity.spec.ts",
-        ]),
-      ],
-    },
-    undefined,
-    { stdout: sink, stderr: sink },
-  );
-  const states = Object.fromEntries(
-    vitest.state.getTestModules().map((module) => [basename(module.moduleId), module.state()]),
-  );
-  expect(states, output).toEqual({
-    "interactions.parity.spec.ts": "passed",
-    "requires.parity.spec.ts": "passed",
-  });
+  const { status, output, tests, failed, fileProblems, matrix } = await runStubs([
+    "interactions/*.spec.ts",
+    "requires/*.parity.spec.ts",
+  ]);
+  // The one test that leaves a step uncompared fails on purpose, and it alone.
+  expect(failed, output).toEqual(["fails L9 with a step no expectParity compared"]);
+  expect(fileProblems, output).toEqual([]);
+  expect(status).toBe(1);
   // A skipped test that recorded why is no problem for the reporter.
   expect(output).not.toContain("problem(s) beyond the failed tests");
-  expect(process.exitCode).toBe(exitCode);
 
-  const matrix = reporter.matrix!;
+  const skip = { status: "skip", reason: SKIP };
+  expect(tests.get(SKIPPED)?.state).toBe("skip");
+  expect(tests.get(SKIPPED)?.meta.uf).toEqual({
+    case: "stub/requires",
+    target: "dom",
+    layers: { L7: skip, L8: skip, L9: skip, L10: skip, L11: skip, L13: skip },
+    skipped: SKIP,
+  });
+
   expect(matrix.version).toBe(MATRIX_VERSION);
   const requires = matrix.tests["stub/requires"]?.dom;
   expect(requires).toEqual({
     "stub/requires > runs a test whose capabilities its target supports": {
       scenarios: ["supported"],
     },
-    "stub/requires > skips a test that requires a list box, which the stub lacks": {
-      scenarios: [],
-      skipped: SKIP,
-    },
+    [`stub/requires > ${SKIPPED}`]: { scenarios: [], skipped: SKIP },
   });
   const interactions = matrix.tests["stub/interactions"]?.dom ?? {};
   expect(
@@ -97,6 +64,6 @@ it("records each test's scenarios and capability skip, and L9, in the parity mat
   });
   expect(summary.problems.filter((problem) => problem.includes("skipped"))).toEqual([]);
   expect(summary.markdown).toContain(
-    `- skipped on dom by capability: "stub/requires > skips a test that requires a list box, which the stub lacks" (${SKIP}).`,
+    `- skipped on dom by capability: "stub/requires > ${SKIPPED}" (${SKIP}).`,
   );
-}, 120_000);
+}, 180_000);

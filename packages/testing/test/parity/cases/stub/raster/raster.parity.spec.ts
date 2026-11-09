@@ -3,16 +3,16 @@
 // tile's old pixels. Where an element starts mid-pixel, that rect's edge cuts the anti-aliased
 // corner of the box beside it, which rasterises one level apart from a whole raster: the same DOM
 // then captured differently after a hover, a press or a keystroke repainted one control, and L10
-// failed by a pixel at the edge of the control a test used last. The parity projects launch
-// Chromium with whole-tile raster (`parityBrowser`), so a capture is a function of the DOM,
+// failed by a pixel at the edge of the control a test used last. Each run of the parity layers
+// launches Chromium with whole-tile raster (`launchArguments`), so a capture is a function of the DOM,
 // whatever was repainted before it. Without `--disable-partial-raster`, this test fails.
 import { expect, it } from "vitest";
-import { page } from "vitest/browser";
 
 import "../../../../../src/setup.ts";
 import { describeTargets, mount } from "../../../../../src/index.ts";
 import type { View } from "../../../../../src/index.ts";
 import "../../../dom-target.ts";
+import { screenshot } from "../../../stub-api.ts";
 
 const BOX = "display: block; height: 20px; border: 1px solid #767676; border-radius: 4px";
 
@@ -31,8 +31,7 @@ const ROWS = [0, 1, 2, 3, 4, 5, 6, 7]
 /** The container's pixels, as a PNG in base64. */
 async function capture(view: View): Promise<string> {
   await view.settle();
-  // Not saved, a screenshot is returned as base64.
-  return page.screenshot({ element: view.container, save: false });
+  return screenshot(view);
 }
 
 describeTargets("stub/raster", () => {

@@ -5,6 +5,7 @@
 // listeners isn't copied: Storybook's permanent ones would stop it reporting on the real host only.
 // An event with a value and a listener of the page's own therefore reports here, where Vitest's
 // would log it, which no corpus spec can tell apart: none adds a listener for either event.
+import { report } from "./config.ts";
 import { recordUnhandled, serializeError } from "./runner.ts";
 
 /** Installs the two listeners, once per page. */
@@ -27,5 +28,7 @@ function listen(
     // An `ErrorEvent` may have only a message.
     const { message } = fired as ErrorEvent;
     console.error(message ? new Error(message) : fired);
+    // Not left unhandled, which would bring it back here: a page going away rejects the binding.
+    report({ kind: "logged-error", message: message ?? String(value) }).catch(console.error);
   });
 }

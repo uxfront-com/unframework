@@ -15,6 +15,7 @@
     "harness",
     "scripts",
     "vitest.config.ts",
+    "playwright.config.ts",
     "styleframe.config.ts",
     "styleframe.d.ts",
     "fixture-engine.d.ts",

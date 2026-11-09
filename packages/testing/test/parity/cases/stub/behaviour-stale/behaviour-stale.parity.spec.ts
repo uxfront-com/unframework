@@ -7,6 +7,7 @@ import { expect, it } from "vitest";
 import "../../../../../src/setup.ts";
 import { describeTargets, mount } from "../../../../../src/index.ts";
 import "../../../dom-target.ts";
+import { sibling } from "../../../stub-api.ts";
 
 describeTargets("stub/behaviour-stale", () => {
   it("passes, and records the pass under the entry as it is", async () => {
@@ -14,7 +15,9 @@ describeTargets("stub/behaviour-stale", () => {
     await expect.element(view.getByText("Fixed")).toBeVisible();
   });
 
-  it("recorded L8 as a pass", ({ task }) => {
-    expect(task.suite?.tasks[0]?.meta.uf?.layers.L8).toEqual({ status: "pass" });
+  it("recorded L8 as a pass", () => {
+    expect(
+      sibling("passes, and records the pass under the entry as it is")?.meta.uf?.layers.L8,
+    ).toEqual({ status: "pass" });
   });
 });
