@@ -83,7 +83,7 @@ export async function ufMapStack(
   if (!map || !("version" in map) || map.mappings === "") {
     return { message: `${frame.url} has no source map. Expected ${expected}.` };
   }
-  const position = originalPositionFor(new TraceMap(map), {
+  const position = originalPositionFor(new TraceMap(JSON.stringify(map)), {
     line: frame.line,
     column: frame.column - 1,
   });
