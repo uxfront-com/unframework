@@ -1,5 +1,6 @@
 import { glob, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { stripVTControlCharacters } from "node:util";
 
 import type { OutputFile } from "@unframework/compiler";
 
@@ -96,8 +97,9 @@ export const angular: Packager = {
       work,
       "stderr",
     ).catch((error: Error) => {
-      // Its spinner's lines, which say nothing about the failure.
-      throw new Error(error.message.replace(/^[-✖✔] .*\n/gm, ""));
+      // Its spinner's lines, which say nothing about the failure. With colour on, each starts with
+      // a control code, so those go first.
+      throw new Error(stripVTControlCharacters(error.message).replace(/^[-✖✔] .*\n/gm, ""));
     });
     // ng-packagr always writes maps, and a package ships none (ADR-0077).
     for await (const file of glob("**/*.map", { cwd: out })) {

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { run, tree, write } from "../helpers.ts";
 import { check, consumer, designSystem, inRepository, SOURCE_TREE } from "./helpers.ts";
@@ -144,7 +144,7 @@ describe("build --package: Angular", () => {
     expect(bad.output).toContain("nope");
     const files = tree(join(root, "dist", "package"));
     expect(files[FESM]).toContain('from "@angular/common"');
-    // Only what the barrel's components need: the scoping directive stays private.
+    // The scoping directive isn't a slot's, so it stays private.
     expect(files[TYPES]).not.toMatch(/export (declare class |\{[^}]*)ScopeAttributes/);
   });
 
@@ -232,6 +232,26 @@ export const Klass = class {
     expect(stderr).toContain("dist/angular/shared/format.ts");
     expect(stderr).not.toContain("Compiling with Angular sources");
     expect(tree(join(root, "dist", "package"))).toEqual(before);
+  });
+
+  it("leaves ng-packagr's coloured spinner out of UF7009", async () => {
+    vi.stubEnv("FORCE_COLOR", "1");
+    vi.stubEnv("NO_COLOR", undefined);
+    try {
+      const root = angular({
+        "src/shared/format.ts": `export const formatLabel = (label: string): string => label.trim();
+export const Klass = class {
+  private y = 1;
+};
+`,
+      });
+      const { code, stderr } = await run(root, "build", "--package");
+      expect(code).toBe(1);
+      expect(stderr).toContain("TS4094");
+      expect(stderr).not.toContain("Compiling with Angular sources");
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("reports a project without ng-packagr or Angular as UF7008, and writes nothing", async () => {
