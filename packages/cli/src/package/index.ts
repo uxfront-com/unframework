@@ -18,20 +18,26 @@ import type { OutputFile, ResolvedConfig, TargetName } from "@unframework/compil
 import { createDiagnostic } from "@unframework/diagnostics";
 import type { Diagnostic, DiagnosticCode } from "@unframework/diagnostics";
 
+import { angular } from "./angular.ts";
 import { astro } from "./astro.ts";
-import type { Packager } from "./packager.ts";
+import type { Packager, SubpathExports } from "./packager.ts";
+import { qwik } from "./qwik.ts";
 import { react } from "./react.ts";
 import { solid } from "./solid.ts";
+import { svelte } from "./svelte.ts";
 import { vue } from "./vue.ts";
 
 /** Where the package goes under `outDir`, which `build` cleans like a target's tree. */
 export const PACKAGE_DIRECTORY = "package";
 
 /** One line per target, in the order Angular, Astro, Qwik, React, Solid, Svelte, Vue. */
-const PACKAGERS: Partial<Record<TargetName, Packager>> = {
+const PACKAGERS: Record<TargetName, Packager> = {
+  angular,
   astro,
+  qwik,
   react,
   solid,
+  svelte,
   vue,
 };
 
@@ -143,14 +149,15 @@ function failure(error: unknown, work: string, tree: string): string {
 function manifest(
   fields: Readonly<Record<string, string>>,
   packagers: readonly (readonly [TargetName, Packager])[],
+  subpaths: ReadonlyMap<TargetName, SubpathExports>,
 ): string {
-  const peers = packagers.map(([, { peer }]) => peer);
+  const peers = packagers.flatMap(([, { peer }]) => peer);
   return `${JSON.stringify(
     {
       ...fields,
       type: "module",
       exports: {
-        ...Object.fromEntries(packagers.map(([target, each]) => [`./${target}`, each.exports])),
+        ...Object.fromEntries(packagers.map(([target]) => [`./${target}`, subpaths.get(target)])),
         "./source/*": "./source/*",
         "./package.json": "./package.json",
       },
@@ -191,18 +198,13 @@ export async function planPackage(input: PackageInput): Promise<PackagePlan> {
   const diagnostics: Diagnostic[] = [];
   for (const target of requested) {
     const packager = PACKAGERS[target];
-    if (!packager) {
-      const message = `Unframework has no ${target} packager yet. Leave ${target} out of package.targets.`;
-      diagnostics.push(problem("UF7008", target, message));
-      continue;
-    }
     const resolve = resolverFrom(from(target));
     for (const need of packager.needs) {
       try {
         resolve(need);
       } catch {
         const place = relative(root, from(target)).split(sep).join("/") || "the project's root";
-        const message = `The ${target} packager needs ${need}, which doesn't resolve from ${place}. Install it there, point package.resolveFrom at a directory that has it, or leave ${target} out of package.targets.`;
+        const message = `The ${target} packager needs ${packageOf(need)}, which doesn't resolve from ${place}. Install it there, point package.resolveFrom at a directory that has it, or leave ${target} out of package.targets.`;
         diagnostics.push(problem("UF7008", target, message));
       }
     }
@@ -227,25 +229,33 @@ export async function planPackage(input: PackageInput): Promise<PackagePlan> {
       const stage = await realpath(await mkdtemp(join(config.outDir, ".package-")));
       // A directory of its own, as `mkdtemp`'s mode is private and would survive the rename.
       const built = join(stage, PACKAGE_DIRECTORY);
+      const subpaths = new Map<TargetName, SubpathExports>();
       try {
         for (const [target, packager] of packagers) {
           const work = join(stage, "work", target);
           const tree = relative(root, join(config.outDir, target));
+          const out = join(built, target);
           await mkdir(work, { recursive: true });
           try {
             await packager.run({
               files: trees.get(target) ?? [],
-              out: join(built, target),
+              out,
               work,
               resolve: resolverFrom(from(target)),
             });
+            subpaths.set(
+              target,
+              typeof packager.exports === "function"
+                ? await packager.exports(out)
+                : packager.exports,
+            );
           } catch (error) {
             const message = `The ${target} packager failed: ${failure(error, work, tree)}`;
             return [problem("UF7009", target, message)];
           }
         }
         await mkdir(built, { recursive: true });
-        await writeFile(join(built, "package.json"), manifest(fields, packagers));
+        await writeFile(join(built, "package.json"), manifest(fields, packagers, subpaths));
         for (const [file, path] of shipped) {
           const to = join(built, "source", path);
           await mkdir(dirname(to), { recursive: true });

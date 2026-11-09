@@ -1,8 +1,8 @@
-import { glob, readFile, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import type { Packager } from "./packager.ts";
-import { dropSideEffectImports, runScript, writeFiles } from "./packager.ts";
+import { dropDeclarationSideEffects, runScript, writeFiles } from "./packager.ts";
 
 const VUE_TSC = "vue-tsc/bin/vue-tsc.js";
 
@@ -44,9 +44,6 @@ export const vue: Packager = {
       }),
     );
     await runScript(resolve(VUE_TSC), ["-p", tsconfig], work);
-    for await (const file of glob("**/*.d.ts", { cwd: out })) {
-      const path = join(out, file);
-      await writeFile(path, dropSideEffectImports(await readFile(path, "utf8")));
-    }
+    await dropDeclarationSideEffects(out);
   },
 };

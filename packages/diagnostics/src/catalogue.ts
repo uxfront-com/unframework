@@ -2634,8 +2634,10 @@ const entries: CatalogueEntry[] = [
     description: [
       "`unframework build --package` runs each target's packager, and it could not resolve this",
       "one. React and Solid use `tsdown`, Vue uses `vue-tsc`, Svelte uses `@sveltejs/package`,",
-      "Angular uses `ng-packagr`, and Qwik uses `vite`. Unframework does not install them: it",
-      "resolves them from `package.resolveFrom`, which is the project root by default.",
+      "Angular uses `ng-packagr`, and Qwik uses `vite` and `@qwik.dev/core`, whose `qwikVite()`",
+      "runs the build. Svelte and Qwik also need `typescript`, for their declarations. Unframework",
+      "does not install them: it resolves them from `package.resolveFrom`, which is the project",
+      "root by default.",
       "",
       "Install the packager in the project, point `package.resolveFrom` at a directory that has it,",
       "or leave the target out of `package.targets`.",

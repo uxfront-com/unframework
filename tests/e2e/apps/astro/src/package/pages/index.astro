@@ -1,4 +1,5 @@
 ---
+import { Button, Card, Counter, TextField } from "@unframework/e2e-design-system/astro";
 import Hello from "../Hello.astro";
 ---
 
@@ -10,5 +11,15 @@ import Hello from "../Hello.astro";
   </head>
   <body>
     <Hello />
+    <main>
+      <Button>Press me</Button>
+      <Counter initial={2} step={3} />
+      <TextField label="Name" />
+      <Card>
+        <h2 slot="header">Card header</h2>
+        <button type="button">Toggle card</button>
+        <p slot="footer">Closed</p>
+      </Card>
+    </main>
   </body>
 </html>
