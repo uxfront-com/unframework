@@ -2,6 +2,7 @@
 // and every target's production compile of a component, a case of several sources and a styled one.
 import { cpSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
+import { Worker } from "node:worker_threads";
 
 import { TARGET_NAMES } from "@unframework/compiler";
 import type { TargetName } from "@unframework/compiler";
@@ -12,6 +13,7 @@ import {
   budgetProblems,
   bundleSize,
   CALIBRATION,
+  cpuTime,
   measureSize,
   measureTimes,
   readBudgets,
@@ -26,6 +28,46 @@ import { loadToolchain } from "./targets.ts";
 
 const budget: CaseCost = { time: 2, sizes: { vue: { raw: 1000, gzip: 500 } } };
 const size = { raw: 1000, gzip: 500 };
+
+/** Spins for `ms` on the calling thread. */
+function spin(ms: number): void {
+  const end = performance.now() + ms;
+  while (performance.now() < end);
+}
+
+describe("cpuTime", () => {
+  // What another thread burns stands in for V8's background GC and JIT, which made a case's time
+  // differ more than twofold between runs on a quiet machine.
+  const spinner = `
+    const { parentPort } = require("node:worker_threads");
+    parentPort.once("message", (ms) => {
+      const end = performance.now() + ms;
+      while (performance.now() < end);
+      parentPort.postMessage("done");
+    });
+    parentPort.postMessage("ready");
+  `;
+
+  it("charges nothing for another thread's work", async () => {
+    const worker = new Worker(spinner, { eval: true });
+    try {
+      await new Promise((resolve) => worker.once("message", resolve));
+      const before = cpuTime();
+      const done = new Promise((resolve) => worker.once("message", resolve));
+      worker.postMessage(200);
+      await done;
+      expect(cpuTime() - before).toBeLessThan(100);
+    } finally {
+      await worker.terminate();
+    }
+  });
+
+  it("counts this thread's own work", () => {
+    const before = cpuTime();
+    spin(200);
+    expect(cpuTime() - before).toBeGreaterThan(100);
+  });
+});
 
 describe("budgetProblems", () => {
   it("passes a cell on its margins", () => {

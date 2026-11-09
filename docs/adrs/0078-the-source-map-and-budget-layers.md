@@ -30,8 +30,11 @@ built.
     the median, normalised by `basics/hello` on the same machine.
   - **Output size per target:** each target's L3 compile, then a minified rolldown bundle with the
     framework, `.css` and `passThrough` imports external. It records raw and gzip bytes.
-  - **The clock** is the process's CPU time, through tinybench's `now`, because the clock on the wall
-    charges a compile for whatever else the machine runs.
+  - **The clock** is the main thread's CPU time, through tinybench's `now`. The clock on the wall
+    charges a compile for whatever else the machine runs. The process's CPU time charges it for V8's
+    background GC and JIT, which made `types/imported-interface` fail on a quiet machine. The cost is
+    that oxfmt formats on a native thread, so a time counts almost none of the formatter's work. The
+    compile still formats, and oxfmt is pinned exactly, so only a deliberate bump can change that cost.
   - **The calibration** runs before each case, and a ratio divides by the median of those runs, since
     `basics/hello` is the shortest compile of all and one run alone is noisy. Its own ratio is 1 by
     definition.

@@ -162,11 +162,14 @@ export async function measureTimes(
 }
 
 /**
- * This process's CPU time, in milliseconds. The clock on the wall would charge a compile for
- * whatever else the machine runs: on a loaded machine, two runs' ratios differed tenfold.
+ * This thread's CPU time, in milliseconds. The clock on the wall would charge a compile for
+ * whatever else the machine runs: on a loaded machine, two runs' ratios differed tenfold. The
+ * process's CPU time would charge it for V8's background GC and JIT, which land on whichever
+ * case is running: `types/imported-interface` measured 2 to 5.4 × `basics/hello` from run to run.
+ * oxfmt formats on a native thread, so this clock counts almost none of it (ADR-0078).
  */
-function cpuTime(): number {
-  const { user, system } = process.cpuUsage();
+export function cpuTime(): number {
+  const { user, system } = process.threadCpuUsage();
   return (user + system) / 1000;
 }
 

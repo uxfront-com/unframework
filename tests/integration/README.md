@@ -284,8 +284,8 @@ compiles of every case, so a run without it fills each L15 cell with `skip(not i
 
 `pnpm test:budgets:update` measures every cell and writes `budgets.json`,
 which is never edited by hand: a change that adds a case or changes an output's size runs it again.
-A time is CPU time, as a ratio with `basics/hello` measured in the same run, so `basics/hello`'s
-own never fails.
+A time is the main thread's CPU time, as a ratio with `basics/hello` measured in the same run, so
+`basics/hello`'s own never fails.
 A size is the target's framework compile (`frameworkEmit` in its toolchain), bundled and minified by
 rolldown, with the framework, each `.css` and each `passThrough` import left external.
 
