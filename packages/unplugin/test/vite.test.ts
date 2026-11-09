@@ -382,10 +382,8 @@ describe("an import that never names the file", () => {
   it("fails loudly when the authored file reaches a target whose ids have a suffix", async () => {
     for (const target of TARGET_NAMES.filter((name) => ID_SUFFIXES[name] !== "")) {
       await withServer(unframework({ target }), async ({ client }) => {
-        const resolved = await client.pluginContainer.resolveId("@ds/core/hello", importer());
-        // Vite resolved the package's `exports` entry itself: the plugin never saw the import.
+        // What a plugin that resolves before this one can hand over: the file, unsuffixed.
         const authored = file("node_modules/@ds/core/src/Hello.uf.tsx");
-        expect(resolved?.id, target).toBe(authored);
         await expect(client.pluginContainer.load(authored), target).rejects.toThrow(
           `node_modules/@ds/core/src/Hello.uf.tsx reached Vite as itself, which would load it as plain TSX rather than as its ${target} component: the import that resolved to it does not name the file (a package's \`exports\` entry or a tsconfig path, say), so this plugin never saw it. Import it with a specifier that ends in .uf.tsx, such as "./Hello.uf.tsx"; a package that ships .uf.tsx sources must export them under subpaths that do.`,
         );

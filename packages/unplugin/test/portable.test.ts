@@ -228,6 +228,17 @@ describe("resolveId without a bundler's resolver", () => {
     expect(await resolveId(pre, "./Missing.uf.tsx", file("App.ts"))).toBeNull();
   });
 
+  it("resolves a package's specifier where the context can", async () => {
+    const [pre] = rawPlugins({ target: "vue" }, project.root, "rollup");
+    const source = join(project.root, "node_modules/@ds/core/src/Hello.uf.tsx");
+    const context = { resolve: async () => ({ id: `${source}?v=abc` }) };
+    expect(await call(pre.resolveId, context, "@ds/core/hello", file("App.ts"), {})).toBe(
+      `${source}.vue`,
+    );
+    const external = { resolve: async () => ({ id: source, external: true }) };
+    expect(await call(pre.resolveId, external, "@ds/core/hello", file("App.ts"), {})).toBeNull();
+  });
+
   it("gives no scan id: the scan is Vite's", async () => {
     const [pre] = rawPlugins({ target: "vue" });
     const options = { isEntry: false, scan: true };

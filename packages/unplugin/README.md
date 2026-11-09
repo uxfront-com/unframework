@@ -57,7 +57,7 @@ The project's root is Vite's `root`, webpack's or Rspack's `compiler.context`, e
 `absWorkingDir`, or else `process.cwd()`, which Rsbuild, Rolldown, Rollup and the others get.
 
 A bundler whose hook context has `this.resolve`, like Rollup, Rolldown and Vite, resolves a specifier
-itself, so aliases work. Without it, as on esbuild and webpack, a specifier must be a path: `./Hello.uf`,
+itself, so aliases and [a package's sources](#packages-that-ship-sources) work. Without it, as on esbuild and webpack, a specifier must be a path: `./Hello.uf`,
 `./Hello.uf.js` and `./Hello.uf.jsx` find `Hello.uf.tsx` or `Hello.uf.ts` beside the importer. A
 package's specifier and an alias are left to the bundler, and a `.uf.tsx` file they resolve to
 fails in `load` on a target whose ids have a suffix.
@@ -269,14 +269,49 @@ before: a parameter named after the id's extension (`?vue&type=style&index=0&lan
 of the module, which `load` leaves to that plugin; Vite's file queries are left to Vite; any other
 query (`?container`) loads the component, even on a cold server.
 
-An import whose specifier does not name the file never reaches `resolveId`: a package's `exports`
-entry or a tsconfig path that maps to a `.uf.tsx`. On React, Solid and Qwik the resolved id is the
-module id, so it compiles anyway. On the other targets the authored file would load as plain TSX,
-so `load` fails it with the fix: import it with a specifier that ends in `.uf.tsx`. A `.uf.ts`
-file mapped that way loads as its composables where its id is the file itself, and fails the same
-way on Svelte and Angular, whose ids have a suffix. Packages that
-ship `.uf.tsx` sources (consumed through `exports` maps and Vite's dependency optimizer, which
-bundles `node_modules` before any plugin runs) are M6's to support.
+On a bundler whose context can't resolve one, a bare specifier that maps to a `.uf.tsx` never
+reaches `resolveId`, and neither does a file another plugin answers for first. On React, Solid and
+Qwik the resolved id is the module id, so it compiles anyway. On the other targets the authored
+file would load as plain TSX, so `load` fails it with the fix: import it with a specifier that ends
+in `.uf.tsx`. A `.uf.ts` file mapped that way loads as its composables where its id is the file
+itself, and fails the same way on Svelte and Angular, whose ids have a suffix.
+
+## Packages that ship sources
+
+A package can ship its `.uf.tsx` and `.uf.ts` files for its consumers to compile, through
+`exports`:
+
+```json
+{
+  "name": "@acme/ui",
+  "exports": { "./source/*": "./src/*", "./button": "./src/Button.uf.tsx" }
+}
+```
+
+```ts
+import Button from "@acme/ui/source/Button.uf.tsx";
+import Same from "@acme/ui/button";
+```
+
+Both imports load one module, on Vite and Rollup's family. What decides is the file a bare specifier
+resolves to, so an entry that hides the extension works, and so does a `#` subpath import. A bare
+specifier that resolves to anything else stays the bundler's.
+
+- **The dependency optimiser never sees the file.** `this.resolve` would register a file of
+  `node_modules` with Vite's optimiser, which bundles it as plain TSX, so on Vite a bare specifier
+  goes through a resolver of its own, which only finds the file (ADR-0075). The dependency scan gets
+  the `\0uf-scan:` id, as it does for a local file. You don't need `optimizeDeps.exclude`.
+- **SSR keeps the file in its module graph.** The plugin answers before Vite decides what to
+  externalise, and Vite never externalises a `.tsx` or `.ts` file, so you don't need `ssr.noExternal`.
+- **The package has its own project graph,** with the package's root as its root (ADR-0071). So a diagnostic names a file the same way wherever the package is installed. A
+  file in `node_modules` finds its root by its path, and a linked workspace package outside the
+  project's root by its nearest named `package.json`. A compile error names the file relative to
+  the package, and then says where the package is.
+- **Watching stops at `node_modules`,** as for a package's types. The next load still compares the
+  files. A linked package's files get the usual watch edges.
+
+Keep in mind that the host file does the importing. A `.uf.tsx` file imports another component by a
+relative path, so importing a package's component from one reports UF1202.
 
 ## Diagnostics and the guard
 

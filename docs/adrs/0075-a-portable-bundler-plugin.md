@@ -112,9 +112,23 @@ built.
 ### Packages that ship sources
 
 - A bare import that resolves to a `.uf.tsx` or `.uf.ts` inside `node_modules`, through `exports`
-  and `./source/*` included, compiles like a local one.
-- Such a file stays out of the dependency optimiser and is `noExternal` for SSR, with the package's
-  root as the project root of its graph.
+  and `./source/*` included, compiles like a local one. `resolveId` looks at every bare specifier
+  where the context can resolve one, and only the file it resolves to decides. A `#` subpath import
+  and a linked workspace package work the same way.
+- Such a file stays out of the dependency optimiser. `this.resolve` would register a file of
+  `node_modules` as a missing import, and the optimiser would bundle it as plain TSX, so on Vite a
+  bare specifier goes through `createIdResolver` instead, which has no optimiser. The dependency
+  scan gets the `\0uf-scan:` id, which it leaves out. This decides per import, so it needs no
+  `optimizeDeps.exclude`, which only names whole packages and would have to find them first.
+- Such a file is `noExternal` for SSR without being listed. The plugin answers before Vite
+  externalises the import, and Vite's `canExternalizeFile` refuses a `.tsx` or `.ts` file.
+- The package's root is the project root of its graph, one graph per root. A diagnostic then names a file the
+  same way wherever the package is installed. A file of
+  `node_modules` finds its root by its path, since a nested `package.json` or an npm alias would
+  mislead a search by name. A linked package outside the project's root finds it by its nearest
+  named `package.json`.
+- A `.uf.tsx` file that imports a package's component by a bare specifier still reports UF1202: the
+  project resolves a child by its relative path, and graphs don't read each other's files.
 
 ## Consequences
 

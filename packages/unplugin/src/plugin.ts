@@ -141,10 +141,37 @@ const PACKAGE = "pkg:";
 /** The output files a script target joins into one module (`.tsx`, `.ts`). */
 const SCRIPT = /^\.tsx?$/;
 
+/**
+ * A specifier that names a package or a subpath import rather than a path or a scheme: `pkg`,
+ * `@scope/pkg/source/Button.uf.tsx`, `#ui/Button`. Which file it names only its resolution can say
+ * (ADR-0075).
+ */
+const BARE = /^[\w@#][^:]*$/;
+
+/** The bundlers whose hook context resolves a bare specifier (see `fileOf`). */
+const RESOLVES_BARE: readonly string[] = ["vite", "rollup", "rolldown"];
+
+const NODE_MODULES = "/node_modules/";
+
 interface FailedModule {
   message: string;
   exports: string[];
 }
+
+/** One project graph (ADR-0071), over the project's root or the root of a package (ADR-0075). */
+interface Graph {
+  root: string;
+  project: Project;
+  /** Every package a module of this graph has reached, whose files its oracle may hold. */
+  reachedPackages: Set<string>;
+}
+
+/** What resolves a bare specifier on Vite: `createIdResolver`'s function. */
+type BareResolver = (
+  environment: Environment,
+  id: string,
+  importer?: string,
+) => Promise<string | undefined>;
 
 /** What loading a module calls on a hook's context, on every bundler. */
 interface LoadContext {
@@ -162,6 +189,15 @@ interface Resolver {
 }
 
 const resolves = (context: object): context is Resolver => "resolve" in context;
+
+const hasEnvironment = (context: object): context is { environment: Environment } =>
+  "environment" in context;
+
+/** A resolved id without its query: Vite versions a file of `node_modules` with `?v=`. */
+const withoutQuery = (id: string) => {
+  const index = id.indexOf("?");
+  return index === -1 ? id : id.slice(0, index);
+};
 
 /** A path with forward slashes, as ids and the project's root are written on every platform. */
 const toPosix = (path: string) => path.split(sep).join("/");
@@ -222,6 +258,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       ? [composableSuffix]
       : [...new Set(Object.values(COMPOSABLE_ID_SUFFIXES))]
   ).map(composableFilter);
+  // Whether a bare specifier can name a `.uf.tsx` file here: where the context has no resolver,
+  // the hook could only give it back, so the filter leaves those imports to the bundler.
+  const bareSpecifiers = RESOLVES_BARE.includes(meta.framework);
   // A file's main component loads under its module id, and each other component under a
   // component id (ADR-0053); a script target joins them all under the module id.
   const moduleIds = [...suffixes.map(moduleIdFilter), COMPONENT_ID_FILTER, ...composableFilters];
@@ -243,39 +282,82 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     return text;
   };
   // The package a directory's files belong to: the `name` in its nearest `package.json` that has
-  // one, past a nameless one such as a dual build's `dist/esm/package.json`. A project names a
-  // package it read types from `pkg:<name>` (ADR-0071), and the oracle reads its files at their
-  // real paths, outside `node_modules` for a linked workspace package.
-  const packageNames = new Map<string, string | undefined>();
-  const packageOf = (directory: string): string | undefined => {
-    if (packageNames.has(directory)) return packageNames.get(directory);
-    let name: string | undefined;
+  // one, past a nameless one such as a dual build's `dist/esm/package.json`, and the directory
+  // that holds it. A project names a package it read types from `pkg:<name>` (ADR-0071), and the
+  // oracle reads its files at their real paths, outside `node_modules` for a linked workspace
+  // package.
+  const manifests = new Map<string, { name: string; directory: string } | undefined>();
+  const packageAt = (directory: string): { name: string; directory: string } | undefined => {
+    if (manifests.has(directory)) return manifests.get(directory);
+    let found: { name: string; directory: string } | undefined;
     try {
       const manifest: unknown = JSON.parse(readFileSync(`${directory}/package.json`, "utf8"));
       const named = manifest && typeof manifest === "object" && "name" in manifest;
-      if (named && typeof manifest.name === "string") name = manifest.name;
+      if (named && typeof manifest.name === "string") found = { name: manifest.name, directory };
     } catch {
       // No manifest here, or one that does not parse.
     }
     const parent = posix.dirname(directory);
-    if (name === undefined && parent !== directory) name = packageOf(parent);
-    packageNames.set(directory, name);
-    return name;
+    if (found === undefined && parent !== directory) found = packageAt(parent);
+    manifests.set(directory, found);
+    return found;
   };
-  // The project graph over the root (ADR-0071), made on the first compile, after configResolved:
-  // every module the plugin compiles shares its graph and its type oracle (ADR-0067).
-  let graph: Project | undefined;
-  const projectOf = () =>
-    (graph ??= createProject({
-      root,
-      readFile: read,
-      typeOracle: createSyntacticOracle({ root, readFile: read }),
-      targets: [target],
-      format: options.format !== false,
-      sourceMap: true,
-      plugins: options.plugins,
-      ...(options.passThrough ? { passThrough: options.passThrough } : {}),
-    }));
+  const packageOf = (directory: string) => packageAt(directory)?.name;
+
+  /** A file's path below the root, or the whole path for a file outside it. */
+  const belowRoot = (file: string) =>
+    file.startsWith(`${root}/`) ? file.slice(root.length) : file;
+
+  /**
+   * The root of the graph a file belongs to (ADR-0075). A file of the project belongs to the
+   * project's. A package's belongs to the package's, so its file names, and what hashes them, are
+   * the same wherever it is installed: by the path for a file of `node_modules`, whose package may
+   * be published under another name, or by its manifest for a linked one outside the root.
+   */
+  const graphRootOf = (file: string): string => {
+    const below = belowRoot(file);
+    const index = below.lastIndexOf(NODE_MODULES);
+    if (index !== -1) {
+      const start = index + NODE_MODULES.length;
+      const [first, second, third] = below.slice(start).split("/");
+      const depth = first?.startsWith("@") ? [first, second, third] : [first, second];
+      if (depth.every((part) => part !== undefined)) {
+        const name = depth.slice(0, -1).join("/");
+        return `${file.slice(0, file.length - below.length + start)}${name}`;
+      }
+      return root;
+    }
+    return below === file ? (packageAt(posix.dirname(file))?.directory ?? root) : root;
+  };
+
+  // The project graphs (ADR-0071), made on a file's first compile, after configResolved: every
+  // module of one root shares its graph and its type oracle (ADR-0067).
+  const graphs = new Map<string, Graph>();
+  const graphOf = (file: string): Graph => {
+    const graphRoot = graphRootOf(file);
+    let graph = graphs.get(graphRoot);
+    if (!graph) {
+      const project = createProject({
+        root: graphRoot,
+        readFile: read,
+        typeOracle: createSyntacticOracle({ root: graphRoot, readFile: read }),
+        targets: [target],
+        format: options.format !== false,
+        sourceMap: true,
+        plugins: options.plugins,
+        ...(options.passThrough ? { passThrough: options.passThrough } : {}),
+      });
+      graph = { root: graphRoot, project, reachedPackages: new Set() };
+      graphs.set(graphRoot, graph);
+    }
+    return graph;
+  };
+
+  /** A file's graph and its name there: relative to the graph's root, with forward slashes. */
+  const locate = (file: string) => {
+    const graph = graphOf(file);
+    return { graph, filename: toPosix(relative(graph.root, file)) };
+  };
   // A compile and an update both change the project, and client and ssr load ids at once: one
   // runs at a time, so no compile keeps a result an update has made stale.
   let queue: Promise<unknown> = Promise.resolve();
@@ -309,8 +391,21 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   // The verdicts of a bundler with no environments.
   const sharedFailures = new Map<string, FailedModule>();
 
-  /** The file name diagnostics use: relative to the root, with forward slashes. */
+  /** A file's name relative to the project's root, with forward slashes, for a message. */
   const filenameOf = (file: string) => toPosix(relative(root, file));
+
+  /** A compile's errors, which name a package's file by its own root, so they say where that is. */
+  const formatErrors = (
+    graph: Graph,
+    filename: string,
+    errors: Diagnostic[],
+    source: string,
+  ): string => {
+    const message = formatDiagnostics(errors, { [filename]: source });
+    return graph.root === root
+      ? message
+      : `${message}\n\nThe file is in the package at ${filenameOf(graph.root)}.`;
+  };
 
   /**
    * A component id taken apart, unless the id is a module id: a suffix of several extensions
@@ -334,16 +429,12 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       : undefined;
   };
 
-  // Every package a module has reached, whose files the oracle may hold as `pkg:<name>`.
-  const reachedPackages = new Set<string>();
-
   /**
    * What a module's output depends on (ADR-0071): its own file and every file the project's edges
    * reach from it, its children's and its composables' types included, named relative to the
-   * root, and the packages they read types from, by name.
+   * graph's root, and the packages they read types from, by name.
    */
-  const reachedFrom = (filename: string) => {
-    const project = projectOf();
+  const reachedFrom = ({ project, reachedPackages }: Graph, filename: string) => {
     const files = new Set([filename]);
     const packages = new Set<string>();
     for (const file of files) {
@@ -366,16 +457,16 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   };
 
   /**
-   * The names a changed file has in the project and its oracle: relative to the root, for a file
-   * under it, and `pkg:<name>`, for a file of a package any module reached. One file may have
-   * both: a workspace package that one module imports by name and another by path, or a
-   * library's own files that its playground imports by the library's name.
+   * The names a changed file has in a graph and its oracle: relative to the graph's root, for a
+   * file under it, and `pkg:<name>`, for a file of a package a module of the graph reached. One
+   * file may have both: a workspace package that one module imports by name and another by path,
+   * or a library's own files that its playground imports by the library's name.
    */
-  const namesOf = (path: string): string[] => {
+  const namesOf = (graph: Graph, path: string): string[] => {
     const name = packageOf(posix.dirname(path));
     return [
-      ...(path.startsWith(`${root}/`) ? [path.slice(root.length + 1)] : []),
-      ...(name !== undefined && reachedPackages.has(name) ? [`${PACKAGE}${name}`] : []),
+      ...(path.startsWith(`${graph.root}/`) ? [path.slice(graph.root.length + 1)] : []),
+      ...(name !== undefined && graph.reachedPackages.has(name) ? [`${PACKAGE}${name}`] : []),
     ];
   };
 
@@ -385,9 +476,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   const recompiled = new Map<string, Set<string>>();
 
   /**
-   * Hands the project every change it has not seen among the files at these paths, under every
-   * name each file has, so `update` compiles again the modules whose inputs changed, those compiled
-   * for other modules included. Gives whether anything changed.
+   * Hands each graph every change it has not seen among the files at these paths, under every
+   * name each file has there, so `update` compiles again the modules whose inputs changed, those
+   * compiled for other modules included. Gives whether anything changed.
    */
   const handOver = async (paths: Iterable<string>): Promise<boolean> => {
     const changed = new Map<string, string | undefined>();
@@ -400,12 +491,14 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     const before = new Map([...changed.keys()].map((path) => [path, seen.get(path)]));
     for (const [path, text] of changed) seen.set(path, text);
     try {
-      const names = [...changed.keys()].flatMap((path) => namesOf(path));
-      const { compiled: modules } = await projectOf().update([...new Set(names)]);
-      if (meta.framework === "vite") {
+      for (const graph of graphs.values()) {
+        const names = [...changed.keys()].flatMap((path) => namesOf(graph, path));
+        if (!names.length) continue;
+        const { compiled: modules } = await graph.project.update([...new Set(names)]);
+        if (meta.framework !== "vite") continue;
         for (const path of changed.keys()) {
           const files = recompiled.get(path) ?? new Set();
-          for (const module of modules) files.add(posix.join(root, module));
+          for (const module of modules) files.add(posix.join(graph.root, module));
           recompiled.set(path, files);
         }
       }
@@ -418,10 +511,10 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   };
 
   /** Hands the project every change it has not seen among what a module reached. */
-  const refresh = (filename: string): Promise<boolean> => {
-    const { files, packages } = reachedFrom(filename);
+  const refresh = (graph: Graph, filename: string): Promise<boolean> => {
+    const { files, packages } = reachedFrom(graph, filename);
     return handOver(
-      new Set([...files.map((file) => `${root}/${file}`), ...packageFiles(packages)]),
+      new Set([...files.map((file) => `${graph.root}/${file}`), ...packageFiles(packages)]),
     );
   };
 
@@ -436,12 +529,12 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
    */
   const compileFile = (file: string) =>
     exclusive(async (): Promise<{ result: CompileResult; source: string }> => {
-      const project = projectOf();
-      const filename = filenameOf(file);
-      await refresh(filename);
+      const { graph, filename } = locate(file);
+      const { project } = graph;
+      await refresh(graph, filename);
       let result = await project.compile(filename);
-      if (await refresh(filename)) result = await project.compile(filename);
-      const source = seen.get(`${root}/${filename}`) ?? "";
+      if (await refresh(graph, filename)) result = await project.compile(filename);
+      const source = seen.get(`${graph.root}/${filename}`) ?? "";
       const files = result.outputs[target.name] ?? [];
       if (!files.length) return { result, source };
       const outputs = { ...result.outputs, [target.name]: [...files, ...project.copies(filename)] };
@@ -471,17 +564,6 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   };
 
   /**
-   * Why an authored `.uf.tsx` file reached `load` as itself on a target whose module ids have a
-   * suffix: its import did not name the file, so `resolveId` never saw it.
-   *
-   * M6 (plugin mode and packaging, plan §8.2 and §8.4) decides whether packages may ship
-   * `.uf.tsx` sources. They reach the bundler through `exports` entries this cannot see, and,
-   * from `node_modules`, through the dependency optimizer, which bundles them as plain TSX before
-   * any plugin runs, on every target. Supporting them takes a module here that re-exports the
-   * component's module id, and an optimizer plugin that refuses `.uf.tsx` files; until then this
-   * is the loud failure.
-   */
-  /**
    * Fails a module through `error`, which throws on Rollup's family, and fails webpack's build
    * through `emitError`. esbuild only records the message, and drops it when `load` returns no code
    * or a `transform` follows (ADR-0075), so there the hook throws, which esbuild does report.
@@ -492,6 +574,12 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   };
 
   const bundler = meta.framework === "vite" ? "Vite" : meta.framework;
+
+  /**
+   * Why an authored `.uf.tsx` file reached `load` as itself on a target whose module ids have a
+   * suffix: its import did not name the file, so `resolveId` never saw it. A bare specifier gets
+   * here only on a bundler whose context can't resolve one (ADR-0075).
+   */
   const bypassed = (file: string) => {
     // A module of composables loads under an id of its own on Svelte and Angular (ADR-0069).
     const composables = file.endsWith(COMPOSABLE_EXTENSION);
@@ -542,10 +630,10 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     id: string,
     file: string,
   ): Promise<{ code: string } | { error: string }> => {
-    const filename = filenameOf(file);
+    const { graph, filename } = locate(file);
     const { result, source } = await compileFile(file);
     const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-    if (errors.length > 0) return { error: formatDiagnostics(errors, { [filename]: source }) };
+    if (errors.length > 0) return { error: formatErrors(graph, filename, errors, source) };
     const path = `${basename(file)}${SHEET_SUFFIX}`;
     const emitted = (result.outputs[target.name] ?? []).find((output) => output.path === path);
     if (!emitted) {
@@ -564,13 +652,15 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
    * load, which the project checks.
    */
   const watchedFiles = (file: string): string[] => {
-    const filename = filenameOf(file);
-    const { files, packages } = reachedFrom(filename);
-    const paths = files.filter((each) => each !== filename).map((each) => posix.join(root, each));
-    for (const path of packageFiles(packages)) {
-      if (!path.includes("/node_modules/")) paths.push(path);
-    }
-    return [...new Set(paths)].filter((path) => existsSync(path));
+    const { graph, filename } = locate(file);
+    const { files, packages } = reachedFrom(graph, filename);
+    const paths = files
+      .filter((each) => each !== filename)
+      .map((each) => posix.join(graph.root, each));
+    paths.push(...packageFiles(packages));
+    return [...new Set(paths)].filter(
+      (path) => !belowRoot(path).includes(NODE_MODULES) && existsSync(path),
+    );
   };
 
   /**
@@ -584,7 +674,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     file: string,
     failed: Map<string, FailedModule>,
   ) {
-    const filename = filenameOf(file);
+    const { graph, filename } = locate(file);
     const { result, source } = await compileFile(file);
     const files = result.outputs[target.name] ?? [];
     for (const diagnostic of result.diagnostics) {
@@ -604,7 +694,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       return failModule(this, verdict ? `${message}\n\n${verdict}` : message);
     };
     const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-    if (errors.length > 0) return fail(formatDiagnostics(errors, { [filename]: source }));
+    if (errors.length > 0) return fail(formatErrors(graph, filename, errors, source));
     const owners = result.owners[target.name] ?? {};
     const owned = files.filter((output) => Object.hasOwn(owners, output.path));
     const assembly = assembleModule({
@@ -628,14 +718,25 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
 
   /**
    * The authored file a specifier names, by the file it resolves to. Rollup's family resolves it
-   * through the bundler, so aliases work. The others' contexts have no resolver (ADR-0075), so
-   * there the specifier must be a path: `./X.uf`, `./X.uf.js` and `./X.uf.jsx` find `X.uf.tsx` or
-   * `X.uf.ts` as the bundler's resolver would, and a package's specifier is left to the bundler.
+   * through the bundler, so aliases work. On Vite a bare specifier goes through `resolveBare`
+   * instead, because `this.resolve` would register a file of `node_modules` with the dependency
+   * optimiser, which bundles it as plain TSX before this plugin sees it (ADR-0075). The others'
+   * contexts have no resolver, so there the specifier must be a path: `./X.uf`, `./X.uf.js` and
+   * `./X.uf.jsx` find `X.uf.tsx` or `X.uf.ts` as the bundler's resolver would, and a package's
+   * specifier is left to the bundler.
    */
   const fileOf = async (context: object, path: string, importer: string | undefined) => {
     if (resolves(context)) {
+      if (resolveBare && BARE.test(path) && hasEnvironment(context)) {
+        // A specifier no entry of a package's `exports` names throws here, and the question is
+        // only whether it names a source: Vite's own resolver reports it if nothing else claims it.
+        const id = await (
+          await resolveBare
+        )(context.environment, path, importer).catch(() => undefined);
+        return id === undefined ? undefined : withoutQuery(id);
+      }
       const resolved = await context.resolve(path, importer, { skipSelf: true });
-      return resolved && !resolved.external ? resolved.id : undefined;
+      return resolved && !resolved.external ? withoutQuery(resolved.id) : undefined;
     }
     const [named] = moduleIdCandidates(path, root, importer);
     if (named === undefined) return undefined;
@@ -643,6 +744,10 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     const candidates = stem === undefined ? [named] : [named, `${stem}.tsx`, `${stem}.ts`];
     return candidates.find((candidate) => existsSync(candidate));
   };
+
+  // Set by Vite's `configResolved`, whose config it needs. Importing Vite only then keeps it an
+  // optional peer on every other bundler.
+  let resolveBare: Promise<BareResolver> | undefined;
 
   /** What `resolveId` answers (see the README), on every bundler. Only Vite's scan sets `scan`. */
   const resolveModule = async (
@@ -699,7 +804,13 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
       const child = await childId(from.file, path);
       if (child !== undefined) return `${child}${query}`;
     }
-    if (!specifierFilter(suffix).test(source) && !composableIds.test(source)) return null;
+    if (
+      !(bareSpecifiers && BARE.test(path)) &&
+      !specifierFilter(suffix).test(source) &&
+      !composableIds.test(source)
+    ) {
+      return null;
+    }
     // One of our module ids coming back: an absolute id from a plugin, a root-relative URL
     // from the browser on a cold server (`/cases/hello/Hello.uf.tsx.vue`), or a path
     // relative to its importer. `load` must receive the absolute id, and queries
@@ -833,7 +944,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     if (!isAbsolute(request.file)) return null;
     if (VITE_FILE_QUERY.test(request.query) || subRequest.test(request.query)) return null;
 
-    const filename = filenameOf(request.file);
+    const { graph, filename } = locate(request.file);
     const { result, source } = await compileFile(request.file);
     const files = result.outputs[target.name] ?? [];
     for (const diagnostic of result.diagnostics) {
@@ -854,7 +965,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     };
 
     const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
-    if (errors.length > 0) return fail(formatDiagnostics(errors, { [filename]: source }));
+    if (errors.length > 0) return fail(formatErrors(graph, filename, errors, source));
     const owners = result.owners[target.name] ?? {};
     const main = mainComponent(result.ir);
     // A component id loads its component's file; a main id, the main component's files,
@@ -925,6 +1036,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
         RELATIVE,
         SHEET_ID_FILTER,
         ...composableFilters,
+        ...(bareSpecifiers ? [BARE] : []),
       ]
         .map(({ source }) => source)
         .join("|"),
@@ -973,6 +1085,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     vite: {
       configResolved(config) {
         root = config.root;
+        resolveBare = import("vite").then(({ createIdResolver }) => createIdResolver(config));
         const file = config.configFile
           ? filenameOf(config.configFile)
           : "inline Vite configuration";
