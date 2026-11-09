@@ -48,9 +48,13 @@ built, and the targets stay in this order so that two sections never share a lin
 
 ng-packagr builds a standalone Angular Package Format into `<outDir>/package/angular`, since
 `<outDir>/angular` is the target's tree. It compiles partially, so a consumer's linker finishes the
-job. Its `exports["."]` merges into the root manifest as `./angular`, with the paths prefixed again.
+job.
+
+Its `exports["."]` merges into the root manifest as `./angular`, with the paths prefixed again.
 Reading them from what ng-packagr wrote keeps the manifest true if the format's layout moves. A
 consumer fixture compiles with ngc from `tests/toolchains/angular`.
+
+The packager makes these choices:
 
 - The format has one entry point, so it also exports the slot directives of the components the
   barrel exports (ADR-0056). A consumer can't fill a named slot without importing one.
