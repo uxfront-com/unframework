@@ -99,6 +99,9 @@ export const NO_SPEC_SKIP = "no spec: a diagnostics case renders in no browser";
 /** L13's skip in the server render of a component that did not render: L6 failed instead. */
 export const NOT_RENDERED_SKIP = "the component did not render (L6)";
 
+/** A layer only a project outside this run records (L15, `bench`): the summary fills its cells. */
+export const NOT_IN_THIS_RUN_SKIP = "not in this run";
+
 /** L9's skip in a scenario that no interaction or rerender led to: there is no trace. */
 export const NO_INTERACTION_SKIP = "no scripted interaction";
 

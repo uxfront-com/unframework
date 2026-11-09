@@ -4,7 +4,7 @@ import type { Toolchain } from "@unframework/codegen";
 import { typecheckWithTsgo } from "@unframework/codegen/toolchain-node";
 import type { Plugin, UserConfig } from "vite";
 
-import { compileWithOptimizer } from "./compile.ts";
+import { compileWithOptimizer, emitWithOptimizer } from "./compile.ts";
 import { lint } from "./lint.ts";
 import { segmentLoads } from "./loads.ts";
 
@@ -52,6 +52,8 @@ export const toolchain: Toolchain = {
   },
 
   frameworkCompile: (files) => compileWithOptimizer(files),
+
+  frameworkEmit: (files) => emitWithOptimizer(files),
 
   typecheck: (files, context) => typecheckWithTsgo(files, context),
 

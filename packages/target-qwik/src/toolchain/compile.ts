@@ -7,7 +7,7 @@
 // parsed strictly as TSX first: output that is not valid TSX never passes as accepted.
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { basename, dirname } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 import type { Diagnostic, Optimizer, TransformModulesOptions } from "@qwik.dev/optimizer";
 import type { FrameworkCompileResult, ToolchainFile, ToolchainMessage } from "@unframework/codegen";
@@ -66,6 +66,39 @@ export async function compileWithOptimizer(
     results.set(file.path, result);
   }
   return results;
+}
+
+/**
+ * L15: the optimizer's client modules for each file in production mode, as a Qwik build splits
+ * them: the file's own module first, then its segments, beside it.
+ */
+export async function emitWithOptimizer(
+  files: readonly ToolchainFile[],
+): Promise<Map<string, ToolchainFile[]>> {
+  assertFilesToCompile(files);
+  optimizer ??= loadOptimizer();
+  const qwik = await optimizer;
+  const emitted = new Map<string, ToolchainFile[]>();
+  for (const file of files) {
+    const { modules } = await qwik.transformModules({
+      input: [{ path: basename(file.path), code: file.contents }],
+      srcDir: dirname(file.path),
+      entryStrategy: { type: "segment" },
+      minify: "simplify",
+      transpileTs: true,
+      transpileJsx: true,
+      explicitExtensions: true,
+      mode: "prod",
+      isServer: false,
+    });
+    emitted.set(
+      file.path,
+      modules
+        .toSorted((a, b) => Number(a.segment !== null) - Number(b.segment !== null))
+        .map(({ path, code }) => ({ path: join(dirname(file.path), path), contents: code })),
+    );
+  }
+  return emitted;
 }
 
 /**

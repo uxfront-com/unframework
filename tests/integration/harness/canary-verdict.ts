@@ -33,9 +33,9 @@ export interface CanaryVerdict {
   notes: string[];
 }
 
-/** The project of a kind that verifies a target: `compile`, or `<kind>:<target>`. */
+/** The project of a kind that verifies a target: `compile`, `bench`, or `<kind>:<target>`. */
 export function projectOf(kind: ProjectKind, target: string): string {
-  return kind === "compile" || kind === "harness" ? kind : `${kind}:${target}`;
+  return kind === "compile" || kind === "harness" || kind === "bench" ? kind : `${kind}:${target}`;
 }
 
 /** Judges one canary run against the targets it ran on and the corpus. */

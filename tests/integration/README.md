@@ -275,6 +275,19 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
 | L10   | `browser:<target>`    | Geometry and computed styles first, then pixels, with zero tolerance by default.                                                                                                                                                                         |
 | L11   | `browser:<target>`    | axe-core reports no violations, or exactly the case's `axe` list.                                                                                                                                                                                        |
 | L13   | `ssr:` and `browser:` | No `console.warn` or `console.error` during render or mount.                                                                                                                                                                                             |
+| L15   | `bench`               | Each case's compile time, as a ratio of `basics/hello`'s, stays within twice its budget, and each target's bundled output size within its budget plus 5%.                                                                                                |
+
+**L15's budgets** (ADR-0078). The default run leaves the `bench` project out, since it times 20
+compiles of every case, so a run without it fills each L15 cell with `skip(not in this run)`.
+`pnpm --filter @unframework/integration budgets` runs it alone, and so do CI's `Bench` job and
+`pnpm test:canaries L15`.
+
+`pnpm test:budgets:update` measures every cell and writes `budgets.json`,
+which is never edited by hand: a change that adds a case or changes an output's size runs it again.
+A time is the main thread's CPU time, as a ratio with `basics/hello` measured in the same run, so
+`basics/hello`'s own never fails.
+A size is the target's framework compile (`frameworkEmit` in its toolchain), bundled and minified by
+rolldown, with the framework, each `.css` and each `passThrough` import left external.
 
 **L4's consumer check** (ADR-0059). A case may have consumer fixtures per target, hand-written in
 that target's language under `../toolchains/<target>/consumers/<area>/<case>/`: one correct
@@ -307,7 +320,8 @@ into `parity-matrix.<engine>.json` and `.md`. The nightly workflow runs both eng
 difference there is an issue, never a quarantine entry. A cell is `pass`, `fail`,
 `skip(reason)` or `quarantined(issue)`; a skip on a live layer names a capability the target
 lacks (`requires interactivity: …`) or a mechanical cause (no output, no spec, the live
-reference, a component that did not render, no scripted interaction). A diagnostics case has no
+reference, a component that did not render, no scripted interaction). The summary itself fills an
+L15 cell with `skip(not in this run)` in a run without the `bench` project. A diagnostics case has no
 spec: where its target has output (its only diagnostic is a capability's note, as UF4004), the
 compile project records its browser layers `skip(no spec: …)`, and its server render checks the
 output. A project that collects no tests fails, and when every
@@ -415,12 +429,14 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
 
 ## Where things live
 
-- `harness/projects.ts`: the Vitest projects (`compile`, `harness`, and `toolchain:`, `ssr:` and
-  `browser:` per target). `UF_TARGETS=vue,react` restricts the targets; a target a case names as
-  its own reference (`"reference"`, ADR-0057) still runs that case alone (`referencesOnly`).
+- `harness/projects.ts`: the Vitest projects (`compile`, `harness`, `toolchain:`, `ssr:` and
+  `browser:` per target, and `bench`, which only `--project bench` runs). `UF_TARGETS=vue,react`
+  restricts the targets; a target a case names as its own reference (`"reference"`, ADR-0057) still runs that case alone (`referencesOnly`).
 - `harness/cases.ts`: the corpus, each case's inputs (its `.uf.tsx` and `.uf.ts` sources and its
   `.ts` modules), its main one and its `case.json`;
   `sources.ts`: how a case's inputs join their diagnostics and golden files.
+- `harness/bench.test.ts`: L15, which reads `budgets.json`. `scripts/budgets.ts`: how it measures,
+  and `pnpm test:budgets:update`.
 - `harness/compile.test.ts`, `toolchain.test.ts`, `ssr.test.ts`: the node-side layers;
   `compile-checks.ts`: L1's fix check, L2's determinism and formatting checks, and the scoped
   sheets' parse; `toolchain-results.ts`: what L3, L4 and L5 make of each tool's report, and the
@@ -443,7 +459,8 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
 - `@unframework/testing`: `describeTargets`, `mount`, `expectParity`, the normaliser, the write
   policy, the visual capture and the parity reporter.
 - `@unframework/target-<name>/toolchain`: each framework's Vite plugins, mount adapter (with its
-  rerender), server renderer, compiler check (L3), type check (L4) and lint (L5).
+  rerender), server renderer, compiler check (L3), type check (L4), lint (L5) and production
+  compile (L15).
 - `../toolchains/<name>`: the checkers and tsconfigs that type-check each target's outputs,
   with TypeScript 6 where a checker still needs it, and the lint configurations:
   `output.oxlintrc.json` for every target (not `.oxlintrc.json`, which the repository's own

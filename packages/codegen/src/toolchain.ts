@@ -83,6 +83,16 @@ export interface Toolchain {
     context: ToolchainContext,
   ): Promise<Map<string, FrameworkCompileResult>>;
   /**
+   * L15: what the framework's compiler makes of output files for a production client build, for
+   * the harness to bundle and measure (ADR-0078). Each file's path maps to its module, then any
+   * module the compiler splits off it, at paths beside it. A file it cannot compile rejects: L3
+   * says why.
+   */
+  frameworkEmit(
+    files: readonly ToolchainFile[],
+    context: ToolchainContext,
+  ): Promise<Map<string, ToolchainFile[]>>;
+  /**
    * L4: type-checks output files (absolute paths) in one checker run, and returns every
    * diagnostic by file path. A checker that cannot start rejects: a gate that cannot start
    * fails.

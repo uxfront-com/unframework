@@ -16,6 +16,7 @@ import { describe, expect, it } from "vitest";
 
 // The unplugin's join, by path: it is internal to the package, and the canary must survive it.
 import { joinModules } from "../../../packages/unplugin/src/assemble.ts";
+import { bundleSize } from "../scripts/budgets.ts";
 import {
   canaryRuns,
   combineRuns,
@@ -43,6 +44,7 @@ import {
   withQwikImports,
 } from "./canaries.ts";
 import type { Canary, CanaryCase } from "./canaries.ts";
+import { projectOf } from "./canary-verdict.ts";
 import { listCases } from "./cases.ts";
 import { checkFixes, formattingProblems, nondeterminism } from "./compile-checks.ts";
 import { CASES_DIR, REPO_ROOT } from "./paths.ts";
@@ -119,6 +121,7 @@ const VERIFIED_BY: Record<string, readonly ProjectKind[]> = {
   L10: ["browser"],
   L11: ["browser"],
   L13: ["ssr", "browser"],
+  L15: ["bench"],
 };
 
 /** A case as the verdict sees it, for the fix canary. */
@@ -326,6 +329,13 @@ describe("canaries", () => {
     }
   });
 
+  it("run an L15 canary in the bench project, which holds every target", () => {
+    expect(canaryRuns(findCanary("L15-slow-compile"), ["vue", "react"], [], undefined)).toEqual([
+      { name: "bench", args: ["--project", "bench"] },
+    ]);
+    expect(projectOf("bench", "vue")).toBe("bench");
+  });
+
   it("take a shard, and run each case in exactly one of its parts", () => {
     expect(parseArguments(["--", "L8", "--shard", "1/2"])).toEqual({
       names: ["L8"],
@@ -526,6 +536,8 @@ describe("canaries", () => {
     CANARIES.filter(
       (canary) =>
         canary.layer !== "L1" &&
+        // It slows the compile and leaves the output alone: a test of its own below.
+        canary.id !== "L15-slow-compile" &&
         canary.id !== "L9-unwired-handler" &&
         canary.id !== "L10-stylesheet-rule-dropped",
     ),
@@ -972,6 +984,46 @@ describe("canaries", () => {
             ),
       );
     }
+  });
+
+  it("L15-slow-compile slows only its own case's compile, and changes no output", async () => {
+    const compileAt = async (at: string) => {
+      const started = performance.now();
+      const result = await compile(source, {
+        filename: at,
+        targets: ["vue"],
+        plugins: canaryPlugins("L15-slow-compile"),
+      });
+      return { result, elapsed: performance.now() - started };
+    };
+    const slowed = await compileAt("basics/nested-and-void/TaskList.uf.tsx");
+    const spared = await compileAt("basics/hello/TaskList.uf.tsx");
+    expect(slowed.elapsed).toBeGreaterThanOrEqual(500);
+    expect(spared.elapsed).toBeLessThan(500);
+    const clean = await compile(source, {
+      filename: "basics/nested-and-void/TaskList.uf.tsx",
+      targets: ["vue"],
+    });
+    expect(slowed.result.outputs).toEqual(clean.outputs);
+    const canary = findCanary("L15-slow-compile");
+    const named = (id: string) => ({ ...fixture(false), id });
+    expect(canary.appliesTo!(named("basics/nested-and-void"), "vue")).toBe(true);
+    expect(canary.appliesTo!(named("basics/hello"), "vue")).toBe(false);
+  });
+
+  it("L15-output-bloat keeps its string through the minifier, and grows a file by its length", async () => {
+    const corrupted = await compileWith("L15-output-bloat", "react");
+    const clean = await compileWith(null, "react");
+    const [before] = clean.outputs.react!;
+    const [after] = corrupted.outputs.react!;
+    expect(after!.contents.length).toBeGreaterThan(before!.contents.length * 1.9);
+    const size = (contents: string, path: string) => bundleSize([[{ path, contents }]]);
+    const [grown, base] = await Promise.all([
+      size(after!.contents, "/case/a.tsx"),
+      size(before!.contents, "/case/a.tsx"),
+    ]);
+    expect(grown.raw).toBeGreaterThan(base.raw * 1.05);
+    expect(grown.gzip).toBeGreaterThan(base.gzip * 1.05);
   });
 
   // A component's root inside another's is inverted twice: the filter must not undo itself,
@@ -1515,7 +1567,12 @@ describe("every canary on the corpus", () => {
     return pending;
   };
 
-  it.each(CANARIES.filter((canary) => canary.plugin && canary.id !== "L1-plugin-throws"))(
+  it.each(
+    CANARIES.filter(
+      (canary) =>
+        canary.plugin && canary.id !== "L1-plugin-throws" && canary.id !== "L15-slow-compile",
+    ),
+  )(
     "$id corrupts every case with output on every target it corrupts, keeping the IR valid",
     async (canary) => {
       const problems: string[] = [];

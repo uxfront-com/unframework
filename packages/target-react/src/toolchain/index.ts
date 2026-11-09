@@ -4,7 +4,7 @@ import type { Toolchain } from "@unframework/codegen";
 import { lintWithOxlint, typecheckWithTsgo } from "@unframework/codegen/toolchain-node";
 import type { UserConfig } from "vite";
 
-import { compileWithReactCompiler } from "./compile.ts";
+import { compileWithReactCompiler, emitWithReactCompiler } from "./compile.ts";
 
 /** The runtime modules compiled output and the mount adapter import in the browser. */
 const BROWSER_RUNTIME = ["react", "react/jsx-dev-runtime", "react-dom/client"];
@@ -29,6 +29,8 @@ export const toolchain: Toolchain = {
   },
 
   frameworkCompile: (files) => compileWithReactCompiler(files),
+
+  frameworkEmit: (files) => emitWithReactCompiler(files),
 
   typecheck: (files, context) => typecheckWithTsgo(files, context),
 

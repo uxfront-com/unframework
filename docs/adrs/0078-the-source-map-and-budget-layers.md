@@ -30,13 +30,32 @@ built.
     the median, normalised by `basics/hello` on the same machine.
   - **Output size per target:** each target's L3 compile, then a minified rolldown bundle with the
     framework, `.css` and `passThrough` imports external. It records raw and gzip bytes.
+  - **The clock** is the main thread's CPU time, through tinybench's `now`. The clock on the wall
+    charges a compile for whatever else the machine runs. The process's CPU time charges it for V8's
+    background GC and JIT, which made `types/imported-interface` fail on a quiet machine. The cost is
+    that oxfmt formats on a native thread, so a time counts almost none of the formatter's work. The
+    compile still formats, and oxfmt is pinned exactly, so only a deliberate bump can change that cost.
+  - **The calibration** runs before each case, and a ratio divides by the median of those runs, since
+    `basics/hello` is the shortest compile of all and one run alone is noisy. Its own ratio is 1 by
+    definition.
+  - **The framework compile** is a new toolchain method, `frameworkEmit`, because L3's
+    `frameworkCompile` keeps only errors and warnings. It compiles for a production client build, so
+    a size counts what ships: Vue with its template inlined, Qwik in production mode with its
+    segments, Angular AOT only. It's one more compile beside L3's, not L3's own.
+  - **A bundle's entries** are every output file of the case on that target, and its size is the sum
+    of its chunks, so Qwik's lazy segments count. It defines `process.env.NODE_ENV` as `"production"`
+    and `ngDevMode` as `false`.
 - `pnpm test:budgets:update` writes `tests/integration/budgets.json`, a generated file that's never
-  edited by hand.
-- A size fails above its budget plus 5%, and a time above twice its budget.
-- It runs in a new `bench` project, left out of the default run. A run without that project reports
-  L15 as `skip(not in this run)`, never as missing. `pnpm --filter @unframework/integration budgets`,
-  `pnpm test:canaries L15` and a `Bench` CI job, which isn't required, all run it.
-- A canary breaks a budget and has to fail the layer.
+  edited by hand. Each budget is the measured baseline: its time rounded up to two decimals, and its
+  sizes as measured. A case with output on no target has no budget, since it has no cell to fail.
+- A size fails above its budget plus 5%, and a time above twice its budget. A time fails every cell of
+  its case that has output.
+- It runs in a new `bench` project, which only `--project bench` selects, by that exact name. A run
+  without that project in full reports L15 as `skip(not in this run)`, never as missing.
+  `pnpm --filter @unframework/integration budgets`, `pnpm test:canaries L15` and a `Bench` CI job,
+  which isn't required, all run it. CI's parity job reads the `Bench` report and requires every cell.
+- Two canaries break a budget and have to fail the layer, one per check: `L15-output-bloat` grows every
+  file, and `L15-slow-compile` slows the compile of one case, since each of its iterations waits.
 
 ### Round trip
 

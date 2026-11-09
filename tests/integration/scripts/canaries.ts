@@ -33,6 +33,7 @@ const PROJECTS: Record<ProjectKind, string> = {
   toolchain: "toolchain:*",
   ssr: "ssr:*",
   browser: "browser:*",
+  bench: "bench",
 };
 
 /**
@@ -130,7 +131,7 @@ export function canaryRuns(
   // A canary of some targets runs their projects only: the others have nothing corrupted.
   const corrupted = (canary.targets ?? targets).filter((target) => targets.includes(target));
   const projectsOf = (kind: ProjectKind) =>
-    canary.targets && kind !== "compile" && kind !== "harness"
+    canary.targets && kind !== "compile" && kind !== "harness" && kind !== "bench"
       ? corrupted.map((target) => `${kind}:${target}`)
       : [PROJECTS[kind]];
   const loads = canaryProjects(canary).filter((kind) => kind in (canary.loadEvidence ?? {}));

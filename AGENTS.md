@@ -175,6 +175,7 @@ Generate each of these with its command. The formatter and the linter skip them 
 | `cases/**/__screenshots__/`, `__expected__/geometry.*.json` | `pnpm test:baselines:download` (CI's artefact) or `pnpm test:baselines` (Docker, linux/amd64) |
 | `packages/ir/schema/`                                       | `pnpm --filter @unframework/ir generate`                                                      |
 | `packages/unframework/src/vendor/`                          | `pnpm --filter unframework vendor:jsx`                                                        |
+| `tests/integration/budgets.json`                            | `pnpm test:budgets:update`                                                                    |
 
 ### Never weaken a check
 
