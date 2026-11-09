@@ -9,6 +9,7 @@ import { join } from "node:path";
 
 import { serveStatic } from "@unframework/testing/driver/server";
 import { RUN_SPEC, RUNNER_STORY } from "@unframework/visual";
+import { buildIsolated } from "@unframework/visual/preset";
 import { chromium } from "playwright";
 import type { Page } from "playwright";
 
@@ -26,7 +27,7 @@ import {
   within,
 } from "../harness/storybook-check.ts";
 import type { StoryPage } from "../harness/storybook-check.ts";
-import { CASES_ENV, targetStories } from "../harness/storybook.ts";
+import { CASES_ENV, storiesDir, targetStories } from "../harness/storybook.ts";
 
 /** How long a dev server has to answer, and a story to render. */
 const READY_MS = 90_000;
@@ -80,14 +81,25 @@ function stopGroup(child: ChildProcess, signal: NodeJS.Signals): void {
   }
 }
 
-/** The target's static build, of some cases where they're given. A canary's has its own directory. */
-export async function buildStorybook(target: string, cases?: string): Promise<number> {
-  const output = storybookOutput(target, process.env.UF_CANARY?.trim() || null);
-  const child = storybook(target, ["build", "--quiet", "--output-dir", output], {
-    ...process.env,
-    ...(cases ? { [CASES_ENV]: cases } : {}),
-  });
-  return exited(child);
+/**
+ * A target's static build, of some cases where they're given, again for as long as an abort names a
+ * new module to fail. A canary's has its own directory.
+ */
+export async function build(target: string, cases?: string): Promise<number> {
+  const canary = process.env.UF_CANARY?.trim() || null;
+  const output = storybookOutput(target, canary);
+  // Beside the stories' directories, which a start empties, and gitignored with them. One file per
+  // build that can run beside another, since a build fails every module its file names.
+  const aborts = `${storiesDir(target, cases)}${canary ? `.${canary}` : ""}.aborts.json`;
+  return buildIsolated(aborts, (env) =>
+    exited(
+      storybook(target, ["build", "--quiet", "--output-dir", output], {
+        ...process.env,
+        ...(cases ? { [CASES_ENV]: cases } : {}),
+        ...env,
+      }),
+    ),
+  );
 }
 
 /** A port nothing listens on now. */
@@ -269,7 +281,7 @@ async function check(target: string, story: string | undefined): Promise<number>
 
 async function main(argv: readonly string[]): Promise<number> {
   const { command, target, value } = parseCommand(argv);
-  if (command === "build") return buildStorybook(target);
+  if (command === "build") return build(target);
   return command === "serve" ? serve(target, value) : check(target, value);
 }
 

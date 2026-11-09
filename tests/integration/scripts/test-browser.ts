@@ -1,8 +1,8 @@
 // `test:browser <target> [cases…]`: a target's specs on Playwright, against its static Storybook
 // build. A canary's build is always its own, under `.canary/<id>/`, since a build holds its compile,
 // and holds only the cases the run judges: a canary can break the link of a case it isn't asked
-// about, which aborts a build until each case's failure is isolated. Otherwise the run reads the
-// build `storybook:build` left, and makes one if there is none.
+// about, and each abort that causes costs another build. Otherwise the run reads the build
+// `storybook:build` left, and makes one if there is none.
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -14,7 +14,7 @@ import { ROOT, storybookOutput } from "../harness/paths.ts";
 import { browserProjectName } from "../harness/playwright-rules.ts";
 import { STORYBOOK_TARGETS } from "../harness/storybook.ts";
 import { selectTargets } from "../harness/targets.ts";
-import { buildStorybook } from "./storybook.ts";
+import { build } from "./storybook.ts";
 
 const USAGE = "Usage: test-browser.ts <target> [<case>…]";
 
@@ -36,7 +36,7 @@ async function main(argv: readonly string[]): Promise<number> {
   const canary = process.env.UF_CANARY?.trim() || null;
   const directory = storybookOutput(target, canary);
   if (canary || !existsSync(join(directory, "index.json"))) {
-    const built = await buildStorybook(target, canary ? cases.join(",") : undefined);
+    const built = await build(target, canary ? cases.join(",") : undefined);
     if (built !== 0) return built;
   } else {
     console.log(`Reading the build in ${directory}: storybook:build ${target} makes a new one.`);
