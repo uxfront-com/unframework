@@ -20,7 +20,7 @@ import { formatDiagnostic, formatDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import { createUnplugin } from "unplugin";
 import type { TransformResult, UnpluginFactory, UnpluginInstance, UnpluginOptions } from "unplugin";
-import type { Environment } from "vite";
+import type { Environment, EnvironmentModuleNode, HotUpdateOptions } from "vite";
 
 import { assembleModule } from "./assemble.ts";
 import { detectTarget, hostOptionWarning } from "./detect.ts";
@@ -379,6 +379,11 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     ];
   };
 
+  // What each change compiled again, by the changed file's path, as absolute paths, until the hot
+  // update that reports the change takes it. A load may hand a change over before Vite's watcher
+  // reports it, so `hotUpdate` can't ask the project itself. Only Vite reports changes that way.
+  const recompiled = new Map<string, Set<string>>();
+
   /**
    * Hands the project every change it has not seen among the files at these paths, under every
    * name each file has, so `update` compiles again the modules whose inputs changed, those compiled
@@ -396,7 +401,14 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     for (const [path, text] of changed) seen.set(path, text);
     try {
       const names = [...changed.keys()].flatMap((path) => namesOf(path));
-      await projectOf().update([...new Set(names)]);
+      const { compiled: modules } = await projectOf().update([...new Set(names)]);
+      if (meta.framework === "vite") {
+        for (const path of changed.keys()) {
+          const files = recompiled.get(path) ?? new Set();
+          for (const module of modules) files.add(posix.join(root, module));
+          recompiled.set(path, files);
+        }
+      }
     } catch (error) {
       // The project never took the change: the next load hands it over again.
       for (const [path, text] of before) seen.set(path, text);
@@ -725,6 +737,75 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     return composable ? composableId(file, composableSuffix, query) : moduleId(file, suffix, query);
   };
 
+  /**
+   * The authored file a module of Vite's graph was loaded from, if it is one of ours: a sheet, a
+   * module of composables, a component, a main module or a Qwik segment, with any framework's
+   * query. Vite's own file queries (`?raw`, `?url`) read the authored file, so they stay Vite's.
+   */
+  const ownerOf = (id: string | null): string | undefined => {
+    if (id === null || VITE_FILE_QUERY.test(id)) return undefined;
+    const owner =
+      parseModuleId(id, SHEET_SUFFIX) ??
+      composableRequest(id) ??
+      componentRequest(id) ??
+      parseModuleId(id, suffix) ??
+      splitFrom(id);
+    return owner?.file;
+  };
+
+  // Every module id Vite has really transformed. Nothing else tells a node that only
+  // `addWatchFile` put in the graph from a real import once Vite has invalidated it, and Vite
+  // would follow such a node up to the modules that watch it, whatever the project compiled.
+  const served = new Set<string>();
+  const isOurs = (node: EnvironmentModuleNode) => {
+    if (ownerOf(node.id) !== undefined) return true;
+    return (
+      node.id !== null &&
+      !served.has(node.id) &&
+      node.importers.size > 0 &&
+      [...node.importers].every((importer) => ownerOf(importer.id) !== undefined)
+    );
+  };
+
+  // Each environment runs `hotUpdate` for one change, with one timestamp: the first takes what the
+  // change compiled again, and the others read it here.
+  const hotUpdates = new Map<string, { timestamp: number; files: Promise<Set<string>> }>();
+  const recompiledBy = (file: string, timestamp: number): Promise<Set<string>> => {
+    const known = hotUpdates.get(file);
+    if (known?.timestamp === timestamp) return known.files;
+    const files = exclusive(async () => {
+      await handOver([file]);
+      const taken = recompiled.get(file) ?? new Set<string>();
+      recompiled.delete(file);
+      return taken;
+    });
+    hotUpdates.set(file, { timestamp, files });
+    return files;
+  };
+
+  /**
+   * The modules a change updates in one environment (ADR-0075). Vite's own list holds the file's
+   * nodes, and on a target with an id suffix those are only watch edges, which it never analysed,
+   * so it would send nothing. So the list becomes every module of ours whose file the project
+   * compiled again, its scoped sheet included, because a sheet's text and the scope id in its
+   * component's markup change together (ADR-0063). Modules not ours keep Vite's handling. A file
+   * created or deleted also reaches the modules of that file, which the project no longer holds,
+   * and Vite's own list stays, since it holds the modules that failed to resolve the new file.
+   */
+  const hotModules = async (
+    { type, file, timestamp, modules }: HotUpdateOptions,
+    idToModule: ReadonlyMap<string, EnvironmentModuleNode>,
+  ): Promise<EnvironmentModuleNode[]> => {
+    const files = new Set(await recompiledBy(file, timestamp));
+    if (type !== "update") files.add(file);
+    const updated = [...idToModule.values()].filter((node) => {
+      const owner = ownerOf(node.id);
+      return owner !== undefined && files.has(owner);
+    });
+    const kept = type === "update" ? modules.filter((node) => !isOurs(node)) : modules;
+    return [...new Set([...kept, ...updated])];
+  };
+
   /** What `load` answers, keeping the guard's verdicts in `failed`. */
   async function loadModule(this: LoadContext, id: string, failed: Map<string, FailedModule>) {
     const sheet = parseModuleId(id, SHEET_SUFFIX);
@@ -815,6 +896,27 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     return assembly;
   }
 
+  /**
+   * The watch edges (see resolveId): to the file, for every id but one that is the file itself,
+   * and to every file the project says the output depends on (ADR-0071): each child's `.uf.tsx`,
+   * each composable's `.uf.ts`, each shared `.ts` module and each file a type was read from, so an
+   * edit to one invalidates the module. They are added in `transform` rather than `load`: Vite
+   * keeps the files a load adds only when the module is already in its graph, which a cold
+   * request's is not, while a transform always runs on a module the graph holds.
+   */
+  function addWatchEdges(this: { addWatchFile(file: string): void }, id: string): null {
+    const composables = composableRequest(id);
+    const component = composables ? undefined : componentRequest(id);
+    const request = composables ?? component ?? parseModuleId(id, suffix);
+    if (!request || !isAbsolute(request.file)) return null;
+    // A module of composables' id is the file itself where it has no suffix (ADR-0069).
+    if (composables ? composableSuffix : suffix || component) {
+      this.addWatchFile(request.file);
+    }
+    for (const path of watchedFiles(request.file)) this.addWatchFile(path);
+    return null;
+  }
+
   const resolveFilter = {
     id: new RegExp(
       [
@@ -847,23 +949,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     transform: {
       filter: { id: moduleIds },
       handler(_code, id) {
-        // The watch edges (see resolveId): to the file, for every id but one that is the file
-        // itself, and to every file the project says the output depends on (ADR-0071): each
-        // child's `.uf.tsx`, each composable's `.uf.ts`, each shared `.ts` module and each file
-        // a type was read from, so an edit to one invalidates the module. They are added here
-        // rather than in `load`: Vite keeps the files a load adds only when the module is
-        // already in its graph, which a cold request's is not, while a transform always runs on
-        // a module the graph holds.
-        const composables = composableRequest(id);
-        const component = composables ? undefined : componentRequest(id);
-        const request = composables ?? component ?? parseModuleId(id, suffix);
-        if (!request || !isAbsolute(request.file)) return null;
-        // A module of composables' id is the file itself where it has no suffix (ADR-0069).
-        if (composables ? composableSuffix : suffix || component) {
-          this.addWatchFile(request.file);
-        }
-        for (const path of watchedFiles(request.file)) this.addWatchFile(path);
-        return null;
+        return addWatchEdges.call(this, id);
       },
     },
     // Hands an edit to the project as soon as the bundler reports it, rather than at the next load
@@ -913,6 +999,16 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
         handler(id) {
           return loadModule.call(this, id, failuresIn(this.environment));
         },
+      },
+      // Replaces the generic hook, whose filter only passes the plugin's ids: every module counts
+      // as served (see `served`).
+      transform(_code, id) {
+        served.add(id);
+        return addWatchEdges.call(this, id);
+      },
+      // A framework's own HMR does the rest: this only says which modules changed.
+      hotUpdate(update) {
+        return hotModules(update, this.environment.moduleGraph.idToModuleMap);
       },
       api: {
         getCompiled: (id: string) => compiled.get(id),

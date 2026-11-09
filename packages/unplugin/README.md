@@ -246,15 +246,22 @@ How `resolveId` answers:
   may add one the output does not read, such as a grandchild's: an edit to it transforms the
   module again, and the project compiles nothing. A package's files in `node_modules` get none,
   since Vite's watcher ignores them, and neither does a file that does not exist yet, since Vite's
-  import analysis fails an import it cannot resolve: the next load still compares both. Hot
-  updates are M6's.
+  import analysis fails an import it cannot resolve: the next load still compares both.
+- **Hot updates** (ADR-0075). On Vite, `hotUpdate` routes a changed, created or deleted file through
+  the project, in each environment, and answers with every module of each file the project
+  compiled again: its main module, its other components, its module of composables, its Qwik
+  segments and its scoped sheet, plugin-vue's style queries included. An edit of a stylesheet
+  updates the sheet and the markup together, because the scope id hashes the sheet's text
+  (ADR-0063). When the project compiled nothing, the plugin's modules and the nodes only its
+  watch edges put in the graph leave Vite's list, so nothing is sent. A module the plugin doesn't
+  own keeps Vite's handling, and a framework's own HMR does the rest: React, Vue, Svelte and Solid
+  send an update, and Qwik and Astro do a full reload with the new content.
 
 `load` answers a scoped sheet's id with the sheet this target's compile emitted, whatever its
 query: plugin-vue's request for `<style src>` (`?vue&type=style&index=0&src=true&lang.css`), which
 the plugin serves before plugin-vue reads the disk, and Qwik's `?inline` give the same text. The
 author's `Hello.css` is never loaded: no output imports it. A file that imports no stylesheet has
-no sheet, and its sheet id fails. No edit of the author's sheet invalidates the sheet module
-until M6.
+no sheet, and its sheet id fails.
 
 How `load` answers any other query is decided by the query alone, never by what the process resolved
 before: a parameter named after the id's extension (`?vue&type=style&index=0&lang.css`,

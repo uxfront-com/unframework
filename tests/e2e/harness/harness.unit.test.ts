@@ -19,6 +19,7 @@ import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  assertInstalledFromTarball,
   copyManifest,
   copyMarker,
   copyWorkspace,
@@ -52,6 +53,49 @@ const repository = (): string => {
 };
 
 const file = (): string => join(scratch, "Hello.tsx");
+
+describe("assertInstalledFromTarball", () => {
+  const name = "@scope/design-system";
+  const store = "node_modules/.pnpm/ds@file/node_modules/@scope/design-system";
+
+  /** A copy whose `node_modules/<name>` links to `target`, as pnpm's does. */
+  const copyLinkedTo = (target: string): string => {
+    const copy = join(scratch, "copy");
+    mkdirSync(join(copy, "node_modules/@scope"), { recursive: true });
+    symlinkSync(target, join(copy, "node_modules", name));
+    return copy;
+  };
+
+  /** The same copy with real files in its virtual store. */
+  const installedCopy = (): string => {
+    const copy = copyLinkedTo(join(scratch, "copy", store));
+    mkdirSync(join(copy, store, "react"), { recursive: true });
+    writeFileSync(join(copy, store, "react/index.js"), "");
+    return copy;
+  };
+
+  it("accepts real files in the copy's virtual store", () => {
+    expect(() => assertInstalledFromTarball(installedCopy(), name)).not.toThrow();
+  });
+
+  it("refuses a package that links out of the copy", () => {
+    const outside = join(scratch, "workspace/design-system");
+    mkdirSync(outside, { recursive: true });
+    expect(() => assertInstalledFromTarball(copyLinkedTo(outside), name)).toThrow(/virtual store/);
+  });
+
+  it("refuses a symbolic link inside the package", () => {
+    const copy = installedCopy();
+    symlinkSync(join(scratch, "elsewhere"), join(copy, store, "react/linked"));
+    expect(() => assertInstalledFromTarball(copy, name)).toThrow(/symbolic link/);
+  });
+
+  it("rejects a package that isn't installed", () => {
+    const copy = join(scratch, "empty");
+    mkdirSync(copy, { recursive: true });
+    expect(() => assertInstalledFromTarball(copy, name)).toThrow(/ENOENT/);
+  });
+});
 
 describe("findApps", () => {
   it("lists each app with the modes under its e2e directory", () => {

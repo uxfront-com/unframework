@@ -5,6 +5,15 @@ import { promisify } from "node:util";
 
 import type { OutputFile } from "@unframework/compiler";
 
+/** A subpath's entry in `exports`: a path, or conditions that each hold one. */
+export type SubpathExports = string | { readonly [condition: string]: SubpathExports };
+
+/** An optional peer of the package. */
+export interface PackagePeer {
+  name: string;
+  range: string;
+}
+
 /** What one target's packager works on. */
 export interface PackagerInput {
   /** The target's files as `compile()` gave them, so with no map (ADR-0077). */
@@ -19,8 +28,8 @@ export interface PackagerInput {
 
 /** One target's line in the registry (ADR-0077). */
 export interface Packager {
-  /** The framework, an optional peer of the package. */
-  peer: { name: string; range: string };
+  /** The framework, an optional peer of the package, or its packages where there are several. */
+  peer: PackagePeer | readonly PackagePeer[];
   /** What must resolve from `package.resolveFrom`, checked before anything is written (UF7008). */
   needs: readonly string[];
   /**
@@ -29,8 +38,8 @@ export interface Packager {
    * silently.
    */
   types?: string;
-  /** The target's subpath in the manifest's `exports`. */
-  exports: string | Readonly<Record<string, string>>;
+  /** The target's subpath in the manifest's `exports`, or how to read it from a finished `out`. */
+  exports: SubpathExports | ((out: string) => Promise<SubpathExports>);
   /** Fills `out`. What it throws is the packager's failure (UF7009). */
   run(input: PackagerInput): Promise<void>;
 }
@@ -65,18 +74,21 @@ export const tscOf = (manifest: string): Promise<string> => binOf(manifest, "tsc
 
 /**
  * Runs a tool's script in `cwd`, and gives what it warned on stderr. A failure throws what the tool
- * printed: tsc prints to stdout.
+ * printed: tsc prints to stdout, and a tool that reports progress there, like ng-packagr, passes
+ * `"stderr"` to skip it.
  */
 export async function runScript(
   script: string,
   args: readonly string[],
   cwd: string,
+  errors: "stdout" | "stderr" = "stdout",
 ): Promise<string> {
   const { stderr } = await promisify(execFile)(process.execPath, [script, ...args], {
     cwd,
     maxBuffer: 2 ** 28,
   }).catch((error: { stdout?: string; stderr?: string; message: string }) => {
-    throw new Error(error.stdout || error.stderr || error.message);
+    const printed = errors === "stderr" ? error.stderr : error.stdout || error.stderr;
+    throw new Error(printed || error.message);
   });
   return stderr;
 }

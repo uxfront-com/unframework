@@ -10,13 +10,18 @@
   "exports": {
     "./source/*": "./src/*"
   },
+  "scripts": {
+    "pack:dist": "unframework build --package"
+  },
   "devDependencies": {
     "@angular/common": "catalog:",
     "@angular/core": "catalog:",
+    "@babel/core": "catalog:",
     "@qwik.dev/core": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "astro": "catalog:",
+    "babel-preset-solid": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "solid-js": "catalog:",

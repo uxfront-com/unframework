@@ -1,6 +1,6 @@
-// Temporary projects and real Vite 8 dev servers for the plugin tests. The framework plugins are
-// not dependencies of this package, so the tests drive the hooks through the plugin container,
-// and a stand-in for plugin-vue completes the pipeline where a test needs Vite's own passes.
+// Temporary projects and real Vite 8 dev servers for the plugin tests. These tests drive the hooks
+// through the plugin container, and a stand-in for plugin-vue completes the pipeline where a test
+// needs Vite's own passes. Only `hot.test.ts` runs the frameworks' own plugins.
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
