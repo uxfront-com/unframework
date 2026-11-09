@@ -1,5 +1,6 @@
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -85,6 +86,27 @@ export function startCopy(copy: string): void {
 export function designSystemSource(directory: string = designSystemDir): string {
   const packaged = join(directory, "dist/package");
   return existsSync(packaged) ? packaged : directory;
+}
+
+/**
+ * Throws unless a copy's package is what a tarball installs: real files in the copy's own virtual
+ * store. pnpm always links `node_modules/<name>` into that store, so the link itself proves
+ * nothing. Where it leads, and what is inside, do.
+ */
+export function assertInstalledFromTarball(copy: string, name: string): void {
+  const store = join(realpathSync(copy), "node_modules/.pnpm") + sep;
+  const installed = realpathSync(join(copy, "node_modules", name));
+  if (!installed.startsWith(store)) {
+    throw new Error(`${name} resolves to ${installed}, outside the copy's virtual store.`);
+  }
+  const visit = (directory: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
+      if (lstatSync(path).isSymbolicLink()) throw new Error(`${path} is a symbolic link.`);
+      if (entry.isDirectory()) visit(path);
+    }
+  };
+  visit(installed);
 }
 
 /** Reads one package's manifest. */

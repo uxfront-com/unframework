@@ -80,6 +80,10 @@ Each app's server starts its own way, and that decides what `edit` waits for:
 
 `ng serve` runs in another process, so its watcher is out of reach, and a file event alone would come too early: until the rebuild ends, a page still loads the old bundle. `rebuildWatcher` reads the end of each rebuild from what `ng serve` prints, whether the rebuild failed, changed nothing or changed the bundle. Write one edit at a time there, because a file written during a rebuild is reported when that rebuild ends.
 
+The package-mode smoke specs of the apps that install the design system share `harness/design-system.ts`, so every framework is held to the same page: each component renders, the design system's sheet applies, and each component responds to one interaction. Astro renders on the server only, so its spec stops after the render. `assertInstalledFromTarball` in `harness/apps.ts` runs first. pnpm always links `node_modules/<name>` into its virtual store, so it checks where that link leads and that the package holds no symbolic link.
+
+The Vue app passes `script.fs` to `@vitejs/plugin-vue`, because a packaged SFC imports its prop types from a sibling module, and Vue's compiler reads those through TypeScript's `sys`, which TypeScript 7 doesn't export. Without it the page fails with "No fs option provided to `compileScript`".
+
 The run uses one worker and no retries. A project's specs share one copy and an HMR spec edits it, so nothing runs beside it. A flaky spec is a bug, so we never retry it.
 
 ## Servers and ports
