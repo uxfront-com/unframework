@@ -78,7 +78,10 @@ does a source that reads a file above `srcDir`, like a sheet, since `./source/*`
 Each target's packager resolves from `package.resolveFrom`, which is one path or a path per target and
 defaults to the project's root. It's never a dependency of the CLI. Each target ships like this:
 
-- **Angular:** not packaged yet, so `--package` reports UF7008.
+- **Angular:** ng-packagr builds the Angular Package Format, partially compiled, so a consumer's linker
+  finishes it. `./angular` takes its `exports["."]` with the paths prefixed again. The entry point
+  also exports the barrel's slot directives, which a consumer imports to fill a named slot.
+  `@angular/common` is an optional peer beside `@angular/core`.
 - **Astro:** the emitted sources, which Astro's compiler builds in the consumer's app. It needs no
   packager.
 - **Qwik:** not packaged yet, so `--package` reports UF7008.
@@ -90,7 +93,7 @@ defaults to the project's root. It's never a dependency of the CLI. Each target 
 - **Vue:** the SFC sources and `.ts` modules, with `vue-tsc`'s declarations beside them. Vue's compiler
   builds them in the consumer's app, and `vue-tsc` resolves its TypeScript from where it's installed.
 
-A declaration's inferred types come from `@types/react`, `solid-js` or `vue`, so each must resolve from
+A declaration's inferred types come from `@angular/core`, `@types/react`, `solid-js` or `vue`, so each must resolve from
 where the package is built, the real path of `outDir`. Packaged outputs ship with no source maps.
 
 `build --package` also reports:
