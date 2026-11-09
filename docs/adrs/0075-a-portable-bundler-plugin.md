@@ -91,12 +91,23 @@ built.
 ### Hot updates
 
 - Vite's `hotUpdate` runs `project.update([file])`, and handles `create` and `delete` as well as
-  `update`. The hook takes over from the `handleHotUpdate` ADR-0071 names.
-- For an edited stylesheet, it adds the sheet modules of every component that imports it
-  (`<abs>.uf.tsx.css`, plugin-vue's style queries included), so Vite applies a CSS update.
-- It drops our virtual modules from `modules` when early cutoff recompiled nothing (ADR-0071).
+  `update`. The hook takes over from the `handleHotUpdate` ADR-0071 names. `watchChange` runs first
+  and may hand the change over, as a load may, so the plugin keeps what each change compiled again
+  until the hook takes it.
+- The hook replaces the plugin's modules in `modules` with every module of each file the update
+  compiled again: its main module, its other components, its module of composables, its Qwik
+  segments and its sheet (`<abs>.uf.tsx.css`, plugin-vue's style queries included). A stylesheet
+  edit therefore updates the sheet and the markup together, as the scope id hashes the sheet's text
+  (ADR-0063).
+- When early cutoff recompiled nothing (ADR-0071), the plugin's modules leave `modules`, and so do
+  the nodes only `addWatchFile` put there, which Vite would otherwise follow up to the modules that
+  watch them. A module that isn't the plugin's keeps Vite's handling.
+- A created or deleted file also updates that file's own modules, and `modules` keeps the modules
+  that failed to resolve a new file.
 - A framework's HMR stays the framework's own. React, Vue, Svelte and Solid send an update. Qwik and
-  Astro do a full reload with the new content.
+  Astro do a full reload with the new content. plugin-vue also updates the importers of a type file
+  it read itself, and vite-plugin-svelte drops a module whose JS did not change, so a type-only
+  edit reaches a Svelte page through its sheet alone.
 
 ### Packages that ship sources
 
