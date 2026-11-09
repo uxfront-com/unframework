@@ -6,7 +6,7 @@
 // the corpus, and the verdict tests (canary-verdict.unit.test.ts) how it judges a run.
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 import { compile, TARGET_NAMES } from "@unframework/compiler";
 import type { CompileResult, TargetName } from "@unframework/compiler";
@@ -33,6 +33,7 @@ import {
   dropFirstRule,
   canaryFixes,
   canaryFormats,
+  canaryMaps,
   canaryPlugins,
   canaryProjects,
   canarySource,
@@ -46,10 +47,15 @@ import {
 import type { Canary, CanaryCase } from "./canaries.ts";
 import { projectOf } from "./canary-verdict.ts";
 import { listCases } from "./cases.ts";
-import { checkFixes, formattingProblems, nondeterminism } from "./compile-checks.ts";
+import {
+  checkFixes,
+  formattingProblems,
+  nondeterminism,
+  sourceMapProblems,
+} from "./compile-checks.ts";
 import { CASES_DIR, REPO_ROOT } from "./paths.ts";
 import { LIVE_LAYERS } from "./quarantine.ts";
-import { caseResolver } from "./sources.ts";
+import { caseOracle, caseResolver } from "./sources.ts";
 import { REFERENCE } from "./targets.ts";
 
 const filename = "fixture/task-list/TaskList.uf.tsx";
@@ -121,6 +127,7 @@ const VERIFIED_BY: Record<string, readonly ProjectKind[]> = {
   L10: ["browser"],
   L11: ["browser"],
   L13: ["ssr", "browser"],
+  L14: ["compile"],
   L15: ["bench"],
 };
 
@@ -227,15 +234,19 @@ describe("canaries", () => {
     expect(canaryProjects(findCanary("L6-golden-guard"))).toEqual(["ssr", "browser"]);
   });
 
-  it("corrupt a source or the fixes, or skip the format step, only for the compile project", () => {
+  it("corrupt a source, the fixes or a map, or skip the format step, only for the compile project", () => {
     const compileOnly = CANARIES.filter(
       (canary) =>
-        canary.source !== undefined || canary.fixes !== undefined || canary.format === false,
+        canary.source !== undefined ||
+        canary.fixes !== undefined ||
+        canary.map !== undefined ||
+        canary.format === false,
     );
     expect(compileOnly.map((canary) => canary.id)).toEqual([
       "L1-diagnostic-added",
       "L1-fix-no-op",
       "L2-unformatted",
+      "L14-map-shifted",
     ]);
     for (const canary of compileOnly) expect(canaryProjects(canary)).toEqual(["compile"]);
     expect(canarySource(null, source)).toBe(source);
@@ -538,6 +549,8 @@ describe("canaries", () => {
         canary.layer !== "L1" &&
         // It slows the compile and leaves the output alone: a test of its own below.
         canary.id !== "L15-slow-compile" &&
+        // It corrupts a map, after the compile: a test of its own below.
+        canary.id !== "L14-map-shifted" &&
         canary.id !== "L9-unwired-handler" &&
         canary.id !== "L10-stylesheet-rule-dropped",
     ),
@@ -1553,6 +1566,66 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
 
 describe("every canary on the corpus", () => {
   const cases = listCases();
+
+  it("L14-map-shifted corrupts one map of every case with output, on every target", async () => {
+    const canary = findCanary("L14-map-shifted");
+    const evidence = canary.evidence.compile!["round trip"]!;
+    const pattern = (target: string) =>
+      typeof evidence === "function" ? evidence(target) : evidence;
+    const problems: string[] = [];
+    let corrupted = 0;
+    for (const info of cases) {
+      const modules = new Set(info.modules.map(({ source }) => basename(source)));
+      const results = await Promise.all(
+        info.sources.map(async (source) => {
+          const text = readFileSync(source.source, "utf8");
+          const typeOracle = caseOracle(info, CASES_DIR, { filename: source.filename, text });
+          try {
+            const result = await compile(text, {
+              filename: source.filename,
+              targets: TARGET_NAMES,
+              sourceMap: true,
+              resolve: caseResolver(info, CASES_DIR, typeOracle),
+              typeOracle,
+            });
+            return { source, text, result };
+          } finally {
+            await typeOracle.dispose();
+          }
+        }),
+      );
+      for (const target of TARGET_NAMES) {
+        if (
+          results.some(({ result }) =>
+            result.diagnostics.some(
+              (diagnostic) =>
+                diagnostic.severity === "error" &&
+                (diagnostic.target === undefined || diagnostic.target === target),
+            ),
+          )
+        ) {
+          continue;
+        }
+        const where = `${info.id} › ${target}`;
+        const reports = results.map(({ source, text, result }) => {
+          const files = result.outputs[target] ?? [];
+          const input = { filename: source.filename, text };
+          return {
+            before: sourceMapProblems(target, files, input, modules),
+            after: sourceMapProblems(target, canaryMaps(canary.id, files), input, modules),
+          };
+        });
+        const before = reports.flatMap((report) => report.before);
+        if (before.length) problems.push(`${where}: clean maps fail: ${before.join("; ")}`);
+        const after = reports.flatMap((report) => report.after);
+        if (after.some((message) => pattern(target).test(message))) corrupted += 1;
+        else problems.push(`${where}: not caught: ${after.join("; ") || "no problem"}`);
+      }
+    }
+    expect(problems).toEqual([]);
+    expect(corrupted).toBeGreaterThan(1000);
+  });
+
   const compiled = new Map<string, Promise<{ input: string; result: CompileResult }>>();
   /** A case's source and its clean compile, once per run. */
   const clean = (info: (typeof cases)[number]) => {

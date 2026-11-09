@@ -59,13 +59,25 @@ built.
 
 ### Round trip
 
-- The `compile` project compiles with `sourceMap: true`. For every case and target it checks that:
-  - each output's map decodes
-  - `sources` names the case's `.uf.tsx`, with its content
-  - each anchored run maps back to identical source text
-- It records L14 per cell.
-- A canary shifts one segment of a compiled map, through a new `map` corruption point, since the
-  `output` hook runs before the map exists.
+- The `compile` project compiles with `sourceMap: true`, so L2's determinism check holds the maps too.
+  For every case and target, `sourceMapProblems` (`harness/compile-checks.ts`) checks that:
+  - each output's map decodes and stays inside its two files
+  - `sources` names the case's `.uf.tsx`, relative to the output, with its content
+  - each segment without a name maps to identical source text, read for the length of the source's
+    token (ADR-0074). A segment with a name marks a reference, which a target respells, so only its
+    position is checked
+  - a shared module's copy names itself, and a scoped sheet's map has no segments
+- It records L14 per cell, and a case with compile errors on a target has no output, so that cell is
+  a skip.
+- A token oxfmt rewrites needs no allowance here. Formatting drops a segment whose token it changes,
+  so no segment that compares text is left to excuse (ADR-0074).
+- L14 passes a map with no segments, as a template of only static markup has. A corpus gate in the
+  same project fails a target none of whose maps compare any text.
+- `L14-map-shifted` moves one segment of a compiled map a column along, through a new `map` corruption
+  point, since the `output` hook runs before the map exists. It picks a segment whose text changes
+  when shifted, because `=` beside `=` reads the same. A few cells, mostly Angular's markup and static
+  templates, have no segment that compares text, so there the canary adds one that reads the wrong
+  text. A canary has to reach every case it's judged on.
 
 ### Thrown errors
 

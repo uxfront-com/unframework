@@ -2,19 +2,25 @@
 // fixes that leave their diagnostic or bring another, and outputs that differ between compiles
 // or are not formatted. On the corpus, the fix check applies the fixes of the diagnostics cases
 // (and jsx/escaping's), and the L1-fix-no-op canary proves it catches a fix that fixes nothing.
+import { encodedMappings, TraceMap } from "@jridgewell/trace-mapping";
+import type { SourceMapSegment } from "@jridgewell/trace-mapping";
+import type { OutputFile, SourceMapV3 } from "@unframework/codegen";
 import { builtinTargets, compile, createFileResolver, TARGET_NAMES } from "@unframework/compiler";
-import type { CompileResult, CompilerPlugin } from "@unframework/compiler";
+import type { CompileResult, CompilerPlugin, TargetName } from "@unframework/compiler";
 import { applyFixes } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import { describe, expect, it } from "vitest";
 
+import { canaryMaps } from "./canaries.ts";
 import {
   checkFixes,
+  comparedSegments,
   expectationProblems,
   formattingProblems,
   moduleCopyProblems,
   nondeterminism,
   referenceProblems,
+  sourceMapProblems,
   stylesheetProblems,
 } from "./compile-checks.ts";
 
@@ -341,3 +347,233 @@ describe("moduleCopyProblems (L2, ADR-0070)", () => {
     expect(problem).toMatch(/^\+ export const SIZE = 9;$/m);
   });
 });
+
+describe("sourceMapProblems (L14)", () => {
+  const card = `export default function Card({ label }: { label: string }) {
+  const shout = () => label.toUpperCase();
+  return <button onClick={shout}>{label}</button>;
+}
+`;
+  const source = { filename: "fixture/card/Card.uf.tsx", text: card };
+  const none = new Set<string>();
+  const mapped = async (target: TargetName = "react"): Promise<OutputFile[]> => {
+    const result = await compile(card, {
+      filename: source.filename,
+      targets: [target],
+      sourceMap: true,
+    });
+    return result.outputs[target]!;
+  };
+  /** The map of the one file, changed. */
+  const withMap = (file: OutputFile, map: Partial<SourceMapV3>): OutputFile => ({
+    ...file,
+    map: { ...file.map!, ...map },
+  });
+
+  it("passes every target's maps of a real compile", async () => {
+    for (const target of TARGET_NAMES) {
+      expect(sourceMapProblems(target, await mapped(target), source, none), target).toEqual([]);
+    }
+  });
+
+  it("fails an output with no map", async () => {
+    const [file] = await mapped();
+    const { map: _map, ...bare } = file!;
+    expect(sourceMapProblems("react", [bare], source, none)).toEqual([
+      `react/${file!.path} has no source map.`,
+    ]);
+  });
+
+  it("fails a map that names another source, or more than one", async () => {
+    const [file] = await mapped();
+    for (const sources of [["Other.uf.tsx"], ["Card.uf.tsx", "Card.uf.tsx"], []]) {
+      expect(
+        sourceMapProblems("react", [withMap(file!, { sources })], source, none)[0],
+        sources.join(),
+      ).toMatch(/map names .*, not its source Card\.uf\.tsx/);
+    }
+  });
+
+  it("fails a map that resolves outside the output's own directory", async () => {
+    const [file] = await mapped();
+    const nested = { ...file!, path: `nested/${file!.path}` };
+    expect(sourceMapProblems("react", [nested], source, none)[0]).toMatch(/not its source/);
+    expect(
+      sourceMapProblems("react", [withMap(nested, { sources: ["../Card.uf.tsx"] })], source, none),
+    ).toEqual([]);
+  });
+
+  it("fails a map that holds other content", async () => {
+    const [file] = await mapped();
+    expect(
+      sourceMapProblems("react", [withMap(file!, { sourcesContent: ["// other"] })], source, none),
+    ).toEqual([`react/${file!.path}'s map does not hold the content of its source Card.uf.tsx.`]);
+  });
+
+  it("fails a segment shifted a column, and reports each map once", async () => {
+    const files = await mapped();
+    const shifted = canaryMaps("L14-map-shifted", files);
+    expect(shifted).not.toEqual(files);
+    expect(sourceMapProblems("react", shifted, source, none)).toEqual([
+      expect.stringMatching(
+        /^react\/\S+'s map has 1 wrong segment\(s\), the first at \d+:\d+ reads "/,
+      ),
+    ]);
+  });
+
+  it("fails mappings that point outside the output or the source", async () => {
+    const [file] = await mapped();
+    const beyond = encodedMappings(new TraceMap({ ...file!.map!, mappings: [[[0, 0, 9_999, 0]]] }));
+    expect(
+      sourceMapProblems("react", [withMap(file!, { mappings: beyond })], source, none)[0],
+    ).toMatch(/1 wrong segment\(s\), the first at 1:0 points outside its files/);
+    expect(
+      sourceMapProblems(
+        "react",
+        [withMap(file!, { mappings: ";".repeat(99_999) + "AAAA" })],
+        source,
+        none,
+      )[0],
+    ).toMatch(/points outside its files/);
+  });
+
+  it("fails mappings that are not VLQ, which the decoder would read as zeros", async () => {
+    const [file] = await mapped();
+    expect(
+      sourceMapProblems("react", [withMap(file!, { mappings: "AAAA,!!!" })], source, none),
+    ).toEqual([`react/${file!.path}'s map does not decode: its mappings are not VLQ.`]);
+  });
+
+  it("counts only the segments that compare text", async () => {
+    const [file] = await mapped();
+    const encoded = (lines: SourceMapSegment[][]) =>
+      encodedMappings(new TraceMap({ ...file!.map!, names: ["label"], mappings: lines }));
+    expect(
+      comparedSegments(
+        withMap(file!, {
+          names: ["label"],
+          mappings: encoded([
+            [
+              [0, 0, 0, 0],
+              [1, 0, 0, 1, 0],
+            ],
+          ]),
+        }),
+      ),
+    ).toBe(1);
+    const { map: _map, ...bare } = file!;
+    expect(comparedSegments(bare)).toBe(0);
+    expect(
+      comparedSegments(
+        withMap(file!, { sources: [file!.path.slice(file!.path.lastIndexOf("/") + 1)] }),
+      ),
+    ).toBe(0);
+  });
+
+  it("does not compare the text of a segment with a name, which a target respells", async () => {
+    const [file] = await mapped();
+    const named = encodedMappings(
+      new TraceMap({ ...file!.map!, names: ["label"], mappings: [[[0, 0, 0, 0, 0]]] }),
+    );
+    expect(
+      sourceMapProblems(
+        "react",
+        [withMap(file!, { names: ["label"], mappings: named })],
+        source,
+        none,
+      ),
+    ).toEqual([]);
+  });
+
+  it("reads a segment for the source token's length: a longer number the output starts with passes", () => {
+    const text = "const size = 5.;\n";
+    const file: OutputFile = {
+      path: "Size.ts",
+      contents: "const size = 5.0;\n",
+      map: {
+        version: 3,
+        file: "Size.ts",
+        sources: ["Size.uf.tsx"],
+        sourcesContent: [text],
+        names: [],
+        mappings: encodedMappings(
+          new TraceMap({
+            version: 3,
+            sources: ["Size.uf.tsx"],
+            names: [],
+            mappings: [[[13, 0, 0, 13]]],
+          }),
+        ),
+      },
+    };
+    expect(sourceMapProblems("react", [file], { filename: "x/Size.uf.tsx", text }, none)).toEqual(
+      [],
+    );
+  });
+
+  it("holds a copy of a shared module to its own name and content", async () => {
+    const contents = "export const size = 1;\n";
+    const file = await copyWithIdentityMap(contents);
+    const modules = new Set([file.path]);
+    expect(sourceMapProblems("react", [file], source, modules)).toEqual([]);
+    expect(sourceMapProblems("react", [file], source, none)[0]).toMatch(/not its source Card/);
+    expect(
+      sourceMapProblems(
+        "react",
+        [withMap(file, { sourcesContent: [`${contents}// edited\n`] })],
+        source,
+        modules,
+      ),
+    ).toEqual([`react/${file.path}'s map does not hold the content of its source ${file.path}.`]);
+  });
+
+  it("fails a scoped sheet whose map has segments, and passes one without", async () => {
+    const sheet = await styledSheet();
+    expect(sheet.map!.mappings.replaceAll(";", "")).toBe("");
+    expect(sourceMapProblems("react", [sheet], styled, none)).toEqual([]);
+    const segmented = encodedMappings(new TraceMap({ ...sheet.map!, mappings: [[[0, 0, 0, 0]]] }));
+    expect(
+      sourceMapProblems("react", [withMap(sheet, { mappings: segmented })], styled, none),
+    ).toEqual([`react/${sheet.path}'s map has 1 segment(s): a scoped sheet has none.`]);
+  });
+});
+
+const styled = {
+  filename: "fixture/badge/Badge.uf.tsx",
+  text: 'import "./Badge.css";\n\nexport default function Badge() {\n  return <p class="badge">New</p>;\n}\n',
+};
+
+/** A real compile's copy of a shared module, whose map is the compiler's `identityMapped`. */
+async function copyWithIdentityMap(contents: string): Promise<OutputFile> {
+  const text =
+    'import { size } from "./size.ts";\n\nexport default function Box() {\n  return <p>{size}</p>;\n}\n';
+  const result = await compile(text, {
+    filename: "fixture/box/Box.uf.tsx",
+    targets: ["react"],
+    sourceMap: true,
+    resolve: createFileResolver({
+      root: "/cases",
+      readFile: async (path) => (path === "/cases/fixture/box/size.ts" ? contents : undefined),
+    }),
+  });
+  const copy = result.outputs.react!.find(({ path }) => path === "size.ts");
+  if (!copy) throw new Error(JSON.stringify(result.diagnostics));
+  return copy;
+}
+
+/** A real compile's scoped sheet. */
+async function styledSheet(): Promise<OutputFile> {
+  const result = await compile(styled.text, {
+    filename: styled.filename,
+    targets: ["react"],
+    sourceMap: true,
+    resolve: createFileResolver({
+      root: "/cases",
+      readFile: async (path) =>
+        path === "/cases/fixture/badge/Badge.css" ? ".badge { color: red; }\n" : undefined,
+    }),
+  });
+  const sheet = result.outputs.react!.find(({ path }) => path.endsWith(".css"));
+  if (!sheet) throw new Error(JSON.stringify(result.diagnostics));
+  return sheet;
+}

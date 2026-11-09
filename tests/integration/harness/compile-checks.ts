@@ -1,7 +1,10 @@
 // The compile project's checks besides the artefact comparisons: L1's fixes and what a case
-// may expect, L2's determinism and formatting, and the scoped sheets' parse. Plain functions, so `compile-checks.unit.test.ts` can prove each
+// may expect, L2's determinism and formatting, the scoped sheets' parse, and L14's source maps. Plain functions, so `compile-checks.unit.test.ts` can prove each
 // one catches what it exists for, on the real compiler; the compile project runs them on every
 // case and target.
+import { posix } from "node:path";
+
+import { decodedMappings, TraceMap } from "@jridgewell/trace-mapping";
 import { formatOutput } from "@unframework/codegen";
 import type { Capabilities, OutputFile } from "@unframework/codegen";
 import { builtinTargets } from "@unframework/compiler";
@@ -251,4 +254,118 @@ export async function formattingProblems(
     }
   }
   return problems;
+}
+
+/**
+ * A token of the source, as the compiler anchors them (`packages/codegen/src/sourcemap.ts`): a
+ * word or a number whole, any other character alone. Written out here so that a change to the
+ * compiler's tokens can't quietly change what this check compares.
+ */
+const SOURCE_TOKEN = /[\p{ID_Start}$_][\p{ID_Continue}$]*|\d[\w.]*|\S/uy;
+
+/** What `mappings` may hold: VLQ digits, split into segments and lines. */
+const VLQ = /^[A-Za-z0-9+/,;]*$/;
+
+/** The source's token at a column of one of its lines, or `""` where there is none. */
+export function sourceTokenAt(line: string, column: number): string {
+  SOURCE_TOKEN.lastIndex = column;
+  return SOURCE_TOKEN.exec(line)?.[0] ?? "";
+}
+
+/** The source a target's output files were compiled from. */
+export interface MapSource {
+  filename: string;
+  text: string;
+}
+
+/**
+ * L14 (ADR-0078): every way a target's output files' maps fail to round-trip to the source. Each
+ * map decodes and names its one source with that source's content, relative to the file: the
+ * `.uf.tsx`, or for a copy of a shared module (`modules`, by path) the copy itself (ADR-0070).
+ * Each segment without a name maps to the same text in both files, read for the length of the
+ * source's token: oxfmt may lengthen a number the output still starts with (`5.` to `5.0`), and a
+ * token it rewrites otherwise has lost its segment (ADR-0074). A segment with a name marks a
+ * reference, which a target respells, so only its position is checked. A scoped sheet's text
+ * comes from a stylesheet, so its map holds no segments (ADR-0063).
+ */
+export function sourceMapProblems(
+  target: string,
+  files: readonly OutputFile[],
+  source: MapSource,
+  modules: ReadonlySet<string>,
+): string[] {
+  return files.flatMap((file) => fileMapProblems(`${target}/${file.path}`, file, source, modules));
+}
+
+function fileMapProblems(
+  where: string,
+  file: OutputFile,
+  source: MapSource,
+  modules: ReadonlySet<string>,
+): string[] {
+  const { map } = file;
+  if (!map) return [`${where} has no source map.`];
+  const copy = modules.has(file.path);
+  const expected = copy ? posix.basename(file.path) : posix.basename(source.filename);
+  const text = copy ? file.contents : source.text;
+  const named = map.sources.map((name) =>
+    posix.normalize(posix.join(posix.dirname(file.path), name)),
+  );
+  if (named.length !== 1 || named[0] !== expected) {
+    return [`${where}'s map names ${JSON.stringify(map.sources)}, not its source ${expected}.`];
+  }
+  if (map.sourcesContent[0] !== text) {
+    return [`${where}'s map does not hold the content of its source ${expected}.`];
+  }
+  // The decoder reads a character outside the alphabet as zero rather than throw on it.
+  if (!VLQ.test(map.mappings)) return [`${where}'s map does not decode: its mappings are not VLQ.`];
+  const lines = decodedMappings(new TraceMap(map));
+  const segments = lines.reduce((count, line) => count + line.length, 0);
+  if (file.path.endsWith(".css")) {
+    return segments ? [`${where}'s map has ${segments} segment(s): a scoped sheet has none.`] : [];
+  }
+  const outputLines = file.contents.split("\n");
+  const sourceLines = text.split("\n");
+  const wrong: string[] = [];
+  for (const [line, row] of lines.entries()) {
+    for (const segment of row) {
+      if (segment.length === 1) continue;
+      const [column, index, fromLine, fromColumn] = segment;
+      const output = outputLines[line];
+      const original = sourceLines[fromLine];
+      if (
+        index !== 0 ||
+        output === undefined ||
+        original === undefined ||
+        !(column >= 0 && column <= output.length) ||
+        !(fromColumn >= 0 && fromColumn <= original.length)
+      ) {
+        wrong.push(`${line + 1}:${column} points outside its files`);
+        continue;
+      }
+      if (segment.length === 5) continue;
+      const token = sourceTokenAt(original, fromColumn);
+      const reads = output.slice(column, column + token.length);
+      if (!token || reads !== token) {
+        wrong.push(
+          `${line + 1}:${column} reads ${JSON.stringify(reads)}, where ${expected}:${fromLine + 1}:${fromColumn} reads ${JSON.stringify(token)}`,
+        );
+      }
+    }
+  }
+  if (!wrong.length) return [];
+  // One map can hold thousands of wrong tokens, so the first says what the rest would.
+  return [`${where}'s map has ${wrong.length} wrong segment(s), the first at ${wrong[0]}.`];
+}
+
+/**
+ * How many segments of a compiled file's map compare text (ADR-0074): those without a name. A
+ * copy of a shared module names itself and counts none, since its identity map says nothing of
+ * how the compiler maps a source.
+ */
+export function comparedSegments(file: OutputFile): number {
+  if (!file.map || file.map.sources[0] === posix.basename(file.path)) return 0;
+  return decodedMappings(new TraceMap(file.map))
+    .flat()
+    .filter((segment) => segment.length === 4).length;
 }

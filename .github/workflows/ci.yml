@@ -389,6 +389,7 @@ jobs:
             shard: 1/2
           - canaries: L13-qwik-handler-throws
             shard: 2/2
+          - canaries: L14
           - canaries: L15
     steps:
       - name: Checkout
