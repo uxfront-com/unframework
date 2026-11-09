@@ -1,6 +1,6 @@
 // The Vitest projects of the harness (plan §7.3):
 //
-//   compile             node     L1 L2     every case to every target, against __output__
+//   compile             node     L1 L2 L14 every case to every target, against __output__
 //   harness             node               the harness's own unit tests
 //   toolchain:<target>  node     L3 L4 L5  the framework compiler, checker and linters, one run
 //                                          of each per target

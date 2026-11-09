@@ -24,7 +24,7 @@ const CASES = listCases().map((info) => info.id);
 
 /** The live layers each kind of project records (plan §7.3). */
 const LAYERS_OF: Record<string, LayerName[]> = {
-  compile: ["L1", "L2"],
+  compile: ["L1", "L2", "L14"],
   harness: [],
   toolchain: ["L3", "L4", "L5"],
   ssr: ["L6", "L13"],
@@ -250,7 +250,7 @@ describe("a run of scripts/run.ts", () => {
     expect(cell(CASES[0]!, TARGETS[0]!, "L15")).toBe("skip(not in this run)");
     expect(cell(CASES[0]!, TARGETS[0]!, "L1")).toBe("pass");
     expect(readFileSync(join(reportsDir, "parity-matrix.md"), "utf8")).toContain(
-      "Every project ran: every cell is checked.\nLayers that are not live (L12, L14) are recorded as skip(not live yet).\nOnly `bench` records L15, and it did not run in full, so those cells are skip(not in this run).",
+      "Every project ran: every cell is checked.\nLayers that are not live (L12) are recorded as skip(not live yet).\nOnly `bench` records L15, and it did not run in full, so those cells are skip(not in this run).",
     );
   });
 

@@ -275,6 +275,7 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
 | L10   | `browser:<target>`    | Geometry and computed styles first, then pixels, with zero tolerance by default.                                                                                                                                                                         |
 | L11   | `browser:<target>`    | axe-core reports no violations, or exactly the case's `axe` list.                                                                                                                                                                                        |
 | L13   | `ssr:` and `browser:` | No `console.warn` or `console.error` during render or mount.                                                                                                                                                                                             |
+| L14   | `compile`             | Each output's source map decodes and names its source with that source's content, and each segment without a name maps to the same text in both files. A shared module's copy names itself, and a scoped sheet's map has no segments.                    |
 | L15   | `bench`               | Each case's compile time, as a ratio of `basics/hello`'s, stays within twice its budget, and each target's bundled output size within its budget plus 5%.                                                                                                |
 
 **L15's budgets** (ADR-0078). The default run leaves the `bench` project out, since it times 20
@@ -377,13 +378,14 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   framework's lint rules forbid, wrong text, a render of nothing, element listeners removed on
   the cases whose specs act, wrong text on the cases whose specs rerender, a hidden root,
   inverted colours, an invalid ARIA role, a console warning), with a fix that fixes nothing (corrupted by
-  the harness, on the cases whose diagnostics have a fix), and with one that only the golden
+  the harness, on the cases whose diagnostics have a fix), with a shifted segment of a compiled source map
+  (corrupted by the harness, since the `output` hook runs before a map exists), and with one that only the golden
   guard can catch, in the server render and in each browser spec's import. The run fails unless
   every canary is caught by its own layer on every case and target it corrupts, in each
   sub-check it names: the diagnostics (the diagnostics cases' too) and their fixes, the IR
   snapshot and the golden files, determinism and formatting, the baseline lint rules and the
   framework's, the DOM and the ARIA tree, the spec's assertions, the traces, geometry and pixels,
-  the server's console and the page's. Each kind of project is judged on its own cells (the
+  the server's console and the page's, and the source maps' round trip. Each kind of project is judged on its own cells (the
   server's console proves nothing of the page's), and only on the tests that ran: a browser
   project proves nothing of a case none of whose tests runs on its target (each skipped by a
   capability it requires), and a canary of the tests that act or rerender is judged only where

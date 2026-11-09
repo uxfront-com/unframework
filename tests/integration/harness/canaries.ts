@@ -18,6 +18,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
+import { decodedMappings, encodedMappings, TraceMap } from "@jridgewell/trace-mapping";
 import { parseStatementsSource } from "@unframework/codegen";
 import type { OutputFile, ParsedStatements } from "@unframework/codegen";
 import { builtinTargets } from "@unframework/compiler";
@@ -53,6 +54,7 @@ import type { LayerName, ProjectKind } from "@unframework/testing/node";
 
 import { errorState, expectedDiagnostics, specTests } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
+import { sourceTokenAt } from "./compile-checks.ts";
 import { consumerFixtures } from "./consumers.ts";
 import { standInCases } from "./no-output.ts";
 import { ROOT } from "./paths.ts";
@@ -158,6 +160,12 @@ export interface Canary {
    * errors has them too. Only the compile project.
    */
   fixes?(diagnostics: readonly Diagnostic[], source: string, target: string): Diagnostic[];
+  /**
+   * Corrupts a target's output files after the compiler built their source maps (L14). The
+   * `output` hook runs before a map exists, so the harness corrupts the result. Only the compile
+   * project.
+   */
+  map?(files: readonly OutputFile[]): OutputFile[];
   /**
    * The cases the canary corrupts on a target, when not every case it can reach: the compile
    * project corrupts, and the verdict judges, only those.
@@ -700,6 +708,18 @@ export const CANARIES: readonly Canary[] = [
     }),
   },
   {
+    id: "L14-map-shifted",
+    layer: "L14",
+    description:
+      "Moves one segment of a compiled map a column along, to where the output reads other text than its source. An output with no segment that compares text, as a template of only static markup has none, gets one that reads the wrong text.",
+    evidence: {
+      compile: {
+        "round trip": (target) => new RegExp(`${target}/\\S+'s map has \\d+ wrong segment`),
+      },
+    },
+    map: shiftSegment,
+  },
+  {
     id: "L15-output-bloat",
     layer: "L15",
     description:
@@ -739,6 +759,73 @@ export const CANARIES: readonly Canary[] = [
     }),
   },
 ];
+
+/** A code file's decoded mappings, the same shape {@link TraceMap} takes back. */
+type DecodedLines = ReturnType<typeof decodedMappings>;
+
+/** One map changed, so that L14 finds a segment whose text differs (`L14-map-shifted`). */
+function shiftSegment(files: readonly OutputFile[]): OutputFile[] {
+  const code = files.filter(({ path, map }) => map && !path.endsWith(".css"));
+  for (const file of code) {
+    const mappings = shiftedMappings(file);
+    if (mappings) return replaceMappings(files, file, mappings);
+  }
+  const first = code[0];
+  if (!first) throw new Error(`${MARKER} L14: no output has a map to corrupt.`);
+  return replaceMappings(files, first, withWrongSegment(first));
+}
+
+/**
+ * The mappings with the first segment that compares text moved a column along, or `undefined`
+ * when no segment's text would change: `=` beside `=` reads the same a column along.
+ */
+function shiftedMappings(file: OutputFile): DecodedLines | undefined {
+  const map = file.map!;
+  const lines = decodedMappings(new TraceMap(map)).map((line) => [...line]);
+  const output = file.contents.split("\n");
+  const source = map.sourcesContent[0]!.split("\n");
+  for (const [line, segments] of lines.entries()) {
+    for (const [index, segment] of segments.entries()) {
+      if (segment.length !== 4) continue;
+      const [column, sourceIndex, fromLine, fromColumn] = segment;
+      const token = sourceTokenAt(source[fromLine]!, fromColumn);
+      if (output[line]!.slice(column + 1, column + 1 + token.length) === token) continue;
+      segments[index] = [column + 1, sourceIndex, fromLine, fromColumn];
+      return lines;
+    }
+  }
+  return undefined;
+}
+
+/** The mappings with a segment from the output's first token to a source token that differs. */
+function withWrongSegment(file: OutputFile): DecodedLines {
+  const map = file.map!;
+  const lines = decodedMappings(new TraceMap(map)).map((line) => [...line]);
+  const output = file.contents.split("\n");
+  const line = output.findIndex((text) => text.trim());
+  const column = output[line]!.search(/\S/);
+  for (const [fromLine, text] of map.sourcesContent[0]!.split("\n").entries()) {
+    for (const { index: fromColumn } of text.matchAll(/\S/g)) {
+      const token = sourceTokenAt(text, fromColumn);
+      if (output[line]!.slice(column, column + token.length) === token) continue;
+      lines[line]!.push([column, 0, fromLine, fromColumn]);
+      lines[line]!.sort((a, b) => a[0] - b[0]);
+      return lines;
+    }
+  }
+  throw new Error(`${MARKER} L14: ${file.path}'s source holds no token that differs.`);
+}
+
+function replaceMappings(
+  files: readonly OutputFile[],
+  file: OutputFile,
+  mappings: DecodedLines,
+): OutputFile[] {
+  const encoded = encodedMappings(new TraceMap({ ...file.map!, mappings }));
+  return files.map((each) =>
+    each === file ? { ...each, map: { ...each.map!, mappings: encoded } } : each,
+  );
+}
 
 /**
  * A Qwik file whose component renders `leaf` after what it returns, in a fragment
@@ -894,6 +981,12 @@ export function canaryFixes(
   const canary = id ? findCanary(id) : undefined;
   if (!canary?.fixes || (canary.appliesTo && !canary.appliesTo(info, target))) return diagnostics;
   return canary.fixes(diagnostics, source, target);
+}
+
+/** A target's output files as the compile project's map check reads them: under a map canary. */
+export function canaryMaps(id: string | null, files: readonly OutputFile[]): readonly OutputFile[] {
+  const canary = id ? findCanary(id) : undefined;
+  return canary?.map ? canary.map(files) : files;
 }
 
 /** Whether the compile project formats its output: always, except under a format canary. */
