@@ -102,7 +102,23 @@ non-whitespace characters and moves each segment:
   the reason for the diff goes away.
 
 **The chain.** The plugin's `load` returns the map (ADR-0075), and Vite and each framework's plugin
-chain on it. No printer or target changes.
+chain on it. No printer or target changes. React, Vue, Solid and Angular reach the source that way
+in dev. The spike behind ADR-0078 found that three targets need a step from the unplugin
+(`packages/unplugin/src/chain.ts`), since a framework's plugin breaks the chain on them:
+
+- **Svelte** merges the load map itself, through `getCombinedSourcemap()`, and Vite then chains its
+  result through that map again, so most positions trace to nothing. The unplugin hides the load map
+  from the compile of its own modules, and Vite's chain does the work once.
+- **Qwik's** optimizer serves each segment as a module of its own, so Vite never chains the module's
+  load map onto it and a segment's map stops at the Qwik output. The unplugin chains it on through
+  `chainMap`.
+- **Astro's** compiler maps a frontmatter line to column 0 of its source line. The load map's first
+  segment on a line comes after its indentation, so that trace finds nothing and Vite drops the whole
+  chain. The unplugin adds a segment at column 0 of each mapped line (`withLineStarts`), for Astro's
+  load map only, so `compile()`'s maps and L14's round trip don't change.
+
+The Svelte and Qwik steps wrap another plugin's hook, found by its name. A release that renames
+either leaves the broken chain, which L14's stack checks fail on.
 
 ## Consequences
 
@@ -131,9 +147,6 @@ chain on it. No printer or target changes.
 
 **Open:**
 
-- **Qwik's and Astro's chains are unverified.** Qwik's optimizer splits a module into segments, and
-  Astro's compiler has its own maps. If a chain can't reach the source, M6 reports that with the
-  evidence rather than a quarantine entry (ADR-0078).
 - Maps inside packaged outputs aren't proven (ADR-0077).
 
 ## Alternatives considered

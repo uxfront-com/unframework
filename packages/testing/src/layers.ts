@@ -84,7 +84,7 @@ export interface UfLayerMeta {
 }
 
 /** The layers a browser test records, which a test skipped by capability records as skipped. */
-export const BROWSER_LAYERS: readonly LayerName[] = ["L7", "L8", "L9", "L10", "L11", "L13"];
+export const BROWSER_LAYERS: readonly LayerName[] = ["L7", "L8", "L9", "L10", "L11", "L13", "L14"];
 
 /** The skip of the layers that need output, on a target a case has compile errors for. */
 export const NO_OUTPUT_SKIP = "compile errors: no output";

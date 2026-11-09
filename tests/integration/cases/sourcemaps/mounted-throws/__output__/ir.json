@@ -1,0 +1,256 @@
+{
+  "irVersion": 1,
+  "file": "sourcemaps/mounted-throws/ReportPanel.uf.tsx",
+  "components": [
+    {
+      "name": "ReportPanel",
+      "span": {
+        "start": 73,
+        "end": 376
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "open@121",
+          "name": "open",
+          "kind": "state",
+          "span": {
+            "start": 121,
+            "end": 125
+          }
+        },
+        {
+          "id": "show@152",
+          "name": "show",
+          "kind": "localFn",
+          "span": {
+            "start": 152,
+            "end": 156
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "open@121",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 132,
+              "end": 137
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 115,
+            "end": 139
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "show@152",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    open.value = true;\n  }",
+              "span": {
+                "start": 159,
+                "end": 187
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "open@121",
+                  "operator": "=",
+                  "span": {
+                    "start": 165,
+                    "end": 182
+                  },
+                  "target": {
+                    "start": 165,
+                    "end": 175
+                  },
+                  "value": {
+                    "start": 178,
+                    "end": 182
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 156,
+              "end": 187
+            }
+          },
+          "span": {
+            "start": 143,
+            "end": 187
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Report",
+            "span": {
+              "start": 213,
+              "end": 232
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 248,
+                  "end": 261
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "show@152",
+                  "span": {
+                    "start": 271,
+                    "end": 275
+                  }
+                },
+                "span": {
+                  "start": 262,
+                  "end": 276
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Show the chart",
+                "span": {
+                  "start": 277,
+                  "end": 307
+                }
+              }
+            ],
+            "span": {
+              "start": 240,
+              "end": 316
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 324,
+                    "end": 334
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@121",
+                      "span": {
+                        "start": 324,
+                        "end": 334
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Component",
+                    "component": "Chart",
+                    "attributes": [],
+                    "fills": [],
+                    "span": {
+                      "start": 337,
+                      "end": 346
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 324,
+                  "end": 346
+                }
+              }
+            ],
+            "span": {
+              "start": 324,
+              "end": 353
+            }
+          }
+        ],
+        "span": {
+          "start": 204,
+          "end": 369
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ReportPanel",
+      "span": {
+        "start": 73,
+        "end": 376
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Chart.uf.tsx",
+      "file": "Chart.uf.tsx",
+      "api": {
+        "file": "Chart.uf.tsx",
+        "components": [
+          {
+            "name": "Chart",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "p"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Chart",
+          "span": {
+            "start": 43,
+            "end": 48
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 71
+      }
+    }
+  ]
+}

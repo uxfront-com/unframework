@@ -1,0 +1,7 @@
+{
+  "description": "A computed throws once its state goes negative: the error's stack maps to the authored line, in the browser and on the server.",
+  "ssr": {
+    "two-units": { "props": { "quantity": 2 } }
+  },
+  "ssrThrows": { "props": { "quantity": -1 } }
+}

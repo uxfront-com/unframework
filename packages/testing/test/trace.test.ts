@@ -20,6 +20,17 @@ function fake() {
 }
 
 describe("Trace", () => {
+  it("forgets the steps a throwing step recorded, and only those", async () => {
+    closeTraces();
+    const { trace } = fake();
+    await trace.record("before");
+    const mark = trace.length;
+    await trace.record("throw");
+    trace.forget(mark);
+    expect(trace.take().map((step) => step.action)).toEqual(["before"]);
+    expect(closeTraces()).toEqual([]);
+  });
+
   it("records each step with the events since the step before, and gives them up once", async () => {
     closeTraces();
     const { state, events, trace } = fake();

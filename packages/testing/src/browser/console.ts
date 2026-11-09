@@ -13,6 +13,8 @@ export interface ConsoleEntry {
   source: "page" | "server";
   /** It was logged before the test that judges it began. */
   beforeTest?: true;
+  /** Why it is not judged: a step that fails on purpose logged it (ADR-0078). */
+  excused?: string;
 }
 
 interface Allowance {
@@ -23,6 +25,7 @@ interface Allowance {
 const entries: ConsoleEntry[] = [];
 const allowances: Allowance[] = [];
 let installed = false;
+let errorWatcher: ((value: unknown) => void) | undefined;
 
 /**
  * Wraps console.warn and console.error once per page. The originals still print, so the run log
@@ -35,6 +38,7 @@ export function installConsoleCapture(): void {
     const original = console[level].bind(console);
     console[level] = (...args: unknown[]) => {
       entries.push({ level, message: formatConsoleArgs(args), source: "page" });
+      for (const arg of args) errorWatcher?.(arg);
       original(...args);
     };
   }
@@ -75,6 +79,29 @@ export function endTestConsole(): void {
   entries.length = 0;
 }
 
+/** Calls `watch` with each argument the console is given, until the returned function runs. */
+export function watchConsoleErrors(watch: (value: unknown) => void): () => void {
+  errorWatcher = watch;
+  return () => {
+    errorWatcher = undefined;
+  };
+}
+
+/** Where the captured messages end now, for {@link excuseConsoleSince}. */
+export function consoleMark(): number {
+  return entries.length;
+}
+
+/**
+ * Excuses the messages captured since `mark`, for one step that fails on purpose. A pattern
+ * would not do: each framework reports the same throw in its own words, and an allowance by
+ * pattern would hold for the rest of the test.
+ */
+export function excuseConsoleSince(mark: number, reason: string): void {
+  if (!reason.trim()) throw new Error("excuseConsoleSince needs a reason.");
+  for (const entry of entries.slice(mark)) entry.excused = reason;
+}
+
 /** Every message the current test will be judged on, those logged before it began first. */
 export function capturedConsole(): readonly ConsoleEntry[] {
   return entries;
@@ -82,7 +109,10 @@ export function capturedConsole(): readonly ConsoleEntry[] {
 
 /** The captured messages no allowance covers. */
 export function unexpectedConsole(): ConsoleEntry[] {
-  return entries.filter((entry) => !allowances.some(({ pattern }) => pattern.test(entry.message)));
+  return entries.filter(
+    (entry) =>
+      entry.excused === undefined && !allowances.some(({ pattern }) => pattern.test(entry.message)),
+  );
 }
 
 /** Describes unexpected messages for a failure: one line each, the first line of the message. */

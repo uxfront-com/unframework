@@ -45,6 +45,7 @@ import { goldenGuard } from "./guard.ts";
 import { noOutputCases, noOutputPlugin, standInCases, standInReasons } from "./no-output.ts";
 import { FAILURE_SCREENSHOTS_DIR, ROOT, toolchainDir } from "./paths.ts";
 import { loadToolchain, REFERENCE } from "./targets.ts";
+import { ufMapStack } from "./thrown.ts";
 
 /** What every project factory needs. */
 export interface HarnessSetup {
@@ -86,7 +87,7 @@ const NODE_TEST = { environment: "node", pool: "forks", testTimeout: 60_000 } as
 /** The layers each kind of project records, which an unavailable project fails. */
 const LAYERS_OF: Record<"ssr" | "browser", LayerName[]> = {
   ssr: ["L6", "L13"],
-  browser: ["L7", "L8", "L9", "L10", "L11", "L13"],
+  browser: ["L7", "L8", "L9", "L10", "L11", "L13", "L14"],
 };
 
 /** The budgets' project: left out of a run that does not name it, so `pnpm test` stays short. */
@@ -368,7 +369,7 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
         browser: {
           ...parityBrowser({
             name,
-            commands: toolchain.browserCommands?.(context) ?? {},
+            commands: { ...toolchain.browserCommands?.(context), ufMapStack },
             browser: setup.mode.browser ?? "chromium",
           }),
           // Vitest's failure screenshots go next to the spec by default, among the committed

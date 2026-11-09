@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { basename, extname, isAbsolute, posix, relative, sep } from "node:path";
 
-import type { OutputFile, Target } from "@unframework/codegen";
+import type { OutputFile, SourceMapV3, Target } from "@unframework/codegen";
 import {
   checkPassThrough,
   createProject,
@@ -23,6 +23,7 @@ import type { TransformResult, UnpluginFactory, UnpluginInstance, UnpluginOption
 import type { Environment, EnvironmentModuleNode, HotUpdateOptions } from "vite";
 
 import { assembleModule } from "./assemble.ts";
+import { chainQwikSegments, chainSvelteOnce } from "./chain.ts";
 import { detectTarget, hostOptionWarning } from "./detect.ts";
 import {
   COMPONENT_ID_FILTER,
@@ -288,6 +289,8 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   // id concurrently, and `getCompiled` must not miss a module because another environment is
   // reloading it.
   const compiled = new Map<string, string>();
+  // Each module's load map (ADR-0074), which a Qwik segment's map goes on through.
+  const loadMaps = new Map<string, SourceMapV3>();
   // The scoped sheet of each file's last finished load, replaced as `compiled` is.
   const sheets = new Map<string, string>();
   // The modules the guard failed, per environment (what Vite's `perEnvironmentState` does,
@@ -884,6 +887,8 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     });
     if ("error" in assembly) return fail(assembly.error);
     compiled.set(id, assembly.code);
+    if (assembly.map) loadMaps.set(id, assembly.map);
+    else loadMaps.delete(id);
     const emitted = files.find((file) => file.path === `${basename(request.file)}${SHEET_SUFFIX}`);
     if (emitted) sheets.set(request.file, emitted.contents);
     else sheets.delete(request.file);
@@ -983,6 +988,11 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
         }
         const warning = target.name === "vue" && hostOptionWarning(config.plugins, file);
         if (warning) this.warn(warning);
+        chainSvelteOnce(config.plugins, (id) => compiled.has(id));
+        chainQwikSegments(config.plugins, (id) => {
+          const parent = SEGMENT.exec(id)?.[1];
+          return parent === undefined ? undefined : loadMaps.get(parent);
+        });
       },
       // Replaces the generic hook, for what only Vite has: its dependency scan, whose `scan` is
       // missing from the public type.

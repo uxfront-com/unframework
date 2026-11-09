@@ -4,7 +4,7 @@
 // component's file while each other component loads under a component id (ADR-0053). A script
 // module keeps the `.uf.tsx` file's exports; a markup file's module has only a default export, so
 // a main component exported by name is refused there.
-import { composeJoinedMap } from "@unframework/codegen";
+import { composeJoinedMap, withLineStarts } from "@unframework/codegen";
 import type { OutputFile, SourceMapV3 } from "@unframework/codegen";
 import { parseModule } from "@unframework/parser";
 import type { AST } from "@unframework/parser";
@@ -52,7 +52,7 @@ export function assembleModule(input: AssemblyInput): Assembly {
     };
   }
   if (SCRIPT.test(extension)) {
-    if (matching.length === 1) return loaded(matching[0]!);
+    if (matching.length === 1) return loaded(matching[0]!, target);
     const paths = matching.map((file) => file.path).join(", ");
     return joinModules(
       matching,
@@ -76,12 +76,14 @@ export function assembleModule(input: AssemblyInput): Assembly {
       error: `${filename} exports ${names} by name, and the module of a ${extension} file has only a default export, so \`import { ${named[0]!.name} }\` would find nothing on the ${target} target. Export the file's main component as the default: \`export default function ${named[0]!.local}() { … }\`.`,
     };
   }
-  return loaded(matching[0]!);
+  return loaded(matching[0]!, target);
 }
 
 /** What one file loads: its text, and its map when it has one. */
-function loaded({ contents, map }: OutputFile): Assembly {
-  return map ? { code: contents, map } : { code: contents };
+function loaded({ contents, map }: OutputFile, target: string): Assembly {
+  if (!map) return { code: contents };
+  // Astro's compiler traces a frontmatter line from its column 0 (ADR-0074).
+  return { code: contents, map: target === "astro" ? withLineStarts(map) : map };
 }
 
 /**

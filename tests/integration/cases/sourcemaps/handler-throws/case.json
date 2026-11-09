@@ -1,0 +1,3 @@
+{
+  "description": "A click handler throws: the error's stack maps to the authored line."
+}
