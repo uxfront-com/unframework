@@ -20,8 +20,10 @@ import type { Diagnostic, DiagnosticCode } from "@unframework/diagnostics";
 
 import { astro } from "./astro.ts";
 import type { Packager } from "./packager.ts";
+import { qwik } from "./qwik.ts";
 import { react } from "./react.ts";
 import { solid } from "./solid.ts";
+import { svelte } from "./svelte.ts";
 import { vue } from "./vue.ts";
 
 /** Where the package goes under `outDir`, which `build` cleans like a target's tree. */
@@ -30,8 +32,10 @@ export const PACKAGE_DIRECTORY = "package";
 /** One line per target, in the order Angular, Astro, Qwik, React, Solid, Svelte, Vue. */
 const PACKAGERS: Partial<Record<TargetName, Packager>> = {
   astro,
+  qwik,
   react,
   solid,
+  svelte,
   vue,
 };
 
@@ -202,7 +206,7 @@ export async function planPackage(input: PackageInput): Promise<PackagePlan> {
         resolve(need);
       } catch {
         const place = relative(root, from(target)).split(sep).join("/") || "the project's root";
-        const message = `The ${target} packager needs ${need}, which doesn't resolve from ${place}. Install it there, point package.resolveFrom at a directory that has it, or leave ${target} out of package.targets.`;
+        const message = `The ${target} packager needs ${packageOf(need)}, which doesn't resolve from ${place}. Install it there, point package.resolveFrom at a directory that has it, or leave ${target} out of package.targets.`;
         diagnostics.push(problem("UF7008", target, message));
       }
     }

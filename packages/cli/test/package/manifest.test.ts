@@ -440,11 +440,11 @@ describe("build --package: UF7008", () => {
   });
 
   it("fires for a target with no packager yet", async () => {
-    const root = designSystem({ config: { targets: ["svelte"] } });
+    const root = designSystem({ config: { targets: ["angular"] } });
     const { code, stderr } = await run(root, "build", "--package");
     expect(code).toBe(1);
     expect(stderr).toContain("UF7008");
-    expect(stderr).toContain("(svelte)");
+    expect(stderr).toContain("(angular)");
     expect(stderr).toContain("package.targets");
     expect(existsSync(join(root, "dist"))).toBe(false);
   });

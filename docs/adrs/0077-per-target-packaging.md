@@ -57,7 +57,23 @@ Astro ships the emitted sources, as §8.4 says. Astro's compiler builds them in 
 
 ### Qwik
 
-A Vite library build with `qwikVite()` emits `.qwik.mjs` under the `qwik` export condition.
+A Vite library build with `qwikVite()` emits one `index.qwik.mjs` under the `qwik` export condition.
+`qwikVite()` comes from `@qwik.dev/core/optimizer`, so `@qwik.dev/core` resolves from
+`package.resolveFrom` beside `vite`. Vite doesn't read a `qwik` condition by itself, so `default` names
+the same file.
+
+The build runs in Vite's `lib` mode, which keeps every QRL inline for the app's optimizer to split. The
+name `.qwik.mjs` marks the file for that optimizer, so a dynamic import stays in the one file instead
+of becoming a chunk without the name.
+
+Each sheet is inlined through the `?inline` import the target writes, and a passed-through module stays
+an import (P7). `import.meta.env` also stays as written, because Vite would otherwise write this
+build's values into the package, `VITE_` variables included (P8). The Qwik plugin that writes an app's
+manifest and bundle graph is left out, since a library has neither and it warns on the console that
+it found none.
+
+`tsc`, resolved from `package.resolveFrom` too, writes the declarations with `noCheck`, for the reason
+Vue's have it.
 
 ### React
 
@@ -77,7 +93,15 @@ Both resolve from `package.resolveFrom`, beside tsdown.
 
 ### Svelte
 
-`@sveltejs/package`, §8.4's svelte-package, packages the emitted components.
+`@sveltejs/package`, §8.4's svelte-package, packages the emitted components. It keeps them as Svelte,
+turns each `.ts` module into JS, and writes the declarations, so `./svelte` exports `types` and
+`svelte`, as Svelte's packaging guide shows. It runs from the scratch directory, so a project's own
+`svelte.config.js` isn't read.
+
+It only warns of a declaration it couldn't write, and it transpiles a module without reading its
+diagnostics, so both are made UF7009 here. The warning is read back, and `tsc --noCheck` parses the
+`.ts` modules first, so `typescript` resolves from `package.resolveFrom` beside it. The peer range is
+`^5.29.0`, the first release with the `{@attach}` the output uses.
 
 ### Vue
 
