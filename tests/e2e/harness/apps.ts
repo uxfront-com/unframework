@@ -155,4 +155,10 @@ export function copyWorkspace(tarballs: Record<string, string>): string {
   return `${JSON.stringify({ overrides, allowBuilds: ALLOWED_BUILDS }, null, 2)}\n`;
 }
 
-const ALLOWED_BUILDS = { esbuild: true, "@parcel/watcher": true, lmdb: true, sharp: true };
+const ALLOWED_BUILDS = {
+  esbuild: true,
+  "@parcel/watcher": true,
+  lmdb: true,
+  "msgpackr-extract": true,
+  sharp: true,
+};

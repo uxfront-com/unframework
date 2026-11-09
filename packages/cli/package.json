@@ -2,7 +2,7 @@
   "name": "@unframework/cli",
   "version": "0.0.0",
   "private": true,
-  "description": "The `unframework` command line. It has no commands yet.",
+  "description": "The `unframework` command line: `build`, `check`, `explain` and `init`.",
   "keywords": [
     "unframework"
   ],

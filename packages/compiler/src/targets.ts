@@ -7,8 +7,9 @@ import solid from "@unframework/target-solid";
 import svelte from "@unframework/target-svelte";
 import vue from "@unframework/target-vue";
 
-/** The names of the built-in targets. */
-export type TargetName = "react" | "vue" | "svelte" | "solid" | "angular" | "qwik" | "astro";
+import type { TargetName } from "./config-types.ts";
+
+export type { TargetName };
 
 /** The built-in targets, in the order the docs and reports list them. */
 export const TARGET_NAMES: readonly TargetName[] = [

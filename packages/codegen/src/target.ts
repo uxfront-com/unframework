@@ -288,11 +288,23 @@ export type CapabilityCell =
 /** A target's capability matrix: one cell per capability. */
 export type Capabilities = Readonly<Record<CapabilityName, CapabilityCell>>;
 
+/** A version 3 source map, whose `sources` are relative to the file it maps (ADR-0074). */
+export interface SourceMapV3 {
+  version: 3;
+  file: string;
+  sources: string[];
+  sourcesContent: string[];
+  names: string[];
+  mappings: string;
+}
+
 /** A file a target emits. */
 export interface OutputFile {
   /** The path relative to the target's output directory, with forward slashes. */
   path: string;
   contents: string;
+  /** How its text maps to its source: `compile()` sets it under its `sourceMap` option. */
+  map?: SourceMapV3;
 }
 
 /** What a target's `emit` receives besides the component. */

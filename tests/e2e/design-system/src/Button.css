@@ -1,0 +1,17 @@
+.button {
+  padding: 6px 14px;
+  border: 2px solid rgb(30, 64, 175);
+  border-radius: 6px;
+  background-color: rgb(30, 64, 175);
+  color: rgb(255, 255, 255);
+}
+
+.button[data-variant="secondary"] {
+  background-color: rgb(255, 255, 255);
+  color: rgb(30, 64, 175);
+}
+
+.button:focus-visible {
+  outline: 3px solid rgb(37, 99, 235);
+  outline-offset: 2px;
+}

@@ -55,8 +55,9 @@ built.
   because a project's specs share one working copy and an HMR spec edits it. A project is
   `<app>:<mode>`, found from each app's `e2e/<mode>/` directory. The script drops the `--` that pnpm
   passes on, since Playwright would ignore every flag after it and run all the projects.
-- A worker-scoped fixture starts each dev server from the working copy's own `vite` or `astro`
-  through `createRequire`, on a free port of `127.0.0.1`, and stops it in teardown. It records the
+- A worker-scoped fixture starts each dev server from the working copy, on a free port of
+  `127.0.0.1`, and stops it in teardown. `vite` and `astro` load through `createRequire`, and the
+  Apps section below describes the spawned `ng serve`. It records the
   port under `<work>/.ports`, and a global teardown fails if a recorded port still listens.
 - An `edit(file, from, to)` helper changes a file in the working copy for an HMR test and restores it
   after. It rejects when the file doesn't contain `from`. The edit and the restore each wait until
@@ -69,11 +70,17 @@ built.
 ### Apps and the Angular exception
 
 - There are seven apps: `react`, `vue`, `svelte`, `solid` and `qwik` on Vite, `astro` on Astro, and
-  `angular` on `@angular/build`.
+  `angular` on `@angular/build`. `qwik` also shares a `tsconfig.json` between its modes, which points
+  Vite's dependency scan at Qwik's JSX runtime.
 - Six apps have both modes. `angular` has the package mode only, because the Angular CLI has no plugin
   API (§8.2) and Analog plugin mode is deferred (ADR-0075). Its HMR test edits the app's own component.
 - The fixture starts Astro's in-process `dev()`, and a spawned `ng serve` in its own process group,
-  killed in teardown.
+  killed in teardown. `ng serve` takes port 0, and the fixture reads the port it prints.
+- `edit` takes an in-process watcher. Vite's fits, and so does the `watcher` on Astro's `dev()`, each
+  with a 5 second limit. `ng serve` has none in reach, and a file event alone comes before its new
+  bundle. So `rebuildWatcher` adapts it: it reports the end of each rebuild that `ng serve` prints,
+  failed or not, as a change to any file, with a 20 second limit. A rebuild only runs once the server
+  has seen a write.
 - The Angular app is the one exception to `AGENTS.md`'s TypeScript 6 rule. It declares
   `@angular/cli` 22.2.0, which M6 adds to the catalog beside `@angular/build` 22.2.0,
   `@angular/compiler-cli` at its exact catalog version, and TypeScript 6 as
