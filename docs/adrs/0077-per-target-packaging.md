@@ -72,6 +72,10 @@ build's values into the package, `VITE_` variables included (P8). The Qwik plugi
 manifest and bundle graph is left out, since a library has neither and it warns on the console that
 it found none.
 
+The build reads none of the project's own configuration: no Vite config, `.env`, `tsconfig.json` or
+PostCSS config. So the inlined sheet is the one the other targets ship, and the package depends only
+on the sources and the Unframework config (P8).
+
 `tsc`, resolved from `package.resolveFrom` too, writes the declarations with `noCheck`, for the reason
 Vue's have it.
 

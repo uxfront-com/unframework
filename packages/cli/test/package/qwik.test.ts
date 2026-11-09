@@ -93,6 +93,22 @@ describe("build --package: Qwik", () => {
     }
   });
 
+  it.each([
+    [
+      "that rewrites a sheet",
+      'export default { plugins: [{ postcssPlugin: "rewrite", Declaration(d) { d.value = "blue"; } }] };\n',
+    ],
+    ["that throws", 'throw new Error("this config was read");\n'],
+  ])("ignores a project's PostCSS config %s", async (_, config) => {
+    const root = qwik();
+    write(root, { "postcss.config.mjs": config });
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(stderr).not.toContain("error[");
+    expect(code).toBe(0);
+    // Every target's sheet is the compiler's, so Qwik's inlined copy reads as the others do.
+    expect(tree(join(root, "dist", "package"))["qwik/index.qwik.mjs"]).toContain("color: red");
+  });
+
   it("keeps a passed-through module an import, and out of the declarations", async () => {
     const root = qwik();
     write(root, {

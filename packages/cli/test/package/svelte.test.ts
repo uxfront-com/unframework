@@ -1,5 +1,5 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, symlinkSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -166,6 +166,19 @@ export const Klass = class {
     expect(stderr).toContain("(svelte)");
     // The package's name, not the file of it that this reads.
     expect(stderr).toContain("needs @sveltejs/package,");
+    expect(existsSync(join(root, "dist"))).toBe(false);
+  });
+
+  it("fires UF7008 for a missing typescript, which the module check needs", async () => {
+    const root = designSystem({ config: { targets: ["svelte"] }, frameworks: ["svelte"] });
+    const link = join(root, "node_modules", "@sveltejs", "package");
+    mkdirSync(dirname(link), { recursive: true });
+    symlinkSync(join(TOOLCHAIN, "node_modules", "@sveltejs", "package"), link);
+    const { code, stderr } = await run(root, "build", "--package");
+    expect(code).toBe(1);
+    expect(stderr).toContain("UF7008");
+    expect(stderr).toContain("needs typescript,");
+    expect(stderr).not.toContain("needs @sveltejs/package,");
     expect(existsSync(join(root, "dist"))).toBe(false);
   });
 

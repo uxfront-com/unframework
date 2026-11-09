@@ -101,6 +101,8 @@ export const qwik: Packager = {
       logLevel: "silent",
       mode: "lib",
       root: work,
+      // Inline, or Vite searches upward from here and runs the project's own over the sheets (P8).
+      css: { postcss: { plugins: [] } },
       build: {
         outDir: out,
         emptyOutDir: false,
