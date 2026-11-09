@@ -122,9 +122,11 @@ jobs:
           - canaries: L9-rerender-text
             shard: 2/2
           - canaries: L10-root-hidden
-            shard: 1/2
+            shard: 1/3
           - canaries: L10-root-hidden
-            shard: 2/2
+            shard: 2/3
+          - canaries: L10-root-hidden
+            shard: 3/3
           - canaries: L10-root-inverted
             shard: 1/2
           - canaries: L10-root-inverted
