@@ -3,6 +3,7 @@
 // frameworks from the project's own directory.
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
 import type { Toolchain } from "@unframework/codegen";
@@ -24,6 +25,14 @@ import unframework from "../src/vite.ts";
 // A real server with real framework plugins, and a real watcher, which takes seconds.
 const SLOW = 60_000;
 const HOT = { timeout: 15_000, interval: 20 };
+
+// Polling, because file events are late on macOS: they report the setup's writes after the watcher
+// starts, and an edit written just after that report gets no event of its own. A poll only sees
+// what changes after it starts, on every platform.
+const WATCH = { usePolling: true, interval: 20, binaryInterval: 20 };
+
+// How long after a path's last report chokidar drops a `change` for it.
+const CHANGE_THROTTLE = 50;
 
 const HOST = "127.0.0.1";
 
@@ -84,23 +93,24 @@ async function startHot(
   let compiles = 0;
   const counter: CompilerPlugin = { name: "count", output: () => void (compiles += 1) };
   const framework = await toolchain.vite(mode, { root, toolchainDir: root });
-  let ready!: () => void;
-  const watching = new Promise<void>((resolve) => (ready = resolve));
   const ssrModules: string[] = [];
   const probe: Plugin = {
     name: "probe",
     enforce: "post",
-    configureServer: (server) => void server.watcher.once("ready", ready),
     hotUpdate(options) {
-      if (this.environment.name === "client") started.add(options.file);
+      if (this.environment.name === "client") {
+        started.add(options.file);
+        inFlight += 1;
+      }
       if (this.environment.name === "ssr") {
         ssrModules.push(...options.modules.flatMap((node) => (node.id ? [node.id] : [])));
       }
     },
   };
-  // Vite settles changes in the order they arrive, and a watcher may report a file written just
-  // before it started, so an edit waits for its own file's update to finish.
+  // `hotUpdateEnvironments` isn't told which change it finishes, so an edit is done once its own
+  // file's update has started and none is left running.
   const started = new Set<string>();
+  let inFlight = 0;
   let settle: ((file: string) => void) | undefined;
   const server = await createServer({
     ...framework,
@@ -112,25 +122,25 @@ async function startHot(
     server: {
       middlewareMode: true,
       ws: false,
-      watch: {},
+      watch: WATCH,
       async hotUpdateEnvironments(viteServer, hmr) {
         await Promise.all(Object.values(viteServer.environments).map((each) => hmr(each)));
-        for (const file of started) settle?.(file);
+        inFlight -= 1;
+        if (inFlight === 0) for (const file of started) settle?.(file);
       },
     },
     optimizeDeps: { noDiscovery: true, include: [] },
     plugins: [...unframework({ target, plugins: [counter] }), ...(framework.plugins ?? []), probe],
   });
-  await watching;
-  // An operating system's file events can still report the writes before the watcher started,
-  // and arrive in order, so this file's update comes after them.
-  const flushed = new Promise<void>((resolve) => {
-    settle = (file) => {
-      if (file === join(root, ".flushed")) resolve();
-    };
-  });
-  write(root, ".flushed", "");
-  await flushed;
+  const reported = new Map<string, number>();
+  server.watcher.on("all", (_event, file) => reported.set(file, performance.now()));
+  // The watcher's `ready` event may fire before any plugin can listen for it, so this waits for
+  // the watcher to report a file in the deepest directory the tests edit.
+  const sentinel = join(root, "src", ".watching");
+  await vi.waitFor(() => {
+    write(root, "src/.watching", "");
+    expect(reported.has(sentinel)).toBe(true);
+  }, HOT);
   const client = server.environments.client;
   // The environment the page's modules load in: Qwik and Astro render on the server.
   const environment = mode === "ssr" ? server.environments.ssr : client;
@@ -146,17 +156,28 @@ async function startHot(
     ssrModules,
     compiles: () => compiles,
     edit: async (path, change) => {
+      const wanted = join(root, path);
+      const elapsed = performance.now() - (reported.get(wanted) ?? Number.NEGATIVE_INFINITY);
+      if (elapsed <= CHANGE_THROTTLE) await delay(CHANGE_THROTTLE - elapsed + 1);
       sent.length = 0;
       ssrModules.length = 0;
       started.clear();
-      const wanted = join(root, path);
-      const settled = new Promise<void>((resolve) => {
+      let timer: NodeJS.Timeout | undefined;
+      const settled = new Promise<void>((resolve, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`Vite finished no hot update of ${path}.`)),
+          HOT.timeout,
+        );
         settle = (file) => {
           if (file === wanted) resolve();
         };
       });
-      await change();
-      await settled;
+      try {
+        await change();
+        await settled;
+      } finally {
+        clearTimeout(timer);
+      }
     },
     fetchAll: async () => {
       const seen = new Map<string, string>();
@@ -357,12 +378,16 @@ describe("what a change reaches", () => {
     async () => {
       const root = createRoot({
         ...FILES,
+        // A boundary, so that a module caught between its two states can't reach a dead end.
+        "lazy.ts":
+          'import Other from "./src/Other.uf.tsx";\n\nexport { Other };\nimport.meta.hot.accept();\n',
         "src/Other.uf.tsx":
           'import type { Props } from "./types.ts";\n\nexport default function Other(props: Props) {\n  return <i>{props.label}</i>;\n}\n',
       });
       const hot = await startHot(root, "react", react);
       try {
         await hot.fetchAll();
+        await hot.server.environments.client.transformRequest("/lazy.ts");
         await hot.edit("src/types.ts", async () => {
           write(root, "src/types.ts", "export interface Props {\n  label: number;\n}\n");
           // A first load of another module reaches the file, and hands the change to the project
@@ -456,6 +481,25 @@ describe("what a change reaches", () => {
     }
   });
 
+  it("leaves a shared module the output really imports to Vite", { timeout: SLOW }, async () => {
+    const root = createRoot({
+      "main.ts": FILES["main.ts"]!,
+      "src/label.ts": 'export const LABEL = "one";\n',
+      "src/Card.uf.tsx":
+        'import { LABEL } from "./label.ts";\n\nexport default function Card() {\n  return <p>{LABEL}</p>;\n}\n',
+    });
+    const hot = await startHot(root, "react", react);
+    try {
+      await hot.fetchAll();
+      await hot.edit("src/label.ts", () =>
+        write(root, "src/label.ts", 'export const LABEL = "two";\n'),
+      );
+      expect(updates(hot.sent).join()).toContain("Card.uf.tsx");
+    } finally {
+      await hot.close();
+    }
+  });
+
   it("leaves a file no compile read to Vite", { timeout: SLOW }, async () => {
     const root = createRoot({ ...FILES, "src/other.ts": "export const other = 1;\n" });
     const hot = await startHot(root, "vue", vue);
@@ -497,6 +541,7 @@ describe("a framework with no hot update of its own", () => {
       "src/types.ts": TYPES,
     });
     vi.stubEnv("VITEST", "");
+    vi.stubEnv("ASTRO_TELEMETRY_DISABLED", "1");
     // Astro turns Vite's HMR off under NODE_ENV=test, which Vitest sets.
     vi.stubEnv("NODE_ENV", "development");
     let vite: ViteDevServer | undefined;
@@ -504,9 +549,9 @@ describe("a framework with no hot update of its own", () => {
       root,
       configFile: false,
       logLevel: "silent",
-      telemetry: { enabled: false },
       devToolbar: { enabled: false },
       server: { host: HOST, port: 0 },
+      vite: { server: { watch: WATCH } },
       integrations: [
         astro(),
         {
@@ -514,7 +559,7 @@ describe("a framework with no hot update of its own", () => {
           hooks: { "astro:server:setup": ({ server: viteServer }) => void (vite = viteServer) },
         },
       ],
-    } as Parameters<typeof dev>[0]);
+    });
     try {
       const url = `http://${HOST}:${server.address.port}/`;
       expect(await (await fetch(url)).text()).toContain("Hello, Astro");

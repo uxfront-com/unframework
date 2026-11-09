@@ -1007,8 +1007,8 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
         return addWatchEdges.call(this, id);
       },
       // A framework's own HMR does the rest: this only says which modules changed.
-      hotUpdate(options) {
-        return hotModules(options, this.environment.moduleGraph.idToModuleMap);
+      hotUpdate(update) {
+        return hotModules(update, this.environment.moduleGraph.idToModuleMap);
       },
       api: {
         getCompiled: (id: string) => compiled.get(id),
