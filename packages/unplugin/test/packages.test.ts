@@ -23,7 +23,7 @@ import { toolchain as svelte } from "@unframework/target-svelte/toolchain";
 import { toolchain as vue } from "@unframework/target-vue/toolchain";
 import { build as astroBuild, dev as astroDev } from "astro";
 import { build, createServer } from "vite";
-import type { InlineConfig, Rollup, ViteDevServer } from "vite";
+import type { InlineConfig, Plugin, Rollup, ViteDevServer } from "vite";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import astro from "../src/astro.ts";
@@ -70,8 +70,10 @@ const MAIN = [
   'import Button from "@ds/kit/button";',
   'import Source from "@ds/kit/source/Button.uf.tsx";',
   'import { useToggle } from "@ds/kit/use-toggle";',
+  // Vite's optimiser takes a `.ts` file, so this one must never reach it.
+  'import { useToggle as named } from "@ds/kit/source/useToggle.uf.ts";',
   "",
-  "export { Button, Source, useToggle };",
+  "export { Button, Source, useToggle, named };",
   "",
 ].join("\n");
 
@@ -132,6 +134,8 @@ async function configOf(
     ...vite,
     root,
     configFile: false,
+    // Its own, since the test files run at once and would race on one under this package.
+    cacheDir: join(root, ".vite"),
     appType: "custom",
     clearScreen: false,
     logLevel: "silent",
@@ -224,6 +228,7 @@ describe.each(VITE_TARGETS)("a package's sources on %s", (target, toolchain) => 
       expect(loaded.Button).toBeDefined();
       expect(loaded.Source).toBe(loaded.Button);
       expect(loaded.useToggle).toBeTypeOf("function");
+      expect(loaded.named).toBe(loaded.useToggle);
       const ids = [...server.environments.ssr.moduleGraph.idToModuleMap.keys()];
       expect(ids).toContain(join(root, `node_modules/@ds/kit/src/Button.uf.tsx${suffix}`));
     } finally {
@@ -377,6 +382,53 @@ describe("how a package's source resolves", () => {
       );
     } finally {
       await test.close();
+    }
+  });
+
+  it.each(["vue", "svelte", "angular", "astro"] as const)(
+    "asks the other plugins about a specifier that names a source, on %s",
+    { timeout: SLOW },
+    async (target) => {
+      const root = createRoot({ "main.ts": "", "src/Local.uf.tsx": ICON });
+      const paths: Plugin = {
+        name: "custom-paths",
+        resolveId: (id) => (id === "@ui/Local.uf.tsx" ? join(root, "src/Local.uf.tsx") : null),
+      };
+      const test = await startServer(root, [...unframework({ target }), paths]);
+      try {
+        const { pluginContainer } = test.client;
+        const resolved = await pluginContainer.resolveId("@ui/Local.uf.tsx", join(root, "main.ts"));
+        expect(resolved?.id).toBe(join(root, `src/Local.uf.tsx${ID_SUFFIXES[target]}`));
+        expect(codeOf(await pluginContainer.load(resolved!.id))).toContain("Kit icon");
+      } finally {
+        await test.close();
+      }
+    },
+  );
+
+  it("honours resolve.preferRelative", { timeout: SLOW }, async () => {
+    const root = createRoot({ "main.ts": "", "Local.uf.tsx": ICON });
+    // Vite reads `preferRelative`, and its public type leaves it out.
+    const resolve = { preferRelative: true, dedupe: [] };
+    const server = await createServer({
+      root,
+      configFile: false,
+      appType: "custom",
+      logLevel: "silent",
+      cacheDir: join(root, ".vite"),
+      resolve,
+      server: { middlewareMode: true, hmr: false, ws: false, watch: null },
+      optimizeDeps: { noDiscovery: true, include: [] },
+      plugins: unframework({ target: "vue" }),
+    });
+    try {
+      const resolved = await server.environments.client.pluginContainer.resolveId(
+        "Local.uf.tsx",
+        join(root, "main.ts"),
+      );
+      expect(resolved?.id).toBe(join(root, "Local.uf.tsx.vue"));
+    } finally {
+      await server.close();
     }
   });
 

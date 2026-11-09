@@ -269,9 +269,11 @@ before: a parameter named after the id's extension (`?vue&type=style&index=0&lan
 of the module, which `load` leaves to that plugin; Vite's file queries are left to Vite; any other
 query (`?container`) loads the component, even on a cold server.
 
-On a bundler whose context can't resolve one, a bare specifier that maps to a `.uf.tsx` never
-reaches `resolveId`, and neither does a file another plugin answers for first. On React, Solid and
-Qwik the resolved id is the module id, so it compiles anyway. On the other targets the authored
+A bare specifier that maps to a `.uf.tsx` never reaches `resolveId` on a bundler whose context can't
+resolve one. On Vite this plugin also leaves a specifier that hides the extension to the plugin that
+resolves it, and never sees a file a plugin answers for before this one.
+
+On React, Solid and Qwik the resolved id is the module id, so it compiles anyway. On the other targets the authored
 file would load as plain TSX, so `load` fails it with the fix: import it with a specifier that ends
 in `.uf.tsx`. A `.uf.ts` file mapped that way loads as its composables where its id is the file
 itself, and fails the same way on Svelte and Angular, whose ids have a suffix.
@@ -298,9 +300,12 @@ resolves to, so an entry that hides the extension works, and so does a `#` subpa
 specifier that resolves to anything else stays the bundler's. A shipped source differs from a local
 one in these ways:
 
-- **The dependency optimiser never sees the file.** `this.resolve` would register a file of
-  `node_modules` with Vite's optimiser, which bundles it as plain TSX, so on Vite a bare specifier
-  goes through a resolver of its own, which only finds the file (ADR-0075). The dependency scan gets
+- **The dependency optimiser never sees the file.** `this.resolve` would register a `.uf.ts` file of
+  `node_modules` with Vite's optimiser, which bundles it as plain TypeScript, and a `.uf.tsx` file
+  too in a project that adds `.tsx` to `optimizeDeps.extensions`, so on Vite a bare specifier
+  asks a resolver of its own first, which only finds the file (ADR-0075). A specifier that names a
+  source and that resolver doesn't place in `node_modules` goes on through `this.resolve`, so
+  another plugin's answer works. A plugin isn't asked about a specifier that hides the extension. The dependency scan gets
   the `\0uf-scan:` id, as it does for a local file. You don't need `optimizeDeps.exclude`.
 - **SSR keeps the file in its module graph.** The plugin answers before Vite decides what to
   externalise, and Vite never externalises a `.tsx` or `.ts` file, so you don't need `ssr.noExternal`.

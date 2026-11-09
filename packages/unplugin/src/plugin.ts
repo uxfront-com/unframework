@@ -193,6 +193,9 @@ const resolves = (context: object): context is Resolver => "resolve" in context;
 const hasEnvironment = (context: object): context is { environment: Environment } =>
   "environment" in context;
 
+const isSource = (file: string) =>
+  file.endsWith(SOURCE_EXTENSION) || file.endsWith(COMPOSABLE_EXTENSION);
+
 /** A resolved id without its query: Vite versions a file of `node_modules` with `?v=`. */
 const withoutQuery = (id: string) => {
   const index = id.indexOf("?");
@@ -587,7 +590,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     const what = composables
       ? `plain TypeScript rather than as its ${target.name} composables`
       : `plain TSX rather than as its ${target.name} component`;
-    return `${filenameOf(file)} reached ${bundler} as itself, which would load it as ${what}: the import that resolved to it does not name the file (a package's \`exports\` entry or a tsconfig path, say), so this plugin never saw it. Import it with a specifier that ends in ${extension}, such as "./${basename(file)}"; a package that ships ${extension} sources must export them under subpaths that do.`;
+    return `${filenameOf(file)} reached ${bundler} as itself, which would load it as ${what}: the import that resolved to it does not name the file (a package's \`exports\` entry or a tsconfig path, say), so this plugin never saw it. Import it with a specifier that ends in ${extension}, such as "./${basename(file)}"${bareSpecifiers ? "" : `; a package that ships ${extension} sources must export them under subpaths that do`}.`;
   };
 
   /**
@@ -718,10 +721,11 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
 
   /**
    * The authored file a specifier names, by the file it resolves to. Rollup's family resolves it
-   * through the bundler, so aliases work. On Vite a bare specifier goes through `resolveBare`
-   * instead, because `this.resolve` would register a file of `node_modules` with the dependency
-   * optimiser, which bundles it as plain TSX before this plugin sees it (ADR-0075). The others'
-   * contexts have no resolver, so there the specifier must be a path: `./X.uf`, `./X.uf.js` and
+   * through the bundler, so aliases and other plugins' answers work. On Vite a bare specifier asks
+   * `resolveBare` first, because `this.resolve` would register a `.uf.ts` file of `node_modules` with the
+   * dependency optimiser, which bundles it as plain TypeScript before this plugin sees it, and a
+   * `.uf.tsx` file too in a project that adds `.tsx` to `optimizeDeps.extensions` (ADR-0075). The
+   * others' contexts have no resolver, so there the specifier must be a path: `./X.uf`, `./X.uf.js` and
    * `./X.uf.jsx` find `X.uf.tsx` or `X.uf.ts` as the bundler's resolver would, and a package's
    * specifier is left to the bundler.
    */
@@ -733,7 +737,11 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
         const id = await (
           await resolveBare
         )(context.environment, path, importer).catch(() => undefined);
-        return id === undefined ? undefined : withoutQuery(id);
+        const found = id === undefined ? undefined : withoutQuery(id);
+        if (found?.includes(NODE_MODULES) && isSource(found)) return found;
+        // Every other plugin is asked only about a specifier that names a source, as it would be
+        // for a path. Asking about each bare import would run them all twice.
+        if (!specifierFilter(suffix).test(path) && !composableIds.test(path)) return found;
       }
       const resolved = await context.resolve(path, importer, { skipSelf: true });
       return resolved && !resolved.external ? withoutQuery(resolved.id) : undefined;

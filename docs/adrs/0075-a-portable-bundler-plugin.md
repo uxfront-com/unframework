@@ -115,9 +115,14 @@ built.
   and `./source/*` included, compiles like a local one. `resolveId` looks at every bare specifier
   where the context can resolve one, and only the file it resolves to decides. A `#` subpath import
   and a linked workspace package work the same way.
-- Such a file stays out of the dependency optimiser. `this.resolve` would register a file of
-  `node_modules` as a missing import, and the optimiser would bundle it as plain TSX, so on Vite a
-  bare specifier goes through `createIdResolver` instead, which has no optimiser. The dependency
+- Such a file stays out of the dependency optimiser. `this.resolve` would register a `.uf.ts` file of
+  `node_modules` as a missing import, and the optimiser would bundle it as plain TypeScript, as it
+  would a `.uf.tsx` file in a project that adds `.tsx` to `optimizeDeps.extensions`. So on Vite a
+  bare specifier asks `createIdResolver` first, which has no optimiser. A specifier that ends in a
+  source's name and that it doesn't place in `node_modules` goes on through `this.resolve`, so another
+  plugin's answer still counts. A plugin that remaps a source Vite would find in `node_modules`
+  isn't asked, unless it runs before this plugin, and neither is one that only resolves a specifier
+  hiding the extension, which fails in `load` as before. The dependency
   scan gets the `\0uf-scan:` id, which it leaves out. This decides per import, so it needs no
   `optimizeDeps.exclude`, which only names whole packages and would have to find them first.
 - Such a file is `noExternal` for SSR without being listed. The plugin answers before Vite
