@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { glob, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 
@@ -51,23 +51,46 @@ export interface Packager {
 export const dropSideEffectImports = (code: string): string =>
   code.replace(/^import "[^"]+";\n/gm, "");
 
+/** {@link dropSideEffectImports} over every declaration a tool wrote to a directory. */
+export async function dropDeclarationSideEffects(directory: string): Promise<void> {
+  for await (const file of glob("**/*.d.ts", { cwd: directory })) {
+    const path = join(directory, file);
+    await writeFile(path, dropSideEffectImports(await readFile(path, "utf8")));
+  }
+}
+
+/** The script a package's manifest names for the first of these binaries it has. */
+export async function binOf(manifest: string, ...names: readonly string[]): Promise<string> {
+  const { name: owner, bin }: { name: string; bin: Readonly<Record<string, string>> } = JSON.parse(
+    await readFile(manifest, "utf8"),
+  );
+  const script = names.map((name) => bin[name]).find((path) => path !== undefined);
+  if (script === undefined) throw new Error(`${owner} has no ${names.join(" or ")} binary.`);
+  return join(dirname(manifest), script);
+}
+
+/** TypeScript's compiler. `@typescript/typescript6`, installed under the name `typescript`, calls it `tsc6`. */
+export const tscOf = (manifest: string): Promise<string> => binOf(manifest, "tsc", "tsc6");
+
 /**
- * Runs a tool's script in `cwd`. A failure throws what the tool printed: tsc prints to stdout, and
- * a tool that reports progress there, like ng-packagr, passes `"stderr"` to skip it.
+ * Runs a tool's script in `cwd`, and gives what it warned on stderr. A failure throws what the tool
+ * printed: tsc prints to stdout, and a tool that reports progress there, like ng-packagr, passes
+ * `"stderr"` to skip it.
  */
 export async function runScript(
   script: string,
   args: readonly string[],
   cwd: string,
   errors: "stdout" | "stderr" = "stdout",
-): Promise<void> {
-  await promisify(execFile)(process.execPath, [script, ...args], {
+): Promise<string> {
+  const { stderr } = await promisify(execFile)(process.execPath, [script, ...args], {
     cwd,
     maxBuffer: 2 ** 28,
   }).catch((error: { stdout?: string; stderr?: string; message: string }) => {
     const printed = errors === "stderr" ? error.stderr : error.stdout || error.stderr;
     throw new Error(printed || error.message);
   });
+  return stderr;
 }
 
 export async function writeFiles(directory: string, files: readonly OutputFile[]): Promise<void> {

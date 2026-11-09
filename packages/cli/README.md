@@ -84,25 +84,30 @@ defaults to the project's root. It's never a dependency of the CLI. Each target 
   `@angular/common` is an optional peer beside `@angular/core`.
 - **Astro:** the emitted sources, which Astro's compiler builds in the consumer's app. It needs no
   packager.
-- **Qwik:** not packaged yet, so `--package` reports UF7008.
+- **Qwik:** a Vite library build with `qwikVite()` writes one `index.qwik.mjs`, with each sheet inlined,
+  under a `qwik` export condition, and `tsc` writes the `.d.ts`. `vite`, `@qwik.dev/core` and
+  `typescript` must all resolve.
 - **React:** tsdown builds JS and `.d.ts`, one module to a file, with each sheet beside its importer.
 - **Solid:** the same through tsdown. A `solid` export condition points at preserved JSX, which a
   consumer's Solid compiler reads. Babel with `babel-preset-solid` compiles the plain JS for the DOM,
   so both must resolve beside tsdown.
-- **Svelte:** not packaged yet, so `--package` reports UF7008.
+- **Svelte:** `@sveltejs/package` keeps the components as Svelte, turns each `.ts` module into JS and
+  writes the `.d.ts`, with `types` and `svelte` export conditions. `typescript` must resolve beside it.
 - **Vue:** the SFC sources and `.ts` modules, with `vue-tsc`'s declarations beside them. Vue's compiler
   builds them in the consumer's app, and `vue-tsc` resolves its TypeScript from where it's installed.
 
-A declaration's inferred types come from `@angular/core`, `@types/react`, `solid-js` or `vue`, so each must resolve from
-where the package is built, the real path of `outDir`. Packaged outputs ship with no source maps.
+A declaration's inferred types come from `@angular/core`, `@qwik.dev/core`, `@types/react`, `solid-js`,
+`svelte` or `vue`, so each must resolve from where the package is built, the real path of `outDir`.
+Packaged outputs ship with no source maps.
 
 `build --package` also reports:
 
-- **UF7008:** a packager, or Solid's Babel, isn't installed, a target has no packager yet, or the
-  framework's types don't resolve from `outDir`. Nothing is cleaned or written.
+- **UF7008:** a packager, Solid's Babel, or the `typescript` that Svelte's and Qwik's declarations need
+  isn't installed, or the framework's types don't resolve from `outDir`.
+  Nothing is cleaned or written.
 - **UF7009:** a packager failed, and its message holds the packager's own error. The targets' trees
-  are written by then. tsgo under tsdown and `vue-tsc` write declarations without type-checking, so
-  on them it's usually a syntax error, or a type a declaration can't name.
+  are written by then. Every packager writes declarations without type-checking, so it's usually a
+  syntax error, or a type a declaration can't name.
 - **UF7002** at `/outDir`: cleaning `outDir/package` would delete the project, a source, or a file a
   source read.
 
