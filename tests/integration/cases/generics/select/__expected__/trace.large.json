@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "selectOptions getByRole('combobox', { name: 'Size' }) [\"l\"]",
+      "dom": [
+        "<section aria-label=\"Size\">",
+        "  <label>",
+        "    \"Size \"",
+        "    <select>",
+        "      <option uf:selected=\"false\" value=\"s\">",
+        "        \"s\"",
+        "      </option>",
+        "      <option uf:selected=\"false\" value=\"m\">",
+        "        \"m\"",
+        "      </option>",
+        "      <option uf:selected=\"true\" value=\"l\">",
+        "        \"l\"",
+        "      </option>",
+        "    </select>",
+        "  </label>",
+        "  <output>",
+        "    \"Chosen: l\"",
+        "  </output>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Size\":",
+        "  - text: Size",
+        "  - combobox \"Size\":",
+        "    - option \"s\"",
+        "    - option \"m\"",
+        "    - option \"l\" [selected]",
+        "  - status: \"Chosen: l\""
+      ],
+      "events": {}
+    }
+  ]
+}

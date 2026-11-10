@@ -1,14 +1,16 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface ShippingLabelProps {
     recipient: string;
     street: string;
     city: string;
     postcode: string;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ShippingLabelProps & { class?: ClassValue; style?: string };
 

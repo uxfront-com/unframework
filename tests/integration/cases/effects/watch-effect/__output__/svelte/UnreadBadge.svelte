@@ -1,11 +1,13 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface UnreadBadgeProps {
     appName: string;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = UnreadBadgeProps & {
     ontitlechange?: (title: string) => void;

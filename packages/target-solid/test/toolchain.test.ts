@@ -177,6 +177,7 @@ describe("solid typecheck (L4)", () => {
     );
   }, 60_000);
 
+  // It checks every committed golden output too, so its time grows with the corpus.
   it("reports each injected type error against its own file", async () => {
     const goldenFiles = [
       ...solidGoldens().map((file) => file.path),
@@ -205,7 +206,7 @@ describe("solid typecheck (L4)", () => {
       ],
       [template]: [{ message: "Cannot find name 'greet'.", line: 2, column: 14, code: "TS2304" }],
     });
-  });
+  }, 60_000);
 
   it("checks JSX against Solid's own types", async () => {
     const unknownProp = scratchFile(

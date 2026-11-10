@@ -1,26 +1,43 @@
 import type { Diagnostic, Fix } from "@unframework/diagnostics";
 import {
   createComponent,
+  createDeclaredTypeExport,
   createExport,
   createFragment,
   createImportedName,
   createInjectionKeyDeclaration,
   createModule,
   createModuleImport,
+  createNamedImport,
+  createSharedModuleImport,
   createTypeDeclaration,
+  createTypeExportName,
+  createTypeImport,
+  createTypeReExport,
+  createTypeParameter,
   createTypeText,
+  codeOf,
+  functionsOf,
   isExportName,
   walk,
 } from "@unframework/ir";
 import type {
   ComponentApi,
+  ComposableApi,
   ImportedName,
   InjectionKeyDeclaration,
   ModuleApi,
+  ModuleConstant,
   ModuleImport,
+  NamedImport,
   PassThroughImport,
+  SharedModuleImport,
   TypeDeclaration,
+  TypeExport,
+  TypeImport,
+  TypeParameter,
   UfComponent,
+  UfComposable,
   UfExport,
   UfModule,
 } from "@unframework/ir";
@@ -29,17 +46,31 @@ import {
   findComponents,
   findTypeDeclarations,
   isComponentName,
+  parseModule,
   typeDeclarationOf,
   visitorKeys,
 } from "@unframework/parser";
-import type { AST, ComponentExport, ParsedModule } from "@unframework/parser";
+import type {
+  AST,
+  ComponentExport,
+  ParsedModule,
+  TypeDeclarationStatement,
+} from "@unframework/parser";
 
-import { componentApi } from "./api.ts";
+import { componentApi, withReferences } from "./api.ts";
 import type { ApiContext } from "./api.ts";
 import { authoringBindings, checkAuthoringImport } from "./authoring.ts";
 import type { AuthoringApi } from "./authoring.ts";
+import { analyzeComposable, COMPOSABLE_FILE, findComposables } from "./composables.ts";
+import type { AnalyzedComposable, ComposableCandidate } from "./composables.ts";
 import { Reporter } from "./context.ts";
-import { checkTypeDeclaration, closure, collectTypes, setupTypes } from "./declarations.ts";
+import {
+  checkCopiedText,
+  checkTypeDeclaration,
+  closure,
+  collectTypes,
+  setupTypes,
+} from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
 import { frameworkOf, isAuthoringModule } from "./frameworks.ts";
 import { containsJsx, lowerElement, lowerRootChildren, ROOT } from "./lower.ts";
@@ -50,15 +81,21 @@ import {
   reportUnread,
 } from "./pass-through.ts";
 import type { PassThrough } from "./pass-through.ts";
-import { analyzeProps } from "./props.ts";
+import { analyzeProps, checkTypeParameters, shapeReading } from "./props.ts";
 import type { ComponentFunction, ComponentInfo, RenderContext, SetupBinding } from "./render.ts";
 import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
 import { checkDirective, declareSetup, isDirective, refTypeOf } from "./setup.ts";
 import type { InjectionKeyInfo } from "./setup.ts";
+import { ownShapes } from "./shapes.ts";
+import type { Shapes } from "./shapes.ts";
+import { isSharedModuleSpecifier, lowerConstants, sharedValue } from "./shared.ts";
+import type { ConstantCandidate, SharedModule, SharedValues } from "./shared.ts";
 import { scopeIdOf, STYLESHEET_SPECIFIER, stylesheetImport } from "./styles.ts";
 import type { LoweredSheet, StylesheetSource } from "./styles.ts";
 import { syntaxError } from "./syntax.ts";
+import { kindsFromShape } from "./types/from-shape.ts";
+import type { Kinds } from "./types/kinds.ts";
 
 /** The result of analysing one module. */
 export interface AnalyzeResult {
@@ -89,11 +126,23 @@ export interface AnalyzeOptions {
    */
   stylesheets?: ReadonlyMap<string, StylesheetSource | undefined>;
   /**
+   * Each shared `.ts` module the source imports (`sharedModuleImports`), by the import's
+   * specifier, as the compiler's resolver read it (ADR-0070): `undefined` for one it could not
+   * read, whose value import is UF1202.
+   */
+  modules?: ReadonlyMap<string, SharedModule | undefined>;
+  /**
    * The specifier prefixes whose imports pass through to every output as written (ADR-0064):
    * `["virtual:"]` when absent. An import the analyser classifies otherwise (the authoring API, a
    * framework, a `.uf.tsx` or relative module) never passes through.
    */
   passThrough?: readonly string[];
+  /**
+   * The shape of each type `shapeQueries` names, as the compiler's type oracle resolved it
+   * (ADR-0067): `undefined` for one it was not asked for. Without it, the analyser reads the
+   * module's own declarations only (`localShapes`), and an imported type is unresolved.
+   */
+  shapes?: Shapes;
 }
 
 /** A relative or absolute specifier: a file of the project, never a module a plugin registers. */
@@ -103,18 +152,24 @@ const RELATIVE_OR_ABSOLUTE = /^(?:[./\\]|[A-Za-z]:)/;
 export const COMPONENT_SPECIFIER: RegExp = /\.uf\.tsx$/;
 
 /**
- * The specifiers of the `.uf.tsx` modules a parsed module imports as values, in source order,
- * each once: what `compile()` asks its resolver for before the module is analysed.
+ * The specifiers of the `.uf.tsx` modules a parsed module imports, values or types, and of the
+ * `.uf.ts` modules whose composables a `.uf.tsx` module imports (ADR-0069), in source order, each
+ * once: what `compile()` asks its resolver for before the module is analysed.
  */
 export function componentImports(parsed: ParsedModule): string[] {
   const found = new Set<string>();
+  // A composable calls no other composable (UF2035), so a `.uf.ts` module resolves none.
+  const component = !COMPOSABLE_FILE.test(parsed.file);
   for (const statement of parsed.program.body) {
+    if (statement.type !== "ImportDeclaration") continue;
+    const specifier = statement.source.value;
+    // A type-only import too: its outputs import the types from the output of the module's main
+    // component, which only the module's API names (ADR-0067).
     if (
-      statement.type === "ImportDeclaration" &&
-      statement.importKind !== "type" &&
-      COMPONENT_SPECIFIER.test(statement.source.value)
+      COMPONENT_SPECIFIER.test(specifier) ||
+      (component && COMPOSABLE_FILE.test(specifier) && statement.importKind !== "type")
     ) {
-      found.add(statement.source.value);
+      found.add(specifier);
     }
   }
   return [...found];
@@ -136,7 +191,10 @@ interface Candidate {
   value?: AST.VariableDeclaration;
 }
 
-/** Analyses a parsed `.uf.tsx` module and lowers its components into IR (passes P2 and P3). */
+/**
+ * Analyses a parsed `.uf.tsx` module and lowers its components into IR (passes P2 and P3), or a
+ * `.uf.ts` module and its composables (ADR-0069).
+ */
 export function analyze(parsed: ParsedModule, options: AnalyzeOptions = {}): AnalyzeResult {
   return analyzeModule(parsed, undefined, options);
 }
@@ -169,25 +227,66 @@ export function analyzeModule(
     return { module: undefined, diagnostics: reporter.diagnostics, api: undefined };
   }
 
-  const candidates: Candidate[] = [
-    ...findComponents(parsed.program),
-    ...findValueComponents(parsed.program),
-  ].toSorted((a, b) => a.span.start - b.span.start);
-  const componentStatements = new Set(candidates.map((candidate) => candidate.span.start));
-  const declarations = findTypeDeclarations(parsed.program);
+  // A `.uf.ts` module holds composables and no component (ADR-0069).
+  const composableModule = COMPOSABLE_FILE.test(parsed.file);
+  const candidates: Candidate[] = composableModule
+    ? []
+    : [...findComponents(parsed.program), ...findValueComponents(parsed.program)].toSorted(
+        (a, b) => a.span.start - b.span.start,
+      );
+  // Its top-level forms are the module's: an error in one drops every composable (UF2035).
+  const foundMark = reporter.diagnostics.length;
+  const found = composableModule
+    ? findComposables(parsed.program, exportedNames(parsed.program), reporter)
+    : undefined;
+  const foundErrors = reporter.hasErrorsSince(foundMark);
+  const composableCandidates = found?.candidates ?? [];
+  const componentStatements = new Set([
+    ...candidates.map((candidate) => candidate.span.start),
+    ...(found?.statements ?? []),
+  ]);
+  const listed = listedTypeExports(parsed.program);
+  const declarations = findTypeDeclarations(parsed.program).map((declaration) =>
+    listed.has(declaration.name) ? { ...declaration, exported: true } : declaration,
+  );
   // The module's injection keys (ADR-0054): read before any import or component, since the
   // resolver gives a parent's keys to the children that inject them.
   const keyCandidates = findKeys(parsed.program);
-  const types = collectTypes(
-    declarations,
-    candidates,
-    [...keyCandidates.values()].flatMap((candidate) => (candidate.type ? [candidate.type] : [])),
+  // What each top-level `const` writes of types, in its annotation and its value: copied as the
+  // setup's types are, into the outputs that declare the constant (ADR-0070).
+  const constantTypes = new Map<string, AST.VariableDeclarator>(
+    parsed.program.body.flatMap((statement) =>
+      statement.type === "VariableDeclaration" && !keyCandidates.has(statement.start)
+        ? statement.declarations.flatMap((declarator) =>
+            declarator.id.type === "Identifier"
+              ? [[`${declarator.id.name}@${declarator.id.start}`, declarator] as const]
+              : [],
+          )
+        : [],
+    ),
   );
+  const types = collectTypes(declarations, candidates, [
+    ...[...keyCandidates.values()].flatMap((candidate) => (candidate.type ? [candidate.type] : [])),
+    ...constantTypes.values(),
+    // A composable's types are its setup's, its parameters' included (ADR-0069).
+    ...composableCandidates.map(({ node }) => [node.typeParameters, node.params, node.body]),
+  ]);
   const scopes = new Scopes(parsed.program);
   const authoring = authoringBindings(parsed.program);
+  const shapes = options.shapes ?? ownShapes(parsed);
+  // The module's own path, for the types the compiler did not ask its oracle for, indexed once
+  // and only when a component reads one.
+  let own: Shapes | undefined = options.shapes ? undefined : shapes;
+  const localShapes: Shapes = (at) => (own ??= ownShapes(parsed))(at);
   // Every component's API, read from its declarations before any is lowered: they render each
   // other, and themselves (ADR-0053).
-  const apiContext: ApiContext = { source: parsed.source, scopes, types: types.table, authoring };
+  const apiContext: ApiContext = {
+    source: parsed.source,
+    file: parsed.file,
+    scopes,
+    shapes,
+    authoring,
+  };
   const apis = new Map<Candidate, ComponentApi>();
   for (const candidate of candidates) {
     if (!candidate.value) apis.set(candidate, componentApi(candidate, apiContext));
@@ -196,6 +295,15 @@ export function analyzeModule(
   const keyDeclarations: InjectionKeyDeclaration[] = [];
   const keys = new Map<object, InjectionKeyInfo>();
   for (const candidate of keyCandidates.values()) {
+    if (composableModule) {
+      // `provide` and `inject` are a component's, so a key stays in the module of the component
+      // that provides it (ADR-0054, ADR-0069).
+      reporter.unsupported(
+        candidate.id,
+        "An injection key is declared in the `.uf.tsx` module of the component that provides it, and a composable neither provides nor injects.",
+      );
+      continue;
+    }
     // A key reported here is still one `provide` and `inject` may name: their uses are checked
     // as its fix would leave them, and report nothing more (one code per misuse).
     const ref = refTypeOf(candidate.type);
@@ -233,15 +341,57 @@ export function analyzeModule(
     passThrough: { names: new Map(), read: new Set(), clashes: new Set() },
     passThroughPrefixes: options.passThrough ?? DEFAULT_PASS_THROUGH,
     passThroughImports: [],
+    typeImports: [],
+    typeExports: [],
+    modules: options.modules ?? new Map(),
+    moduleImports: [],
+    shared: { values: new Map(), failed: new Set() },
+    constants: [],
+    composableModule,
+    composableImports: new Map(),
+    composables: new Map(),
   };
   const moduleMark = reporter.diagnostics.length;
   for (const statement of parsed.program.body) {
     if (componentStatements.has(statement.start) || keyCandidates.has(statement.start)) continue;
     checkTopLevelStatement(statement, context);
   }
+  // Lowered once every import is known: imports are hoisted, so a constant may read one
+  // written after it.
+  const constants = lowerConstants(context.constants, {
+    source: parsed.source,
+    scopes,
+    reporter,
+    shared: context.shared,
+  });
   // A module-level error drops every component, but they are still checked: fixing it must
   // reveal nothing new (the harness's L1).
   const moduleErrors = keyErrors || reporter.hasErrorsSince(moduleMark);
+  if (composableModule) {
+    const errors = moduleErrors || foundErrors;
+    return composableResult(
+      composableCandidates,
+      errors,
+      constants,
+      constantTypes,
+      {
+        parsed,
+        types,
+        shapes,
+        scopes,
+        authoring,
+        reporter,
+        components: new Map(),
+        keys,
+        passThrough: context.passThrough,
+        shared: context.shared,
+        composableImports: context.composableImports,
+        called: new Set(),
+        writtenType: writtenTypeIn({ parsed, types, shapes, localShapes }),
+      },
+      context,
+    );
+  }
   // The module's one component owns its sheets (ADR-0063): its API carries their scope id, as
   // the one a parent reads through the resolver, and so does its own render of itself.
   const [sheetOwner] = candidates;
@@ -266,18 +416,23 @@ export function analyzeModule(
       description: key.description,
       type: key.type.code,
       ...(key.ref ? { ref: key.ref } : {}),
+      ...withReferences(key.type.code),
     })),
   };
 
   const module: ComponentModule = {
     parsed,
     types,
+    shapes,
+    localShapes,
     scopes,
     authoring,
     reporter,
     components,
     keys,
     passThrough: context.passThrough,
+    shared: context.shared,
+    composables: context.composables,
     ...(observe ? { observe } : {}),
   };
   const lowered: UfComponent[] = [];
@@ -338,19 +493,253 @@ export function analyzeModule(
     return { module: undefined, diagnostics: reporter.diagnostics, api };
   }
   exports.sort((a, b) => a.span.start - b.span.start);
+  const read = readConstants(constants, lowered, types.declarations, parsed.source);
+  const readTypes = new Set(
+    closure(
+      read.map(({ binding }) => constantTypes.get(binding)),
+      types.table,
+    ),
+  );
   return {
     module: createModule(
       parsed.file,
       lowered,
       exports.filter((entry) => kept.has(entry.local)),
-      moduleTypes(lowered, types, parsed.source),
+      moduleTypes(lowered, types, parsed.source, readTypes),
       imports,
       keyDeclarations,
       context.passThroughImports,
+      {
+        typeImports: context.typeImports,
+        typeExports: [
+          ...context.typeExports,
+          ...declaredTypeExports(types, parsed.source),
+        ].toSorted((a, b) => a.span.start - b.span.start),
+        moduleImports: context.moduleImports,
+        constants: read,
+      },
     ),
     diagnostics: reporter.diagnostics,
     api,
   };
+}
+
+/**
+ * Lowers a `.uf.ts` module's composables, once its top-level statements are checked (ADR-0069):
+ * its IR holds them and no component, and its API what a caller reads of each.
+ */
+function composableResult(
+  candidates: readonly ComposableCandidate[],
+  moduleErrors: boolean,
+  constants: readonly ModuleConstant[],
+  constantTypes: ReadonlyMap<string, AST.VariableDeclarator>,
+  module: Parameters<typeof analyzeComposable>[2],
+  context: ModuleContext,
+): AnalyzeResult {
+  const { parsed, reporter, types } = module;
+  const mark = reporter.diagnostics.length;
+  const lowered: AnalyzedComposable[] = [];
+  for (const candidate of candidates) {
+    const result = analyzeComposable(
+      candidate,
+      typeParametersOf(candidate.node, parsed.source),
+      module,
+    );
+    if (result) lowered.push(result);
+  }
+  // A value import no composable calls names a type, or nothing a composable may read: either
+  // way its outputs would import a value the module never had (UF2035).
+  for (const [local, specifier] of module.composableImports) {
+    if (module.called.has(local)) continue;
+    reporter.report(
+      "UF2035",
+      specifier,
+      `\`${specifier.local.name}\` is imported as a value from a module of composables, which a composable never calls: a type is imported with \`type\`.`,
+      {
+        help: `Import it as a type: \`import { type ${specifier.local.name} } from "…";\`.`,
+        ...(specifier.type === "ImportSpecifier"
+          ? {
+              fixes: [
+                {
+                  title: "Import it as a type",
+                  confidence: "likely" as const,
+                  edits: [
+                    { span: { start: specifier.start, end: specifier.start }, text: "type " },
+                  ],
+                },
+              ],
+            }
+          : {}),
+      },
+    );
+  }
+  const api: ModuleApi = {
+    file: parsed.file,
+    components: [],
+    keys: [],
+    ...(lowered.length ? { composables: lowered.map(({ api }) => api) } : {}),
+  };
+  const uncalled =
+    !reporter.diagnostics.some(({ severity }) => severity === "error") &&
+    reportUnread(parsed.program.body, context.passThrough, reporter);
+  if (moduleErrors || uncalled || reporter.hasErrorsSince(mark)) {
+    return { module: undefined, diagnostics: reporter.diagnostics, api };
+  }
+  if (!candidates.length) {
+    reporter.report("UF2035", { start: 0, end: 0 }, "This file exports no composable.", {
+      help: "A module of composables exports functions named `use` and an upper-case letter, each returning a shorthand object.",
+    });
+    return { module: undefined, diagnostics: reporter.diagnostics, api };
+  }
+  if (lowered.length < candidates.length) {
+    return { module: undefined, diagnostics: reporter.diagnostics, api };
+  }
+  const composables = lowered.map(({ composable }) => composable);
+  const read = readConstants(constants, composables, types.declarations, parsed.source);
+  const used = new Set([
+    ...composables.flatMap((composable) => composable.types),
+    ...closure(
+      read.map(({ binding }) => constantTypes.get(binding)),
+      types.table,
+    ),
+  ]);
+  return {
+    module: createModule(
+      parsed.file,
+      [],
+      [],
+      types.declarations
+        .filter((declaration) => used.has(declaration.name))
+        .map((declaration) =>
+          createTypeDeclaration(
+            declaration.name,
+            declaration.exported,
+            parsed.source.slice(declaration.node.start, declaration.node.end),
+            spanOf(declaration.node),
+          ),
+        ),
+      [],
+      [],
+      context.passThroughImports,
+      {
+        typeImports: context.typeImports,
+        typeExports: [
+          ...context.typeExports,
+          ...declaredTypeExports(types, parsed.source),
+        ].toSorted((a, b) => a.span.start - b.span.start),
+        moduleImports: context.moduleImports,
+        constants: read,
+        composables,
+      },
+    ),
+    diagnostics: reporter.diagnostics,
+    api,
+  };
+}
+
+/**
+ * The module's constants its components read, those they read in turn, and those a `typeof` in
+ * their types names, in source order (ADR-0070): what every output declares. A copied type that
+ * queries a constant names it in the output, so the output declares it too.
+ */
+function readConstants(
+  constants: readonly ModuleConstant[],
+  owners: readonly (UfComponent | UfComposable)[],
+  declarations: readonly TypeDeclarationStatement[],
+  source: string,
+): ModuleConstant[] {
+  const byId = new Map(constants.map((constant) => [constant.binding, constant]));
+  const byName = new Map(constants.map((constant) => [constant.name, constant.binding]));
+  const read = new Set<string>();
+  const add = (id: string) => {
+    const constant = byId.get(id);
+    if (!constant || read.has(id)) return;
+    read.add(id);
+    for (const ref of constant.value.refs) if (ref.kind === "Binding") add(ref.binding);
+    const queried = [
+      ...(constant.type ? typeQueryRoots(`type T = ${constant.type.code};`) : []),
+      ...typeQueryRoots(`(${constant.value.code});`),
+    ];
+    for (const name of queried) if (byName.has(name)) add(byName.get(name)!);
+  };
+  for (const owner of owners) {
+    for (const binding of owner.bindings) if (binding.kind === "moduleConst") add(binding.id);
+    const own = new Set(owner.bindings.map(({ name }) => name));
+    const texts = [
+      ...ownTypeTexts(owner).map((type) => `type T = ${type};`),
+      ...codeOf(owner).map(({ code }) => code.code),
+      ...declarations
+        .filter(({ name }) => owner.types.includes(name))
+        .map(({ node }) => source.slice(node.start, node.end)),
+    ];
+    for (const name of texts.flatMap(typeQueryRoots)) {
+      if (byName.has(name) && !own.has(name)) add(byName.get(name)!);
+    }
+  }
+  return constants.filter((constant) => read.has(constant.binding));
+}
+
+/** The type texts an owner's IR writes beside its code. */
+function ownTypeTexts(owner: UfComponent | UfComposable): string[] {
+  const found: string[] = [];
+  if ("props" in owner) {
+    if (owner.propsParameter) found.push(owner.propsParameter.type.code);
+    for (const prop of owner.props) found.push(prop.type.code);
+    if (owner.emits) found.push(owner.emits.type.code);
+  } else {
+    for (const parameter of owner.parameters) found.push(parameter.type.code);
+  }
+  for (const item of owner.setup) if ("type" in item && item.type) found.push(item.type.code);
+  for (const { function: fn } of functionsOf(owner)) {
+    for (const parameter of fn.parameters) if (parameter.type) found.push(parameter.type.code);
+    if (fn.returnType) found.push(fn.returnType.code);
+  }
+  for (const parameter of owner.typeParameters ?? []) {
+    if (parameter.constraint) found.push(parameter.constraint.code);
+    if (parameter.default) found.push(parameter.default.code);
+  }
+  return found;
+}
+
+/**
+ * The root name of each `typeof` in source text, `SIZES` in `keyof typeof SIZES`: a statement
+ * list, an expression in parentheses, or a function's body, which may `return` and `await`, the
+ * first it parses as. Every text the IR holds is one of them.
+ */
+function typeQueryRoots(text: string): string[] {
+  // A type query is spelt with the keyword, which no escape can write: a text without it holds
+  // none, so it skips the parses, which every component's code would otherwise pay for.
+  if (!text.includes("typeof")) return [];
+  const parsed = [text, `(${text});`, `async function body() {\n${text}\n}`]
+    .map((source) => parseModule("query.ts", source))
+    .find(({ errors }) => !errors.length);
+  if (!parsed) return [];
+  const found: string[] = [];
+  visit(parsed.program, (node) => {
+    if (node.type !== "TSTypeQuery") return;
+    let name = node.exprName;
+    while (name.type === "TSQualifiedName") name = name.left;
+    if (name.type === "Identifier") found.push(name.name);
+  });
+  return found;
+}
+
+/**
+ * The types the module exports that no component reaches (ADR-0068): every output exports them
+ * as written, for its consumers' types.
+ */
+function declaredTypeExports(types: ModuleTypes, source: string): TypeExport[] {
+  return types.declarations
+    .filter(
+      (declaration) =>
+        declaration.exported &&
+        types.table.declaration(declaration.name) === declaration &&
+        !types.reached.has(declaration.name) &&
+        !types.setupReached.has(declaration.name),
+    )
+    .map(({ name, node }) =>
+      createDeclaredTypeExport(name, source.slice(node.start, node.end), spanOf(node)),
+    );
 }
 
 /**
@@ -385,8 +774,9 @@ function moduleTypes(
   components: readonly UfComponent[],
   types: ModuleTypes,
   source: string,
+  constants: ReadonlySet<string>,
 ): TypeDeclaration[] {
-  const used = new Set(components.flatMap((component) => component.types));
+  const used = new Set([...components.flatMap((component) => component.types), ...constants]);
   return types.declarations
     .filter((declaration) => used.has(declaration.name))
     .map((declaration) =>
@@ -482,6 +872,27 @@ interface ModuleContext {
   passThroughPrefixes: readonly string[];
   /** The module's imports that every output keeps as written, in source order (ADR-0064). */
   passThroughImports: PassThroughImport[];
+  /** The module's imports of types, which every output re-imports by name (ADR-0067). */
+  typeImports: TypeImport[];
+  /** The module's type re-exports, in source order (ADR-0068). */
+  typeExports: TypeExport[];
+  /** Each shared `.ts` module the module imports, by specifier, as the resolver read it. */
+  modules: ReadonlyMap<string, SharedModule | undefined>;
+  /** The module's value imports of shared modules, in source order (ADR-0070). */
+  moduleImports: SharedModuleImport[];
+  /** The values the module's components may read: its value imports and constants. */
+  shared: SharedValues;
+  /** The module's top-level `const`s, in source order, lowered once every import is known. */
+  constants: ConstantCandidate[];
+  /** Whether the module is a `.uf.ts` module of composables (ADR-0069). */
+  composableModule: boolean;
+  /** In a `.uf.ts` module, the names it imports from other `.uf.ts` modules (UF2035). */
+  composableImports: Map<object, AST.ImportDeclarationSpecifier>;
+  /**
+   * In a `.uf.tsx` module, the composables it imports, by the identifier that declares each, with
+   * the API the resolver gave (ADR-0069): `undefined` for one reported where it is imported.
+   */
+  composables: Map<object, ComposableApi | undefined>;
 }
 
 /** The local names a module exports as values in `export { name }` and `export default name`. */
@@ -549,6 +960,9 @@ function checkTopLevelStatement(
     // A stray `;`, such as one after a function, does nothing.
     case "EmptyStatement":
       return;
+    case "VariableDeclaration":
+      moduleConstant(statement, context);
+      return;
     case "ImportDeclaration":
       if (COMPONENT_SPECIFIER.test(statement.source.value) && statement.importKind !== "type") {
         componentImport(statement, context);
@@ -571,6 +985,33 @@ function checkTopLevelStatement(
         );
         return;
       }
+      if (
+        !context.composableModule &&
+        COMPOSABLE_FILE.test(statement.source.value) &&
+        statement.importKind !== "type"
+      ) {
+        composableImport(statement, context);
+        return;
+      }
+      if (
+        context.composableModule &&
+        COMPOSABLE_FILE.test(statement.source.value) &&
+        statement.importKind !== "type"
+      ) {
+        // Its types are re-imported by name (ADR-0067); a composable that calls another is
+        // reported at the call (UF2035).
+        const types = statement.specifiers.filter(
+          (item): item is AST.ImportSpecifier =>
+            item.type === "ImportSpecifier" && item.importKind === "type",
+        );
+        if (types.length) typeImport(statement, types, context);
+        for (const specifier of statement.specifiers) {
+          if (!types.includes(specifier as AST.ImportSpecifier)) {
+            context.composableImports.set(specifier.local, specifier);
+          }
+        }
+        return;
+      }
       if (STYLESHEET_SPECIFIER.test(statement.source.value)) {
         stylesheetImport(
           statement,
@@ -581,23 +1022,50 @@ function checkTopLevelStatement(
         );
         return;
       }
-      checkImport(statement, reporter);
+      checkImport(statement, context);
       return;
     case "ExportNamedDeclaration": {
-      // A type-only export list exports no value, only types for consumers' type checks (M5),
-      // and the targets' outputs export none on their own yet. (`export interface` and
-      // `export type X = …` declare a props type, above.)
-      if (statement.exportKind === "type") {
-        reporter.unsupported(statement, "Type-only exports are not supported yet.");
+      // A type re-export, which every output writes for its consumers' types (ADR-0068).
+      if (
+        statement.source &&
+        statement.specifiers.length &&
+        (statement.exportKind === "type" ||
+          statement.specifiers.every((specifier) => specifier.exportKind === "type"))
+      ) {
+        typeReExport(statement, statement.source.value, context);
+        return;
+      }
+      if (statement.declaration?.type === "VariableDeclaration") {
+        reporter.unsupported(
+          statement,
+          "A module exports its components and injection keys, and no other value.",
+          {
+            help: "Move the value to a shared `.ts` module, which each component that reads it imports (ADR-0070).",
+          },
+        );
         return;
       }
       if (statement.declaration || statement.source) break;
-      const typeOnly = statement.specifiers.filter((specifier) => specifier.exportKind === "type");
+      // A local type in an export list is exported as if its declaration were
+      // (`listedTypeExports`). A type-only export of anything else exports no value (TS1361).
+      const typeOnly = statement.specifiers.filter(
+        (specifier) =>
+          (statement.exportKind === "type" || specifier.exportKind === "type") &&
+          !isListedType(specifier, context),
+      );
+      if (statement.exportKind === "type") {
+        if (typeOnly.length) {
+          reporter.unsupported(statement, "Type-only exports are not supported yet.");
+        }
+        return;
+      }
       for (const specifier of typeOnly) {
         reporter.unsupported(specifier, "Type-only exports are not supported yet.");
       }
       // `export { Name }` of a component is recorded by findComponents.
-      const others = statement.specifiers.filter((specifier) => !typeOnly.includes(specifier));
+      const others = statement.specifiers.filter(
+        (specifier) => specifier.exportKind !== "type" && !typeOnly.includes(specifier),
+      );
       if (
         others.every(
           (specifier) =>
@@ -645,8 +1113,63 @@ function checkTopLevelStatement(
   }
   reporter.unsupported(
     statement,
-    "Top-level declarations other than imports and components are not supported yet.",
+    "Top-level declarations other than imports, components and `const`s are not supported yet.",
   );
+}
+
+/**
+ * A top-level `const` (ADR-0070): a plain value the module's components read, never write. A `let`
+ * or a `var` would be state shared between instances, which has no form.
+ */
+function moduleConstant(statement: AST.VariableDeclaration, context: ModuleContext): void {
+  const { reporter } = context;
+  if (statement.kind !== "const" || statement.declare) {
+    reporter.unsupported(
+      statement,
+      statement.declare
+        ? "An ambient declaration declares no value a component can read."
+        : `A module's top-level \`${statement.kind}\` is not supported: its values are read-only, so state shared between a component's instances has no form.`,
+      {
+        help: "Declare a constant with `const`, or keep state in a component's `ref`.",
+      },
+    );
+    return;
+  }
+  if (statement.declarations.length > 1) {
+    reporter.unsupported(statement, "A top-level `const` declares one constant.", {
+      help: "Declare each constant with a `const` of its own.",
+    });
+    return;
+  }
+  const [declarator] = statement.declarations;
+  if (!declarator || declarator.id.type !== "Identifier" || !declarator.init) {
+    reporter.unsupported(
+      declarator?.id ?? statement,
+      "Destructuring is not supported in a module's constants.",
+      { help: "Declare each constant by its name." },
+    );
+    return;
+  }
+  // Each output copies it as written, into a frontmatter or a script block (ADR-0070).
+  checkCopiedText(
+    { start: statement.start, end: statement.end },
+    context.source,
+    reporter,
+    "A module's constant",
+  );
+  const annotation = declarator.id.typeAnnotation?.typeAnnotation;
+  context.shared.values.set(
+    declarator.id,
+    sharedValue(
+      "moduleConst",
+      declarator.id,
+      annotation ? context.types.table.kindsOf(annotation) : undefined,
+    ),
+  );
+  context.constants.push({
+    statement,
+    declarator: declarator as ConstantCandidate["declarator"],
+  });
 }
 
 /**
@@ -737,8 +1260,8 @@ function occurrences(source: string, identifier: string): number {
 
 /**
  * An import of a component module (ADR-0053): each name it binds is a component the module
- * exports, by the API the resolver gave (UF1202 otherwise). A type-only import is M5's, as any
- * other module's types are.
+ * exports, by the API the resolver gave (UF1202 otherwise), or a type, which every output
+ * re-imports by name (ADR-0067).
  */
 function componentImport(statement: AST.ImportDeclaration, context: ModuleContext): void {
   const { reporter, resolved } = context;
@@ -762,15 +1285,13 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
     return;
   }
   const names: ImportedName[] = [];
+  const types = statement.specifiers.filter(
+    (item): item is AST.ImportSpecifier =>
+      item.type === "ImportSpecifier" && item.importKind === "type",
+  );
+  if (types.length) typeImport(statement, types, context);
   for (const item of statement.specifiers) {
-    if (item.type === "ImportSpecifier" && item.importKind === "type") {
-      reporter.unsupported(
-        item,
-        "Importing types from other modules is not supported yet: types from other modules land in M5.",
-        { help: "Declare the type in this module." },
-      );
-      continue;
-    }
+    if (item.type === "ImportSpecifier" && item.importKind === "type") continue;
     if (item.type === "ImportNamespaceSpecifier") {
       reporter.unsupported(
         item,
@@ -846,6 +1367,83 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
       }),
     );
     context.components.set(item.local, { name: item.local.name, api: component });
+  }
+  if (!names.length) return;
+  // A type-only import of the module before this one recorded it without names.
+  const typesOnly = context.imports.findIndex(
+    (entry) => entry.specifier === specifier && !entry.names.length,
+  );
+  if (typesOnly !== -1) context.imports.splice(typesOnly, 1);
+  context.imports.push(
+    createModuleImport(specifier, api.file, api, names, {
+      start: statement.start,
+      end: statement.end,
+    }),
+  );
+}
+
+/**
+ * An import of a `.uf.ts` module's composables (ADR-0069): each name it binds is a composable the
+ * module exports, by the API the resolver gave (UF1202 otherwise), which the setup calls, or a
+ * type, which every output re-imports by name (ADR-0067).
+ */
+function composableImport(statement: AST.ImportDeclaration, context: ModuleContext): void {
+  const { reporter, resolved } = context;
+  const specifier = statement.source.value;
+  const api = resolved.get(specifier);
+  const values = statement.specifiers.filter(
+    (item) => !(item.type === "ImportSpecifier" && item.importKind === "type"),
+  );
+  const types = statement.specifiers.filter(
+    (item): item is AST.ImportSpecifier =>
+      item.type === "ImportSpecifier" && item.importKind === "type",
+  );
+  if (!api) {
+    for (const item of values) context.composables.set(item.local, undefined);
+    reporter.report(
+      "UF1202",
+      statement.source,
+      `"${specifier}" cannot be resolved: the compiler finds no module of composables there.`,
+      {
+        help: "Import a `.uf.ts` file of the project by its relative path, as in `./useToggle.uf.ts`.",
+      },
+    );
+    return;
+  }
+  if (types.length) typeImport(statement, types, context);
+  const names: ImportedName[] = [];
+  for (const item of values) {
+    if (item.type !== "ImportSpecifier") {
+      context.composables.set(item.local, undefined);
+      reporter.unsupported(
+        item,
+        "A module of composables exports each composable by its name, and nothing else: it is imported by name.",
+        {
+          help: `Import each composable by its name, as in \`import { useToggle } from "${specifier}";\`.`,
+        },
+      );
+      continue;
+    }
+    const imported = exportName(item.imported);
+    const composable = api.composables?.find((entry) => entry.name === imported);
+    if (!composable) {
+      const exported = (api.composables ?? []).map((entry) => `\`${entry.name}\``);
+      context.composables.set(item.local, undefined);
+      reporter.report(
+        "UF1202",
+        item,
+        `"${specifier}" exports no composable named \`${imported}\`: it exports ${exported.join(", ") || "no composable"}.`,
+        { help: "Import a composable the module exports." },
+      );
+      continue;
+    }
+    names.push(
+      createImportedName("Composable", imported, item.local.name, {
+        start: item.start,
+        end: item.end,
+      }),
+    );
+    context.composables.set(item.local, composable);
   }
   if (!names.length) return;
   context.imports.push(
@@ -1060,7 +1658,8 @@ function checkKey(
   );
 }
 
-function checkImport(statement: AST.ImportDeclaration, reporter: Reporter): void {
+function checkImport(statement: AST.ImportDeclaration, context: ModuleContext): void {
+  const { reporter } = context;
   const specifier = statement.source.value;
   const framework = frameworkOf(specifier);
   if (framework) {
@@ -1078,21 +1677,188 @@ function checkImport(statement: AST.ImportDeclaration, reporter: Reporter): void
     checkAuthoringImport(statement, reporter);
     return;
   }
+  if (isSharedModuleSpecifier(specifier)) {
+    sharedImport(statement, context);
+    return;
+  }
   if (statement.importKind === "type") {
-    reporter.unsupported(
-      statement,
-      "Importing types from other modules is not supported yet: types from other modules land in M5.",
-      { help: "Declare the props type in this module." },
-    );
+    typeImport(statement, statement.specifiers, context);
+    if (COMPONENT_SPECIFIER.test(specifier)) typeOnlyModule(statement, context);
     return;
   }
   reporter.unsupported(statement, "Importing modules is not supported yet.");
+}
+
+/**
+ * An import of a shared `.ts` module (ADR-0070): its values are read through `import` bindings,
+ * and its types re-imported by name (ADR-0067). The module is copied into every output tree, so
+ * it may reach no framework (UF1204), and every relative module it reaches must be read (UF1202).
+ * A type import the resolver could not read is the type oracle's to report (UF6001).
+ */
+function sharedImport(statement: AST.ImportDeclaration, context: ModuleContext): void {
+  const { reporter } = context;
+  const specifier = statement.source.value;
+  const typeOnly = (item: AST.ImportDeclarationSpecifier) =>
+    statement.importKind === "type" ||
+    (item.type === "ImportSpecifier" && item.importKind === "type");
+  const values = statement.specifiers.filter((item) => !typeOnly(item));
+  const types = statement.specifiers.filter(typeOnly);
+  if (!statement.specifiers.length) {
+    reporter.unsupported(
+      statement,
+      "A side-effect import of a shared module is not supported: a component imports the values it reads.",
+      { help: `Import each value by its name, as in \`import { sizes } from "${specifier}";\`.` },
+    );
+    return;
+  }
+  const module = context.modules.get(specifier);
+  const fail = (code: "UF1202" | "UF1204", message: string, help: string) => {
+    for (const item of values) context.shared.failed.add(item.local);
+    reporter.report(code, statement.source, message, { help });
+  };
+  if (!module) {
+    if (values.length) {
+      fail(
+        "UF1202",
+        `"${specifier}" cannot be resolved: the compiler finds no \`.ts\` module there.`,
+        "Import a `.ts` file of the project by its relative path, as in `./tokens.ts`.",
+      );
+      return;
+    }
+  } else if (module.framework) {
+    const { file, specifier: framework } = module.framework;
+    fail(
+      "UF1204",
+      `"${specifier}" ${file === module.file ? "" : `reaches "${file}", which `}imports "${framework}": a shared module is copied unchanged into every framework's output, so it imports no framework, and no \`unframework\`.`,
+      "Keep the shared module to plain values, types and functions, and move what needs reactivity into a composable in a `.uf.ts` module.",
+    );
+    return;
+  } else if (module.unresolved) {
+    const { file, specifier: missing } = module.unresolved;
+    fail(
+      "UF1202",
+      `"${specifier}" ${file === module.file ? "" : `reaches "${file}", which `}loads \`${missing}\`, which the compiler cannot read or follow: every output tree holds a copy of each module it reaches.`,
+      "Import a `.ts` file of the project by its relative path, as in `./tokens.ts`.",
+    );
+    return;
+  }
+  if (types.length) typeImport(statement, types, context);
+  if (!module) return;
+  const names: NamedImport[] = [];
+  for (const item of values) {
+    if (item.type === "ImportNamespaceSpecifier") {
+      context.shared.failed.add(item.local);
+      reporter.unsupported(item, "A namespace import of a shared module is not supported.", {
+        help: `Import each value by its name, as in \`import { sizes } from "${specifier}";\`.`,
+      });
+      continue;
+    }
+    const imported = item.type === "ImportDefaultSpecifier" ? "default" : exportName(item.imported);
+    names.push(createNamedImport(imported, item.local.name, spanOf(item)));
+    context.shared.values.set(item.local, sharedValue("import", item.local));
+  }
+  if (!names.length) return;
+  context.moduleImports.push(
+    createSharedModuleImport(specifier, module.file, names, spanOf(statement)),
+  );
+}
+
+/**
+ * A `.uf.tsx` module the source imports types from alone: recorded with its API and no names, so
+ * each output imports the types from the output of its main component, which the file's name
+ * does not give (ADR-0067). An unresolved one is left to the type oracle, which reports the types
+ * it cannot read (UF6001).
+ */
+function typeOnlyModule(statement: AST.ImportDeclaration, context: ModuleContext): void {
+  const specifier = statement.source.value;
+  const api = context.resolved.get(specifier);
+  if (!api || context.imports.some((entry) => entry.specifier === specifier)) return;
+  context.imports.push(
+    createModuleImport(specifier, api.file, api, [], {
+      start: statement.start,
+      end: statement.end,
+    }),
+  );
+}
+
+/**
+ * An import of types from a relative `.ts`, a `.uf.tsx`, a `.uf.ts` or a package (ADR-0067):
+ * the analyser reads them through the type oracle's shapes, and every output re-imports them
+ * by name. A namespace import has no name to re-import.
+ */
+function typeImport(
+  statement: AST.ImportDeclaration,
+  specifiers: readonly AST.ImportDeclarationSpecifier[],
+  context: ModuleContext,
+): void {
+  const names: NamedImport[] = [];
+  for (const item of specifiers) {
+    if (item.type === "ImportNamespaceSpecifier") {
+      context.reporter.unsupported(item, "A namespace import of types is not supported.", {
+        help: `Import each type by its name, as in \`import type { ButtonProps } from "${statement.source.value}";\`.`,
+      });
+      continue;
+    }
+    const imported = item.type === "ImportDefaultSpecifier" ? "default" : exportName(item.imported);
+    names.push(createNamedImport(imported, item.local.name, spanOf(item)));
+  }
+  if (!names.length) return;
+  context.typeImports.push(createTypeImport(statement.source.value, names, spanOf(statement)));
+}
+
+/**
+ * Whether an export list's specifier exports a local type under its own name: it is exported as
+ * if `export` were written on its declaration, which the outputs copy (ADR-0068).
+ */
+function isListedType(specifier: AST.ExportSpecifier, context: ModuleContext): boolean {
+  const name = exportName(specifier.local);
+  return (
+    name === exportName(specifier.exported) &&
+    context.types.table.declaration(name) !== undefined &&
+    !context.candidates.some((candidate) => candidate.name === name)
+  );
+}
+
+/**
+ * The local types an export list exports under their own names (`export type { Tone }`): each
+ * is exported as if `export` were written on its declaration (ADR-0068).
+ */
+function listedTypeExports(program: AST.Program): Set<string> {
+  const names = new Set<string>();
+  for (const statement of program.body) {
+    if (statement.type !== "ExportNamedDeclaration" || statement.source) continue;
+    for (const specifier of statement.specifiers) {
+      const name = exportName(specifier.local);
+      if (
+        (statement.exportKind === "type" || specifier.exportKind === "type") &&
+        name === exportName(specifier.exported)
+      ) {
+        names.add(name);
+      }
+    }
+  }
+  return names;
+}
+
+/** `export type { Tone } from "./types"` (ADR-0068): every output re-exports the types. */
+function typeReExport(
+  statement: AST.ExportNamedDeclaration,
+  specifier: string,
+  context: ModuleContext,
+): void {
+  const names = statement.specifiers.map((item) =>
+    createTypeExportName(exportName(item.local), exportName(item.exported), spanOf(item)),
+  );
+  context.typeExports.push(createTypeReExport(specifier, names, spanOf(statement)));
 }
 
 /** What analysing a component needs to know about its module. */
 interface ComponentModule {
   parsed: ParsedModule;
   types: ModuleTypes;
+  shapes: Shapes;
+  /** The module's own shapes, for a type `shapes` has none of. */
+  localShapes: Shapes;
   scopes: Scopes;
   /** The module's authoring imports, by the identifier that declares each (ADR-0006). */
   authoring: ReadonlyMap<object, AuthoringApi | undefined>;
@@ -1103,12 +1869,37 @@ interface ComponentModule {
   keys: ReadonlyMap<object, InjectionKeyInfo>;
   /** The module's pass-through imports (ADR-0064). */
   passThrough: PassThrough;
+  /** The values the module's components may read (ADR-0070). */
+  shared: SharedValues;
+  /** The composables the module imports, by the identifier that declares each (ADR-0069). */
+  composables: ReadonlyMap<object, ComposableApi | undefined>;
   observe?: SetupObserver;
+}
+
+/**
+ * What a written type gives a value (`SetupContext.writtenType`). A written type that reaches an
+ * imported type is one `shapeQueries` asks the oracle for; any other resolves in the module,
+ * which follows its `extends` and aliases as the oracle does.
+ */
+function writtenTypeIn(
+  module: Pick<ComponentModule, "parsed" | "types" | "shapes" | "localShapes">,
+): (type: AST.TSType) => { kinds: Kinds; complete: boolean } {
+  const { parsed, types, shapes } = module;
+  return (type) => {
+    const at = { start: type.start, end: type.end };
+    const shape = shapes(at) ?? module.localShapes(at);
+    // A shape that does not resolve in full keeps what it could not evaluate as an object (a
+    // branded `string & {}`), so its kinds are read as the module's own types give them, which
+    // leave such a type `unknown` (ADR-0035).
+    return shape && !shape.unresolved.length
+      ? { kinds: kindsFromShape(shape, shapeReading(parsed, types.table, at)), complete: true }
+      : { kinds: types.table.kindsOf(type), complete: false };
+  };
 }
 
 /** Checks a component's shape, its props and its setup, and lowers its returned JSX. */
 function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComponent | undefined {
-  const { parsed, types, scopes, authoring, reporter } = module;
+  const { parsed, types, shapes, scopes, authoring, reporter } = module;
   const mark = reporter.diagnostics.length;
   const fn = candidate.node;
   const name = fn.id ?? candidate.span;
@@ -1120,9 +1911,8 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     );
   }
   if (fn.async) reporter.unsupported(name, "Async components are not supported yet.");
-  if (fn.typeParameters)
-    reporter.unsupported(fn.typeParameters, "Generic components are not supported yet.");
-  const props = analyzeProps(fn, types, parsed.source, parsed.comments, reporter);
+  checkTypeParameters(fn, types, parsed, reporter);
+  const props = analyzeProps(fn, types, shapes, parsed, reporter);
 
   // A stray `;` does nothing, so `return <p />;;` still ends with its return.
   const block = fn.body?.type === "BlockStatement" ? fn.body : undefined;
@@ -1135,12 +1925,15 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
       : last?.type === "ReturnStatement"
         ? last.argument
         : undefined;
+  const writtenType = writtenTypeIn(module);
   // The setup (ADR-0045): every statement before the return, declared before any code is walked.
   const setup = declareSetup({
     source: parsed.source,
     reporter,
     scopes,
     types: types.table,
+    shapes,
+    writtenType,
     comments: parsed.comments,
     authoring,
     component: fn,
@@ -1148,12 +1941,14 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     statements: body.slice(0, -1),
     returned: returned ?? undefined,
     keys: module.keys,
+    composables: module.composables,
   });
   const render: RenderContext = {
     source: parsed.source,
     reporter,
     scopes,
     types: types.table,
+    shapes,
     component: fn,
     props: props.byName,
     propsByDeclaration: props.byDeclaration,
@@ -1168,6 +1963,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     components: module.components,
     slots: setup.slots,
     passThrough: module.passThrough,
+    shared: module.shared,
   };
   setup.lower(render);
   if (!returned || (returned.type !== "JSXElement" && returned.type !== "JSXFragment")) {
@@ -1237,10 +2033,28 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     setup.items,
     setup.emits,
     {
+      typeParameters: typeParametersOf(fn, parsed.source),
       ...(setup.slots ? { slots: setup.slots } : {}),
       ...(setup.exposes ? { exposes: setup.exposes } : {}),
       ...(setup.inheritAttrs ? {} : { inheritAttrs: false as const }),
     },
+  );
+}
+
+/**
+ * A generic component's type parameters (ADR-0068), `List<T extends Item = Item>`: each target
+ * writes its own generic form from them, and the consumer's props infer them.
+ */
+function typeParametersOf(fn: ComponentFunction, source: string): TypeParameter[] {
+  const text = (type: AST.TSType | null) =>
+    type ? createTypeText(source.slice(type.start, type.end), spanOf(type)) : undefined;
+  return (fn.typeParameters?.params ?? []).map((parameter) =>
+    createTypeParameter(
+      parameter.name.name,
+      spanOf(parameter),
+      text(parameter.constraint),
+      text(parameter.default),
+    ),
   );
 }
 

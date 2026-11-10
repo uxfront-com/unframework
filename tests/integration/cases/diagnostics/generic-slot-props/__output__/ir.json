@@ -1,0 +1,229 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/generic-slot-props/Options.uf.tsx",
+  "components": [
+    {
+      "name": "Options",
+      "span": {
+        "start": 383,
+        "end": 696
+      },
+      "typeParameters": [
+        {
+          "name": "T",
+          "constraint": {
+            "code": "{ value: string }",
+            "span": {
+              "start": 425,
+              "end": 442
+            }
+          },
+          "span": {
+            "start": 415,
+            "end": 442
+          }
+        }
+      ],
+      "props": [
+        {
+          "name": "options",
+          "optional": false,
+          "type": {
+            "code": "T[]",
+            "span": {
+              "start": 468,
+              "end": 471
+            }
+          },
+          "binding": "options@446",
+          "span": {
+            "start": 459,
+            "end": 471
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ options: T[] }",
+          "span": {
+            "start": 457,
+            "end": 473
+          }
+        },
+        "span": {
+          "start": 444,
+          "end": 473
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@485",
+        "type": {
+          "code": "{ option?(props: { option: T }): Element }",
+          "span": {
+            "start": 505,
+            "end": 547
+          }
+        },
+        "slots": [
+          {
+            "name": "option",
+            "optional": true,
+            "props": {
+              "code": "{ option: T }",
+              "span": {
+                "start": 522,
+                "end": 535
+              }
+            },
+            "references": [
+              "T"
+            ],
+            "span": {
+              "start": 507,
+              "end": 545
+            }
+          }
+        ],
+        "span": {
+          "start": 479,
+          "end": 551
+        }
+      },
+      "bindings": [
+        {
+          "id": "options@446",
+          "name": "options",
+          "kind": "prop",
+          "span": {
+            "start": 446,
+            "end": 453
+          }
+        },
+        {
+          "id": "slots@485",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 485,
+            "end": 490
+          }
+        },
+        {
+          "id": "option@592",
+          "name": "option",
+          "kind": "loopVar",
+          "span": {
+            "start": 592,
+            "end": 598
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "ul",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "For",
+            "source": {
+              "code": "options",
+              "span": {
+                "start": 579,
+                "end": 586
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "options@446",
+                  "span": {
+                    "start": 579,
+                    "end": 586
+                  }
+                }
+              ]
+            },
+            "item": "option@592",
+            "key": {
+              "code": "option.value",
+              "span": {
+                "start": 622,
+                "end": 634
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "option@592",
+                  "span": {
+                    "start": 622,
+                    "end": 628
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Element",
+              "tag": "li",
+              "attributes": [],
+              "children": [
+                {
+                  "kind": "SlotOutlet",
+                  "slot": "option",
+                  "props": {
+                    "code": "{ option }",
+                    "span": {
+                      "start": 652,
+                      "end": 662
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "option@592",
+                        "span": {
+                          "start": 654,
+                          "end": 660
+                        },
+                        "shorthand": true
+                      }
+                    ]
+                  },
+                  "fallback": [],
+                  "span": {
+                    "start": 636,
+                    "end": 664
+                  }
+                }
+              ],
+              "span": {
+                "start": 613,
+                "end": 669
+              }
+            },
+            "span": {
+              "start": 579,
+              "end": 678
+            }
+          }
+        ],
+        "span": {
+          "start": 567,
+          "end": 689
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Options",
+      "span": {
+        "start": 383,
+        "end": 696
+      }
+    }
+  ],
+  "types": []
+}

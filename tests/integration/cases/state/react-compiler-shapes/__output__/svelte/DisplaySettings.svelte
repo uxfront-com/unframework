@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface Settings {
     theme: string;
     size: number;
@@ -12,6 +10,10 @@
     id?: number;
     error?: string;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = {
     onapplied?: (theme: string, size: number) => void;

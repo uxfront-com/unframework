@@ -1,0 +1,1212 @@
+import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { parseSync } from "oxc-parser";
+import { describe, expect, it } from "vitest";
+
+import { typeOracleContract } from "../src/contract.ts";
+import { createSyntacticOracle, localShapes, printShape } from "../src/index.ts";
+import type { ObjectNode, TypeOracle, TypeShape } from "../src/index.ts";
+
+typeOracleContract("syntactic", ({ root }) =>
+  createSyntacticOracle({
+    root,
+    readFile: (path) => readFile(path, "utf8").catch(() => undefined),
+  }),
+);
+
+/** An oracle over files in memory, under `/project`, that records what it reads. */
+function memory(files: Record<string, string>): { oracle: TypeOracle; reads: string[] } {
+  const reads: string[] = [];
+  const oracle = createSyntacticOracle({
+    root: "/project/",
+    readFile: (path) => {
+      reads.push(path);
+      return Promise.resolve(files[path.slice("/project/".length)]);
+    },
+  });
+  return { oracle, reads };
+}
+
+/** Links `path` to `target`, as a package manager installs a package. */
+async function link(target: string, path: string): Promise<void> {
+  await mkdir(dirname(path), { recursive: true });
+  await symlink(target, path);
+}
+
+/** The query for the first `type` written after `after` in `source`. */
+function at(file: string, source: string, after: string, type: string) {
+  const start = source.indexOf(type, source.indexOf(after) + after.length);
+  return { file, span: { start, end: start + type.length } };
+}
+
+const root = (shape: TypeShape) => shape.nodes[shape.root] as ObjectNode;
+
+describe("createSyntacticOracle", () => {
+  it("records each member's file, declaration, span, text and references", async () => {
+    const types = [
+      "export type Size = 'sm' | 'md';",
+      "interface Inner { size: Size; tags: Array<Size> }",
+      "export type { Inner };",
+    ].join("\n");
+    const button = 'import type { Inner } from "./types.ts";\nfunction B(props: Inner) {}';
+    const { oracle } = memory({ "types.ts": types, "Button.uf.tsx": button });
+    const shape = await oracle.resolveShape(at("Button.uf.tsx", button, "props: ", "Inner"));
+    const [size, tags] = root(shape).members;
+    expect(root(shape).declaration).toEqual({ file: "types.ts", name: "Inner", exported: true });
+    expect(size).toEqual({
+      name: "size",
+      optional: false,
+      readonly: false,
+      type: size!.type,
+      file: "types.ts",
+      declaration: { file: "types.ts", name: "Inner", exported: true },
+      span: { start: types.indexOf("size: Size"), end: types.indexOf("size: Size") + 11 },
+      typeText: {
+        code: "Size",
+        span: { start: types.indexOf("size: Size") + 6, end: types.indexOf("size: Size") + 10 },
+      },
+      references: ["Size"],
+    });
+    expect(tags!.references).toEqual(["Array", "Size"]);
+    expect(printShape(shape)).toBe('{ size: "sm" | "md"; tags: ("sm" | "md")[] }');
+  });
+
+  it("keeps a recursive type as a cycle of node ids", async () => {
+    const source = "interface Tree { children: Tree[] }\nfunction T(props: Tree) {}";
+    const { oracle } = memory({ "T.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("T.uf.tsx", source, "props: ", "Tree"));
+    const children = shape.nodes[root(shape).members[0]!.type]!;
+    expect(children).toEqual({ kind: "array", element: shape.root, readonly: false });
+    expect(JSON.parse(JSON.stringify(shape))).toEqual(shape);
+  });
+
+  it("resolves an extensionless relative specifier", async () => {
+    const source = 'import type { P } from "./types";\nfunction C(props: P) {}';
+    const { oracle, reads } = memory({
+      "types.ts": "export type P = { a: string };",
+      "C.uf.tsx": source,
+    });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "P"));
+    expect(printShape(shape)).toBe("{ a: string }");
+    expect(shape.dependencies).toEqual(["types.ts"]);
+    expect(reads).toEqual(["/project/C.uf.tsx", "/project/types.ts"]);
+  });
+
+  it.each([
+    ["Partial<string>", "utility:Partial"],
+    ["Pick<P, string>", "utility:Pick"],
+    ['Pick<P, "a" | "z">', "utility:Pick"],
+    ["Omit<P>", "utility:Omit"],
+    ["Map<string, P>", "generic"],
+    ["Wrap", "generic"],
+    ["Wrap<string, number>", "generic"],
+    ["P extends string ? A : B", "conditional"],
+    ["{ [K in Keys]: string }", "mapped"],
+    ["P['a']", "indexed-access"],
+    ["keyof P", "keyof"],
+    ["typeof value", "typeof"],
+    ["`on${string}`", "template-literal"],
+    ["{ [key: string]: number }", "index-signature"],
+    ["{ [key]: number }", "computed-key"],
+    ["{ a: string } & string", "intersection"],
+    ["NS.P", "qualified-name"],
+  ])("leaves %s unresolved, as %s", async (type, construct) => {
+    const source = `type P = { a: string };\ntype Wrap<T> = T;\nconst key = "a";\nfunction C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(shape.construction).toContain(construct);
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+    expect(printShape(shape)).not.toContain("never");
+  });
+
+  it("names a package it cannot find as a dependency, with the import missing", async () => {
+    const source = 'import type { Item } from "@scope/ui/types";\nfunction C(props: Item) {}';
+    const { oracle, reads } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "Item"));
+    expect(shape.dependencies).toEqual(["pkg:@scope/ui"]);
+    expect(shape.construction).toEqual(["package"]);
+    expect(shape.unresolved).toEqual([
+      {
+        file: "C.uf.tsx",
+        span: at("C.uf.tsx", source, "props: ", "Item").span,
+        reason: "missing-module",
+      },
+    ]);
+    expect(reads).toEqual(["/project/C.uf.tsx"]);
+  });
+
+  it("keeps a global of TypeScript's lib as written, and resolved", async () => {
+    const source = "function C(props: { at: Date; title?(): Element }) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const type = "{ at: Date; title?(): Element }";
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(printShape(shape)).toBe("{ at: Date; title?: () => Element }");
+    expect(shape.unresolved).toEqual([]);
+  });
+
+  it("reports a member two parts of an intersection declare differently", async () => {
+    const source =
+      "type A = { a: string };\ntype B = { a: number; b: string };\nfunction C(props: A & B) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "A & B"));
+    expect(printShape(shape)).toBe("{ a: string; b: string }");
+    const a = root(shape).members[0]!;
+    expect(shape.nodes[a.type]).toEqual({
+      kind: "opaque",
+      text: "string",
+      file: "C.uf.tsx",
+      span: a.typeText!.span,
+    });
+    // The entry is at the opaque node's span, so the canonical print shows it unresolved.
+    expect(shape.unresolved).toEqual([
+      { file: "C.uf.tsx", span: a.typeText!.span, reason: "conflict" },
+    ]);
+    expect(printShape(shape, { canonical: true })).toBe("{ a: (unresolved); b: string }");
+  });
+
+  it("reads each file once, and again after update names it", async () => {
+    const files = {
+      "types.ts": "export type P = { a: string };",
+      "C.uf.tsx": 'import type { P } from "./types.ts";\nfunction C(props: P) {}',
+    };
+    const { oracle, reads } = memory(files);
+    const query = at("C.uf.tsx", files["C.uf.tsx"], "props: ", "P");
+    await oracle.resolveShape(query);
+    await oracle.resolveShape(query);
+    expect(reads).toEqual(["/project/C.uf.tsx", "/project/types.ts"]);
+    files["types.ts"] = "export type P = { a: string; b: number };";
+    await oracle.update({ files: ["types.ts"] });
+    expect(printShape(await oracle.resolveShape(query))).toBe("{ a: string; b: number }");
+    expect(reads).toEqual(["/project/C.uf.tsx", "/project/types.ts", "/project/types.ts"]);
+  });
+
+  it("rejects a query for a file it cannot read, or a span with no type", async () => {
+    const { oracle } = memory({ "C.uf.tsx": "function C(props: { a: string }) {}" });
+    await expect(
+      oracle.resolveShape({ file: "D.uf.tsx", span: { start: 0, end: 1 } }),
+    ).rejects.toThrow("Cannot read D.uf.tsx.");
+    await expect(
+      oracle.resolveShape({ file: "C.uf.tsx", span: { start: 0, end: 8 } }),
+    ).rejects.toThrow("No type at C.uf.tsx:0-8.");
+  });
+
+  it("flattens a union of unions, with no node twice", async () => {
+    const source = 'type AB = "a" | "b";\nfunction C(props: AB | "b" | "c") {}';
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", 'AB | "b" | "c"'));
+    const union = shape.nodes[shape.root]!;
+    expect(union.kind).toBe("union");
+    const types = union.kind === "union" ? union.types : [];
+    expect(types.map((id) => shape.nodes[id])).toEqual([
+      { kind: "literal", value: "a" },
+      { kind: "literal", value: "b" },
+      { kind: "literal", value: "c" },
+    ]);
+  });
+
+  it("keeps an overloaded method's name, with its type unresolved", async () => {
+    const source =
+      "interface A { f(a: string | number): void }\ninterface P extends A { f(a: string): void; f(a: number): void; g(): void }\nfunction C(props: P) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "P"));
+    const [f, g] = root(shape).members;
+    expect(shape.nodes[f!.type]).toEqual({
+      kind: "opaque",
+      text: "f(a: string): void;",
+      file: "C.uf.tsx",
+      span: { start: source.indexOf("f(a: string)"), end: source.indexOf("f(a: string)") + 19 },
+    });
+    expect(f!.declaration?.name).toBe("P");
+    expect(printShape({ ...shape, root: g!.type })).toBe("() => void");
+    expect(shape.construction).toEqual(["overload", "extends", "union"]);
+    const first = {
+      start: source.indexOf("f(a: string)"),
+      end: source.indexOf("f(a: string)") + 19,
+    };
+    expect(shape.unresolved).toEqual([{ file: "C.uf.tsx", span: first, reason: "unsupported" }]);
+  });
+
+  it.each([
+    ["a property and a property of another type", "a: number"],
+    ["a property and a method", "a(): void"],
+    ["a method and a property of the same type", "a(): string", "a: () => string"],
+    ["a property and a method of the same type", "a: () => string", "a(): string"],
+  ])(
+    "reports %s that merged interfaces declare as one name",
+    async (_, second, first = "a: string") => {
+      const source = `interface P { ${first} }\ninterface P { ${second} }\nfunction C(props: P) {}`;
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "P"));
+      expect(shape.nodes[root(shape).members[0]!.type]!.kind).toBe("opaque");
+      expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+    },
+  );
+
+  it("keeps a member two parts declare with the same type, however it is written", async () => {
+    const type = "{ a: { x: 1 }; b: string | number } & { a: { x: 1 }; b: number | string }";
+    const source = `function C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(printShape(shape)).toBe("{ a: { x: 1 }; b: string | number }");
+    expect(shape.unresolved).toEqual([]);
+  });
+
+  it.each([
+    ["a generic method", "f<T extends string>(a: T): void", "f(a: string): void", "generic"],
+    ["an accessor", 'get f(): "x"', "f: string", "accessor"],
+  ])(
+    "keeps %s's name over its base's, with its type unresolved",
+    async (_, own, base, construct) => {
+      const source = `interface A { ${base} }\ninterface B extends A { ${own} }\nfunction C(props: B) {}`;
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "B"));
+      const [f] = root(shape).members;
+      expect(root(shape).members).toHaveLength(1);
+      expect(shape.nodes[f!.type]).toMatchObject({ kind: "opaque", text: own });
+      expect(f!.declaration?.name).toBe("B");
+      expect(shape.construction).toContain(construct);
+      expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+    },
+  );
+
+  it("keeps a member that merged interfaces declare with one object type twice", async () => {
+    const source =
+      "interface P { a: { x: 1 } }\ninterface P { a: { x: 1 } }\nfunction C(props: P) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "P"));
+    expect(printShape(shape)).toBe("{ a: { x: 1 } }");
+    expect(shape.unresolved).toEqual([]);
+  });
+
+  it("does not take two declarations of one name in two files for one type", async () => {
+    const files = {
+      "a.ts": 'import type { N as B } from "./b.ts";\nexport interface N { x: B }',
+      "b.ts": 'import type { N as A } from "./a.ts";\nexport interface N { y: A }',
+      "c.ts": "export interface X { x: N }\ninterface N { y: N }",
+      "q.ts":
+        'import type { N } from "./a.ts";\nimport type { X } from "./c.ts";\nfunction C(props: { v: N } & { v: X }) {}',
+    };
+    const { oracle } = memory(files);
+    const shape = await oracle.resolveShape(
+      at("q.ts", files["q.ts"], "props: ", "{ v: N } & { v: X }"),
+    );
+    expect(printShape(shape, { canonical: true })).toBe("{ v: (unresolved) }");
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+  });
+
+  it.each([
+    ["a nested conflict", '{ v: { a: string } } & { v: { a: string } & { a: "x" } }'],
+    ["two different unresolved types", "{ a: { k: Foo } } & { a: { k: Bar } }"],
+  ])("reports %s at the member that holds it", async (_, type) => {
+    const source = `function C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(printShape(shape, { canonical: true })).toMatch(/^\{ (v|a): \(unresolved\) \}$/);
+    expect(shape.unresolved.map((entry) => entry.reason)).toContain("conflict");
+  });
+
+  it("compares two deep declared types by their declarations, without walking them", async () => {
+    // At depth 40, a walk over both chains takes 2^40 steps, so it would time out.
+    const chain = (name: string) =>
+      [`interface ${name}0 { x: 1 }`]
+        .concat(
+          Array.from(
+            { length: 40 },
+            (_, i) => `interface ${name}${i + 1} { a: ${name}${i}; b: ${name}${i} }`,
+          ),
+        )
+        .join("\n");
+    const type = "{ v: T40 } & { v: U40 }";
+    const source = `${chain("T")}\n${chain("U")}\nfunction C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(printShape(shape, { canonical: true })).toBe("{ v: (unresolved) }");
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+  });
+
+  it("drops what was unresolved in a base member the interface overrides", async () => {
+    const source =
+      'interface X { k: 1 }\ninterface B { a: keyof X }\ninterface P extends B { a: "x" }\nfunction C(props: P) {}';
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const query = at("C.uf.tsx", source, "props: ", "P");
+    expect((await oracle.resolveShape(query)).unresolved).toEqual([]);
+    expect(await oracle.printType(query)).toBe('{ a: "x" }');
+  });
+
+  it.each([
+    ["after a plain signature", 'on(e: "click"): void; on<T>(e: T): void'],
+    ["before a plain signature", 'on<T>(e: T): void; on(e: "click"): void'],
+  ])("leaves an overload set with a generic signature %s opaque", async (_, signatures) => {
+    const source = `interface P { ${signatures} }\nfunction C(props: P) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "P"));
+    expect(printShape(shape, { canonical: true })).toBe("{ on: (unresolved) }");
+  });
+
+  it("keeps a base's members opaque beside a computed key of unknown name", async () => {
+    const source =
+      'const k = "a";\ninterface B { a: string; b: number }\ninterface P extends B { [k]: "x"; c: boolean }\nfunction C(props: P) {}';
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "P"));
+    expect(printShape(shape, { canonical: true })).toBe(
+      "{ a: (unresolved); b: (unresolved); c: boolean }",
+    );
+    expect(shape.construction).toContain("computed-key");
+  });
+
+  it.each([
+    ["an exported enum", "export enum E { A }", "import type { E as T } from './e.ts';"],
+    [
+      "a default-exported class",
+      "export default class K { a = 1 }",
+      "import type T from './e.ts';",
+    ],
+  ])("leaves %s, imported as a type, unresolved", async (_, declaration, importLine) => {
+    const source = `${importLine}\nfunction C(props: T) {}`;
+    const { oracle } = memory({ "e.ts": declaration, "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "T"));
+    expect(shape.construction).toContain("class-or-enum");
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+  });
+
+  it.each([
+    [
+      "a base it cannot read",
+      'import type { B } from "./missing.ts";\ninterface P extends B { a: string }',
+      "P",
+      "missing-module",
+      "{ a: string }",
+    ],
+    [
+      "a part it cannot read",
+      'import type { B } from "./missing.ts";\ntype P = B & { a: string };',
+      "P",
+      "missing-module",
+      "{ a: string }",
+    ],
+    [
+      "a part's computed key of unknown name",
+      'const k = "a";\ntype P = { [k]: 1 } & { a: string };',
+      "P",
+      "unsupported",
+      "{ a: (unresolved) }",
+    ],
+  ])(
+    "keeps what was unresolved in %s, beside the members it has",
+    async (_, declarations, type, reason, printed) => {
+      const source = `${declarations}\nfunction C(props: ${type}) {}`;
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+      expect(shape.unresolved.map((entry) => entry.reason)).toContain(reason);
+      expect(printShape(shape, { canonical: true })).toBe(printed);
+    },
+  );
+
+  it.each([
+    [
+      "a union with a member the other lacks",
+      '{ v: { a: "x" | "y" } } & { v: { a: "x" | "y" | "z" } }',
+    ],
+    ["an object with a computed key of unknown name", "{ v: { [k]: 1 } } & { v: { [k]: 1 } }"],
+    [
+      "an intersection with a computed key of unknown name",
+      "{ v: { [k]: 1 } & { b: 1 } } & { v: { [k]: 1 } & { b: 1 } }",
+    ],
+    [
+      "a pair that failed once inside a union",
+      "{ v: { u: L | M; w: L } } & { v: { u: M | K; w: M } }",
+    ],
+  ])("is not sure two types are the same with %s", async (_, type) => {
+    const source = `const k = "a";\ntype L = { a: 1 }[];\ntype M = { a: 2 }[];\ntype K = { a: 1 }[];\nfunction C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(shape.unresolved.map((entry) => entry.reason)).toContain("conflict");
+  });
+
+  it("reports a member three parts declare differently once", async () => {
+    const type = "{ a: string } & { a: number } & { a: boolean }";
+    const source = `function C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+  });
+
+  it.each([
+    ["an index signature in a part", "type P = { [key: string]: number } & { a: number };", "P"],
+    [
+      "an index signature in a base",
+      "interface B { [k: string]: unknown; a: 1 }\ninterface P extends B { b: 1 }",
+      "P",
+    ],
+    [
+      "a call signature in a base",
+      "interface B { (): void; a: 1 }\ninterface P extends B { b: 1 }",
+      "P",
+    ],
+    [
+      "a computed key of unknown name in a base",
+      'const k = "z";\ninterface B { [k]: 1 }\ninterface P extends B { b: 1 }',
+      "P",
+    ],
+    [
+      "a generic global base of a base",
+      "interface B extends Map<string, number> { a: 1 }\ninterface P extends B { b: 1 }",
+      "P",
+    ],
+    [
+      "an unresolved part of a base",
+      "interface Q { a: 1 }\ntype B = (Q extends 1 ? Q : Q) & { b: 1 };\ninterface P extends B { c: 1 }",
+      "P",
+    ],
+    [
+      "a utility of a base that loses a member",
+      'interface Q { a: 1 }\ninterface B extends Pick<Q, "z"> { a: 1 }\ninterface P extends B { b: 1 }',
+      "P",
+    ],
+    [
+      "a qualified base of a base",
+      "interface B extends NS.A { a: 1 }\ninterface P extends B { b: 1 }",
+      "P",
+    ],
+    [
+      "a base of a base that is not an object",
+      "type S = string;\ninterface B extends S { a: 1 }\ninterface P extends B { b: 1 }",
+      "P",
+    ],
+    [
+      "a circular chain of three",
+      "interface A extends C { a: 1 }\ninterface B extends A { b: 1 }\ninterface C extends B { c: 1 }",
+      "A",
+    ],
+  ])("keeps what was lost to %s, so printType rejects", async (_, declarations, type) => {
+    const source = `${declarations}\nfunction C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const query = at("C.uf.tsx", source, "props: ", type);
+    expect((await oracle.resolveShape(query)).unresolved).not.toEqual([]);
+    await expect(oracle.printType(query)).rejects.toThrow("it has unresolved parts.");
+  });
+
+  it.each([
+    ["an index signature", "{ [k: string]: number; a: 1 }"],
+    ["a call signature", "{ (): void; a: 1 }"],
+    ["an unresolved part", "{ a: 1 } & (Q extends 1 ? Q : Q)"],
+    ["a construct two levels down", "{ w: { [k: string]: number }; a: 1 }"],
+  ])("is not sure of an object that lost %s, in either part", async (_, lossy) => {
+    for (const type of [`{ v: { a: 1 } } & { v: ${lossy} }`, `{ v: ${lossy} } & { v: { a: 1 } }`]) {
+      const source = `interface Q { q: 1 }\nfunction C(props: ${type}) {}`;
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const query = at("C.uf.tsx", source, "props: ", type);
+      expect((await oracle.resolveShape(query)).unresolved).not.toEqual([]);
+      await expect(oracle.printType(query)).rejects.toThrow("it has unresolved parts.");
+    }
+  });
+
+  it("keeps an entry a failed base carries while its opaque node is reachable by another path", async () => {
+    const source = [
+      "interface X { x: 1 }",
+      "type S = X extends 1 ? X : X;",
+      "interface B extends S { a: 1 }",
+      "interface Q { m: B }",
+      "interface D extends Q { m: never }",
+      "interface P { d: D; g: S }",
+      "function C(props: P) {}",
+    ].join("\n");
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const query = at("C.uf.tsx", source, "props: ", "P");
+    expect((await oracle.resolveShape(query)).unresolved.map((entry) => entry.reason)).toEqual([
+      "unsupported",
+    ]);
+    await expect(oracle.printType(query)).rejects.toThrow("it has unresolved parts.");
+  });
+
+  it("keeps an entry while the opaque node it describes is reachable by another path", async () => {
+    const source = [
+      "interface X { x: 1 }",
+      "type Foo = { a: keyof X } | string;",
+      "interface B { m: Foo & { z: 1 } }",
+      "interface D extends B { m: never }",
+      "interface P { f: D; g: Foo }",
+      "function C(props: P) {}",
+    ].join("\n");
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const query = at("C.uf.tsx", source, "props: ", "P");
+    const shape = await oracle.resolveShape(query);
+    expect(shape.unresolved).toEqual([
+      {
+        file: "C.uf.tsx",
+        span: at("C.uf.tsx", source, "a: ", "keyof X").span,
+        reason: "unsupported",
+      },
+    ]);
+    await expect(oracle.printType(query)).rejects.toThrow("it has unresolved parts.");
+  });
+
+  it.each([
+    [
+      "after the member that holds it",
+      "interface P { v: { k: 1 } & P; w: string }\ninterface P { v: { k: 1 } & P }",
+    ],
+    [
+      "before the member that holds it",
+      "interface P { w: string; v: { k: 1 } & P }\ninterface P { v: { k: 1 } & P }",
+    ],
+  ])(
+    "is not sure of a merged interface's member whose intersection is not merged yet, %s",
+    async (_, declarations) => {
+      const source = `${declarations}\nfunction C(props: P) {}`;
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const query = at("C.uf.tsx", source, "props: ", "P");
+      const shape = await oracle.resolveShape(query);
+      expect(printShape(shape, { canonical: true })).toBe("{ v: (unresolved); w: string }");
+      expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+    },
+  );
+
+  it.each([
+    ["first", "interface P { v: {} & {} }\ninterface P { v: {} }"],
+    ["second", "interface P { v: {} }\ninterface P { v: {} & {} }"],
+  ])("is not sure of an intersection not merged yet, written %s", async (_, declarations) => {
+    const source = `${declarations}\nfunction C(props: P) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "P"));
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+  });
+
+  describe("compares deep shared types once per pair", () => {
+    // Without a cache of the pairs compared, each of these takes seconds: 2^depth steps.
+    const chain = (name: string, depth: number, leaf: string, form: (inner: string) => string) =>
+      [`type ${name}0 = ${leaf};`]
+        .concat(
+          Array.from({ length: depth }, (_, i) => `type ${name}${i + 1} = ${form(name + i)};`),
+        )
+        .join("\n");
+    const objects = (inner: string) => `{ a: ${inner} }[] | { a: ${inner} }[]`;
+    const pairs = (inner: string) => `[{ a: ${inner} }, 1] | [{ a: ${inner} }, 2]`;
+    const reversed = (inner: string) => `[{ a: ${inner} }, 2] | [{ a: ${inner} }, 1]`;
+    it.each([
+      ["arrays of objects, different at the leaves", 22, "2", objects, objects, ["conflict"]],
+      ["arrays of objects, equal", 12, "1", objects, objects, []],
+      ["tuples in another order", 12, "1", pairs, reversed, []],
+    ])("%s", async (_, depth, leaf, left, right, reasons) => {
+      const type = `{ v: T${depth} } & { v: U${depth} }`;
+      const source = [
+        chain("T", depth, "1", left),
+        chain("U", depth, leaf, right),
+        `function C(props: ${type}) {}`,
+      ].join("\n");
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const query = at("C.uf.tsx", source, "props: ", type);
+      const start = performance.now();
+      const shape = await oracle.resolveShape(query);
+      expect(performance.now() - start).toBeLessThan(500);
+      expect(shape.unresolved.map((entry) => entry.reason)).toEqual(reasons);
+    });
+
+    it("matches a wide union's members without comparing every pair", async () => {
+      const objects = Array.from({ length: 2900 }, (_, i) => `{ k: ${i} }`);
+      const type = `{ v: ${objects.join(" | ")} } & { v: ${objects.toReversed().join(" | ")} }`;
+      const source = `function C(props: ${type}) {}`;
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const start = performance.now();
+      const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+      expect(performance.now() - start).toBeLessThan(1000);
+      expect(shape.unresolved).toEqual([]);
+    });
+
+    it.each([
+      [
+        "tries every member that shares a fingerprint, not only the first",
+        "{ a: { b: { c: { d: 1 } } } } | { a: { b: { c: { d: 2 } } } }",
+        "{ a: { b: { c: { d: 2 } } } } | { a: { b: { c: { d: 1 } } } }",
+      ],
+      ["reads an object's members in any order", "{ a: 1; b: 2 } | 3", "{ b: 2; a: 1 } | 3"],
+    ])("%s", async (_, left, right) => {
+      const type = `{ v: ${left} } & { v: ${right} }`;
+      const source = `function C(props: ${type}) {}`;
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const query = at("C.uf.tsx", source, "props: ", type);
+      expect((await oracle.resolveShape(query)).unresolved).toEqual([]);
+      expect(await oracle.printType(query)).toBe(`{ v: ${left} }`);
+    });
+
+    it("is not sure past its bound of pairs, and does not throw", { timeout: 20_000 }, async () => {
+      // Members alike three levels down share one fingerprint, so each pair is compared.
+      const objects = Array.from({ length: 800 }, (_, i) => `{ a: { b: { c: { d: ${i} } } } }`);
+      const type = `{ v: ${objects.join(" | ")} } & { v: ${objects.toReversed().join(" | ")} }`;
+      const source = `function C(props: ${type}) {}`;
+      const { oracle } = memory({ "C.uf.tsx": source });
+      const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+      expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+    });
+  });
+
+  it("is not sure of two recursive types with no name, and stops", async () => {
+    const source = [
+      "interface R1 { b?: R1 & { x: 1 } }",
+      "interface R2 { b?: R2 & { x: 1 } }",
+      "function C(props: { v: R1 & { x: 1 } } & { v: R2 & { x: 1 } }) {}",
+    ].join("\n");
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const type = "{ v: R1 & { x: 1 } } & { v: R2 & { x: 1 } }";
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+  });
+
+  it.each([
+    ["one more member", "{ a: 1 }", "{ a: 1; b: 1 }"],
+    ["an optional member", "{ a?: 1 }", "{ a: 1 }"],
+    ["a readonly member", "{ readonly a: 1 }", "{ a: 1 }"],
+    ["a member of another name", "{ a: 1 }", "{ b: 1 }"],
+    ["a readonly array", "{ a: { x: 1 }[] }", "{ a: readonly { x: 1 }[] }"],
+    ["a readonly tuple", "{ a: [{ x: 1 }] }", "{ a: readonly [{ x: 1 }] }"],
+    ["one more element", "{ a: [{ x: 1 }] }", "{ a: [{ x: 1 }, { x: 1 }] }"],
+    ["an optional element", "{ a: [{ x: 1 }?] }", "{ a: [{ x: 1 }] }"],
+    ["a rest element", "{ a: [...{ x: 1 }[]] }", "{ a: [{ x: 1 }[]] }"],
+    ["one more parameter", "{ a: (p: { x: 1 }) => void }", "{ a: (p: { x: 1 }, q: 1) => void }"],
+    ["an optional parameter", "{ a: (p?: { x: 1 }) => void }", "{ a: (p: { x: 1 }) => void }"],
+    ["a rest parameter", "{ a: (...p: { x: 1 }[]) => void }", "{ a: (p: { x: 1 }[]) => void }"],
+    ["another return type", "{ a: () => { x: 1 } }", "{ a: () => { x: 2 } }"],
+    ["a `this` parameter", "{ a: (this: { x: 1 }) => void }", "{ a: () => void }"],
+    ["a union with another member", '{ a: { x: 1 } | "y" }', '{ a: { x: 1 } | "z" }'],
+  ])("reports a member whose types differ by %s", async (_, left, right) => {
+    const type = `{ v: ${left} } & { v: ${right} }`;
+    const source = `function C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+  });
+
+  it.each([
+    ["objects", "{ a: { x: 1 } }"],
+    ["arrays and readonly arrays", "{ a: { x: 1 }[]; b: readonly { x: 1 }[] }"],
+    ["tuples", "{ a: [{ x: 1 }, ...{ y: 1 }[]]; b: readonly [{ x: 1 }?] }"],
+    ["functions", "{ a: (p: { x: 1 }, q?: 1, ...r: { y: 1 }[]) => { z: 1 } }"],
+    ["unions in another order", '{ a: { x: 1 } | "y" | { z: 1 } }'],
+    ["unions inside a union, one with a repeated member", '{ a: { u: { x: 1 } | "y" } | "z" }'],
+  ])("keeps a member two parts write with the same %s", async (_, written) => {
+    const reordered = written
+      .replace('{ x: 1 } | "y" | { z: 1 }', '{ z: 1 } | { x: 1 } | "y"')
+      .replace('{ u: { x: 1 } | "y" }', '{ u: "y" | { x: 1 } | { x: 1 } }');
+    const type = `{ v: ${written} } & { v: ${reordered} }`;
+    const source = `function C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(shape.unresolved).toEqual([]);
+  });
+
+  it.each([
+    ["a union", "{ a: keyof X | 1 }"],
+    ["an array", "{ a: (keyof X)[] }"],
+    ["a tuple", "{ a: [keyof X] }"],
+    ["a parameter", "{ a: (p: keyof X) => void }"],
+    ["a return type", "{ a: () => keyof X }"],
+    ["a type parameter's constraint", "{ a: T }"],
+  ])("keeps what is unresolved in %s", async (_, type) => {
+    const source = `interface X { x: 1 }\nfunction C<T extends keyof X>(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+  });
+
+  it("checks a later member of a name again after the same type was written twice", async () => {
+    const source = "interface P { a: 1; a: 1; a: string }\nfunction C(props: P) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "P"));
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["conflict"]);
+  });
+
+  it("keeps an accessor opaque over a later property of its name, reported once", async () => {
+    const source = 'interface P { get a(): "x"; a: string }\nfunction C(props: P) {}';
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "P"));
+    expect(printShape(shape, { canonical: true })).toBe("{ a: (unresolved) }");
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+  });
+
+  it("reads a computed key that is a literal as the member's name", async () => {
+    const source =
+      'interface A { a: string }\ninterface B extends A { ["a"]: "x" }\nfunction C(props: B) {}';
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "B"));
+    expect(printShape(shape)).toBe('{ a: "x" }');
+    expect(shape.unresolved).toEqual([]);
+  });
+
+  it("reports a method overloaded three times once", async () => {
+    const source =
+      "interface P { f(a: string): void; f(a: number): void; f(a: boolean): void }\nfunction C(props: P) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "P"));
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+  });
+
+  it("leaves an interface generic in a later declaration unresolved", async () => {
+    const source = "interface G { a: string }\ninterface G<T> { b: T }\nfunction C(props: G) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "G"));
+    expect(shape.construction).toEqual(["generic"]);
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+  });
+
+  it("resolves a cycle through aliases of intersections from any of them", async () => {
+    const source =
+      "type A = B & { a: 1 };\ntype B = C & { b: 1 };\ntype C = { c: A };\nfunction C1(props: A, other: C) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const a = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "A"));
+    const c = await oracle.resolveShape(at("C.uf.tsx", source, "other: ", "C"));
+    expect(printShape(a, { canonical: true })).toBe("{ a: 1; b: 1; c: A }");
+    expect(printShape(c, { canonical: true })).toBe("{ c: { a: 1; b: 1; c: A } }");
+    expect([...a.unresolved, ...c.unresolved]).toEqual([]);
+  });
+
+  it("leaves a class or an enum used as a type unresolved", async () => {
+    const source =
+      "class P { a = 1 }\ninterface P { b: string }\nexport enum E { A }\nfunction C(props: P, other: E) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    for (const [after, type] of [
+      ["props: ", "P"],
+      ["other: ", "E"],
+    ] as const) {
+      const shape = await oracle.resolveShape(at("C.uf.tsx", source, after, type));
+      expect(shape.construction).toEqual(["class-or-enum"]);
+      expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+    }
+  });
+
+  it("reads a named rest element of a tuple", async () => {
+    const source = "function C(props: { e: [first: string, ...rest: number[]] }) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const type = "{ e: [first: string, ...rest: number[]] }";
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(printShape(shape)).toBe(type);
+    expect(shape.unresolved).toEqual([]);
+  });
+
+  it("leaves an interface that extends itself, and a repeated alias, unresolved", async () => {
+    const source = [
+      "interface A extends B { a: string }",
+      "interface B extends A { b: string }",
+      "type D = { d: string };",
+      "type D = { e: string };",
+      "function C(props: A, other: D) {}",
+    ].join("\n");
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const cycle = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "A"));
+    expect(cycle.construction).toContain("circular");
+    expect(cycle.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+    const repeated = await oracle.resolveShape(at("C.uf.tsx", source, "other: ", "D"));
+    expect(repeated.construction).toEqual(["duplicate-declaration"]);
+    expect(printShape(repeated)).toBe("D");
+  });
+
+  it("names the declaration's module, and whether it exports it, on each member", async () => {
+    const types =
+      "export interface Base { a: string }\ninterface Own extends Base { b: string }\nexport type { Own as Public };";
+    const button = 'import type { Public } from "./types.ts";\nfunction B(props: Public) {}';
+    const { oracle } = memory({ "types.ts": types, "B.uf.tsx": button });
+    const shape = await oracle.resolveShape(at("B.uf.tsx", button, "props: ", "Public"));
+    expect(root(shape).members.map((member) => member.declaration)).toEqual([
+      { file: "types.ts", name: "Own", exported: true },
+      { file: "types.ts", name: "Base", exported: true },
+    ]);
+    const local = "interface Own { b: string }\nfunction B(props: Own) {}";
+    const { oracle: other } = memory({ "B.uf.tsx": local });
+    const own = await other.resolveShape(at("B.uf.tsx", local, "props: ", "Own"));
+    expect(root(own).declaration).toEqual({ file: "B.uf.tsx", name: "Own", exported: false });
+  });
+
+  it("keeps each shape until update names a file it was read from", async () => {
+    const files: Record<string, string> = {
+      "C.uf.tsx": 'import type { P } from "./types";\nfunction C(props: P) {}',
+      "D.uf.tsx": "function D(props: { d: string }) {}",
+      "types.tsx": "export interface P { a: string }",
+    };
+    const reads: string[] = [];
+    const oracle = createSyntacticOracle({
+      root: "/project",
+      readFile: (path) => {
+        reads.push(path.slice("/project/".length));
+        return Promise.resolve(files[path.slice("/project/".length)]);
+      },
+    });
+    const c = at("C.uf.tsx", files["C.uf.tsx"]!, "props: ", "P");
+    const d = at("D.uf.tsx", files["D.uf.tsx"]!, "props: ", "{ d: string }");
+    const first = await oracle.resolveShape(c);
+    const unrelated = await oracle.resolveShape(d);
+    expect(reads).toEqual(["C.uf.tsx", "types.ts", "types.tsx", "D.uf.tsx"]);
+    // A file no shape was read from drops nothing.
+    await oracle.update({ files: ["other.ts"] });
+    expect(await oracle.resolveShape(c)).toBe(first);
+    expect(await oracle.resolveShape(d)).toBe(unrelated);
+    expect(reads).toHaveLength(4);
+    // A candidate that did not exist, created, takes over the import, and drops only the shapes
+    // read through it.
+    files["types.ts"] = "export interface P { b: number }";
+    await oracle.update({ files: ["types.ts"] });
+    expect(printShape(await oracle.resolveShape(c))).toBe("{ b: number }");
+    expect(await oracle.resolveShape(d)).toBe(unrelated);
+    expect(reads.slice(4)).toEqual(["types.ts"]);
+    // An edit to the imported module drops the shape of the module that imports it.
+    files["types.ts"] = "export interface P { c: boolean }";
+    await oracle.update({ files: ["types.ts"] });
+    expect(printShape(await oracle.resolveShape(c))).toBe("{ c: boolean }");
+    expect(reads.slice(5)).toEqual(["types.ts"]);
+  });
+
+  it("resolves a package installed after a miss, once update names it", async () => {
+    const project = await realpath(await mkdtemp(join(tmpdir(), "type-oracle-")));
+    try {
+      const source = 'import type { P } from "late";\nfunction C(props: P) {}';
+      await writeFile(join(project, "C.uf.tsx"), source);
+      const oracle = createSyntacticOracle({
+        root: project,
+        readFile: (path) => readFile(path, "utf8").catch(() => undefined),
+      });
+      const query = at("C.uf.tsx", source, "props: ", "P");
+      const missing = await oracle.resolveShape(query);
+      expect(missing.unresolved.map((entry) => entry.reason)).toEqual(["missing-module"]);
+      expect(missing.dependencies).toEqual(["pkg:late"]);
+      await mkdir(join(project, "node_modules/late"), { recursive: true });
+      await writeFile(
+        join(project, "node_modules/late/package.json"),
+        '{ "name": "late", "types": "./index.d.ts" }',
+      );
+      await writeFile(
+        join(project, "node_modules/late/index.d.ts"),
+        'export interface P { a: string; o: Outside }\nimport type { Outside } from "../../outside";',
+      );
+      await writeFile(join(project, "outside.ts"), "export interface Outside { b: string }");
+      await oracle.update({ files: ["pkg:late"] });
+      const installed = await oracle.resolveShape(query);
+      expect(printShape(installed, { canonical: true })).toBe("{ a: string; o: (unresolved) }");
+      // A relative import that leaves its package is no file of that package.
+      expect(installed.unresolved).toEqual([
+        expect.objectContaining({ file: "pkg:late/index.d.ts", reason: "missing-module" }),
+      ]);
+    } finally {
+      await rm(project, { recursive: true, force: true });
+    }
+  });
+
+  it("names each version of a package the root does not resolve, under pnpm's layout", async () => {
+    const project = await realpath(await mkdtemp(join(tmpdir(), "type-oracle-")));
+    try {
+      // Only the root's direct dependencies are links in its `node_modules`; their own
+      // dependencies are sibling links inside the store, `.pnpm/<package>@<version>/node_modules`.
+      const store = join(project, "node_modules/.pnpm");
+      const write = async (path: string, text: string) => {
+        await mkdir(dirname(join(store, path)), { recursive: true });
+        await writeFile(join(store, path), text);
+      };
+      for (const [user, version] of [
+        ["ui", "2.0.0"],
+        ["kit", "3.0.0"],
+      ] as const) {
+        const directory = `${user}@1.0.0/node_modules/${user}`;
+        await write(
+          `${directory}/package.json`,
+          `{ "name": "${user}", "version": "1.0.0", "types": "./index.d.ts" }`,
+        );
+        await write(
+          `${directory}/index.d.ts`,
+          `import type { Tone } from "tokens";\nexport interface Props { tone: Tone }`,
+        );
+        await write(
+          `tokens@${version}/node_modules/tokens/package.json`,
+          `{ "name": "tokens", "version": "${version}", "types": "./index.d.ts" }`,
+        );
+        await write(
+          `tokens@${version}/node_modules/tokens/index.d.ts`,
+          `export type Tone = "v${version}";`,
+        );
+        await link(join(store, directory), join(project, "node_modules", user));
+        await link(
+          join(store, `tokens@${version}/node_modules/tokens`),
+          join(store, `${user}@1.0.0/node_modules/tokens`),
+        );
+      }
+      const source =
+        'import type { Props as A } from "ui";\nimport type { Props as B } from "kit";\nfunction C(a: A, b: B) {}';
+      await writeFile(join(project, "C.uf.tsx"), source);
+      const queries = [at("C.uf.tsx", source, "a: ", "A"), at("C.uf.tsx", source, "b: ", "B")];
+      const results = [];
+      let oracle: TypeOracle | undefined;
+      for (const order of [queries, queries.toReversed()]) {
+        oracle = createSyntacticOracle({
+          root: project,
+          readFile: (path) => readFile(path, "utf8").catch(() => undefined),
+        });
+        const shapes = new Map();
+        for (const query of order) shapes.set(query, await oracle.resolveShape(query));
+        results.push(queries.map((query) => shapes.get(query)));
+      }
+      expect(results[0]).toEqual(results[1]);
+      const [a, b] = results[0]!;
+      expect(printShape(a)).toBe('{ tone: "v2.0.0" }');
+      expect(printShape(b)).toBe('{ tone: "v3.0.0" }');
+      expect(a.dependencies).toEqual(["pkg:tokens", "pkg:ui"]);
+      expect(JSON.stringify([a, b])).not.toContain(project);
+      // `pkg:<name>` names every version of it.
+      await write("tokens@2.0.0/node_modules/tokens/index.d.ts", 'export type Tone = "edited";');
+      await oracle!.update({ files: ["pkg:tokens"] });
+      expect(printShape(await oracle!.resolveShape(queries[0]!))).toBe('{ tone: "edited" }');
+    } finally {
+      await rm(project, { recursive: true, force: true });
+    }
+  });
+
+  it("gives each copy of a package the same answer, whichever query reads first", async () => {
+    const project = fileURLToPath(new URL("fixtures/packages", import.meta.url));
+    const source = await readFile(`${project}/Badge.uf.tsx`, "utf8");
+    const nested = at("Badge.uf.tsx", source, "NestedCopy(props: ", "Uses");
+    const owner = at("Badge.uf.tsx", source, "RootCopy(props: ", "Twin");
+    const results = [];
+    for (const order of [
+      [nested, owner],
+      [owner, nested],
+    ]) {
+      const oracle = createSyntacticOracle({
+        root: project,
+        readFile: (path) => readFile(path, "utf8").catch(() => undefined),
+      });
+      const shapes = new Map();
+      for (const query of order) shapes.set(query, await oracle.resolveShape(query));
+      results.push([nested, owner].map((query) => shapes.get(query)));
+    }
+    expect(results[0]).toEqual(results[1]);
+  });
+
+  it.each([
+    [
+      "a numeric key, over a string-keyed member",
+      'interface S { "2": number; a: string }',
+      "Omit<S, 2>",
+    ],
+    ["a string key, over a numeric member", "interface S { 2: number; a: string }", 'Omit<S, "2">'],
+    ["a numeric member", "interface S { 2: number; a: string }", 'Pick<S, "a">'],
+  ])("leaves Pick and Omit unresolved with %s", async (_, declaration, type) => {
+    const source = `${declaration}\nfunction C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const query = at("C.uf.tsx", source, "props: ", type);
+    const shape = await oracle.resolveShape(query);
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+    await expect(oracle.printType(query)).rejects.toThrow("it has unresolved parts.");
+  });
+
+  it("keeps a readonly member readonly under Required", async () => {
+    const source = "interface P { readonly a?: string }\nfunction C(props: Required<P>) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "Required<P>"));
+    expect(printShape(shape)).toBe("{ readonly a: string }");
+  });
+
+  it("reads a local declaration named like a utility as that declaration", async () => {
+    const source = "type Partial<T> = { p: T };\nfunction C(props: Partial<string>) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "Partial<string>"));
+    expect(printShape(shape)).toBe("{ p: string }");
+    expect(shape.construction).not.toContain("utility:Partial");
+  });
+
+  it("instantiates a generic base with its arguments", async () => {
+    const source =
+      "interface Pair<A, B> { a: A; b: B }\ninterface P extends Pair<string, number> { c: boolean }\nfunction C(props: P) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "P"));
+    expect(printShape(shape, { canonical: true })).toBe("{ a: string; b: number; c: boolean }");
+  });
+
+  it.each([
+    ["a utility with no arguments", "{ p: Partial }", "unsupported"],
+    [
+      "a star export of an absolute path",
+      'import type { X } from "./m";\nfunction D(p: X) {}',
+      "missing-export",
+    ],
+  ])("leaves %s unresolved", async (_, type, reason) => {
+    const source = type.startsWith("{") ? `function C(props: ${type}) {}` : type;
+    const { oracle } = memory({ "C.uf.tsx": source, "m.ts": 'export * from "/abs/types";' });
+    const query = type.startsWith("{")
+      ? at("C.uf.tsx", source, "props: ", type)
+      : at("C.uf.tsx", source, "p: ", "X");
+    const shape = await oracle.resolveShape(query);
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual([reason]);
+    expect(shape.dependencies.filter((dependency) => dependency.startsWith("pkg:"))).toEqual([]);
+  });
+
+  it("reads a package again after update names it", async () => {
+    const project = fileURLToPath(new URL("fixtures/packages", import.meta.url));
+    const reads: string[] = [];
+    const oracle = createSyntacticOracle({
+      root: project,
+      readFile: (path) => {
+        reads.push(path);
+        return readFile(path, "utf8").catch(() => undefined);
+      },
+    });
+    const source = await readFile(`${project}/Badge.uf.tsx`, "utf8");
+    const query = at("Badge.uf.tsx", source, "Exported(props: ", "ButtonProps");
+    const shape = await oracle.resolveShape(query);
+    const count = reads.length;
+    expect(count).toBe(4);
+    expect(reads.every((path) => !path.includes("@acme"))).toBe(true);
+    await oracle.update({ files: ["pkg:@acme/types"] });
+    expect(await oracle.resolveShape(query)).toBe(shape);
+    await oracle.update({ files: ["pkg:ui-kit"] });
+    expect(await oracle.resolveShape(query)).toEqual(shape);
+    expect(reads.slice(count).map((path) => path.slice(path.lastIndexOf("/") + 1))).toEqual([
+      "index.d.ts",
+      "base.d.ts",
+      "tokens.d.ts",
+    ]);
+  });
+
+  it("names no absolute path in a package's shape", async () => {
+    const project = fileURLToPath(new URL("fixtures/packages", import.meta.url));
+    const oracle = createSyntacticOracle({
+      root: project,
+      readFile: (path) => readFile(path, "utf8").catch(() => undefined),
+    });
+    const source = await readFile(`${project}/Badge.uf.tsx`, "utf8");
+    const shape = await oracle.resolveShape(at("Badge.uf.tsx", source, "props: ", "ButtonProps"));
+    expect(JSON.stringify(shape)).not.toContain(project);
+    expect(JSON.stringify(shape)).not.toContain("node_modules");
+  });
+
+  it.each([
+    ["a type parameter", "interface P<T> { a?: T }\nfunction C<T>(props: Required<P<T>>) {}"],
+    ["void", "interface P { a?: void | string }\nfunction C(props: Required<P>) {}"],
+  ])("keeps an optional member Required cannot narrow, %s, unresolved", async (_, source) => {
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const type = source.slice(source.indexOf("Required<"), source.lastIndexOf(")"));
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(printShape(shape, { canonical: true })).toBe("{ a: (unresolved) }");
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+  });
+
+  it("gives `never` for an optional member that holds only `undefined`, under Required", async () => {
+    const source = "interface P { a?: undefined }\nfunction C(props: Required<P>) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "Required<P>"));
+    expect(printShape(shape)).toBe("{ a: never }");
+  });
+
+  it("stops an instantiation that takes new arguments inside itself", async () => {
+    const source = "interface N<T> { v: T; n: N<T[]> }\nfunction C(props: N<string>) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", "N<string>"));
+    expect(shape.construction).toContain("generic");
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+  });
+
+  it.each([
+    ["a default that reads its own declaration", "type P<T = P> = { a: T };", "P"],
+    ["too many arguments", "type P<T> = { a: T };", "P<string, number>"],
+    ["arguments to a type parameter", "type P<T> = { a: T<string> };", "P<string>"],
+    ["an interface that extends its parameter", "interface P<T> extends T { a: 1 }", "P<{}>"],
+  ])("leaves %s unresolved", async (_, declaration, type) => {
+    const source = `${declaration}\nfunction C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(shape.unresolved).not.toEqual([]);
+  });
+
+  it("keeps two instantiations of one declaration apart", async () => {
+    const source =
+      "type Box<T> = { value: T };\nfunction C(props: { a: Box<string>; b: Box<number>; c: Box<string> }) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const type = "{ a: Box<string>; b: Box<number>; c: Box<string> }";
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    const [a, b, c] = root(shape).members.map((member) => member.type);
+    expect(a).toBe(c);
+    expect(a).not.toBe(b);
+    expect(printShape(shape)).toBe(
+      "{ a: { value: string }; b: { value: number }; c: { value: string } }",
+    );
+  });
+
+  it("reads every file again after dispose", async () => {
+    const source = "function C(props: { a: string }) {}";
+    const { oracle, reads } = memory({ "C.uf.tsx": source });
+    const query = at("C.uf.tsx", source, "props: ", "{ a: string }");
+    await oracle.resolveShape(query);
+    await oracle.dispose();
+    await oracle.resolveShape(query);
+    expect(reads).toEqual(["/project/C.uf.tsx", "/project/C.uf.tsx"]);
+  });
+
+  it.each([".", ".."])("reads %s as a relative specifier, not a package", async (specifier) => {
+    const source = `import type { P } from "${specifier}";\nfunction C(props: P) {}`;
+    const { oracle } = memory({ "src/C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("src/C.uf.tsx", source, "props: ", "P"));
+    expect(shape.dependencies).toEqual([]);
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["missing-module"]);
+  });
+
+  it.each(["1e400", "-1e400"])("leaves %s, which JSON cannot hold, unresolved", async (literal) => {
+    const source = `function C(props: { a: ${literal} }) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", `{ a: ${literal} }`));
+    expect(shape.unresolved.map((entry) => entry.reason)).toEqual(["unsupported"]);
+    expect(JSON.parse(JSON.stringify(shape))).toEqual(shape);
+  });
+});
+
+describe("printShape", () => {
+  it("parenthesises what binds looser than `[]` and `?`", async () => {
+    const type = "{ a: (readonly string[])[]; b: [(string | number)?]; c: (readonly [string])[] }";
+    const source = `function C(props: ${type}) {}`;
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const shape = await oracle.resolveShape(at("C.uf.tsx", source, "props: ", type));
+    expect(printShape(shape)).toBe(type);
+  });
+
+  it("refuses a recursive object with no name, which printType rejects", async () => {
+    const source = "interface A { b?: A & { x: 1 } }\nfunction C(props: A) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const query = at("C.uf.tsx", source, "props: ", "A");
+    const shape = await oracle.resolveShape(query);
+    expect(() => printShape(shape)).toThrow("Cannot print a recursive type that has no name.");
+    expect(printShape(shape, { canonical: true })).toBe("{ b?: { b?: (cycle ^1); x: 1 } }");
+    await expect(oracle.printType(query)).rejects.toThrow("Cannot print a recursive type");
+  });
+
+  it("is rejected by printType for a type with unresolved parts", async () => {
+    const source = "function C(props: { a: keyof { b: string } }) {}";
+    const { oracle } = memory({ "C.uf.tsx": source });
+    const query = at("C.uf.tsx", source, "props: ", "{ a: keyof { b: string } }");
+    await expect(oracle.printType(query)).rejects.toThrow("it has unresolved parts.");
+  });
+});
+
+describe("localShapes", () => {
+  const source = [
+    'import type { Size } from "./types.ts";',
+    "interface Props { label: string; size?: Size }",
+    "function C(props: Props) {}",
+  ].join("\n");
+  const { program } = parseSync("C.uf.tsx", source, { astType: "ts" });
+  const shapes = localShapes({ program, source }, "C.uf.tsx");
+
+  it("resolves the module's own declarations, and leaves an import external", () => {
+    const shape = shapes(at("C.uf.tsx", source, "props: ", "Props").span)!;
+    expect(printShape(shape)).toBe("{ label: string; size?: Size }");
+    expect(shape.unresolved).toEqual([
+      {
+        file: "C.uf.tsx",
+        span: at("C.uf.tsx", source, "size?: ", "Size").span,
+        reason: "external",
+      },
+    ]);
+    expect(shape.dependencies).toEqual([]);
+  });
+
+  it("gives the same shape for the same span, and nothing for a span with no type", () => {
+    const span = at("C.uf.tsx", source, "props: ", "Props").span;
+    expect(shapes(span)).toBe(shapes(span));
+    expect(shapes({ start: 0, end: 6 })).toBeUndefined();
+  });
+});

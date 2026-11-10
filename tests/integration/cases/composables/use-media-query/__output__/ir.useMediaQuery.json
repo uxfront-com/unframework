@@ -1,0 +1,288 @@
+{
+  "irVersion": 1,
+  "file": "composables/use-media-query/useMediaQuery.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "composables": [
+    {
+      "name": "useMediaQuery",
+      "span": {
+        "start": 236,
+        "end": 649
+      },
+      "parameters": [
+        {
+          "name": "query",
+          "kind": "value",
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 273,
+              "end": 279
+            }
+          },
+          "binding": "query@266",
+          "span": {
+            "start": 266,
+            "end": 279
+          }
+        }
+      ],
+      "types": [],
+      "bindings": [
+        {
+          "id": "query@266",
+          "name": "query",
+          "kind": "argument",
+          "span": {
+            "start": 266,
+            "end": 271
+          }
+        },
+        {
+          "id": "matches@291",
+          "name": "matches",
+          "kind": "state",
+          "span": {
+            "start": 291,
+            "end": 298
+          }
+        },
+        {
+          "id": "list@319",
+          "name": "list",
+          "kind": "localVar",
+          "span": {
+            "start": 319,
+            "end": 323
+          }
+        },
+        {
+          "id": "update@365",
+          "name": "update",
+          "kind": "localFn",
+          "span": {
+            "start": 365,
+            "end": 371
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "matches@291",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 305,
+              "end": 310
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 285,
+            "end": 312
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "list@319",
+          "type": {
+            "code": "MediaQueryList | undefined",
+            "span": {
+              "start": 325,
+              "end": 351
+            }
+          },
+          "span": {
+            "start": 315,
+            "end": 352
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "update@365",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    matches.value = list?.matches ?? false;\n  }",
+              "span": {
+                "start": 374,
+                "end": 423
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "matches@291",
+                  "operator": "=",
+                  "span": {
+                    "start": 380,
+                    "end": 418
+                  },
+                  "target": {
+                    "start": 380,
+                    "end": 393
+                  },
+                  "value": {
+                    "start": 396,
+                    "end": 418
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "list@319",
+                  "span": {
+                    "start": 396,
+                    "end": 400
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 371,
+              "end": 423
+            }
+          },
+          "span": {
+            "start": 356,
+            "end": 423
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    list = window.matchMedia(query);\n    update();\n    list.addEventListener(\"change\", update);\n  }",
+              "span": {
+                "start": 443,
+                "end": 544
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "list@319",
+                  "operator": "=",
+                  "span": {
+                    "start": 449,
+                    "end": 480
+                  },
+                  "target": {
+                    "start": 449,
+                    "end": 453
+                  },
+                  "value": {
+                    "start": 456,
+                    "end": 480
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "window",
+                  "span": {
+                    "start": 456,
+                    "end": 462
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "query@266",
+                  "span": {
+                    "start": 474,
+                    "end": 479
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "update@365",
+                  "span": {
+                    "start": 486,
+                    "end": 492
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "list@319",
+                  "span": {
+                    "start": 500,
+                    "end": 504
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "update@365",
+                  "span": {
+                    "start": 532,
+                    "end": 538
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 437,
+              "end": 544
+            }
+          },
+          "span": {
+            "start": 427,
+            "end": 546
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "unmounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    list?.removeEventListener(\"change\", update);\n  }",
+              "span": {
+                "start": 568,
+                "end": 622
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "list@319",
+                  "span": {
+                    "start": 574,
+                    "end": 578
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "update@365",
+                  "span": {
+                    "start": 610,
+                    "end": 616
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 562,
+              "end": 622
+            }
+          },
+          "span": {
+            "start": 550,
+            "end": 624
+          }
+        }
+      ],
+      "returns": [
+        {
+          "name": "matches",
+          "binding": "matches@291",
+          "span": {
+            "start": 637,
+            "end": 644
+          }
+        }
+      ]
+    }
+  ]
+}

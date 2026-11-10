@@ -1,0 +1,8 @@
+error[UF6004]: The props type resolves to a union, not to an object type: the targets declare the members of one object type as props.
+ --> diagnostics/props-not-object/Badge.uf.tsx:5:38
+  |
+5 | export default function Badge(props: BadgeProps) {
+  |                                      ^^^^^^^^^^
+  |
+  = help: Give the component one object type of props. Write alternatives as optional members, or as a member whose literal union says which applies.
+  = see: https://unframework.dev/diagnostics/UF6004

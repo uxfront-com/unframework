@@ -1,0 +1,8 @@
+error[UF2036]: `on` is a ref a composable returns, which its caller reads and never writes: the composable changes its own state.
+  --> diagnostics/composable-result-write/Switch.uf.tsx:10:5
+   |
+10 |     on.value = true;
+   |     ^^^^^^^^
+   |
+   = help: Return a function from the composable that changes it, and call that: `toggle()`.
+   = see: https://unframework.dev/diagnostics/UF2036

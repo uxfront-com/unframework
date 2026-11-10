@@ -14,10 +14,11 @@ import type { AngularCompiler } from "./tools.ts";
 
 /**
  * The Angular id scheme of the unframework plugin, not on disk: `<abs>/X.uf.tsx.ts` for a file's
- * main component, and `<abs>/X.uf.tsx.<output file>` for any other (`Card.uf.tsx.card-icon.ts`,
- * ADR-0053).
+ * main component, `<abs>/X.uf.tsx.<output file>` for any other (`Card.uf.tsx.card-icon.ts`,
+ * ADR-0053), and `<abs>/X.uf.ts.ts` for a module of composables, which a component's program
+ * reads to check its template against the composable's types (ADR-0069).
  */
-const VIRTUAL_ID = /\.uf\.tsx(?:\.[^/?]+)?\.ts$/;
+const VIRTUAL_ID = /\.uf\.tsx?(?:\.[^/?]+)?\.ts$/;
 /**
  * A relative import or re-export in generated code, of a child's output (`./field`, ADR-0053)
  * or of a file on disk: `import … from "./x"`, `export … from "./x"` or `import "./x"`. Its
@@ -75,11 +76,11 @@ export interface Compiled {
 export type WorkerReply = { request: number } & ({ compiled: Compiled } | { failure: unknown });
 
 /**
- * Compiles `<abs>/X.uf.tsx.ts` ids with Angular's AOT compiler under the strict options L3
- * checks with, failing the module on any error (template type errors included) and passing
- * warnings to Vite. Compiles run one at a time in a worker, each reusing the previous program, so
- * libraries are analysed once. `declarations` are the ambient declarations each program reads
- * beside the module (`ToolchainContext.declarations`).
+ * Compiles `<abs>/X.uf.tsx.ts` and `<abs>/X.uf.ts.ts` ids with Angular's AOT compiler under the
+ * strict options L3 checks with, failing the module on any error (template type errors included)
+ * and passing warnings to Vite. Compiles run one at a time in a worker, each reusing the previous
+ * program, so libraries are analysed once. `declarations` are the ambient declarations each
+ * program reads beside the module (`ToolchainContext.declarations`).
  */
 export function ngtscVirtual(
   compiler: AngularCompiler,
@@ -144,7 +145,7 @@ export function ngtscVirtual(
       api = candidate as UnframeworkApi;
     },
     transform: {
-      filter: { id: /\.uf\.tsx(?:\.[^/?]+)?\.ts(?:\?|$)/ },
+      filter: { id: /\.uf\.tsx?(?:\.[^/?]+)?\.ts(?:\?|$)/ },
       async handler(code, rawId) {
         const id = rawId.split("?")[0]!;
         // ngtsc reads a child's source from the unframework plugin, which has it only once Vite

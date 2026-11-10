@@ -1,0 +1,277 @@
+{
+  "irVersion": 1,
+  "file": "composables/use-media-query/Layout.uf.tsx",
+  "components": [
+    {
+      "name": "Layout",
+      "span": {
+        "start": 56,
+        "end": 437
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "wide@110",
+          "name": "wide",
+          "kind": "usedState",
+          "span": {
+            "start": 110,
+            "end": 114
+          }
+        },
+        {
+          "id": "tiny@173",
+          "name": "tiny",
+          "kind": "usedState",
+          "span": {
+            "start": 173,
+            "end": 177
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Use",
+          "composable": "useMediaQuery",
+          "arguments": [
+            {
+              "kind": "Value",
+              "value": {
+                "code": "\"(min-width: 1px)\"",
+                "span": {
+                  "start": 133,
+                  "end": 151
+                },
+                "refs": []
+              },
+              "span": {
+                "start": 133,
+                "end": 151
+              }
+            }
+          ],
+          "members": [
+            {
+              "member": "matches",
+              "binding": "wide@110",
+              "span": {
+                "start": 101,
+                "end": 114
+              }
+            }
+          ],
+          "hasEffects": true,
+          "span": {
+            "start": 93,
+            "end": 153
+          }
+        },
+        {
+          "kind": "Use",
+          "composable": "useMediaQuery",
+          "arguments": [
+            {
+              "kind": "Value",
+              "value": {
+                "code": "\"(max-width: 1px)\"",
+                "span": {
+                  "start": 196,
+                  "end": 214
+                },
+                "refs": []
+              },
+              "span": {
+                "start": 196,
+                "end": 214
+              }
+            }
+          ],
+          "members": [
+            {
+              "member": "matches",
+              "binding": "tiny@173",
+              "span": {
+                "start": 164,
+                "end": 177
+              }
+            }
+          ],
+          "hasEffects": true,
+          "span": {
+            "start": 156,
+            "end": 216
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "layout",
+            "span": {
+              "start": 242,
+              "end": 256
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Layout",
+            "span": {
+              "start": 257,
+              "end": 276
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 287,
+                  "end": 300
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "wide.value ? \"Wide layout\" : \"Narrow layout\"",
+                  "span": {
+                    "start": 302,
+                    "end": 346
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "wide@110",
+                      "span": {
+                        "start": 302,
+                        "end": 312
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 301,
+                  "end": 347
+                }
+              }
+            ],
+            "span": {
+              "start": 284,
+              "end": 351
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "tiny.value ? \"Tiny screen\" : \"Not a tiny screen\"",
+                  "span": {
+                    "start": 362,
+                    "end": 410
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tiny@173",
+                      "span": {
+                        "start": 362,
+                        "end": 372
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 361,
+                  "end": 411
+                }
+              }
+            ],
+            "span": {
+              "start": 358,
+              "end": 415
+            }
+          }
+        ],
+        "span": {
+          "start": 233,
+          "end": 430
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Layout",
+      "span": {
+        "start": 56,
+        "end": 437
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./useMediaQuery.uf.ts",
+      "file": "useMediaQuery.uf.ts",
+      "api": {
+        "file": "useMediaQuery.uf.ts",
+        "components": [],
+        "keys": [],
+        "composables": [
+          {
+            "name": "useMediaQuery",
+            "parameters": [
+              {
+                "name": "query",
+                "kind": "value",
+                "type": "string"
+              }
+            ],
+            "members": [
+              {
+                "name": "matches",
+                "kind": "state",
+                "type": "boolean"
+              }
+            ],
+            "hasEffects": true
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Composable",
+          "imported": "useMediaQuery",
+          "local": "useMediaQuery",
+          "span": {
+            "start": 9,
+            "end": 22
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 54
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF4004",
+    "severity": "info",
+    "message": "The angular target does not support generic-slot-props: Angular infers a component's type parameter from its inputs alone, and a slot's directive cannot infer it, so a scoped slot's context takes the parameter's constraint, where the other targets type the consumer's fill by the type argument (ADR-0068).",
+    "file": "diagnostics/generic-slot-props/Options.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 31,
+      "offset": 507
+    },
+    "end": {
+      "line": 8,
+      "column": 69,
+      "offset": 545
+    },
+    "target": "angular"
+  }
+]

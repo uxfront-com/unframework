@@ -5,6 +5,10 @@ name: Nightly
 # baselines are Chromium's, and Chromium stays the only engine that gates a pull request
 # (ci.yml). Each engine's parity matrix goes to the job summary and to an artefact. A difference
 # fails its engine's job, and becomes an issue, never a quarantine entry.
+#
+# Every canary too (ADR-0073), in Chromium: a pull request runs them only when it changes a path
+# that can change a canary's answer (ci.yml), and this is the backstop for one that changes it
+# anyway.
 on:
   schedule:
     - cron: "23 3 * * *"
@@ -40,7 +44,7 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -60,7 +64,7 @@ jobs:
 
       - name: Upload the parity matrix
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: parity-${{ matrix.browser }}
           path: tests/integration/.reports/${{ matrix.browser }}
@@ -71,13 +75,108 @@ jobs:
 
       - name: Upload visual diffs
         if: ${{ failure() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: visual-diffs-${{ matrix.browser }}
           path: |
             tests/integration/.reports/diffs
             tests/integration/.reports/failures
             tests/integration/.vitest
+          include-hidden-files: true
+          if-no-files-found: ignore
+          overwrite: true
+          retention-days: 14
+
+  # ci.yml's matrix and run line, copied: harness/canaries.unit.test.ts fails when they differ.
+  canaries:
+    name: "Nightly: canaries (${{ matrix.canaries }}${{ matrix.shard && format(', shard {0}', matrix.shard) || '' }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - canaries: L1
+          - canaries: L2
+          - canaries: L3
+          - canaries: L4
+          - canaries: L5
+          - canaries: L6
+          - canaries: L7
+            shard: 1/2
+          - canaries: L7
+            shard: 2/2
+          - canaries: L8
+            shard: 1/3
+          - canaries: L8
+            shard: 2/3
+          - canaries: L8
+            shard: 3/3
+          - canaries: L9-unwired-handler
+            shard: 1/2
+          - canaries: L9-unwired-handler
+            shard: 2/2
+          - canaries: L9-rerender-text
+            shard: 1/2
+          - canaries: L9-rerender-text
+            shard: 2/2
+          - canaries: L10-root-hidden
+            shard: 1/3
+          - canaries: L10-root-hidden
+            shard: 2/3
+          - canaries: L10-root-hidden
+            shard: 3/3
+          - canaries: L10-root-inverted
+            shard: 1/2
+          - canaries: L10-root-inverted
+            shard: 2/2
+          - canaries: L10-stylesheet-rule-dropped
+            shard: 1/2
+          - canaries: L10-stylesheet-rule-dropped
+            shard: 2/2
+          - canaries: L11
+            shard: 1/2
+          - canaries: L11
+            shard: 2/2
+          - canaries: L13-console-warn
+            shard: 1/2
+          - canaries: L13-console-warn
+            shard: 2/2
+          - canaries: L13-qwik-handler-throws
+            shard: 1/2
+          - canaries: L13-qwik-handler-throws
+            shard: 2/2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Canaries
+        run: pnpm test:canaries ${{ matrix.canaries }}${{ matrix.shard && format(' --shard {0}', matrix.shard) || '' }}
+
+      # A canary that was not caught leaves its Vitest log and matrix in .canary/<id>. The job's
+      # index tells a canary's shards apart: an artefact's name takes no `/`.
+      - name: Upload the canary runs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: canaries-${{ matrix.canaries }}-${{ strategy.job-index }}
+          path: tests/integration/.canary
           include-hidden-files: true
           if-no-files-found: ignore
           overwrite: true

@@ -25,7 +25,7 @@ The page (`app/pages/index.vue`) holds the copy and the scene. Its story follows
 | 04 Next     | `threshold`: the rails cross a soap film of light and converge into one white stream | Why a new framework won't need a migration     |
 | Finale      | The light corridor                                                                   | The GitHub link and the other UXFront projects |
 
-`app/lib/formations.ts` has the two wrappers the chapters need: `hold()` keeps a formation at a fixed progress (the hero holds its formation for only the first quarter screen of scroll, so the rails would otherwise grow out as the page starts to scroll) and `spotlight()` lights one stretch of the prism along the x axis.
+The chapters wrap their formations in two ways: `hold()` from `@uxfront/scene` keeps a formation at a fixed progress (the hero holds its formation for only the first quarter screen of scroll, so the rails would otherwise grow out as the page starts to scroll), and `spotlight()` in `app/lib/formations.ts` lights one stretch of the prism along the x axis.
 
 Chapters 03 and 04 use `stack` and `threshold`, two formations that started on this site and now live in `@uxfront/scene`:
 
@@ -63,7 +63,7 @@ How it shares the app with the homepage:
 - `app/app.vue` replaces Docus's own, so it renders the Docus shell (header, sidebar, search), loaded lazily from `docus/app/app.vue`, on `/docs` and below, and the bare page everywhere else. `app/error.vue` still renders `UxErrorPage`, docs included.
 - `docsTheme.byline` in `app/app.config.ts` signs the docs header's `Unframework` "by UXFront", like the homepage header. `@uxfront/layer-docs` draws it, and leaves the name itself as Docus's plain title.
 - Docus adds Tailwind CSS and Nuxt UI to the entry stylesheet. On the homepage, `@uxfront/layer-ui` loads that stylesheet after first paint, and the `.ux-site` styles take precedence over it. Keep `app/app.css`, which Docus imports into the same stylesheet, off `.ux-site` too.
-- `nuxt.config.ts` turns off Nuxt's prefetch hints. Otherwise every page, the homepage included, would prefetch the docs' lazy chunks, which delays the homepage's fonts and stylesheet, and with them its LCP.
+- `@uxfront/layer-ui` turns off Nuxt's prefetch hints. Otherwise every page, the homepage included, would prefetch the docs' lazy chunks, which delays the homepage's fonts and stylesheet, and with them its LCP.
 - `app/app.config.ts` sets the theme colors and the GitHub, "Edit this page" and "Report an issue" links (with `rootDir: "apps/web"`, since the docs don't live at the repository root). `app/app.css` darkens Nuxt UI's light-mode primary to pass WCAG AA contrast. Nuxt UI's callouts (`::tip`, `::note`, …) still draw their text in fixed shades that fail it in light mode, so avoid them until they're themed.
 - Docus reads the site URL from `NUXT_SITE_URL`, which `nuxt.config.ts` defaults to the production origin, and generates `robots.txt` (with `@nuxtjs/robots`). Don't add a `public/robots.txt`: the module renames it to `_robots.txt` and merges it in.
 - The site is static, so Docus's MCP server is off (`mcp.enabled` in `nuxt.config.ts`), and so is its AI assistant, which only starts with an `AI_GATEWAY_API_KEY`.

@@ -1,0 +1,7 @@
+{
+  "description": "A parent's prop typed with a type its child's module exports.",
+  "main": "Form.uf.tsx",
+  "ssr": {
+    "email": { "props": { "field": { "name": "email", "label": "Email" } } }
+  }
+}

@@ -328,8 +328,18 @@ function templateReadsBinding(kind: BindingKind): boolean {
     case "slotScope":
     case "context":
     case "component":
+    // `<script setup>` hands the template its imports and constants (ADR-0070), and what a
+    // composable returns, its refs unwrapped as the setup's own (ADR-0069).
+    case "moduleConst":
+    case "import":
+    case "usedState":
+    case "usedDerived":
+    case "usedFn":
+    case "usedConst":
       return true;
     case "localVar":
+    // A composable's parameter: a composable has no template.
+    case "argument":
       return false;
     default:
       return unreachable(kind);

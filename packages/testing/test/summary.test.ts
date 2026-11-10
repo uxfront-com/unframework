@@ -622,7 +622,7 @@ describe("summarise: parity scenarios", () => {
   };
 
   /** What one target's test checked: its scenarios, or the reason it was skipped. */
-  type Checked = string[] | { skipped: string };
+  type Checked = string[] | { skipped: string } | { standIn: string };
 
   /**
    * A run of every project in which each target's browser tests checked these scenarios, by
@@ -650,10 +650,15 @@ describe("summarise: parity scenarios", () => {
             record: {
               ...(Array.isArray(checked)
                 ? { ...hello({ L7: { status: "pass" } }, target), scenarios: checked }
-                : {
-                    ...hello({ L7: { status: "skip", reason: checked.skipped } }, target),
-                    skipped: checked.skipped,
-                  }),
+                : "standIn" in checked
+                  ? {
+                      ...hello({ L7: { status: "fail", message: checked.standIn } }, target),
+                      standIn: checked.standIn,
+                    }
+                  : {
+                      ...hello({ L7: { status: "skip", reason: checked.skipped } }, target),
+                      skipped: checked.skipped,
+                    }),
               test: `basics/hello > ${name}`,
             },
           })),
@@ -672,7 +677,7 @@ describe("summarise: parity scenarios", () => {
 
   const SKIPPED = { skipped: "requires interactivity: react runs nothing (fixture)" };
   const SUFFIX =
-    "Every target runs the same spec, so every target checks the same scenarios, unless it skips a test by capability or has no output for the case.";
+    "Every target runs the same spec, so every target checks the same scenarios, unless it skips a test by capability, has no output for the case, or cannot compile it yet.";
 
   it("passes when every target's tests check the reference's scenarios, in any order", () => {
     const result = summarise(
@@ -822,6 +827,22 @@ describe("summarise: parity scenarios", () => {
     ]);
   });
 
+  it("excuses a test a target ran against a stand-in, on that target alone (ADR-0068)", () => {
+    const STAND_IN = { standIn: "react cannot compile basics/hello yet (fixture)" };
+    const run = scenarios({
+      vue: { renders: ["initial"], updates: ["after-click"] },
+      react: { renders: STAND_IN, updates: STAND_IN },
+    });
+    expect(summarise([run], twoTargets).problems).toEqual([
+      // Its cells fail: only its scenarios are excused, not its layers.
+      expect.stringContaining("basics/hello › react › L7: fail"),
+    ]);
+    expect(summarise([run], twoTargets).matrix.tests["basics/hello"]?.react).toEqual({
+      "basics/hello > renders": { scenarios: [], standIn: STAND_IN.standIn },
+      "basics/hello > updates": { scenarios: [], standIn: STAND_IN.standIn },
+    });
+  });
+
   it("excuses every test of a case a target has no output for, on that target alone", () => {
     const NO_OUTPUT = { skipped: "no output: UF4001 (The react target does not support x: y.)" };
     expect(
@@ -905,6 +926,7 @@ describe("summarise: skips on live layers", () => {
     for (const reason of [
       "requires interactivity: Astro components render on the server only",
       "compile errors: no output",
+      "no spec: a diagnostics case renders in no browser",
       LIVE_REFERENCE_SKIP,
       "the component did not render (L6)",
       "no scripted interaction",

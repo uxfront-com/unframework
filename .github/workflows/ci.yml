@@ -32,7 +32,7 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -64,10 +64,26 @@ jobs:
   # every package, two at a time: on the runner's four vCPUs, more at once starve the browser
   # and compiler-heavy suites (Angular's ngtsc, unframework's build and type probes) past
   # Vitest's timeouts. --continue reports every package that fails, not only the first.
+  # One job ran past its ten minutes as the suites grew, so the packages are split into shards of
+  # about the same length (the targets' suites are the longest). The `core` shard is every package
+  # but the integration corpus and the targets, so a new package lands there; the target shards
+  # name theirs. Together they run every package once.
   unit:
-    name: Unit tests
+    name: "Unit tests (${{ matrix.group }})"
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: core
+            filter: --filter='!@unframework/integration' --filter='!@unframework/target-*'
+          - group: react, solid, angular
+            filter: --filter=@unframework/target-react --filter=@unframework/target-solid --filter=@unframework/target-angular
+          - group: vue, qwik
+            filter: --filter=@unframework/target-vue --filter=@unframework/target-qwik
+          - group: svelte, astro
+            filter: --filter=@unframework/target-svelte --filter=@unframework/target-astro
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
     steps:
@@ -80,7 +96,7 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -89,7 +105,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Test
-        run: pnpm exec turbo run test --filter='!@unframework/integration' --continue --concurrency=2
+        run: pnpm exec turbo run test ${{ matrix.filter }} --continue --concurrency=2
 
   # L1 and L2: every case compiled to all seven targets, against the golden outputs; and the
   # harness's own unit tests, the canaries' corruptions of every case among them.
@@ -107,7 +123,7 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -120,7 +136,7 @@ jobs:
 
       - name: Upload the parity results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: parity-compile
           path: tests/integration/.reports
@@ -149,7 +165,7 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -162,7 +178,7 @@ jobs:
 
       - name: Upload the parity results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: parity-toolchain-${{ matrix.target }}
           path: tests/integration/.reports
@@ -186,7 +202,7 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -199,7 +215,7 @@ jobs:
 
       - name: Upload the parity results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: parity-ssr
           path: tests/integration/.reports
@@ -234,7 +250,7 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -247,7 +263,7 @@ jobs:
 
       - name: Upload the parity results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: parity-browser-${{ matrix.target }}
           path: tests/integration/.reports
@@ -258,7 +274,7 @@ jobs:
 
       - name: Upload visual diffs
         if: ${{ failure() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: visual-diffs-${{ matrix.target }}
           path: |
@@ -299,7 +315,7 @@ jobs:
 
       - name: Upload the baselines
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: baselines
           path: tests/integration/.reports/baselines
@@ -308,6 +324,40 @@ jobs:
           overwrite: true
           retention-days: 7
 
+  # Decides whether the canaries run (ADR-0073). On a pull request it diffs the merge commit against
+  # its first parent: the PR's net change against the current base. --no-renames lists both sides
+  # of a move, so moving a file off the list still counts. `shell: bash` sets pipefail, which a step
+  # with no `shell` lacks: a failed diff turns this job red, and never passes as a skip (P2).
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      canaries: ${{ steps.filter.outputs.canaries }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Filter
+        id: filter
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            git diff --no-renames --name-only HEAD^1 HEAD | node tests/integration/scripts/canary-paths.ts >> "$GITHUB_OUTPUT"
+          else
+            echo "canaries=true" >> "$GITHUB_OUTPUT"
+          fi
+
   # Each live layer has a canary: a corruption that layer must catch. A job fails if any of its
   # canaries passes (plan §7.7). Each entry's `canaries` is what `pnpm test:canaries` takes: a
   # layer's canaries, or one canary where a layer has two that run the browser projects. A
@@ -315,8 +365,18 @@ jobs:
   # target, so it runs in shards, each on a part of the cases (ADR-0052).
   # harness/canaries.unit.test.ts holds the matrix to every canary, once or in every shard, at
   # most one browser canary per job, and shards for each whose browser specs run.
+  # A pull request runs them only when it changes a path that can change a canary's answer: the
+  # list is CANARY_PATHS in tests/integration/scripts/canary-paths.ts. A skipped job counts as
+  # passed. A push to main and workflow_dispatch run them all. The accepted risk (ADR-0073): a
+  # change to a compile package the list leaves out (ir, parser, diagnostics, analyzer,
+  # type-oracle, type-oracle-tsgo, codegen and the targets apart from their toolchain files,
+  # unframework) can change a canary's answer, most plainly a target-specific one such as
+  # L13-qwik-handler-throws. The harness's unit tests, which always run, and nightly.yml, which
+  # runs every canary, are the backstop.
   canaries:
     name: "Canaries (${{ matrix.canaries }}${{ matrix.shard && format(', shard {0}', matrix.shard) || '' }})"
+    needs: changes
+    if: ${{ needs.changes.outputs.canaries == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
@@ -336,9 +396,11 @@ jobs:
           - canaries: L7
             shard: 2/2
           - canaries: L8
-            shard: 1/2
+            shard: 1/3
           - canaries: L8
-            shard: 2/2
+            shard: 2/3
+          - canaries: L8
+            shard: 3/3
           - canaries: L9-unwired-handler
             shard: 1/2
           - canaries: L9-unwired-handler
@@ -348,9 +410,11 @@ jobs:
           - canaries: L9-rerender-text
             shard: 2/2
           - canaries: L10-root-hidden
-            shard: 1/2
+            shard: 1/3
           - canaries: L10-root-hidden
-            shard: 2/2
+            shard: 2/3
+          - canaries: L10-root-hidden
+            shard: 3/3
           - canaries: L10-root-inverted
             shard: 1/2
           - canaries: L10-root-inverted
@@ -381,7 +445,7 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -396,7 +460,7 @@ jobs:
       # index tells a canary's shards apart: an artefact's name takes no `/`.
       - name: Upload the canary runs
         if: ${{ failure() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: canaries-${{ matrix.canaries }}-${{ strategy.job-index }}
           path: tests/integration/.canary
@@ -424,7 +488,7 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -433,7 +497,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download the parity results
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: parity-*
           path: tests/integration/.reports
@@ -444,7 +508,7 @@ jobs:
 
       - name: Upload the parity matrix
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: parity-matrix
           path: |
@@ -469,7 +533,7 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -481,7 +545,7 @@ jobs:
         run: pnpm build
 
       - name: Upload web build
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: web-dist
           path: apps/web/dist
@@ -510,12 +574,12 @@ jobs:
       # No dependency install, so no dependency cache: the audit only needs the
       # built site, lighthouserc.json and `pnpm dlx @lhci/cli`.
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Download web build
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: web-dist
           path: apps/web/dist
@@ -527,7 +591,7 @@ jobs:
 
       - name: Upload Lighthouse reports
         if: ${{ failure() && steps.lighthouse.conclusion == 'failure' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: lighthouse-reports
           path: apps/web/.lighthouseci

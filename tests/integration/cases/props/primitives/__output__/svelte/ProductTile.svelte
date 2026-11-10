@@ -1,14 +1,16 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface ProductTileProps {
     name: string;
     price: number;
     stock: number;
     available?: boolean;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ProductTileProps & { class?: ClassValue; style?: string };
 

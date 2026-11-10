@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF6002",
+    "severity": "error",
+    "message": "`{ [Key in \"label\" | \"title\"]: string }` needs a type checker to evaluate, and the default type oracle reads types as written.",
+    "file": "diagnostics/unsupported-type-construct/Badge.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 26,
+      "offset": 210
+    },
+    "end": {
+      "line": 3,
+      "column": 64,
+      "offset": 248
+    },
+    "help": "Write the type out with interfaces, aliases, unions and object types, or compile with the tsgo type oracle, `@unframework/type-oracle-tsgo`."
+  }
+]

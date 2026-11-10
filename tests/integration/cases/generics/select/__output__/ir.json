@@ -1,0 +1,313 @@
+{
+  "irVersion": 1,
+  "file": "generics/select/SizeForm.uf.tsx",
+  "components": [
+    {
+      "name": "SizeForm",
+      "span": {
+        "start": 194,
+        "end": 484
+      },
+      "props": [],
+      "types": [
+        "Size"
+      ],
+      "bindings": [
+        {
+          "id": "sizes@239",
+          "name": "sizes",
+          "kind": "localConst",
+          "span": {
+            "start": 239,
+            "end": 244
+          }
+        },
+        {
+          "id": "size@280",
+          "name": "size",
+          "kind": "state",
+          "span": {
+            "start": 280,
+            "end": 284
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Const",
+          "binding": "sizes@239",
+          "type": {
+            "code": "Size[]",
+            "span": {
+              "start": 246,
+              "end": 252
+            }
+          },
+          "value": {
+            "code": "[\"s\", \"m\", \"l\"]",
+            "span": {
+              "start": 255,
+              "end": 270
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 233,
+            "end": 271
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "size@280",
+          "type": {
+            "code": "Size",
+            "span": {
+              "start": 291,
+              "end": 295
+            }
+          },
+          "initial": {
+            "code": "\"m\"",
+            "span": {
+              "start": 297,
+              "end": 300
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 274,
+            "end": 302
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Size",
+            "span": {
+              "start": 327,
+              "end": 344
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Select",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Size\"",
+                  "span": {
+                    "start": 366,
+                    "end": 372
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 360,
+                  "end": 372
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "options",
+                "value": {
+                  "code": "sizes",
+                  "span": {
+                    "start": 382,
+                    "end": 387
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "sizes@239",
+                      "span": {
+                        "start": 382,
+                        "end": 387
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 373,
+                  "end": 388
+                }
+              },
+              {
+                "kind": "ModelBinding",
+                "model": "value",
+                "value": {
+                  "code": "size.value",
+                  "span": {
+                    "start": 404,
+                    "end": 414
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "size@280",
+                      "span": {
+                        "start": 404,
+                        "end": 414
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 389,
+                  "end": 415
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 352,
+              "end": 418
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Chosen: ",
+                "span": {
+                  "start": 433,
+                  "end": 441
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "size.value",
+                  "span": {
+                    "start": 442,
+                    "end": 452
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "size@280",
+                      "span": {
+                        "start": 442,
+                        "end": 452
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 441,
+                  "end": 453
+                }
+              }
+            ],
+            "span": {
+              "start": 425,
+              "end": 462
+            }
+          }
+        ],
+        "span": {
+          "start": 318,
+          "end": 477
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SizeForm",
+      "span": {
+        "start": 194,
+        "end": 484
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Size",
+      "exported": false,
+      "code": "type Size = \"s\" | \"m\" | \"l\";",
+      "span": {
+        "start": 75,
+        "end": 103
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./Select.uf.tsx",
+      "file": "Select.uf.tsx",
+      "api": {
+        "file": "Select.uf.tsx",
+        "components": [
+          {
+            "name": "Select",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              },
+              {
+                "name": "options",
+                "optional": false,
+                "type": "readonly T[]",
+                "references": [
+                  "T"
+                ]
+              }
+            ],
+            "events": [],
+            "models": [
+              {
+                "name": "value",
+                "optional": false,
+                "type": "T",
+                "references": [
+                  "T"
+                ]
+              }
+            ],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "typeParameters": [
+              "T"
+            ],
+            "rootTag": "label"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Select",
+          "span": {
+            "start": 43,
+            "end": 49
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 73
+      }
+    }
+  ]
+}

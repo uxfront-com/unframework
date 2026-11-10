@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Increment' })",
+      "dom": [
+        "<section aria-label=\"Timeline\" class=\"timeline\">",
+        "  <p role=\"status\">",
+        "    \"Count: 1\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Increment\"",
+        "  </button>",
+        "  <ol>",
+        "    <li>",
+        "      \"caller mounted first\"",
+        "    </li>",
+        "    <li>",
+        "      \"composable mounted\"",
+        "    </li>",
+        "    <li>",
+        "      \"caller mounted last\"",
+        "    </li>",
+        "    <li>",
+        "      \"composable watcher\"",
+        "    </li>",
+        "    <li>",
+        "      \"caller watcher\"",
+        "    </li>",
+        "  </ol>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Timeline\":",
+        "  - status: \"Count: 1\"",
+        "  - button \"Increment\"",
+        "  - list:",
+        "    - listitem: caller mounted first",
+        "    - listitem: composable mounted",
+        "    - listitem: caller mounted last",
+        "    - listitem: composable watcher",
+        "    - listitem: caller watcher"
+      ],
+      "events": {}
+    }
+  ]
+}

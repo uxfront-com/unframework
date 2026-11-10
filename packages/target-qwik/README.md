@@ -23,6 +23,28 @@ export default component$<BadgeProps>(({ label, tone = "info" }) => {
   default, and so is the parameter when nothing reads it (`component$<Props>(() => …)`): unused
   bindings fail L5. Qwik's optimizer turns the destructuring into reactive reads and a default
   into `??`, which the analyser allows only where the prop cannot be `null` (ADR-0034).
+- The source's `import type` names the output reads, by name (ADR-0067): from a `.ts` module or a
+  package as written, `import type { BadgeProps } from "./types"`, and from a child's output,
+  `import Field, { type FieldProps } from "./Field"`. The output of the module's main component
+  also writes the module's other type exports, an exported type no component reaches and a
+  re-export (`export type { Tone } from "./types"`), among the copied types in source order
+  (ADR-0068). The interfaces the output declares take another name where the source's types take
+  theirs (`CardEvents_1`).
+- A generic component is a generic arrow in `component$`, whose parameter carries the props type:
+  `component$(<T,>({ items }: ListProps<T>) => …)`. TypeScript makes the component it returns
+  generic too, so a consumer's JSX infers `T` from the props it passes, with no cast (ADR-0068).
+  The arrow takes `_props` where it reads no prop.
+  - The interfaces the output declares for its events, models and slots take the type parameters
+    their members read (`PickerSlots<T>`). A scoped slot's fill is typed with the consumer's `T`.
+  - A setup constant that names a type parameter stays in the arrow, where `T` is in scope. A
+    function whose parameters' types name every `T` it reads moves to module scope with its own
+    (`function label<T>(item: T)`), and each call infers `T`. Any other function stays in the
+    arrow: one that names a `T` no call could infer (`function blank(): T[]`), one that reads such
+    a constant, and one that calls either. A getter's `$` scope can't call a function in the
+    arrow, so a getter that calls one declares it inside itself:
+    `useComputed$(() => { function blank(): T[] { … } return blank().length; })`.
+  - A form control bound to a model or a state of `T` writes its value as `T`
+    (`element.value as T`).
 - The export shape follows the source: a default export, a same-named `export const`, or an
   export list for aliases and several exports of one component.
 - Expressions exactly as the source writes them; conditionals as ternary chains ending in
@@ -179,6 +201,99 @@ as a `<style q:style>` where the component renders, before its root, which the n
 out of Qwik's markup, and which `:first-child`, `:nth-child()` and `+` count in the server's
 markup.
 
+## Composables (M5)
+
+Each composable of a `.uf.ts` module is its own module, `useToggle.ts`, holding a `use*` hook
+(`src/composable.ts`, ADR-0069): `export function useToggle(initial: boolean)`, its setup planned
+and printed as a component's is (`src/plan.ts`, `src/setup.ts`), with `useSignal`, `useComputed$`
+and tasks. It returns what the source returns: its signals as they are, and each function as the
+`$()` QRL its caller's client code calls, never moved to module scope.
+
+A hook's `$` scopes capture only what Qwik serialises, never a plain function (optimizer C02), so
+its parameters take the forms Qwik captures:
+
+- A value is taken as written, `initial: boolean`, and read once.
+- A getter, `price: () => number`, is the signal its caller computes with `useComputed$`,
+  `price: ReadonlySignal<number>`, and each call reads it: `price()` is `price.value`. A task
+  tracks it through a function, `track(() => price.value)`, since `track` infers a value only
+  from a writable signal.
+- A callback, `onLimit: (count: number) => void`, is the QRL its caller makes with `$()`,
+  `onLimit: QRL<(count: number) => void>`. A statement call of a callback that returns `void` or
+  a promise runs without waiting, as an emit does: `void onLimit(count.value)`. A call whose value
+  is used is awaited.
+
+What those forms cannot keep is UF1002, at the read, and the hook is not emitted:
+
+- a getter read other than by a call or a test (passed on, kept or aliased), since it is a
+  signal;
+- a callback read other than by a call or a test, or called in a function of the code's own (an
+  array method's callback, a comparator, a timer's), which cannot wait for a QRL's promise;
+- a value whose type holds a function, or a setup `const` whose value holds one by the types it
+  reads, read where a `$` scope captures it, since Qwik serialises what a `$` scope captures;
+- a setup `let` or `ref` whose initial value holds a function, since each is a signal.
+
+Types are read as written: an argument's annotation, a member's declared type, a call's declared
+return type (each part's, for a union of functions such as an optional one), an assertion's type,
+an array's elements (and its copies, `slice()`, and elements, `at(0)`), what an array's `map` or
+`reduce` callback returns where its parameters are plain names and its body an expression, a
+function's `bind`, a setup function's declared return type, and the module's own declarations with
+the interfaces they extend and their type arguments substituted, through `Readonly`, `Partial`,
+`Required`, `NonNullable` and a union's `undefined`. So `const step = options.step` with
+`step: number` holds no function, and `const format = options.make()` with
+`make: () => (value: number) => string` holds one.
+
+Wherever those types don't give a value's type exactly (a global's call, a callback with a
+destructured, default or rest parameter or a block body, a generic function's result, a setup
+function without a return type), it holds a function exactly when what it reads holds one. A
+primitive holds none, so `options.name.toUpperCase()` holds none. An imported type, a class and a
+composable's own type parameter are not seen: each is free.
+
+A test of an optional getter or callback, whether the caller passed it, reads the signal or the
+QRL itself: `limit ? Math.min(price.value, limit.value) : price.value`, and
+`if (onChange) void onChange(next)`. A test is an `if`'s, a loop's or a `?:`'s test, `!`, a
+comparison, the left of `&&`, or an operand of `&&`, `||` or `??` that is itself in a test.
+`typeof limit` is not one: a signal is no function.
+
+A component calls a composable at the top of its setup, as the source does, and imports the hook
+from its output beside the `.uf.ts`: `const { on, toggle } = useToggle(false);`, destructuring
+only the members the output reads (`src/setup.ts`). Each argument takes its parameter's form:
+
+| Source                                     | Qwik                                              |
+| ------------------------------------------ | ------------------------------------------------- |
+| a value, `useToggle(false)`                | as written, read once                             |
+| a getter, `useTotal(() => quantity.value)` | `useTotal(useComputed$(() => quantity.value))`    |
+| a callback, `useCounter((n) => …)`         | `useCounter($((n) => …))`, the QRL the hook calls |
+
+What the call gives is read as the hook returns it: a ref or a derived value is its signal, read
+through `.value` as written and tracked by a task as a component's own signal is; a constant is
+as written; and a function is the hook's QRL, which client code calls as it calls a local QRL
+(awaited where the call is a statement or its value is used, floated where the function is
+async). Since every function the hook returns is a QRL, whose call gives a promise, a call of one
+in the template (a slot's fill included, which is a render prop), a getter or a value the setup
+evaluates is UF1002, at the call.
+
+An argument whose code reads a member of its own call, itself or through the setup declarations
+it reads, another call's arguments among them (`useCounter(3, () => reset())`), is UF1002 at the
+read: Qwik makes the argument's QRL or signal before the call returns, so it would capture the
+member before it exists.
+
+Qwik's optimizer captures a destructured call's members through an object it names after the
+hook, and where one call's argument reads another call's members, it can name two calls of one
+hook alike. So once one call of a hook is read so, every call of that hook is an object of its
+own, destructured after it: `const counter_1 = useCounter(4, …);` then
+`const { reset: resetB } = counter_1;`.
+
+A module's values reach an output as module-level bindings, which a `$` scope reads without
+capturing them, since the optimizer imports them into the segments it writes (ADR-0070,
+`src/modules.ts`): a value imported from a relative `.ts` module is imported from the output
+tree's copy of the module as the source imports it, and a top-level `const` the output reaches is
+declared at module scope as written, in source order, with the module's types its annotations
+name. A function or a `const` that reads only them moves to module scope with them. Where a
+source holds several components or composables, its main one declares every module value any of
+them reads and exports those the others read, `export { STEP };`, and each other one imports what
+it reads from the main one's output, `import { STEP } from "./Pair"`, and reads it only inside
+its function, so the files join into one module (ADR-0053).
+
 ## Toolchain
 
 Tests and tooling use three Node and browser entries (plan §5.7, `Toolchain` in
@@ -192,7 +307,8 @@ Tests and tooling use three Node and browser entries (plan §5.7, `Toolchain` in
 
 - **L3** runs the Rust optimizer from `@qwik.dev/optimizer` (the exact version
   `@qwik.dev/core` depends on, checked at start) over each file, for the client and the
-  server, with the `segment` entry strategy.
+  server, with the `segment` entry strategy, after a strict parse of the file as TSX, or as
+  TypeScript for a `.ts` module, which the optimizer would repair silently otherwise.
 - **L4** runs TypeScript 7 (tsgo) once over every file, through a temporary tsconfig in
   `<toolchainDir>/.uf-tmp/` that extends `<toolchainDir>/tsconfig.json`. In this repo the
   toolchain directory is `tests/toolchains/qwik`.

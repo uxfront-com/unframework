@@ -1,0 +1,6 @@
+{
+  "description": "A generic component's scoped slot whose props name its type parameter: Angular's fill takes the constraint (UF4004, info).",
+  "ssr": {
+    "default": { "props": { "options": [{ "value": "a" }, { "value": "b" }] } }
+  }
+}

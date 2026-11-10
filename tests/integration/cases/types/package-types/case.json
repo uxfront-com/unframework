@@ -1,0 +1,7 @@
+{
+  "description": "Props whose members a package's generic type declares, beside one a `.ts` module declares.",
+  "ssr": {
+    "tick": { "props": { "label": "Feed", "value": "tick", "interval": 250 } },
+    "tock": { "props": { "label": "Clock", "value": "tock", "interval": 1000 } }
+  }
+}

@@ -6,11 +6,30 @@ render: what the server render reaches of the setup, and the markup. It emits on
 per component (ADR-0034, ADR-0046):
 
 - **A frontmatter** at the very top when it declares anything (`src/frontmatter.ts`):
+  - the source's `import type` names the server render reads, and those an injection key's value
+    type names, by name (ADR-0067): from a `.ts` module or a package as written,
+    `import type { BadgeProps } from "./types";`, and from a child's output,
+    `import Field, { type FieldProps } from "./Field.astro";`. An imported
+    `Props` is imported as `OwnProps`, `import type { Props as OwnProps } from "./types";`, and
+    every type the output prints names it so, since Astro declares its own `Props`. No name of
+    Astro's own takes a type import's name;
   - the type declarations the props and the kept setup reach (`liveTypes`), copied as written,
-    and every one the source exports (exported then);
+    and every one the source exports (exported then). The output of the module's main component
+    also writes the module's other type exports, an exported type no component reaches and a
+    re-export (`export type { Tone } from "./types";`), among them in source order (ADR-0068);
   - `Props`, which Astro types `Astro.props` and the component's callers by:
     `type Props = BadgeProps;` for a named props type, `interface Props { … }` holding an inline
-    object type's members, nothing more when the props type is named `Props` already;
+    object type's members, `type Props = Base & { n: number } & { … }` for a type an interface
+    cannot extend, nothing more when the props type is named `Props` already. A generic
+    `Props` is renamed `OwnProps`, since `Props` cannot alias itself:
+    `type Props<T> = OwnProps<T>;`, or `interface Props<T> extends OwnProps<T> { … }` with
+    members beside it. A source that exports its `Props` gets Astro's exported too. A generic
+    component's `Props` declares the type parameters its members name, and those their bounds
+    name, as the source writes them, `interface Props<T> extends ListProps<T>`, and Astro infers
+    `T` from a consumer's props (ADR-0068). One no member names is left out: nothing could infer
+    it. Astro declares them on the component's render function alone, so a parameter the kept
+    setup names is declared at the top of the frontmatter as its constraint, `type T = Item;`,
+    or `unknown`;
   - the props the server render reads (the markup and the kept setup), destructured in the
     source's order with their defaults: `const { label, tone = "info" } = Astro.props;`. Astro
     prints no list keys, so a prop only a key reads is left out, and so is a prop only client code
@@ -118,14 +137,37 @@ per component (ADR-0034, ADR-0046):
   fallthrough reaches. Content filled into a child whose sheet uses `:slotted()`, a scoped
   fill's render prop included, carries the child's `-s`.
 
+- **Shared modules** (ADR-0070, `src/modules.ts`): a value the server render reads of a `.ts`
+  module is imported as the source imports it, `import { formatPrice } from "./format";`, from
+  the copy `compile()` emits beside the outputs. The module's constants it reaches, and those
+  they read, are declared as written in the frontmatter, after `Props` and before the props it
+  reads: `const START = LIMITS.min + 2;`. A value only client code reads is left out. The
+  frontmatter is one scope with the setup, so a constant the component reaches only through
+  another, and whose name a top-level name of the component takes, is declared under a claimed
+  name (`STEP_1`), and the constants and copied types that read it read it so.
+- **Composables** (ADR-0069, `src/composable.ts`): a `.uf.ts` module's composable is a static
+  module of its own, `useToggle.ts`. It keeps the source's function, its type parameters and its
+  value and getter parameters as written, and its setup as a component's: each ref's initial
+  value, each derived value, its constants and the functions a render may call. It returns those,
+  `return { on, label, describe };`. Client code is dropped: its watchers, effects and hooks, its
+  setup `let`s, the functions that write, emit, call `nextTick` or await, or read what does, and
+  its callbacks, which only client code calls, so the parameter list leaves them out. A parameter
+  only dropped code reads is still taken, as `_delay`, so every caller passes the same arguments.
+  A caller imports it from that module, `import { useToggle } from "./useToggle";`, and
+  destructures the members its server render reads, under the names it reads them by, passing
+  its value arguments as its setup reads them (a ref's `.value` as the constant) and its getters
+  as arrows:
+  `const { on: pressed } = useToggle(true, () => price);`. A call whose members only client code
+  reads is left out, with its import.
+
 The capabilities (`src/index.ts`): `interactivity`, `event-capture`, `event-once`,
 `event-passive`, `event-semantics` and `next-tick` are unsupported (UF4001, for information):
 components render on the server only and each render is a new instance, so handlers, template
 refs, watchers and hooks never run and state keeps its initial value; the compiler reports only
 `interactivity`, once per module. Composition's `component-event`, `two-way-binding`,
-`model-array`, `model-modifiers` and `expose` refine `interactivity` and are unsupported in the
-same way; `context` and `reactive-context` are unsupported (UF4001, warnings: `inject` gives its
-fallback, and a provided ref reaches no descendant). `use-id` is emulated (`uniqueId`), and so are
+`model-array`, `model-modifiers` and `expose`, and a composable's `composable-effect-order`
+(ADR-0069), refine `interactivity` and are unsupported in the same way; `context` and
+`reactive-context` are unsupported (UF4001, warnings: `inject` gives its fallback, and a provided ref reaches no descendant). `use-id` is emulated (`uniqueId`), and so are
 `scoped-slot` (a render prop named as the slot), `child-root-scope` (`scopeAttributes`) and
 `style-binding` (`styleObject`, for a style bound to a value that a merge spreads, ADR-0065).
 Every other capability is native.
@@ -142,13 +184,16 @@ Its toolchain, for tests and tooling (the target's main entry never loads it):
   its children import, as the browser project serves it, in a `<style>` before the HTML, a
   child's first (ADR-0063). The render server adds the project's own plugins
   (`ToolchainContext.plugins`), so a styling engine's plugin resolves its `virtual:` modules,
-  and the engine's stylesheet goes before the markup too (ADR-0064). The checks:
+  and the engine's stylesheet goes before the markup too (ADR-0064). A module of composables a
+  component imports (`/abs/useToggle.uf.ts`, ADR-0069) is served as the browser project compiles
+  it, read again on each render. The checks:
   - L3 runs `@astrojs/compiler-rs` with Astro's options and reports every diagnostic (it refuses
-    a compiler version other than the one `astro` uses);
+    a compiler version other than the one `astro` uses), and Vite's TypeScript transform over a
+    `.ts` module, a shared one (ADR-0070) or a composable's (ADR-0069);
   - L4 runs `astro check` (`AstroCheck`, TypeScript 6) from the toolchain directory, once over
     every file;
   - L5 (ADR-0042) runs oxlint's shared baseline over the frontmatter and ESLint with
-    eslint-plugin-astro over the whole file.
+    eslint-plugin-astro over the whole file; a `.ts` module is oxlint's alone.
     A component other than a file's main one has a component id (`X.uf.tsx.Icon.astro`,
     ADR-0053), which the browser project's reference and the render server take as they take a
     main id.

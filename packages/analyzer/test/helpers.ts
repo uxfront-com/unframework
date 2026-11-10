@@ -13,15 +13,19 @@ import type {
 import { parseModule } from "@unframework/parser";
 
 import { analyze } from "../src/index.ts";
-import type { AnalyzeResult } from "../src/index.ts";
+import type { AnalyzeOptions, AnalyzeResult } from "../src/index.ts";
 
 /**
  * Analyses a source. Every test that runs the analyser also checks that the IR it lowers keeps
  * the IR's invariants, which the compiler would otherwise report as an internal error, and
  * survives a JSON round trip unchanged, as snapshots and plugins see it.
  */
-export function run(source: string, file = "Test.uf.tsx"): AnalyzeResult {
-  const result = analyze(parseModule(file, source));
+export function run(
+  source: string,
+  file = "Test.uf.tsx",
+  options: AnalyzeOptions = {},
+): AnalyzeResult {
+  const result = analyze(parseModule(file, source), options);
   if (result.module) {
     const broken = checkInvariants(result.module);
     if (broken.length) {

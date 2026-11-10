@@ -1,0 +1,8 @@
+error[UF6002]: `{ [Key in "label" | "title"]: string }` needs a type checker to evaluate, and the default type oracle reads types as written.
+ --> diagnostics/unsupported-type-construct/Badge.uf.tsx:3:26
+  |
+3 | export type BadgeProps = { [Key in "label" | "title"]: string };
+  |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: Write the type out with interfaces, aliases, unions and object types, or compile with the tsgo type oracle, `@unframework/type-oracle-tsgo`.
+  = see: https://unframework.dev/diagnostics/UF6002

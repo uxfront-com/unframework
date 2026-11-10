@@ -1,0 +1,8 @@
+error[UF2035]: `inject` needs the component it runs in, and a composable runs in whichever component calls it: it calls no `useId`, `useTemplateRef`, `provide`, `inject` or `define*` macro.
+ --> diagnostics/invalid-composable/useTheme.uf.ts:8:17
+  |
+8 |   const theme = inject(ThemeKey, "light");
+  |                 ^^^^^^
+  |
+  = help: Call `inject` in the component, and pass what the composable needs from it as an argument.
+  = see: https://unframework.dev/diagnostics/UF2035

@@ -3,8 +3,8 @@
 Passes P2 (analyse) and P3 (lower) of the Unframework compiler (plan §5.1):
 
 - `analyze(parsed)` checks a parsed `.uf.tsx` module and lowers each component's returned JSX into
-  the portable IR. It reports every construct it cannot lower as a diagnostic, and never copies
-  code through unanalysed (P2). It never throws. A syntax error stops it. Any other module-level
+  the portable IR, or a `.uf.ts` module and its composables (ADR-0069). It reports every construct
+  it cannot lower as a diagnostic, and never copies code through unanalysed (P2). It never throws. A syntax error stops it. Any other module-level
   error (an import, a top-level declaration) drops every component, which are still checked, so
   that fixing it reveals nothing new; an error in a component drops that component only.
 - JSX text means what every JSX implementation agrees it means. Babel (Vue's and Solid's JSX)
@@ -29,16 +29,134 @@ Passes P2 (analyse) and P3 (lower) of the Unframework compiler (plan §5.1):
 
 Components with typed props, a setup, listeners and JSX (plan §9 M1 and M2, ADR-0034 to ADR-0040,
 ADR-0045 onwards), and the composition of M3's core lane (ADR-0053 to ADR-0055): components that
-render each other, slots, fallthrough and `defineExpose`. A module exports at least one component;
+render each other, slots, fallthrough and `defineExpose`. A `.uf.tsx` module exports at least one component;
 one it does not export is lowered too, and each output writes it as a sibling file. A component
 is a function declaration; one written as a value (`export const Card = (props) => …`) is UF1102,
 checked as the declaration its likely fix writes (`analyze.ts`).
 
-- **Props** (`props.ts`, `declarations.ts`): the one parameter, destructured with static defaults
-  or kept as one object read as `props.x`, typed by an object type literal or a local `interface`
-  or `type`. Member types keep to what every target's props can declare. Problems are UF2001 to
-  UF2003, and UF1002 for types that land in M5. Each top-level type declaration must be reached by
-  some component's props; the outputs copy it as written.
+- **Props** (`props.ts`, `declarations.ts`): the one parameter, destructured with static defaults or
+  kept as one object read as `props.x`, typed by a type read from its shape through the type oracle
+  (ADR-0067), whatever its form: an object type literal, a local `interface` or `type`, one imported
+  from a relative `.ts`, a `.uf.tsx`, a `.uf.ts` or a package, an `extends` chain, an intersection,
+  or `Partial`, `Required`, `Pick`, `Omit` or `Readonly`. A member the props type's own declaration
+  writes, through its aliases, keeps its span and its type's text as written; one another
+  declaration writes records it in `Prop.declaredBy`; one another file writes takes the props
+  annotation's span and its declaring file's text. Member types keep to what every target's props
+  can declare: what this module writes is checked as written, each problem once, at its own span, as
+  ADR-0034 reads it, and what another file writes is checked on the shape and reported at the member
+  that reaches it, or at the props annotation. A problem in one member fails the component without
+  stopping the checks of the others. A prop's kinds are read from the shape (`kindsFromShape`).
+  Problems are UF2001 to UF2003, a function type, or a call or construct signature this module
+  writes, UF1002, and UF6001 (a type that cannot be resolved), UF6002 (a construct the default
+  oracle cannot evaluate, a computed key, or a member type props cannot take), UF6003 (a member's
+  type names one its file does not export), UF6004 (a props type that is not one object type) and
+  UF6005 (a member two declarations type differently, or make optional in one and required in the
+  other: an interface's member over its base's, two bases', or two intersection parts', read from
+  the syntax this module writes through aliases and utility types; one member written once and given
+  twice, as in `Partial<L> & L`, is declared once. A type another file builds is checked by
+  TypeScript in that file, and the oracle reports its intersections' conflicts). Each top-level type
+  declaration is reached by some component's props or setup, which the outputs copy as written, or
+  exported on its own (`typeExports`); an export list may export a local type by its own name.
+- **Generic components** (`analyze.ts`, `props.ts`, ADR-0068):
+  `function List<T>(props: ListProps<T>)` records its type parameters, with their constraints and
+  defaults as written, in `UfComponent.typeParameters`, and their names in
+  `ComponentApi.typeParameters`. Its props, slots and events' payloads may name them, and a slot
+  records the names its props reference. A declaration given its own type parameters, by name and
+  in order, is the props type's own; any other instantiation is another declaration's
+  (`declaredBy`). Type arguments on a tag (`<List<string> />`), and a generic component as a
+  candidate of `<component is>`, are UF6006: its consumer's props infer `T`.
+- **Types from other modules** (`shapes.ts`, ADR-0067): `import type` (or a `type` specifier) from
+  any module but the authoring API and a framework is a `typeImports` entry, which every output
+  re-imports by name; `export type { … } from` is a `typeExports` re-export. The analyser is
+  synchronous, so `shapeQueries(parsed)` lists the types whose shapes it reads (each props
+  annotation, each type argument of `defineEmits`, `defineModel` and `defineSlots`, each
+  `InjectionKey<…>`'s argument, and each annotation or type argument in a function's body that
+  names an imported type), and `analyze(parsed, { shapes })` takes them, as the compiler's oracle
+  resolved them. Without `shapes` it reads the module's own declarations (`localShapes`), and an
+  imported type is UF6001. The shapes reach the API, setup and render contexts.
+- **Shared modules and module-level values** (`shared.ts`, ADR-0070): a component reads values
+  from relative `.ts` modules and its module's top-level `const`s, each through a read-only
+  binding of its own (`import`, `moduleConst`), which a write (UF2011) or a change in place
+  (UF2004) never touches. `analyze(parsed, { modules })` takes each shared module the source
+  imports, by specifier (`sharedModuleImports(parsed)` lists them, values or types), as the
+  compiler's resolver read it: a value import of one it could not read, or of one that reaches a
+  file it could not read, is UF1202; one that imports a framework or `unframework`, itself or
+  through another `.ts` (`moduleSpecifiers(parsed)` lists what a module imports), is UF1204, for
+  a type import too. Both are module-level errors. The module records its value imports
+  (`moduleImports`) and the constants its components read, with those they read in turn
+  (`constants`). A constant is a plain value (`lowerConstants`): a function, `const f = (…) =>
+…`, whose body runs once called, or any other value, which runs as the module loads, but for
+  the arrows it holds.
+  - It reads the module's other constants, its value imports and the pure globals (UF3020). As
+    the module loads it reads no constant declared after it, itself or through the functions it
+    calls, a function constant passed to a call (a table that holds functions is only read), or an
+    arrow a value holds and calls through any name or member that reaches it (`O.m()`, `P.m()` with
+    `P = O`, `O.a.m()`, `O.m.call(…)`, `[…].map(O.m)`), included (UF2023). An arrow runs then only where it is called in place, passed to
+    a call or called through a member; one a value holds runs once called. A type it names (`typeof B`) reads nothing, and a local type
+    it names is declared with it.
+  - It changes in place only a fresh value, one it builds itself: a literal, a `new`, a copy
+    (`filter`, `map`, `slice`, … of anything but an object literal, whose own method may give
+    what it holds), the receiver a method returns (`sort`, `reverse`), a deep copy and all it
+    holds (`structuredClone`, `JSON.parse`), or a function's local that only ever holds one (a
+    `reduce` accumulator too, but never another parameter, which holds what its caller gives).
+    Freezing a value changes nothing anyone reads, so `Object.freeze(…)` is plain, and a
+    component's setup and client code accept it of a module's value too. Anything else written,
+    deleted or changed by a mutating method, through `as`, `!`, an alias or a pattern too, is
+    UF2004. A function writes only its
+    own locals (UF2011).
+  - It holds no JSX (UF3012), and no `this`, `import.meta`, `import()`, function expression or
+    class, and calls no computed member (UF1002).
+  - Chance, the clock and the locale are UF3019 as the module loads, and a global only client
+    code may read (`console`, `document`, …) UF3020. In a function, or an arrow a value holds,
+    they mark the constant `nondeterministic` or `clientOnly`, and a value that holds such a
+    function carries it (not one that only reads it, as `Object.keys(TABLE)` and
+    `Object.values(TABLE).length` do). A call of one as the module loads reports it there when
+    it is called by name or through a member that reaches it (`f()`, `O.m()`, `O.m.call(…)`,
+    `[…].map(O.m)`). One a callback calls (`L.map((f) => f())`), or a function a table is
+    passed to (`pick(TABLE)`), is a known gap. A
+    template, a getter or an initial value that calls or reads one (`XS.map(format)`, `O.d()`),
+    or a local function it reaches, reports it (UF3019, UF2014), as setup does; client code may
+    call it.
+  - A `let`, a destructured or exported `const` and a `const` of two names are UF1002. Qwik
+    reads both kinds where they are declared, so a getter's function may read them (UF2014).
+
+  A shared module's imports include its `import x = require("…")` and each `import()` of a string
+  or a template without holes; `unfollowedImports(parsed)` lists what it loads that the compiler
+  cannot follow (any other `import()`, `import.meta.glob`), which is UF1202.
+
+- **Composables** (`composables.ts`, ADR-0069): a `.uf.ts` module holds no component, and each
+  named export `use[A-Z]…`, a function declaration, is a composable, lowered into
+  `UfModule.composables`. Its body is a setup under a component's rules (`declareSetup`), with
+  parameters in place of props and a returned object in place of JSX.
+  - Each parameter is a name with a type, an `argument` binding read as a destructured prop is.
+    Its type gives its kind: a function type without parameters is a getter, any other function
+    type a callback, which only client code reads, and anything else a value.
+  - The last statement returns a shorthand object of the setup's state, derived values, local
+    functions and constants.
+  - The module's API lists a `ComposableApi` per composable: each parameter's kind and type, each
+    member's kind and its type where the source writes one, whether a returned function is
+    `async`, and `pure` or `client` by its summary, and `hasEffects` where the setup holds a
+    watcher or a lifecycle hook. A composable with an error is left out of it.
+  - UF2035 rejects a call of `useId`, `useTemplateRef`, `provide`, `inject` or a `define*` macro,
+    a call of another composable (one the module declares, or imports from a `.uf.ts`), a default
+    export, an export named otherwise, a `use*` function the module does not export or writes as
+    a value, an `async` or generator function, a parameter without a type, with a default value or
+    written as a pattern, a callback read outside client code, a return of any other shape, and a
+    module that exports no composable. An injection key in a `.uf.ts` module is UF1002: it stays
+    in the `.uf.tsx` module that provides it (ADR-0054).
+  - **The call site.** A component imports a `.uf.ts` module's composables by name, and calls
+    each at the top level of its setup as `const { on, toggle } = useToggle(false)`, which lowers
+    to a `Use` item. Each argument is read as its parameter's kind says. A value is read once,
+    as an initial value is, a getter is an arrow written in place and read as a `computed`'s
+    getter, and a callback is an arrow written in place and read as client code. Each destructured member is a `used*` binding of
+    the member's kind (`usedState`, `usedDerived`, `usedFn`, `usedConst`), and the item copies
+    the API's `hasEffects`. A write of a returned ref is UF2036, a reactive read passed to a value
+    parameter is UF2007 (a warning), and a template, a getter or an initial value that calls a
+    returned function the API doesn't mark `pure`, itself or through a local function, is
+    UF2014. A call that isn't destructured by a top-level `const`, explicit type arguments, a
+    wrong number of arguments, a getter or a callback not written in place, and a member the
+    composable doesn't return are UF1002.
+
 - **The authoring API** (`authoring.ts`): named imports from `"unframework"`, recognised by the
   binding each declares (ADR-0006), as the package exports them (a test reads its `index.ts`).
   Anything else is UF2016.
@@ -46,11 +164,16 @@ checked as the declaration its likely fix writes (`analyze.ts`).
   - A component's API (`ComponentApi`: its props, events, slots, exposed functions, options and
     the shape of its root) is read from its declarations alone, before any component is lowered:
     the module's components render each other and themselves, and `analyze` returns the module's
-    API for the compiler's resolver, whatever its templates hold.
+    API for the compiler's resolver, whatever its templates hold. Its props, events and slots are
+    the members of their types' shapes (ADR-0067), so a type the module imports, extends or builds
+    with a utility type reaches it; a prop, a model, a scoped slot's props and a key name what
+    their types reference (`references`), and a prop typed by an alias of a union of literals
+    holds them (`literals`).
   - `analyze(parsed, { imports })` takes the API of each `.uf.tsx` module the source imports,
-    by specifier (`componentImports(parsed)` lists them): an import the resolver gave nothing
-    for, or a name the module does not export, is UF1202, and the module records each one it
-    lowers (`ModuleImport`).
+    and of each `.uf.ts` module whose composables a `.uf.tsx` imports (ADR-0069), by specifier
+    (`componentImports(parsed)` lists them, and a `.uf.ts` module asks for none): an import the
+    resolver gave nothing for, or a name the module does not export, is UF1202, and the module
+    records each one it lowers (`ModuleImport`).
   - A PascalCase tag names an imported component, one of the module's own, or the component
     itself (UF3047 otherwise, with a likely fix to a close name). Its attributes are props, the
     listeners of the events it declares (`onClear`, a local function or an arrow whose parameters
@@ -81,8 +204,9 @@ checked as the declaration its likely fix writes (`analyze.ts`).
     it begins alone (`"warn"` for `"warning"`), and a likely fix that writes it. The fix is
     withheld on `<component is>`, and in a JSX string for a literal holding `"`, `\`, `&` or a
     line break, which the string cannot hold as written. The union is read from the type as the
-    child writes it: an alias or a union with a wider member is not checked, and the outputs'
-    type checks (L4) catch the rest.
+    child writes it, or for an alias from the literals the child's API resolved
+    (`ApiMember.literals`, ADR-0067). A union with a wider member is not checked, and the
+    outputs' type checks (L4) catch the rest.
 - **Models** (`setup.ts`, `models.ts`, ADR-0054): `const value = defineModel<T>("value", { default,
 required })` declares a `model` binding, read and written as `value.value`, as state is; the
   name is a camelCase string literal apart from the props, the other models and an event's
@@ -238,17 +362,19 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   listeners are judged by Svelte 5.57.1's five handler-dependent accessibility rules (`a11y.ts`,
   UF3030), on the source's listeners, its tables Svelte's own.
 - **Attributes** (`attribute-names.ts`, `attributes.ts`, `enumerated.ts`, `class.ts`, `style.ts`,
-  `aria.ts`): name checks first, whatever the value; then static values, literals in braces
-  (written statically, UF3004), bindings whose kinds must fit the attribute and whose values
-  every typed target's element types accept (UF3018: an enumerated attribute's tokens, a
-  string where a target types one), `class` parts, `style` declarations (parsed by
-  `@unframework/parser`, UF3022 for what the targets cannot keep apart) and spreads of objects
-  whose keys a local type declares. A spread records whether its object may be nullish where
-  it renders (`spread-source.ts`): its kinds say whether its type may be, and the conditions
-  around it narrow it as every target's checker does; a test the compiler does not follow is
-  UF1002, and a source the conditions show is absent UF3004. A bound `value` that may be nullish
-  on the elements whose `value` some targets set as a property (`NULLISH_VALUE_ELEMENTS`) is
-  UF1002.
+  `aria.ts`): name checks first, whatever the value; then static values, literals in braces (written
+  statically, UF3004), bindings whose kinds must fit the attribute and whose values every typed
+  target's element types accept (UF3018: an enumerated attribute's tokens, a string where a target
+  types one), `class` parts, `style` declarations (parsed by `@unframework/parser`, UF3022 for what
+  the targets cannot keep apart) and spreads of objects whose keys a type declares: a prop's, a
+  list's item's, or a setup value's whose type is written as an annotation or as `ref`'s type
+  argument, read from its shape. A spread that reads any setup value whose type is not written so,
+  its source or a condition's, is UF1002, and one that reads a setup value whose type does not
+  resolve in full UF3048. A spread records whether its object may be nullish where it renders
+  (`spread-source.ts`): its kinds say whether its type may be, and the conditions around it narrow
+  it as every target's checker does; a test the compiler does not follow is UF1002, and a source the
+  conditions show is absent UF3004. A bound `value` that may be nullish on the elements whose
+  `value` some targets set as a property (`NULLISH_VALUE_ELEMENTS`) is UF1002.
 
 Every fix leaves exactly the diagnostics that had none once all are applied (the harness's L1),
 which the tests check for each fix, for each pair that can meet, and over random mixes.

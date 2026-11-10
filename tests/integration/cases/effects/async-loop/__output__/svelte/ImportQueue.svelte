@@ -1,12 +1,14 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import { tick, untrack } from "svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface ImportQueueProps {
     files: string[];
   }
+</script>
+
+<script lang="ts">
+  import { tick, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ImportQueueProps & {
     onprogress?: (status: string, attempts: number) => void;

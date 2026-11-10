@@ -1,0 +1,32 @@
+---
+import { useCounter } from "./useCounter";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const message = "Keep going" as string;
+const { count, step } = useCounter(3);
+---
+
+<section
+  class:list={["clicker", className]}
+  aria-label="Clicker"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
+  <p role="status">Count: {count}</p>
+  <p>{message}</p>
+  <button type="button">Add {step}</button>
+  <button type="button">Reset</button>
+</section>

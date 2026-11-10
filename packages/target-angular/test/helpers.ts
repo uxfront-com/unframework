@@ -73,7 +73,9 @@ export function corpusSources(): { name: string; file: string; source: string }[
         !name.startsWith("diagnostics/") &&
         !COMPOSITION.test(name) &&
         !STYLED_COMPOSITION.test(name) &&
-        !BINDING_COMPOSITION.test(name),
+        !BINDING_COMPOSITION.test(name) &&
+        !TYPE_MODULES.test(name) &&
+        !COMPOSABLE_MODULES.test(name),
     );
 }
 
@@ -91,6 +93,22 @@ const STYLED_COMPOSITION =
  * toolchain project checks their Angular outputs.
  */
 const BINDING_COMPOSITION = /^bindings\/(?:style-expression|style-spread)$/;
+
+/**
+ * The types and generics cases whose sources import types from a module beside them, or render
+ * a child (ADR-0067, ADR-0068): `compile()` resolves both through its oracle and resolver, and
+ * copies the modules into the output tree, which `lower` does not. The corpus's toolchain project
+ * checks their Angular outputs.
+ */
+const TYPE_MODULES = /^types\/(?!exported-types$)|^generics\/(?:scoped-slot|select)$/;
+
+/**
+ * The composable and shared-module cases, once they land from `pending/` (ADR-0069, ADR-0070):
+ * their sources call a composable or read a module beside them, which `compile()` resolves and
+ * `lower` does not. The `composable` test and the corpus's toolchain project check their Angular
+ * outputs.
+ */
+const COMPOSABLE_MODULES = /^(?:composables|modules)\/|^semantics\/composable-/;
 
 /**
  * The areas of M3's composition cases, which Angular reports (UF1002) until its M3 lane

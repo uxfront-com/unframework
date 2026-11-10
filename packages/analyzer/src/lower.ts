@@ -93,6 +93,25 @@ export function lowerElement(
 ): LoweredElement {
   const { reporter } = render;
   const name = node.openingElement.name;
+  const { typeArguments } = node.openingElement;
+  if (typeArguments) {
+    // `<List<string> … />`: no target's template writes type arguments (ADR-0068).
+    reporter.report(
+      "UF6006",
+      typeArguments,
+      "A tag cannot take type arguments: several targets' templates cannot write them, and a generic component infers them from the props its consumer passes.",
+      {
+        help: "Remove the type arguments, and pass props whose types give them.",
+        fixes: [
+          {
+            title: "Remove the type arguments",
+            confidence: "likely",
+            edits: [{ span: span(typeArguments), text: "" }],
+          },
+        ],
+      },
+    );
+  }
   if (name.type !== "JSXIdentifier") {
     reporter.unsupported(
       name,

@@ -575,8 +575,9 @@ const ASCII_WHITESPACE = /^[\t\n\f\r ]+$/;
 
 /**
  * Reads a spread (ADR-0039): an object literal is written as its attributes (UF3004); any other
- * value must be a prop or an item whose type the module declares, whose keys it renders exactly,
- * each checked as a bound attribute of the element, and read through `?.` where the value may be
+ * value must have a declared type whose keys are known, a prop's, a list item's or a setup
+ * value's written type, and it renders those keys exactly, each checked as a bound attribute of
+ * the element, and read through `?.` where the value may be
  * nullish (`./spread-source.ts`). A type that declares no keys, or a source that is absent
  * wherever the spread renders, renders nothing (UF3004, removed). `after` is where the source
  * before it ends.
@@ -599,17 +600,34 @@ function readSpread(
   }
   const mark = reporter.diagnostics.length;
   const checked = checkExpression(argument, render);
-  // A setup value's keys are its inferred type's, which M5's type oracle reads (ADR-0045,
-  // amending ADR-0039).
-  const setup = new Set([...render.setup.bindings.values()].map((binding) => binding.id));
-  if (
-    checked.clean &&
-    checked.expression.refs.some((ref) => ref.kind === "Binding" && setup.has(ref.binding))
-  ) {
+  // A setup value's keys are those of its written type, an annotation or `ref`'s type argument,
+  // read from its shape (ADR-0039, ADR-0045, ADR-0067), and known only when that type resolves
+  // in full: a key an unresolved part declares would never render.
+  const setupReads = checked.clean
+    ? [...render.setup.bindings.values()].filter((binding) =>
+        checked.expression.refs.some((ref) => ref.kind === "Binding" && ref.binding === binding.id),
+      )
+    : [];
+  const unwritten = setupReads.find((binding) => !binding.typed);
+  if (unwritten) {
     reporter.unsupported(
       item,
-      "Spreads of the setup's values are not supported yet: a setup value's type is mostly inferred, which M5's type oracle reads.",
-      { help: "Spread a prop or a list's item, or write the attributes." },
+      `This spread reads \`${unwritten.name}\`, a setup value whose type is not written as an annotation or as \`ref\`'s type argument: a spread reads only setup values whose types are written, so that it renders the keys they declare.`,
+      {
+        help: `Write \`${unwritten.name}\`'s type, as an annotation or as \`ref\`'s type argument, or write the attributes.`,
+      },
+    );
+    return { node: item, binds: true, attribute: undefined, keys: [] };
+  }
+  const partial = setupReads.find((binding) => !binding.typed!.complete);
+  if (partial) {
+    reporter.report(
+      "UF3048",
+      item,
+      `This spread's keys are not all known: it reads \`${partial.name}\`, a setup value whose type does not resolve in full, and a spread renders exactly the keys its type declares (ADR-0054).`,
+      {
+        help: "Give the value a type the compiler resolves (no index signature, and every type it reaches declared or imported), or write the attributes.",
+      },
     );
     return { node: item, binds: true, attribute: undefined, keys: [] };
   }
@@ -621,7 +639,9 @@ function readSpread(
         item,
         "This spread's keys are not known: a spread renders exactly the keys its type declares, and no target can render keys only the run time knows (ADR-0054).",
         {
-          help: "Spread a prop or a list's item typed by an interface or an object type the module declares, or write the attributes.",
+          help: setupReads.length
+            ? "Spread a prop, a list's item or a setup value whose type is an interface or an object type, or write the attributes."
+            : "Spread a prop or a list's item typed by an interface or an object type the module declares, or write the attributes.",
         },
       );
     }

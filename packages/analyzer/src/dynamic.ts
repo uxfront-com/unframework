@@ -98,6 +98,21 @@ export function lowerDynamic(
     );
     return undefined;
   }
+  // A generic child infers its type arguments from the props its own tag passes (ADR-0068).
+  let generic = false;
+  for (const leaf of leaves) {
+    if (leaf.kind !== "Component" || !leaf.info.api.typeParameters?.length) continue;
+    generic = true;
+    reporter.report(
+      "UF6006",
+      leaf.node,
+      `\`${leaf.info.name}\` is generic, and cannot be a candidate of \`<component is>\`: no one type argument types the props of every candidate.`,
+      {
+        help: `Render \`${leaf.info.name}\` by its own tag, which infers its type arguments from its props.`,
+      },
+    );
+  }
+  if (generic) return undefined;
   const candidates: DynamicCandidate[] = [];
   for (const leaf of leaves) {
     const candidate: DynamicCandidate =

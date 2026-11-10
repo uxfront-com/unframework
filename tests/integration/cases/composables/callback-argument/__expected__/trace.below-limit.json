@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add 1' })",
+      "dom": [
+        "<section aria-label=\"Clicker\" class=\"clicker\">",
+        "  <p role=\"status\">",
+        "    \"Count: 1\"",
+        "  </p>",
+        "  <p>",
+        "    \"Keep going\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add 1\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Reset\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Clicker\":",
+        "  - status: \"Count: 1\"",
+        "  - paragraph: Keep going",
+        "  - button \"Add 1\"",
+        "  - button \"Reset\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Add 1' })",
+      "dom": [
+        "<section aria-label=\"Clicker\" class=\"clicker\">",
+        "  <p role=\"status\">",
+        "    \"Count: 2\"",
+        "  </p>",
+        "  <p>",
+        "    \"Keep going\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add 1\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Reset\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Clicker\":",
+        "  - status: \"Count: 2\"",
+        "  - paragraph: Keep going",
+        "  - button \"Add 1\"",
+        "  - button \"Reset\""
+      ],
+      "events": {}
+    }
+  ]
+}

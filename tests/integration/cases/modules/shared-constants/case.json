@@ -1,0 +1,7 @@
+{
+  "description": "A component reads constants a .ts module exports, in its template and in its setup: a lookup table, a default and a frozen list.",
+  "main": "SizePicker.uf.tsx",
+  "ssr": {
+    "initial": {}
+  }
+}

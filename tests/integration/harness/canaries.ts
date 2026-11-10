@@ -53,7 +53,9 @@ import type { LayerName, ProjectKind } from "@unframework/testing/node";
 import { errorState, expectedDiagnostics, specTests } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
 import { consumerFixtures } from "./consumers.ts";
+import { standInCases } from "./no-output.ts";
 import { ROOT } from "./paths.ts";
+import { QUARANTINE } from "./quarantine.ts";
 import { REFERENCE } from "./targets.ts";
 
 /** What a sub-check's failure says: a pattern, or one built for the target of the cell. */
@@ -80,6 +82,12 @@ export interface CanaryCase {
   rerenders(target: string): boolean;
   /** Whether a source's committed IR has an element listener (an `Event` attribute) to unwire. */
   listens: boolean;
+  /**
+   * Whether the target's browser projects serve the case's spec a stand-in, since the target
+   * cannot compile the case yet (ADR-0068): the corrupted component never loads there, so its
+   * spec's import proves nothing, as a quarantined cell proves nothing. Absent: never.
+   */
+  standIn?(target: string): boolean;
   /** Whether a source's committed IR imports a stylesheet, so its compile emits a scoped sheet. */
   styled: boolean;
   /**
@@ -383,14 +391,16 @@ export const CANARIES: readonly Canary[] = [
     description:
       "Types every output's props, events and slots `any`, where its consumers' checker reads them: each consumer fixture's expected error goes unmet (ADR-0059).",
     evidence: {
-      // A directive the checker no longer meets, named with the declaration's `.uf.tsx` line.
+      // A directive the checker no longer meets, named with the declaration's line: in a
+      // `.uf.tsx`, or in a `.ts` module for a type re-exported from one (ADR-0068).
       toolchain: {
-        "consumer check": /consumers\/\S+:\d+: expected \S+ for \S+ \(\S+\.uf\.tsx:\d+\), got none/,
+        "consumer check":
+          /consumers\/\S+:\d+: expected \S+ for \S+ \(\S+\.(?:uf\.tsx|ts):\d+\), got none/,
       },
     },
     appliesTo: (info, target) => consumerFixtures(target, info.id).length > 0,
     // An output hook: the compiler rejects an `ir` hook's type that the analyser did not
-    // produce (P2), and props cannot be `any` in the source until M5 (UF1002).
+    // produce (P2).
     plugin: () => ({
       name: "uf-canary-L4-consumer",
       output: (files, { target }) =>
@@ -508,10 +518,11 @@ export const CANARIES: readonly Canary[] = [
           component.render = createElement("div", [], [], component.render.span);
           // A loop variable is bound by its list, which is gone, and a setup binding by its
           // setup. The events stay declared: Angular's adapter binds each to its output, which
-          // must exist, and Vue's would pass an undeclared listener on to the root.
+          // must exist, and Vue's would pass an undeclared listener on to the root. So do the
+          // slots, whose declaration names its binding.
           component.setup = [];
           component.bindings = component.bindings.filter(
-            ({ kind }) => kind === "prop" || kind === "emit",
+            ({ kind }) => kind === "prop" || kind === "emit" || kind === "slots",
           );
         }
         return copy;
@@ -867,6 +878,7 @@ export function canaryCase(info: CaseInfo): CanaryCase {
     listens: irs.some(
       (ir) => existsSync(ir) && listens(JSON.parse(readFileSync(ir, "utf8")) as UfModule),
     ),
+    standIn: (target) => Object.hasOwn(standInCases([info], target, QUARANTINE), info.id),
     styled: irs.some(
       (ir) =>
         existsSync(ir) &&
@@ -1247,20 +1259,27 @@ export function mismatchClosingTag(file: OutputFile): string {
 }
 
 /**
- * An output whose props and events a consumer sees as `any`: the type each target's checker
- * reads them from, the component's props parameter (React, Solid), its `$props()` (Svelte), its
- * `Props` (Astro), or the type arguments of `component$` (Qwik), `defineProps`, `defineModel`,
- * `defineEmits` and `defineSlots` (Vue), and `input`, `output` and `model` (Angular). An output
- * with none, a component without props or events, is left as it is.
+ * An output whose props, events and exported types a consumer sees as `any`: the type each
+ * target's checker reads the props and events from, the component's props parameter (React,
+ * Solid), its `$props()` (Svelte), its `Props` (Astro), the type arguments of `component$` or a
+ * generic component's arrow parameter (Qwik), `defineProps`, `defineModel`, `defineEmits` and
+ * `defineSlots` (Vue), and `input`, `output` and `model` (Angular); and every exported
+ * `interface` and type alias, in any output file, a copied `.ts` module included, so a consumer's
+ * misuse of an exported type goes unmet too (ADR-0068). An output with none of them is left as it
+ * is.
  */
 function widenPublicTypes(file: OutputFile, target: string): string {
+  return anyExportedTypes(widenProps(file, target));
+}
+
+/** {@link widenPublicTypes}'s props and events. */
+function widenProps(file: OutputFile, target: string): string {
   const { contents } = file;
   switch (target) {
     case "react":
     case "solid": {
-      const component = /\bfunction\s+[A-Z][\w$]*\s*\(/.exec(contents);
-      if (!component) return contents;
-      const open = component.index + component[0].length - 1;
+      const open = componentParameters(contents);
+      if (open === undefined) return contents;
       const close = matchingBracket(contents, open, "(", ")");
       if (close === undefined) return contents;
       // The parameter: a destructuring pattern or a name, then its annotation.
@@ -1271,7 +1290,7 @@ function widenPublicTypes(file: OutputFile, target: string): string {
       return `${contents.slice(0, colon)}: any${contents.slice(close)}`;
     }
     case "qwik":
-      return anyTypeArguments(contents, /\bcomponent\$</g);
+      return anyTypeArguments(anyGenericArrowProps(contents), /\bcomponent\$</g);
     case "vue":
       // `defineProps<any>()` declares no props to vue-tsc: each key takes anything instead.
       return anyTypeArguments(
@@ -1305,6 +1324,97 @@ function widenPublicTypes(file: OutputFile, target: string): string {
     default:
       throw new Error(`${MARKER} L4: no public types to widen for the target ${target}.`);
   }
+}
+
+/**
+ * `contents` with each exported `interface` and type alias declared `any`, its type parameters
+ * kept, so every reference to it still checks: `export type ButtonProps = any;`,
+ * `export type ListProps<T> = any;`. A type re-export, `export type { Tone } from "./types"`,
+ * declares each name it exports `any` in its place: the `.ts` module it names is copied into the
+ * output tree beside the outputs, where no output hook reaches (ADR-0070).
+ */
+export function anyExportedTypes(contents: string): string {
+  const reExported = new Set<string>();
+  contents = contents.replace(
+    /\bexport\s+type\s*\{([^}]*)\}\s*from\s*(["'])[^"']*\2;?/g,
+    (_, names: string) =>
+      names
+        .split(",")
+        .map((name) =>
+          name
+            .trim()
+            .split(/\s+as\s+/)
+            .at(-1)!,
+        )
+        .filter(Boolean)
+        .map((name) => {
+          reExported.add(name);
+          return `export type ${name} = any;`;
+        })
+        .join("\n"),
+  );
+  // A type import of a name the module re-exported now declares it twice (TS2440): the
+  // declaration replaces the import, and an import left with no name goes.
+  contents = contents.replace(
+    /^(\s*)import\s+type\s*\{([^}]*)\}\s*from\s*(["'][^"']*["']);?[ \t]*\n?/gm,
+    (whole, indent: string, names: string, from: string) => {
+      const kept = names
+        .split(",")
+        .map((name) => name.trim())
+        .filter((name) => name && !reExported.has(name.split(/\s+as\s+/).at(-1)!));
+      if (kept.length === names.split(",").filter((name) => name.trim()).length) return whole;
+      return kept.length ? `${indent}import type { ${kept.join(", ")} } from ${from};\n` : "";
+    },
+  );
+  let result = "";
+  let from = 0;
+  for (const match of contents.matchAll(/\bexport\s+(interface|type)\s+([A-Za-z_$][\w$]*)/g)) {
+    if (match.index < from) continue;
+    let index = match.index + match[0].length;
+    while (/\s/.test(contents[index] ?? "")) index += 1;
+    let parameters = "";
+    if (contents[index] === "<") {
+      const close = matchingBracket(contents, index, "<", ">");
+      if (close === undefined) continue;
+      parameters = contents.slice(index, close + 1);
+      index = close + 1;
+    }
+    const end =
+      match[1] === "interface"
+        ? interfaceEnd(contents, index)
+        : statementEnd(contents, contents.indexOf("=", index));
+    if (end === undefined) continue;
+    result += `${contents.slice(from, match.index)}export type ${match[2]}${parameters} = any;`;
+    from = end + 1;
+  }
+  return result + contents.slice(from);
+}
+
+/** The index of the `}` that ends an interface whose header ends at `from`. */
+function interfaceEnd(contents: string, from: number): number | undefined {
+  const open = contents.indexOf("{", from);
+  return open === -1 ? undefined : matchingBracket(contents, open, "{", "}");
+}
+
+/** The index of the `;` that ends a type alias whose `=` is at `from`, outside any bracket. */
+function statementEnd(contents: string, from: number): number | undefined {
+  if (from === -1) return undefined;
+  let depth = 0;
+  for (let index = from + 1; index < contents.length; index += 1) {
+    const char = contents[index]!;
+    if (char === '"' || char === "'" || char === "`") {
+      const end = endOfString(contents, index);
+      if (end === undefined) return undefined;
+      index = end;
+    } else if ("{([<".includes(char)) {
+      depth += 1;
+    } else if ("})]".includes(char) || (char === ">" && contents[index - 1] !== "=")) {
+      depth -= 1;
+    } else if (char === ";" && depth === 0) {
+      return index;
+    }
+  }
+  return undefined;
 }
 
 /** `contents` with the type arguments after each match of `opening` (which ends at `<`) `any`. */
@@ -1445,12 +1555,10 @@ export function injectScript(
     const existing = insertAfter(component, /\bconstructor\s*\([^)]*\)\s*\{/, `\n    ${statement}`);
     if (existing !== undefined) return `${before}${existing}`;
     // The class's members follow: a constructor before them still runs once per render.
-    const added = insertAfter(
-      component,
-      /export\s+(?:default\s+)?class\s+\w+[^{]*\{/,
-      `\n  constructor() {\n    ${statement}\n  }\n`,
-    );
-    return added === undefined ? fail("component class") : `${before}${added}`;
+    const start = classBodyStart(component);
+    return start === undefined
+      ? fail("component class")
+      : `${before}${component.slice(0, start)}\n  constructor() {\n    ${statement}\n  }\n${component.slice(start)}`;
   }
   const body = componentBodyStart(contents);
   if (body === undefined) {
@@ -1479,9 +1587,11 @@ export function withQwikImports(file: OutputFile, names: readonly string[]): str
 }
 
 /**
- * Where a JSX component's body starts, just after its `{`: Qwik's `component$<Props>((…) => {`,
- * or the first PascalCase `function Name(…) {` (React and Solid). The parameters are read to
- * their matching parenthesis: a destructured default or a type may hold parentheses of its own.
+ * Where a JSX component's body starts, just after its `{`: Qwik's `component$<Props>((…) => {`
+ * or generic `component$(<T,>(…) => {`, or the first PascalCase `function Name(…) {` or generic
+ * `function Name<…>(…) {` (React and Solid). The type parameters and the parameters are read to
+ * their matching bracket: a constraint, a destructured default or a type may hold brackets of
+ * their own.
  */
 function componentBodyStart(contents: string): number | undefined {
   // Not the import's `component$`: the call's, with its type argument or its parenthesis.
@@ -1496,16 +1606,80 @@ function componentBodyStart(contents: string): number | undefined {
     const call = /^\s*\(\s*/.exec(contents.slice(index));
     if (!call) return undefined;
     index += call[0].length;
+    // A generic component's arrow takes its type parameters first (ADR-0068).
+    if (contents[index] === "<") {
+      const parameters = matchingBracket(contents, index, "<", ">");
+      if (parameters === undefined || contents[parameters + 1] !== "(") return undefined;
+      index = parameters + 1;
+    }
     if (contents[index] !== "(") return undefined;
     const close = matchingBracket(contents, index, "(", ")");
     if (close === undefined) return undefined;
     return endAt(contents, close + 1, /^\s*=>\s*\{/);
   }
-  const component = /\bfunction\s+[A-Z][\w$]*\s*\(/.exec(contents);
-  if (!component) return undefined;
-  const close = matchingBracket(contents, component.index + component[0].length - 1, "(", ")");
+  const open = componentParameters(contents);
+  if (open === undefined) return undefined;
+  const close = matchingBracket(contents, open, "(", ")");
   if (close === undefined) return undefined;
   return endAt(contents, close + 1, /^[^{]*\{/);
+}
+
+/**
+ * Where the body of the first exported class starts, after its `{` (Angular). The type
+ * parameters of a generic component's class are read to their matching bracket: a constraint may
+ * hold braces of its own (`class Table<T extends { id: string }>`, ADR-0068).
+ */
+function classBodyStart(contents: string): number | undefined {
+  const declaration = /export\s+(?:default\s+)?class\s+[\w$]+\s*/.exec(contents);
+  if (!declaration) return undefined;
+  let index = declaration.index + declaration[0].length;
+  if (contents[index] === "<") {
+    const parameters = matchingBracket(contents, index, "<", ">");
+    if (parameters === undefined) return undefined;
+    index = parameters + 1;
+  }
+  return endAt(contents, index, /^[^{]*\{/);
+}
+
+/**
+ * The index of the `(` that opens the first PascalCase function's parameters (React and Solid),
+ * past a generic component's type parameters, `function List<T>(` (ADR-0068).
+ */
+function componentParameters(contents: string): number | undefined {
+  const component = /\bfunction\s+[A-Z][\w$]*\s*(?=[<(])/.exec(contents);
+  if (!component) return undefined;
+  const index = component.index + component[0].length;
+  if (contents[index] !== "<") return index;
+  // A constraint may hold brackets of its own.
+  const parameters = matchingBracket(contents, index, "<", ">");
+  if (parameters === undefined) return undefined;
+  const open = endAt(contents, parameters + 1, /^\s*/)!;
+  return contents[open] === "(" ? open : undefined;
+}
+
+/**
+ * A Qwik output whose generic arrows' props annotations are `any`: a generic component's props
+ * type is its parameter's, `component$(<T,>({ … }: ListProps<T>) => …)`, not a type argument
+ * (ADR-0068), in each component a joined module holds (ADR-0053). Any other output is left as it
+ * is.
+ */
+function anyGenericArrowProps(contents: string): string {
+  let result = "";
+  let from = 0;
+  for (const call of contents.matchAll(/\bcomponent\$\(\s*</g)) {
+    const parameters = matchingBracket(contents, call.index + call[0].length - 1, "<", ">");
+    if (parameters === undefined || contents[parameters + 1] !== "(") continue;
+    const open = parameters + 1;
+    const close = matchingBracket(contents, open, "(", ")");
+    if (close === undefined) continue;
+    const pattern =
+      contents[open + 1] === "{" ? matchingBracket(contents, open + 1, "{", "}") : open;
+    const colon = pattern === undefined ? -1 : contents.indexOf(":", pattern + 1);
+    if (colon === -1 || colon > close) continue;
+    result += `${contents.slice(from, colon)}: any`;
+    from = close;
+  }
+  return result + contents.slice(from);
 }
 
 /** The end of `pattern` (anchored with `^`) matched at `index`, or `undefined`. */

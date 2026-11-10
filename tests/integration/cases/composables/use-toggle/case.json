@@ -1,0 +1,7 @@
+{
+  "description": "A component calls a composable from a .uf.ts module, reads the ref it returns and calls its functions from listeners; a value parameter seeds the state once.",
+  "main": "Disclosure.uf.tsx",
+  "ssr": {
+    "closed": {}
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Switch units' })",
+      "dom": [
+        "<section aria-label=\"Distance\" class=\"distance\">",
+        "  <p role=\"status\">",
+        "    \"42 miles\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Switch units\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Distance\":",
+        "  - status: 42 miles",
+        "  - button \"Switch units\""
+      ],
+      "events": {}
+    }
+  ]
+}

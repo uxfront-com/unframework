@@ -444,7 +444,10 @@
               {
                 "name": "attrs",
                 "optional": false,
-                "type": "HintAttributes"
+                "type": "HintAttributes",
+                "references": [
+                  "HintAttributes"
+                ]
               }
             ],
             "events": [],

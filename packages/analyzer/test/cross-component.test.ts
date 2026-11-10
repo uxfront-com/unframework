@@ -210,10 +210,26 @@ describe("a literal outside a prop's union of literals (UF3039)", () => {
     expect(parent(jsx).diagnostics).toEqual([]);
   });
 
-  it("checks no type it cannot read as a union of literals: an alias, a widened union", () => {
+  it("checks a union of literals an alias names, through the child's shape (ADR-0067)", () => {
     const source = `type Tone = "info" | "warning";
-function Badge({ tone, code }: { tone: Tone; code: "x" | string }) { return <b class={tone}>{code}</b>; }
-export function A() { return <Badge tone="warn" code="y" />; }`;
+type Optional = Tone | undefined;
+function Badge({ tone, mood }: { tone: Tone; mood?: Optional }) { return <b class={[tone, mood]} />; }
+export function A() { return <Badge tone="warn" mood={"info"} />; }
+export function B() { return <Badge tone="info" mood={"warnin"} />; }`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(['UF3039 "warn"', 'UF3039 "warnin"']);
+    expect(diagnostics[0]!.message).toBe(
+      'Badge\'s `tone` takes `"info" | "warning"`, and "warn" is none of them. Did you mean "warning"?',
+    );
+    expect(applyAndRecheck(source, diagnostics)).toContain(
+      '<Badge tone="warning" mood={"info"} />',
+    );
+  });
+
+  it("checks no type it cannot read as a union of literals: a widened union", () => {
+    const source = `type Code = "x" | string;
+function Badge({ code, other }: { code: Code; other: "x" | string }) { return <b>{code}{other}</b>; }
+export function A() { return <Badge code="y" other="z" />; }`;
     expect(run(source).diagnostics).toEqual([]);
   });
 

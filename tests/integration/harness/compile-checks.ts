@@ -217,6 +217,23 @@ export function stylesheetProblems(target: string, files: readonly OutputFile[])
     );
 }
 
+/**
+ * L2: every copy of a case's `.ts` module in a target's output tree that is not the module
+ * byte for byte: each output tree holds the modules unchanged (ADR-0070). A copy sits at the
+ * module's own file name; the files an output imports are L4's.
+ */
+export function moduleCopyProblems(
+  target: string,
+  outputs: ReadonlyMap<string, string>,
+  modules: readonly OutputFile[],
+): string[] {
+  return modules.flatMap(({ path, contents }) => {
+    const copy = outputs.get(path);
+    if (copy === undefined || copy === contents) return [];
+    return [`${target}/${path} is not the case's ${path} unchanged:\n${diffLines(contents, copy)}`];
+  });
+}
+
 /** L2: every output file that formatting again would change, or that no longer parses. */
 export async function formattingProblems(
   target: string,

@@ -1,0 +1,159 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/composable-result-write/useToggle.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "composables": [
+    {
+      "name": "useToggle",
+      "span": {
+        "start": 130,
+        "end": 283
+      },
+      "parameters": [
+        {
+          "name": "initial",
+          "kind": "value",
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 165,
+              "end": 172
+            }
+          },
+          "binding": "initial@156",
+          "span": {
+            "start": 156,
+            "end": 172
+          }
+        }
+      ],
+      "types": [],
+      "bindings": [
+        {
+          "id": "initial@156",
+          "name": "initial",
+          "kind": "argument",
+          "span": {
+            "start": 156,
+            "end": 163
+          }
+        },
+        {
+          "id": "on@184",
+          "name": "on",
+          "kind": "state",
+          "span": {
+            "start": 184,
+            "end": 186
+          }
+        },
+        {
+          "id": "toggle@215",
+          "name": "toggle",
+          "kind": "localFn",
+          "span": {
+            "start": 215,
+            "end": 221
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "on@184",
+          "initial": {
+            "code": "initial",
+            "span": {
+              "start": 193,
+              "end": 200
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "initial@156",
+                "span": {
+                  "start": 193,
+                  "end": 200
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 178,
+            "end": 202
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "toggle@215",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    on.value = !on.value;\n  }",
+              "span": {
+                "start": 224,
+                "end": 255
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "on@184",
+                  "operator": "=",
+                  "span": {
+                    "start": 230,
+                    "end": 250
+                  },
+                  "target": {
+                    "start": 230,
+                    "end": 238
+                  },
+                  "value": {
+                    "start": 241,
+                    "end": 250
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "on@184",
+                  "span": {
+                    "start": 242,
+                    "end": 250
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 221,
+              "end": 255
+            }
+          },
+          "span": {
+            "start": 206,
+            "end": 255
+          }
+        }
+      ],
+      "returns": [
+        {
+          "name": "on",
+          "binding": "on@184",
+          "span": {
+            "start": 268,
+            "end": 270
+          }
+        },
+        {
+          "name": "toggle",
+          "binding": "toggle@215",
+          "span": {
+            "start": 272,
+            "end": 278
+          }
+        }
+      ]
+    }
+  ]
+}

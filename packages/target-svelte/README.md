@@ -4,18 +4,20 @@ The Svelte 5 target of the Unframework compiler: runes-mode components. Every co
 declares `<svelte:options runes={true} preserveWhitespace={false} />`, so one without runes never
 compiles in legacy mode and the markup's layout holds whatever the consumer's whitespace option.
 
-A component is that line, an instance script when it takes props or has a setup, and its markup
-(plan §6):
+A component is that line, a module script when it exports a type or declares injection keys, an
+instance script when it takes props or has a setup, and its markup (plan §6):
 
 ```svelte
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
+<script lang="ts" module>
   export interface BadgeProps {
     label: string;
     tone?: "info" | "warn";
   }
+</script>
 
+<script lang="ts">
   let { label, tone = "info" }: BadgeProps = $props();
 </script>
 
@@ -32,6 +34,54 @@ A component is that line, an instance script when it takes props or has a setup,
   (`$`-prefixed) is named `props`. Script lines are indented, but for lines inside a multi-line
   literal, which the target finds by parsing the code. `</script` in copied code is written
   `<\/script`, as a guard: the analyser rejects it.
+- **Types** (ADR-0067, ADR-0068). The types a component reads from another file are imported by
+  name, under the source's names: a `.ts` module's or a package's from the specifier as written,
+  `import type { Tone } from "./types"`, and a child's from its output, beside the child,
+  `import Field, { type FieldProps } from "./Field.svelte"`. The output of the module's main
+  component also writes the module's type exports: an exported type no component reaches, and a
+  re-export, `export type { Tone } from "./types"`. An output that exports a type declares the
+  types it copies and imports in `<script lang="ts" module>`, which the instance script reads, so
+  a consumer imports them from the component's file:
+  `import type { BadgeProps } from "./Badge.svelte"`. A generic component writes its type
+  parameters in the instance script's `generics`, `<script lang="ts" generics="T extends string">`.
+  An attribute cannot hold its own quote, so every string literal in them is double-quoted, a
+  template literal stays in backticks, a `'` inside either is written `\u0027`, the same type, and
+  the attribute is single-quoted where the text holds a `"`:
+  `generics='T extends "don\u0027t" | "b"'`. A scoped slot's props that name a type
+  parameter are `Snippet<[{ item: T }]>`; both cells are native.
+- **Shared modules** (ADR-0070). A value the component reads of a `.ts` module is imported as the
+  source imports it, `import { sizes } from "./tokens"`, from the copy beside the outputs. The
+  module's constants it reads, and those they read, are declared as written, with the types they
+  name, at the top of the instance script, before `$props()`: `const GAP = sizes.sm * 2;`. An
+  output with a `<script lang="ts" module>`, one that exports a type or declares the module's
+  injection keys, declares them there instead, with the imports of the values they read, since a
+  type there may query one (`keyof typeof SIZES`). A type a constant names keeps its `export`,
+  unless another component's output declares it: the main output then re-exports it from there,
+  and declares it too where its own constant names it. A module name that a top-level setup
+  binding shadows is declared under a name of its own, `label_1`, and every module text that reads
+  it, a constant, a copied type or an exported one, reads it there. A fill's snippet hides a name
+  only from the markup between the child's tags, so a module value it would hide keeps its name,
+  which every `typeof` reads, and the component reads it through an alias,
+  `const label_1 = label;` (`src/modules.ts`).
+- **Composables** (ADR-0069). A `.uf.ts` module's composable is its own module,
+  `useToggle.svelte.ts`, whose runes vite-plugin-svelte compiles. It holds the source's exported
+  function, with its parameters and type parameters as written and its setup lowered as a
+  component's is (below). It returns an object with a getter for each ref and computed value it
+  returns, and its functions and constants as they are, since a destructured rune would hold its
+  value once: `return { get on() { return on; }, toggle };`. The module imports every type its
+  parameters, setup and functions name, and declares the module's types and constants it reads.
+  A caller imports it as `import { useToggle } from "./useToggle.svelte"`, which svelte-check and
+  the unplugin resolve to that module. It keeps the object, `const toggle = useToggle(false)`, and
+  reads each destructured name through it, `toggle.on` and `toggle.toggle()`, in the script and
+  the markup alike. The object takes the name of the one member the call renames
+  (`const wide = useMediaQuery(…)` for `{ matches: wide }`), or else the composable's exported
+  name without `use` (`toggle`, for `useToggle` imported under any alias). That name may be one
+  of the destructured members, which vanish from the output: UF3024 keeps every parameter and
+  local off them. It gives way to the next free name, `toggle_1`, where the setup takes it
+  otherwise, a fill's snippet would hide it, or it is a reserved word (`switch_1` for
+  `useSwitch`). A getter and a callback are passed as written. Both cells, `composables` and
+  `composable-effect-order`, are native: the composable's effects and hooks run where its call
+  sits.
 - **Setup** (ADR-0045 to ADR-0049), in source order after `$props()`, with what it imports from
   `svelte` and `svelte/events` (each name claimed beside the source's):
 
@@ -49,6 +99,7 @@ A component is that line, an instance script when it takes props or has a setup,
   | `onMounted(fn)`, `onUnmounted(fn)`                        | `onMount(() => {…})`, `onMount(() => () => {…})`: browser only, never `onDestroy`; an `onUnmounted` declared before a watcher or a `watchEffect` with a cleanup comes after the last of them, so every cleanup runs before it, as on Vue (Svelte tears effects down in creation order)                                                                                                                                                                                                                                                                                                                                                            |
   | `nextTick()`                                              | `tick()`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
   | `defineEmits`, `emit("change", v)`                        | a callback prop `onchange` (the name in lower case) in `type Props = <props type> & { onchange?: (value: number) => void }`, destructured where called: `onchange?.(v)`                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+  | `const { on, toggle } = useToggle(false)`                 | `const toggle = useToggle(false)`, each name read through the object: `toggle.on`, `toggle.toggle()`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 - **Listeners** (ADR-0047). `onclick={…}` and `onclickcapture={…}`, the handler a setup function's
   name or an arrow. Svelte has no attribute for `once` or `passive`, for the events
@@ -127,12 +178,15 @@ Its toolchain, for tests and tooling (the target's main entry never loads it):
 
 - **`@unframework/target-svelte/toolchain`**: `@sveltejs/vite-plugin-svelte` for Vite; L3 runs
   `svelte/compiler` for the client and the server and reports its errors and warnings
-  (accessibility included), and a component that would compile in legacy mode; L4 runs
+  (accessibility included), and a component that would compile in legacy mode, and compiles a
+  composable's `.svelte.ts` module (ADR-0069) as vite-plugin-svelte does, Vite's TypeScript
+  transform then `compileModule`, and a shared `.ts` module (ADR-0070) with the transform alone; L4 runs
   svelte-check, from the toolchain directory, once over every file, for types only
   (`--diagnostic-sources js`: the compiler's warnings are L3's), with warnings failing as errors
   do. It refuses files under `node_modules`, which svelte-check reports clean unchecked. L5 runs
   oxlint's shared baseline over the script and ESLint with eslint-plugin-svelte over the whole
-  file (ADR-0042, `tests/toolchains/svelte`), with the rules that judge the author's code off
+  file and over each `.svelte.ts` module, a shared `.ts` module being oxlint's alone (ADR-0042,
+  `tests/toolchains/svelte`), with the rules that judge the author's code off
   (`svelte/prefer-svelte-reactivity`: a handler's own `new Map()`; `svelte/prefer-writable-derived`:
   the author's `watchEffect` that writes a state, which a `$derived` would render on the server). In the browser, Vite
   pre-bundles `svelte`, `svelte/events` and the runtime entries the compiled output imports.

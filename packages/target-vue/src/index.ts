@@ -2,6 +2,7 @@ import { defineTarget, printMarkup, vueDialect } from "@unframework/codegen";
 import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
+import { emitComposable } from "./composable.ts";
 import { scriptSetup } from "./script.ts";
 
 /**
@@ -75,6 +76,10 @@ export const vue: Target = defineTarget({
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
     "sheet-order": { support: "native" },
+    "generic-components": { support: "native" },
+    "generic-slot-props": { support: "native" },
+    composables: { support: "native" },
+    "composable-effect-order": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { block, rewrite, listeners, components, keys } = scriptSetup(component, context.module);
@@ -102,6 +107,7 @@ export const vue: Target = defineTarget({
     ];
     return [{ path: `${component.name}.vue`, contents: `${parts.join("\n\n")}\n` }];
   },
+  emitComposable,
 });
 
 export default vue;

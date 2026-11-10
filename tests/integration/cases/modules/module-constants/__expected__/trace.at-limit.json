@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add 10' })",
+      "dom": [
+        "<section aria-label=\"Stepper\" class=\"stepper\">",
+        "  <p role=\"status\">",
+        "    \"17 of 20\"",
+        "  </p>",
+        "  <ul>",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"Add 1\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"Add 5\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button type=\"button\" uf:focused=\"\">",
+        "        \"Add 10\"",
+        "      </button>",
+        "    </li>",
+        "  </ul>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Stepper\":",
+        "  - status: 17 of 20",
+        "  - list:",
+        "    - listitem:",
+        "      - button \"Add 1\"",
+        "    - listitem:",
+        "      - button \"Add 5\"",
+        "    - listitem:",
+        "      - button \"Add 10\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Add 10' })",
+      "dom": [
+        "<section aria-label=\"Stepper\" class=\"stepper\">",
+        "  <p role=\"status\">",
+        "    \"20 of 20\"",
+        "  </p>",
+        "  <ul>",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"Add 1\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"Add 5\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button type=\"button\" uf:focused=\"\">",
+        "        \"Add 10\"",
+        "      </button>",
+        "    </li>",
+        "  </ul>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Stepper\":",
+        "  - status: 20 of 20",
+        "  - list:",
+        "    - listitem:",
+        "      - button \"Add 1\"",
+        "    - listitem:",
+        "      - button \"Add 5\"",
+        "    - listitem:",
+        "      - button \"Add 10\""
+      ],
+      "events": {}
+    }
+  ]
+}

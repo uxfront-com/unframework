@@ -1,10 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import Badge from "./Badge.svelte";
-  import Tag from "./Tag.svelte";
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   type NoticeLook = {
     color?: string;
     backgroundColor?: string;
@@ -20,6 +16,12 @@
     declarations?: string;
     vars?: NoticeVars;
   }
+</script>
+
+<script lang="ts">
+  import Badge from "./Badge.svelte";
+  import Tag from "./Tag.svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = NoticeProps & { class?: ClassValue; style?: string };
 

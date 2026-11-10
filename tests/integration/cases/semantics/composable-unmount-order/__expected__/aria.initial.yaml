@@ -1,0 +1,7 @@
+- region "Panel a":
+  - heading "Panel a" [level=2]
+- region "Panel b":
+  - heading "Panel b" [level=2]
+- button "Hide a"
+- button "Hide b"
+- status

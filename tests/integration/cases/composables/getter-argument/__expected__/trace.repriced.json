@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "rerender {\"price\":5}",
+      "dom": [
+        "<section aria-label=\"Basket\" class=\"basket\">",
+        "  <p role=\"status\">",
+        "    \"Total: 5\"",
+        "  </p>",
+        "  <p>",
+        "    \"1 × 5 = 5\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Add one\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Basket\":",
+        "  - status: \"Total: 5\"",
+        "  - paragraph: 1 × 5 = 5",
+        "  - button \"Add one\""
+      ],
+      "events": {}
+    }
+  ]
+}

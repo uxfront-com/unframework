@@ -1,6 +1,7 @@
-// Value kinds from TypeScript types (ADR-0035): a prop's kinds are its member type's,
-// followed through the module's own `interface` and `type` declarations. Only the types the
-// props check accepts (ADR-0034) need a faithful reading; anything else reads as `unknown`.
+// Value kinds from TypeScript types (ADR-0035), followed through the module's own `interface`
+// and `type` declarations, for the types the setup writes that the type oracle's shapes do not
+// cover; props and written setup types read theirs from shapes (`from-shape.ts`). Only the types
+// the checks accept need a faithful reading; anything else reads as `unknown`.
 
 import type { AST, TypeDeclarationStatement } from "@unframework/parser";
 

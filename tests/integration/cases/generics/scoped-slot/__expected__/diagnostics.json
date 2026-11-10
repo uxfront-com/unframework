@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF4004",
+    "severity": "info",
+    "message": "The angular target does not support generic-slot-props: Angular infers a component's type parameter from its inputs alone, and a slot's directive cannot infer it, so a scoped slot's context takes the parameter's constraint, where the other targets type the consumer's fill by the type argument (ADR-0068).",
+    "file": "generics/scoped-slot/Fruits.uf.tsx",
+    "start": {
+      "line": 13,
+      "column": 9,
+      "offset": 298
+    },
+    "end": {
+      "line": 17,
+      "column": 10,
+      "offset": 403
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF4004",
+    "severity": "info",
+    "message": "The angular target does not support generic-slot-props: Angular infers a component's type parameter from its inputs alone, and a slot's directive cannot infer it, so a scoped slot's context takes the parameter's constraint, where the other targets type the consumer's fill by the type argument (ADR-0068).",
+    "file": "generics/scoped-slot/Picker.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 31,
+      "offset": 326
+    },
+    "end": {
+      "line": 10,
+      "column": 65,
+      "offset": 360
+    },
+    "target": "angular"
+  }
+]

@@ -24,7 +24,9 @@ type Location = Babel.types.SourceLocation | symbol | null | undefined;
  *   it cannot compile there (a `Todo` or an `Invariant`): another bailout in it is a warning, and
  *   an opt-out React Compiler would compile is one too (`react-compiler/needless-opt-out`);
  * - a file in which nothing compiled is a warning too (`react-compiler/nothing-compiled`),
- *   so the check never passes because the compiler ignored the file.
+ *   so the check never passes because the compiler ignored the file; but for a `.ts` module
+ *   that declares no hook, a shared module copied beside the components (ADR-0070), which has
+ *   nothing to compile. A composable's module declares its hook (ADR-0069).
  */
 export async function compileWithReactCompiler(
   files: readonly ToolchainFile[],
@@ -114,7 +116,13 @@ function compileFile(
       code: false,
       // React Compiler must be the first plugin.
       plugins: [[compiler, options]],
-      presets: [[typescript, { isTSX: true, allExtensions: true, onlyRemoveTypeImports: true }]],
+      // A `.ts` module is TypeScript without JSX, where `<T>(value: T) => …` is a generic arrow.
+      presets: [
+        [
+          typescript,
+          { isTSX: !file.path.endsWith(".ts"), allExtensions: true, onlyRemoveTypeImports: true },
+        ],
+      ],
     });
   } catch (error) {
     return { errors: [...errors, fromBabelError(error, file.path)], warnings };
@@ -129,7 +137,13 @@ function compileFile(
   }
   // An opt-out React Compiler confirms was checked too.
   compiled += needed.size;
-  if (compiled === 0 && errors.length === 0 && warnings.length === 0) {
+  const module = file.path.endsWith(".ts");
+  if (
+    compiled === 0 &&
+    errors.length === 0 &&
+    warnings.length === 0 &&
+    (!module || HOOK.test(file.contents))
+  ) {
     warnings.push({
       message: "React Compiler compiled no component or hook in this file, so it checked nothing.",
       code: "react-compiler/nothing-compiled",
@@ -143,6 +157,14 @@ function compileFile(
  * function that opts out, they are the reason it does.
  */
 const UNSUPPORTED: ReadonlySet<string> = new Set(["Todo", "Invariant"]);
+
+/**
+ * A hook's declaration at the start of a line, by React's naming rule: `function useToggle(`,
+ * or a `const useToggle` that holds a function. A value named so (`const useCases = [...]`), or
+ * a name in a comment, declares none.
+ */
+const HOOK =
+  /^\s*(?:export\s+)?(?:(?:async\s+)?function\s+use[A-Z]|const\s+use[A-Z]\w*\s*(?::[^=]+)?=\s*(?:async\s+)?(?:function\b|\(|<))/m;
 
 /** React Compiler's opt-out directives (its `OPT_OUT_DIRECTIVES`). */
 const OPT_OUT = new Set(["use no memo", "use no forget"]);
@@ -169,7 +191,12 @@ function optOuts(
       filename: file.path,
       babelrc: false,
       configFile: false,
-      presets: [[typescript, { isTSX: true, allExtensions: true, onlyRemoveTypeImports: true }]],
+      presets: [
+        [
+          typescript,
+          { isTSX: !file.path.endsWith(".ts"), allExtensions: true, onlyRemoveTypeImports: true },
+        ],
+      ],
     });
   } catch {
     // The transform reports the parse error.

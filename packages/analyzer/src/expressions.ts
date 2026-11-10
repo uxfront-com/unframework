@@ -18,6 +18,7 @@ import {
   angularRespellsRegex,
   CLIENT_GLOBALS,
   createApiReference,
+  createBinding,
   createBindingReference,
   createCode,
   createEmitReference,
@@ -109,6 +110,7 @@ import type { Provenance } from "./origins.ts";
 import { isStatic } from "./props.ts";
 import type { EventParameter, PropBinding, RenderContext, SetupBinding } from "./render.ts";
 import { setupBindingOf } from "./render.ts";
+import type { SharedValue } from "./shared.ts";
 import {
   arrayOf,
   BOOLEAN,
@@ -172,7 +174,7 @@ const GLOBALS: Readonly<Record<Mode, ReadonlySet<string>>> = {
 };
 
 /** Globals that make the rendering depend on time, chance or the machine (UF3019), and how. */
-const NONDETERMINISTIC_GLOBALS: ReadonlyMap<string, string> = new Map([
+export const NONDETERMINISTIC_GLOBALS: ReadonlyMap<string, string> = new Map([
   ["Date", "`Date` reads the clock"],
   ["Intl", "`Intl` formats by the machine's locale"],
   ["crypto", "`crypto` reads chance"],
@@ -181,7 +183,7 @@ const NONDETERMINISTIC_GLOBALS: ReadonlyMap<string, string> = new Map([
 ]);
 
 /** Methods that read the machine's locale, whatever their receiver (UF3019). */
-const LOCALE_METHODS: ReadonlySet<string> = new Set([
+export const LOCALE_METHODS: ReadonlySet<string> = new Set([
   "localeCompare",
   "toLocaleDateString",
   "toLocaleLowerCase",
@@ -194,7 +196,7 @@ const LOCALE_METHODS: ReadonlySet<string> = new Set([
  * Methods that change their receiver, whatever it is (UF3021), with the method that returns a
  * changed copy instead, where one exists (ES2023).
  */
-const MUTATING_METHODS: ReadonlyMap<string, string | undefined> = new Map([
+export const MUTATING_METHODS: ReadonlyMap<string, string | undefined> = new Map([
   ["copyWithin", undefined],
   ["fill", undefined],
   ["pop", undefined],
@@ -207,7 +209,7 @@ const MUTATING_METHODS: ReadonlyMap<string, string | undefined> = new Map([
 ]);
 
 /** `Object`'s functions that change their argument (UF3021). */
-const MUTATING_OBJECT_FUNCTIONS: ReadonlySet<string> = new Set([
+export const MUTATING_OBJECT_FUNCTIONS: ReadonlySet<string> = new Set([
   "assign",
   "defineProperties",
   "defineProperty",
@@ -366,7 +368,7 @@ interface Local {
 }
 
 /** Methods that change a `Map`, a `Set` or a `WeakMap`/`WeakSet` they are called on (UF2004). */
-const COLLECTION_METHODS: ReadonlySet<string> = new Set(["add", "clear", "delete", "set"]);
+export const COLLECTION_METHODS: ReadonlySet<string> = new Set(["add", "clear", "delete", "set"]);
 
 /** The array methods whose callback's first parameter is each item of the array. */
 const ITERATING_METHODS: ReadonlySet<string> = new Set([
@@ -593,6 +595,8 @@ class Walk {
    * summary does not list (`Math.random`, `toLocaleString`): UF3019 where render calls it.
    */
   nondeterministic: string | undefined;
+  /** The callee of the call being walked, while it is: a shared value's reference marks it. */
+  #callee: object | undefined;
 
   constructor(context: RenderContext, mode: Mode) {
     this.#context = context;
@@ -745,7 +749,7 @@ class Walk {
         if (render) return this.#impure(node, "`import()` loads a module");
         return this.#rejected(
           node,
-          "Dynamic imports are not supported yet: imports of modules land in M5.",
+          "Dynamic imports are not supported: a component imports a shared module's values with an `import` declaration.",
         );
       case "MetaProperty":
         if (render) {
@@ -926,8 +930,29 @@ class Walk {
           }
           const prop = context.propsByDeclaration.get(resolution.declaration);
           if (prop?.id === undefined) return UNKNOWN;
+          if (prop.callback && this.#mode !== "client") {
+            context.reporter.report(
+              "UF2035",
+              node,
+              `\`${node.name}\` is a callback the composable is passed, read in ${this.#mode === "render" ? "a template expression" : "a getter or an initial value"}: a callback is called from client code, a handler, a watcher's callback or a lifecycle hook.`,
+              {
+                help: "Call it from client code, or type the parameter as a getter, `() => T`, to read it as it changes.",
+              },
+            );
+            return UNKNOWN;
+          }
           const narrowed = render ? [] : this.#narrowingRule(node, { kind: "prop", prop }, true);
-          this.refs.push(createBindingReference(prop.id, span(node), shorthand, false, narrowed));
+          // Only a prop's or a ref's value's read narrows in the IR: a composable's parameter is a
+          // plain local on every target, read as TypeScript narrows it.
+          this.refs.push(
+            createBindingReference(
+              prop.id,
+              span(node),
+              shorthand,
+              false,
+              prop.argument ? [] : narrowed,
+            ),
+          );
           return this.#narrowed(node, prop.kinds);
         }
         const loop = context.loopVariables.get(resolution.declaration);
@@ -962,9 +987,11 @@ class Walk {
             this.#unresolved(node);
             return UNKNOWN;
           }
+          const value = context.shared.values.get(resolution.declaration);
+          if (value) return this.#sharedRead(node, value, shorthand);
           this.#unsupported(
             node,
-            `\`${node.name}\` is declared at the module's top level, which a component cannot read yet: module-level declarations land in M5.`,
+            `\`${node.name}\` is declared at the module's top level, and is not a \`const\` a component reads: an injection key is read only by \`provide\` and \`inject\`.`,
           );
           return UNKNOWN;
         }
@@ -974,7 +1001,7 @@ class Walk {
         return local.kinds;
       }
       case "import":
-        return this.#imported(node, resolution.declaration);
+        return this.#imported(node, resolution.declaration, shorthand);
       default:
         if (!render && node.name === "arguments") {
           return this.#rejected(
@@ -1069,7 +1096,10 @@ class Walk {
       case "derived":
       case "templateRef":
       case "model":
-      case "context": {
+      case "context":
+      // A ref a composable returns is read as the caller's own (ADR-0069).
+      case "usedState":
+      case "usedDerived": {
         // An injected value that is no ref is read as it is, as a constant is.
         if (!isRef(binding)) {
           this.refs.push(createBindingReference(binding.id, span(node), shorthand));
@@ -1108,9 +1138,11 @@ class Walk {
         this.refs.push(createBindingReference(binding.id, span(node), shorthand));
         return binding.kinds;
       case "localConst":
+      case "usedConst":
         this.refs.push(createBindingReference(binding.id, span(node), shorthand));
         return binding.kinds;
       case "localFn":
+      case "usedFn":
         if (this.#mode !== "client" || position !== "argument") {
           this.#functionValue(node, binding);
           return FUNCTION;
@@ -1123,6 +1155,10 @@ class Walk {
       // Composition's bindings (ADR-0055) the setup never declares.
       case "slotScope":
       case "component":
+      // What a module or a composable gives (ADR-0069, ADR-0070), which the setup never declares.
+      case "moduleConst":
+      case "import":
+      case "argument":
         return UNKNOWN;
       default:
         return unreachable(binding.kind);
@@ -1170,12 +1206,14 @@ class Walk {
    */
   #functionValue(node: AST.IdentifierReference, binding: SetupBinding): void {
     const { name } = binding;
+    // A local function, or one a composable returns (ADR-0069).
+    const what = WHAT[binding.kind];
     this.#context.reporter.report(
       "UF2022",
       node,
       this.#mode === "client"
-        ? `\`${name}\` is a local function used as a value: client code calls a local function, or passes it as a call's argument (\`setTimeout(${name}, 100)\`).`
-        : `\`${name}\` is a local function used as a value in ${this.#mode === "render" ? "a template expression" : "a getter or an initial value"}, which only calls it: the targets write a local function their own way (a method, a QRL), which they cannot pass around there.`,
+        ? `\`${name}\` is ${what} used as a value: client code calls a local function, or passes it as a call's argument (\`setTimeout(${name}, 100)\`).`
+        : `\`${name}\` is ${what} used as a value in ${this.#mode === "render" ? "a template expression" : "a getter or an initial value"}, which only calls it: the targets write a local function their own way (a method, a QRL), which they cannot pass around there.`,
       {
         help:
           this.#mode === "client"
@@ -1187,19 +1225,33 @@ class Walk {
 
   /**
    * An imported name: an authoring API, recognised by binding (ADR-0006), is called at the top of
-   * the component's body (UF2005) but `nextTick`, which client code calls anywhere; another
-   * module's import is reported where it is imported, and read here as not supported yet.
+   * the component's body (UF2005) but `nextTick`, which client code calls anywhere; a shared
+   * module's value is an `import` binding (ADR-0070); any other module's import is reported where
+   * it is imported, or here where it is read as a value.
    */
-  #imported(node: AST.IdentifierReference, declaration: object): Kinds {
+  #imported(node: AST.IdentifierReference, declaration: object, shorthand: boolean): Kinds {
     const { authoring } = this.#context.setup;
     if (this.#context.passThrough.names.has(declaration)) {
       this.#passThroughValue(node, declaration);
       return UNKNOWN;
     }
+    const value = this.#context.shared.values.get(declaration);
+    if (value) return this.#sharedRead(node, value, shorthand);
+    if (this.#context.shared.failed.has(declaration)) return UNKNOWN;
+    if (this.#context.setup.composables.has(declaration)) {
+      // One its import reported says nothing more.
+      if (this.#context.setup.composables.get(declaration)) {
+        this.#unsupported(
+          node,
+          `\`${node.name}\` is a composable, which the component calls once, at the top level of its body, and destructures: \`const { … } = ${node.name}(…)\` (ADR-0069).`,
+        );
+      }
+      return UNKNOWN;
+    }
     if (!authoring.has(declaration)) {
       this.#unsupported(
         node,
-        `\`${node.name}\` is imported from another module, which a component cannot read yet: imports of modules land in M5.`,
+        `\`${node.name}\` is imported from a module whose values a component does not read: it reads the values of shared \`.ts\` modules, renders the components it imports and passes the keys it imports to \`provide\` and \`inject\`.`,
       );
       return UNKNOWN;
     }
@@ -1220,6 +1272,20 @@ class Walk {
     }
     this.#misplaced(node, api, false);
     return UNKNOWN;
+  }
+
+  /**
+   * A read of a value the module imports from a shared module, or of a constant it declares
+   * (ADR-0070): read-only, and a binding of the component's, declared once, which every target
+   * reads as a module binding. A call's callee is marked as one.
+   */
+  #sharedRead(node: AST.IdentifierReference, value: SharedValue, shorthand: boolean): Kinds {
+    const { bindings } = this.#context;
+    if (!bindings.some((binding) => binding.id === value.id)) {
+      bindings.push(createBinding(value.name, value.kind, value.span));
+    }
+    this.refs.push(createBindingReference(value.id, span(node), shorthand, this.#callee === node));
+    return value.kinds;
   }
 
   /**
@@ -2630,6 +2696,13 @@ class Walk {
           this.#arguments(node.arguments, [], "now", { name: binding.name, arrayMethod: false });
           return binding.kinds;
         }
+        // A function a composable returns: where it may be called, its flags say (ADR-0069).
+        if (binding?.kind === "usedFn") {
+          this.refs.push(createBindingReference(binding.id, span(callee), false, true));
+          this.#arguments(node.arguments, [], "now", { name: binding.name, arrayMethod: false });
+          // The API holds no function's result type.
+          return UNKNOWN;
+        }
       }
     }
     if (
@@ -2674,7 +2747,10 @@ class Walk {
       }
       calleeKinds = FUNCTION;
     } else {
+      // A shared value's reference marks the call (ADR-0070).
+      this.#callee = callee;
       calleeKinds = this.value(callee, "value", false);
+      this.#callee = undefined;
       if (callee.type === "Identifier" && this.#isGlobal(callee)) {
         if (callee.name === "Array" && render) {
           this.#unsupported(
@@ -2886,6 +2962,8 @@ class Walk {
       this.#context.scopes.resolve(object).kind === "global"
     ) {
       const [target] = node.arguments;
+      // Freezing a module's value changes nothing anyone reads, as module level holds (ADR-0070).
+      if (name === "freeze" && target && this.#isModuleValue(target)) return;
       if (target && target.type !== "SpreadElement") {
         this.#mutation(node, target, `\`Object.${name}\` changes`, position, undefined);
       }
@@ -2951,6 +3029,21 @@ class Walk {
         ...(fix ? { fixes: [fix] } : {}),
       },
     );
+  }
+
+  /**
+   * Whether an expression names a module's value: one of its top-level constants, or a value it
+   * imports from a shared module (ADR-0070).
+   */
+  #isModuleValue(node: AST.Expression | AST.SpreadElement): boolean {
+    if (node.type === "SpreadElement") return false;
+    const inner = unwrapExpression(node);
+    if (inner.type !== "Identifier") return false;
+    const resolution = this.#context.scopes.resolve(inner);
+    const declared =
+      resolution.kind === "import" ||
+      (resolution.kind === "variable" && (resolution.scope as AST.Node).type === "Program");
+    return declared && this.#context.shared.values.has(resolution.declaration);
   }
 
   /** The likely fix of UF2004 on a ref's value: the same change, as a new value written whole. */
@@ -3327,8 +3420,15 @@ class Walk {
               }
               return other(binding ? `\`${inner.name}\`, ${WHAT[binding.kind]},` : undefined);
             }
-            if ((resolution.scope as AST.Node).type === "Program") return other();
+            if ((resolution.scope as AST.Node).type === "Program") {
+              const value = context.shared.values.get(resolution.declaration);
+              return other(value ? `\`${inner.name}\`, ${WHAT[value.kind]},` : undefined);
+            }
             return this.#heldBy(resolution.declaration, inner.name, visiting);
+          }
+          case "import": {
+            const value = context.shared.values.get(resolution.declaration);
+            return other(value ? `\`${inner.name}\`, ${WHAT[value.kind]},` : undefined);
           }
           default:
             return other();
@@ -4834,6 +4934,22 @@ class Walk {
     };
   }
 
+  /**
+   * A write of a ref a composable returns (UF2036): its caller only reads it, since on some
+   * targets the caller holds the value its render reads, apart from the composable's state.
+   */
+  #resultWrite(node: { start: number; end: number }, binding: SetupBinding): Target {
+    this.#context.reporter.report(
+      "UF2036",
+      node,
+      `\`${binding.name}\` is ${WHAT[binding.kind]}, which its caller reads and never writes: the composable changes its own state.`,
+      {
+        help: "Return a function from the composable that changes it, and call that: `toggle()`.",
+      },
+    );
+    return { kind: "invalid" };
+  }
+
   /** What an assignment writes, reporting what may not be written (UF2011, UF2001). */
   #target(node: AST.AssignmentTarget | AST.SimpleAssignmentTarget): Target {
     const context = this.#context;
@@ -4854,6 +4970,9 @@ class Walk {
           if (!binding) return { kind: "invalid" };
           if (binding.kind === "localVar") return { kind: "binding", binding };
           if (binding.kind === "context") return this.#contextWrite(node, binding);
+          if (binding.kind === "usedState" || binding.kind === "usedDerived") {
+            return this.#resultWrite(node, binding);
+          }
           return isRef(binding)
             ? invalid(
                 node,
@@ -4889,11 +5008,11 @@ class Walk {
         }
         if (resolution.kind === "variable") {
           if ((resolution.scope as AST.Node).type === "Program") {
-            this.#unsupported(
+            return invalid(
               node,
-              `\`${node.name}\` is declared at the module's top level, which a component cannot read yet: module-level declarations land in M5.`,
+              `\`${node.name}\` is declared at the module's top level, and code does not write it: a module's values are read-only (ADR-0070).`,
+              "Keep what changes in a `ref` of the component's setup.",
             );
-            return { kind: "invalid" };
           }
           return { kind: "local" };
         }
@@ -4927,6 +5046,9 @@ class Walk {
           ) {
             if (isWritableRef(binding)) return { kind: "binding", binding };
             if (binding.kind === "context") return this.#contextWrite(node, binding);
+            if (binding.kind === "usedState" || binding.kind === "usedDerived") {
+              return this.#resultWrite(node, binding);
+            }
             return invalid(
               node,
               binding.kind === "derived"
@@ -5408,6 +5530,13 @@ const WHAT: Readonly<Record<SetupBinding["kind"], string>> = {
   slotScope: "a slot's props",
   context: "an injected value",
   component: "a component",
+  moduleConst: "a constant the module declares",
+  import: "a value imported from a `.ts` module",
+  argument: "a composable's argument",
+  usedState: "a ref a composable returns",
+  usedDerived: "a computed value a composable returns",
+  usedFn: "a function a composable returns",
+  usedConst: "a constant a composable returns",
 };
 
 /**
@@ -5420,6 +5549,8 @@ export function isRef(binding: SetupBinding): boolean {
     binding.kind === "derived" ||
     binding.kind === "templateRef" ||
     binding.kind === "model" ||
+    binding.kind === "usedState" ||
+    binding.kind === "usedDerived" ||
     (binding.kind === "context" && binding.ref === true)
   );
 }

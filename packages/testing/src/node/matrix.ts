@@ -13,7 +13,10 @@ export type MatrixCells = Record<string, Record<string, Partial<Record<LayerName
 /** Case → target → the parity scenarios its tests checked (`expectParity` names), sorted. */
 export type MatrixScenarios = Record<string, Record<string, string[]>>;
 
-/** What the matrix keeps of one test: the scenarios it checked, or why it was skipped. */
+/**
+ * What the matrix keeps of one test: the scenarios it checked, or why it was skipped or ran
+ * against a stand-in.
+ */
 export interface MatrixTest {
   /** The parity scenarios the test checked, sorted. */
   scenarios: string[];
@@ -22,6 +25,8 @@ export interface MatrixTest {
    * target has no output for the case.
    */
   skipped?: string;
+  /** Why the test ran against a stand-in on this target: it cannot compile the case yet. */
+  standIn?: string;
 }
 
 /**
@@ -238,18 +243,22 @@ export function mergeScenarios(sets: readonly MatrixScenarios[]): MatrixScenario
 }
 
 /**
- * The tests of test records: each named test's sorted scenarios and capability skip. Records
- * without a test name (a file's own) and tests that checked nothing and were not skipped are
- * left out: they have nothing to compare.
+ * The tests of test records: each named test's sorted scenarios, capability skip and stand-in.
+ * Records without a test name (a file's own) and tests that checked nothing and were neither
+ * skipped nor run against a stand-in are left out: they have nothing to compare.
  */
 export function buildTests(records: readonly UfLayerMeta[]): MatrixTests {
   return mergeTests(
     records.flatMap((record) => {
-      if (record.test === undefined || (!record.scenarios?.length && record.skipped === undefined))
+      if (
+        record.test === undefined ||
+        (!record.scenarios?.length && record.skipped === undefined && record.standIn === undefined)
+      )
         return [];
       const test: MatrixTest = {
         scenarios: [...new Set(record.scenarios ?? [])].sort(),
         ...(record.skipped === undefined ? {} : { skipped: record.skipped }),
+        ...(record.standIn === undefined ? {} : { standIn: record.standIn }),
       };
       return [{ [record.case]: { [record.target]: { [record.test]: test } } }];
     }),

@@ -35,7 +35,14 @@ export function assertedPaths(
       return plan.derived.get(binding.id)?.current
         ? reference.narrowed.filter(({ scope }) => scope !== "template")
         : [];
+    // A composable's ref or derived value, which client code reads through the hook's live
+    // reader (ADR-0069).
+    case "usedState":
+    case "usedDerived":
+      return reference.narrowed.filter(({ scope }) => scope !== "template");
+    // A composable's getter or callback argument is mirrored as a prop is (ADR-0069).
     case "prop":
+    case "argument":
       return plan.propMirrors.has(binding.id)
         ? reference.narrowed.filter(({ scope }) => scope === "closure")
         : [];
@@ -51,6 +58,10 @@ export function assertedPaths(
     case "slotScope":
     case "context":
     case "component":
+    case "moduleConst":
+    case "import":
+    case "usedFn":
+    case "usedConst":
       return [];
     default:
       return binding.kind satisfies never;

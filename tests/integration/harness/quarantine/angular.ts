@@ -2,5 +2,5 @@
 // entries whose target is "angular" belong here, so each target lane edits its own file.
 import type { QuarantineEntry } from "@unframework/testing/node";
 
-/** Empty: every live layer is green on Angular (ADR-0060). */
+/** Empty: every live layer is green on Angular. */
 export const QUARANTINE: readonly QuarantineEntry[] = [];

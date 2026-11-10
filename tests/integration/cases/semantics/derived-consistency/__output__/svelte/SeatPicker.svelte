@@ -1,11 +1,13 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface SeatPickerProps {
     pricePerSeat: number;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = SeatPickerProps & {
     onquote?: (seats: number, total: number, summary: string) => void;

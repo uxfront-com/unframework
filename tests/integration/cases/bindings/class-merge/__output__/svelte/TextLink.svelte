@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   interface LinkAttributes {
     class?: string;
     title?: string;
@@ -21,6 +19,10 @@
     link: LinkAttributes;
     row: RowAttributes;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = TextLinkProps & { class?: ClassValue; style?: string };
 

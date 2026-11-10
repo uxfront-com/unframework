@@ -144,25 +144,45 @@ describe("diagnostics", () => {
     expect(diagnostics).toEqual([]);
   });
 
-  // Props types from other modules land with M5's type oracle (ADR-0034).
-  it("reports type-only imports from other modules as not supported yet", () => {
-    const source = 'import type { X } from "./types.ts";\nexport function A() { return <p />; }';
+  // Every output re-imports them by name (ADR-0067).
+  it("records type imports from other modules, by name", () => {
+    const source = [
+      'import type { X, Y as Z } from "./types.ts";',
+      'import type W from "pkg";',
+      "export function A() { return <p />; }",
+    ].join("\n");
     const { module, diagnostics } = run(source);
-    expect(module).toBeUndefined();
-    expect(codes(diagnostics)).toEqual(["UF1002"]);
-    expect(diagnostics[0]!.message).toBe(
-      "Importing types from other modules is not supported yet: types from other modules land in M5.",
-    );
+    expect(diagnostics).toEqual([]);
+    expect(
+      module!.typeImports!.map(({ specifier, names }) => [
+        specifier,
+        names.map(({ imported, local }) => `${imported} ${local}`),
+      ]),
+    ).toEqual([
+      ["./types.ts", ["X X", "Y Z"]],
+      ["pkg", ["default W"]],
+    ]);
+  });
+
+  it("reports a namespace import of types", () => {
+    const source = 'import type * as T from "./types.ts";\nexport function A() { return <p />; }';
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF1002 * as T"]);
   });
 
   // A stylesheet the resolver did not read is UF5005 (`styles.test.ts`).
-  it("reports value imports as not supported yet", () => {
-    const source =
-      'import "./A.css";\nimport { x } from "./x.ts";\nexport function A() { return <p />; }';
+  // A shared module's value import is UF1202 without a resolver (`shared-modules.test.ts`).
+  it("reports value imports of other modules as not supported yet", () => {
+    const source = [
+      'import "./A.css";',
+      'import { x } from "./x.ts";',
+      'import { y } from "./y.json";',
+      "export function A() { return <p />; }",
+    ].join("\n");
     const { module, diagnostics } = run(source);
     expect(module).toBeUndefined();
-    expect(codes(diagnostics)).toEqual(["UF5005", "UF1002"]);
-    expect(diagnostics[1]!.message).toBe("Importing modules is not supported yet.");
+    expect(codes(diagnostics)).toEqual(["UF5005", "UF1202", "UF1002"]);
+    expect(diagnostics[2]!.message).toBe("Importing modules is not supported yet.");
   });
 
   it("reports a file without an exported component as UF1101", () => {
@@ -316,7 +336,7 @@ describe("diagnostics", () => {
   });
 
   it("reports other top-level declarations as not supported yet", () => {
-    const { diagnostics } = run("const x = 1;\nexport function A() { return <p />; }");
+    const { diagnostics } = run("class X {}\nexport function A() { return <p />; }");
     expect(codes(diagnostics)).toEqual(["UF1002"]);
   });
 
@@ -487,7 +507,7 @@ describe("the module's statements", () => {
       "export function helper() { return 1; }\nexport function A() { return <p />; }",
     );
     expect(diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
-      "Top-level declarations other than imports and components are not supported yet.",
+      "Top-level declarations other than imports, components and `const`s are not supported yet.",
     ]);
   });
 

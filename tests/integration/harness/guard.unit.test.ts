@@ -74,4 +74,15 @@ describe("goldenGuard", () => {
     expect(message).toContain("cases/area/form/__output__/vue/Other.vue is missing.");
     expect(message).not.toContain("Field.vue");
   });
+
+  it("judges a component beside a .uf.ts composable on the files it produced (ADR-0069)", () => {
+    const toggleDir = join(root, "cases", "area", "toggle");
+    mkdirSync(join(toggleDir, "__output__", "vue"), { recursive: true });
+    const toggle = join(toggleDir, "Toggle.uf.tsx");
+    writeFileSync(toggle, "");
+    writeFileSync(join(toggleDir, "useToggle.uf.ts"), "");
+    writeFileSync(join(toggleDir, "__output__", "vue", "Toggle.vue"), golden);
+    writeFileSync(join(toggleDir, "__output__", "vue", "useToggle.ts"), "export {};\n");
+    expect(guard("vue", [{ path: "Toggle.vue", contents: golden }], toggle)).toBeUndefined();
+  });
 });

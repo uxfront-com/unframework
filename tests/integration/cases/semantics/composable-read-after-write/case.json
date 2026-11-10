@@ -1,0 +1,7 @@
+{
+  "description": "Client code that calls a composable's function reads the composable's ref and derived value after it, and sees the write.",
+  "main": "Cart.uf.tsx",
+  "ssr": {
+    "initial": {}
+  }
+}

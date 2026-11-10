@@ -156,7 +156,10 @@
             "name": "CountKey",
             "description": "uf.count",
             "type": "Ref<number>",
-            "ref": "Ref"
+            "ref": "Ref",
+            "references": [
+              "Ref"
+            ]
           }
         ]
       },

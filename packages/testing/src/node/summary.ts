@@ -13,6 +13,7 @@ import {
   NO_INTERACTION_SKIP,
   NO_OUTPUT_SKIP,
   NO_OUTPUT_TEST_SKIP,
+  NO_SPEC_SKIP,
   NOT_RENDERED_SKIP,
   REQUIRES_SKIP,
 } from "../layers.ts";
@@ -54,6 +55,7 @@ export interface SummaryExpectations {
  */
 const MECHANICAL_SKIPS: readonly string[] = [
   NO_OUTPUT_SKIP,
+  NO_SPEC_SKIP,
   LIVE_REFERENCE_SKIP,
   NOT_RENDERED_SKIP,
   NO_INTERACTION_SKIP,
@@ -255,9 +257,9 @@ export function summarise(
  * The targets whose parity scenarios of a case differ from the reference's, test by test. Every
  * target runs the same spec, and a cell merges every test of its case, so a scenario one target
  * leaves out (a spec that branches on the target, a test that stops early) shows in no cell.
- * A test a target skipped (by capability, or because the target has no output for the case) is
- * excused on that target, and only that test: its scenarios are the ones it would have checked
- * (ADR-0050). Judged like the missing cells, once every project ran all its tests: a filtered
+ * A test a target skipped (by capability, or because the target has no output for the case), or
+ * ran against a stand-in for a component it cannot compile yet (ADR-0068), is excused on that
+ * target, and only that test: its scenarios are the ones it would have checked (ADR-0050). Judged like the missing cells, once every project ran all its tests: a filtered
  * run checks only some scenarios.
  */
 function scenarioProblems(
@@ -276,7 +278,7 @@ function scenarioProblems(
     for (const name of [...new Set([...Object.keys(expected), ...Object.keys(actual)])].sort()) {
       const theirs = expected[name];
       const ours = actual[name];
-      if (ours?.skipped !== undefined) continue;
+      if (ours?.skipped !== undefined || ours?.standIn !== undefined) continue;
       const wanted = theirs?.skipped === undefined ? (theirs?.scenarios ?? []) : [];
       const checked = ours?.scenarios ?? [];
       const missing = wanted.filter((scenario) => !checked.includes(scenario));
@@ -292,7 +294,7 @@ function scenarioProblems(
     }
     if (!differences.length) continue;
     problems.push(
-      `${caseId} › ${target}: its parity scenarios differ from ${reference}'s: ${differences.join("; ")}. Every target runs the same spec, so every target checks the same scenarios, unless it skips a test by capability or has no output for the case.`,
+      `${caseId} › ${target}: its parity scenarios differ from ${reference}'s: ${differences.join("; ")}. Every target runs the same spec, so every target checks the same scenarios, unless it skips a test by capability, has no output for the case, or cannot compile it yet.`,
     );
   }
   return problems;
@@ -497,15 +499,20 @@ export function renderMarkdown(
           : [...where.targets].join(", ");
       lines.push(`- ${escapeCell(note)}: ${[...where.layers].join(", ")} on ${on}.`);
     }
-    // The tests skipped by capability or for want of output, which a cell that another test of
-    // the case passes hides.
+    // The tests skipped by capability or for want of output, or run against a stand-in for a
+    // component the target cannot compile yet (ADR-0068), which a cell that another test of the
+    // case passes hides.
     const skipped = expected.targets.flatMap((target) =>
       Object.entries(matrix.tests[caseId]?.[target] ?? {}).flatMap(([name, test]) =>
-        test.skipped === undefined
-          ? []
-          : [
+        test.skipped !== undefined
+          ? [
               `- skipped on ${target} ${NO_OUTPUT_TEST_SKIP.test(test.skipped) ? "for want of output" : "by capability"}: "${escapeCell(name)}" (${escapeCell(test.skipped)}).`,
-            ],
+            ]
+          : test.standIn !== undefined
+            ? [
+                `- run against a stand-in on ${target}: "${escapeCell(name)}" (${escapeCell(test.standIn)}).`,
+              ]
+            : [],
       ),
     );
     lines.push(...skipped);

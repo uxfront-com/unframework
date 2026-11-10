@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   type TagStates = { selected?: boolean; muted?: boolean };
 
   export interface TagListProps {
@@ -11,6 +9,10 @@
     states: TagStates;
     extra?: string[];
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = TagListProps & { class?: ClassValue; style?: string };
 

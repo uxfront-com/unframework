@@ -1,16 +1,21 @@
-import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { defineTarget } from "@unframework/codegen";
 import type { Capabilities, CapabilityCell } from "@unframework/codegen";
-import { compile, createFileResolver, TARGET_NAMES } from "@unframework/compiler";
+import {
+  compile,
+  createFileResolver,
+  createSyntacticOracle,
+  TARGET_NAMES,
+} from "@unframework/compiler";
 import type { CompilerPlugin } from "@unframework/compiler";
 import { isRunnableDevEnvironment, optimizeDeps, resolveConfig } from "vite";
 import type { Plugin } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { ID_SUFFIXES, unframeworkUnplugin } from "../src/index.ts";
+import { ID_SUFFIXES, SCAN_ID_PREFIX, unframeworkUnplugin } from "../src/index.ts";
 import type { CompileEvent } from "../src/index.ts";
 import unframework from "../src/vite.ts";
 import { apiOf, codeOf, createProject, fakeVue, HELLO, startServer } from "./fixtures.ts";
@@ -711,6 +716,244 @@ describe("children (ADR-0053)", () => {
   });
 });
 
+describe("composables (ADR-0069)", () => {
+  const TOGGLE = [
+    'import { ref } from "unframework";',
+    "export function useToggle(initial: boolean) {",
+    "  const on = ref(initial);",
+    "  function toggle() {",
+    "    on.value = !on.value;",
+    "  }",
+    "  return { on, toggle };",
+    "}",
+    "",
+  ].join("\n");
+  const SWITCH = [
+    'import { useToggle } from "./useToggle.uf.ts";',
+    "export default function Switch() {",
+    "  const { on, toggle } = useToggle(false);",
+    "  return <button onClick={() => toggle()}>{on.value ? 'On' : 'Off'}</button>;",
+    "}",
+    "",
+  ].join("\n");
+  const files = {
+    "useToggle.uf.ts": TOGGLE,
+    "Switch.uf.tsx": SWITCH,
+    "main.ts": 'import { useToggle } from "./useToggle.uf.ts";\nexport default useToggle;\n',
+  };
+
+  /** A third-party target that emits each composable as `<name>.ts`. */
+  const scripted = () =>
+    defineTarget({
+      ...htmlTarget(),
+      emitComposable: (composable) => [
+        {
+          path: `${composable.name}.ts`,
+          contents: `export function ${composable.name}() {\n  return {};\n}\n`,
+        },
+      ],
+    });
+
+  it("resolves an import of a `.uf.ts` file to its target's id, and maps the id back", async () => {
+    const composables = createProject(files);
+    try {
+      const server = await startServer(composables.root, unframework({ target: "svelte" }));
+      try {
+        const { client } = server;
+        const main = join(composables.root, "main.ts");
+        const id = `${join(composables.root, "useToggle.uf.ts")}.svelte.ts`;
+        for (const specifier of ["./useToggle.uf.ts", "./useToggle.uf"]) {
+          expect(await client.pluginContainer.resolveId(specifier, main), specifier).toMatchObject({
+            id,
+          });
+        }
+        expect(await client.pluginContainer.resolveId(id)).toMatchObject({ id });
+        expect(await client.pluginContainer.resolveId(`${id}?x`)).toMatchObject({ id: `${id}?x` });
+        // The watch edge from its own module answers with the real file.
+        expect(await client.pluginContainer.resolveId("./useToggle.uf.ts", id)).toMatchObject({
+          id: join(composables.root, "useToggle.uf.ts"),
+        });
+        const scanning = { scan: true } as Parameters<typeof client.pluginContainer.resolveId>[2];
+        expect(
+          await client.pluginContainer.resolveId("./useToggle.uf.ts", main, scanning),
+        ).toMatchObject({ id: `${SCAN_ID_PREFIX}${join(composables.root, "useToggle.uf.ts")}` });
+      } finally {
+        await server.close();
+      }
+    } finally {
+      composables.remove();
+    }
+  });
+
+  it("leaves Vite's file queries to the authored `.uf.ts`, and fails it loudly as itself", async () => {
+    const composables = createProject(files);
+    try {
+      for (const name of ["svelte", "angular", "vue"] as const) {
+        const server = await startServer(composables.root, unframework({ target: name }));
+        try {
+          const { client } = server;
+          const main = join(composables.root, "main.ts");
+          const authored = join(composables.root, "useToggle.uf.ts");
+          for (const query of ["?raw", "?url"]) {
+            const resolved = await client.pluginContainer.resolveId(
+              `./useToggle.uf.ts${query}`,
+              main,
+            );
+            expect(resolved?.id, `${name} ${query}`).toBe(`${authored}${query}`);
+            // Vite's own plugins answer, with the authored file's text or its URL.
+            expect(
+              codeOf(await client.pluginContainer.load(resolved!.id)),
+              `${name} ${query}`,
+            ).toMatch(/^export default "/);
+          }
+          // On a target whose composable ids have a suffix, the authored file is never one.
+          if (name !== "vue") {
+            await expect(client.pluginContainer.load(authored), name).rejects.toThrow(
+              `useToggle.uf.ts reached Vite as itself, which would load it as plain TypeScript rather than as its ${name} composables`,
+            );
+          }
+        } finally {
+          await server.close();
+        }
+      }
+    } finally {
+      composables.remove();
+    }
+  });
+
+  it("fails a module of composables loudly on a target without `emitComposable`", async () => {
+    const composables = createProject(files);
+    try {
+      const server = await startServer(
+        composables.root,
+        unframework({ target: htmlTarget(), extension: ".html" }),
+      );
+      try {
+        const id = join(composables.root, "useToggle.uf.ts");
+        await expect(server.client.pluginContainer.load(id)).rejects.toThrow(
+          "error[UF1002] (html): The html target does not emit composables: it has no `emitComposable`.",
+        );
+      } finally {
+        await server.close();
+      }
+    } finally {
+      composables.remove();
+    }
+  });
+
+  it("loads what `emitComposable` emits, and resolves a caller's import of it to the module", async () => {
+    const composables = createProject(files);
+    try {
+      const target = scripted();
+      const server = await startServer(
+        composables.root,
+        unframework({ target, extension: ".html" }),
+      );
+      try {
+        const { client } = server;
+        const id = join(composables.root, "useToggle.uf.ts");
+        expect(
+          await client.pluginContainer.resolveId(
+            "./useToggle.uf.ts",
+            join(composables.root, "main.ts"),
+          ),
+        ).toMatchObject({ id });
+        expect(codeOf(await client.pluginContainer.load(id))).toBe(
+          "export function useToggle() {\n  return {};\n}\n",
+        );
+        expect(apiOf(server.server).getCompiled(id)).toBe(
+          "export function useToggle() {\n  return {};\n}\n",
+        );
+        // A caller's output imports the composable's output, which the module's id loads.
+        const caller = `${join(composables.root, "Switch.uf.tsx")}.html`;
+        await client.pluginContainer.load(caller);
+        expect(await client.pluginContainer.resolveId("./useToggle", caller)).toMatchObject({ id });
+        expect(await client.pluginContainer.resolveId("./useToggle.ts", caller)).toMatchObject({
+          id,
+        });
+      } finally {
+        await server.close();
+      }
+    } finally {
+      composables.remove();
+    }
+  });
+});
+
+/** Reads a project's file, as the compiler's file resolver and type oracle ask for it. */
+async function readFile(path: string): Promise<string> {
+  return readFileSync(path, "utf8");
+}
+
+describe("types read through the type oracle (ADR-0067)", () => {
+  const TONES =
+    'export type Tone = "info" | "warning";\nexport interface ChipProps { tone: Tone }\n';
+  const CHIP =
+    'import type { ChipProps } from "./tones.ts";\n\nexport default function Chip({ tone }: ChipProps) {\n  return <b class={tone}>{tone}</b>;\n}\n';
+  const PANEL =
+    'import Chip from "./Chip.uf.tsx";\n\nexport default function Panel() {\n  return <Chip tone="info" />;\n}\n';
+
+  // A shared module's copy is no component's output (ADR-0070): a target that joins a file's
+  // outputs keeps it out of the module, whose import of the module stays.
+  it("joins no shared module's copy into an Angular module", async () => {
+    const types = createProject({
+      "tones.ts":
+        'import { BASE } from "./base.ts";\n' + TONES + "export const sizes = { sm: BASE };\n",
+      "base.ts": "export const BASE = 4;\n",
+      "Chip.uf.tsx": CHIP,
+    });
+    try {
+      const server = await startServer(types.root, [...unframework({ target: "angular" })]);
+      try {
+        const id = `${join(types.root, "Chip.uf.tsx")}${ID_SUFFIXES.angular}`;
+        const code = codeOf(await server.client.pluginContainer.load(id));
+        const typeOracle = createSyntacticOracle({ root: types.root, readFile });
+        const compiled = await compile(CHIP, {
+          filename: "Chip.uf.tsx",
+          targets: ["angular"],
+          resolve: createFileResolver({ root: types.root, readFile, typeOracle }),
+          typeOracle,
+        });
+        await typeOracle.dispose();
+        expect(compiled.outputs.angular!.map(({ path }) => path)).toEqual([
+          "chip.ts",
+          "tones.ts",
+          "base.ts",
+        ]);
+        expect(code).toBe(compiled.outputs.angular![0]!.contents);
+        expect(code).not.toContain("BASE");
+      } finally {
+        await server.close();
+      }
+    } finally {
+      types.remove();
+    }
+  });
+
+  it("compiles a component whose props type another module declares, and a parent of it", async () => {
+    const types = createProject({ "tones.ts": TONES, "Chip.uf.tsx": CHIP, "Panel.uf.tsx": PANEL });
+    try {
+      const server = await startServer(types.root, [...unframework({ target: "vue" }), fakeVue]);
+      try {
+        const { client } = server;
+        const chip = codeOf(
+          await client.pluginContainer.load(`${join(types.root, "Chip.uf.tsx")}.vue`),
+        );
+        expect(chip).toContain("defineProps<ChipProps>()");
+        const panel = `${join(types.root, "Panel.uf.tsx")}.vue`;
+        expect(codeOf(await client.pluginContainer.load(panel))).toContain('<Chip tone="info" />');
+        // A literal outside the union the child's imported alias names (UF3039).
+        types.write("tones.ts", TONES.replace('"info" | ', ""));
+        await expect(client.pluginContainer.load(panel)).rejects.toThrow("UF3039");
+      } finally {
+        await server.close();
+      }
+    } finally {
+      types.remove();
+    }
+  });
+});
+
 describe("the golden guard (onCompile)", () => {
   it("receives every compile, and leaves a module it accepts alone", async () => {
     const events: CompileEvent[] = [];
@@ -889,6 +1132,320 @@ describe("watching", () => {
   });
 });
 
+/** A component that renders `Field` with a prop it does not declare yet. */
+const rendersField = (name: string) =>
+  `import Field from "./Field.uf.tsx";\n\nexport default function ${name}() {\n  return <Field label="Name" hint="Hi" />;\n}\n`;
+
+/** The files a module's id imports in Vite's graph: its watch edges, relative to the root. */
+const watchedBy = (graph: Project, client: TestServer["client"], id: string) =>
+  [...(client.moduleGraph.getModuleById(id)?.importedModules ?? [])]
+    .map((module) => relative(graph.root, module.file!))
+    .toSorted();
+
+/** The props and the error codes of the last compile `onCompile` saw for an id. */
+const lastCompile = (events: CompileEvent[], id: string) => {
+  const event = events.findLast((each) => each.id === id)!;
+  return {
+    props: event.ir?.components[0]?.props.map(({ name }) => name),
+    errors: event.diagnostics
+      .filter(({ severity }) => severity === "error")
+      .map(({ code }) => code),
+  };
+};
+
+/** Loads an id that may fail to compile: `onCompile` sees it either way. */
+const request = (client: TestServer["client"], id: string) =>
+  client.transformRequest(id).catch(() => undefined);
+
+/** Links a workspace package into `node_modules`, as pnpm does. */
+const linkPackage = (graph: Project, name: string) => {
+  mkdirSync(join(graph.root, "node_modules"), { recursive: true });
+  symlinkSync(join(graph.root, "packages", name), join(graph.root, "node_modules", name));
+};
+
+/**
+ * A library's playground, which imports the library's types by its name. The comment goes before
+ * the import, so an edit to it moves the props type's span.
+ */
+const playgroundApp = (comment: string) =>
+  `${comment}import type { CardProps } from "my-lib";\n\nexport default function App({ label }: CardProps) {\n  return <p>{label}</p>;\n}\n`;
+
+describe("the project graph (ADR-0071)", () => {
+  // The verification plan's invalidation fixture (C9), and a second shared module: `B` reads its
+  // types from `a.ts` and `tokens.ts`, whose copies its output tree holds, `C` reaches `a.ts`
+  // through `useC.uf.ts` alone, and `D` reads none.
+  const PROPS = "export interface CardProps {\n  label: string;\n}\n";
+  const TOKENS = 'export type Tone = "info" | "warning";\n';
+  const HINTED = PROPS.replace("label: string;", "label: string;\n  hint?: string;");
+  const FIELD =
+    "export default function Field({ label }: { label: string }) {\n  return <i>{label}</i>;\n}\n";
+  const GRAPH = {
+    "a.ts": PROPS,
+    "tokens.ts": TOKENS,
+    "B.uf.tsx":
+      'import type { CardProps } from "./a.ts";\nimport type { Tone } from "./tokens.ts";\n\nexport default function B({ label, tone }: CardProps & { tone?: Tone }) {\n  return <p class={tone}>{label}</p>;\n}\n',
+    "useC.uf.ts":
+      'import { computed } from "unframework";\nimport type { CardProps } from "./a.ts";\n\nexport function useC(card: CardProps) {\n  const text = computed(() => card.label);\n  return { text };\n}\n',
+    "C.uf.tsx":
+      'import { useC } from "./useC.uf.ts";\n\nexport default function C({ label }: { label: string }) {\n  const { text } = useC({ label });\n  return <p>{text.value}</p>;\n}\n',
+    "D.uf.tsx": "export default function D() {\n  return <p>D</p>;\n}\n",
+    // Loaded by the tests that need them, never by `withGraph`.
+    "X.uf.tsx":
+      'import type { CardProps } from "./a.ts";\n\nexport default function X({ label }: CardProps) {\n  return <p>{label}</p>;\n}\n',
+    "Field.uf.tsx": FIELD,
+    "Form.uf.tsx": rendersField("Form"),
+    "Page.uf.tsx": rendersField("Page"),
+    // A workspace package, which pnpm links into `node_modules` (`linkPackage`).
+    "packages/tokens/package.json": JSON.stringify({ name: "tokens", types: "./index.ts" }),
+    "packages/tokens/index.ts": PROPS,
+    "P.uf.tsx":
+      'import type { CardProps } from "tokens";\n\nexport default function P({ label }: CardProps) {\n  return <p>{label}</p>;\n}\n',
+    // The same file by its path.
+    "R.uf.tsx":
+      'import type { CardProps } from "./packages/tokens/index.ts";\n\nexport default function R({ label }: CardProps) {\n  return <p>{label}</p>;\n}\n',
+    // A dual build, whose types sit beside a `package.json` without a name.
+    "packages/dual/package.json": JSON.stringify({ name: "dual", types: "./dist/esm/index.d.ts" }),
+    "packages/dual/dist/esm/package.json": JSON.stringify({ type: "module" }),
+    "packages/dual/dist/esm/index.d.ts": PROPS,
+    // A package installed into `node_modules`, which Vite's watcher ignores.
+    "node_modules/vendor/package.json": JSON.stringify({ name: "vendor", types: "./index.d.ts" }),
+    "node_modules/vendor/index.d.ts": PROPS,
+    "V.uf.tsx":
+      'import type { CardProps } from "vendor";\n\nexport default function V({ label }: CardProps) {\n  return <p>{label}</p>;\n}\n',
+    "Dual.uf.tsx":
+      'import type { CardProps } from "dual";\n\nexport default function Dual({ label }: CardProps) {\n  return <p>{label}</p>;\n}\n',
+  };
+
+  /**
+   * A target that emits each component as a stub `.vue` file, which plugin-vue's stand-in claims,
+   * a composable's call included, so these tests judge the watch edges and the compiles rather
+   * than a framework's output.
+   */
+  const target = defineTarget({
+    ...htmlTarget(),
+    emit: (component) => [{ path: `${component.name}.vue`, contents: "<p></p>\n" }],
+    emitComposable: (composable) => [
+      { path: `${composable.name}.ts`, contents: `export function ${composable.name}() {}\n` },
+    ],
+  });
+
+  /** Runs `fn` on a server over the fixture, counting the compiles of each module. */
+  async function withGraph(
+    fn: (context: {
+      graph: Project;
+      client: TestServer["client"];
+      ids: Record<"B" | "C" | "D", string>;
+      idOf: (name: string) => string;
+      compiled: string[];
+      events: CompileEvent[];
+    }) => Promise<void>,
+  ) {
+    const graph = createProject(GRAPH);
+    const compiled: string[] = [];
+    const events: CompileEvent[] = [];
+    const counter: CompilerPlugin = {
+      name: "counter",
+      ir: (module) => void compiled.push(module.file),
+    };
+    const plugins = unframework({
+      target,
+      extension: ".vue",
+      plugins: [counter],
+      onCompile: (event) => void events.push(event),
+    });
+    try {
+      const server = await startServer(graph.root, [...plugins, fakeVue]);
+      try {
+        const idOf = (name: string) => `${join(graph.root, `${name}.uf.tsx`)}.vue`;
+        const ids = { B: idOf("B"), C: idOf("C"), D: idOf("D") };
+        for (const each of Object.values(ids)) await server.client.transformRequest(each);
+        await fn({ graph, client: server.client, ids, idOf, compiled, events });
+      } finally {
+        await server.close();
+      }
+    } finally {
+      graph.remove();
+    }
+  }
+
+  it("watches a module's `.ts`, `.uf.ts` and type dependencies", async () => {
+    await withGraph(async ({ graph, client, ids }) => {
+      const watched = (id: string) => watchedBy(graph, client, id);
+      expect(watched(ids.B)).toEqual(["B.uf.tsx", "a.ts", "tokens.ts"]);
+      // C reaches the type through its composable's API.
+      expect(watched(ids.C)).toEqual(["C.uf.tsx", "a.ts", "useC.uf.ts"]);
+      expect(watched(ids.D)).toEqual(["D.uf.tsx"]);
+    });
+  });
+
+  it.each([
+    ["a.ts", ["B", "C"]],
+    ["useC.uf.ts", ["C"]],
+    ["tokens.ts", ["B"]],
+  ] as const)("invalidates the modules that depend on %s, and only them", async (path, names) => {
+    await withGraph(async ({ graph, client, ids }) => {
+      const edited = join(graph.root, path);
+      writeFileSync(edited, `${readFileSync(edited, "utf8")}\n`);
+      client.moduleGraph.onFileChange(edited);
+      for (const [name, id] of Object.entries(ids)) {
+        const result = client.moduleGraph.getModuleById(id)?.transformResult;
+        if ((names as readonly string[]).includes(name)) expect(result, name).toBeNull();
+        else expect(result, name).not.toBeNull();
+      }
+    });
+  });
+
+  it("compiles again exactly the dependents of a type it changed", async () => {
+    await withGraph(async ({ graph, client, ids, compiled }) => {
+      expect(compiled.toSorted()).toEqual(["B.uf.tsx", "C.uf.tsx", "D.uf.tsx"]);
+      compiled.length = 0;
+      graph.write("a.ts", PROPS.replace("label: string;", "label: string;\n  hint?: string;"));
+      client.moduleGraph.onFileChange(join(graph.root, "a.ts"));
+      for (const id of Object.values(ids)) await client.transformRequest(id);
+      expect(compiled.toSorted()).toEqual(["B.uf.tsx", "C.uf.tsx"]);
+    });
+  });
+
+  it("watches what a module of composables depends on", async () => {
+    await withGraph(async ({ graph, client }) => {
+      // Its id is the file itself on this target (ADR-0069), so only its dependency is an edge.
+      const id = join(graph.root, "useC.uf.ts");
+      await client.transformRequest(id);
+      expect(watchedBy(graph, client, id)).toEqual(["a.ts"]);
+    });
+  });
+
+  it("sees an edit in a module first compiled after it, and in those compiled before", async () => {
+    await withGraph(async ({ graph, client, ids, idOf, events }) => {
+      graph.write("a.ts", HINTED);
+      // Never loaded before the edit: its compile reads `a.ts` before B's does again.
+      await request(client, idOf("X"));
+      expect(lastCompile(events, idOf("X")).props).toEqual(["label", "hint"]);
+      client.moduleGraph.onFileChange(join(graph.root, "a.ts"));
+      await request(client, ids.B);
+      expect(lastCompile(events, ids.B).props).toContain("hint");
+    });
+  });
+
+  it("sees a child's edit in a parent first compiled after it, and in those compiled before", async () => {
+    await withGraph(async ({ graph, client, idOf, events }) => {
+      await request(client, idOf("Form"));
+      expect(lastCompile(events, idOf("Form")).errors).toEqual(["UF3035"]);
+      graph.write("Field.uf.tsx", FIELD.replace("label: string", "label: string; hint?: string"));
+      await request(client, idOf("Page"));
+      expect(lastCompile(events, idOf("Page")).errors).toEqual([]);
+      client.moduleGraph.onFileChange(join(graph.root, "Field.uf.tsx"));
+      await request(client, idOf("Form"));
+      expect(lastCompile(events, idOf("Form")).errors).toEqual([]);
+    });
+  });
+
+  it("watches a workspace package's types, and reads them again when they change", async () => {
+    await withGraph(async ({ graph, client, idOf, events }) => {
+      linkPackage(graph, "tokens");
+      const id = idOf("P");
+      await request(client, id);
+      expect(lastCompile(events, id).props).toEqual(["label"]);
+      expect(watchedBy(graph, client, id)).toEqual(["P.uf.tsx", "packages/tokens/index.ts"]);
+      graph.write("packages/tokens/index.ts", HINTED);
+      client.moduleGraph.onFileChange(join(graph.root, "packages/tokens/index.ts"));
+      expect(client.moduleGraph.getModuleById(id)?.transformResult).toBeNull();
+      await request(client, id);
+      expect(lastCompile(events, id).props).toEqual(["label", "hint"]);
+    });
+  });
+
+  it.each([
+    ["by its package's name first", ["P", "R"]],
+    ["by its path first", ["R", "P"]],
+  ])("sees an edit to a file that modules import %s, and by the other", async (_, names) => {
+    await withGraph(async ({ graph, client, idOf, events }) => {
+      linkPackage(graph, "tokens");
+      for (const name of names) await request(client, idOf(name));
+      graph.write("packages/tokens/index.ts", HINTED);
+      client.moduleGraph.onFileChange(join(graph.root, "packages/tokens/index.ts"));
+      for (const name of names) {
+        await request(client, idOf(name));
+        expect(lastCompile(events, idOf(name)).props, name).toEqual(["label", "hint"]);
+      }
+    });
+  });
+
+  it("sees edits to a module that imports its own root package by name, and to the package", async () => {
+    await withGraph(async ({ graph, client, events }) => {
+      // A component library's playground.
+      graph.write(
+        "package.json",
+        JSON.stringify({ name: "my-lib", exports: { ".": { types: "./src/index.ts" } } }),
+      );
+      graph.write("src/index.ts", PROPS);
+      const appFile = graph.write("playground/App.uf.tsx", playgroundApp(""));
+      const id = `${appFile}.vue`;
+      await request(client, id);
+      expect(lastCompile(events, id)).toEqual({ props: ["label"], errors: [] });
+      graph.write("playground/App.uf.tsx", playgroundApp("// The playground.\n"));
+      client.moduleGraph.onFileChange(appFile);
+      await request(client, id);
+      expect(lastCompile(events, id)).toEqual({ props: ["label"], errors: [] });
+      graph.write("src/index.ts", HINTED);
+      client.moduleGraph.onFileChange(join(graph.root, "src/index.ts"));
+      await request(client, id);
+      expect(lastCompile(events, id)).toEqual({ props: ["label", "hint"], errors: [] });
+    });
+  });
+
+  it("watches no installed package's file, and still reads it again on the next load", async () => {
+    await withGraph(async ({ graph, client, idOf, events }) => {
+      const id = idOf("V");
+      await request(client, id);
+      expect(watchedBy(graph, client, id)).toEqual(["V.uf.tsx"]);
+      graph.write("node_modules/vendor/index.d.ts", HINTED);
+      client.moduleGraph.invalidateAll();
+      await request(client, id);
+      expect(lastCompile(events, id).props).toEqual(["label", "hint"]);
+    });
+  });
+
+  it("reads a package's types again beside a `package.json` without a name", async () => {
+    await withGraph(async ({ graph, client, idOf, events }) => {
+      linkPackage(graph, "dual");
+      const id = idOf("Dual");
+      await request(client, id);
+      expect(lastCompile(events, id).props).toEqual(["label"]);
+      const types = join(graph.root, "packages/dual/dist/esm/index.d.ts");
+      expect(watchedBy(graph, client, id)).toContain("packages/dual/dist/esm/index.d.ts");
+      graph.write("packages/dual/dist/esm/index.d.ts", HINTED);
+      client.moduleGraph.onFileChange(types);
+      await request(client, id);
+      expect(lastCompile(events, id).props).toEqual(["label", "hint"]);
+    });
+  });
+
+  it("gives the guard each shared module's copy, as the module now holds it", async () => {
+    await withGraph(async ({ graph, client, ids, compiled, events }) => {
+      const filesOf = () => events.findLast((event) => event.id === ids.B)!.files;
+      const typeOracle = createSyntacticOracle({ root: graph.root, readFile });
+      const direct = await compile(GRAPH["B.uf.tsx"], {
+        filename: "B.uf.tsx",
+        targets: [target],
+        resolve: createFileResolver({ root: graph.root, readFile, typeOracle }),
+        typeOracle,
+      });
+      await typeOracle.dispose();
+      expect(filesOf()).toEqual(direct.outputs.html);
+      expect(filesOf().map(({ path }) => path)).toEqual(["B.vue", "a.ts", "tokens.ts"]);
+      // An edit that leaves the types alone compiles nothing, and the copy holds the new text.
+      compiled.length = 0;
+      const tokens = `${TOKENS}export const TONES: Tone[] = ["info", "warning"];\n`;
+      graph.write("tokens.ts", tokens);
+      client.moduleGraph.onFileChange(join(graph.root, "tokens.ts"));
+      await client.transformRequest(ids.B);
+      expect(compiled).toEqual([]);
+      expect(filesOf().find(({ path }) => path === "tokens.ts")?.contents).toBe(tokens);
+    });
+  });
+});
+
 describe("api.getCompiled", () => {
   it("returns what load returned for an id, and nothing once it fails", async () => {
     const flaky = project.write("Flaky.uf.tsx", HELLO);
@@ -995,6 +1552,10 @@ function htmlTarget() {
     "child-root-scope": { support: "native" },
     "slotted-styles": { support: "native" },
     "sheet-order": { support: "native" },
+    "generic-components": { support: "native" },
+    "generic-slot-props": { support: "native" },
+    composables: { support: "native" },
+    "composable-effect-order": { support: "native" },
   };
   return defineTarget({
     name: "html",

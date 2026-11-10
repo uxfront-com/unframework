@@ -44,6 +44,65 @@ export const ID_SUFFIXES: Readonly<Record<TargetName, string>> = {
   astro: ".astro",
 };
 
+/** The extension of an authored module of composables (ADR-0069). */
+export const COMPOSABLE_EXTENSION = ".uf.ts";
+
+/**
+ * What each built-in target appends to the absolute `.uf.ts` path to form the id of a module of
+ * composables (ADR-0069). A composable compiles to a plain TypeScript module on React, Vue, Solid,
+ * Astro and Qwik, which Vite's own transform and Qwik's optimizer claim under the `.uf.ts` id.
+ * vite-plugin-svelte compiles runes only in a `.svelte.ts` module, and Angular's `ngtscVirtual`
+ * collects `<file>.ts` ids, so their ids end in `.uf.ts.svelte.ts` and `.uf.ts.ts`.
+ */
+export const COMPOSABLE_ID_SUFFIXES: Readonly<Record<TargetName, string>> = {
+  react: "",
+  vue: "",
+  svelte: ".svelte.ts",
+  solid: "",
+  angular: ".ts",
+  qwik: "",
+  astro: "",
+};
+
+/**
+ * The id suffix of a target's modules of composables: a built-in target's, or `""` for a
+ * third-party target, whose composables load as plain TypeScript modules.
+ */
+export function composableIdSuffix(target: TargetName | Target): string {
+  const builtin =
+    typeof target === "string"
+      ? target
+      : TARGET_NAMES.find((name) => builtinTargets[name] === target);
+  return builtin !== undefined && Object.hasOwn(COMPOSABLE_ID_SUFFIXES, builtin)
+    ? COMPOSABLE_ID_SUFFIXES[builtin]
+    : "";
+}
+
+/** A `.uf.ts` specifier, or a module id of composables for `suffix` coming back, with any query. */
+export function composableFilter(suffix: string): RegExp {
+  const tail = suffix ? `(?:${escapeRegExp(suffix)})?` : "";
+  return new RegExp(`${escapeRegExp(COMPOSABLE_EXTENSION)}${tail}(?:\\?.*)?$`);
+}
+
+/** The id of the module of composables `file` (an absolute `.uf.ts` path) for an id suffix. */
+export function composableId(file: string, suffix: string, query = ""): string {
+  return `${file}${suffix}${query}`;
+}
+
+/**
+ * Takes the id of a module of composables for an id suffix apart, or returns `undefined` when the
+ * id is not one.
+ */
+export function parseComposableId(id: string, suffix: string): ModuleRequest | undefined {
+  const index = id.indexOf("?");
+  const path = index === -1 ? id : id.slice(0, index);
+  if (!path.endsWith(`${COMPOSABLE_EXTENSION}${suffix}`)) return undefined;
+  return {
+    file: path.slice(0, path.length - suffix.length),
+    query: index === -1 ? "" : id.slice(index),
+  };
+}
+
 /**
  * The prefix of the id a `.uf.tsx` import resolves to during Vite's dependency scan. The
  * scanner reads whatever id it gets from disk with its own loaders, so a module id that only
@@ -91,7 +150,7 @@ export function moduleId(file: string, suffix: string, query = ""): string {
 
 /** A module id taken apart. */
 export interface ModuleRequest {
-  /** The authored `.uf.tsx` file. */
+  /** The authored `.uf.tsx` file, or `.uf.ts` file for a module of composables. */
   file: string;
   /** The query, with its `?`, or `""`. */
   query: string;

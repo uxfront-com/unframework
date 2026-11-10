@@ -1,0 +1,135 @@
+{
+  "irVersion": 1,
+  "file": "types/re-export-only/Badge.uf.tsx",
+  "components": [
+    {
+      "name": "Badge",
+      "span": {
+        "start": 224,
+        "end": 332
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 274,
+              "end": 280
+            }
+          },
+          "binding": "label@256",
+          "span": {
+            "start": 267,
+            "end": 280
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 265,
+            "end": 282
+          }
+        },
+        "span": {
+          "start": 254,
+          "end": 282
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "label@256",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 256,
+            "end": 261
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "badge",
+            "span": {
+              "start": 301,
+              "end": 314
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 316,
+                "end": 321
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@256",
+                  "span": {
+                    "start": 316,
+                    "end": 321
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 315,
+              "end": 322
+            }
+          }
+        ],
+        "span": {
+          "start": 295,
+          "end": 329
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Badge",
+      "span": {
+        "start": 224,
+        "end": 332
+      }
+    }
+  ],
+  "types": [],
+  "typeExports": [
+    {
+      "kind": "ReExport",
+      "specifier": "./tone",
+      "names": [
+        {
+          "imported": "Tone",
+          "exported": "Tone",
+          "span": {
+            "start": 201,
+            "end": 205
+          }
+        }
+      ],
+      "span": {
+        "start": 187,
+        "end": 222
+      }
+    }
+  ]
+}

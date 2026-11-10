@@ -9,6 +9,7 @@ import {
 import type { CapabilityCell, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
+import { emitComposable } from "./composable.ts";
 import { astroRender, takesFallthrough } from "./composition.ts";
 import { childTags, frontmatterOf } from "./frontmatter.ts";
 import { printComponentMarkup } from "./markup.ts";
@@ -116,6 +117,10 @@ export const astro: Target = defineTarget({
     "slotted-styles": { support: "native" },
     // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
     "sheet-order": { support: "native" },
+    "generic-components": { support: "native" },
+    "generic-slot-props": { support: "native" },
+    composables: { support: "native" },
+    "composable-effect-order": inert("A composable's watchers, effects and hooks never run"),
   },
   /**
    * One `.astro` file: the frontmatter at the very top (where Astro reads it, and where the
@@ -175,6 +180,8 @@ export const astro: Target = defineTarget({
       },
     ];
   },
+  // A composable is a static `.ts` module, which returns initial values (ADR-0069).
+  emitComposable,
 });
 
 export default astro;

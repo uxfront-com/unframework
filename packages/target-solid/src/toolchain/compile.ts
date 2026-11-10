@@ -61,7 +61,15 @@ function compileFile(
           code: false,
           presets: [
             [solid, { generate, hydratable: generate === "ssr" }],
-            [typescript, { isTSX: true, allExtensions: true, onlyRemoveTypeImports: true }],
+            // A `.ts` module is TypeScript without JSX, where `<T>(value: T) => …` is a generic arrow.
+            [
+              typescript,
+              {
+                isTSX: !file.path.endsWith(".ts"),
+                allExtensions: true,
+                onlyRemoveTypeImports: true,
+              },
+            ],
           ],
         }),
       );

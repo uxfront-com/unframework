@@ -1,0 +1,213 @@
+{
+  "irVersion": 1,
+  "file": "semantics/composable-effect-order/useTracked.uf.ts",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "composables": [
+    {
+      "name": "useTracked",
+      "span": {
+        "start": 217,
+        "end": 488
+      },
+      "parameters": [
+        {
+          "name": "report",
+          "kind": "callback",
+          "type": {
+            "code": "(entry: string) => void",
+            "span": {
+              "start": 252,
+              "end": 275
+            }
+          },
+          "binding": "report@244",
+          "span": {
+            "start": 244,
+            "end": 275
+          }
+        }
+      ],
+      "types": [],
+      "bindings": [
+        {
+          "id": "report@244",
+          "name": "report",
+          "kind": "argument",
+          "span": {
+            "start": 244,
+            "end": 250
+          }
+        },
+        {
+          "id": "count@287",
+          "name": "count",
+          "kind": "state",
+          "span": {
+            "start": 287,
+            "end": 292
+          }
+        },
+        {
+          "id": "increment@418",
+          "name": "increment",
+          "kind": "localFn",
+          "span": {
+            "start": 418,
+            "end": 427
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "count@287",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 299,
+              "end": 300
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 281,
+            "end": 302
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "count@287",
+              "span": {
+                "start": 312,
+                "end": 317
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "report(\"composable watcher\")",
+              "span": {
+                "start": 325,
+                "end": 353
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "report@244",
+                  "span": {
+                    "start": 325,
+                    "end": 331
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 319,
+              "end": 353
+            }
+          },
+          "span": {
+            "start": 306,
+            "end": 355
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "report(\"composable mounted\")",
+              "span": {
+                "start": 375,
+                "end": 403
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "report@244",
+                  "span": {
+                    "start": 375,
+                    "end": 381
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 369,
+              "end": 403
+            }
+          },
+          "span": {
+            "start": 359,
+            "end": 405
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "increment@418",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    count.value++;\n  }",
+              "span": {
+                "start": 430,
+                "end": 454
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "count@287",
+                  "operator": "++",
+                  "span": {
+                    "start": 436,
+                    "end": 449
+                  },
+                  "target": {
+                    "start": 436,
+                    "end": 447
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 427,
+              "end": 454
+            }
+          },
+          "span": {
+            "start": 409,
+            "end": 454
+          }
+        }
+      ],
+      "returns": [
+        {
+          "name": "count",
+          "binding": "count@287",
+          "span": {
+            "start": 467,
+            "end": 472
+          }
+        },
+        {
+          "name": "increment",
+          "binding": "increment@418",
+          "span": {
+            "start": 474,
+            "end": 483
+          }
+        }
+      ]
+    }
+  ]
+}

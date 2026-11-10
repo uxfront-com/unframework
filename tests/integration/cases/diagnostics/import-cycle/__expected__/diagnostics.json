@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF1205",
+    "severity": "error",
+    "message": "\"./Pong.uf.tsx\" closes an import cycle of components, Ping.uf.tsx → Pong.uf.tsx → Ping.uf.tsx: each imports the next to render it, so none of them can load before the others.",
+    "file": "diagnostics/import-cycle/Ping.uf.tsx",
+    "start": {
+      "line": 4,
+      "column": 18,
+      "offset": 292
+    },
+    "end": {
+      "line": 4,
+      "column": 33,
+      "offset": 307
+    },
+    "help": "Render the components of the cycle from one module, which declares them all."
+  },
+  {
+    "code": "UF1205",
+    "severity": "error",
+    "message": "\"./Ping.uf.tsx\" closes an import cycle of components, Pong.uf.tsx → Ping.uf.tsx → Pong.uf.tsx: each imports the next to render it, so none of them can load before the others.",
+    "file": "diagnostics/import-cycle/Pong.uf.tsx",
+    "start": {
+      "line": 2,
+      "column": 18,
+      "offset": 73
+    },
+    "end": {
+      "line": 2,
+      "column": 33,
+      "offset": 88
+    },
+    "help": "Render the components of the cycle from one module, which declares them all."
+  }
+]

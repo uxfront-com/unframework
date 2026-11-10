@@ -100,6 +100,7 @@ export type {
   SsrScenario,
 } from "../harness.ts";
 export {
+  BROWSER_LAYERS,
   checkLayers,
   LAYERS,
   LayerFailure,
@@ -108,10 +109,12 @@ export {
   NO_INTERACTION_SKIP,
   NO_OUTPUT_SKIP,
   NO_OUTPUT_TEST_SKIP,
+  NO_SPEC_SKIP,
   noOutputSkip,
   NOT_RENDERED_SKIP,
   quarantineFor,
   recordLayer,
+  recordStandIn,
   REQUIRES_SKIP,
   requiresSkip,
   settleOutcome,

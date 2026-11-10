@@ -43,7 +43,7 @@ import type { ApiEvent } from "@unframework/ir";
 import { childEvent } from "./composition.ts";
 import type { DirectiveSpec } from "./directives.ts";
 import { assertedCode, assertedFunction } from "./narrowing.ts";
-import { bindingById, formOf, isLoopVariable, unreachable } from "./plan.ts";
+import { bindingById, formOf, isLoopVariable, resultApi, unreachable } from "./plan.ts";
 import type { Plan } from "./plan.ts";
 import { classRules, statementRead, statementRules } from "./rules.ts";
 import { bodyStatements, returnsValue } from "./statements.ts";
@@ -553,6 +553,15 @@ function templateStatement(
     rewriteCode(code, plan.component, statementRules(plan), "client"),
   );
   if (call.callee === undefined) return { code: statement, valued: false };
+  // A function a composable returns may return a value: its API holds no result, only whether it
+  // is async (ADR-0069).
+  if (bindingById(plan, call.callee).kind === "usedFn") {
+    return { code: statement, valued: resultApi(plan, call.callee).async !== true };
+  }
+  // A module's function (ADR-0070) is declared in another module, so nothing here says whether it
+  // returns a value: the statement discards it, as Angular prevents the default on `false`.
+  const { kind } = bindingById(plan, call.callee);
+  if (kind === "import" || kind === "moduleConst") return { code: statement, valued: true };
   // A setup function's value, unless it is async (its value is a promise).
   const callee = functionOf(plan.component, call.callee);
   return { code: statement, valued: !callee.async && returnsValue(callee) };
@@ -689,7 +698,10 @@ function simpleRead(plan: Plan, reference: CodeReference): boolean {
         case "method":
         case "arrow":
         case "context":
+        case "module":
+        case "resultValue":
           return true;
+        case "result":
         case "model":
         case "instance":
         case "component":

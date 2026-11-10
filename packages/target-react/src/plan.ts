@@ -9,11 +9,13 @@
 import {
   addPassThroughImports,
   codeKind,
+  codeNames,
   moduleHelperName,
   ImportSet,
   parseCodeSource,
   pascalCase,
   sourceNames,
+  typeNames,
 } from "@unframework/codegen";
 import {
   codeOf,
@@ -28,6 +30,8 @@ import type {
   BindingId,
   BindingKind,
   Code,
+  ComposableApi,
+  ComposableMemberApi,
   ElementNode,
   EventAttribute,
   FunctionCode,
@@ -37,8 +41,11 @@ import type {
   RefAttribute,
   RenderNode,
   Span,
+  TypeText,
   UfComponent,
+  UfComposable,
   UfModule,
+  UseItem,
 } from "@unframework/ir";
 
 import { planComposition } from "./composition.ts";
@@ -51,8 +58,13 @@ export interface StatePlan {
   name: string;
   /** The setter: absent when no code writes the state (an unused setter fails L5). */
   setter?: string;
-  /** The mirror ref client code reads and writes, `countRef`: present when client code writes. */
+  /**
+   * The mirror ref client code reads and writes, `countRef`: present when client code writes,
+   * and for a state a composable returns.
+   */
   mirror?: string;
+  /** `currentOn()`: the live reader of a state a composable returns (ADR-0069). */
+  current?: string;
 }
 
 /** A `derived` binding: `const total = useMemo(…)`, and its live getter when client code reads it. */
@@ -62,6 +74,24 @@ export interface DerivedPlan {
   memo: boolean;
   /** `currentTotal()`: the getter over the mirrors, which client code calls. */
   current?: string;
+}
+
+/**
+ * A member a composable's call destructures (ADR-0069): `on`, or `matches: wide`, and for a ref of
+ * state or a derived value the hook's live reader, `currentMatches: currentWide`, which client code
+ * calls. Each is destructured only where the output reads it, which `read` records as it prints.
+ */
+export interface UsedPlan {
+  /** The call. */
+  item: UseItem;
+  /** The member's name in the composable's API. */
+  member: string;
+  /** The local the source destructures it to. */
+  local: string;
+  /** The live reader: its member name, by the API's rule (`liveReaderNames`), and its local. */
+  reader?: { member: string; local: string };
+  /** Whether the output reads the member's render value, and whether it calls its live reader. */
+  read: { render: boolean; client: boolean };
 }
 
 /** An event the component declares (ADR-0012): the prop a consumer passes as its listener. */
@@ -105,9 +135,15 @@ export interface Caret {
   callback?: string;
 }
 
-/** The analysis of one component for the React target. */
+/** The analysis of one component, or of one composable's hook, for the React target. */
 export interface ReactPlan {
-  readonly component: UfComponent;
+  /**
+   * The setup owner: the component, or a composable as one, with its parameters' bindings and
+   * its setup, no props and nothing to render (ADR-0069).
+   */
+  readonly owner: UfComponent;
+  /** The composable whose hook this plans, when it plans one. */
+  readonly composable?: UfComposable;
   readonly module: UfModule;
   /** The output file's imports and names. */
   readonly names: ImportSet;
@@ -117,8 +153,13 @@ export interface ReactPlan {
   readonly derived: ReadonlyMap<BindingId, DerivedPlan>;
   /** The `localConst` and `localFn` bindings printed at module scope. */
   readonly hoisted: ReadonlySet<BindingId>;
-  /** The props deferred code reads, by binding: their mirror refs. */
+  /**
+   * The props deferred code reads, by binding, and a composable's getter and callback
+   * arguments: their mirror refs.
+   */
   readonly propMirrors: ReadonlyMap<BindingId, string>;
+  /** What each composable's call destructures, by the member's `used*` binding (ADR-0069). */
+  readonly used: ReadonlyMap<BindingId, UsedPlan>;
   /** The events, by name, in declaration order. */
   readonly events: ReadonlyMap<string, EventPlan>;
   /** The generated interface of the events' props, `CounterEvents`. */
@@ -162,19 +203,40 @@ export interface ReactPlan {
   readonly composition: CompositionPlan;
 }
 
-/** Plans a component's React output. */
-export function planComponent(component: UfComponent, module: UfModule): ReactPlan {
+/**
+ * Plans a component's React output, or a composable's hook, given the composable and its setup
+ * owner (`composable.ts`). A hook hands what it returns to its caller (ADR-0069): its functions
+ * are stable, as a function passed as a value is, its state keeps a mirror and a live reader,
+ * and its derived values a memo and a live getter.
+ */
+export function planComponent(
+  component: UfComponent,
+  module: UfModule,
+  composable?: UfComposable,
+): ReactPlan {
   const bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
   const kindOf = (id: BindingId) => bindings.get(id)?.kind;
-  const summaries = summarize(component);
+  const returned = new Set(composable?.returns.map((member) => member.binding));
+  const summaries = new Map(
+    [...summarize(component)].map(([id, summary]) => [
+      id,
+      returned.has(id) ? { ...summary, escapes: true } : summary,
+    ]),
+  );
+  // The getter and callback arguments, which deferred code reads through mirrors, as props.
+  const mirrorable = new Set(
+    composable?.parameters.flatMap(({ kind, binding }) => (kind === "value" ? [] : [binding])),
+  );
 
   const listeners = listenerModes(component);
   const eventModes = eventParameterModes(component, listeners);
   const names = new ImportSet(reservedNames(component, module, listeners, eventModes));
-  // A source's components are joined into one module where it is loaded (ADR-0053): each claims
-  // its helpers from bases of its own (`cx_1`), past the names any other component declares.
-  const index = module.components.findIndex((each) => each.name === component.name);
-  const reserved = module.components.map((each) => {
+  // A source's components are joined into one module where it is loaded (ADR-0053), and a
+  // `.uf.ts` module's hooks too (ADR-0069): each claims its helpers from bases of its own
+  // (`cx_1`), past the names any other declares.
+  const owners = composable ? (module.composables ?? []).map(setupOwner) : module.components;
+  const index = owners.findIndex((each) => each.name === component.name);
+  const reserved = owners.map((each) => {
     const modes = listenerModes(each);
     return reservedNames(each, module, modes, eventParameterModes(each, modes));
   });
@@ -206,6 +268,14 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
     if (listener.handler.kind === "Function") {
       const fn = functionItems.get(listener.handler.binding);
       if (fn) clientFunctions.add(fn);
+    }
+  }
+  // A composable's callback argument runs in the caller's client code, as a handler does: the
+  // hook calls the one its caller's last render passed (ADR-0069).
+  for (const item of component.setup) {
+    if (item.kind !== "Use") continue;
+    for (const argument of item.arguments) {
+      if (argument.kind === "Callback") clientFunctions.add(argument.callback);
     }
   }
   for (const [id, summary] of summaries) {
@@ -259,6 +329,8 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
       }
     }
   }
+  // The caller's client code reads a returned derived value through its live getter.
+  for (const id of returned) if (kindOf(id) === "derived") needLive(id);
   for (let id = pendingLive.pop(); id !== undefined; id = pendingLive.pop()) {
     for (const reference of getters.get(id)!.body.refs) {
       if (reference.kind === "Binding" && kindOf(reference.binding) === "derived") {
@@ -286,6 +358,9 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
       if (fn) deferred.add(fn);
     }
   }
+  // A returned derived value's live getter is the caller's, which may call it from any render's
+  // client code: it reads what changes through mirrors all through (ADR-0069).
+  for (const id of returned) if (kindOf(id) === "derived") deferred.add(getters.get(id)!);
   const mirroredProps = new Set<BindingId>();
   const mirroredEvents = new Set<string>();
   const ranges = new Map<FunctionCode, readonly Span[]>();
@@ -306,6 +381,9 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
               case "prop":
                 mirroredProps.add(reference.binding);
                 break;
+              case "argument":
+                if (mirrorable.has(reference.binding)) mirroredProps.add(reference.binding);
+                break;
               // A function or a live getter that deferred code calls runs deferred all through.
               case "localFn":
                 target = functionItems.get(reference.binding);
@@ -324,6 +402,14 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
               case "slotScope":
               case "context":
               case "component":
+              // A module's values never change, and a composable's result is read through its
+              // hook's live readers and stable functions (ADR-0069, ADR-0070).
+              case "moduleConst":
+              case "import":
+              case "usedState":
+              case "usedDerived":
+              case "usedFn":
+              case "usedConst":
                 break;
               default:
                 kind satisfies never;
@@ -399,13 +485,15 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
       for (const id of summarizeCode(item.effect.body, component).reads) needMemo(id);
     }
   }
+  // The caller renders a returned derived value.
+  for (const id of returned) needMemo(id);
   for (let id = pendingMemos.pop(); id !== undefined; id = pendingMemos.pop()) {
     renderReads(getters.get(id)!.body);
   }
 
   // Hoisting (ADR-0045): a value or a function that captures nothing of the component goes to
   // module scope (`unicorn/consistent-function-scoping` rejects such a function inside it).
-  const hoisted = hoistable(component, kindOf);
+  const hoisted = hoistable(component, kindOf, moduleNames(module));
 
   // Names, in a fixed order: the events' interface, then each item's, then the props' mirrors.
   const parameter = component.propsParameter;
@@ -436,10 +524,29 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
 
   const state = new Map<BindingId, StatePlan>();
   const derived = new Map<BindingId, DerivedPlan>();
+  const used = new Map<BindingId, UsedPlan>();
   for (const item of component.setup) {
-    if (item.kind === "State") {
+    if (item.kind === "Use") {
+      // The live reader of each ref or derived value the call destructures, under the member
+      // name every caller derives from the API, and a local of its own (ADR-0069).
+      const readers = liveReaderNames(composableApi(module, item.composable).members);
+      for (const member of item.members) {
+        const { name } = bindings.get(member.binding)!;
+        const reader = readers.get(member.member);
+        used.set(member.binding, {
+          item,
+          member: member.member,
+          local: name,
+          ...(reader
+            ? { reader: { member: reader, local: names.claim(`current${pascalCase(name)}`) } }
+            : {}),
+          read: { render: false, client: false },
+        });
+      }
+    } else if (item.kind === "State") {
       const { name } = bindings.get(item.binding)!;
       const isWritten = written.has(item.binding);
+      const isReturned = returned.has(item.binding);
       // A `v-model` writes it through its setter, whoever else does (ADR-0054).
       const setter =
         isWritten || composition.bound.has(item.binding)
@@ -448,9 +555,10 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
       state.set(item.binding, {
         name,
         ...setter,
-        ...(isWritten || composition.mirrored.has(item.binding)
+        ...(isWritten || isReturned || composition.mirrored.has(item.binding)
           ? { mirror: names.claim(`${name}Ref`) }
           : {}),
+        ...(isReturned ? { current: names.claim(`current${pascalCase(name)}`) } : {}),
       });
     } else if (item.kind === "Derived") {
       const { name } = bindings.get(item.binding)!;
@@ -477,6 +585,7 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
           if (written.has(read)) return true;
           break;
         case "prop":
+        case "argument":
           if (mirroredProps.has(read)) return true;
           break;
         case "loopVar":
@@ -489,7 +598,16 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
         case "slots":
         case "slotScope":
         case "context":
+        // Client code reads a composable's ref or derived value through the hook's live reader
+        // (ADR-0069).
+        case "usedState":
+        case "usedDerived":
+          return true;
         case "component":
+        case "moduleConst":
+        case "import":
+        case "usedFn":
+        case "usedConst":
           break;
         default:
           kind satisfies never;
@@ -513,6 +631,11 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
   for (const prop of component.props) {
     if (prop.binding && mirroredProps.has(prop.binding)) {
       propMirrors.set(prop.binding, names.claim(`${prop.name}Ref`));
+    }
+  }
+  for (const argument of composable?.parameters ?? []) {
+    if (mirroredProps.has(argument.binding)) {
+      propMirrors.set(argument.binding, names.claim(`${argument.name}Ref`));
     }
   }
   for (const [name, event] of events) {
@@ -563,7 +686,8 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
   if (nextTick) helpers.nextTick = names.claim("useNextTick");
 
   return {
-    component,
+    owner: component,
+    ...(composable ? { composable } : {}),
     module,
     names,
     bindings,
@@ -572,6 +696,7 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
     derived,
     hoisted,
     propMirrors,
+    used,
     events,
     ...(eventsInterface ? { eventsInterface } : {}),
     renderFunctions,
@@ -590,6 +715,54 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
   };
 }
 
+/**
+ * A composable as the setup owner a plan reads (ADR-0069): its bindings, its setup and the types
+ * it declares, with no props and nothing to render.
+ */
+export function setupOwner(composable: UfComposable): UfComponent {
+  return {
+    name: composable.name,
+    span: composable.span,
+    ...(composable.typeParameters ? { typeParameters: composable.typeParameters } : {}),
+    props: [],
+    types: composable.types,
+    bindings: composable.bindings,
+    setup: composable.setup,
+    render: { kind: "Fragment", children: [], span: composable.span },
+  };
+}
+
+/** The API of the composable a module imports under `local` (ADR-0069). */
+export function composableApi(module: UfModule, local: string): ComposableApi {
+  for (const entry of module.imports ?? []) {
+    const name = entry.names.find((each) => each.kind === "Composable" && each.local === local);
+    if (name) return entry.api.composables!.find((each) => each.name === name.imported)!;
+  }
+  throw new Error(`No composable is imported as ${local}.`);
+}
+
+/**
+ * The live readers a hook returns beside its members (ADR-0069), by member name: one for each
+ * state or derived value `x`, `currentX`, or where that names another member or an earlier
+ * reader, the first free one of `currentX_1`, `currentX_2`…. A rule of the API alone, so the
+ * hook and its callers agree on every name.
+ */
+export function liveReaderNames(
+  members: readonly Pick<ComposableMemberApi, "name" | "kind">[],
+): Map<string, string> {
+  const taken = new Set(members.map(({ name }) => name));
+  const readers = new Map<string, string>();
+  for (const { name, kind } of members) {
+    if (kind !== "state" && kind !== "derived") continue;
+    const base = `current${pascalCase(name)}`;
+    let reader = base;
+    for (let suffix = 1; taken.has(reader); suffix++) reader = `${base}_${suffix}`;
+    taken.add(reader);
+    readers.set(name, reader);
+  }
+  return readers;
+}
+
 /** The inline helpers' names, as the target claims them. */
 const HELPER_NAMES = [
   "cx",
@@ -604,15 +777,21 @@ const HELPER_NAMES = [
   "scopeAttributes",
 ];
 
-/** Whether a binding's value changes as the component runs: a prop, state or a derived value. */
+/**
+ * Whether a binding's value changes as the component runs: a prop, state or a derived value,
+ * and a composable's argument, which its caller passes again at each render (ADR-0069).
+ */
 export function reactive(kind: BindingKind): boolean {
   switch (kind) {
     case "prop":
+    case "argument":
     case "state":
     case "derived":
     case "model":
     case "slots":
     case "context":
+    case "usedState":
+    case "usedDerived":
       return true;
     case "loopVar":
     case "templateRef":
@@ -622,6 +801,12 @@ export function reactive(kind: BindingKind): boolean {
     case "emit":
     case "slotScope":
     case "component":
+    // A module's values are read-only (ADR-0070), and a composable's functions and constants are
+    // one for the hook's life (ADR-0069).
+    case "moduleConst":
+    case "import":
+    case "usedFn":
+    case "usedConst":
       return false;
     default:
       return kind satisfies never;
@@ -865,9 +1050,41 @@ function eventParameterModes(
 /**
  * The names the output must leave alone: the source's (`sourceNames`), but for the DOM event
  * types that only the annotations React rewrites name (`KeyboardEvent` in `(event:
- * KeyboardEvent)` on a synthetic listener), which the output imports from `react` instead.
+ * KeyboardEvent)` on a synthetic listener), which the output imports from `react` instead; and
+ * the types the output imports and exports by the source's names (ADR-0067, ADR-0068), so the
+ * interfaces React declares (`CardEvents`) never take one.
  */
 function reservedNames(
+  component: UfComponent,
+  module: UfModule,
+  listeners: ReadonlyMap<EventAttribute, { mode: ListenerMode }>,
+  eventModes: ReadonlyMap<BindingId, ReadonlySet<ListenerMode>>,
+): Set<string> {
+  const names = sourceAndEventNames(component, module, listeners, eventModes);
+  for (const entry of module.typeImports ?? []) {
+    for (const name of entry.names) names.add(name.local);
+  }
+  // The module's values, which the output declares or imports at module scope as the source
+  // does (ADR-0070), and the composables its calls import (ADR-0069).
+  for (const name of moduleNames(module)) names.add(name);
+  for (const item of component.setup) if (item.kind === "Use") names.add(item.composable);
+  for (const entry of module.typeExports ?? []) {
+    if (entry.kind === "Declaration") names.add(entry.name);
+    else for (const name of entry.names) names.add(name.exported);
+  }
+  return names;
+}
+
+/** The names of a module's top-level constants and of the values it imports from `.ts` modules. */
+export function moduleNames(module: UfModule): Set<string> {
+  return new Set([
+    ...(module.constants ?? []).map(({ name }) => name),
+    ...(module.moduleImports ?? []).flatMap(({ names }) => names.map(({ local }) => local)),
+  ]);
+}
+
+/** The source's names, but for the DOM event types React rewrites (`reservedNames`). */
+function sourceAndEventNames(
   component: UfComponent,
   module: UfModule,
   listeners: ReadonlyMap<EventAttribute, { mode: ListenerMode }>,
@@ -934,21 +1151,41 @@ function reservedNames(
 /**
  * The `localConst` and `localFn` bindings that capture nothing of the component: their code reads
  * only globals, its own names and other such bindings, and writes, emits and calls `nextTick`
- * (a hook's result on React) not at all. An `Id` is the instance's, so never.
+ * (a hook's result on React) not at all. An `Id` is the instance's, so never, and neither is a
+ * binding whose types or code name a type parameter of a generic component, which exists only
+ * inside it (ADR-0068). A module's constants and imported values are at module scope already
+ * (ADR-0070).
  */
 function hoistable(
   component: UfComponent,
   kindOf: (id: BindingId) => Binding["kind"] | undefined,
+  moduleLevel: ReadonlySet<string>,
 ): Set<BindingId> {
+  const nameOf = new Map(component.bindings.map(({ id, name }) => [id, name]));
   const code = new Map<BindingId, Code[]>();
+  const parameters = new Set(component.typeParameters?.map(({ name }) => name));
+  const typed = new Set<BindingId>();
+  const names = (types: readonly (TypeText | undefined)[], pieces: readonly Code[]) => {
+    const found = new Set<string>();
+    for (const type of types) if (type) for (const name of typeNames(type)) found.add(name);
+    for (const piece of pieces) {
+      for (const name of codeNames(piece.code, codeKind(piece, component))) found.add(name);
+    }
+    return [...found].some((name) => parameters.has(name));
+  };
   for (const item of component.setup) {
-    if (item.kind === "Const") code.set(item.binding, [item.value]);
-    else if (item.kind === "Function") {
+    if (item.kind === "Const") {
+      code.set(item.binding, [item.value]);
+      if (parameters.size && names([item.type], [item.value])) typed.add(item.binding);
+    } else if (item.kind === "Function") {
       const fn = item.function;
-      code.set(item.binding, [
+      const pieces = [
         fn.body,
         ...fn.parameters.flatMap((parameter) => (parameter.default ? [parameter.default] : [])),
-      ]);
+      ];
+      code.set(item.binding, pieces);
+      const types = [...fn.parameters.map((parameter) => parameter.type), fn.returnType];
+      if (parameters.size && names(types, pieces)) typed.add(item.binding);
     }
   }
   const verdicts = new Map<BindingId, boolean>();
@@ -958,8 +1195,12 @@ function hoistable(
     // A cycle (local functions do not recurse, UF2024) stays inside the component.
     verdicts.set(id, false);
     const pieces = code.get(id);
+    // One named like a module's value the output declares at module scope stays inside: the
+    // source's binding shadows it there (ADR-0070).
     const free =
       pieces !== undefined &&
+      !typed.has(id) &&
+      !moduleLevel.has(nameOf.get(id)!) &&
       pieces.every((piece) =>
         piece.refs.every((reference) => {
           switch (reference.kind) {
@@ -973,6 +1214,10 @@ function hoistable(
                 case "localConst":
                 case "localFn":
                   return decide(reference.binding);
+                // A module's values are at module scope too (ADR-0070).
+                case "moduleConst":
+                case "import":
+                  return true;
                 case "prop":
                 case "loopVar":
                 case "state":
@@ -985,6 +1230,11 @@ function hoistable(
                 case "slotScope":
                 case "context":
                 case "component":
+                case "argument":
+                case "usedState":
+                case "usedDerived":
+                case "usedFn":
+                case "usedConst":
                   return false;
                 default:
                   return kind satisfies never;

@@ -1,14 +1,16 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface InboxSummaryProps {
     folder: string;
     unread: number;
     flagged: number;
     signature: string;
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = InboxSummaryProps & { class?: ClassValue; style?: string };
 

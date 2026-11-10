@@ -28,7 +28,7 @@ import type { Composition } from "./composition.ts";
 import type { Listeners } from "./listeners.ts";
 import type { Models } from "./models.ts";
 import { outputName } from "./outputs.ts";
-import { bindingById, unreachable } from "./plan.ts";
+import { bindingById, memberOf, unreachable } from "./plan.ts";
 import type { Plan } from "./plan.ts";
 import { readThroughLet, templateRules } from "./rules.ts";
 
@@ -86,12 +86,14 @@ export function template(
     if (id === undefined || !reads.read.has(id)) return;
     const binding = bindingById(plan, id);
     if (readThroughLet(plan, binding)) {
-      lets.push(`${pad}@let ${binding.name} = this.${binding.name}();`);
+      lets.push(`${pad}@let ${binding.name} = this.${memberOf(plan, binding)}();`);
     }
   };
   for (const prop of component.props) declare(prop.binding);
   for (const item of component.setup) {
     if ("binding" in item) declare(item.binding);
+    // A composable's returned refs, read through its call's holder (ADR-0069).
+    if (item.kind === "Use") for (const member of item.members) declare(member.binding);
   }
   const dialect: MarkupDialect = {
     ...angularDialect,

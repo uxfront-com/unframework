@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import { hold } from "@uxfront/scene";
 import { corridor, prism, stack, threshold } from "@uxfront/scene/formations";
 import { FRAMEWORKS } from "@uxfront/ui/frameworks";
 
 import { DOCS_URL, GITHUB_URL, UXFRONT_URL } from "~/data/site";
-import { hold, spotlight } from "~/lib/formations";
+import { spotlight } from "~/lib/formations";
 
 useUxHead({
   title: "Unframework - The compiler that speaks seven UI frameworks",

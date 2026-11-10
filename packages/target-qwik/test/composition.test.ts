@@ -502,6 +502,422 @@ function Rows() {
   );
 });
 
+describe("qwik target: generic components", () => {
+  // ADR-0068: a generic arrow in `component$`, which TypeScript makes a generic component, and
+  // the interfaces beside it over the type parameters their members read.
+  const pick = `import { computed, defineEmits, defineExpose, defineModel, defineSlots } from "unframework";
+import type { Element } from "unframework";
+
+export type PickEvents = "taken";
+
+export interface PickProps<T extends { id: string }, U extends string = "x"> {
+  items: T[];
+  note?: U;
+}
+
+export default function Pick<T extends { id: string }, U extends string = "x">({ items, note }: PickProps<T, U>) {
+  const emit = defineEmits<{ pick: [item: T] }>();
+  const first = computed(() => (items[0] ? label(items[0]) : ""));
+  const open = defineModel<boolean>("open");
+  const slots = defineSlots<{ item?(props: { item: T }): Element }>();
+  const empty: T[] = [];
+  function label(item: T): string {
+    return item.id;
+  }
+  function choose(item: T) {
+    emit("pick", item);
+  }
+  defineExpose({ choose });
+  return (
+    <ul data-note={note} data-open={String(open.value)} data-first={first.value}>
+      {(items.length ? items : empty).map((item) => (
+        <li key={item.id}>
+          <button type="button" onClick={() => choose(item)}>{label(item)}</button>
+          {slots.item?.({ item })}
+        </li>
+      ))}
+    </ul>
+  );
+}`;
+  const multi = `import { defineModel, ref } from "unframework";
+
+export default function Multi<T extends string>({ options }: { options: readonly T[] }) {
+  const picked = ref<T[]>([]);
+  const text = defineModel<T>("text", { required: true });
+  const trimmed = defineModel<T>("trimmed", { required: true });
+  return (
+    <div>
+      <input v-model_trim={trimmed.value} />
+      <output>{picked.value.join(",")}</output>
+      <select multiple v-model={picked.value}>
+        {options.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+      <input v-model={text.value} />
+    </div>
+  );
+}`;
+  const unread = `export default function Unread<T>(props: { items: T[] }) {
+  return <p>none</p>;
+}`;
+  // Functions whose parameters' types name `T`, in each declared form: they move to module scope
+  // with their own `T`, so a getter may call them, and each call infers it.
+  const hoisted = `import { computed, ref } from "unframework";
+
+export default function Hoisted<T>({ items }: { items: T[] }) {
+  const last = ref("");
+  function size(list: T[]): number {
+    return list.length;
+  }
+  const show = (item: T) => String(item);
+  const settle = async (item: T) => [item];
+  async function keep(item: T): Promise<T[]> {
+    return [item];
+  }
+  const total = computed(() => size(items) + 1);
+  async function pick(item: T) {
+    last.value = String((await settle(item)).length + (await keep(item)).length);
+  }
+  return (
+    <ul data-total={total.value} data-last={last.value}>
+      {items.map((item, index) => (
+        <li key={index}>
+          <button type="button" onClick={() => pick(item)}>{show(item)}</button>
+        </li>
+      ))}
+    </ul>
+  );
+}`;
+  // A forward chain of constraints (`A extends Box<B>, B extends Box<C>, C`): each interface and
+  // hoisted function declares all three.
+  const chain = `import { defineEmits } from "unframework";
+
+interface Box<V> {
+  value: V;
+}
+
+export interface ChainProps<A extends Box<B>, B extends Box<C>, C> {
+  items: A[];
+  extra?: B;
+  last?: C;
+}
+
+export default function Chain<A extends Box<B>, B extends Box<C>, C>({ items }: ChainProps<A, B, C>) {
+  const emit = defineEmits<{ pick: [item: A] }>();
+  function label(item: A): string {
+    return String(item.value);
+  }
+  return (
+    <ul>
+      {items.map((item, index) => (
+        <li key={index}>
+          <button type="button" onClick={() => emit("pick", item)}>{label(item)}</button>
+        </li>
+      ))}
+    </ul>
+  );
+}`;
+  // The same chain in the other order: a single pass in declared order misses a parameter here,
+  // as a reversed one does in `chain`.
+  const reversedChain = chain
+    .replaceAll("A extends Box<B>, B extends Box<C>, C", "C, B extends Box<C>, A extends Box<B>")
+    .replaceAll("ChainProps<A, B, C>", "ChainProps<C, B, A>");
+  // Functions kept in the generic arrow, which getters call: a `computed`'s, and a watcher's
+  // sources, alone and in an array.
+  const kept = `import { computed, ref, watch } from "unframework";
+
+export default function Kept<T>({ items }: { items: T[] }) {
+  const nothing: T[] = [];
+  const last = ref("");
+  function count() {
+    return nothing.length;
+  }
+  function blank(): T[] {
+    return [];
+  }
+  function wrap() {
+    return blank().length;
+  }
+  function deep(): T[] {
+    return [];
+  }
+  function shallow() {
+    return deep().length;
+  }
+  function inner(): T[] {
+    return [];
+  }
+  function outer() {
+    return inner().length;
+  }
+  function guard(value: unknown): void {
+    if (value === nothing) throw new Error("empty");
+  }
+  function check(value: unknown): asserts value is T[] {
+    if (!Array.isArray(value)) throw new Error("not a list");
+  }
+  const total = computed(() => count() + blank().length + items.length);
+  const deepest = computed(() => shallow());
+  const checked = computed(() => {
+    const value: unknown = items;
+    guard(value);
+    check(value);
+    return value.length + inner().length;
+  });
+  watch(
+    () => wrap() + items.length,
+    (size) => {
+      last.value = String(size);
+    },
+  );
+  watch([() => count(), () => items.length], ([counted, length]) => {
+    last.value = String(counted + length);
+  });
+  return (
+    <p data-last={last.value} data-blank={blank().length} data-outer={outer()}>
+      {total.value} {checked.value} {deepest.value}
+    </p>
+  );
+}`;
+  // Kept functions a getter calls and client code too: a listener, a `watchEffect`, an
+  // `onMounted` and `defineExpose`. Client code calls their QRLs, so only `empty`, which the
+  // template calls as well, keeps a plain declaration in the arrow.
+  const shared = `import { computed, defineExpose, onMounted, ref, watchEffect } from "unframework";
+
+export default function Shared<T>({ items }: { items: T[] }) {
+  const picked = ref<T[]>([]);
+  function blank(): T[] {
+    return [];
+  }
+  function fresh(): T[] {
+    return [];
+  }
+  function empty(): T[] {
+    return [];
+  }
+  function none(): T[] {
+    return [];
+  }
+  const total = computed(
+    () => blank().length + fresh().length + empty().length + none().length + items.length,
+  );
+  function reset() {
+    picked.value = blank();
+  }
+  watchEffect(() => {
+    if (items.length === 0) picked.value = fresh();
+  });
+  onMounted(() => {
+    picked.value = empty();
+  });
+  defineExpose({ none });
+  return (
+    <button type="button" onClick={reset} data-empty={empty().length}>
+      {total.value} {picked.value.length}
+    </button>
+  );
+}`;
+  // A function whose `T` only its return type names, which reads nothing of the component.
+  const first = `import { defineEmits } from "unframework";
+
+export default function First<T>({ items }: { items: T[] }) {
+  const emit = defineEmits<{ pick: [item: T] }>();
+  function none(): T | undefined {
+    return undefined;
+  }
+  function pick() {
+    const found = none();
+    if (found !== undefined) emit("pick", found);
+  }
+  return <button type="button" data-count={items.length} onClick={pick}>Pick</button>;
+}`;
+  // Types the module imports and re-exports keep their names: the interfaces take others.
+  const named = `import { defineEmits, defineSlots } from "unframework";
+import type { Element } from "unframework";
+import type { ListEvents } from "./types";
+
+export type { ListSlots } from "./types";
+
+export default function List<T>({ items }: { items: T[] }) {
+  const emit = defineEmits<{ pick: [item: T] }>();
+  const slots = defineSlots<{ item?(props: { item: T }): Element }>();
+  const seen: ListEvents = [];
+  return (
+    <ul data-seen={seen.length}>
+      {items.map((item, index) => (
+        <li key={index}>
+          <button type="button" onClick={() => emit("pick", item)}>{slots.item?.({ item })}</button>
+        </li>
+      ))}
+    </ul>
+  );
+}`;
+  const types = 'export type ListEvents = string[];\nexport type ListSlots = "item";\n';
+
+  it("writes a generic arrow, and its interfaces over the parameters they read", async () => {
+    const contents = await emitSource(pick);
+    expect(contents).toContain(
+      "export interface PickEvents_1<T extends { id: string }> {\n  onPick$?: QRL<(item: T) => void>;\n}",
+    );
+    expect(contents).toContain("export interface PickModels {");
+    expect(contents).toContain("export interface PickSlots<T extends { id: string }> {");
+    expect(contents).toMatch(
+      /export default component\$\(\n {2}<T extends \{ id: string \}, U extends string = "x">\(\{/,
+    );
+    // `PickEvents` is the source's own exported type (ADR-0068): the interface takes another name.
+    expect(contents).toContain(
+      "}: PickProps<T, U> &\n    PickEvents_1<T> &\n    PickModels &\n    PickSlots<T> & { ref?: Signal<object | undefined> }) => {",
+    );
+    // A constant `T` types stays in the arrow, where `T` is in scope; a function `T` types moves
+    // to module scope with its own `T`, so the computed's `$` scope can call it.
+    expect(contents).toMatch(/=> \{\n(?:.*\n)*? {4}const empty: T\[\] = \[\];/);
+    expect(contents).toMatch(/^function label<T extends \{ id: string \}>\(item: T\): string \{$/m);
+  });
+
+  it("writes a control's value as the type of the generic state or model it binds", async () => {
+    const contents = await emitSource(multi);
+    expect(contents).toContain("picked.value = selectedValues(element) as T[]");
+    expect(contents).toContain("setText(element.value as T)");
+    // A modifier reads the control through `modelText`, whose value is cast the same way.
+    expect(contents).toContain("setTrimmed(modelText.read(element, { trim: true }) as T)");
+  });
+
+  it("moves a function typed by `T` to module scope with its own `T`, in each declared form", async () => {
+    const contents = await emitSource(hoisted);
+    expect(contents).toMatch(/^function size<T>\(list: T\[\]\): number \{$/m);
+    // An arrow's lone `<T>` takes a comma, or TSX reads it as a tag.
+    expect(contents).toMatch(/^const show = <T,>\(item: T\) => String\(item\);$/m);
+    expect(contents).toMatch(/^const settle = async <T,>\(item: T\) => \[item\];$/m);
+    expect(contents).toMatch(/^async function keep<T>\(item: T\): Promise<T\[\]> \{$/m);
+    expect(contents).toContain("useComputed$(() => size(items) + 1)");
+  });
+
+  it("closes a parameter's constraints over the parameters they name, in either order", async () => {
+    // The closure runs to a fixed point.
+    const reversed = await emitSource(reversedChain);
+    expect(reversed).toContain(
+      "export interface ChainEvents<C, B extends Box<C>, A extends Box<B>> {",
+    );
+    const contents = await emitSource(chain);
+    expect(contents).toContain(
+      "export interface ChainEvents<A extends Box<B>, B extends Box<C>, C> {",
+    );
+    expect(contents).toMatch(
+      /^function label<A extends Box<B>, B extends Box<C>, C>\(item: A\): string \{$/m,
+    );
+  });
+
+  it("names its interfaces apart from the types the module imports and re-exports", async () => {
+    const contents = await emitSource(named);
+    expect(contents).toContain("export interface ListEvents_1<T> {");
+    expect(contents).toContain("export interface ListSlots_1<T> {");
+    expect(contents).toContain('import type { ListEvents } from "./types";');
+    expect(contents).toContain('export type { ListSlots } from "./types";');
+  });
+
+  it("declares a function kept in the generic arrow inside each getter that calls it", async () => {
+    const contents = await emitSource(kept);
+    // `blank` names a `T` no call could infer, `count` reads a constant typed by `T`, and `wrap`
+    // calls `blank`: each stays in the arrow, and a getter's `$` scope can't capture a function.
+    expect(contents).not.toMatch(/^(?:function|const) (?:blank|count|wrap)\b/m);
+    expect(lines(contents)).toContain(
+      lines(`const total = useComputed$(() => {
+        function count() {
+          return nothing.length;
+        }
+        function blank(): T[] {
+          return [];
+        }
+        return count() + blank().length + items.length;
+      });`),
+    );
+    // `wrap` declares the `blank` it calls in itself.
+    expect(lines(contents)).toContain(
+      lines(`function wrap() {
+          function blank(): T[] {
+            return [];
+          }
+          return blank().length;
+        }`),
+    );
+    // A watcher's getter source, alone or among an array's, does the same.
+    expect(lines(contents)).toContain(
+      lines(`const sizeSource = useComputed$(() => {
+        function wrap() {`),
+    );
+    expect(contents.match(/function count\(\) \{/g)).toHaveLength(2);
+    // A statement call and an assertion stay calls, declared in the getter: an assertion's
+    // narrowing needs its call by name (TS2776).
+    expect(lines(contents)).toContain(
+      lines(`guard(value);
+        check(value);
+        return value.length + inner().length;`),
+    );
+    expect(contents).toMatch(
+      /useComputed\$\(\(\) => \{\n(?:.*\n)*? {4}function check\(value: unknown\): asserts value is T\[\] \{/,
+    );
+    // `outer`, which the template calls, calls `inner`: the arrow declares both, and the getter
+    // that calls `inner` its own.
+    expect(contents.match(/function inner\(\): T\[\] \{/g)).toHaveLength(2);
+    // `deep`, which only `shallow` calls, which only a getter calls, is declared only there.
+    expect(contents.match(/function deep\(\): T\[\] \{/g)).toHaveLength(1);
+    // The template calls `blank` too, so the arrow declares it as well.
+    expect(contents).toMatch(
+      /=> \{\n {2}const nothing: T\[\] = \[\];\n(?:.*\n)*? {2}function blank\(\): T\[\] \{/,
+    );
+  });
+
+  it("declares no plain function a getter and client code share, only its QRL", async () => {
+    const contents = await emitSource(shared);
+    // The getter declares all four. The listener and the exposed ref call QRLs; the tasks write
+    // their calls in place, as they do for any function (./src/inline.ts).
+    expect(contents).toContain("const blankQrl = $(");
+    expect(contents).toContain("const noneQrl = $(");
+    expect(lines(contents)).toContain(
+      lines(`const total = useComputed$(() => {
+        function blank(): T[] {`),
+    );
+    // Only `empty`, which the template calls, keeps a plain declaration in the arrow too.
+    expect(contents.match(/^ {4}function (\w+)\(\): T\[\] \{$/gm)).toEqual([
+      "    function empty(): T[] {",
+    ]);
+  });
+
+  it("keeps a function no call could infer `T` for in the arrow, where its callers check", async () => {
+    // A call with no contextual type would infer `unknown` from a module-scope `none<T>()`.
+    const contents = await emitSource(first);
+    expect(contents).not.toMatch(/^function none/m);
+    expect(contents).toContain("  const none = $((): T | undefined => {");
+  });
+
+  it(
+    "emits generic components the optimizer, the checker and lint accept (L3, L4, L5)",
+    async () => {
+      const sources = [
+        pick,
+        multi,
+        unread,
+        hoisted,
+        chain,
+        reversedChain,
+        named,
+        first,
+        kept,
+        shared,
+      ];
+      for (const source of sources) {
+        const contents = await emitSource(source);
+        const file = { path: "/virtual/Generic.tsx", contents };
+        const result = (await toolchain.frameworkCompile([file], context)).get(file.path);
+        expect(result).toEqual({ errors: [], warnings: [] });
+      }
+      await expectCheckedClean(sources, { "types.ts": types });
+    },
+    CHECKED,
+  );
+});
+
 describe("qwik target: options read as the DOM reads them", () => {
   const pick = `import { ref } from "unframework";
 
@@ -712,10 +1128,15 @@ function lines(code: string): string {
  * output: neither the target nor oxfmt may report anything, and no checker message, for these
  * files or any other path, may remain.
  */
-async function expectCheckedClean(sources: readonly string[]): Promise<void> {
+async function expectCheckedClean(
+  sources: readonly string[],
+  modules: Readonly<Record<string, string>> = {},
+): Promise<void> {
   const paths: string[] = [];
   for (const source of sources) {
     const dir = mkdtempSync(join(scratch, "checked-"));
+    // The `.ts` modules a source imports, beside its outputs as in an output tree (ADR-0070).
+    for (const [name, code] of Object.entries(modules)) writeFileSync(join(dir, name), code);
     const module = lower(source);
     const reported: unknown[] = [];
     for (const component of module.components) {

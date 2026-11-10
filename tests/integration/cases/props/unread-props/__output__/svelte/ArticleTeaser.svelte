@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   export interface ArticleTeaserProps {
     title: string;
     summary: string;
@@ -13,6 +11,10 @@
     pinned?: boolean;
     layout?: "row" | "column";
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = ArticleTeaserProps & { class?: ClassValue; style?: string };
 

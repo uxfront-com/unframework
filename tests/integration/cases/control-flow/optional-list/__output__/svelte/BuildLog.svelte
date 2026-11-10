@@ -1,8 +1,6 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<script lang="ts">
-  import type { ClassValue } from "svelte/elements";
-
+<script lang="ts" module>
   interface LogLine {
     id: string;
     text: string;
@@ -14,6 +12,10 @@
     lines?: LogLine[] | null;
     warnings?: string[];
   }
+</script>
+
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
 
   type Props = BuildLogProps & { class?: ClassValue; style?: string };
 
