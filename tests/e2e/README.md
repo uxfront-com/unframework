@@ -31,7 +31,7 @@ An install that stops with `ERR_PNPM_IGNORED_BUILDS` names a package that runs a
 
 ## An app's layout
 
-Each app keeps its files per mode, so that work on one mode leaves the other's files alone. Only `package.json` is shared, and in Qwik a `tsconfig.json`:
+Each app keeps its files per mode, so that work on one mode leaves the other's files alone. Only `package.json` is shared, and in Qwik and Astro a `tsconfig.json`:
 
 | Path                                                  | Holds                                                            |
 | ----------------------------------------------------- | ---------------------------------------------------------------- |
@@ -41,8 +41,11 @@ Each app keeps its files per mode, so that work on one mode leaves the other's f
 | `angular.json`, `tsconfig.json`                       | The Angular CLI's workspace, for the package mode                |
 | `src/package/`, `src/plugin/`                         | Each mode's entry and components                                 |
 | `e2e/package/`, `e2e/plugin/`                         | Each mode's specs                                                |
+| `tsconfig.uf.json`                                    | The plugin mode's check of its `.uf.tsx` and `.uf.ts` files      |
 
 Angular has the package mode only, because the Angular CLI has no plugin API. It's also the one app with TypeScript 6, since an Angular CLI app needs its compiler stack: [ADR-0079](../../docs/adrs/0079-the-e2e-apps-and-packed-tarballs.md) records the exception. Qwik has a `tsconfig.json` too, which points Vite's dependency scan at Qwik's JSX runtime.
+
+An app's `.uf.tsx` and `.uf.ts` files type-check against `unframework`'s JSX types, through `tsconfig.uf.json`, and its own `tsconfig.json` leaves them out ([ADR-0073](../../docs/adrs/0073-jsx-import-source-in-host-apps.md)). Run the check in a copy, after `prepare-apps`, with `pnpm exec tsc --noEmit -p tsconfig.uf.json`. Astro's `tsconfig.json` also leaves out `e2e/`, since the specs import the harness from the repository.
 
 Each directory under `e2e/` is one Playwright project, named `<app>:<mode>`, so a new app or mode needs no change to `playwright.config.ts`. The `dev:package` and `dev:plugin` scripts start a mode by hand in a copy.
 
@@ -80,7 +83,9 @@ Each app's server starts its own way, and that decides what `edit` waits for:
 
 `ng serve` runs in another process, so its watcher is out of reach, and a file event alone would come too early: until the rebuild ends, a page still loads the old bundle. `rebuildWatcher` reads the end of each rebuild from what `ng serve` prints, whether the rebuild failed, changed nothing or changed the bundle. Write one edit at a time there, because a file written during a rebuild is reported when that rebuild ends.
 
-The package-mode smoke specs of the apps that install the design system share `harness/design-system.ts`, so every framework is held to the same page: each component renders, the design system's sheet applies, and each component responds to one interaction. Astro renders on the server only, so its spec stops after the render. `assertInstalledFromTarball` in `harness/apps.ts` runs first. pnpm always links `node_modules/<name>` into its virtual store, so it checks where that link leads and that the package holds no symbolic link.
+The smoke specs of the apps that render the design system share `harness/design-system.ts`, so every framework and mode is held to the same page: each component renders, the design system's sheet applies, and each component responds to one interaction. Astro renders on the server only, so its specs stop after the render. In package mode, `assertInstalledFromTarball` in `harness/apps.ts` runs first. pnpm always links `node_modules/<name>` into its virtual store, so it checks where that link leads and that the package holds no symbolic link.
+
+Astro answers an edit that reaches the page with a full reload, so its plugin-mode HMR spec marks the page before each edit and expects the mark gone after it. A type changes nothing on the page, so for an edit to `types.ts` the reload is the evidence that the edit reached the page.
 
 The Vue app passes `script.fs` to `@vitejs/plugin-vue`, because a packaged SFC imports its prop types from a sibling module, and Vue's compiler reads those through TypeScript's `sys`, which TypeScript 7 doesn't export. Without it the page fails with "No fs option provided to `compileScript`".
 
