@@ -43,7 +43,7 @@ describe("selectTargets", () => {
 });
 
 describe("projects", () => {
-  it("runs spec files in parallel in Chromium only (ADR-0067)", () => {
+  it("runs spec files in parallel in Chromium only (ADR-0081)", () => {
     expect(fileParallelism({})).toBe(true);
     expect(fileParallelism({ browser: "chromium" })).toBe(true);
     expect(fileParallelism({ browser: "firefox" })).toBe(false);

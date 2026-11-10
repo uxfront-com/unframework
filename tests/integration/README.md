@@ -41,7 +41,8 @@ the diagnostics, and `__output__/diagnostics.txt` is the code frame people and a
 
 The browser projects run every case in the light colour scheme. A dark-theme case opts in with
 `"colorScheme": "dark"`: the setup file emulates `prefers-color-scheme: dark` before the spec
-mounts anything, and the startup check asserts it (ADR-0061). A case may also hold `.css` files
+mounts anything, and the startup check asserts it once it applies, waiting at most 5 s
+(ADR-0061, ADR-0081). A case may also hold `.css` files
 beside its inputs; the loader reads them as neither inputs nor specs, and a stylesheet a target
 emits is a golden file under `__output__/<target>/` like any other. The toolchain projects leave
 emitted `.css` files out of what L3, L4 and L5 check; the compile project parses each with
@@ -303,8 +304,12 @@ skip by the test's name, which the summary compares and lists. The parity report
 into `parity-matrix.json` and `parity-matrix.md` (CI's job summary). `UF_BROWSER=firefox` or
 `webkit` runs the browser projects in that engine (ADR-0066): L10 compares each target with the
 reference's capture from the same run, nothing is written, and the matrices go to `.reports/<engine>/`, merged
-into `parity-matrix.<engine>.json` and `.md`. The nightly workflow runs both engines; a
-difference there is an issue, never a quarantine entry. A cell is `pass`, `fail`,
+into `parity-matrix.<engine>.json` and `.md`. In those engines each browser project runs alone,
+the reference first, then the targets a case names as its reference, then each other target in
+order, and each runs one spec file at a time (ADR-0081): parallel tester pages in one engine take
+the focus from each other, and five followers at once ran WebKit out of memory. Firefox's DOM
+writes `-webkit-box-orient` as `-moz-box-orient`, which the normaliser renames for Firefox alone.
+The nightly workflow runs both engines; a difference there is an issue, never a quarantine entry. A cell is `pass`, `fail`,
 `skip(reason)` or `quarantined(issue)`; a skip on a live layer names a capability the target
 lacks (`requires interactivity: …`) or a mechanical cause (no output, no spec, the live
 reference, a component that did not render, no scripted interaction). A diagnostics case has no

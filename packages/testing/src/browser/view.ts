@@ -255,7 +255,7 @@ async function mountWith(
   report(instance);
 
   const locator = page.getByTestId(testId);
-  // The engine too: Firefox serialises some prefixed properties under its own alias (ADR-0067).
+  // The engine too: Firefox serialises some prefixed properties under its own alias (ADR-0081).
   // Outside the harness (this package's own tests) nothing provides it.
   const engine = (inject("ufHarness") as HarnessContext | undefined)?.browser;
   const normalizeOptions = {

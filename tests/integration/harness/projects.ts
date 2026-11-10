@@ -130,7 +130,7 @@ export function harnessProjects(setup: HarnessSetup): TestProjectConfiguration[]
 
 /**
  * Whether a browser project runs its spec files in parallel: in Chromium, yes. In Firefox and
- * WebKit, no (ADR-0067): their tester pages in one browser compete for the focus, so a page
+ * WebKit, no (ADR-0081): their tester pages in one browser compete for the focus, so a page
  * idle in one file sees the blur and focus events of another's, and five followers' pages
  * at once ran the nightly's WebKit job out of memory.
  */

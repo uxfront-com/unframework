@@ -26,7 +26,7 @@ export interface NormalizeOptions {
    */
   target?: NormalizeTarget;
   /**
-   * The engine the live DOM was read in (`UF_BROWSER`, ADR-0067). The properties it serialises
+   * The engine the live DOM was read in (`UF_BROWSER`, ADR-0081). The properties it serialises
    * under its own alias take the name Chromium writes, and nothing else changes. Without an
    * engine, or in Chromium, no property is renamed.
    */

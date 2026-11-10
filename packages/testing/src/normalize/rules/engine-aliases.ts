@@ -16,7 +16,7 @@ const ENGINE_ALIASES: Readonly<Partial<Record<BrowserEngine, Readonly<Record<str
 
 /**
  * Rule 3b: renames, in every `style` attribute, the properties the engine the DOM was read in
- * serialises under its own alias (ADR-0067, amending ADR-0031). The engine renders the source's
+ * serialises under its own alias (ADR-0081, amending ADR-0031). The engine renders the source's
  * property (L8 checks it), but its `cssText` spells it another way, so a Firefox DOM never
  * matched an expectation Chromium wrote. Only the named engine's aliases are renamed, and only
  * the property: a value that differs still differs, and so does every other `-moz-*` property.

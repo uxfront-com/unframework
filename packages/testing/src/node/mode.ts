@@ -172,7 +172,7 @@ export type ProjectKind = "compile" | "harness" | "toolchain" | "ssr" | "browser
  *   reference everywhere else, and the other followers at 3;
  * - check with live pixels: the reference browser project 0, the other browser projects 1; the
  *   browser projects of the targets some case names at 1 alone, and the others at 2;
- * - check with live pixels in Firefox or WebKit (ADR-0067): every browser project alone, the
+ * - check with live pixels in Firefox or WebKit (ADR-0081): every browser project alone, the
  *   reference at 1, then the targets some case names, then each other target in the order of
  *   `targets`. Five followers at once in one engine ran the nightly's WebKit job out of memory.
  *   Each of those projects also runs one file at a time (`fileParallelism: false`), so the
