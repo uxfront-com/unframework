@@ -20,7 +20,13 @@ import { formatDiagnostic, formatDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import { createUnplugin } from "unplugin";
 import type { TransformResult, UnpluginFactory, UnpluginInstance, UnpluginOptions } from "unplugin";
-import type { Environment, EnvironmentModuleNode, HotUpdateOptions, ResolvedConfig } from "vite";
+import type {
+  DevEnvironment,
+  Environment,
+  EnvironmentModuleNode,
+  HotUpdateOptions,
+  ResolvedConfig,
+} from "vite";
 
 import { assembleModule } from "./assemble.ts";
 import { chainQwikSegments, chainSvelteOnce } from "./chain.ts";
@@ -956,6 +962,32 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   };
 
   /**
+   * Qwik's own plugin sends its hot update, or its full reload with its hot update off, from the
+   * `ssr` environment only. A client-rendered app loads nothing there, so it would get neither.
+   * In place, Qwik also keeps the sheet a component's `useStyles$` added first, while the scope id
+   * in its markup changes with the sheet (ADR-0063). So when the `ssr` environment holds none of
+   * the change's modules, the client environment reloads the page itself (ADR-0075). Vite
+   * invalidates nothing a hook leaves out of its list, so our modules are invalidated here first,
+   * and the reloaded page loads the new code.
+   */
+  const reloadQwikClient = (
+    environment: DevEnvironment,
+    { server, timestamp }: HotUpdateOptions,
+    modules: EnvironmentModuleNode[],
+  ): EnvironmentModuleNode[] => {
+    const ours = modules.filter((node) => ownerOf(node.id) !== undefined);
+    if (ours.length === 0) return modules;
+    const files = new Set(ours.map((node) => ownerOf(node.id)));
+    const ssr = server.environments.ssr?.moduleGraph.idToModuleMap.values() ?? [];
+    if ([...ssr].some((node) => files.has(ownerOf(node.id)))) return modules;
+    const invalidated = new Set<EnvironmentModuleNode>();
+    for (const node of ours)
+      environment.moduleGraph.invalidateModule(node, invalidated, timestamp, true);
+    environment.hot.send({ type: "full-reload" });
+    return modules.filter((node) => !ours.includes(node));
+  };
+
+  /**
    * What `load` answers, keeping the guard's verdicts in `failed`. With `access`, a `.uf.tsx` file
    * any of our ids names, queries included, goes through it before anything reads the file.
    */
@@ -1187,9 +1219,13 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
         served.add(id);
         return addWatchEdges.call(this, id);
       },
-      // A framework's own HMR does the rest: this only says which modules changed.
-      hotUpdate(update) {
-        return hotModules(update, this.environment.moduleGraph.idToModuleMap);
+      // A framework's own HMR does the rest: this only says which modules changed. Qwik's gives a
+      // client-rendered page nothing, so there the plugin reloads it (`reloadQwikClient`).
+      async hotUpdate(update) {
+        const modules = await hotModules(update, this.environment.moduleGraph.idToModuleMap);
+        const qwikClient =
+          target.name === "qwik" && this.environment.name === "client" && update.type === "update";
+        return qwikClient ? reloadQwikClient(this.environment, update, modules) : modules;
       },
       api: {
         getCompiled: (id: string) => compiled.get(id),

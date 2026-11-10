@@ -43,7 +43,9 @@ Each app keeps its files per mode, so that work on one mode leaves the other's f
 | `src/package/`, `src/plugin/`                         | Each mode's entry and components                                 |
 | `e2e/package/`, `e2e/plugin/`                         | Each mode's specs                                                |
 
-Angular has the package mode only, because the Angular CLI has no plugin API. It's also the one app with TypeScript 6, since an Angular CLI app needs its compiler stack: [ADR-0079](../../docs/adrs/0079-the-e2e-apps-and-packed-tarballs.md) records the exception. Qwik has a `tsconfig.json` too, which points Vite's dependency scan at Qwik's JSX runtime.
+Angular has the package mode only, because the Angular CLI has no plugin API. It's also the one app with TypeScript 6, since an Angular CLI app needs its compiler stack: [ADR-0079](../../docs/adrs/0079-the-e2e-apps-and-packed-tarballs.md) records the exception. Qwik's `tsconfig.json` also points Vite's dependency scan at Qwik's JSX runtime.
+
+Both of Qwik's entries import `@qwik.dev/core/qwikloader.js`. A client-rendered Qwik element keeps its handlers for that loader, so without it a click does nothing.
 
 In plugin mode, an app imports the design system's sources through its `./source/*` export and adds a `Greeting.uf.tsx` of its own, with a stylesheet and a `types.ts`, which its HMR spec edits. Its `tsconfig.uf.json` follows [ADR-0073](../../docs/adrs/0073-jsx-import-source-in-host-apps.md), and its `tsconfig.json` leaves the `.uf.tsx` and `.uf.ts` files out. Check them in the copy:
 
@@ -94,6 +96,8 @@ An edit that changes nothing on the page, like a prop type in `types.ts`, shows 
 The smoke specs of the apps that render the design system share `harness/design-system.ts`, so every framework and mode is held to the same page: each component renders, the design system's sheet applies, and each component responds to one interaction. Astro renders on the server only, so its specs stop after the render. In package mode, `assertInstalledFromTarball` in `harness/apps.ts` runs first. pnpm always links `node_modules/<name>` into its virtual store, so it checks where that link leads and that the package holds no symbolic link.
 
 Astro answers an edit that reaches the page with a full reload, so its plugin-mode HMR spec marks the page before each edit and expects the mark gone after it. A type changes nothing on the page, so for an edit to `types.ts` the reload is the evidence that the edit reached the page.
+
+Qwik reloads a client-rendered page for every edit too. The unframework plugin sends that reload, because Qwik's own plugin sends its hot update only from the `ssr` environment ([ADR-0075](../../docs/adrs/0075-a-portable-bundler-plugin.md)). So Qwik's plugin-mode HMR spec counts the page's loads and expects one more after each edit.
 
 The Vue app passes `script.fs` to `@vitejs/plugin-vue` in both modes, because a packaged SFC and a compiled `.uf.tsx` import their prop types from a sibling module, and Vue's compiler reads those through TypeScript's `sys`, which TypeScript 7 doesn't export. Without it the page fails with "No fs option provided to `compileScript`".
 

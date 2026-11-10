@@ -107,7 +107,14 @@ built.
 - A framework's HMR stays the framework's own. React, Vue, Svelte and Solid send an update. Qwik and
   Astro do a full reload with the new content. plugin-vue also updates the importers of a type file
   it read itself, and vite-plugin-svelte drops a module whose JS did not change, so a type-only
-  edit reaches a Svelte page through its sheet alone.
+  edit reaches a Svelte page through its sheet alone. One exception, from L23: Qwik's own plugin
+  sends its hot update (`qwik:hmr`), or its full reload when its hot update is off, from the `ssr`
+  environment only. A client-rendered Qwik app loads nothing there, so it would get neither, and
+  in place Qwik keeps the sheet a component's `useStyles$` added first while the scope id in its
+  markup changes (ADR-0063). So on Qwik, when the `ssr` environment holds none of the change's
+  modules, the client environment invalidates the plugin's modules and sends a full reload itself,
+  and leaves them out of the in-place update. When the `ssr` environment holds them, Qwik's own
+  handling stays.
 
 ### Packages that ship sources
 
@@ -173,5 +180,12 @@ built.
   defaults.
 - **Keeping the hooks under `vite:` and adding others beside them.** Each bundler would then have its
   own copy of `resolveId` and `load`, and the copies would drift.
+- **Sending Qwik's `qwik:hmr` event from the client environment,** to keep in-place updates on a
+  client-rendered Qwik app. The event belongs to Qwik's private, beta protocol (`document.__hmrT`),
+  and it does nothing when the app turns Qwik's hot update off, so the plugin sends a full reload
+  instead.
+- **Reloading the page by hand in the e2e spec,** or rendering the Qwik e2e app on the server. The
+  first would test less than an app gets, and the second needs a server entry, since Qwik 2 has no
+  dev SSR server of its own.
 - **Meta-framework integrations (Nuxt, SvelteKit, SolidStart, Qwik City).** They're out of M6, and
   M6's apps are plain Vite apps, an Astro app and an Angular CLI app (ADR-0079).

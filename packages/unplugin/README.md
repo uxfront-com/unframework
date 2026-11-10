@@ -272,7 +272,12 @@ How `resolveId` answers:
   (ADR-0063). When the project compiled nothing, the plugin's modules and the nodes only its
   watch edges put in the graph leave Vite's list, so nothing is sent. A module the plugin doesn't
   own keeps Vite's handling, and a framework's own HMR does the rest: React, Vue, Svelte and Solid
-  send an update, and Qwik and Astro do a full reload with the new content.
+  send an update, and Astro does a full reload with the new content. Qwik's own plugin reloads the
+  page, or sends its `qwik:hmr` update, from the `ssr` environment only, so it does that for a
+  server-rendered app. For a client-rendered one, whose `ssr` environment holds none of the
+  change's modules, the plugin invalidates its modules and sends the full reload itself from the
+  client environment, whatever Qwik's hot-update setting. That way a stylesheet edit never meets
+  the sheet Qwik's `useStyles$` added first.
 
 `load` answers a scoped sheet's id with the sheet this target's compile emitted, whatever its
 query: plugin-vue's request for `<style src>` (`?vue&type=style&index=0&src=true&lang.css`), which

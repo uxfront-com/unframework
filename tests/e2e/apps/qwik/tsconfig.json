@@ -3,5 +3,7 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "@qwik.dev/core"
-  }
+  },
+  // `tsconfig.uf.json` checks these (ADR-0073).
+  "exclude": ["**/*.uf.tsx", "**/*.uf.ts"]
 }

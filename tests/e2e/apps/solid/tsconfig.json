@@ -1,0 +1,5 @@
+{
+  // The app's own files. Its `.uf.tsx` and `.uf.ts` files are checked by `tsconfig.uf.json`
+  // (ADR-0073).
+  "exclude": ["**/*.uf.tsx", "**/*.uf.ts"]
+}
