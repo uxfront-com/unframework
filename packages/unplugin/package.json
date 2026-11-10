@@ -110,6 +110,7 @@
   "devDependencies": {
     "@qwik.dev/core": "catalog:",
     "@types/node": "catalog:",
+    "@unframework/target-angular": "workspace:*",
     "@unframework/target-qwik": "workspace:*",
     "@unframework/target-react": "workspace:*",
     "@unframework/target-solid": "workspace:*",
