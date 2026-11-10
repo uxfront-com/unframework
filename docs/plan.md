@@ -1,6 +1,6 @@
 # Unframework compiler: plan
 
-**Status:** proposal, 2026-10-01. M0 to M5 are built, and M6 is next (§9). **Supersedes:** the
+**Status:** proposal, 2026-10-01. M0 to M6 are built, and M7 is next (§9). **Supersedes:** the
 Inkline compiler (`packages/compiler-v1`, reference only and gitignored; also at
 `~/Workspace/inkline/core/compiler`).
 
