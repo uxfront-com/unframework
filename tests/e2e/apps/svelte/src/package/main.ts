@@ -1,6 +1,6 @@
 import { mount } from "svelte";
 
-import Hello from "./Hello.svelte";
+import App from "./App.svelte";
 
 const target = document.getElementById("app");
-if (target) mount(Hello, { target });
+if (target) mount(App, { target });

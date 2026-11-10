@@ -20,7 +20,7 @@ import { formatDiagnostic, formatDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import { createUnplugin } from "unplugin";
 import type { TransformResult, UnpluginFactory, UnpluginInstance, UnpluginOptions } from "unplugin";
-import type { Environment, EnvironmentModuleNode, HotUpdateOptions } from "vite";
+import type { Environment, EnvironmentModuleNode, HotUpdateOptions, ResolvedConfig } from "vite";
 
 import { assembleModule } from "./assemble.ts";
 import { chainQwikSegments, chainSvelteOnce } from "./chain.ts";
@@ -180,6 +180,30 @@ interface LoadContext {
   error(message: string): void;
 }
 
+/** What refuses a load of `file` by `id`, by throwing, when a dev server must not serve it. */
+type AccessCheck = (file: string, id: string) => Promise<void>;
+
+/**
+ * A dev server's own allow list, applied to the files our ids name (C21). Vite refuses a request
+ * for a file outside `server.fs.allow` only when it reads the file itself, and `load` reads and
+ * compiles it here, by whichever id names it: a module id, a component id, a sheet id, or the
+ * `.uf.tsx` path itself. So `load` asks Vite's own `isFileLoadingAllowed`, which also honours
+ * `server.fs.strict` and `server.fs.deny`, about the file and about the id without its query,
+ * since Vite records a module a served module imports under the id it imported
+ * (`safeModulePaths`), suffix and all. A refusal is Vite's own `ERR_DENIED_ID` error, named after
+ * the file, which its middleware answers with a 403, as it answers a request for any other file.
+ */
+function accessCheck(config: ResolvedConfig): AccessCheck {
+  const allowed = import("vite").then(({ isFileLoadingAllowed }) => isFileLoadingAllowed);
+  return async (file, id) => {
+    const isAllowed = await allowed;
+    if (isAllowed(config, file) || isAllowed(config, withoutQuery(id))) return;
+    throw Object.assign(
+      new Error(`The request id "${file}" is outside of Vite's serving allow list.`),
+      { code: "ERR_DENIED_ID", id: file },
+    );
+  };
+}
 /** What Rollup's family adds to a hook's context: a resolver, which no other bundler's has. */
 interface Resolver {
   resolve(
@@ -760,6 +784,9 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
   // optional peer on every other bundler.
   let resolveBare: Promise<BareResolver> | undefined;
 
+  // Set on a dev server only: a build reads what its inputs import, and has no requests.
+  let checkAccess: AccessCheck | undefined;
+
   /** What `resolveId` answers (see the README), on every bundler. Only Vite's scan sets `scan`. */
   const resolveModule = async (
     context: object,
@@ -928,8 +955,22 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     return [...new Set([...kept, ...updated])];
   };
 
-  /** What `load` answers, keeping the guard's verdicts in `failed`. */
-  async function loadModule(this: LoadContext, id: string, failed: Map<string, FailedModule>) {
+  /**
+   * What `load` answers, keeping the guard's verdicts in `failed`. With `access`, a `.uf.tsx` file
+   * any of our ids names, queries included, goes through it before anything reads the file.
+   */
+  async function loadModule(
+    this: LoadContext,
+    id: string,
+    failed: Map<string, FailedModule>,
+    access?: AccessCheck,
+  ) {
+    const requested =
+      parseModuleId(id, SHEET_SUFFIX) ??
+      componentRequest(id) ??
+      parseModuleId(id, suffix) ??
+      parseModuleId(id, "");
+    if (access && requested && isAbsolute(requested.file)) await access(requested.file, id);
     const sheet = parseModuleId(id, SHEET_SUFFIX);
     if (sheet) {
       if (!isAbsolute(sheet.file)) return null;
@@ -1098,6 +1139,7 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
     vite: {
       configResolved(config) {
         root = config.root;
+        checkAccess = config.command === "serve" ? accessCheck(config) : undefined;
         resolveBare = import("vite").then(({ createIdResolver }) => createIdResolver(config));
         const file = config.configFile
           ? filenameOf(config.configFile)
@@ -1124,11 +1166,19 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
           return resolveModule(this, source, importer, scan);
         },
       },
-      // Replaces the generic hook, for what only Vite has: its environments.
+      // Replaces the generic hook, for what only Vite has: its environments. Only the client's
+      // loads answer a browser's requests. A server environment's come from the server's own
+      // code, which Vite lets read any file (`skipFsCheck`), and so does this plugin.
       load: {
         filter: { id: loadIds },
         handler(id) {
-          return loadModule.call(this, id, failuresIn(this.environment));
+          const client = this.environment.config.consumer === "client";
+          return loadModule.call(
+            this,
+            id,
+            failuresIn(this.environment),
+            client ? checkAccess : undefined,
+          );
         },
       },
       // Replaces the generic hook, whose filter only passes the plugin's ids: every module counts
