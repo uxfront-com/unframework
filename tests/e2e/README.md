@@ -31,7 +31,7 @@ An install that stops with `ERR_PNPM_IGNORED_BUILDS` names a package that runs a
 
 ## An app's layout
 
-Each app keeps its files per mode, so that work on one mode leaves the other's files alone. Only `package.json` is shared, and in Qwik and Astro a `tsconfig.json`:
+Each app keeps its files per mode, so that work on one mode leaves the other's files alone. Only `package.json` is shared, and the TypeScript configs where an app has them:
 
 | Path                                                  | Holds                                                            |
 | ----------------------------------------------------- | ---------------------------------------------------------------- |
@@ -39,13 +39,19 @@ Each app keeps its files per mode, so that work on one mode leaves the other's f
 | `vite.config.package.ts`, `vite.config.plugin.ts`     | Each mode's Vite config, whose `root` is its `src/<mode>`        |
 | `astro.config.package.mjs`, `astro.config.plugin.mjs` | Astro's config for each mode, whose `srcDir` is its `src/<mode>` |
 | `angular.json`, `tsconfig.json`                       | The Angular CLI's workspace, for the package mode                |
+| `tsconfig.uf.json`                                    | The check of the app's own `.uf.tsx` files, for the plugin mode  |
 | `src/package/`, `src/plugin/`                         | Each mode's entry and components                                 |
 | `e2e/package/`, `e2e/plugin/`                         | Each mode's specs                                                |
-| `tsconfig.uf.json`                                    | The plugin mode's check of its `.uf.tsx` and `.uf.ts` files      |
 
 Angular has the package mode only, because the Angular CLI has no plugin API. It's also the one app with TypeScript 6, since an Angular CLI app needs its compiler stack: [ADR-0079](../../docs/adrs/0079-the-e2e-apps-and-packed-tarballs.md) records the exception. Qwik has a `tsconfig.json` too, which points Vite's dependency scan at Qwik's JSX runtime.
 
-An app's `.uf.tsx` and `.uf.ts` files type-check against `unframework`'s JSX types, through `tsconfig.uf.json`, and its own `tsconfig.json` leaves them out ([ADR-0073](../../docs/adrs/0073-jsx-import-source-in-host-apps.md)). Run the check in a copy, after `prepare-apps`, with `pnpm exec tsc --noEmit -p tsconfig.uf.json`. Astro's `tsconfig.json` also leaves out `e2e/`, since the specs import the harness from the repository.
+In plugin mode, an app imports the design system's sources through its `./source/*` export and adds a `Greeting.uf.tsx` of its own, with a stylesheet and a `types.ts`, which its HMR spec edits. Its `tsconfig.uf.json` follows [ADR-0073](../../docs/adrs/0073-jsx-import-source-in-host-apps.md), and its `tsconfig.json` leaves the `.uf.tsx` and `.uf.ts` files out. Check them in the copy:
+
+```sh
+cd <work>/<app> && pnpm exec tsc --noEmit -p tsconfig.uf.json
+```
+
+Astro's `tsconfig.json` also leaves out `e2e/`, since the specs import the harness from the repository.
 
 Each directory under `e2e/` is one Playwright project, named `<app>:<mode>`, so a new app or mode needs no change to `playwright.config.ts`. The `dev:package` and `dev:plugin` scripts start a mode by hand in a copy.
 
@@ -81,13 +87,15 @@ Each app's server starts its own way, and that decides what `edit` waits for:
 
 `edit` rejects when the file doesn't contain `from`, since the test would otherwise wait for an update that never comes. It and the restore also wait as the table says, and reject if the wait runs out, so the file must be one the server watches, like a file under the mode's `src/`. Without that wait, the next page could load before the server has seen the write and keep the old content.
 
+An edit that changes nothing on the page, like a prop type in `types.ts`, shows only in the line Vite's client logs for each module it updates, `[vite] hot updated: <path>`. Wait for that line with `page.waitForEvent("console", …)`, set up before the edit. Make that edit first in the spec, because an earlier edit's update can log the same path after its own assertion passes.
+
 `ng serve` runs in another process, so its watcher is out of reach, and a file event alone would come too early: until the rebuild ends, a page still loads the old bundle. `rebuildWatcher` reads the end of each rebuild from what `ng serve` prints, whether the rebuild failed, changed nothing or changed the bundle. Write one edit at a time there, because a file written during a rebuild is reported when that rebuild ends.
 
 The smoke specs of the apps that render the design system share `harness/design-system.ts`, so every framework and mode is held to the same page: each component renders, the design system's sheet applies, and each component responds to one interaction. Astro renders on the server only, so its specs stop after the render. In package mode, `assertInstalledFromTarball` in `harness/apps.ts` runs first. pnpm always links `node_modules/<name>` into its virtual store, so it checks where that link leads and that the package holds no symbolic link.
 
 Astro answers an edit that reaches the page with a full reload, so its plugin-mode HMR spec marks the page before each edit and expects the mark gone after it. A type changes nothing on the page, so for an edit to `types.ts` the reload is the evidence that the edit reached the page.
 
-The Vue app passes `script.fs` to `@vitejs/plugin-vue`, because a packaged SFC imports its prop types from a sibling module, and Vue's compiler reads those through TypeScript's `sys`, which TypeScript 7 doesn't export. Without it the page fails with "No fs option provided to `compileScript`".
+The Vue app passes `script.fs` to `@vitejs/plugin-vue` in both modes, because a packaged SFC and a compiled `.uf.tsx` import their prop types from a sibling module, and Vue's compiler reads those through TypeScript's `sys`, which TypeScript 7 doesn't export. Without it the page fails with "No fs option provided to `compileScript`".
 
 The run uses one worker and no retries. A project's specs share one copy and an HMR spec edits it, so nothing runs beside it. A flaky spec is a bug, so we never retry it.
 
