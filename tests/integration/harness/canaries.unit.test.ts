@@ -61,6 +61,26 @@ import { LIVE_LAYERS } from "./quarantine.ts";
 import { caseOracle, caseResolver } from "./sources.ts";
 import { REFERENCE } from "./targets.ts";
 
+/** The canary jobs' run line, in ci.yml and nightly.yml alike. */
+const CANARIES_RUN =
+  "run: pnpm test:canaries ${{ matrix.canaries }}${{ matrix.shard && format(' --shard {0}', matrix.shard) || '' }}\n";
+
+/** A job's block in a workflow, from its id's line. */
+function workflowJob(file: string, id: string): string {
+  const workflow = readFileSync(join(REPO_ROOT, ".github", "workflows", file), "utf8");
+  const job = workflow
+    .slice(workflow.indexOf("\njobs:\n"))
+    .split(/^ {2}(?=[a-z0-9-]+:\n)/m)
+    .find((block) => block.startsWith(`${id}:\n`));
+  if (!job) throw new Error(`${file} has no ${id} job.`);
+  return job;
+}
+
+/** The lines of a job's `matrix.include`. */
+function matrixInclude(job: string): string {
+  return /^ {8}include:\n((?: {10}.*\n)+)/m.exec(job)?.[1] ?? "";
+}
+
 const filename = "fixture/task-list/TaskList.uf.tsx";
 /**
  * An M1-shaped component: local types (one generic, which Svelte's script keeps), props with
@@ -297,18 +317,11 @@ describe("canaries", () => {
   });
 
   it("run in CI as a matrix: every canary once or in every shard, at most one browser canary per job, and shards for each whose browser specs run", () => {
-    const workflow = readFileSync(join(REPO_ROOT, ".github", "workflows", "ci.yml"), "utf8");
-    const job = workflow
-      .slice(workflow.indexOf("\njobs:\n"))
-      .split(/^ {2}(?=[a-z0-9-]+:\n)/m)
-      .find((block) => block.startsWith("canaries:\n"));
-    if (!job) throw new Error("ci.yml has no canaries job.");
-    expect(job).toContain(
-      "run: pnpm test:canaries ${{ matrix.canaries }}${{ matrix.shard && format(' --shard {0}', matrix.shard) || '' }}\n",
-    );
+    const job = workflowJob("ci.yml", "canaries");
+    expect(job).toContain(CANARIES_RUN);
     expect(job).toMatch(/^ {4}timeout-minutes: 10$/m);
     // An `include` entry a job: its canaries, and its shard if it has one.
-    const include = /^ {8}include:\n((?: {10}.*\n)+)/m.exec(job)?.[1] ?? "";
+    const include = matrixInclude(job);
     const entries = [
       ...include.matchAll(/^ {10}- canaries: (\S+)\n(?: {12}shard: (\S+)\n)?/gm),
     ].map(([, names, shard]) => ({
@@ -333,6 +346,9 @@ describe("canaries", () => {
     // L8's specs wait out a timeout on the most cases: with M5's cases, each of two shards
     // outgrew the ten minutes, so it runs in three.
     expect(runs.get("L8-render-nothing")).toHaveLength(3);
+    // L10-root-hidden's two shards passed within a minute of the ten, and a cold pnpm cache takes
+    // about 40 s to save after the last step, so GitHub cancelled a job whose steps had passed.
+    expect(runs.get("L10-root-hidden")).toHaveLength(3);
     // A canary whose browser specs run waits out a timeout at most of their failures, on every
     // target: one job of the whole corpus outgrew the ten minutes (ADR-0052). The golden
     // guard's specs fail to load, so they run no test and wait for nothing.
@@ -350,6 +366,38 @@ describe("canaries", () => {
       { name: "bench", args: ["--project", "bench"] },
     ]);
     expect(projectOf("bench", "vue")).toBe("bench");
+  });
+
+  it("run in CI only when the changes job says so, and that job fails loud (ADR-0073)", () => {
+    const job = workflowJob("ci.yml", "canaries");
+    expect(job).toMatch(/^ {4}needs: changes$/m);
+    expect(job).toMatch(/^ {4}if: \$\{\{ needs\.changes\.outputs\.canaries == 'true' \}\}$/m);
+    const changes = workflowJob("ci.yml", "changes");
+    expect(changes).toContain("canaries: ${{ steps.filter.outputs.canaries }}\n");
+    expect(changes).toMatch(/^ {10}fetch-depth: 2$/m);
+    // A step with no `shell` has no pipefail: a failed diff would read as an empty list.
+    expect(changes).toMatch(/^ {8}shell: bash$/m);
+    expect(changes).toContain(
+      'git diff --no-renames --name-only HEAD^1 HEAD | node tests/integration/scripts/canary-paths.ts >> "$GITHUB_OUTPUT"\n',
+    );
+    expect(changes).toContain('if [ "$EVENT_NAME" = "pull_request" ]; then\n');
+    expect(changes).toContain('echo "canaries=true" >> "$GITHUB_OUTPUT"\n');
+    expect(changes).not.toMatch(/\|\| true|continue-on-error/);
+  });
+
+  it("run every night with CI's matrix and run line (ADR-0073)", () => {
+    const ci = workflowJob("ci.yml", "canaries");
+    const nightly = workflowJob("nightly.yml", "canaries");
+    expect(matrixInclude(nightly), "the matrices of ci.yml and nightly.yml").toBe(
+      matrixInclude(ci),
+    );
+    expect(matrixInclude(nightly)).not.toBe("");
+    expect(nightly).toContain(CANARIES_RUN);
+    expect(nightly).toMatch(/^ {4}timeout-minutes: 10$/m);
+    expect(nightly).toMatch(/^ {6}fail-fast: false$/m);
+    // The nightly's run is Chromium's, and nothing makes it wait for a filter.
+    expect(nightly).not.toContain("UF_BROWSER");
+    expect(nightly).not.toMatch(/^ {4}(?:needs|if):/m);
   });
 
   it("take a shard, and run each case in exactly one of its parts", () => {

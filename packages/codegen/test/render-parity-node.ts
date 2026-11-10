@@ -984,6 +984,10 @@ export function browserProject(options: BrowserProjectOptions): TestProjectInlin
       ...vite.test,
       name: "browser",
       include: ["test/**/*.browser.test.ts"],
+      // One file at a time. The target's Vite plugins compile the parity components in the Vitest
+      // process, which also runs every `userEvent` command: beside a file that clicks, a compile
+      // blocks that process, and its clicks, for seconds under CPU load.
+      maxWorkers: 1,
       browser: {
         enabled: true,
         provider,

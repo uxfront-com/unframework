@@ -3,6 +3,7 @@ import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import type { ToolchainContext } from "@unframework/codegen";
+import type { Plugin } from "vite";
 // Vite's config, with the `test` options Vitest declares on it.
 import type { ViteUserConfig } from "vitest/config";
 
@@ -39,7 +40,9 @@ export async function viteConfig(
   }
   const plugins = [
     ngtscVirtual(compiler, context.declarations),
-    ...tools.analog({ tsconfig: analogTsconfig(context.toolchainDir), jit: false }),
+    ...tools
+      .analog({ tsconfig: analogTsconfig(context.toolchainDir), jit: false })
+      .map(sourcemapPluginOnFileNames),
   ];
   if (mode === "browser") {
     return {
@@ -62,6 +65,42 @@ export async function viteConfig(
     // Analog switches a Node project to `vmThreads` unless a pool is set, which breaks isolation.
     test: { pool: "forks" },
   };
+}
+
+/** Analog's plugin that compiles, under Vitest, the `.ts` modules Angular did not. */
+const ANALOG_SOURCEMAP_PLUGIN = "@analogjs/vitest-angular-sourcemap-plugin";
+
+/**
+ * Analog's source-map plugin with its `.ts` test applied to the file name only. Analog tests
+ * the unanchored `/\.ts/` against the whole module id, so in a checkout whose path has a
+ * directory containing `.ts` (`example.ts.net/…`) it compiles every module as TypeScript, and
+ * the CSS of Vitest's page fails to parse, so no browser test runs. With the directories
+ * removed, the decision is Analog's own on every other path. Remove this once the catalog
+ * reaches an Analog whose test is anchored (3.0.0-beta.38 anchors it; 2.9.6 does not).
+ */
+function sourcemapPluginOnFileNames(plugin: Plugin): Plugin {
+  const hook = plugin.transform;
+  if (plugin.name !== ANALOG_SOURCEMAP_PLUGIN || hook === undefined) {
+    return plugin;
+  }
+  const handler = typeof hook === "function" ? hook : hook.handler;
+  const transform: typeof handler = function (code, id, options) {
+    if (!/\.ts/.test(withoutDirectories(id))) {
+      return;
+    }
+    return handler.call(this, code, id, options);
+  };
+  return {
+    ...plugin,
+    transform: typeof hook === "function" ? transform : { ...hook, handler: transform },
+  };
+}
+
+/** A module id without its directories: the text after the last `/` that comes before any `?`. */
+function withoutDirectories(id: string): string {
+  const query = id.indexOf("?");
+  const path = query === -1 ? id : id.slice(0, query);
+  return id.slice(path.lastIndexOf("/") + 1);
 }
 
 /**
