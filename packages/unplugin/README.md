@@ -97,6 +97,21 @@ integration harness does (`sourceUtilities` in `tests/integration/harness/stylef
 | `format`      | Formats the output with oxfmt. Defaults to `true`, so a module's code equals the golden file byte for byte.                                                                                                                                                                                                  |
 | `passThrough` | The specifier prefixes whose imports pass through to every output as written, passed to `compile()`. Defaults to `["virtual:"]`; a list replaces it, as `["virtual:", "styled-system/"]` adds an engine that generates files. A prefix that is empty, relative or absolute fails when the plugin is created. |
 
+## The dev server's allow list
+
+On a Vite dev server, a `.uf.tsx` file outside `server.fs.allow` gets the same 403 as any other
+file there, whichever id a request names it by: the file itself, its module id, a component id or
+its scoped sheet's id, with any query. The plugin reads and compiles the file in `load`, where
+Vite's own check never runs, so `load` asks Vite's `isFileLoadingAllowed` first. That honours
+`server.fs.strict` and `server.fs.deny` as Vite does, and with `strict` off nothing is refused.
+
+A file that a served module imports still loads, even from outside the allow list, because Vite
+records the id it was imported by as safe, and `load` accepts that id as well as the file. So a
+child component next to your project, or a package's shipped sources from a linked directory,
+load as soon as something you serve imports them. Only the client environment is checked, since a
+server environment's loads come from your own server code, which Vite lets read any file, and a
+build is never checked. A `.uf.ts` module of composables isn't covered yet.
+
 ## Target detection
 
 With `target` left out, Vite's `configResolved` reads the plugin names in your configuration. A
