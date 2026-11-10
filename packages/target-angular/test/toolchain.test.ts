@@ -9,6 +9,7 @@ import {
 import { join, resolve } from "node:path";
 
 import type { ToolchainContext } from "@unframework/codegen";
+import type { Plugin } from "vite";
 import { afterAll, describe, expect, it } from "vitest";
 
 import manifest from "../package.json" with { type: "json" };
@@ -331,6 +332,39 @@ describe("vite", () => {
   it("gives Analog an empty program", async () => {
     await toolchain.vite("browser", context);
     expect(JSON.parse(readFileSync(analogTsconfig, "utf8"))).toMatchObject({ files: [] });
+  });
+
+  // Analog tests `/\.ts/` against the whole id, so a checkout under `example.ts.net/` compiled
+  // the CSS of Vitest's page as TypeScript, and no browser test ran.
+  it("compiles TypeScript by file name with Analog, whatever the directories are called", async () => {
+    const config = await toolchain.vite("browser", context);
+    const plugin = config.plugins
+      ?.flat(2)
+      .find(
+        (entry): entry is Plugin =>
+          typeof entry === "object" &&
+          entry !== null &&
+          "name" in entry &&
+          entry.name === "@analogjs/vitest-angular-sourcemap-plugin",
+      );
+    expect(plugin, "Analog's source-map plugin").toBeDefined();
+    const transform = plugin!.transform as (
+      this: unknown,
+      code: string,
+      id: string,
+    ) => Promise<{ code: string } | undefined> | undefined;
+    const compile = (code: string, id: string) => transform.call({}, code, id);
+
+    const css = "\nhtml { color: red }";
+    expect(
+      await compile(css, "/a.ts.net-8080/tester.html?html-proxy&direct&index=0.css"),
+    ).toBeUndefined();
+    const typed = "const a: number = 1; export { a };";
+    for (const id of ["/plain/x.ts", "/a.ts.net/x.ts?v=1", "/a.ts.net/x.tsx"]) {
+      const result = await compile(typed, id);
+      expect(result?.code, id).toContain("const a = 1");
+      expect(result?.code, id).not.toContain(": number");
+    }
   });
 });
 
