@@ -9,18 +9,18 @@ Found a bug, or have an idea? Search the [existing issues](https://github.com/ux
 - `apps/web`: the Nuxt site for [unframework.dev](https://unframework.dev), the homepage and the documentation at `/docs`. See [`apps/web/README.md`](../apps/web/README.md).
 - `packages/*`: the packages of Unframework, one job each (plan §5.2):
 
-  | Package                         | Role                                                                                              |
-  | ------------------------------- | ------------------------------------------------------------------------------------------------- |
-  | `@unframework/ir`               | The portable IR: plain-data types, builders, visitors and its generated JSON Schema.              |
-  | `@unframework/diagnostics`      | The diagnostic type, the catalogue of stable `UF` codes, code frames, JSON and SARIF, fixes.      |
-  | `@unframework/parser`           | Parses `.uf.tsx` with oxc and stylesheets with lightningcss. No TypeScript API.                   |
-  | `@unframework/analyzer`         | Checks a parsed module and lowers its JSX into IR.                                                |
-  | `@unframework/codegen`          | The target kit: `defineTarget`, JS/JSX/markup printers, oxfmt formatting, the toolchain contract. |
-  | `@unframework/target-<name>` ×7 | One framework each: `emit()`, its capabilities, and a `/toolchain` entry that tests run it with.  |
-  | `@unframework/compiler`         | `compile()`: the passes in order, for every selected target.                                      |
-  | `@unframework/unplugin`         | The bundler plugin (Vite in M0): `.uf.tsx` imports compile to the host framework.                 |
-  | `unframework`                   | The authoring API and the JSX types of `.uf.tsx` components.                                      |
-  | `@unframework/testing`          | The cross-target test API, normalisation, the parity reporter. Private until M7.                  |
+  | Package                         | Role                                                                                                                                                |
+  | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `@unframework/ir`               | The portable IR: plain-data types, builders, visitors and its generated JSON Schema.                                                                |
+  | `@unframework/diagnostics`      | The diagnostic type, the catalogue of stable `UF` codes, code frames, JSON and SARIF, fixes.                                                        |
+  | `@unframework/parser`           | Parses `.uf.tsx` with oxc and stylesheets with lightningcss. No TypeScript API.                                                                     |
+  | `@unframework/analyzer`         | Checks a parsed module and lowers its JSX into IR.                                                                                                  |
+  | `@unframework/codegen`          | The target kit: `defineTarget`, JS/JSX/markup printers, oxfmt formatting, the toolchain contract.                                                   |
+  | `@unframework/target-<name>` ×7 | One framework each: `emit()`, its capabilities, and a `/toolchain` entry that tests run it with.                                                    |
+  | `@unframework/compiler`         | `compile()`: the passes in order, for every selected target.                                                                                        |
+  | `@unframework/unplugin`         | The bundler plugin: `.uf.tsx` imports compile to the host framework, on Vite (tested) and every bundler unplugin offers, and the Astro integration. |
+  | `unframework`                   | The authoring API and the JSX types of `.uf.tsx` components.                                                                                        |
+  | `@unframework/testing`          | The cross-target test API, normalisation, the parity reporter. Private until M7.                                                                    |
 
 - `tests/integration`: the corpus and its harness, which verify every case on every target. See [`tests/integration/README.md`](../tests/integration/README.md).
 - `tests/toolchains/<name>`: the type checkers of each target's output, with TypeScript 6 where a checker still needs it.

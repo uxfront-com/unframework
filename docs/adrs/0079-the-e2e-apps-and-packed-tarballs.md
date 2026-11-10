@@ -1,7 +1,7 @@
 # ADR-0079: The e2e apps install packed tarballs outside the workspace
 
-- **Status:** Proposed
-- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Date:** 2026-11-10
 - **Plan:** §5.2, §7.9, §8.2, §9 M6; R8, R12; ADR-0027, ADR-0075, ADR-0077; records an exception to
   ADR-0022's TypeScript 6 rule, without editing that record
 

@@ -1,7 +1,7 @@
 # ADR-0074: Source maps are anchored after emit and remapped through formatting
 
-- **Status:** Proposed
-- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Date:** 2026-11-10
 - **Plan:** §5.8, §7.2 (L14), §9 M6; P2, P6, P8; ADR-0021, ADR-0026, ADR-0035, ADR-0041, ADR-0070;
   replaces §5.8's V3 composer
 
