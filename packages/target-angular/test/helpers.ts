@@ -74,6 +74,7 @@ export function corpusSources(): { name: string; file: string; source: string }[
         !COMPOSITION.test(name) &&
         !STYLED_COMPOSITION.test(name) &&
         !BINDING_COMPOSITION.test(name) &&
+        !THROWN_COMPOSITION.test(name) &&
         !TYPE_MODULES.test(name) &&
         !COMPOSABLE_MODULES.test(name),
     );
@@ -93,6 +94,13 @@ const STYLED_COMPOSITION =
  * toolchain project checks their Angular outputs.
  */
 const BINDING_COMPOSITION = /^bindings\/(?:style-expression|style-spread)$/;
+
+/**
+ * The thrown-error case whose main source renders a child that throws once mounted (ADR-0078):
+ * it resolves the child as `compile()` does, which `lower` has not. The corpus's toolchain project
+ * checks its Angular outputs.
+ */
+const THROWN_COMPOSITION = /^sourcemaps\/mounted-throws$/;
 
 /**
  * The types and generics cases whose sources import types from a module beside them, or render

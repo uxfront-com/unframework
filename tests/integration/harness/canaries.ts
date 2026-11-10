@@ -180,7 +180,8 @@ export interface Canary {
    * at its end, which moves no line, and this map, which Vite chains onto the map the module had. The compiler's `output` hook runs before a
    * map exists, and the compile project serves no module, so only those projects.
    */
-  servedMap?(code: string, file: string): SourceMapV3;
+  // A function property, not a method: the serve plugin holds it on its own, apart from the canary.
+  servedMap?: (code: string, file: string) => SourceMapV3;
   /**
    * The cases the canary corrupts on a target, when not every case it can reach: the compile
    * project corrupts, and the verdict judges, only those.
