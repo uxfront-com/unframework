@@ -327,6 +327,9 @@ describe("canaries", () => {
     // L8's specs wait out a timeout on the most cases: with M5's cases, each of two shards
     // outgrew the ten minutes, so it runs in three.
     expect(runs.get("L8-render-nothing")).toHaveLength(3);
+    // L10-root-hidden's two shards passed within a minute of the ten, and a cold pnpm cache takes
+    // about 40 s to save after the last step, so GitHub cancelled a job whose steps had passed.
+    expect(runs.get("L10-root-hidden")).toHaveLength(3);
     // A canary whose browser specs run waits out a timeout at most of their failures, on every
     // target: one job of the whole corpus outgrew the ten minutes (ADR-0052). The golden
     // guard's specs fail to load, so they run no test and wait for nothing.
