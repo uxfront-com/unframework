@@ -9,7 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative, resolve, sep } from "node:path";
+import { basename, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const e2eRoot: string = fileURLToPath(new URL("..", import.meta.url));
@@ -107,6 +107,52 @@ export function assertInstalledFromTarball(copy: string, name: string): void {
     }
   };
   visit(installed);
+}
+
+/** The file in `.tarballs` that names what `prepare-apps` packed, so a later run can reuse it. */
+export const packedFile = "packed.json";
+
+export interface Packed {
+  /** The design system's package name. */
+  designSystem: string;
+  /** Each packed package's tarball, by name. */
+  tarballs: Record<string, string>;
+}
+
+/** Records what was packed, by file name, so the directory can move: CI's E2E jobs download it. */
+export function writePacked(packed: Packed, directory: string = tarballsDir): void {
+  const tarballs = Object.fromEntries(
+    Object.entries(packed.tarballs).map(([name, path]) => [name, basename(path)]),
+  );
+  writeFileSync(
+    join(directory, packedFile),
+    `${JSON.stringify({ designSystem: packed.designSystem, tarballs }, null, 2)}\n`,
+  );
+}
+
+/**
+ * What an earlier `prepare-apps` packed into `directory`, with each tarball's absolute path. It
+ * throws when the record or a tarball is missing, so an install never falls back to the registry.
+ */
+export function readPacked(directory: string = tarballsDir): Packed {
+  const record = join(directory, packedFile);
+  if (!existsSync(record)) {
+    throw new Error(`${record} is missing: run prepare-apps without --reuse-tarballs first.`);
+  }
+  const packed: Packed = JSON.parse(readFileSync(record, "utf8"));
+  if (!(packed.designSystem in packed.tarballs)) {
+    throw new Error(`${record} has no tarball for the design system, ${packed.designSystem}.`);
+  }
+  const tarballs: Record<string, string> = {};
+  for (const [name, file] of Object.entries(packed.tarballs)) {
+    // A file name only: the record never points outside its directory.
+    const path = join(directory, basename(file));
+    if (basename(file) !== file || !existsSync(path)) {
+      throw new Error(`${record} names ${file} for ${name}, which isn't in ${directory}.`);
+    }
+    tarballs[name] = path;
+  }
+  return { designSystem: packed.designSystem, tarballs };
 }
 
 /** Reads one package's manifest. */
