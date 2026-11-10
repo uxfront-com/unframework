@@ -135,11 +135,16 @@ async function startHot(
   const reported = new Map<string, number>();
   server.watcher.on("all", (_event, file) => reported.set(file, performance.now()));
   // The watcher's `ready` event may fire before any plugin can listen for it, so this waits for
-  // the watcher to report a file in the deepest directory the tests edit.
-  const sentinel = join(root, "src", ".watching");
+  // the watcher to report a file in the deepest directory the tests edit. chokidar reads a
+  // directory before it starts polling it, so a file created between the two is in neither: the
+  // read missed it, and the poll's first look already includes it. Rewriting that file never
+  // changes its directory again, so each attempt creates a new file, which does.
+  const sentinels: string[] = [];
   await vi.waitFor(() => {
-    write(root, "src/.watching", "");
-    expect(reported.has(sentinel)).toBe(true);
+    const sentinel = `src/.watching-${sentinels.length}`;
+    write(root, sentinel, "");
+    sentinels.push(join(root, sentinel));
+    expect(sentinels.some((file) => reported.has(file))).toBe(true);
   }, HOT);
   const client = server.environments.client;
   // The environment the page's modules load in: Qwik and Astro render on the server.
