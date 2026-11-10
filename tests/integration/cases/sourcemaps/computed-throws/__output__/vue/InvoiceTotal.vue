@@ -24,7 +24,7 @@ function refund() {
 
 <template>
   <div>
-    <output>{{ total }}</output>
+    <output>{{ `${total} after ${refunded} refunded` }}</output>
     <button type="button" @click="refund">Refund</button>
   </div>
 </template>

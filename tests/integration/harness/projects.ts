@@ -37,7 +37,7 @@ import type { Plugin } from "vite";
 import { mergeConfig } from "vitest/config";
 import type { TestProjectConfiguration, UserWorkspaceConfig, ViteUserConfig } from "vitest/config";
 
-import { canaryPlugins, guardsGoldens } from "./canaries.ts";
+import { canaryPlugins, canaryServePlugin, guardsGoldens } from "./canaries.ts";
 import "./context.ts";
 import { listCases } from "./cases.ts";
 import { ENGINE_DECLARATIONS, enginePlugins } from "./engines.ts";
@@ -241,6 +241,20 @@ function unpluginOptions(setup: HarnessSetup, target: string): UnframeworkOption
 }
 
 /**
+ * The plugin of a canary that corrupts the maps of served modules (`Canary.servedMap`), as a list
+ * to spread into a project's plugins: empty for every other run.
+ */
+function servedMapCanary(setup: HarnessSetup, target: string): Plugin[] {
+  const plugin = canaryServePlugin(
+    setup.mode.canary,
+    target,
+    setup.harness.casesDir,
+    listCases(setup.harness.casesDir),
+  );
+  return plugin ? [plugin] : [];
+}
+
+/**
  * Where a target's toolchain runs the ssr and browser projects: its checkers read the styling
  * engines' virtual modules beside the outputs (ADR-0064), Angular's ngtsc compiles with them,
  * and a server of the toolchain's own (Astro's render server) loads the engines' plugins too.
@@ -261,7 +275,11 @@ const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework)
     {
       root: ROOT,
       // The engines' plugins resolve the imports every output keeps as written (ADR-0064).
-      plugins: [...(await enginePlugins()), ...unframework(unpluginOptions(setup, target))],
+      plugins: [
+        ...(await enginePlugins()),
+        ...unframework(unpluginOptions(setup, target)),
+        ...servedMapCanary(setup, target),
+      ],
     },
     fragment,
   );
@@ -304,6 +322,7 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
         // The engines' plugins resolve the imports every output keeps as written (ADR-0064).
         ...(await enginePlugins()),
         ...unframework(unpluginOptions(setup, target)),
+        ...servedMapCanary(setup, target),
       ],
       // The testing API's own browser dependencies (CommonJS axe-core, parse5), and the runtime
       // Styleframe's recipes import (ADR-0064): listed up front, because one discovered mid-run

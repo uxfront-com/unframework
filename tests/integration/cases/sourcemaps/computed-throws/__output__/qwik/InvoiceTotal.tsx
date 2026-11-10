@@ -28,7 +28,7 @@ export default component$<InvoiceTotalProps & { class?: ClassList; style?: CSSPr
 
     return (
       <div {...scopeAttributes(attributes)} class={className} style={style}>
-        <output>{total.value}</output>
+        <output>{`${total.value} after ${refunded.value} refunded`}</output>
         <button type="button" onClick$={refund}>
           Refund
         </button>

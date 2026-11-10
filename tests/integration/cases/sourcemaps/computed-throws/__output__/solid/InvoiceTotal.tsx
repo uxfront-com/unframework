@@ -22,7 +22,7 @@ export default function InvoiceTotal(
 
   return (
     <div class={props.class} style={props.style} {...scopeAttributes(props)}>
-      <output>{total()}</output>
+      <output>{`${total()} after ${refunded()} refunded`}</output>
       <button type="button" onClick={refund}>
         Refund
       </button>

@@ -296,6 +296,7 @@ describe("the step expectThrown wraps", () => {
     const [test] = specTests(spec);
     expect(test!.uncompared).toEqual([]);
     expect(test!.acts).toBe(false);
+    expect(test!.throws).toBe(true);
   });
 
   it("does not hide a step after it", () => {
@@ -504,6 +505,7 @@ describe("the spec rules", () => {
         requires: [],
         checksFirst: true,
         acts: false,
+        throws: false,
         rerenders: false,
         firstAssertion: undefined,
         uncompared: [],
@@ -513,6 +515,7 @@ describe("the spec rules", () => {
         requires: ["interactivity"],
         checksFirst: false,
         acts: true,
+        throws: false,
         rerenders: false,
         firstAssertion: undefined,
         uncompared: [],
@@ -523,6 +526,7 @@ describe("the spec rules", () => {
         // A rerender is no action: a static target runs a rerender too.
         checksFirst: true,
         acts: false,
+        throws: false,
         rerenders: true,
         firstAssertion: undefined,
         uncompared: [],
@@ -532,6 +536,7 @@ describe("the spec rules", () => {
         requires: [],
         checksFirst: false,
         acts: false,
+        throws: false,
         rerenders: false,
         firstAssertion: undefined,
         uncompared: [],

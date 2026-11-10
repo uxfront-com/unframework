@@ -252,7 +252,9 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
      L13.
    - A `sourcemaps/*` case wraps the step that throws in `view.expectThrown(() => view.user.click(…))`.
      That step is no step of the trace, so it takes no `expectParity` (ADR-0078). The case holds one
-     `throw`, and the harness finds its line in the source.
+     `throw`, and the harness finds its line in the source. A case whose computed throws reads it in
+     one expression with the state it depends on: Qwik doesn't run a reader of only that computed
+     again once it throws.
 
 2. Run `pnpm test:update`. The compile project writes `__output__` and
    `__expected__/diagnostics.json`; the reference target (Vue, decision D10) writes the shared
@@ -382,13 +384,15 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   the cases whose specs act, wrong text on the cases whose specs rerender, a hidden root,
   inverted colours, an invalid ARIA role, a console warning), with a fix that fixes nothing (corrupted by
   the harness, on the cases whose diagnostics have a fix), with a shifted segment of a compiled source map
-  (corrupted by the harness, since the `output` hook runs before a map exists), and with one that only the golden
+  (corrupted by the harness, since the `output` hook runs before a map exists), with the map of
+  every module the `ssr` and `browser` projects serve for the `sourcemaps/*` cases moved down a
+  line (a Vite plugin after every other), and with one that only the golden
   guard can catch, in the server render and in each browser spec's import. The run fails unless
   every canary is caught by its own layer on every case and target it corrupts, in each
   sub-check it names: the diagnostics (the diagnostics cases' too) and their fixes, the IR
   snapshot and the golden files, determinism and formatting, the baseline lint rules and the
   framework's, the DOM and the ARIA tree, the spec's assertions, the traces, geometry and pixels,
-  the server's console and the page's, and the source maps' round trip. Each kind of project is judged on its own cells (the
+  the server's console and the page's, the source maps' round trip and the thrown errors' mapped stacks. Each kind of project is judged on its own cells (the
   server's console proves nothing of the page's), and only on the tests that ran: a browser
   project proves nothing of a case none of whose tests runs on its target (each skipped by a
   capability it requires), and a canary of the tests that act or rerender is judged only where

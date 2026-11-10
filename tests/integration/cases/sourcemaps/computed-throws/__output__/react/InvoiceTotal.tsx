@@ -32,7 +32,7 @@ export default function InvoiceTotal({
 
   return (
     <div className={className} style={style} {...scopeAttributes(attributes)}>
-      <output>{total}</output>
+      <output>{`${total} after ${refunded} refunded`}</output>
       <button type="button" onClick={refund}>
         Refund
       </button>

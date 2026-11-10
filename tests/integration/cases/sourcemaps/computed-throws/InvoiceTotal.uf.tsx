@@ -20,7 +20,7 @@ export default function InvoiceTotal({ quantity }: InvoiceTotalProps) {
 
   return (
     <div>
-      <output>{total.value}</output>
+      <output>{`${total.value} after ${refunded.value} refunded`}</output>
       <button type="button" onClick={refund}>
         Refund
       </button>

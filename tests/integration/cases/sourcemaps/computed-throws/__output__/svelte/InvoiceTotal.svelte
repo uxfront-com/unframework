@@ -36,5 +36,6 @@
 </script>
 
 <div class={className} {style} {...scopeAttributes(attributes)}>
-  <output>{total}</output><button type="button" onclick={refund}>Refund</button>
+  <output>{`${total} after ${refunded} refunded`}</output
+  ><button type="button" onclick={refund}>Refund</button>
 </div>

@@ -330,6 +330,8 @@ export interface SpecTest {
   checksFirst: boolean;
   /** Whether it acts through `view.user`. */
   acts: boolean;
+  /** Whether it wraps a step in `view.expectThrown`, which records L14 (ADR-0078). */
+  throws: boolean;
   /** Whether it rerenders (`view.rerender(…)`). */
   rerenders: boolean;
   /**
@@ -364,6 +366,9 @@ const DIRECT_ACTION =
 
 /** The wrapper around a step that throws (`view.expectThrown(() => view.user.click(…))`). */
 const THROWN_STEP = /\.expectThrown\s*\(/g;
+
+/** {@link THROWN_STEP}, for one test: without `g`, whose `lastIndex` would carry over. */
+const THROWN_STEP_CALL = /\.expectThrown\s*\(/;
 
 /**
  * The code with each `expectThrown` call's arguments blanked to spaces: the step it wraps throws
@@ -426,6 +431,7 @@ export function specTests(source: string): SpecTest[] {
       requires: declaredRequires(call[2]!, header),
       checksFirst: parity !== -1 && (action === -1 || parity < action),
       acts: action !== -1,
+      throws: THROWN_STEP_CALL.test(body),
       rerenders: RERENDER.test(body),
       firstAssertion: assertion,
       uncompared: uncomparedSteps(code, start, body),

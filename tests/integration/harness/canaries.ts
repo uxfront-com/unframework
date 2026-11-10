@@ -16,11 +16,11 @@
 // `canaries.unit.test.ts` runs each canary on every case of the corpus.
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { basename, join, relative, sep } from "node:path";
 
 import { decodedMappings, encodedMappings, TraceMap } from "@jridgewell/trace-mapping";
 import { parseStatementsSource } from "@unframework/codegen";
-import type { OutputFile, ParsedStatements } from "@unframework/codegen";
+import type { OutputFile, ParsedStatements, SourceMapV3 } from "@unframework/codegen";
 import { builtinTargets } from "@unframework/compiler";
 import type { CompilerPlugin, OutputHookContext, TargetName } from "@unframework/compiler";
 import type { Diagnostic } from "@unframework/diagnostics";
@@ -51,6 +51,7 @@ import type {
 } from "@unframework/ir";
 import { REQUIRES_SKIP } from "@unframework/testing/node";
 import type { LayerName, ProjectKind } from "@unframework/testing/node";
+import type { Plugin } from "vite";
 
 import { errorState, expectedDiagnostics, specTests } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
@@ -83,6 +84,13 @@ export interface CanaryCase {
   interacts(target: string): boolean;
   /** Whether a test that runs on a target rerenders: its traces record rerenders. */
   rerenders(target: string): boolean;
+  /**
+   * Whether a test that runs on a target wraps a step in `view.expectThrown`: its browser test
+   * records L14 (ADR-0078).
+   */
+  throws(target: string): boolean;
+  /** Whether `case.json` declares `ssrThrows`: its server render records L14 (ADR-0078). */
+  ssrThrows: boolean;
   /** Whether a source's committed IR has an element listener (an `Event` attribute) to unwire. */
   listens: boolean;
   /**
@@ -166,6 +174,13 @@ export interface Canary {
    * project.
    */
   map?(files: readonly OutputFile[]): OutputFile[];
+  /**
+   * The map a module the `ssr` and `browser` projects serve is given on top of its own (L14): a
+   * Vite plugin that runs after every other gives back the module's code with one more line break
+   * at its end, which moves no line, and this map, which Vite chains onto the map the module had. The compiler's `output` hook runs before a
+   * map exists, and the compile project serves no module, so only those projects.
+   */
+  servedMap?(code: string, file: string): SourceMapV3;
   /**
    * The cases the canary corrupts on a target, when not every case it can reach: the compile
    * project corrupts, and the verdict judges, only those.
@@ -720,6 +735,25 @@ export const CANARIES: readonly Canary[] = [
     map: shiftSegment,
   },
   {
+    id: "L14-ssr-map-shifted",
+    layer: "L14",
+    description:
+      "Moves every line of the map of each module the ssr projects serve for the cases whose server render throws down one, so the error's top frame in the case lands a line below the `throw`. The code gains one line break at its end, and no line moves.",
+    evidence: { ssr: { "mapped stack": /The top frame in the case is \S+:\d+, not / } },
+    appliesTo: (info) => info.ssrThrows,
+    servedMap: linesShifted,
+  },
+  {
+    id: "L14-browser-map-shifted",
+    layer: "L14",
+    description:
+      "Moves every line of the map of each module the browser projects serve for the cases whose specs wrap a throwing step in `expectThrown`, Qwik's segments included, down one, so the error's top frame in the case maps a line below the `throw`. The code gains one line break at its end, and no line moves. Astro runs no such step.",
+    evidence: { browser: { "mapped stack": /The top frame in the case maps to \S+, not to / } },
+    targets: ["react", "vue", "svelte", "solid", "angular", "qwik"],
+    appliesTo: (info, target) => info.throws(target),
+    servedMap: linesShifted,
+  },
+  {
     id: "L15-output-bloat",
     layer: "L15",
     description:
@@ -868,6 +902,81 @@ const ${leaf} = component$(() => {
 `;
   }
   return fail();
+}
+
+/**
+ * A map of `code` onto itself with every line moved down one: each column of a line maps to the
+ * same column of the next, and the last line maps nowhere. Chained onto a module's own map, a
+ * frame on a line then reads the line after it (`L14-ssr-map-shifted`,
+ * `L14-browser-map-shifted`).
+ */
+export function linesShifted(code: string, file: string): SourceMapV3 {
+  const lines = code.split("\n");
+  const mappings = lines.map((text, line) =>
+    line + 1 < lines.length
+      ? Array.from({ length: text.length + 1 }, (_, column): [number, number, number, number] => [
+          column,
+          0,
+          line + 1,
+          column,
+        ])
+      : [],
+  );
+  const map: SourceMapV3 = {
+    version: 3,
+    file,
+    names: [],
+    sources: [file],
+    sourcesContent: [code],
+    mappings: "",
+  };
+  return { ...map, mappings: encodedMappings(new TraceMap({ ...map, mappings })) };
+}
+
+/** A CSS module or a framework's style part (`?vue&type=style…`): no frame lands there. */
+const STYLE_REQUEST = /\.css(?:\?|$)|[?&]type=style\b/;
+
+/**
+ * The Vite plugin that gives a served module the canary's map (`Canary.servedMap`), on the cases
+ * it applies to on the project's target, or none. After every other plugin, so the map moves
+ * whatever the module's own map says, Qwik's segments included, which load as modules of their
+ * own (`<module id>_<symbol>.js`).
+ */
+export function canaryServePlugin(
+  id: string | null,
+  target: string,
+  casesDir: string,
+  cases: readonly CaseInfo[],
+): Plugin | undefined {
+  const canary = id ? findCanary(id) : undefined;
+  const servedMap = canary?.servedMap;
+  if (!canary || !servedMap || !corrupts(canary, target)) return undefined;
+  const byId = new Map(cases.map((info) => [info.id, info]));
+  const corrupted = new Map<string, boolean>();
+  const applies = (caseId: string): boolean => {
+    let known = corrupted.get(caseId);
+    if (known === undefined) {
+      const info = byId.get(caseId);
+      known =
+        info !== undefined && (!canary.appliesTo || canary.appliesTo(canaryCase(info), target));
+      corrupted.set(caseId, known);
+    }
+    return known;
+  };
+  return {
+    name: `uf-canary-${canary.id}`,
+    enforce: "post",
+    transform(code, moduleId) {
+      if (STYLE_REQUEST.test(moduleId)) return undefined;
+      const file = moduleId.replace(/[?#].*$/, "");
+      const [area, name, ...rest] = relative(casesDir, file).split(sep);
+      if (area === ".." || !rest.length || !applies(`${area}/${name}`)) return undefined;
+      // One more line break at the end: Vite keeps the load's map when the transforms give back
+      // the code they were given, and nothing else changes a Qwik segment that imports nothing.
+      const served = `${code}\n`;
+      return { code: served, map: servedMap(served, basename(file)) };
+    },
+  };
 }
 
 /** The canary with an id; throws for an unknown one, so a typo never runs a clean suite. */
@@ -1020,6 +1129,8 @@ export function canaryCase(info: CaseInfo): CanaryCase {
     runs: (target) => running(target).length > 0,
     interacts: (target) => running(target).some((test) => test.acts),
     rerenders: (target) => running(target).some((test) => test.rerenders),
+    throws: (target) => running(target).some((test) => test.throws),
+    ssrThrows: info.config.ssrThrows !== undefined,
     listens: irs.some(
       (ir) => existsSync(ir) && listens(JSON.parse(readFileSync(ir, "utf8")) as UfModule),
     ),

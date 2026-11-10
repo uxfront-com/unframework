@@ -31,6 +31,6 @@ const total = getTotal();
 ---
 
 <div class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
-  <output>{total}</output>
+  <output>{`${total} after ${refunded} refunded`}</output>
   <button type="button">Refund</button>
 </div>

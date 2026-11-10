@@ -45,9 +45,10 @@ export class ScopeAttributes implements OnInit {
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
+    @let refunded = this.refunded();
     @let total = this.total();
     <div [class]="this.class()" [style]="this.style()" [ufScope]="this.host">
-      <output>{{ total }}</output>
+      <output>{{ total + " after " + refunded + " refunded" }}</output>
       <button type="button" (click)="refund()">Refund</button>
     </div>
   `,
@@ -56,7 +57,7 @@ export default class InvoiceTotal {
   readonly quantity = input.required<number>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
-  private readonly refunded = signal(0);
+  protected readonly refunded = signal(0);
   protected readonly total = computed(() => {
     const units = this.quantity() - this.refunded();
     if (units < 0) {

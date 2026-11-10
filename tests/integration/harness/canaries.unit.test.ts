@@ -8,6 +8,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
+import { originalPositionFor, TraceMap } from "@jridgewell/trace-mapping";
 import { compile, TARGET_NAMES } from "@unframework/compiler";
 import type { CompileResult, TargetName } from "@unframework/compiler";
 import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
@@ -36,11 +37,13 @@ import {
   canaryMaps,
   canaryPlugins,
   canaryProjects,
+  canaryServePlugin,
   canarySource,
   corrupts,
   findCanary,
   guardsGoldens,
   injectScript,
+  linesShifted,
   mismatchClosingTag,
   withQwikImports,
 } from "./canaries.ts";
@@ -127,7 +130,7 @@ const VERIFIED_BY: Record<string, readonly ProjectKind[]> = {
   L10: ["browser"],
   L11: ["browser"],
   L13: ["ssr", "browser"],
-  L14: ["compile"],
+  L14: ["compile", "ssr", "browser"],
   L15: ["bench"],
 };
 
@@ -140,6 +143,8 @@ const fixture = (hasFixes: boolean): CanaryCase => ({
   runs: () => true,
   interacts: () => false,
   rerenders: () => false,
+  throws: () => false,
+  ssrThrows: false,
   listens: false,
   styled: false,
   reference: REFERENCE,
@@ -551,6 +556,8 @@ describe("canaries", () => {
         canary.id !== "L15-slow-compile" &&
         // It corrupts a map, after the compile: a test of its own below.
         canary.id !== "L14-map-shifted" &&
+        // They corrupt the maps of served modules, not the compile: tests of their own above.
+        canary.servedMap === undefined &&
         canary.id !== "L9-unwired-handler" &&
         canary.id !== "L10-stylesheet-rule-dropped",
     ),
@@ -1239,6 +1246,71 @@ describe("canaries", () => {
       ),
     ).toBe(false);
     expect(rerender.appliesTo!(fixture(false), "react")).toBe(false);
+  });
+
+  it("L14's served-map canaries apply to the cases that throw, on the projects that record it", () => {
+    const ssr = findCanary("L14-ssr-map-shifted");
+    const browser = findCanary("L14-browser-map-shifted");
+    expect(ssr.appliesTo!({ ...fixture(false), ssrThrows: true }, "astro")).toBe(true);
+    expect(ssr.appliesTo!(fixture(false), "react")).toBe(false);
+    const throwing = { ...fixture(false), throws: (target: string) => target !== "astro" };
+    expect(browser.appliesTo!(throwing, "qwik")).toBe(true);
+    expect(browser.appliesTo!(throwing, "astro")).toBe(false);
+    expect(browser.targets).not.toContain("astro");
+    expect(Object.keys(ssr.evidence)).toEqual(["ssr"]);
+    expect(Object.keys(browser.evidence)).toEqual(["browser"]);
+    // The compile and its output stay as they were: only the served map moves.
+    for (const id of [ssr.id, browser.id]) expect(canaryPlugins(id, "react")).toEqual([]);
+  });
+
+  it("shift a served module's map down one line, column for column", () => {
+    const map = linesShifted("a\nbc\nd", "x.js");
+    const trace = new TraceMap(map);
+    expect(originalPositionFor(trace, { line: 1, column: 0 })).toMatchObject({
+      line: 2,
+      column: 0,
+    });
+    expect(originalPositionFor(trace, { line: 2, column: 1 })).toMatchObject({
+      line: 3,
+      column: 1,
+    });
+    expect(originalPositionFor(trace, { line: 3, column: 0 }).line).toBeNull();
+    expect(map).toMatchObject({ sources: ["x.js"], sourcesContent: ["a\nbc\nd"] });
+  });
+
+  it("serve the shifted map only for the cases a canary applies to, and never for a sheet", () => {
+    const dir = mkdtempSync(join(tmpdir(), "uf-canary-serve-"));
+    try {
+      const write = (path: string, contents: string) => {
+        mkdirSync(dirname(join(dir, path)), { recursive: true });
+        writeFileSync(join(dir, path), contents);
+      };
+      write("a/thrown/Thrown.uf.tsx", "export default function Thrown() {}\n");
+      write("a/thrown/case.json", '{"ssrThrows":{"props":{}}}');
+      write("a/thrown/__expected__/diagnostics.json", "[]");
+      write("a/plain/Plain.uf.tsx", "export default function Plain() {}\n");
+      write("a/plain/__expected__/diagnostics.json", "[]");
+      const cases = listCases(dir);
+      expect(canaryServePlugin(null, "react", dir, cases)).toBeUndefined();
+      expect(canaryServePlugin("L14-map-shifted", "react", dir, cases)).toBeUndefined();
+      expect(canaryServePlugin("L14-browser-map-shifted", "astro", dir, cases)).toBeUndefined();
+      const plugin = canaryServePlugin("L14-ssr-map-shifted", "astro", dir, cases)!;
+      expect(plugin.enforce).toBe("post");
+      const transform = plugin.transform as (code: string, id: string) => unknown;
+      expect(transform("x\ny", `${dir}/a/thrown/Thrown.uf.tsx.astro`)).toMatchObject({
+        code: "x\ny\n",
+        map: { sources: ["Thrown.uf.tsx.astro"] },
+      });
+      expect(transform("x", `${dir}/a/thrown/Thrown.uf.tsx_Thrown_component_abc.js`)).toBeDefined();
+      expect(transform("x", `${dir}/a/thrown/Thrown.uf.tsx.css`)).toBeUndefined();
+      expect(
+        transform("x", `${dir}/a/thrown/Thrown.uf.tsx.vue?vue&type=style&index=0`),
+      ).toBeUndefined();
+      expect(transform("x", `${dir}/a/plain/Plain.uf.tsx.astro`)).toBeUndefined();
+      expect(transform("x", `${dir}/../elsewhere/Thrown.uf.tsx`)).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("read which tests of a case run on each target, and which of those act or rerender", () => {

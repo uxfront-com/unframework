@@ -103,10 +103,24 @@ built.
 - The `ssr:*` projects render `case.json`'s `ssrThrows` props, which only `computed-throws` declares,
   and check that the top frame of the module runner's `error.stack` is on the `throw`. The first
   `Error` counts here too, since Angular's renderer logs it and resolves.
+- `computed-throws` reads the state in the same expression as the computed, because of how Qwik 2
+  beta handles a computed that throws. `$computeIfNeeded$` catches the error and stores it, and the
+  `untrackedError` setter schedules only the computed's `$errorEffects$`, not the readers of its
+  `.value`. So a reader of only the computed never runs again, the DOM keeps its last value and
+  nothing throws. A reader that the state's change runs again reads `.value`, which rethrows the
+  stored error, on Qwik as on every other target.
 - Astro has no client code, so it checks only that server render. Its browser tests that throw are
   skipped by capability.
 - The spike found what ADR-0074's chain needed on Svelte, Qwik and Astro. No target has a quarantine
   entry for L14.
+- Two canaries prove the new cells, since `L14-map-shifted` only reaches the compile project. Each
+  moves every line of a served module's map down one, through a Vite plugin that runs after every
+  other (`Canary.servedMap`), so the top frame lands a line below the `throw`. It adds one line break
+  at the code's end, which moves no line, because Vite keeps a module's load map when its transforms
+  give back the same code, as they do for a Qwik segment that imports nothing. `L14-ssr-map-shifted` applies to the cases with `ssrThrows`, on all seven targets.
+  `L14-browser-map-shifted` applies to the cases whose specs wrap a step in `expectThrown`, on the six
+  targets that run one, Qwik's segments included. A verdict judges one kind of project per canary,
+  so each takes one.
 
 ## Consequences
 
