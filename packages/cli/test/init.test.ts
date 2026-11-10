@@ -46,7 +46,7 @@ describe("init", () => {
     }
   });
 
-  it("writes the tsconfig ADR-0073 settles", async () => {
+  it("writes the tsconfig ADR-0080 settles", async () => {
     const root = project({});
     await run(root, "init");
     expect(JSON.parse(readFileSync(join(root, "tsconfig.uf.json"), "utf8"))).toEqual({

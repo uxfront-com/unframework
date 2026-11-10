@@ -54,7 +54,7 @@ Angular has the package mode only, because the Angular CLI has no plugin API. It
 
 Both of Qwik's entries import `@qwik.dev/core/qwikloader.js`. A client-rendered Qwik element keeps its handlers for that loader, so without it a click does nothing.
 
-In plugin mode, an app imports the design system's sources through its `./source/*` export and adds a `Greeting.uf.tsx` of its own, with a stylesheet and a `types.ts`, which its HMR spec edits. Its `tsconfig.uf.json` follows [ADR-0073](../../docs/adrs/0073-jsx-import-source-in-host-apps.md), and its `tsconfig.json` leaves the `.uf.tsx` and `.uf.ts` files out. Check them in the copy:
+In plugin mode, an app imports the design system's sources through its `./source/*` export and adds a `Greeting.uf.tsx` of its own, with a stylesheet and a `types.ts`, which its HMR spec edits. Its `tsconfig.uf.json` follows [ADR-0080](../../docs/adrs/0080-jsx-import-source-in-host-apps.md), and its `tsconfig.json` leaves the `.uf.tsx` and `.uf.ts` files out. Check them in the copy:
 
 ```sh
 cd <work>/<app> && pnpm exec tsc --noEmit -p tsconfig.uf.json

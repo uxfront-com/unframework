@@ -1,4 +1,4 @@
-# ADR-0073: `jsxImportSource` in host apps is a scoped `tsconfig.uf.json`
+# ADR-0080: `jsxImportSource` in host apps is a scoped `tsconfig.uf.json`
 
 - **Status:** Accepted
 - **Date:** 2026-11-10

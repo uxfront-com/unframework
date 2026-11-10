@@ -126,13 +126,13 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0071](./0071-the-project-graph-and-incremental-invalidation.md)   | The project graph and incremental invalidation                                | Accepted                                                               | §5.10, §8.2, §9 M5      |
 | [0072](./0072-the-content-mapper.md)                               | The content mapper                                                            | Proposed                                                               | §5.6, §9 M5             |
 | [0073](./0073-canaries-run-on-harness-changes-and-nightly.md)      | Canaries run on harness changes and nightly                                   | Accepted                                                               | §7.7, §7.9              |
-| [0073](./0073-jsx-import-source-in-host-apps.md)                   | `jsxImportSource` in host apps is a scoped `tsconfig.uf.json`                 | Accepted                                                               | §8.2, §9 M6             |
 | [0074](./0074-source-maps-anchored-after-emit.md)                  | Source maps are anchored after emit and remapped through formatting           | Accepted                                                               | §5.8, §7.2, §9 M6       |
 | [0075](./0075-a-portable-bundler-plugin.md)                        | A portable bundler plugin, tested on Vite                                     | Accepted                                                               | §8.2, §9 M6             |
 | [0076](./0076-configuration-and-the-cli.md)                        | Configuration and the CLI                                                     | Accepted                                                               | §8.1, §8.3, §9 M6       |
 | [0077](./0077-per-target-packaging.md)                             | Per-target packaging                                                          | Accepted                                                               | §8.4, §9 M6             |
 | [0078](./0078-the-source-map-and-budget-layers.md)                 | L14 checks source maps and L15 checks budgets                                 | Accepted                                                               | §7.2, §9 M6             |
 | [0079](./0079-the-e2e-apps-and-packed-tarballs.md)                 | The e2e apps install packed tarballs outside the workspace                    | Accepted                                                               | §9 M6                   |
+| [0080](./0080-jsx-import-source-in-host-apps.md)                   | `jsxImportSource` in host apps is a scoped `tsconfig.uf.json`                 | Accepted                                                               | §8.2, §9 M6             |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 

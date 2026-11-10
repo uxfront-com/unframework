@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-11-10
-- **Plan:** §5.2, §5.10, §8.1, §8.3, §9 M6; P2, P8; ADR-0016, ADR-0073, ADR-0077; defers ADR-0071's
+- **Plan:** §5.2, §5.10, §8.1, §8.3, §9 M6; P2, P8; ADR-0016, ADR-0080, ADR-0077; defers ADR-0071's
   open item on the IR cache, without editing that record
 
 ## Context
@@ -109,7 +109,7 @@ export default defineConfig({
 ### init and create-unframework
 
 - `unframework init` writes `unframework.config.ts`, `src/Button.uf.tsx` with `src/Button.css`,
-  `tsconfig.uf.json` (ADR-0073) and an `AGENTS.md` that points at unframework.dev. It holds them as
+  `tsconfig.uf.json` (ADR-0080) and an `AGENTS.md` that points at unframework.dev. It holds them as
   strings in the CLI, so they ship in `dist` with no copy step.
 - It refuses to overwrite a file without `--force`. It checks before its first write, so a refusal
   exits 2, names every file in the way, says what `--force` would do with each and writes nothing. A dangling symlink counts as a

@@ -9,7 +9,7 @@
     "verbatimModuleSyntax": true,
     "allowImportingTsExtensions": true
   },
-  // tsconfig.uf.json checks the .uf files, under unframework's JSX types (ADR-0073). The specs
+  // tsconfig.uf.json checks the .uf files, under unframework's JSX types (ADR-0080). The specs
   // run from the repository, under tests/e2e's own config.
   "exclude": ["**/*.uf.tsx", "**/*.uf.ts", "e2e", "dist"]
 }

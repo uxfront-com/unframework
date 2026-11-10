@@ -144,7 +144,7 @@ unframework init [--force]
 
 - **`unframework.config.ts`,** which names all seven targets, `src` and `dist`.
 - **`src/Button.uf.tsx` and `src/Button.css`,** an example component and its stylesheet.
-- **`tsconfig.uf.json`,** the scoped config from ADR-0073, for `tsc --noEmit -p tsconfig.uf.json`.
+- **`tsconfig.uf.json`,** the scoped config from ADR-0080, for `tsc --noEmit -p tsconfig.uf.json`.
   `init` adds no dependency, so add `typescript` to the project to run this.
 - **`AGENTS.md`,** which points agents at unframework.dev and names the commands that check and build.
 
@@ -158,7 +158,7 @@ replaced, not written through. A directory where one of the five files should go
 and so does a file named `src`.
 
 `init` doesn't edit your own `tsconfig.json`. If you have one, add `**/*.uf.tsx` and `**/*.uf.ts` to
-its `exclude`, so your framework's JSX types don't check these files (ADR-0073).
+its `exclude`, so your framework's JSX types don't check these files (ADR-0080).
 
 `check` exits 0 on the example, and prints UF4002 as an info for Angular and for Qwik, as it does for
 any stylesheet.

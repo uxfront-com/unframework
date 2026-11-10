@@ -1,5 +1,5 @@
 {
-  // ADR-0073: the `.uf.tsx` and `.uf.ts` files check against Unframework's JSX types, apart from
+  // ADR-0080: the `.uf.tsx` and `.uf.ts` files check against Unframework's JSX types, apart from
   // the app's own files. Run it as `tsc --noEmit -p tsconfig.uf.json`.
   "compilerOptions": {
     "module": "esnext",
