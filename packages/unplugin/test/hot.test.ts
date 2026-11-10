@@ -532,6 +532,108 @@ describe("a framework with no hot update of its own", () => {
     }
   });
 
+  describe("a client-rendered Qwik page", () => {
+    /**
+     * The code the browser runs for `Card.uf.tsx` on the client: the module, the segments it loads
+     * with `import("…")`, and their `?inline` sheet, all of which `fetchAll` leaves out.
+     */
+    const clientCode = async (hot: HotServer): Promise<string> => {
+      const client = hot.server.environments.client;
+      const seen = new Map<string, string>();
+      const visit = async (url: string): Promise<void> => {
+        const plain = url.replace(/\bt=\d+&?/, "").replace(/[?&]$/, "");
+        if (seen.has(plain)) return;
+        seen.set(plain, "");
+        const result = await client.transformRequest(plain);
+        seen.set(plain, result?.code ?? "");
+        for (const [, imported] of result?.code.matchAll(/(?:from\s*|import\s*\(?\s*)"([^"]+)"/g) ??
+          []) {
+          const resolved = new URL(imported!, `http://host${plain}`);
+          const next = `${resolved.pathname}${resolved.search}`;
+          if (!/node_modules|^\/@/.test(next)) await visit(next);
+        }
+      };
+      await visit("/src/Card.uf.tsx");
+      return [...seen.values()].join("\n");
+    };
+
+    const reloads = (sent: readonly HotPayload[]) =>
+      sent.filter((payload) => payload.type === "full-reload").length;
+
+    it(
+      "reloads the page for a .uf.tsx, stylesheet or type edit, with the new code",
+      { timeout: SLOW },
+      async () => {
+        const root = createRoot({ ...FILES, "src/other.ts": "export const other = 1;\n" });
+        const hot = await startHot(root, "qwik", qwik);
+        try {
+          const before = await clientCode(hot);
+          expect(before).toContain("Hello");
+          expect(before).toContain("color: red");
+
+          // Qwik's own plugin reloads or updates only from the ssr environment, which holds none
+          // of a client-rendered page's modules, so the reload is the unframework plugin's.
+          await hot.edit("src/Card.uf.tsx", () => write(root, "src/Card.uf.tsx", CARD("Goodbye")));
+          expect(reloads(hot.sent)).toBe(1);
+          expect(updates(hot.sent).filter((path) => path.includes("Card.uf.tsx"))).toEqual([]);
+          const edited = await clientCode(hot);
+          expect(edited).toContain("Goodbye");
+          expect(edited).not.toContain("Hello");
+
+          await hot.edit("src/Card.css", () =>
+            write(root, "src/Card.css", ".card { color: blue; }\n"),
+          );
+          expect(reloads(hot.sent)).toBe(1);
+          expect(updates(hot.sent).filter((path) => path.includes("Card.uf.tsx"))).toEqual([]);
+          const styled = await clientCode(hot);
+          expect(styled).toContain("color: blue");
+          expect(styled).not.toContain("color: red");
+
+          await hot.edit("src/types.ts", () =>
+            write(
+              root,
+              "src/types.ts",
+              "export interface Props {\n  label: string;\n  tone?: string;\n}\n",
+            ),
+          );
+          expect(reloads(hot.sent)).toBe(1);
+          expect(updates(hot.sent).filter((path) => path.includes("Card.uf.tsx"))).toEqual([]);
+          const typed = await clientCode(hot);
+          expect(typed).toContain("Goodbye");
+          expect(typed).toContain("color: blue");
+
+          // A file no component imports reaches none of the page's modules.
+          const compiles = hot.compiles();
+          await hot.edit("src/other.ts", () =>
+            write(root, "src/other.ts", "export const other = 2;\n"),
+          );
+          expect(reloads(hot.sent)).toBe(0);
+          expect(hot.compiles()).toBe(compiles);
+        } finally {
+          await hot.close();
+        }
+      },
+    );
+
+    it(
+      "leaves the reload to Qwik when the ssr environment holds the change's modules",
+      { timeout: SLOW },
+      async () => {
+        const root = createRoot(FILES);
+        const hot = await startHot(root, "qwik", qwik, "ssr");
+        try {
+          await hot.fetchAll();
+          await clientCode(hot);
+          await hot.edit("src/Card.uf.tsx", () => write(root, "src/Card.uf.tsx", CARD("Goodbye")));
+          // Qwik's own, from the ssr environment, and no second one.
+          expect(reloads(hot.sent)).toBe(1);
+        } finally {
+          await hot.close();
+        }
+      },
+    );
+  });
+
   it("reloads the page on Astro, and serves the new content", { timeout: SLOW }, async () => {
     const root = createRoot({
       "src/pages/index.astro":
