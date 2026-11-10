@@ -37,7 +37,7 @@ import type { Plugin } from "vite";
 import { mergeConfig } from "vitest/config";
 import type { TestProjectConfiguration, UserWorkspaceConfig, ViteUserConfig } from "vitest/config";
 
-import { canaryPlugins, guardsGoldens } from "./canaries.ts";
+import { canaryPlugins, canaryServePlugin, guardsGoldens } from "./canaries.ts";
 import "./context.ts";
 import { listCases } from "./cases.ts";
 import { ENGINE_DECLARATIONS, enginePlugins } from "./engines.ts";
@@ -45,6 +45,7 @@ import { goldenGuard } from "./guard.ts";
 import { noOutputCases, noOutputPlugin, standInCases, standInReasons } from "./no-output.ts";
 import { FAILURE_SCREENSHOTS_DIR, ROOT, toolchainDir } from "./paths.ts";
 import { loadToolchain, REFERENCE } from "./targets.ts";
+import { ufMapStack } from "./thrown.ts";
 
 /** What every project factory needs. */
 export interface HarnessSetup {
@@ -86,7 +87,7 @@ const NODE_TEST = { environment: "node", pool: "forks", testTimeout: 60_000 } as
 /** The layers each kind of project records, which an unavailable project fails. */
 const LAYERS_OF: Record<"ssr" | "browser", LayerName[]> = {
   ssr: ["L6", "L13"],
-  browser: ["L7", "L8", "L9", "L10", "L11", "L13"],
+  browser: ["L7", "L8", "L9", "L10", "L11", "L13", "L14"],
 };
 
 /** The budgets' project: left out of a run that does not name it, so `pnpm test` stays short. */
@@ -240,6 +241,20 @@ function unpluginOptions(setup: HarnessSetup, target: string): UnframeworkOption
 }
 
 /**
+ * The plugin of a canary that corrupts the maps of served modules (`Canary.servedMap`), as a list
+ * to spread into a project's plugins: empty for every other run.
+ */
+function servedMapCanary(setup: HarnessSetup, target: string): Plugin[] {
+  const plugin = canaryServePlugin(
+    setup.mode.canary,
+    target,
+    setup.harness.casesDir,
+    listCases(setup.harness.casesDir),
+  );
+  return plugin ? [plugin] : [];
+}
+
+/**
  * Where a target's toolchain runs the ssr and browser projects: its checkers read the styling
  * engines' virtual modules beside the outputs (ADR-0064), Angular's ngtsc compiles with them,
  * and a server of the toolchain's own (Astro's render server) loads the engines' plugins too.
@@ -260,7 +275,11 @@ const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework)
     {
       root: ROOT,
       // The engines' plugins resolve the imports every output keeps as written (ADR-0064).
-      plugins: [...(await enginePlugins()), ...unframework(unpluginOptions(setup, target))],
+      plugins: [
+        ...(await enginePlugins()),
+        ...unframework(unpluginOptions(setup, target)),
+        ...servedMapCanary(setup, target),
+      ],
     },
     fragment,
   );
@@ -303,6 +322,7 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
         // The engines' plugins resolve the imports every output keeps as written (ADR-0064).
         ...(await enginePlugins()),
         ...unframework(unpluginOptions(setup, target)),
+        ...servedMapCanary(setup, target),
       ],
       // The testing API's own browser dependencies (CommonJS axe-core, parse5), and the runtime
       // Styleframe's recipes import (ADR-0064): listed up front, because one discovered mid-run
@@ -368,7 +388,7 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
         browser: {
           ...parityBrowser({
             name,
-            commands: toolchain.browserCommands?.(context) ?? {},
+            commands: { ...toolchain.browserCommands?.(context), ufMapStack },
             browser: setup.mode.browser ?? "chromium",
           }),
           // Vitest's failure screenshots go next to the spec by default, among the committed

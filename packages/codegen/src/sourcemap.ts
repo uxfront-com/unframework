@@ -5,7 +5,8 @@
 // frame that lands there resolves no better than the nearest segment, which beats a wrong line (P2).
 import { addSegment, GenMapping, setSourceContent, toEncodedMap } from "@jridgewell/gen-mapping";
 import remapping from "@jridgewell/remapping";
-import { decodedMappings, TraceMap } from "@jridgewell/trace-mapping";
+import { decodedMappings, encodedMappings, TraceMap } from "@jridgewell/trace-mapping";
+import type { SourceMapSegment } from "@jridgewell/trace-mapping";
 import { createDiagnostic } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import type { CodeReference, Span, UfModule } from "@unframework/ir";
@@ -764,6 +765,42 @@ function tokenAt(text: string, offset: number): string {
 function identifierAt(text: string, offset: number): string | undefined {
   IDENTIFIER.lastIndex = offset;
   return IDENTIFIER.exec(text)?.[0];
+}
+
+/**
+ * A map with a segment at the start of each mapped line: its first token's position, under
+ * column 0. Astro's compiler maps a frontmatter line to column 0 of its source line, so a trace
+ * through a map whose first segment comes after the line's indentation finds nothing, and Vite
+ * then drops the whole chain (ADR-0074).
+ */
+export function withLineStarts(map: SourceMapV3): SourceMapV3 {
+  const lines = decodedMappings(new TraceMap(map)).map((line): SourceMapSegment[] => {
+    const first = line[0];
+    if (!first || first[0] === 0 || first.length === 1) return [...line];
+    return [[0, first[1], first[2], first[3]], ...line];
+  });
+  return { ...map, mappings: encodedMappings(new TraceMap({ ...map, mappings: lines })) };
+}
+
+/**
+ * `map` chained on through `next`, the map of the text `map` points at: one transform's map, when
+ * no bundler will chain it (the unplugin's Qwik segments, ADR-0074).
+ */
+export function chainMap(map: string | { mappings: string }, next: SourceMapV3): SourceMapV3 {
+  const chained = remapping(
+    [typeof map === "string" ? map : { version: 3, sources: [], names: [], ...map }, next],
+    () => null,
+  );
+  return {
+    version: 3,
+    file: chained.file ?? next.file,
+    // As in composeJoinedMap: remapping's types allow nulls and decoded mappings it doesn't return
+    // for these inputs.
+    sources: chained.sources as string[],
+    sourcesContent: (chained.sourcesContent ?? []) as string[],
+    names: chained.names,
+    mappings: chained.mappings as string,
+  };
 }
 
 /**

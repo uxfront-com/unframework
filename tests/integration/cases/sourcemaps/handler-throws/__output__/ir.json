@@ -1,0 +1,118 @@
+{
+  "irVersion": 1,
+  "file": "sourcemaps/handler-throws/ChargeButton.uf.tsx",
+  "components": [
+    {
+      "name": "ChargeButton",
+      "span": {
+        "start": 0,
+        "end": 202
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "charge@52",
+          "name": "charge",
+          "kind": "localFn",
+          "span": {
+            "start": 52,
+            "end": 58
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Function",
+          "binding": "charge@52",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    throw new Error(\"The card was declined\");\n  }",
+              "span": {
+                "start": 61,
+                "end": 112
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "Error",
+                  "span": {
+                    "start": 77,
+                    "end": 82
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 58,
+              "end": 112
+            }
+          },
+          "span": {
+            "start": 43,
+            "end": 112
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "button",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "type",
+            "value": "button",
+            "span": {
+              "start": 137,
+              "end": 150
+            }
+          },
+          {
+            "kind": "Event",
+            "event": "click",
+            "handler": {
+              "kind": "Function",
+              "binding": "charge@52",
+              "span": {
+                "start": 160,
+                "end": 166
+              }
+            },
+            "span": {
+              "start": 151,
+              "end": 167
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Charge",
+            "span": {
+              "start": 168,
+              "end": 186
+            }
+          }
+        ],
+        "span": {
+          "start": 129,
+          "end": 195
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ChargeButton",
+      "span": {
+        "start": 0,
+        "end": 202
+      }
+    }
+  ],
+  "types": []
+}

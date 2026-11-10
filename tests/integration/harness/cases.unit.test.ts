@@ -264,6 +264,54 @@ describe("listCases", () => {
   });
 });
 
+describe("case.json's ssrThrows", () => {
+  it.each([["null"], ["[]"], ['{"props":null}'], ['{"props":[]}'], ["{}"]])(
+    "refuses %s",
+    (value) => {
+      const casesDir = makeCorpus({
+        "basics/card/Card.uf.tsx": input,
+        "basics/card/case.json": `{"ssrThrows":${value}}`,
+      });
+      expect(() => listCases(casesDir)).toThrow(/"ssrThrows" must be/);
+    },
+  );
+
+  it("accepts props", () => {
+    const casesDir = makeCorpus({
+      "basics/card/Card.uf.tsx": input,
+      "basics/card/case.json": '{"ssrThrows":{"props":{"a":1}}}',
+    });
+    expect(listCases(casesDir)[0]!.config.ssrThrows).toEqual({ props: { a: 1 } });
+  });
+});
+
+describe("the step expectThrown wraps", () => {
+  const spec = `it("throws", { requires: ["interactivity"] }, async () => {
+    const view = await mount(C);
+    await expect.element(view.getByRole("button")).toBeVisible();
+    await view.expectThrown(() => view.user.click(view.getByRole("button")));
+  });`;
+
+  it("is no step: nothing is left uncompared and the test does not act", () => {
+    const [test] = specTests(spec);
+    expect(test!.uncompared).toEqual([]);
+    expect(test!.acts).toBe(false);
+    expect(test!.throws).toBe(true);
+  });
+
+  it("does not hide a step after it", () => {
+    const after = specTests(
+      spec.replace("\n  });", '\n    await view.user.click(view.getByRole("link"));\n  });'),
+    )[0]!;
+    expect(after.uncompared).toHaveLength(1);
+  });
+
+  it("keeps the blanking in the lines it reports", () => {
+    const code = `it("x", async () => {\n  await view.expectThrown(() => view.user.click(a));\n  await view.user.click(b);\n});`;
+    expect(specTests(code)[0]!.uncompared[0]!.line).toBe(3);
+  });
+});
+
 describe("the shared artefacts a case owns", () => {
   it("are read from the spec's expectParity calls", () => {
     const [info] = listCases(
@@ -457,6 +505,7 @@ describe("the spec rules", () => {
         requires: [],
         checksFirst: true,
         acts: false,
+        throws: false,
         rerenders: false,
         firstAssertion: undefined,
         uncompared: [],
@@ -466,6 +515,7 @@ describe("the spec rules", () => {
         requires: ["interactivity"],
         checksFirst: false,
         acts: true,
+        throws: false,
         rerenders: false,
         firstAssertion: undefined,
         uncompared: [],
@@ -476,6 +526,7 @@ describe("the spec rules", () => {
         // A rerender is no action: a static target runs a rerender too.
         checksFirst: true,
         acts: false,
+        throws: false,
         rerenders: true,
         firstAssertion: undefined,
         uncompared: [],
@@ -485,6 +536,7 @@ describe("the spec rules", () => {
         requires: [],
         checksFirst: false,
         acts: false,
+        throws: false,
         rerenders: false,
         firstAssertion: undefined,
         uncompared: [],

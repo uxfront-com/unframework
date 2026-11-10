@@ -76,9 +76,11 @@ const NO_OUTPUT_LAYERS: readonly LayerName[] = [
 /**
  * The layers only a browser project records, which none records for a diagnostics case, which has
  * no spec: one its target has output for (a capability's note, UF4004) skips them. L13 is the
- * server render's too.
+ * server render's too, and L14 this project's.
  */
-const NO_SPEC_LAYERS: readonly LayerName[] = BROWSER_LAYERS.filter((layer) => layer !== "L13");
+const NO_SPEC_LAYERS: readonly LayerName[] = BROWSER_LAYERS.filter(
+  (layer) => layer !== "L13" && layer !== "L14",
+);
 
 const validateIr = new Ajv({ allErrors: true, strict: true }).compile(irSchema);
 

@@ -22,7 +22,7 @@ pnpm test:canaries L8 --shard 1/2   # a part of the cases, as CI runs a browser 
 cases/basics/hello/
 ├── Hello.uf.tsx                       the input
 ├── hello.test.ts                      the browser spec, written once and run on every target
-├── case.json                          optional: { description, main, ssr: { <scenario>: { props } }, axe: [rule ids], requires: why, reference, colorScheme }
+├── case.json                          optional: { description, main, ssr: { <scenario>: { props } }, ssrThrows: { props }, axe: [rule ids], requires: why, reference, colorScheme }
 ├── __output__/
 │   ├── ir.json                        the IR snapshot, validated against @unframework/ir's schema
 │   └── <target>/<files>               the golden outputs: formatted, reviewed, checked in place
@@ -250,6 +250,11 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
      component's props.
    - No hooks: each test mounts what it checks, and the setup's own `afterEach` records L8 and
      L13.
+   - A `sourcemaps/*` case wraps the step that throws in `view.expectThrown(() => view.user.click(…))`.
+     That step is no step of the trace, so it takes no `expectParity` (ADR-0078). The case holds one
+     `throw`, and the harness finds its line in the source. A case whose computed throws reads it in
+     one expression with the state it depends on: Qwik doesn't run a reader of only that computed
+     again once it throws.
 
 2. Run `pnpm test:update`. The compile project writes `__output__` and
    `__expected__/diagnostics.json`; the reference target (Vue, decision D10) writes the shared
@@ -261,22 +266,22 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
 
 ## The layers
 
-| Layer | Project               | What it checks                                                                                                                                                                                                                                           |
-| ----- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| L1    | `compile`             | The diagnostics equal `diagnostics.json`: no internal error (UF9xxx), and in a case with a spec no error but one a target declares for a capability it lacks. Every fix applies and recompiles clean, but for what the target's capability cells report. |
-| L2    | `compile`             | The IR and the outputs equal `__output__`, byte for byte, with no stale files; compiling twice gives the same bytes; formatting is idempotent; every emitted sheet parses.                                                                               |
-| L3    | `toolchain:<target>`  | Each output passes its framework's own compiler with zero warnings.                                                                                                                                                                                      |
-| L4    | `toolchain:<target>`  | Each output type-checks under one strictness for all seven checkers, one run per target over every case; a tsconfig problem fails every case. The case's consumer fixtures fail exactly where their directives say (below).                              |
-| L5    | `toolchain:<target>`  | Each output passes oxlint's shared baseline rules and its framework's lint rules with zero warnings; rules that judge the author's code are off.                                                                                                         |
-| L6    | `ssr:<target>`        | The server render equals `ssr.<scenario>.html`.                                                                                                                                                                                                          |
-| L7    | `browser:<target>`    | The client DOM and the ARIA tree equal `dom.<name>.html` and `aria.<name>.yaml`.                                                                                                                                                                         |
-| L8    | `browser:<target>`    | The spec's own assertions pass: what it rendered, what a rerender with new props changes, what its actions change and the events it emits.                                                                                                               |
-| L9    | `browser:<target>`    | After every action and rerender, the normalised DOM, the ARIA tree and the events emitted equal the steps of `trace.<name>.json`.                                                                                                                        |
-| L10   | `browser:<target>`    | Geometry and computed styles first, then pixels, with zero tolerance by default.                                                                                                                                                                         |
-| L11   | `browser:<target>`    | axe-core reports no violations, or exactly the case's `axe` list.                                                                                                                                                                                        |
-| L13   | `ssr:` and `browser:` | No `console.warn` or `console.error` during render or mount.                                                                                                                                                                                             |
-| L14   | `compile`             | Each output's source map decodes and names its source with that source's content, and each segment without a name maps to the same text in both files. A shared module's copy names itself, and a scoped sheet's map has no segments.                    |
-| L15   | `bench`               | Each case's compile time, as a ratio of `basics/hello`'s, stays within twice its budget, and each target's bundled output size within its budget plus 5%.                                                                                                |
+| Layer | Project                                                          | What it checks                                                                                                                                                                                                                                                                                                           |
+| ----- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| L1    | `compile`                                                        | The diagnostics equal `diagnostics.json`: no internal error (UF9xxx), and in a case with a spec no error but one a target declares for a capability it lacks. Every fix applies and recompiles clean, but for what the target's capability cells report.                                                                 |
+| L2    | `compile`                                                        | The IR and the outputs equal `__output__`, byte for byte, with no stale files; compiling twice gives the same bytes; formatting is idempotent; every emitted sheet parses.                                                                                                                                               |
+| L3    | `toolchain:<target>`                                             | Each output passes its framework's own compiler with zero warnings.                                                                                                                                                                                                                                                      |
+| L4    | `toolchain:<target>`                                             | Each output type-checks under one strictness for all seven checkers, one run per target over every case; a tsconfig problem fails every case. The case's consumer fixtures fail exactly where their directives say (below).                                                                                              |
+| L5    | `toolchain:<target>`                                             | Each output passes oxlint's shared baseline rules and its framework's lint rules with zero warnings; rules that judge the author's code are off.                                                                                                                                                                         |
+| L6    | `ssr:<target>`                                                   | The server render equals `ssr.<scenario>.html`.                                                                                                                                                                                                                                                                          |
+| L7    | `browser:<target>`                                               | The client DOM and the ARIA tree equal `dom.<name>.html` and `aria.<name>.yaml`.                                                                                                                                                                                                                                         |
+| L8    | `browser:<target>`                                               | The spec's own assertions pass: what it rendered, what a rerender with new props changes, what its actions change and the events it emits.                                                                                                                                                                               |
+| L9    | `browser:<target>`                                               | After every action and rerender, the normalised DOM, the ARIA tree and the events emitted equal the steps of `trace.<name>.json`.                                                                                                                                                                                        |
+| L10   | `browser:<target>`                                               | Geometry and computed styles first, then pixels, with zero tolerance by default.                                                                                                                                                                                                                                         |
+| L11   | `browser:<target>`                                               | axe-core reports no violations, or exactly the case's `axe` list.                                                                                                                                                                                                                                                        |
+| L13   | `ssr:` and `browser:`                                            | No `console.warn` or `console.error` during render or mount.                                                                                                                                                                                                                                                             |
+| L14   | `compile`, and the `sourcemaps/*` cases in `ssr:` and `browser:` | Each output's source map decodes and names its source with that source's content, and each segment without a name maps to the same text in both files. A shared module's copy names itself, and a scoped sheet's map has no segments. A thrown error's top frame in the case maps to the case's `throw` line (ADR-0078). |
+| L15   | `bench`                                                          | Each case's compile time, as a ratio of `basics/hello`'s, stays within twice its budget, and each target's bundled output size within its budget plus 5%.                                                                                                                                                                |
 
 **L15's budgets** (ADR-0078). The default run leaves the `bench` project out, since it times 20
 compiles of every case, so a run without it fills each L15 cell with `skip(not in this run)`.
@@ -379,13 +384,15 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   the cases whose specs act, wrong text on the cases whose specs rerender, a hidden root,
   inverted colours, an invalid ARIA role, a console warning), with a fix that fixes nothing (corrupted by
   the harness, on the cases whose diagnostics have a fix), with a shifted segment of a compiled source map
-  (corrupted by the harness, since the `output` hook runs before a map exists), and with one that only the golden
+  (corrupted by the harness, since the `output` hook runs before a map exists), with the map of
+  every module the `ssr` and `browser` projects serve for the `sourcemaps/*` cases moved down a
+  line (a Vite plugin after every other), and with one that only the golden
   guard can catch, in the server render and in each browser spec's import. The run fails unless
   every canary is caught by its own layer on every case and target it corrupts, in each
   sub-check it names: the diagnostics (the diagnostics cases' too) and their fixes, the IR
   snapshot and the golden files, determinism and formatting, the baseline lint rules and the
   framework's, the DOM and the ARIA tree, the spec's assertions, the traces, geometry and pixels,
-  the server's console and the page's, and the source maps' round trip. Each kind of project is judged on its own cells (the
+  the server's console and the page's, the source maps' round trip and the thrown errors' mapped stacks. Each kind of project is judged on its own cells (the
   server's console proves nothing of the page's), and only on the tests that ran: a browser
   project proves nothing of a case none of whose tests runs on its target (each skipped by a
   capability it requires), and a canary of the tests that act or rerender is judged only where

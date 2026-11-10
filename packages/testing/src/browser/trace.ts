@@ -76,6 +76,16 @@ export class Trace {
     return this.#steps.splice(0);
   }
 
+  /** How many steps are waiting to be compared. */
+  get length(): number {
+    return this.#steps.length;
+  }
+
+  /** Forgets the steps since the trace held `length` of them: they are no scenario to compare. */
+  forget(length: number): void {
+    this.#steps.length = length;
+  }
+
   /** The steps not taken yet, as a message, or nothing. */
   leftover(): string | undefined {
     if (!this.#steps.length) return undefined;

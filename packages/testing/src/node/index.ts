@@ -18,6 +18,7 @@ export type {
   FocusCommandContext,
   InputCommandContext,
 } from "./commands.ts";
+export type { MapStackRequest, MapStackResult } from "../commands.ts";
 export { compiledEvents, eventsOfModule, recordCompiledModule } from "./events.ts";
 export type { CompiledModule } from "./events.ts";
 export { caseDirectory, displayRoot, projectHarness, sharedArtefactContext } from "./context.ts";

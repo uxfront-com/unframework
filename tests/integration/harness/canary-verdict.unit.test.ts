@@ -16,6 +16,8 @@ const still = {
   runs: () => true,
   interacts: () => false,
   rerenders: () => false,
+  throws: () => false,
+  ssrThrows: false,
   listens: false,
   styled: false,
   reference: "vue",

@@ -34,7 +34,7 @@
       }
     },
     "basics/nested-and-void": {
-      "time": 1.84,
+      "time": 2.01,
       "sizes": {
         "react": {
           "raw": 1677,
@@ -67,7 +67,7 @@
       }
     },
     "bindings/assigned-values": {
-      "time": 3.97,
+      "time": 4.49,
       "sizes": {
         "react": {
           "raw": 1477,
@@ -100,7 +100,7 @@
       }
     },
     "bindings/class-array": {
-      "time": 3.96,
+      "time": 4.25,
       "sizes": {
         "react": {
           "raw": 1050,
@@ -133,7 +133,7 @@
       }
     },
     "bindings/class-merge": {
-      "time": 4.08,
+      "time": 4.38,
       "sizes": {
         "react": {
           "raw": 1256,
@@ -166,7 +166,7 @@
       }
     },
     "bindings/class-object": {
-      "time": 3.57,
+      "time": 3.79,
       "sizes": {
         "react": {
           "raw": 1041,
@@ -199,7 +199,7 @@
       }
     },
     "bindings/class-runtime-collections": {
-      "time": 6.21,
+      "time": 6.6,
       "sizes": {
         "react": {
           "raw": 1677,
@@ -232,7 +232,7 @@
       }
     },
     "bindings/class-string": {
-      "time": 2.89,
+      "time": 3.09,
       "sizes": {
         "react": {
           "raw": 1289,
@@ -265,7 +265,7 @@
       }
     },
     "bindings/everyday-values": {
-      "time": 2.36,
+      "time": 2.78,
       "sizes": {
         "react": {
           "raw": 1161,
@@ -298,7 +298,7 @@
       }
     },
     "bindings/nullable-spreads": {
-      "time": 8.53,
+      "time": 9.79,
       "sizes": {
         "react": {
           "raw": 2353,
@@ -331,7 +331,7 @@
       }
     },
     "bindings/spreads": {
-      "time": 4.75,
+      "time": 4.89,
       "sizes": {
         "react": {
           "raw": 1665,
@@ -364,7 +364,7 @@
       }
     },
     "bindings/style-expression": {
-      "time": 15.22,
+      "time": 15.86,
       "sizes": {
         "react": {
           "raw": 4370,
@@ -397,7 +397,7 @@
       }
     },
     "bindings/style-merge": {
-      "time": 3.41,
+      "time": 3.52,
       "sizes": {
         "react": {
           "raw": 887,
@@ -430,7 +430,7 @@
       }
     },
     "bindings/style-object": {
-      "time": 5.2,
+      "time": 5.3,
       "sizes": {
         "react": {
           "raw": 2002,
@@ -463,7 +463,7 @@
       }
     },
     "bindings/style-spread": {
-      "time": 8.42,
+      "time": 8.97,
       "sizes": {
         "react": {
           "raw": 3045,
@@ -496,7 +496,7 @@
       }
     },
     "bindings/style-string": {
-      "time": 3.05,
+      "time": 3.15,
       "sizes": {
         "react": {
           "raw": 1412,
@@ -529,7 +529,7 @@
       }
     },
     "bindings/table-display": {
-      "time": 4.08,
+      "time": 4.19,
       "sizes": {
         "react": {
           "raw": 2118,
@@ -562,7 +562,7 @@
       }
     },
     "bindings/vendor-prefixes": {
-      "time": 3.17,
+      "time": 3,
       "sizes": {
         "react": {
           "raw": 1416,
@@ -595,7 +595,7 @@
       }
     },
     "components/acronym-names": {
-      "time": 7.47,
+      "time": 7.4,
       "sizes": {
         "react": {
           "raw": 1305,
@@ -661,7 +661,7 @@
       }
     },
     "components/framework-names": {
-      "time": 7.76,
+      "time": 7.83,
       "sizes": {
         "react": {
           "raw": 3304,
@@ -694,7 +694,7 @@
       }
     },
     "components/list-item-root": {
-      "time": 3.97,
+      "time": 3.89,
       "sizes": {
         "react": {
           "raw": 1483,
@@ -723,7 +723,7 @@
       }
     },
     "components/list-rows": {
-      "time": 12.31,
+      "time": 13.17,
       "sizes": {
         "react": {
           "raw": 2298,
@@ -756,7 +756,7 @@
       }
     },
     "components/local-sibling": {
-      "time": 3.66,
+      "time": 3.7,
       "sizes": {
         "react": {
           "raw": 1926,
@@ -822,7 +822,7 @@
       }
     },
     "components/props-and-events": {
-      "time": 9.96,
+      "time": 10.3,
       "sizes": {
         "react": {
           "raw": 2254,
@@ -855,7 +855,7 @@
       }
     },
     "components/recursion": {
-      "time": 2.27,
+      "time": 2.31,
       "sizes": {
         "react": {
           "raw": 977,
@@ -888,7 +888,7 @@
       }
     },
     "components/three-levels": {
-      "time": 6.68,
+      "time": 6.83,
       "sizes": {
         "react": {
           "raw": 2654,
@@ -921,7 +921,7 @@
       }
     },
     "composables/callback-argument": {
-      "time": 10.51,
+      "time": 11.37,
       "sizes": {
         "react": {
           "raw": 2234,
@@ -954,7 +954,7 @@
       }
     },
     "composables/getter-argument": {
-      "time": 8.07,
+      "time": 8,
       "sizes": {
         "react": {
           "raw": 1949,
@@ -987,7 +987,7 @@
       }
     },
     "composables/use-controllable-state": {
-      "time": 10.03,
+      "time": 10.6,
       "sizes": {
         "react": {
           "raw": 2007,
@@ -1020,7 +1020,7 @@
       }
     },
     "composables/use-media-query": {
-      "time": 7.92,
+      "time": 8.23,
       "sizes": {
         "react": {
           "raw": 2111,
@@ -1053,7 +1053,7 @@
       }
     },
     "composables/use-toggle": {
-      "time": 7.04,
+      "time": 6.88,
       "sizes": {
         "react": {
           "raw": 1882,
@@ -1086,7 +1086,7 @@
       }
     },
     "context/fallback": {
-      "time": 9.16,
+      "time": 9.47,
       "sizes": {
         "react": {
           "raw": 2101,
@@ -1119,7 +1119,7 @@
       }
     },
     "context/nested": {
-      "time": 6.35,
+      "time": 6.27,
       "sizes": {
         "react": {
           "raw": 1698,
@@ -1152,7 +1152,7 @@
       }
     },
     "context/reactive": {
-      "time": 7.22,
+      "time": 7.26,
       "sizes": {
         "react": {
           "raw": 1595,
@@ -1185,7 +1185,7 @@
       }
     },
     "context/static": {
-      "time": 6.49,
+      "time": 6.57,
       "sizes": {
         "react": {
           "raw": 1640,
@@ -1218,7 +1218,7 @@
       }
     },
     "control-flow/conditional-text": {
-      "time": 3.68,
+      "time": 3.74,
       "sizes": {
         "react": {
           "raw": 1188,
@@ -1251,7 +1251,7 @@
       }
     },
     "control-flow/empty-lists": {
-      "time": 5.52,
+      "time": 5.94,
       "sizes": {
         "react": {
           "raw": 2032,
@@ -1284,7 +1284,7 @@
       }
     },
     "control-flow/indexed-map": {
-      "time": 2.9,
+      "time": 3.25,
       "sizes": {
         "react": {
           "raw": 981,
@@ -1317,7 +1317,7 @@
       }
     },
     "control-flow/keyed-map": {
-      "time": 3.87,
+      "time": 4.14,
       "sizes": {
         "react": {
           "raw": 1552,
@@ -1350,7 +1350,7 @@
       }
     },
     "control-flow/logical-and": {
-      "time": 4.64,
+      "time": 4.87,
       "sizes": {
         "react": {
           "raw": 1711,
@@ -1383,7 +1383,7 @@
       }
     },
     "control-flow/narrowing": {
-      "time": 12.82,
+      "time": 13.29,
       "sizes": {
         "react": {
           "raw": 2722,
@@ -1416,7 +1416,7 @@
       }
     },
     "control-flow/nested": {
-      "time": 5.43,
+      "time": 5.55,
       "sizes": {
         "react": {
           "raw": 1282,
@@ -1449,7 +1449,7 @@
       }
     },
     "control-flow/optional-list": {
-      "time": 4.42,
+      "time": 4.54,
       "sizes": {
         "react": {
           "raw": 1644,
@@ -1482,7 +1482,7 @@
       }
     },
     "control-flow/ternary-chains": {
-      "time": 3.83,
+      "time": 4.03,
       "sizes": {
         "react": {
           "raw": 1229,
@@ -1515,7 +1515,7 @@
       }
     },
     "control-flow/union-props": {
-      "time": 4.84,
+      "time": 5.02,
       "sizes": {
         "react": {
           "raw": 1515,
@@ -1548,7 +1548,7 @@
       }
     },
     "diagnostics/composable-effect-order": {
-      "time": 5.33,
+      "time": 5.52,
       "sizes": {
         "react": {
           "raw": 1733,
@@ -1581,7 +1581,7 @@
       }
     },
     "diagnostics/generic-slot-props": {
-      "time": 3.15,
+      "time": 3.29,
       "sizes": {
         "react": {
           "raw": 760,
@@ -1614,7 +1614,7 @@
       }
     },
     "dynamic/components": {
-      "time": 7.93,
+      "time": 8.03,
       "sizes": {
         "react": {
           "raw": 2520,
@@ -1647,7 +1647,7 @@
       }
     },
     "dynamic/forwarding": {
-      "time": 11.28,
+      "time": 11.24,
       "sizes": {
         "react": {
           "raw": 3511,
@@ -1680,7 +1680,7 @@
       }
     },
     "dynamic/prop-union": {
-      "time": 4.37,
+      "time": 4.28,
       "sizes": {
         "react": {
           "raw": 1308,
@@ -1713,7 +1713,7 @@
       }
     },
     "dynamic/tags": {
-      "time": 3.97,
+      "time": 4.04,
       "sizes": {
         "react": {
           "raw": 879,
@@ -1746,7 +1746,7 @@
       }
     },
     "effects/async-callbacks": {
-      "time": 27.74,
+      "time": 28.33,
       "sizes": {
         "react": {
           "raw": 6238,
@@ -1779,7 +1779,7 @@
       }
     },
     "effects/async-loop": {
-      "time": 8.84,
+      "time": 9.46,
       "sizes": {
         "react": {
           "raw": 2753,
@@ -1812,7 +1812,7 @@
       }
     },
     "effects/async-overlap": {
-      "time": 45.16,
+      "time": 47.04,
       "sizes": {
         "react": {
           "raw": 8458,
@@ -1845,7 +1845,7 @@
       }
     },
     "effects/async-watchers": {
-      "time": 83,
+      "time": 85.16,
       "sizes": {
         "react": {
           "raw": 12284,
@@ -1878,7 +1878,7 @@
       }
     },
     "effects/flush-post": {
-      "time": 7.15,
+      "time": 7.55,
       "sizes": {
         "react": {
           "raw": 1680,
@@ -1911,7 +1911,7 @@
       }
     },
     "effects/persistence-and-fetch": {
-      "time": 41.37,
+      "time": 42.01,
       "sizes": {
         "react": {
           "raw": 3803,
@@ -1944,7 +1944,7 @@
       }
     },
     "effects/pre-and-post": {
-      "time": 18.33,
+      "time": 19.33,
       "sizes": {
         "react": {
           "raw": 4590,
@@ -1977,7 +1977,7 @@
       }
     },
     "effects/watch-cleanup": {
-      "time": 7.68,
+      "time": 8.01,
       "sizes": {
         "react": {
           "raw": 1763,
@@ -2010,7 +2010,7 @@
       }
     },
     "effects/watch-effect": {
-      "time": 7.73,
+      "time": 8.74,
       "sizes": {
         "react": {
           "raw": 1718,
@@ -2043,7 +2043,7 @@
       }
     },
     "effects/watch-identity": {
-      "time": 42.77,
+      "time": 43.68,
       "sizes": {
         "react": {
           "raw": 5105,
@@ -2076,7 +2076,7 @@
       }
     },
     "effects/watch-immediate": {
-      "time": 5.14,
+      "time": 5.37,
       "sizes": {
         "react": {
           "raw": 1184,
@@ -2109,7 +2109,7 @@
       }
     },
     "effects/watch-previous": {
-      "time": 7.73,
+      "time": 8.08,
       "sizes": {
         "react": {
           "raw": 2039,
@@ -2142,7 +2142,7 @@
       }
     },
     "effects/watch-sources": {
-      "time": 11.86,
+      "time": 13.25,
       "sizes": {
         "react": {
           "raw": 2292,
@@ -2175,7 +2175,7 @@
       }
     },
     "engines/fixture-engine": {
-      "time": 1.98,
+      "time": 2.07,
       "sizes": {
         "react": {
           "raw": 860,
@@ -2208,7 +2208,7 @@
       }
     },
     "events/async-handlers": {
-      "time": 6.89,
+      "time": 7.41,
       "sizes": {
         "react": {
           "raw": 2341,
@@ -2241,7 +2241,7 @@
       }
     },
     "events/conditional-controls": {
-      "time": 12.44,
+      "time": 12.65,
       "sizes": {
         "react": {
           "raw": 2164,
@@ -2270,7 +2270,7 @@
       }
     },
     "events/control-only-listeners": {
-      "time": 10.06,
+      "time": 11,
       "sizes": {
         "react": {
           "raw": 1993,
@@ -2303,7 +2303,7 @@
       }
     },
     "events/custom-controls": {
-      "time": 18.15,
+      "time": 19.32,
       "sizes": {
         "react": {
           "raw": 1985,
@@ -2336,7 +2336,7 @@
       }
     },
     "events/emit-payloads": {
-      "time": 10.93,
+      "time": 11.85,
       "sizes": {
         "react": {
           "raw": 2311,
@@ -2369,7 +2369,7 @@
       }
     },
     "events/event-options": {
-      "time": 18.75,
+      "time": 20.19,
       "sizes": {
         "react": {
           "raw": 3134,
@@ -2402,7 +2402,7 @@
       }
     },
     "events/focus-and-change": {
-      "time": 26.94,
+      "time": 27.31,
       "sizes": {
         "react": {
           "raw": 4374,
@@ -2435,7 +2435,7 @@
       }
     },
     "events/form-events": {
-      "time": 20.58,
+      "time": 21.13,
       "sizes": {
         "react": {
           "raw": 3114,
@@ -2468,7 +2468,7 @@
       }
     },
     "events/function-handlers": {
-      "time": 24.48,
+      "time": 24.86,
       "sizes": {
         "react": {
           "raw": 2799,
@@ -2501,7 +2501,7 @@
       }
     },
     "events/guard-controls": {
-      "time": 77.54,
+      "time": 79.58,
       "sizes": {
         "react": {
           "raw": 6263,
@@ -2534,7 +2534,7 @@
       }
     },
     "events/helper-controls": {
-      "time": 33.71,
+      "time": 33.86,
       "sizes": {
         "react": {
           "raw": 3645,
@@ -2567,7 +2567,7 @@
       }
     },
     "events/inline-handlers": {
-      "time": 14.1,
+      "time": 14.94,
       "sizes": {
         "react": {
           "raw": 2676,
@@ -2600,7 +2600,7 @@
       }
     },
     "events/keyboard-navigation": {
-      "time": 49.18,
+      "time": 50.36,
       "sizes": {
         "react": {
           "raw": 4180,
@@ -2629,7 +2629,7 @@
       }
     },
     "events/keys": {
-      "time": 20.33,
+      "time": 20.57,
       "sizes": {
         "react": {
           "raw": 2196,
@@ -2662,7 +2662,7 @@
       }
     },
     "events/list-handlers": {
-      "time": 12.95,
+      "time": 14.17,
       "sizes": {
         "react": {
           "raw": 1480,
@@ -2695,7 +2695,7 @@
       }
     },
     "events/list-pairs": {
-      "time": 35,
+      "time": 35.62,
       "sizes": {
         "react": {
           "raw": 3146,
@@ -2728,7 +2728,7 @@
       }
     },
     "events/listener-order": {
-      "time": 24.09,
+      "time": 24.23,
       "sizes": {
         "react": {
           "raw": 4196,
@@ -2761,7 +2761,7 @@
       }
     },
     "events/listener-pairs": {
-      "time": 31.7,
+      "time": 32.84,
       "sizes": {
         "react": {
           "raw": 4495,
@@ -2794,7 +2794,7 @@
       }
     },
     "expose/focus": {
-      "time": 6.83,
+      "time": 7.01,
       "sizes": {
         "react": {
           "raw": 2057,
@@ -2827,7 +2827,7 @@
       }
     },
     "expose/several": {
-      "time": 8.62,
+      "time": 8.71,
       "sizes": {
         "react": {
           "raw": 2170,
@@ -2860,7 +2860,7 @@
       }
     },
     "fallthrough/class-and-style": {
-      "time": 6.89,
+      "time": 6.88,
       "sizes": {
         "react": {
           "raw": 2140,
@@ -2893,7 +2893,7 @@
       }
     },
     "fallthrough/inherit-attrs-false": {
-      "time": 3.48,
+      "time": 3.45,
       "sizes": {
         "react": {
           "raw": 1172,
@@ -2926,7 +2926,7 @@
       }
     },
     "fallthrough/to-component-root": {
-      "time": 5.6,
+      "time": 5.44,
       "sizes": {
         "react": {
           "raw": 2386,
@@ -2959,7 +2959,7 @@
       }
     },
     "generics/constrained": {
-      "time": 3.37,
+      "time": 3.59,
       "sizes": {
         "react": {
           "raw": 983,
@@ -2992,7 +2992,7 @@
       }
     },
     "generics/list": {
-      "time": 3.2,
+      "time": 3.21,
       "sizes": {
         "react": {
           "raw": 845,
@@ -3025,7 +3025,7 @@
       }
     },
     "generics/props-named-props": {
-      "time": 2.98,
+      "time": 2.97,
       "sizes": {
         "react": {
           "raw": 683,
@@ -3058,7 +3058,7 @@
       }
     },
     "generics/scoped-slot": {
-      "time": 6.79,
+      "time": 7.09,
       "sizes": {
         "react": {
           "raw": 1469,
@@ -3091,7 +3091,7 @@
       }
     },
     "generics/select": {
-      "time": 8.63,
+      "time": 9.58,
       "sizes": {
         "react": {
           "raw": 1762,
@@ -3124,7 +3124,7 @@
       }
     },
     "ids/label-association": {
-      "time": 3.15,
+      "time": 3.29,
       "sizes": {
         "react": {
           "raw": 1139,
@@ -3157,7 +3157,7 @@
       }
     },
     "ids/radio-group": {
-      "time": 7.01,
+      "time": 8,
       "sizes": {
         "react": {
           "raw": 1536,
@@ -3190,7 +3190,7 @@
       }
     },
     "jsx/attribute-names": {
-      "time": 5.32,
+      "time": 5.77,
       "sizes": {
         "react": {
           "raw": 3208,
@@ -3223,7 +3223,7 @@
       }
     },
     "jsx/boolean-and-aria": {
-      "time": 5.89,
+      "time": 6.09,
       "sizes": {
         "react": {
           "raw": 2598,
@@ -3256,7 +3256,7 @@
       }
     },
     "jsx/escaping": {
-      "time": 3.74,
+      "time": 3.93,
       "sizes": {
         "react": {
           "raw": 2079,
@@ -3289,7 +3289,7 @@
       }
     },
     "jsx/expressions": {
-      "time": 6.22,
+      "time": 6.56,
       "sizes": {
         "react": {
           "raw": 2449,
@@ -3322,7 +3322,7 @@
       }
     },
     "jsx/fragments": {
-      "time": 3.26,
+      "time": 3.42,
       "sizes": {
         "react": {
           "raw": 1059,
@@ -3355,7 +3355,7 @@
       }
     },
     "jsx/quoted-strings": {
-      "time": 3.83,
+      "time": 3.69,
       "sizes": {
         "react": {
           "raw": 1580,
@@ -3388,7 +3388,7 @@
       }
     },
     "jsx/svg": {
-      "time": 3.6,
+      "time": 3.62,
       "sizes": {
         "react": {
           "raw": 1945,
@@ -3421,7 +3421,7 @@
       }
     },
     "jsx/svg-titles": {
-      "time": 3.95,
+      "time": 4.07,
       "sizes": {
         "react": {
           "raw": 1804,
@@ -3454,7 +3454,7 @@
       }
     },
     "jsx/whitespace": {
-      "time": 3.86,
+      "time": 3.98,
       "sizes": {
         "react": {
           "raw": 2322,
@@ -3487,7 +3487,7 @@
       }
     },
     "lifecycle/click-outside": {
-      "time": 9.95,
+      "time": 10.41,
       "sizes": {
         "react": {
           "raw": 2335,
@@ -3520,7 +3520,7 @@
       }
     },
     "lifecycle/document-listener": {
-      "time": 13.56,
+      "time": 14.74,
       "sizes": {
         "react": {
           "raw": 2706,
@@ -3553,7 +3553,7 @@
       }
     },
     "lifecycle/mounted-dom": {
-      "time": 6.81,
+      "time": 7.43,
       "sizes": {
         "react": {
           "raw": 1494,
@@ -3586,7 +3586,7 @@
       }
     },
     "lifecycle/next-tick": {
-      "time": 6.13,
+      "time": 6.58,
       "sizes": {
         "react": {
           "raw": 2410,
@@ -3619,7 +3619,7 @@
       }
     },
     "lifecycle/save-shortcut": {
-      "time": 6.74,
+      "time": 7.34,
       "sizes": {
         "react": {
           "raw": 1816,
@@ -3648,7 +3648,7 @@
       }
     },
     "lifecycle/teardown-order": {
-      "time": 20.54,
+      "time": 20.58,
       "sizes": {
         "react": {
           "raw": 4589,
@@ -3681,7 +3681,7 @@
       }
     },
     "lifecycle/unmount-timers": {
-      "time": 8.65,
+      "time": 9.23,
       "sizes": {
         "react": {
           "raw": 1798,
@@ -3714,7 +3714,7 @@
       }
     },
     "models/checkbox": {
-      "time": 3.51,
+      "time": 3.58,
       "sizes": {
         "react": {
           "raw": 1091,
@@ -3747,7 +3747,7 @@
       }
     },
     "models/checkbox-group": {
-      "time": 5.04,
+      "time": 5.22,
       "sizes": {
         "react": {
           "raw": 2304,
@@ -3780,7 +3780,7 @@
       }
     },
     "models/component": {
-      "time": 9.53,
+      "time": 9.97,
       "sizes": {
         "react": {
           "raw": 2669,
@@ -3813,7 +3813,7 @@
       }
     },
     "models/modifiers": {
-      "time": 4.57,
+      "time": 4.83,
       "sizes": {
         "react": {
           "raw": 2354,
@@ -3846,7 +3846,7 @@
       }
     },
     "models/number": {
-      "time": 4.72,
+      "time": 5.26,
       "sizes": {
         "react": {
           "raw": 2338,
@@ -3879,7 +3879,7 @@
       }
     },
     "models/radio": {
-      "time": 3.69,
+      "time": 4.14,
       "sizes": {
         "react": {
           "raw": 1544,
@@ -3912,7 +3912,7 @@
       }
     },
     "models/select": {
-      "time": 3.59,
+      "time": 4.45,
       "sizes": {
         "react": {
           "raw": 1354,
@@ -3945,7 +3945,7 @@
       }
     },
     "models/select-multiple": {
-      "time": 4.26,
+      "time": 4.76,
       "sizes": {
         "react": {
           "raw": 1601,
@@ -3978,7 +3978,7 @@
       }
     },
     "models/several": {
-      "time": 10.3,
+      "time": 11.88,
       "sizes": {
         "react": {
           "raw": 2587,
@@ -4011,7 +4011,7 @@
       }
     },
     "models/text-field": {
-      "time": 4.02,
+      "time": 4.47,
       "sizes": {
         "react": {
           "raw": 1366,
@@ -4044,7 +4044,7 @@
       }
     },
     "models/textarea": {
-      "time": 3.25,
+      "time": 3.45,
       "sizes": {
         "react": {
           "raw": 1144,
@@ -4077,7 +4077,7 @@
       }
     },
     "modules/module-constants": {
-      "time": 7.52,
+      "time": 7.37,
       "sizes": {
         "react": {
           "raw": 1267,
@@ -4110,7 +4110,7 @@
       }
     },
     "modules/nested-modules": {
-      "time": 5.14,
+      "time": 5.26,
       "sizes": {
         "react": {
           "raw": 1318,
@@ -4143,7 +4143,7 @@
       }
     },
     "modules/shared-constants": {
-      "time": 6.49,
+      "time": 6.74,
       "sizes": {
         "react": {
           "raw": 1459,
@@ -4176,7 +4176,7 @@
       }
     },
     "modules/shared-helpers": {
-      "time": 7.45,
+      "time": 8.24,
       "sizes": {
         "react": {
           "raw": 1859,
@@ -4209,7 +4209,7 @@
       }
     },
     "props/destructured-defaults": {
-      "time": 5.45,
+      "time": 5.67,
       "sizes": {
         "react": {
           "raw": 1903,
@@ -4242,7 +4242,7 @@
       }
     },
     "props/literal-unions": {
-      "time": 3.83,
+      "time": 4.04,
       "sizes": {
         "react": {
           "raw": 1054,
@@ -4275,7 +4275,7 @@
       }
     },
     "props/local-types": {
-      "time": 5.23,
+      "time": 5.41,
       "sizes": {
         "react": {
           "raw": 1891,
@@ -4308,7 +4308,7 @@
       }
     },
     "props/null-and-absent": {
-      "time": 3.18,
+      "time": 3.28,
       "sizes": {
         "react": {
           "raw": 1228,
@@ -4341,7 +4341,7 @@
       }
     },
     "props/optional": {
-      "time": 3.29,
+      "time": 3.33,
       "sizes": {
         "react": {
           "raw": 1331,
@@ -4374,7 +4374,7 @@
       }
     },
     "props/primitives": {
-      "time": 3.84,
+      "time": 4.2,
       "sizes": {
         "react": {
           "raw": 1597,
@@ -4407,7 +4407,7 @@
       }
     },
     "props/props-parameter": {
-      "time": 3.07,
+      "time": 3.25,
       "sizes": {
         "react": {
           "raw": 1120,
@@ -4440,7 +4440,7 @@
       }
     },
     "props/unread-props": {
-      "time": 3.52,
+      "time": 3.72,
       "sizes": {
         "react": {
           "raw": 1242,
@@ -4473,7 +4473,7 @@
       }
     },
     "props/unread-props-object": {
-      "time": 1.75,
+      "time": 1.82,
       "sizes": {
         "react": {
           "raw": 880,
@@ -4506,7 +4506,7 @@
       }
     },
     "refs/focus": {
-      "time": 5.63,
+      "time": 6.03,
       "sizes": {
         "react": {
           "raw": 1237,
@@ -4539,7 +4539,7 @@
       }
     },
     "semantics/composable-effect-order": {
-      "time": 12.21,
+      "time": 13.45,
       "sizes": {
         "react": {
           "raw": 3374,
@@ -4572,7 +4572,7 @@
       }
     },
     "semantics/composable-read-after-write": {
-      "time": 9.18,
+      "time": 9.63,
       "sizes": {
         "react": {
           "raw": 2183,
@@ -4605,7 +4605,7 @@
       }
     },
     "semantics/composable-unmount-order": {
-      "time": 14.96,
+      "time": 16.34,
       "sizes": {
         "react": {
           "raw": 3410,
@@ -4638,7 +4638,7 @@
       }
     },
     "semantics/deferred-reads": {
-      "time": 9.68,
+      "time": 10.51,
       "sizes": {
         "react": {
           "raw": 1929,
@@ -4671,7 +4671,7 @@
       }
     },
     "semantics/derived-consistency": {
-      "time": 9.92,
+      "time": 10.93,
       "sizes": {
         "react": {
           "raw": 1784,
@@ -4704,7 +4704,7 @@
       }
     },
     "semantics/derived-from-props": {
-      "time": 6.59,
+      "time": 7.24,
       "sizes": {
         "react": {
           "raw": 1448,
@@ -4737,7 +4737,7 @@
       }
     },
     "semantics/effects-client-only": {
-      "time": 4.85,
+      "time": 5.17,
       "sizes": {
         "react": {
           "raw": 1432,
@@ -4770,7 +4770,7 @@
       }
     },
     "semantics/emit": {
-      "time": 11.02,
+      "time": 12.16,
       "sizes": {
         "react": {
           "raw": 1481,
@@ -4803,7 +4803,7 @@
       }
     },
     "semantics/helper-order": {
-      "time": 18.86,
+      "time": 18.99,
       "sizes": {
         "react": {
           "raw": 3016,
@@ -4836,7 +4836,7 @@
       }
     },
     "semantics/late-optional-prop": {
-      "time": 5.44,
+      "time": 5.66,
       "sizes": {
         "react": {
           "raw": 1273,
@@ -4869,7 +4869,7 @@
       }
     },
     "semantics/listbox": {
-      "time": 3.77,
+      "time": 3.65,
       "sizes": {
         "react": {
           "raw": 1154,
@@ -4898,7 +4898,7 @@
       }
     },
     "semantics/models": {
-      "time": 9.15,
+      "time": 9.82,
       "sizes": {
         "react": {
           "raw": 2561,
@@ -4931,7 +4931,7 @@
       }
     },
     "semantics/nested-branches": {
-      "time": 12.06,
+      "time": 13.27,
       "sizes": {
         "react": {
           "raw": 2010,
@@ -4964,7 +4964,7 @@
       }
     },
     "semantics/nested-call-bubbling": {
-      "time": 18.51,
+      "time": 19.4,
       "sizes": {
         "react": {
           "raw": 3694,
@@ -4997,7 +4997,7 @@
       }
     },
     "semantics/prevent-default": {
-      "time": 22.51,
+      "time": 23.8,
       "sizes": {
         "react": {
           "raw": 2315,
@@ -5030,7 +5030,7 @@
       }
     },
     "semantics/props-seed-let": {
-      "time": 22.98,
+      "time": 23.07,
       "sizes": {
         "react": {
           "raw": 2713,
@@ -5063,7 +5063,7 @@
       }
     },
     "semantics/props-seed-state": {
-      "time": 4,
+      "time": 4.2,
       "sizes": {
         "react": {
           "raw": 1135,
@@ -5096,7 +5096,7 @@
       }
     },
     "semantics/reactive-props": {
-      "time": 6.74,
+      "time": 7.54,
       "sizes": {
         "react": {
           "raw": 1939,
@@ -5129,7 +5129,7 @@
       }
     },
     "semantics/read-after-write": {
-      "time": 15.73,
+      "time": 17.5,
       "sizes": {
         "react": {
           "raw": 2708,
@@ -5162,7 +5162,7 @@
       }
     },
     "semantics/setup-once": {
-      "time": 3.42,
+      "time": 3.62,
       "sizes": {
         "react": {
           "raw": 1179,
@@ -5195,7 +5195,7 @@
       }
     },
     "semantics/watch-timing": {
-      "time": 15.5,
+      "time": 17.08,
       "sizes": {
         "react": {
           "raw": 2754,
@@ -5228,7 +5228,7 @@
       }
     },
     "slots/default": {
-      "time": 5.23,
+      "time": 5.11,
       "sizes": {
         "react": {
           "raw": 1911,
@@ -5261,7 +5261,7 @@
       }
     },
     "slots/fallback": {
-      "time": 5.59,
+      "time": 5.71,
       "sizes": {
         "react": {
           "raw": 2184,
@@ -5294,7 +5294,7 @@
       }
     },
     "slots/forwarding": {
-      "time": 7.99,
+      "time": 7.81,
       "sizes": {
         "react": {
           "raw": 2768,
@@ -5319,7 +5319,7 @@
       }
     },
     "slots/in-list": {
-      "time": 5.02,
+      "time": 5.14,
       "sizes": {
         "react": {
           "raw": 1747,
@@ -5352,7 +5352,7 @@
       }
     },
     "slots/named": {
-      "time": 4.65,
+      "time": 4.72,
       "sizes": {
         "react": {
           "raw": 2119,
@@ -5385,7 +5385,7 @@
       }
     },
     "slots/presence": {
-      "time": 5.7,
+      "time": 5.8,
       "sizes": {
         "react": {
           "raw": 2178,
@@ -5410,7 +5410,7 @@
       }
     },
     "slots/prop-names": {
-      "time": 7.83,
+      "time": 7.66,
       "sizes": {
         "react": {
           "raw": 1582,
@@ -5443,7 +5443,7 @@
       }
     },
     "slots/scoped": {
-      "time": 7.37,
+      "time": 7.43,
       "sizes": {
         "react": {
           "raw": 1803,
@@ -5476,7 +5476,7 @@
       }
     },
     "slots/scoped-default": {
-      "time": 5.54,
+      "time": 5.84,
       "sizes": {
         "react": {
           "raw": 1512,
@@ -5509,7 +5509,7 @@
       }
     },
     "slots/shared-names": {
-      "time": 7.73,
+      "time": 8.13,
       "sizes": {
         "react": {
           "raw": 2037,
@@ -5541,8 +5541,107 @@
         }
       }
     },
+    "sourcemaps/computed-throws": {
+      "time": 5.29,
+      "sizes": {
+        "react": {
+          "raw": 929,
+          "gzip": 590
+        },
+        "vue": {
+          "raw": 512,
+          "gzip": 368
+        },
+        "svelte": {
+          "raw": 868,
+          "gzip": 559
+        },
+        "solid": {
+          "raw": 696,
+          "gzip": 463
+        },
+        "angular": {
+          "raw": 1789,
+          "gzip": 914
+        },
+        "qwik": {
+          "raw": 1242,
+          "gzip": 969
+        },
+        "astro": {
+          "raw": 664,
+          "gzip": 447
+        }
+      }
+    },
+    "sourcemaps/handler-throws": {
+      "time": 1.8,
+      "sizes": {
+        "react": {
+          "raw": 654,
+          "gzip": 441
+        },
+        "vue": {
+          "raw": 271,
+          "gzip": 219
+        },
+        "svelte": {
+          "raw": 553,
+          "gzip": 395
+        },
+        "solid": {
+          "raw": 462,
+          "gzip": 328
+        },
+        "angular": {
+          "raw": 1415,
+          "gzip": 750
+        },
+        "qwik": {
+          "raw": 717,
+          "gzip": 629
+        },
+        "astro": {
+          "raw": 511,
+          "gzip": 352
+        }
+      }
+    },
+    "sourcemaps/mounted-throws": {
+      "time": 5.19,
+      "sizes": {
+        "react": {
+          "raw": 1527,
+          "gzip": 978
+        },
+        "vue": {
+          "raw": 706,
+          "gzip": 531
+        },
+        "svelte": {
+          "raw": 1273,
+          "gzip": 875
+        },
+        "solid": {
+          "raw": 1111,
+          "gzip": 746
+        },
+        "angular": {
+          "raw": 3025,
+          "gzip": 1608
+        },
+        "qwik": {
+          "raw": 1660,
+          "gzip": 1369
+        },
+        "astro": {
+          "raw": 1062,
+          "gzip": 731
+        }
+      }
+    },
     "state/array-replacement": {
-      "time": 18.34,
+      "time": 19.34,
       "sizes": {
         "react": {
           "raw": 1963,
@@ -5575,7 +5674,7 @@
       }
     },
     "state/computed-chain": {
-      "time": 8.32,
+      "time": 8.83,
       "sizes": {
         "react": {
           "raw": 1960,
@@ -5608,7 +5707,7 @@
       }
     },
     "state/counter": {
-      "time": 6.67,
+      "time": 6.71,
       "sizes": {
         "react": {
           "raw": 1262,
@@ -5641,7 +5740,7 @@
       }
     },
     "state/derived-arrays": {
-      "time": 45.66,
+      "time": 47.79,
       "sizes": {
         "react": {
           "raw": 5377,
@@ -5674,7 +5773,7 @@
       }
     },
     "state/helpers-after-use": {
-      "time": 12.45,
+      "time": 13.87,
       "sizes": {
         "react": {
           "raw": 2397,
@@ -5707,7 +5806,7 @@
       }
     },
     "state/identity-and-clone": {
-      "time": 11.43,
+      "time": 12.2,
       "sizes": {
         "react": {
           "raw": 1688,
@@ -5740,7 +5839,7 @@
       }
     },
     "state/local-functions": {
-      "time": 11.77,
+      "time": 12.64,
       "sizes": {
         "react": {
           "raw": 2011,
@@ -5773,7 +5872,7 @@
       }
     },
     "state/narrowed-reads": {
-      "time": 43.59,
+      "time": 45.64,
       "sizes": {
         "react": {
           "raw": 5701,
@@ -5806,7 +5905,7 @@
       }
     },
     "state/object-replacement": {
-      "time": 7.96,
+      "time": 9.05,
       "sizes": {
         "react": {
           "raw": 1783,
@@ -5839,7 +5938,7 @@
       }
     },
     "state/react-compiler-shapes": {
-      "time": 26.75,
+      "time": 26.5,
       "sizes": {
         "react": {
           "raw": 2211,
@@ -5872,7 +5971,7 @@
       }
     },
     "state/toggle-in-branch": {
-      "time": 16.21,
+      "time": 17.26,
       "sizes": {
         "react": {
           "raw": 2476,
@@ -5905,7 +6004,7 @@
       }
     },
     "styleframe/recipe": {
-      "time": 1.76,
+      "time": 1.8,
       "sizes": {
         "react": {
           "raw": 826,
@@ -5938,7 +6037,7 @@
       }
     },
     "styleframe/recipe-and-scoped": {
-      "time": 2.24,
+      "time": 2.44,
       "sizes": {
         "react": {
           "raw": 1073,
@@ -5971,7 +6070,7 @@
       }
     },
     "styleframe/recipe-variants": {
-      "time": 2.32,
+      "time": 2.49,
       "sizes": {
         "react": {
           "raw": 951,
@@ -6004,7 +6103,7 @@
       }
     },
     "styleframe/tokens": {
-      "time": 1.94,
+      "time": 1.9,
       "sizes": {
         "react": {
           "raw": 998,
@@ -6037,7 +6136,7 @@
       }
     },
     "styleframe/utilities": {
-      "time": 1.52,
+      "time": 1.54,
       "sizes": {
         "react": {
           "raw": 858,
@@ -6070,7 +6169,7 @@
       }
     },
     "styles/child-root": {
-      "time": 4.17,
+      "time": 4,
       "sizes": {
         "react": {
           "raw": 2151,
@@ -6103,7 +6202,7 @@
       }
     },
     "styles/child-root-branches": {
-      "time": 7.44,
+      "time": 7.76,
       "sizes": {
         "react": {
           "raw": 2316,
@@ -6136,7 +6235,7 @@
       }
     },
     "styles/custom-properties": {
-      "time": 2.74,
+      "time": 2.85,
       "sizes": {
         "react": {
           "raw": 1296,
@@ -6169,7 +6268,7 @@
       }
     },
     "styles/data-attribute-variants": {
-      "time": 3.35,
+      "time": 3.59,
       "sizes": {
         "react": {
           "raw": 1164,
@@ -6202,7 +6301,7 @@
       }
     },
     "styles/deep": {
-      "time": 4.57,
+      "time": 4.53,
       "sizes": {
         "react": {
           "raw": 2011,
@@ -6235,7 +6334,7 @@
       }
     },
     "styles/focus-visible": {
-      "time": 1.77,
+      "time": 1.92,
       "sizes": {
         "react": {
           "raw": 908,
@@ -6268,7 +6367,7 @@
       }
     },
     "styles/global": {
-      "time": 3.96,
+      "time": 4.04,
       "sizes": {
         "react": {
           "raw": 1845,
@@ -6301,7 +6400,7 @@
       }
     },
     "styles/hover-state": {
-      "time": 1.75,
+      "time": 1.82,
       "sizes": {
         "react": {
           "raw": 904,
@@ -6334,7 +6433,7 @@
       }
     },
     "styles/keyframes": {
-      "time": 1.95,
+      "time": 2,
       "sizes": {
         "react": {
           "raw": 1109,
@@ -6367,7 +6466,7 @@
       }
     },
     "styles/layers": {
-      "time": 1.84,
+      "time": 1.98,
       "sizes": {
         "react": {
           "raw": 968,
@@ -6400,7 +6499,7 @@
       }
     },
     "styles/media-queries": {
-      "time": 1.86,
+      "time": 1.9,
       "sizes": {
         "react": {
           "raw": 965,
@@ -6433,7 +6532,7 @@
       }
     },
     "styles/pseudo-elements": {
-      "time": 1.76,
+      "time": 1.79,
       "sizes": {
         "react": {
           "raw": 841,
@@ -6499,7 +6598,7 @@
       }
     },
     "styles/slotted": {
-      "time": 9.28,
+      "time": 9.33,
       "sizes": {
         "react": {
           "raw": 3247,
@@ -6532,7 +6631,7 @@
       }
     },
     "styles/slotted-order": {
-      "time": 8.63,
+      "time": 8.71,
       "sizes": {
         "react": {
           "raw": 2966,
@@ -6565,7 +6664,7 @@
       }
     },
     "theming/dark-theme": {
-      "time": 1.49,
+      "time": 1.5,
       "sizes": {
         "react": {
           "raw": 827,
@@ -6598,7 +6697,7 @@
       }
     },
     "theming/data-theme": {
-      "time": 2.03,
+      "time": 2.07,
       "sizes": {
         "react": {
           "raw": 923,
@@ -6631,7 +6730,7 @@
       }
     },
     "types/child-type-import": {
-      "time": 4.9,
+      "time": 4.74,
       "sizes": {
         "react": {
           "raw": 1443,
@@ -6664,7 +6763,7 @@
       }
     },
     "types/exported-types": {
-      "time": 2.56,
+      "time": 2.71,
       "sizes": {
         "react": {
           "raw": 889,
@@ -6697,7 +6796,7 @@
       }
     },
     "types/extends-chain": {
-      "time": 2.67,
+      "time": 2.74,
       "sizes": {
         "react": {
           "raw": 729,
@@ -6730,7 +6829,7 @@
       }
     },
     "types/imported-interface": {
-      "time": 2.46,
+      "time": 2.4,
       "sizes": {
         "react": {
           "raw": 819,
@@ -6763,7 +6862,7 @@
       }
     },
     "types/intersection-props": {
-      "time": 3.15,
+      "time": 3.31,
       "sizes": {
         "react": {
           "raw": 837,
@@ -6796,7 +6895,7 @@
       }
     },
     "types/package-types": {
-      "time": 4.12,
+      "time": 4.17,
       "sizes": {
         "react": {
           "raw": 664,
@@ -6829,7 +6928,7 @@
       }
     },
     "types/re-export-only": {
-      "time": 1.62,
+      "time": 1.63,
       "sizes": {
         "react": {
           "raw": 756,
@@ -6862,7 +6961,7 @@
       }
     },
     "types/shared-type": {
-      "time": 4.81,
+      "time": 4.86,
       "sizes": {
         "react": {
           "raw": 1652,
@@ -6895,7 +6994,7 @@
       }
     },
     "types/utility-types": {
-      "time": 3.55,
+      "time": 3.65,
       "sizes": {
         "react": {
           "raw": 813,

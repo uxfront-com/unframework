@@ -81,21 +81,46 @@ built.
 
 ### Thrown errors
 
-- Three new cases, `tests/integration/cases/sourcemaps/{handler-throws,computed-throws,mounted-throws}`,
-  each throw an error. The expected line comes from locating `throw` in the source, never from a
-  number in the test.
+- Three cases, `tests/integration/cases/sourcemaps/{handler-throws,computed-throws,mounted-throws}`,
+  each throw an error from one line. `throwSite` (`harness/thrown.ts`) finds that line by locating
+  `throw` in the case's `.uf.tsx` sources, and refuses a case with none or several, so no test holds
+  a number.
 - Each case renders cleanly for the other layers. The throw fires only in the L14 check, on a
-  scripted step (`view.user`), through L14 in `BROWSER_LAYERS` and a wrapper around the step that
-  never branches on the target.
-- The browser projects capture the first `Error`, and L13 allowlists it with a reason.
-- A browser command maps each frame on the browser's Vite server, from the module graph's
-  `transformResult.map`, with `originalPositionFor`. The top user frame must be
-  `<Case>.uf.tsx:<line>`.
-- The `ssr:*` projects assert the module runner's mapped `error.stack`.
-- Astro is static, so it runs `computed-throws` only, through a dedicated SSR render with a prop that
-  throws.
-- Qwik's optimizer segments and Astro's compiler maps get a spike first. A chain that can't reach the
-  source is reported with its evidence, and it never gets a quarantine entry.
+  scripted step, through `view.expectThrown(() => view.user.click(…))`, L14 in `BROWSER_LAYERS` and no
+  branch on the target. The first test of a case renders it, and the second, which requires
+  `interactivity`, throws.
+- `view.expectThrown` captures the first `Error`: what reaches `window`'s `error` or
+  `unhandledrejection`, or rejects the step, comes before what the console is given. Vitest logs a
+  window error as a new `Error` of its own, so a logged one only counts for a framework that logs and
+  nothing else. Its listeners also stop Vitest from failing the run on the deliberate throw.
+- L13 excuses what the console logged during that one step, and no other. A pattern wouldn't do,
+  because each framework reports a throw in its own words and an allowance holds for the rest of the
+  test. The step leaves no trace step for L9, because what a framework leaves behind after a throw
+  isn't a contract.
+- The `ufMapStack` command takes the top frame inside the case, finds its module in the browser's
+  Vite module graph and traces it through `transformResult.map` with `originalPositionFor`. It must
+  land on `<File>.uf.tsx:<line>`.
+- The `ssr:*` projects render `case.json`'s `ssrThrows` props, which only `computed-throws` declares,
+  and check that the top frame of the module runner's `error.stack` is on the `throw`. The first
+  `Error` counts here too, since Angular's renderer logs it and resolves.
+- `computed-throws` reads the state in the same expression as the computed, because of how Qwik 2
+  beta handles a computed that throws. `$computeIfNeeded$` catches the error and stores it, and the
+  `untrackedError` setter schedules only the computed's `$errorEffects$`, not the readers of its
+  `.value`. So a reader of only the computed never runs again, the DOM keeps its last value and
+  nothing throws. A reader that the state's change runs again reads `.value`, which rethrows the
+  stored error, on Qwik as on every other target.
+- Astro has no client code, so it checks only that server render. Its browser tests that throw are
+  skipped by capability.
+- The spike found what ADR-0074's chain needed on Svelte, Qwik and Astro. No target has a quarantine
+  entry for L14.
+- Two canaries prove the new cells, since `L14-map-shifted` only reaches the compile project. Each
+  moves every line of a served module's map down one, through a Vite plugin that runs after every
+  other (`Canary.servedMap`), so the top frame lands a line below the `throw`. It adds one line break
+  at the code's end, which moves no line, because Vite keeps a module's load map when its transforms
+  give back the same code, as they do for a Qwik segment that imports nothing. `L14-ssr-map-shifted` applies to the cases with `ssrThrows`, on all seven targets.
+  `L14-browser-map-shifted` applies to the cases whose specs wrap a step in `expectThrown`, on the six
+  targets that run one, Qwik's segments included. A verdict judges one kind of project per canary,
+  so each takes one.
 
 ## Consequences
 

@@ -91,7 +91,9 @@ it("records each test's scenarios and capability skip, and L9, in the parity mat
     projects: ["parity"],
     cases: ["stub/interactions", "stub/requires"],
     targets: ["dom"],
-    liveLayers: LAYERS.filter((layer) => ["L7", "L8", "L9", "L10", "L11", "L13"].includes(layer)),
+    liveLayers: LAYERS.filter((layer) =>
+      ["L7", "L8", "L9", "L10", "L11", "L13", "L14"].includes(layer),
+    ),
     notLiveReason: "not live in the stub suite",
     capabilities: Object.keys(STUB_CAPABILITIES),
   });

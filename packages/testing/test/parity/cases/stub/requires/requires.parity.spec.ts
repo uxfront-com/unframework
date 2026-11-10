@@ -41,7 +41,7 @@ describeTargets("stub/requires", () => {
     expect(sibling?.meta.uf).toEqual({
       case: "stub/requires",
       target: "dom",
-      layers: { L7: skip, L8: skip, L9: skip, L10: skip, L11: skip, L13: skip },
+      layers: { L7: skip, L8: skip, L9: skip, L10: skip, L11: skip, L13: skip, L14: skip },
       skipped: SKIP,
     });
   });
