@@ -233,7 +233,7 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
 - **`@unframework/testing/setup`**, loaded first by every browser project: the bundled Inter font
   as "UF Test Sans", the motion and caret reset, the startup assertions (DPR 1, reduced motion,
   and the case's colour scheme: `case.json`'s `colorScheme`, `light` by default, which the file
-  emulates through `ufColorScheme` before anything mounts, ADR-0061; the check reads the scheme
+  emulates through `ufColorScheme` before anything mounts, ADR-0061, and which the check reads
   again for at most 5 s, since Firefox can apply it late, ADR-0081), console capture recorded
   as **L13** for every test of a case (plus the adapter's server-side console, at mount and at
   each rerender), and cleanup (the unmount, then the real intervals back if a view had a clock).
@@ -342,7 +342,7 @@ broken merge. A boolean attribute's `="true"` is written empty on Qwik only, who
 an attribute that is on that way. With `engine: "firefox"`, a `-moz-box-orient` declaration takes
 the name Chromium serialises, `-webkit-box-orient` (rule 3b): Firefox writes the property it
 parsed under its own alias, and its value still compares. No other engine, `-moz-*` property or
-value is touched (ADR-0081). The browser API passes the run's engine; without one, nothing is
+value is touched (ADR-0081). The browser API passes the run's engine. Without one, nothing is
 renamed.
 Only the named target's framework noise is removed (Angular's hosts only from Angular's
 output, Qwik's `preventdefault:`, `stoppropagation:` and `capture:` dispatch attributes and its

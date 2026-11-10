@@ -309,7 +309,7 @@ the reference first, then the targets a case names as its reference, then each o
 order, and each runs one spec file at a time (ADR-0081): parallel tester pages in one engine take
 the focus from each other, and five followers at once ran WebKit out of memory. Firefox's DOM
 writes `-webkit-box-orient` as `-moz-box-orient`, which the normaliser renames for Firefox alone.
-The nightly workflow runs both engines; a difference there is an issue, never a quarantine entry. A cell is `pass`, `fail`,
+The nightly workflow runs both engines. A difference there is an issue, never a quarantine entry. A cell is `pass`, `fail`,
 `skip(reason)` or `quarantined(issue)`; a skip on a live layer names a capability the target
 lacks (`requires interactivity: …`) or a mechanical cause (no output, no spec, the live
 reference, a component that did not render, no scripted interaction). A diagnostics case has no
