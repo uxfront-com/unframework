@@ -6,8 +6,9 @@
 // the corpus, and the verdict tests (canary-verdict.unit.test.ts) how it judges a run.
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
+import { originalPositionFor, TraceMap } from "@jridgewell/trace-mapping";
 import { compile, TARGET_NAMES } from "@unframework/compiler";
 import type { CompileResult, TargetName } from "@unframework/compiler";
 import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
@@ -16,6 +17,7 @@ import { describe, expect, it } from "vitest";
 
 // The unplugin's join, by path: it is internal to the package, and the canary must survive it.
 import { joinModules } from "../../../packages/unplugin/src/assemble.ts";
+import { bundleSize } from "../scripts/budgets.ts";
 import {
   canaryRuns,
   combineRuns,
@@ -32,22 +34,31 @@ import {
   dropFirstRule,
   canaryFixes,
   canaryFormats,
+  canaryMaps,
   canaryPlugins,
   canaryProjects,
+  canaryServePlugin,
   canarySource,
   corrupts,
   findCanary,
   guardsGoldens,
   injectScript,
+  linesShifted,
   mismatchClosingTag,
   withQwikImports,
 } from "./canaries.ts";
 import type { Canary, CanaryCase } from "./canaries.ts";
+import { projectOf } from "./canary-verdict.ts";
 import { listCases } from "./cases.ts";
-import { checkFixes, formattingProblems, nondeterminism } from "./compile-checks.ts";
+import {
+  checkFixes,
+  formattingProblems,
+  nondeterminism,
+  sourceMapProblems,
+} from "./compile-checks.ts";
 import { CASES_DIR, REPO_ROOT } from "./paths.ts";
 import { LIVE_LAYERS } from "./quarantine.ts";
-import { caseResolver } from "./sources.ts";
+import { caseOracle, caseResolver } from "./sources.ts";
 import { REFERENCE } from "./targets.ts";
 
 /** The canary jobs' run line, in ci.yml and nightly.yml alike. */
@@ -139,6 +150,8 @@ const VERIFIED_BY: Record<string, readonly ProjectKind[]> = {
   L10: ["browser"],
   L11: ["browser"],
   L13: ["ssr", "browser"],
+  L14: ["compile", "ssr", "browser"],
+  L15: ["bench"],
 };
 
 /** A case as the verdict sees it, for the fix canary. */
@@ -150,6 +163,8 @@ const fixture = (hasFixes: boolean): CanaryCase => ({
   runs: () => true,
   interacts: () => false,
   rerenders: () => false,
+  throws: () => false,
+  ssrThrows: false,
   listens: false,
   styled: false,
   reference: REFERENCE,
@@ -244,15 +259,19 @@ describe("canaries", () => {
     expect(canaryProjects(findCanary("L6-golden-guard"))).toEqual(["ssr", "browser"]);
   });
 
-  it("corrupt a source or the fixes, or skip the format step, only for the compile project", () => {
+  it("corrupt a source, the fixes or a map, or skip the format step, only for the compile project", () => {
     const compileOnly = CANARIES.filter(
       (canary) =>
-        canary.source !== undefined || canary.fixes !== undefined || canary.format === false,
+        canary.source !== undefined ||
+        canary.fixes !== undefined ||
+        canary.map !== undefined ||
+        canary.format === false,
     );
     expect(compileOnly.map((canary) => canary.id)).toEqual([
       "L1-diagnostic-added",
       "L1-fix-no-op",
       "L2-unformatted",
+      "L14-map-shifted",
     ]);
     for (const canary of compileOnly) expect(canaryProjects(canary)).toEqual(["compile"]);
     expect(canarySource(null, source)).toBe(source);
@@ -340,6 +359,13 @@ describe("canaries", () => {
         expect(shard?.count ?? 1, name).toBeGreaterThanOrEqual(2);
       }
     }
+  });
+
+  it("run an L15 canary in the bench project, which holds every target", () => {
+    expect(canaryRuns(findCanary("L15-slow-compile"), ["vue", "react"], [], undefined)).toEqual([
+      { name: "bench", args: ["--project", "bench"] },
+    ]);
+    expect(projectOf("bench", "vue")).toBe("bench");
   });
 
   it("run in CI only when the changes job says so, and that job fails loud (ADR-0073)", () => {
@@ -574,6 +600,12 @@ describe("canaries", () => {
     CANARIES.filter(
       (canary) =>
         canary.layer !== "L1" &&
+        // It slows the compile and leaves the output alone: a test of its own below.
+        canary.id !== "L15-slow-compile" &&
+        // It corrupts a map, after the compile: a test of its own below.
+        canary.id !== "L14-map-shifted" &&
+        // They corrupt the maps of served modules, not the compile: tests of their own above.
+        canary.servedMap === undefined &&
         canary.id !== "L9-unwired-handler" &&
         canary.id !== "L10-stylesheet-rule-dropped",
     ),
@@ -1022,6 +1054,46 @@ describe("canaries", () => {
     }
   });
 
+  it("L15-slow-compile slows only its own case's compile, and changes no output", async () => {
+    const compileAt = async (at: string) => {
+      const started = performance.now();
+      const result = await compile(source, {
+        filename: at,
+        targets: ["vue"],
+        plugins: canaryPlugins("L15-slow-compile"),
+      });
+      return { result, elapsed: performance.now() - started };
+    };
+    const slowed = await compileAt("basics/nested-and-void/TaskList.uf.tsx");
+    const spared = await compileAt("basics/hello/TaskList.uf.tsx");
+    expect(slowed.elapsed).toBeGreaterThanOrEqual(500);
+    expect(spared.elapsed).toBeLessThan(500);
+    const clean = await compile(source, {
+      filename: "basics/nested-and-void/TaskList.uf.tsx",
+      targets: ["vue"],
+    });
+    expect(slowed.result.outputs).toEqual(clean.outputs);
+    const canary = findCanary("L15-slow-compile");
+    const named = (id: string) => ({ ...fixture(false), id });
+    expect(canary.appliesTo!(named("basics/nested-and-void"), "vue")).toBe(true);
+    expect(canary.appliesTo!(named("basics/hello"), "vue")).toBe(false);
+  });
+
+  it("L15-output-bloat keeps its string through the minifier, and grows a file by its length", async () => {
+    const corrupted = await compileWith("L15-output-bloat", "react");
+    const clean = await compileWith(null, "react");
+    const [before] = clean.outputs.react!;
+    const [after] = corrupted.outputs.react!;
+    expect(after!.contents.length).toBeGreaterThan(before!.contents.length * 1.9);
+    const size = (contents: string, path: string) => bundleSize([[{ path, contents }]]);
+    const [grown, base] = await Promise.all([
+      size(after!.contents, "/case/a.tsx"),
+      size(before!.contents, "/case/a.tsx"),
+    ]);
+    expect(grown.raw).toBeGreaterThan(base.raw * 1.05);
+    expect(grown.gzip).toBeGreaterThan(base.gzip * 1.05);
+  });
+
   // A component's root inside another's is inverted twice: the filter must not undo itself,
   // or a child that holds all the parent's ink renders the reference's pixels.
   it("L10-root-inverted changes a pixel that a nested root inverts twice", async () => {
@@ -1222,6 +1294,71 @@ describe("canaries", () => {
       ),
     ).toBe(false);
     expect(rerender.appliesTo!(fixture(false), "react")).toBe(false);
+  });
+
+  it("L14's served-map canaries apply to the cases that throw, on the projects that record it", () => {
+    const ssr = findCanary("L14-ssr-map-shifted");
+    const browser = findCanary("L14-browser-map-shifted");
+    expect(ssr.appliesTo!({ ...fixture(false), ssrThrows: true }, "astro")).toBe(true);
+    expect(ssr.appliesTo!(fixture(false), "react")).toBe(false);
+    const throwing = { ...fixture(false), throws: (target: string) => target !== "astro" };
+    expect(browser.appliesTo!(throwing, "qwik")).toBe(true);
+    expect(browser.appliesTo!(throwing, "astro")).toBe(false);
+    expect(browser.targets).not.toContain("astro");
+    expect(Object.keys(ssr.evidence)).toEqual(["ssr"]);
+    expect(Object.keys(browser.evidence)).toEqual(["browser"]);
+    // The compile and its output stay as they were: only the served map moves.
+    for (const id of [ssr.id, browser.id]) expect(canaryPlugins(id, "react")).toEqual([]);
+  });
+
+  it("shift a served module's map down one line, column for column", () => {
+    const map = linesShifted("a\nbc\nd", "x.js");
+    const trace = new TraceMap(map);
+    expect(originalPositionFor(trace, { line: 1, column: 0 })).toMatchObject({
+      line: 2,
+      column: 0,
+    });
+    expect(originalPositionFor(trace, { line: 2, column: 1 })).toMatchObject({
+      line: 3,
+      column: 1,
+    });
+    expect(originalPositionFor(trace, { line: 3, column: 0 }).line).toBeNull();
+    expect(map).toMatchObject({ sources: ["x.js"], sourcesContent: ["a\nbc\nd"] });
+  });
+
+  it("serve the shifted map only for the cases a canary applies to, and never for a sheet", () => {
+    const dir = mkdtempSync(join(tmpdir(), "uf-canary-serve-"));
+    try {
+      const write = (path: string, contents: string) => {
+        mkdirSync(dirname(join(dir, path)), { recursive: true });
+        writeFileSync(join(dir, path), contents);
+      };
+      write("a/thrown/Thrown.uf.tsx", "export default function Thrown() {}\n");
+      write("a/thrown/case.json", '{"ssrThrows":{"props":{}}}');
+      write("a/thrown/__expected__/diagnostics.json", "[]");
+      write("a/plain/Plain.uf.tsx", "export default function Plain() {}\n");
+      write("a/plain/__expected__/diagnostics.json", "[]");
+      const cases = listCases(dir);
+      expect(canaryServePlugin(null, "react", dir, cases)).toBeUndefined();
+      expect(canaryServePlugin("L14-map-shifted", "react", dir, cases)).toBeUndefined();
+      expect(canaryServePlugin("L14-browser-map-shifted", "astro", dir, cases)).toBeUndefined();
+      const plugin = canaryServePlugin("L14-ssr-map-shifted", "astro", dir, cases)!;
+      expect(plugin.enforce).toBe("post");
+      const transform = plugin.transform as (code: string, id: string) => unknown;
+      expect(transform("x\ny", `${dir}/a/thrown/Thrown.uf.tsx.astro`)).toMatchObject({
+        code: "x\ny\n",
+        map: { sources: ["Thrown.uf.tsx.astro"] },
+      });
+      expect(transform("x", `${dir}/a/thrown/Thrown.uf.tsx_Thrown_component_abc.js`)).toBeDefined();
+      expect(transform("x", `${dir}/a/thrown/Thrown.uf.tsx.css`)).toBeUndefined();
+      expect(
+        transform("x", `${dir}/a/thrown/Thrown.uf.tsx.vue?vue&type=style&index=0`),
+      ).toBeUndefined();
+      expect(transform("x", `${dir}/a/plain/Plain.uf.tsx.astro`)).toBeUndefined();
+      expect(transform("x", `${dir}/../elsewhere/Thrown.uf.tsx`)).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("read which tests of a case run on each target, and which of those act or rerender", () => {
@@ -1549,6 +1686,66 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
 
 describe("every canary on the corpus", () => {
   const cases = listCases();
+
+  it("L14-map-shifted corrupts one map of every case with output, on every target", async () => {
+    const canary = findCanary("L14-map-shifted");
+    const evidence = canary.evidence.compile!["round trip"]!;
+    const pattern = (target: string) =>
+      typeof evidence === "function" ? evidence(target) : evidence;
+    const problems: string[] = [];
+    let corrupted = 0;
+    for (const info of cases) {
+      const modules = new Set(info.modules.map(({ source }) => basename(source)));
+      const results = await Promise.all(
+        info.sources.map(async (source) => {
+          const text = readFileSync(source.source, "utf8");
+          const typeOracle = caseOracle(info, CASES_DIR, { filename: source.filename, text });
+          try {
+            const result = await compile(text, {
+              filename: source.filename,
+              targets: TARGET_NAMES,
+              sourceMap: true,
+              resolve: caseResolver(info, CASES_DIR, typeOracle),
+              typeOracle,
+            });
+            return { source, text, result };
+          } finally {
+            await typeOracle.dispose();
+          }
+        }),
+      );
+      for (const target of TARGET_NAMES) {
+        if (
+          results.some(({ result }) =>
+            result.diagnostics.some(
+              (diagnostic) =>
+                diagnostic.severity === "error" &&
+                (diagnostic.target === undefined || diagnostic.target === target),
+            ),
+          )
+        ) {
+          continue;
+        }
+        const where = `${info.id} › ${target}`;
+        const reports = results.map(({ source, text, result }) => {
+          const files = result.outputs[target] ?? [];
+          const input = { filename: source.filename, text };
+          return {
+            before: sourceMapProblems(target, files, input, modules),
+            after: sourceMapProblems(target, canaryMaps(canary.id, files), input, modules),
+          };
+        });
+        const before = reports.flatMap((report) => report.before);
+        if (before.length) problems.push(`${where}: clean maps fail: ${before.join("; ")}`);
+        const after = reports.flatMap((report) => report.after);
+        if (after.some((message) => pattern(target).test(message))) corrupted += 1;
+        else problems.push(`${where}: not caught: ${after.join("; ") || "no problem"}`);
+      }
+    }
+    expect(problems).toEqual([]);
+    expect(corrupted).toBeGreaterThan(1000);
+  });
+
   const compiled = new Map<string, Promise<{ input: string; result: CompileResult }>>();
   /** A case's source and its clean compile, once per run. */
   const clean = (info: (typeof cases)[number]) => {
@@ -1563,7 +1760,12 @@ describe("every canary on the corpus", () => {
     return pending;
   };
 
-  it.each(CANARIES.filter((canary) => canary.plugin && canary.id !== "L1-plugin-throws"))(
+  it.each(
+    CANARIES.filter(
+      (canary) =>
+        canary.plugin && canary.id !== "L1-plugin-throws" && canary.id !== "L15-slow-compile",
+    ),
+  )(
     "$id corrupts every case with output on every target it corrupts, keeping the IR valid",
     async (canary) => {
       const problems: string[] = [];

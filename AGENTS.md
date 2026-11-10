@@ -58,8 +58,24 @@ in a real browser.
   recompiles only what an edit reaches, and reports an import cycle of components (UF1205). Probes
   pin layer 1 of the consumer checks, stock tsgo. Layer 3, the content mapper, is left out:
   TypeScript 7.1 refuses `.uf.tsx` as its extension (ADR-0072). Documented on unframework.dev
-  (`2.components/19.types-and-generics.md`, `20.composables.md`, `21.shared-modules.md`). **M6,
-  build integration and distribution, is next** (plan §9).
+  (`2.components/19.types-and-generics.md`, `20.composables.md`, `21.shared-modules.md`).
+- **M6, build integration and distribution, is done:** `@unframework/unplugin` runs on unplugin's
+  generic hooks, with an entry for every bundler unplugin offers, and only Vite is tested
+  (ADR-0075). On Vite it detects the target from the framework's plugin (UF7005, UF7006), serves
+  each module's source map, routes edits through the framework's own hot updates, compiles the
+  `.uf.tsx` sources a package ships (`./source/*`) and refuses a file outside `server.fs.allow`.
+  `@unframework/unplugin/astro` is the Astro integration. `unframework.config.ts`, written with
+  `defineConfig` from `unframework/config`, loads under type stripping (UF7001 to UF7004). The CLI,
+  `@unframework/cli` behind the umbrella's `unframework` bin, runs `build` (with `--package`, one
+  package with each target in its framework's format, ADR-0077), `check` (pretty, JSON or SARIF),
+  `explain` and `init`, and `create-unframework` starts a project (ADR-0076). A host app checks
+  its `.uf.tsx` files through `tsconfig.uf.json` (ADR-0080). A host file that imports one still
+  fails the host's own `tsc`. Outputs carry source maps anchored after emit and remapped through
+  oxfmt (ADR-0074), so a thrown error resolves to its `.uf.tsx` line on every target. L14 (source
+  maps) and L15 (budgets) are live (ADR-0078). `tests/e2e` installs packed tarballs of a sample
+  design system in seven apps, six of them in plugin mode too, with Playwright smoke and HMR specs
+  (ADR-0079). Documented on unframework.dev (`4.tooling/`). **M7, public testing and visual
+  tooling, is next** (plan §9).
 - Anything outside the built subset is rejected as UF1002 (`unsupported-syntax`) until its
   milestone lands. The authoring types already accept the whole language (plan §4).
 - The plan describes the target state. The code is the truth for what is built:
@@ -70,19 +86,20 @@ in a real browser.
 
 ## Read first
 
-| Document                            | Read it                                                                                                                                                                                                                                                                                                                                                                     |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/plan.md`                      | For the architecture. Cited everywhere as §n, principles P1–P8, goals G1–G7, layers L1–L15, milestones M0–M10, decisions C1–C4 and D1–D13, risks R1–R14.                                                                                                                                                                                                                    |
-| `docs/adrs/README.md` and the index | Before you reopen a decision. ADR-0018 to ADR-0033 record what the M0 spikes and build settled, ADR-0034 to ADR-0044 what M1 settled, ADR-0045 to ADR-0052 what M2 settled, ADR-0053 to ADR-0060 what M3 settled, ADR-0061 to ADR-0066 what M4 settled, ADR-0067 to ADR-0071 what M5 settled. An accepted ADR is newer than the plan: where the two differ, follow the ADR. |
-| `tests/integration/README.md`       | Before you touch the corpus or the harness.                                                                                                                                                                                                                                                                                                                                 |
-| `packages/<name>/README.md`         | Before you change a package. Each README states the package's contract and its toolchain. Keep the README true when you change the contract.                                                                                                                                                                                                                                |
-| `.github/CONTRIBUTING.md`           | For scripts, the package template and releases.                                                                                                                                                                                                                                                                                                                             |
+| Document                            | Read it                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/plan.md`                      | For the architecture. Cited everywhere as §n, principles P1–P8, goals G1–G7, layers L1–L15, milestones M0–M10, decisions C1–C4 and D1–D13, risks R1–R14.                                                                                                                                                                                                                                                          |
+| `docs/adrs/README.md` and the index | Before you reopen a decision. ADR-0018 to ADR-0033 record what the M0 spikes and build settled, ADR-0034 to ADR-0044 what M1 settled, ADR-0045 to ADR-0052 what M2 settled, ADR-0053 to ADR-0060 what M3 settled, ADR-0061 to ADR-0066 what M4 settled, ADR-0067 to ADR-0071 what M5 settled, ADR-0074 to ADR-0080 what M6 settled. An accepted ADR is newer than the plan: where the two differ, follow the ADR. |
+| `tests/integration/README.md`       | Before you touch the corpus or the harness.                                                                                                                                                                                                                                                                                                                                                                       |
+| `packages/<name>/README.md`         | Before you change a package. Each README states the package's contract and its toolchain. Keep the README true when you change the contract.                                                                                                                                                                                                                                                                      |
+| `.github/CONTRIBUTING.md`           | For scripts, the package template and releases.                                                                                                                                                                                                                                                                                                                                                                   |
 
 ## Layout
 
 ```
 packages/        ir, diagnostics           pure data and the UF catalogue (no dependencies)
                  parser                    P1: oxc (TS-ESTree) and lightningcss; no TypeScript API
+                 type-oracle, -tsgo        props types across files: syntactic, or TypeScript's checker
                  codegen                   the target kit: defineTarget, capabilities, JS/JSX/markup
                                            printers, oxfmt, the Toolchain contract (/toolchain-node)
                  analyzer                  P2 analyse (scopes through @typescript-eslint/scope-manager)
@@ -90,13 +107,19 @@ packages/        ir, diagnostics           pure data and the UF catalogue (no de
                                            into IR
                  target-<name> ×7          emit() and capabilities; /toolchain{,/client,/server} for tests
                  compiler                  compile(): the passes in order, for each selected target
-                 unplugin                  the Vite plugin (other bundlers in M6)
+                 unplugin                  the bundler plugin: an entry per bundler unplugin offers
+                                           (Vite tested), and the Astro integration (/astro)
+                 cli                       the unframework command: build (--package), check,
+                                           explain, init
+                 create-unframework        create-unframework <dir>: a new project, through init
                  testing                   describeTargets, it, mount, view.user, expectParity,
                                            traces, normaliser, parity reporter (private until M7)
                  unframework               the authoring stubs and the JSX types (vendored from
                                            @vue/runtime-dom), with type probes
 tests/integration  the corpus (cases/<area>/<name>/) and its harness (harness/, scripts/)
 tests/toolchains   one per target: the checker, tsconfig and lint configs for its golden outputs
+tests/e2e          seven apps on packed tarballs of a sample design system (design-system/),
+                   installed outside the repository and driven by Playwright
 tests/repo         repo invariants: package layering, the package template, the diagnostics page
 apps/web           unframework.dev: a Nuxt homepage and Docus docs (content/docs)
 docs/              plan.md and adrs/
@@ -125,6 +148,9 @@ pnpm --filter @unframework/integration test -- --project "ssr:svelte"          #
 pnpm --filter @unframework/integration test -- --project "browser:vue"         # L7 to L11, and L13
 UF_TARGETS=vue,react pnpm --filter @unframework/integration test  # some targets only
 UF_BROWSER=firefox pnpm --filter @unframework/integration test -- --project 'browser:*'   # the nightly's run, in firefox or webkit
+pnpm --filter @unframework/integration budgets                   # L15: compile time and output size against budgets.json
+pnpm --filter @unframework/e2e prepare-apps                       # pack the packages, install the seven e2e apps outside the repo
+pnpm --filter @unframework/e2e e2e                                # their Playwright smoke and HMR specs; -- --project 'vue:*' for one app
 pnpm --filter web build                                           # the docs: prerenders every page, fails on a broken link
 
 # Commands that write artefacts (never in CI)
@@ -133,6 +159,7 @@ pnpm test:baselines                   # the Linux screenshots and geometry, in D
 pnpm test:baselines:download          # or the ones CI's Baselines job generated for this branch
 pnpm test:baselines:check             # compare with them as CI does, in Docker
 pnpm test:canaries                    # after a harness change: every live layer must catch its corruption
+pnpm test:budgets:update              # remeasure and rewrite tests/integration/budgets.json
 
 # Generated files
 pnpm --filter @unframework/ir generate         # the IR's JSON Schema, after a change to the IR types
@@ -175,6 +202,7 @@ Generate each of these with its command. The formatter and the linter skip them 
 | `cases/**/__screenshots__/`, `__expected__/geometry.*.json` | `pnpm test:baselines:download` (CI's artefact) or `pnpm test:baselines` (Docker, linux/amd64) |
 | `packages/ir/schema/`                                       | `pnpm --filter @unframework/ir generate`                                                      |
 | `packages/unframework/src/vendor/`                          | `pnpm --filter unframework vendor:jsx`                                                        |
+| `tests/integration/budgets.json`                            | `pnpm test:budgets:update`                                                                    |
 
 ### Never weaken a check
 
@@ -231,6 +259,10 @@ Generate each of these with its command. The formatter and the linter skip them 
   `tests/toolchains/{vue,svelte,astro,angular}` and in `tests/toolchains/qwik-eslint`, the lint
   host that runs Qwik's type-aware rules (ADR-0045). The Angular compiler stack loads from
   `tests/toolchains/angular` and is never a package dependency.
+- One exception sits outside the workspace: the Angular e2e app (`tests/e2e/apps/angular`) declares
+  TypeScript 6 with `@angular/cli` and `@angular/compiler-cli`, as an Angular CLI app must. It's
+  installed only into its working copy outside the repository, so TypeScript 6 still reaches no
+  workspace package (ADR-0079).
 
 ### Targets and the IR
 

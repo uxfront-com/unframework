@@ -1,0 +1,9 @@
+{
+  // Vite's dependency scan reads these. Without them it looks for React's JSX runtime.
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "@qwik.dev/core"
+  },
+  // `tsconfig.uf.json` checks these (ADR-0080).
+  "exclude": ["**/*.uf.tsx", "**/*.uf.ts"]
+}

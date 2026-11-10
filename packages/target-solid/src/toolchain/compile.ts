@@ -41,6 +41,36 @@ export async function compileWithSolid(
   );
 }
 
+/** L15: Solid's client output for each file, as a client build compiles it. */
+export async function emitWithSolid(
+  files: readonly ToolchainFile[],
+): Promise<Map<string, ToolchainFile[]>> {
+  assertFilesToCompile(files);
+  const babel: typeof Babel = await import("@babel/core");
+  const require = createRequire(import.meta.url);
+  const solid = require.resolve("babel-preset-solid");
+  const typescript = require.resolve("@babel/preset-typescript");
+  return new Map(
+    files.map((file) => {
+      const output = babel.transformSync(file.contents, {
+        filename: file.path,
+        babelrc: false,
+        configFile: false,
+        sourceMaps: false,
+        ast: false,
+        presets: [
+          [solid, { generate: "dom", hydratable: false }],
+          [
+            typescript,
+            { isTSX: !file.path.endsWith(".ts"), allExtensions: true, onlyRemoveTypeImports: true },
+          ],
+        ],
+      });
+      return [file.path, [{ path: file.path, contents: output!.code! }]] as const;
+    }),
+  );
+}
+
 function compileFile(
   babel: typeof Babel,
   solid: string,

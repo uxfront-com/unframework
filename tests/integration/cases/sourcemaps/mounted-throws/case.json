@@ -1,0 +1,4 @@
+{
+  "description": "A child's onMounted throws when a click mounts it: the error's stack maps to the authored line.",
+  "main": "ReportPanel.uf.tsx"
+}

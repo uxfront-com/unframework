@@ -1,0 +1,15 @@
+{
+  // Checks the app's `.uf.tsx` and `.uf.ts` files against `unframework`'s JSX types (ADR-0080):
+  // `pnpm exec tsc --noEmit -p tsconfig.uf.json`.
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "jsx": "preserve",
+    "jsxImportSource": "unframework"
+  },
+  "include": ["**/*.uf.tsx", "**/*.uf.ts"],
+  "exclude": ["dist"]
+}

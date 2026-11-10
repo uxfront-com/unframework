@@ -18,6 +18,7 @@ export type {
   FocusCommandContext,
   InputCommandContext,
 } from "./commands.ts";
+export type { MapStackRequest, MapStackResult } from "../commands.ts";
 export { compiledEvents, eventsOfModule, recordCompiledModule } from "./events.ts";
 export type { CompiledModule } from "./events.ts";
 export { caseDirectory, displayRoot, projectHarness, sharedArtefactContext } from "./context.ts";
@@ -111,6 +112,7 @@ export {
   NO_OUTPUT_TEST_SKIP,
   NO_SPEC_SKIP,
   noOutputSkip,
+  NOT_IN_THIS_RUN_SKIP,
   NOT_RENDERED_SKIP,
   quarantineFor,
   recordLayer,

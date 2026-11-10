@@ -1,0 +1,28 @@
+---
+import Button from "@unframework/e2e-design-system/source/Button.uf.tsx";
+import Card from "@unframework/e2e-design-system/source/Card.uf.tsx";
+import Counter from "@unframework/e2e-design-system/source/Counter.uf.tsx";
+import TextField from "@unframework/e2e-design-system/source/TextField.uf.tsx";
+import Greeting from "../Greeting.uf.tsx";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Astro, plugin mode</title>
+  </head>
+  <body>
+    <Greeting name="Astro" />
+    <main>
+      <Button>Press me</Button>
+      <Counter initial={2} step={3} />
+      <TextField label="Name" />
+      <Card>
+        <h2 slot="header">Card header</h2>
+        <button type="button">Toggle card</button>
+        <p slot="footer">Closed</p>
+      </Card>
+    </main>
+  </body>
+</html>

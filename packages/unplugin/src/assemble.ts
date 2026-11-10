@@ -4,12 +4,14 @@
 // component's file while each other component loads under a component id (ADR-0053). A script
 // module keeps the `.uf.tsx` file's exports; a markup file's module has only a default export, so
 // a main component exported by name is refused there.
-import type { OutputFile } from "@unframework/codegen";
+import { composeJoinedMap, withLineStarts } from "@unframework/codegen";
+import type { OutputFile, SourceMapV3 } from "@unframework/codegen";
 import { parseModule } from "@unframework/parser";
 import type { AST } from "@unframework/parser";
+import { Bundle, MagicString } from "magic-string";
 
-/** The code a module loads, or why it has none. */
-export type Assembly = { code: string } | { error: string };
+/** The code a module loads, with its map when it has one, or why it has none. */
+export type Assembly = { code: string; map?: SourceMapV3 } | { error: string };
 
 /** What {@link assembleModule} needs to know. */
 export interface AssemblyInput {
@@ -50,7 +52,7 @@ export function assembleModule(input: AssemblyInput): Assembly {
     };
   }
   if (SCRIPT.test(extension)) {
-    if (matching.length === 1) return { code: matching[0]!.contents };
+    if (matching.length === 1) return loaded(matching[0]!, target);
     const paths = matching.map((file) => file.path).join(", ");
     return joinModules(
       matching,
@@ -74,13 +76,21 @@ export function assembleModule(input: AssemblyInput): Assembly {
       error: `${filename} exports ${names} by name, and the module of a ${extension} file has only a default export, so \`import { ${named[0]!.name} }\` would find nothing on the ${target} target. Export the file's main component as the default: \`export default function ${named[0]!.local}() { … }\`.`,
     };
   }
-  return { code: matching[0]!.contents };
+  return loaded(matching[0]!, target);
+}
+
+/** What one file loads: its text, and its map when it has one. */
+function loaded({ contents, map }: OutputFile, target: string): Assembly {
+  if (!map) return { code: contents };
+  // Astro's compiler traces a frontmatter line from its column 0 (ADR-0074).
+  return { code: contents, map: target === "astro" ? withLineStarts(map) : map };
 }
 
 /**
  * Joins script modules into one by concatenation. An import statement that an earlier file
  * already wrote, character for character, is left out; any other name that two files declare
- * or export would make the joined module invalid, so it is an error that names the clash.
+ * or export would make the joined module invalid, so it is an error that names the clash. The
+ * text of a file with no map stays unmapped in the join's.
  */
 export function joinModules(
   files: readonly OutputFile[],
@@ -94,7 +104,7 @@ export function joinModules(
   const seenImports = new Set<string>();
   const declaredBy = new Map<string, string[]>();
   const exportedBy = new Map<string, string[]>();
-  const parts: string[] = [];
+  const bundle = new Bundle({ separator: "\n" });
 
   for (const file of files) {
     const parsed = parseModule(file.path, file.contents);
@@ -103,12 +113,14 @@ export function joinModules(
         error: `${context}, and ${file.path} does not parse, so they cannot be joined into one module: ${parsed.errors[0]!.message}`,
       };
     }
-    const repeated: AST.ImportDeclaration[] = [];
+    const part = new MagicString(file.contents);
     for (const statement of parsed.program.body) {
       if (statement.type === "ImportDeclaration") {
         const text = file.contents.slice(statement.start, statement.end);
         if (joined.has(statement.source.value) || seenImports.has(text)) {
-          repeated.push(statement);
+          // The line break that ends it goes with it.
+          const end = file.contents[statement.end] === "\n" ? statement.end + 1 : statement.end;
+          part.remove(statement.start, end);
           continue;
         }
         seenImports.add(text);
@@ -120,7 +132,7 @@ export function joinModules(
       for (const name of declaredNames(statement)) record(declaredBy, name, file.path);
       for (const name of exportedNames(statement)) record(exportedBy, name, file.path);
     }
-    parts.push(withoutStatements(file.contents, repeated));
+    bundle.addSource({ filename: file.path, content: part });
   }
 
   const clashes = [
@@ -132,7 +144,10 @@ export function joinModules(
       error: `${context}, and they cannot be joined into one module: ${clashes.join("; ")}. Give each component its own .uf.tsx file.`,
     };
   }
-  return { code: parts.join("\n") };
+  const code = bundle.toString();
+  if (!files.some((file) => file.map)) return { code };
+  // At every character, so the join's map holds each segment the files' maps have.
+  return { code, map: composeJoinedMap(bundle.generateMap({ hires: true }), files) };
 }
 
 /** Notes that the file at `path` declares or exports `name`. */
@@ -214,15 +229,4 @@ function exportedNames(statement: AST.Directive | AST.Statement): string[] {
 
 function moduleExportName(name: AST.ModuleExportName): string {
   return name.type === "Literal" ? name.value : name.name;
-}
-
-/** `text` without the given statements (in source order) and the line breaks that end them. */
-function withoutStatements(text: string, statements: readonly AST.Span[]): string {
-  let result = "";
-  let from = 0;
-  for (const statement of statements) {
-    result += text.slice(from, statement.start);
-    from = text[statement.end] === "\n" ? statement.end + 1 : statement.end;
-  }
-  return result + text.slice(from);
 }

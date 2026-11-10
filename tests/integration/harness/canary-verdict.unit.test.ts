@@ -16,6 +16,8 @@ const still = {
   runs: () => true,
   interacts: () => false,
   rerenders: () => false,
+  throws: () => false,
+  ssrThrows: false,
   listens: false,
   styled: false,
   reference: "vue",
@@ -635,6 +637,27 @@ describe("judgeCanary on seven targets", () => {
         /^solid › state\/counter › L9 \(browser:solid\): failed, but not in the browser trace check/,
       ),
     ]);
+  });
+
+  it("judges an L15 canary on the bench project's one project, for every target", () => {
+    const bloat = findCanary("L15-output-bloat");
+    const over = "fail: raw size 9 B is above its budget of 1 B plus 5%.\ngzip size 9 B is above";
+    const cells = (cell: string) => ({
+      bench: {
+        "basics/hello": Object.fromEntries(
+          ["vue", "react"].map((target) => [target, { L15: cell }]),
+        ),
+      },
+    });
+    const verdict = (cell: string) =>
+      judgeCanary(bloat, { status: 1, projects: cells(cell) }, ["vue", "react"], [hello]);
+    expect(verdict(over).caught).toBe(true);
+    expect(verdict("pass").problems).toContain(
+      "vue › basics/hello › L15 (bench): pass, although the canary corrupted the case",
+    );
+    expect(verdict("fail: raw size 9 B is above").problems.join("\n")).toMatch(
+      /not in the bench gzip size check/,
+    );
   });
 
   it("judges L13-qwik-handler-throws on Qwik's cases that act, and no other target", () => {

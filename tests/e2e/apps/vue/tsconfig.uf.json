@@ -1,0 +1,15 @@
+{
+  // ADR-0080: the `.uf.tsx` and `.uf.ts` files check against Unframework's JSX types, apart from
+  // the app's own files. Run it as `tsc --noEmit -p tsconfig.uf.json`.
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "jsx": "preserve",
+    "jsxImportSource": "unframework"
+  },
+  "include": ["**/*.uf.tsx", "**/*.uf.ts"],
+  "exclude": ["dist"]
+}

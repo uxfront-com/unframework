@@ -39,8 +39,8 @@ them apart from each other and from a host app's own files.
 - Framework JSX plugins also match `.tsx`, so the Unframework plugin has to run first, with
   `enforce: "pre"`. M0 spike 4 tests that ordering (R12).
 - Inside a host app, `.uf.tsx` files need `jsxImportSource: "unframework"` while the app's own
-  `.tsx` keeps its framework's. That takes a scoped tsconfig or the per-file pragma, and M6 settles
-  which (§8.2).
+  `.tsx` keeps its framework's. That takes a scoped tsconfig or the per-file pragma, and ADR-0080
+  chose the scoped `tsconfig.uf.json` (§8.2).
 
 **Open:**
 

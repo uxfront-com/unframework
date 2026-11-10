@@ -11,7 +11,7 @@ import { resolveBrowser, summaryName, writeSummary } from "@unframework/testing/
 
 import { listCases } from "../harness/cases.ts";
 import { reportsDirOf } from "../harness/paths.ts";
-import { projectNames } from "../harness/projects.ts";
+import { BENCH_PROJECT, parityProjects, projectNames } from "../harness/projects.ts";
 import { LIVE_LAYERS } from "../harness/quarantine.ts";
 import { selectTargets } from "../harness/targets.ts";
 import { isCI } from "./vitest.ts";
@@ -44,11 +44,13 @@ export function runSummary(env: NodeJS.ProcessEnv, run: SummaryRun): number {
     result = writeSummary({
       reportsDir,
       expected: {
-        projects: projectNames(targets),
+        // `bench` is outside the default run (ADR-0078), so only CI's parity job requires it.
+        projects: run.requireComplete ? parityProjects(targets) : projectNames(targets),
         cases: listCases().map((info) => info.id),
         targets,
         liveLayers: LIVE_LAYERS,
-        notLiveReason: "not live in M2",
+        notLiveReason: "not live yet",
+        recordedOnlyBy: { L15: BENCH_PROJECT },
         // A skip by capability names one of these (ADR-0050).
         capabilities: CAPABILITY_NAMES,
       },

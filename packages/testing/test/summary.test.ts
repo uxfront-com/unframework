@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { QuarantineEntry, UfLayerMeta } from "../src/layers.ts";
+import type { LayerName, QuarantineEntry, UfLayerMeta } from "../src/layers.ts";
 import { buildPartialMatrix, MATRIX_VERSION, stringifyMatrix } from "../src/node/matrix.ts";
 import type { PartialMatrix, RunMode, Shard } from "../src/node/matrix.ts";
 import { summarise, writeSummary } from "../src/node/summary.ts";
@@ -98,6 +98,66 @@ const compile = run("compile", "compile", [hello({ L1: { status: "pass" } })]);
 const browser = run("browser-vue", "browser:vue", [hello({ L7: { status: "pass" } })]);
 
 describe("summarise", () => {
+  describe("a live layer one project alone records", () => {
+    const withBench = {
+      ...expected,
+      liveLayers: ["L1", "L15"] as LayerName[],
+      recordedOnlyBy: { L15: "bench" },
+    };
+    const ofRun = (
+      projects: string[],
+      records: { project: string; record: UfLayerMeta }[],
+      filtered: string | null = null,
+    ) =>
+      buildPartialMatrix({
+        run: projects.join("+"),
+        projects,
+        records,
+        finishedAt: "2026-10-01T10:00:00.000Z",
+        mode: check,
+        filtered,
+        shard: null,
+        empty: [],
+        quarantine: [],
+      });
+    const compile = { project: "compile", record: hello({ L1: { status: "pass" } }) };
+    const bench = { project: "bench", record: hello({ L15: { status: "pass" } }) };
+
+    it("is not in this run without that project, and never missing", () => {
+      const result = summarise([ofRun(["compile", "browser:vue"], [compile])], withBench);
+      expect(result.problems).toEqual([]);
+      expect(result.matrix.cases["basics/hello"]?.vue?.L15).toBe("skip(not in this run)");
+    });
+
+    it("is what the project recorded with it", () => {
+      const result = summarise(
+        [ofRun(["compile", "browser:vue", "bench"], [compile, bench])],
+        withBench,
+      );
+      expect(result.problems).toEqual([]);
+      expect(result.matrix.cases["basics/hello"]?.vue?.L15).toBe("pass");
+    });
+
+    it("is missing where the project ran in full and recorded nothing, in a partial run too", () => {
+      const result = summarise([ofRun(["bench"], [])], withBench);
+      expect(result.complete).toBe(false);
+      expect(result.problems).toContain("basics/hello › vue › L15: missing (no test recorded it).");
+    });
+
+    it("is not in this run where a filter narrowed the project", () => {
+      const result = summarise([ofRun(["bench"], [], "tests named x")], withBench);
+      expect(result.problems).toEqual([]);
+      expect(result.matrix.cases["basics/hello"]?.vue?.L15).toBe("skip(not in this run)");
+    });
+
+    it("is missing without the project where every project must have reported", () => {
+      const result = summarise([ofRun(["compile", "browser:vue"], [compile])], withBench, {
+        requireComplete: true,
+      });
+      expect(result.problems).toContain("basics/hello › vue › L15: missing (no test recorded it).");
+    });
+  });
+
   it("merges partial runs and fills the layers that are not live", () => {
     const all = buildPartialMatrix({
       run: "all",

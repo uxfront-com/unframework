@@ -4,6 +4,7 @@
   "private": true,
   "description": "The Unframework bundler plugin: imports of .uf.tsx files compile to the selected framework, and that framework's own plugin finishes the job.",
   "keywords": [
+    "astro",
     "rolldown",
     "rollup",
     "unframework",
@@ -26,7 +27,17 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
+    "./astro": "./src/astro.ts",
+    "./bun": "./src/bun.ts",
+    "./esbuild": "./src/esbuild.ts",
+    "./farm": "./src/farm.ts",
+    "./rolldown": "./src/rolldown.ts",
+    "./rollup": "./src/rollup.ts",
+    "./rsbuild": "./src/rsbuild.ts",
+    "./rspack": "./src/rspack.ts",
+    "./unloader": "./src/unloader.ts",
     "./vite": "./src/vite.ts",
+    "./webpack": "./src/webpack.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -35,9 +46,49 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       },
+      "./astro": {
+        "types": "./dist/astro.d.ts",
+        "default": "./dist/astro.js"
+      },
+      "./bun": {
+        "types": "./dist/bun.d.ts",
+        "default": "./dist/bun.js"
+      },
+      "./esbuild": {
+        "types": "./dist/esbuild.d.ts",
+        "default": "./dist/esbuild.js"
+      },
+      "./farm": {
+        "types": "./dist/farm.d.ts",
+        "default": "./dist/farm.js"
+      },
+      "./rolldown": {
+        "types": "./dist/rolldown.d.ts",
+        "default": "./dist/rolldown.js"
+      },
+      "./rollup": {
+        "types": "./dist/rollup.d.ts",
+        "default": "./dist/rollup.js"
+      },
+      "./rsbuild": {
+        "types": "./dist/rsbuild.d.ts",
+        "default": "./dist/rsbuild.js"
+      },
+      "./rspack": {
+        "types": "./dist/rspack.d.ts",
+        "default": "./dist/rspack.js"
+      },
+      "./unloader": {
+        "types": "./dist/unloader.d.ts",
+        "default": "./dist/unloader.js"
+      },
       "./vite": {
         "types": "./dist/vite.d.ts",
         "default": "./dist/vite.js"
+      },
+      "./webpack": {
+        "types": "./dist/webpack.d.ts",
+        "default": "./dist/webpack.js"
       },
       "./package.json": "./package.json"
     },
@@ -53,19 +104,38 @@
     "@unframework/compiler": "workspace:*",
     "@unframework/diagnostics": "workspace:*",
     "@unframework/parser": "workspace:*",
+    "magic-string": "catalog:",
     "unplugin": "catalog:"
   },
   "devDependencies": {
+    "@qwik.dev/core": "catalog:",
     "@types/node": "catalog:",
+    "@unframework/target-angular": "workspace:*",
+    "@unframework/target-qwik": "workspace:*",
+    "@unframework/target-react": "workspace:*",
+    "@unframework/target-solid": "workspace:*",
+    "@unframework/target-svelte": "workspace:*",
+    "@unframework/target-vue": "workspace:*",
     "@uxfront/typescript-config": "catalog:",
+    "astro": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "solid-js": "catalog:",
+    "svelte": "catalog:",
     "tsdown": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vite-plugin-solid": "catalog:",
+    "vitest": "catalog:",
+    "vue": "catalog:"
   },
   "peerDependencies": {
+    "astro": "catalog:",
     "vite": "catalog:"
   },
   "peerDependenciesMeta": {
+    "astro": {
+      "optional": true
+    },
     "vite": {
       "optional": true
     }

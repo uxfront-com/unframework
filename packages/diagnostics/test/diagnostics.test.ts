@@ -47,6 +47,28 @@ describe("catalogue", () => {
   });
 });
 
+describe("the config and tooling codes", () => {
+  it("catalogues the names and severities the raising packages rely on", () => {
+    const found = [...catalogue.values()]
+      .filter(({ code }) => /^UF7|^UF900[23]$/.test(code))
+      .map(({ code, name, severity }) => [code, name, severity]);
+    expect(found).toEqual([
+      ["UF7001", "config-not-loaded", "error"],
+      ["UF7002", "config-invalid", "error"],
+      ["UF7003", "unknown-target", "error"],
+      ["UF7004", "target-options-invalid", "error"],
+      ["UF7005", "target-not-detected", "error"],
+      ["UF7006", "target-ambiguous", "error"],
+      ["UF7007", "no-sources", "error"],
+      ["UF7008", "packager-missing", "error"],
+      ["UF7009", "packager-failed", "error"],
+      ["UF7010", "host-option-incompatible", "warning"],
+      ["UF9002", "sourcemap-not-remapped", "error"],
+      ["UF9003", "sourcemap-skipped", "warning"],
+    ]);
+  });
+});
+
 describe("createDiagnostic", () => {
   it("takes the catalogue's severity", () => {
     expect(frameworkImport().severity).toBe("error");

@@ -160,13 +160,13 @@ function flag(
 }
 
 /** The kinds of project the harness runs (plan §7.3). */
-export type ProjectKind = "compile" | "harness" | "toolchain" | "ssr" | "browser";
+export type ProjectKind = "compile" | "harness" | "toolchain" | "ssr" | "browser" | "bench";
 
 /**
  * A project's `sequence.groupOrder`. Groups run one after another, so a project that reads what
  * another writes in the same run must sit in a later group:
  *
- * - update: compile (and the harness's own tests) 0, then the toolchains and the reference's
+ * - update: compile (and the harness's own tests, and the budgets) 0, then the toolchains and the reference's
  *   ssr and browser projects 1, then every follower 2; where a case names its own reference
  *   (`caseReferences`, ADR-0057), that target's projects run at 2 alone, as they follow the
  *   reference everywhere else, and the other followers at 3;
@@ -186,7 +186,7 @@ export function groupOrder(
   const named = caseReferences.length ? 1 : 0;
   const namedByCase = target !== undefined && caseReferences.includes(target);
   if (mode.update) {
-    if (kind === "compile" || kind === "harness") return 0;
+    if (kind === "compile" || kind === "harness" || kind === "bench") return 0;
     if (kind === "toolchain" || isReference) return 1;
     return namedByCase ? 2 : 2 + named;
   }

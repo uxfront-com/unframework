@@ -9,29 +9,25 @@
 // canary under `.canary/<id>/<target>/` and those files are checked instead of the goldens. L4's
 // checker run also reads each case's consumer fixtures (ADR-0059, `consumers.ts`), copied beside
 // a canary's compile so they import it.
-import { existsSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { FrameworkCompileResult, ToolchainFile, ToolchainMessage } from "@unframework/codegen";
-import { compile } from "@unframework/compiler";
-import type { TargetName } from "@unframework/compiler";
-import { checkLayers, formatError, writeIfChanged } from "@unframework/testing/node";
+import { checkLayers, formatError } from "@unframework/testing/node";
 import { beforeAll, describe, inject, it } from "vitest";
 
-import { canaryPlugins } from "./canaries.ts";
 import { errorState, listCases } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
 import { consumerFixtures, consumerProblems, copyFixtures } from "./consumers.ts";
 import type { Fixture } from "./consumers.ts";
 import { ENGINE_DECLARATIONS } from "./engines.ts";
+import { outputFiles } from "./output-files.ts";
 import { CANARY_DIR, ROOT, toolchainDir } from "./paths.ts";
-import { caseOracle, caseResolver } from "./sources.ts";
 import { loadToolchain } from "./targets.ts";
 import {
   display,
   frameworkCompileProblems,
   lintProblems,
-  toolchainFiles,
   typecheckProblems,
 } from "./toolchain-results.ts";
 
@@ -77,7 +73,7 @@ let failure: string | undefined;
 beforeAll(async () => {
   try {
     const toolchain = await loadToolchain(target);
-    const files = await outputFiles();
+    const files = await outputFiles(cases, target, harness.casesDir, harness.canary);
     const all = [...files.values()].flat();
     const fixtures = caseFixtures(files);
     const typechecked = new Set([
@@ -174,58 +170,6 @@ function casesFiles(files: Map<string, string[]>, info: CaseInfo): string[] {
 }
 
 /**
- * Each case's output files: the committed `__output__/<target>/` tree, or, with a canary, a
- * fresh compile written to `.canary/<id>/<target>/cases/<case>/__output__/<target>/`. Scoped
- * sheets are left out (`toolchainFiles`), after a canary's are written: an output may read its
- * sheet from the disk (Angular's `styleUrl`).
- */
-async function outputFiles(): Promise<Map<string, string[]>> {
-  const files = new Map<string, string[]>();
-  // A case whose expected diagnostics are missing fails its own test; check what it has.
-  const checked = cases.filter((info) => errorState(info, target) !== true);
-  const canary = harness.canary;
-  if (!canary) {
-    for (const info of checked) {
-      const directory = join(info.dir, "__output__", target);
-      files.set(info.id, toolchainFiles(existsSync(directory) ? listFiles(directory) : []));
-    }
-    return files;
-  }
-  // Each target's project writes its own tree: the projects run in parallel.
-  const root = join(CANARY_DIR, canary, target);
-  rmSync(root, { recursive: true, force: true });
-  for (const info of checked) {
-    // Every source of the case, as the compile project writes them into one tree (ADR-0057):
-    // a parent's output imports its children's.
-    const directory = join(root, "cases", info.id, "__output__", target);
-    const paths: string[] = [];
-    for (const source of info.sources) {
-      const text = readFileSync(source.source, "utf8");
-      const typeOracle = caseOracle(info, harness.casesDir, { filename: source.filename, text });
-      let result: Awaited<ReturnType<typeof compile>>;
-      try {
-        result = await compile(text, {
-          filename: source.filename,
-          targets: [target as TargetName],
-          plugins: canaryPlugins(canary, target),
-          resolve: caseResolver(info, harness.casesDir, typeOracle),
-          typeOracle,
-        });
-      } finally {
-        await typeOracle.dispose();
-      }
-      for (const file of result.outputs[target] ?? []) {
-        const path = join(directory, file.path);
-        writeIfChanged(path, file.contents);
-        paths.push(path);
-      }
-    }
-    files.set(info.id, toolchainFiles(paths).sort());
-  }
-  return files;
-}
-
-/**
  * Each case's consumer fixtures, for the cases with output: the committed files, or, with a
  * canary, copies beside its compile under `.canary/<id>/<target>/consumers/`.
  */
@@ -242,11 +186,4 @@ function caseFixtures(files: Map<string, string[]>): Map<string, Fixture[]> {
     );
   }
   return fixtures;
-}
-
-function listFiles(directory: string): string[] {
-  return (readdirSync(directory, { recursive: true }) as string[])
-    .map((entry) => join(directory, entry))
-    .filter((path) => statSync(path).isFile())
-    .sort();
 }

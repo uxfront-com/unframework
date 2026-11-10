@@ -6,7 +6,7 @@ import {
 } from "@unframework/codegen/toolchain-node";
 import type { UserConfig } from "vite";
 
-import { frameworkCompile } from "./framework-compile.ts";
+import { frameworkCompile, frameworkEmit } from "./framework-compile.ts";
 import { typecheck } from "./typecheck.ts";
 
 /**
@@ -44,6 +44,7 @@ export const toolchain: Toolchain = {
   client: "@unframework/target-svelte/toolchain/client",
   server: "@unframework/target-svelte/toolchain/server",
   frameworkCompile,
+  frameworkEmit,
   typecheck,
   // L5 (ADR-0042): oxlint's shared baseline over the script block, ESLint over the whole file.
   // ESLint reads the `.svelte` files and the composables' `.svelte.ts` modules, whose runes

@@ -38,6 +38,11 @@ export interface CaseConfig {
   main?: string;
   /** L6 scenarios by name; a case without any renders `default` with no props. */
   ssr?: Record<string, SsrScenario>;
+  /**
+   * Props the server render throws with (L14, ADR-0078): the `ssr` project renders them once, and
+   * checks the error's stack. Not a scenario of `ssr`, which each must render cleanly (L6).
+   */
+  ssrThrows?: SsrScenario;
   /** The axe rule ids L11 expects to fail on this case, exactly; none by default. */
   axe?: string[];
   /**

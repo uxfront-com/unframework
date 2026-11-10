@@ -1,0 +1,34 @@
+{
+  "name": "@unframework/e2e-design-system",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The sample design system the end-to-end apps consume, written in the built subset.",
+  "files": [
+    "src"
+  ],
+  "type": "module",
+  "exports": {
+    "./source/*": "./src/*"
+  },
+  "scripts": {
+    "pack:dist": "unframework build --package"
+  },
+  "devDependencies": {
+    "@angular/common": "catalog:",
+    "@angular/core": "catalog:",
+    "@babel/core": "catalog:",
+    "@qwik.dev/core": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "astro": "catalog:",
+    "babel-preset-solid": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "solid-js": "catalog:",
+    "svelte": "catalog:",
+    "tsdown": "catalog:",
+    "unframework": "workspace:*",
+    "vite": "catalog:",
+    "vue": "catalog:"
+  }
+}
