@@ -51,6 +51,8 @@ In plugin mode, an app imports the design system's sources through its `./source
 cd <work>/<app> && pnpm exec tsc --noEmit -p tsconfig.uf.json
 ```
 
+Astro's `tsconfig.json` also leaves out `e2e/`, since the specs import the harness from the repository.
+
 Each directory under `e2e/` is one Playwright project, named `<app>:<mode>`, so a new app or mode needs no change to `playwright.config.ts`. The `dev:package` and `dev:plugin` scripts start a mode by hand in a copy.
 
 ## Write a spec
@@ -89,7 +91,9 @@ An edit that changes nothing on the page, like a prop type in `types.ts`, shows 
 
 `ng serve` runs in another process, so its watcher is out of reach, and a file event alone would come too early: until the rebuild ends, a page still loads the old bundle. `rebuildWatcher` reads the end of each rebuild from what `ng serve` prints, whether the rebuild failed, changed nothing or changed the bundle. Write one edit at a time there, because a file written during a rebuild is reported when that rebuild ends.
 
-The package-mode smoke specs of the apps that install the design system share `harness/design-system.ts`, so every framework is held to the same page: each component renders, the design system's sheet applies, and each component responds to one interaction. Astro renders on the server only, so its spec stops after the render. `assertInstalledFromTarball` in `harness/apps.ts` runs first. pnpm always links `node_modules/<name>` into its virtual store, so it checks where that link leads and that the package holds no symbolic link.
+The smoke specs of the apps that render the design system share `harness/design-system.ts`, so every framework and mode is held to the same page: each component renders, the design system's sheet applies, and each component responds to one interaction. Astro renders on the server only, so its specs stop after the render. In package mode, `assertInstalledFromTarball` in `harness/apps.ts` runs first. pnpm always links `node_modules/<name>` into its virtual store, so it checks where that link leads and that the package holds no symbolic link.
+
+Astro answers an edit that reaches the page with a full reload, so its plugin-mode HMR spec marks the page before each edit and expects the mark gone after it. A type changes nothing on the page, so for an edit to `types.ts` the reload is the evidence that the edit reached the page.
 
 The Vue app passes `script.fs` to `@vitejs/plugin-vue` in both modes, because a packaged SFC and a compiled `.uf.tsx` import their prop types from a sibling module, and Vue's compiler reads those through TypeScript's `sys`, which TypeScript 7 doesn't export. Without it the page fails with "No fs option provided to `compileScript`".
 

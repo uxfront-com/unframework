@@ -1,0 +1,15 @@
+{
+  // No `extends`: the repository's type-aware lint reads this file, and Astro isn't installed here.
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true
+  },
+  // tsconfig.uf.json checks the .uf files, under unframework's JSX types (ADR-0073). The specs
+  // run from the repository, under tests/e2e's own config.
+  "exclude": ["**/*.uf.tsx", "**/*.uf.ts", "e2e", "dist"]
+}
