@@ -1107,6 +1107,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.0
+      '@unframework/target-angular':
+        specifier: workspace:*
+        version: link:../target-angular
       '@unframework/target-qwik':
         specifier: workspace:*
         version: link:../target-qwik
