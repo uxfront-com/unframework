@@ -26,9 +26,12 @@ import {
   designSystemSource,
   e2eRoot,
   findApps,
+  packedFile,
+  readPacked,
   startCopy,
   workDir,
   workspaceClosure,
+  writePacked,
 } from "./apps.ts";
 import { spawnNgServe } from "./dev-servers.ts";
 import { createEditor, rebuildWatcher } from "./edit.ts";
@@ -218,6 +221,53 @@ describe("the copy's manifest and workspace", () => {
       "msgpackr-extract": true,
       sharp: true,
     });
+  });
+});
+
+describe("the packed tarballs' record", () => {
+  const tarball = (name: string): string => {
+    const path = join(scratch, name);
+    writeFileSync(path, "");
+    return path;
+  };
+
+  it("names each tarball by its file, and reads it back with its path in the directory", () => {
+    const packed = {
+      designSystem: "ds",
+      tarballs: { ds: tarball("ds.tgz"), unframework: tarball("uf.tgz") },
+    };
+    writePacked(
+      { ...packed, tarballs: { ds: "/elsewhere/ds.tgz", unframework: "/x/uf.tgz" } },
+      scratch,
+    );
+    expect(JSON.parse(readFileSync(join(scratch, packedFile), "utf8"))).toEqual({
+      designSystem: "ds",
+      tarballs: { ds: "ds.tgz", unframework: "uf.tgz" },
+    });
+    expect(readPacked(scratch)).toEqual(packed);
+  });
+
+  it("fails without a record, so nothing installs from the registry", () => {
+    expect(() => readPacked(scratch)).toThrow(`${join(scratch, packedFile)} is missing`);
+  });
+
+  it("fails on a tarball that isn't in the directory, or a path that leaves it", () => {
+    tarball("ds.tgz");
+    writeFileSync(
+      join(scratch, packedFile),
+      JSON.stringify({ designSystem: "ds", tarballs: { ds: "ds.tgz", ir: "ir.tgz" } }),
+    );
+    expect(() => readPacked(scratch)).toThrow("names ir.tgz for ir, which isn't in");
+    writeFileSync(
+      join(scratch, packedFile),
+      JSON.stringify({ designSystem: "ds", tarballs: { ds: "../ds.tgz" } }),
+    );
+    expect(() => readPacked(scratch)).toThrow("names ../ds.tgz for ds");
+  });
+
+  it("fails without the design system's tarball", () => {
+    writeFileSync(join(scratch, packedFile), JSON.stringify({ designSystem: "ds", tarballs: {} }));
+    expect(() => readPacked(scratch)).toThrow("has no tarball for the design system, ds.");
   });
 });
 

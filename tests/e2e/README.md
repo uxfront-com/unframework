@@ -25,6 +25,13 @@ It takes four steps:
 3. It replaces each copy at `<work>/<app>`. `<work>` is `$UF_E2E_WORK_DIR`, or `unframework-e2e` in the system's temporary directory. The copy's manifest gains the design system's tarball, plus `unframework` and `@unframework/unplugin` if the app has a plugin mode. Its `pnpm-workspace.yaml` holds an override for every tarball and the `allowBuilds` list, which makes the copy its own workspace root.
 4. It runs `pnpm install --prefer-offline` in the copy, and prints the copy's path.
 
+Step 2 also writes `.tarballs/packed.json`, which names each package's tarball. Two flags split the steps, so the packages can be built once and installed elsewhere:
+
+- `prepare-apps --pack` stops after step 2.
+- `prepare-apps --reuse-tarballs` starts at step 3, with the tarballs that `packed.json` names. It fails if the record or a tarball is missing, and it never checks that they match your checkout, so pack again after you change a package.
+
+CI's `Pack` job runs the first and uploads `.tarballs`. Each `E2E (<app>)` job downloads it, runs the second, then runs every project of its app in the Playwright image.
+
 `<work>` must be outside the repository: a copy inside it would resolve upward into the workspace's `node_modules`, so a dependency a tarball forgot would still pass. `prepare-apps` refuses such a directory. It also refuses to replace a directory it didn't make, which it recognises by the `.unframework-e2e-copy` file in each copy.
 
 An install that stops with `ERR_PNPM_IGNORED_BUILDS` names a package that runs an install script. Add it to `ALLOWED_BUILDS` in `harness/apps.ts`.
