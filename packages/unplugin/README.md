@@ -31,6 +31,28 @@ export default {
 
 See [Target detection](#target-detection) for what it looks for.
 
+On TypeScript 7, a Vue app also passes `script.fs` to plugin-vue when a component's props use a
+type from another module. Vue's compiler reads that module through TypeScript's `sys`, which
+TypeScript 7 doesn't export, so without it the build fails with "No fs option provided to
+`compileScript`":
+
+```ts
+import { readFileSync, realpathSync, statSync } from "node:fs";
+
+vue({
+  script: {
+    fs: {
+      fileExists: (file) => statSync(file, { throwIfNoEntry: false })?.isFile() ?? false,
+      readFile: (file) => readFileSync(file, "utf8"),
+      realpath: realpathSync,
+    },
+  },
+});
+```
+
+The [bundler plugin docs](../../apps/web/content/docs/4.tooling/3.bundler-plugin.md#vue-on-typescript-7)
+show the whole config.
+
 ## Bundlers
 
 There's one entry per bundler unplugin offers, each with the same options: `./bun`, `./esbuild`,

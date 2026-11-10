@@ -74,9 +74,9 @@ built.
   Vite's dependency scan at Qwik's JSX runtime.
 - Six apps have both modes. `angular` has the package mode only, because the Angular CLI has no plugin
   API (§8.2) and Analog plugin mode is deferred (ADR-0075). Its HMR test edits the app's own component.
-- The `vue` app's package-mode config passes `script.fs` to `@vitejs/plugin-vue`. A packaged SFC imports
-  its prop types from a sibling module, and Vue's compiler reads those through TypeScript's `sys`, which
-  the TypeScript 7 the app pins doesn't export.
+- The `vue` app passes `script.fs` to `@vitejs/plugin-vue` in both modes. A packaged SFC and a
+  compiled `.uf.tsx` both import their prop types from a sibling module, and Vue's compiler reads
+  those through TypeScript's `sys`, which the TypeScript 7 the app pins doesn't export.
 - The fixture starts Astro's in-process `dev()`, and a spawned `ng serve` in its own process group,
   killed in teardown. `ng serve` takes port 0, and the fixture reads the port it prints.
 - `edit` takes an in-process watcher. Vite's fits, and so does the `watcher` on Astro's `dev()`, each

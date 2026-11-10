@@ -991,7 +991,8 @@ export default defineConfig({
   - The Angular CLI (`@angular/build`) has no plugin API, so Angular apps consume a prebuilt package or
     use Analog.
 - **Type-checking `.uf.tsx` inside a host app** needs `jsxImportSource: "unframework"` for those files,
-  through a scoped tsconfig or the per-file pragma. M6 settles which.
+  through a scoped tsconfig or the per-file pragma. M6 settled it: a scoped `tsconfig.uf.json`
+  (ADR-0080).
 
 ### 8.3 CLI
 
