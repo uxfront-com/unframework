@@ -31,7 +31,7 @@ An install that stops with `ERR_PNPM_IGNORED_BUILDS` names a package that runs a
 
 ## An app's layout
 
-Each app keeps its files per mode, so that work on one mode leaves the other's files alone. Only `package.json` is shared, and in Qwik a `tsconfig.json`:
+Each app keeps its files per mode, so that work on one mode leaves the other's files alone. Only `package.json` and the TypeScript configs are shared:
 
 | Path                                                  | Holds                                                            |
 | ----------------------------------------------------- | ---------------------------------------------------------------- |
@@ -39,10 +39,19 @@ Each app keeps its files per mode, so that work on one mode leaves the other's f
 | `vite.config.package.ts`, `vite.config.plugin.ts`     | Each mode's Vite config, whose `root` is its `src/<mode>`        |
 | `astro.config.package.mjs`, `astro.config.plugin.mjs` | Astro's config for each mode, whose `srcDir` is its `src/<mode>` |
 | `angular.json`, `tsconfig.json`                       | The Angular CLI's workspace, for the package mode                |
+| `tsconfig.json`, `tsconfig.uf.json`                   | The app's own files, and its `.uf.tsx` and `.uf.ts` files        |
 | `src/package/`, `src/plugin/`                         | Each mode's entry and components                                 |
 | `e2e/package/`, `e2e/plugin/`                         | Each mode's specs                                                |
 
-Angular has the package mode only, because the Angular CLI has no plugin API. It's also the one app with TypeScript 6, since an Angular CLI app needs its compiler stack: [ADR-0079](../../docs/adrs/0079-the-e2e-apps-and-packed-tarballs.md) records the exception. Qwik has a `tsconfig.json` too, which points Vite's dependency scan at Qwik's JSX runtime.
+Angular has the package mode only, because the Angular CLI has no plugin API. It's also the one app with TypeScript 6, since an Angular CLI app needs its compiler stack: [ADR-0079](../../docs/adrs/0079-the-e2e-apps-and-packed-tarballs.md) records the exception. Qwik's `tsconfig.json` also points Vite's dependency scan at Qwik's JSX runtime.
+
+In plugin mode an app compiles its own `Greeting.uf.tsx` and the design system's sources, which it imports from `@unframework/e2e-design-system/source/*`. Its `.uf.tsx` and `.uf.ts` files type-check through `tsconfig.uf.json`, and its `tsconfig.json` leaves them out ([ADR-0073](../../docs/adrs/0073-jsx-import-source-in-host-apps.md)). Run the check in a copy:
+
+```sh
+pnpm exec tsc --noEmit -p tsconfig.uf.json
+```
+
+Qwik's plugin-mode entry imports `@qwik.dev/core/qwikloader.js`. A client-rendered Qwik element keeps its handlers for that loader, so without it a click does nothing.
 
 Each directory under `e2e/` is one Playwright project, named `<app>:<mode>`, so a new app or mode needs no change to `playwright.config.ts`. The `dev:package` and `dev:plugin` scripts start a mode by hand in a copy.
 
