@@ -1090,8 +1090,8 @@ layer. Sizes are relative effort: S is about a week, M two to three weeks, L fou
 | M3        | Composition                                     | L    | ~113                        | Done    |
 | M4        | Styling and visual parity                       | M    | ~138                        | Done    |
 | M5        | Cross-file: types, consumer typing, composables | L    | ~163                        | Done    |
-| M6        | Build integration and distribution              | L    | ~163, plus e2e apps         | Next    |
-| M7        | Public testing and visual tooling               | M    | (the corpus on public APIs) | Planned |
+| M6        | Build integration and distribution              | L    | ~163, plus e2e apps         | Done    |
+| M7        | Public testing and visual tooling               | M    | (the corpus on public APIs) | Next    |
 | M8        | Advanced features and versioned targets         | L    | ~193                        | Planned |
 | M9        | Agent tooling                                   | M    | -                           | Planned |
 | M10       | Design-system acceptance and 1.0                | L    | ~233                        | Planned |

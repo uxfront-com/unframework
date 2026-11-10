@@ -1,7 +1,7 @@
 # ADR-0076: Configuration and the CLI
 
-- **Status:** Proposed
-- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Date:** 2026-11-10
 - **Plan:** §5.2, §5.10, §8.1, §8.3, §9 M6; P2, P8; ADR-0016, ADR-0073, ADR-0077; defers ADR-0071's
   open item on the IR cache, without editing that record
 

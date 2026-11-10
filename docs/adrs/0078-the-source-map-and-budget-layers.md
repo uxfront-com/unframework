@@ -1,7 +1,7 @@
 # ADR-0078: L14 checks source maps and L15 checks budgets
 
-- **Status:** Proposed
-- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Date:** 2026-11-10
 - **Plan:** §7.2 (L14, L15), §7.9, §9 M6; P1, P2; ADR-0024, ADR-0027, ADR-0074, ADR-0075
 
 ## Context

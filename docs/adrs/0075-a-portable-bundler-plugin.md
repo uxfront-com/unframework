@@ -1,7 +1,7 @@
 # ADR-0075: A portable bundler plugin, tested on Vite
 
-- **Status:** Proposed
-- **Date:** 2026-11-05
+- **Status:** Accepted
+- **Date:** 2026-11-10
 - **Plan:** §8.2, §9 M6; P2, R12; ADR-0021, ADR-0026, ADR-0053, ADR-0063, ADR-0074; defers
   ADR-0027's "(M6)" step, and uses `hotUpdate` where ADR-0071 names `handleHotUpdate`, without
   editing either record
