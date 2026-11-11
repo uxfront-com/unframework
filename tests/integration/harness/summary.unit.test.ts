@@ -143,7 +143,7 @@ describe("CI's parity job", () => {
   it("waits for every job that runs harness projects, which together run each project once", () => {
     expect(runs.map((run) => run.name)).toEqual([
       "integration-compile",
-      ...TARGETS.map((target) => `integration-toolchains (${target})`),
+      "integration-toolchains",
       "integration-ssr",
       ...TARGETS.map((target) => `integration-browser (${target})`),
       "bench",

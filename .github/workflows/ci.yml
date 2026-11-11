@@ -150,17 +150,14 @@ jobs:
           retention-days: 7
 
   # L3, L4 and L5: one framework-compiler pass, one type-checker run and one lint run (oxlint, and
-  # ESLint for the template languages) per target over every case.
+  # ESLint for the template languages) per target over every case. One job runs every target's
+  # project: each takes seconds, and a job of its own spent most of its time on setup (ADR-0082).
   integration-toolchains:
-    name: "Integration: toolchain (${{ matrix.target }})"
+    name: "Integration: toolchain"
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [react, vue, svelte, solid, angular, qwik, astro]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -179,14 +176,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Toolchain project
-        run: pnpm --filter @unframework/integration exec vitest run --project "toolchain:${{ matrix.target }}"
+      - name: Toolchain projects
+        run: pnpm --filter @unframework/integration exec vitest run --project "toolchain:*"
 
       - name: Upload the parity results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: parity-toolchain-${{ matrix.target }}
+          name: parity-toolchain
           path: tests/integration/.reports
           include-hidden-files: true
           if-no-files-found: error
@@ -598,7 +595,7 @@ jobs:
           retention-days: 30
 
   # The e2e suite (plan §7.9, ADR-0079): real apps that install the packed tarballs outside the
-  # repository. This job builds and packs once, and each E2E job installs its copies from the
+  # repository. This job builds and packs once, and the E2E job installs its copies from the
   # tarballs it uploads, so the seven apps run on the same packages. Not a required check.
   pack:
     name: Pack
@@ -637,21 +634,18 @@ jobs:
           overwrite: true
           retention-days: 1
 
-  # One job per app, in the Playwright image, running every project of its app (`<app>:<mode>`)
-  # with no retries: a flaky spec is a bug. `prepare-apps` installs every app's copy, outside the
-  # checkout as it requires, from the Pack job's tarballs. Not a required check.
+  # One job, in the Playwright image, running every project of every app (`<app>:<mode>`) one at a
+  # time, with no retries: a flaky spec is a bug. Each app's specs take seconds, and a job per app
+  # spent most of its time on setup (ADR-0082). `prepare-apps` installs every app's copy, outside
+  # the checkout as it requires, from the Pack job's tarballs. Not a required check.
   e2e:
-    name: "E2E (${{ matrix.app }})"
+    name: E2E
     needs: [changes, pack]
     if: ${{ !cancelled() && needs.pack.result == 'success' && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
-    strategy:
-      fail-fast: false
-      matrix:
-        app: [react, vue, svelte, solid, angular, qwik, astro]
     env:
       UF_E2E_WORK_DIR: /tmp/unframework-e2e
     steps:
@@ -682,13 +676,13 @@ jobs:
         run: pnpm --filter @unframework/e2e prepare-apps --reuse-tarballs
 
       - name: E2E projects
-        run: pnpm --filter @unframework/e2e e2e -- --project "${{ matrix.app }}:*"
+        run: pnpm --filter @unframework/e2e e2e
 
       - name: Upload the test results
         if: ${{ failure() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: e2e-results-${{ matrix.app }}
+          name: e2e-results
           path: /tmp/unframework-e2e/.results
           include-hidden-files: true
           if-no-files-found: ignore
