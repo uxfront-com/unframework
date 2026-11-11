@@ -5,8 +5,8 @@
     {
       "name": "ArticlePreview",
       "span": {
-        "start": 151,
-        "end": 842
+        "start": 160,
+        "end": 851
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 124,
-              "end": 130
+              "start": 133,
+              "end": 139
             }
           },
-          "binding": "title@192",
+          "binding": "title@201",
           "span": {
-            "start": 117,
-            "end": 131
+            "start": 126,
+            "end": 140
           }
         },
         {
@@ -31,14 +31,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 140,
-              "end": 146
+              "start": 149,
+              "end": 155
             }
           },
-          "binding": "text@199",
+          "binding": "text@208",
           "span": {
-            "start": 134,
-            "end": 147
+            "start": 143,
+            "end": 156
           }
         }
       ],
@@ -47,25 +47,25 @@
         "type": {
           "code": "ArticlePreviewProps",
           "span": {
-            "start": 207,
-            "end": 226
+            "start": 216,
+            "end": 235
           }
         },
         "span": {
-          "start": 190,
-          "end": 226
+          "start": 199,
+          "end": 235
         }
       },
       "types": [
         "ArticlePreviewProps"
       ],
       "emits": {
-        "binding": "emit@238",
+        "binding": "emit@247",
         "type": {
           "code": "{ ready: [characters: number] }",
           "span": {
-            "start": 257,
-            "end": 288
+            "start": 266,
+            "end": 297
           }
         },
         "events": [
@@ -77,129 +77,129 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 279,
-                    "end": 285
+                    "start": 288,
+                    "end": 294
                   }
                 },
                 "span": {
-                  "start": 267,
-                  "end": 285
+                  "start": 276,
+                  "end": 294
                 }
               }
             ],
             "span": {
-              "start": 259,
-              "end": 286
+              "start": 268,
+              "end": 295
             }
           }
         ],
         "span": {
-          "start": 232,
-          "end": 292
+          "start": 241,
+          "end": 301
         }
       },
       "bindings": [
         {
-          "id": "title@192",
+          "id": "title@201",
           "name": "title",
           "kind": "prop",
           "span": {
-            "start": 192,
-            "end": 197
+            "start": 201,
+            "end": 206
           }
         },
         {
-          "id": "text@199",
+          "id": "text@208",
           "name": "text",
           "kind": "prop",
           "span": {
-            "start": 199,
-            "end": 203
+            "start": 208,
+            "end": 212
           }
         },
         {
-          "id": "emit@238",
+          "id": "emit@247",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 238,
-            "end": 242
+            "start": 247,
+            "end": 251
           }
         },
         {
-          "id": "body@302",
+          "id": "body@311",
           "name": "body",
           "kind": "templateRef",
           "span": {
-            "start": 302,
-            "end": 306
+            "start": 311,
+            "end": 315
           }
         },
         {
-          "id": "characters@357",
+          "id": "characters@366",
           "name": "characters",
           "kind": "state",
           "span": {
-            "start": 357,
-            "end": 367
+            "start": 366,
+            "end": 376
           }
         },
         {
-          "id": "counted@386",
+          "id": "counted@395",
           "name": "counted",
           "kind": "state",
           "span": {
-            "start": 386,
-            "end": 393
+            "start": 395,
+            "end": 402
           }
         }
       ],
       "setup": [
         {
           "kind": "TemplateRef",
-          "binding": "body@302",
+          "binding": "body@311",
           "type": {
             "code": "HTMLParagraphElement",
             "span": {
-              "start": 324,
-              "end": 344
+              "start": 333,
+              "end": 353
             }
           },
           "span": {
-            "start": 296,
-            "end": 348
+            "start": 305,
+            "end": 357
           }
         },
         {
           "kind": "State",
-          "binding": "characters@357",
+          "binding": "characters@366",
           "initial": {
             "code": "0",
             "span": {
-              "start": 374,
-              "end": 375
+              "start": 383,
+              "end": 384
             },
             "refs": []
           },
           "span": {
-            "start": 351,
-            "end": 377
+            "start": 360,
+            "end": 386
           }
         },
         {
           "kind": "State",
-          "binding": "counted@386",
+          "binding": "counted@395",
           "initial": {
             "code": "false",
             "span": {
-              "start": 400,
-              "end": 405
+              "start": 409,
+              "end": 414
             },
             "refs": []
           },
           "span": {
-            "start": 380,
-            "end": 407
+            "start": 389,
+            "end": 416
           }
         },
         {
@@ -210,77 +210,77 @@
             "body": {
               "code": "{\n    const length = body.value?.textContent?.length ?? 0;\n    characters.value = length;\n    counted.value = true;\n    emit(\"ready\", length);\n  }",
               "span": {
-                "start": 427,
-                "end": 573
+                "start": 436,
+                "end": 582
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "body@302",
+                  "binding": "body@311",
                   "span": {
-                    "start": 448,
-                    "end": 458
+                    "start": 457,
+                    "end": 467
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "characters@357",
+                  "binding": "characters@366",
                   "operator": "=",
                   "span": {
-                    "start": 490,
-                    "end": 515
+                    "start": 499,
+                    "end": 524
                   },
                   "target": {
-                    "start": 490,
-                    "end": 506
+                    "start": 499,
+                    "end": 515
                   },
                   "value": {
-                    "start": 509,
-                    "end": 515
+                    "start": 518,
+                    "end": 524
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "counted@386",
+                  "binding": "counted@395",
                   "operator": "=",
                   "span": {
-                    "start": 521,
-                    "end": 541
+                    "start": 530,
+                    "end": 550
                   },
                   "target": {
-                    "start": 521,
-                    "end": 534
+                    "start": 530,
+                    "end": 543
                   },
                   "value": {
-                    "start": 537,
-                    "end": 541
+                    "start": 546,
+                    "end": 550
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@238",
+                  "binding": "emit@247",
                   "event": "ready",
                   "span": {
-                    "start": 547,
-                    "end": 568
+                    "start": 556,
+                    "end": 577
                   },
                   "arguments": [
                     {
-                      "start": 561,
-                      "end": 567
+                      "start": 570,
+                      "end": 576
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 421,
-              "end": 573
+              "start": 430,
+              "end": 582
             }
           },
           "span": {
-            "start": 411,
-            "end": 575
+            "start": 420,
+            "end": 584
           }
         }
       ],
@@ -293,8 +293,8 @@
             "name": "class",
             "value": "article-preview",
             "span": {
-              "start": 601,
-              "end": 624
+              "start": 610,
+              "end": 633
             }
           },
           {
@@ -303,23 +303,23 @@
             "value": {
               "code": "title",
               "span": {
-                "start": 637,
-                "end": 642
+                "start": 646,
+                "end": 651
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "title@192",
+                  "binding": "title@201",
                   "span": {
-                    "start": 637,
-                    "end": 642
+                    "start": 646,
+                    "end": 651
                   }
                 }
               ]
             },
             "span": {
-              "start": 625,
-              "end": 643
+              "start": 634,
+              "end": 652
             }
           }
         ],
@@ -334,29 +334,29 @@
                 "value": {
                   "code": "title",
                   "span": {
-                    "start": 656,
-                    "end": 661
+                    "start": 665,
+                    "end": 670
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "title@192",
+                      "binding": "title@201",
                       "span": {
-                        "start": 656,
-                        "end": 661
+                        "start": 665,
+                        "end": 670
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 655,
-                  "end": 662
+                  "start": 664,
+                  "end": 671
                 }
               }
             ],
             "span": {
-              "start": 651,
-              "end": 667
+              "start": 660,
+              "end": 676
             }
           },
           {
@@ -365,10 +365,10 @@
             "attributes": [
               {
                 "kind": "Ref",
-                "binding": "body@302",
+                "binding": "body@311",
                 "span": {
-                  "start": 677,
-                  "end": 687
+                  "start": 686,
+                  "end": 696
                 }
               }
             ],
@@ -378,29 +378,29 @@
                 "value": {
                   "code": "text",
                   "span": {
-                    "start": 689,
-                    "end": 693
+                    "start": 698,
+                    "end": 702
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "text@199",
+                      "binding": "text@208",
                       "span": {
-                        "start": 689,
-                        "end": 693
+                        "start": 698,
+                        "end": 702
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 688,
-                  "end": 694
+                  "start": 697,
+                  "end": 703
                 }
               }
             ],
             "span": {
-              "start": 674,
-              "end": 698
+              "start": 683,
+              "end": 707
             }
           },
           {
@@ -412,8 +412,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 708,
-                  "end": 721
+                  "start": 717,
+                  "end": 730
                 }
               }
             ],
@@ -423,43 +423,43 @@
                 "value": {
                   "code": "counted.value ? `${characters.value} characters` : \"Counting the characters\"",
                   "span": {
-                    "start": 732,
-                    "end": 808
+                    "start": 741,
+                    "end": 817
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "counted@386",
+                      "binding": "counted@395",
                       "span": {
-                        "start": 732,
-                        "end": 745
+                        "start": 741,
+                        "end": 754
                       }
                     },
                     {
                       "kind": "Binding",
-                      "binding": "characters@357",
+                      "binding": "characters@366",
                       "span": {
-                        "start": 751,
-                        "end": 767
+                        "start": 760,
+                        "end": 776
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 731,
-                  "end": 809
+                  "start": 740,
+                  "end": 818
                 }
               }
             ],
             "span": {
-              "start": 705,
-              "end": 820
+              "start": 714,
+              "end": 829
             }
           }
         ],
         "span": {
-          "start": 592,
-          "end": 835
+          "start": 601,
+          "end": 844
         }
       }
     }
@@ -470,8 +470,8 @@
       "name": "default",
       "local": "ArticlePreview",
       "span": {
-        "start": 151,
-        "end": 842
+        "start": 160,
+        "end": 851
       }
     }
   ],
@@ -481,8 +481,8 @@
       "exported": true,
       "code": "interface ArticlePreviewProps {\n  title: string;\n  text: string;\n}",
       "span": {
-        "start": 83,
-        "end": 149
+        "start": 92,
+        "end": 158
       }
     }
   ]

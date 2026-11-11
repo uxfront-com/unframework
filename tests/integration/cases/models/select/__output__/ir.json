@@ -5,37 +5,37 @@
     {
       "name": "SizePicker",
       "span": {
-        "start": 36,
-        "end": 537
+        "start": 45,
+        "end": 546
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "size@83",
+          "id": "size@92",
           "name": "size",
           "kind": "state",
           "span": {
-            "start": 83,
-            "end": 87
+            "start": 92,
+            "end": 96
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "size@83",
+          "binding": "size@92",
           "initial": {
             "code": "\"m\"",
             "span": {
-              "start": 94,
-              "end": 97
+              "start": 103,
+              "end": 106
             },
             "refs": []
           },
           "span": {
-            "start": 77,
-            "end": 99
+            "start": 86,
+            "end": 108
           }
         }
       ],
@@ -48,8 +48,8 @@
             "name": "aria-label",
             "value": "Size",
             "span": {
-              "start": 124,
-              "end": 141
+              "start": 133,
+              "end": 150
             }
           }
         ],
@@ -63,8 +63,8 @@
                 "kind": "Text",
                 "value": "Size ",
                 "span": {
-                  "start": 156,
-                  "end": 174
+                  "start": 165,
+                  "end": 183
                 }
               },
               {
@@ -76,24 +76,24 @@
                     "value": {
                       "code": "size.value",
                       "span": {
-                        "start": 200,
-                        "end": 210
+                        "start": 209,
+                        "end": 219
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "size@83",
+                          "binding": "size@92",
                           "span": {
-                            "start": 200,
-                            "end": 210
+                            "start": 209,
+                            "end": 219
                           }
                         }
                       ]
                     },
                     "control": "select",
                     "span": {
-                      "start": 191,
-                      "end": 211
+                      "start": 200,
+                      "end": 220
                     }
                   }
                 ],
@@ -107,8 +107,8 @@
                         "name": "value",
                         "value": "s",
                         "span": {
-                          "start": 231,
-                          "end": 240
+                          "start": 240,
+                          "end": 249
                         }
                       }
                     ],
@@ -117,14 +117,14 @@
                         "kind": "Text",
                         "value": "Small",
                         "span": {
-                          "start": 241,
-                          "end": 246
+                          "start": 250,
+                          "end": 255
                         }
                       }
                     ],
                     "span": {
-                      "start": 223,
-                      "end": 255
+                      "start": 232,
+                      "end": 264
                     }
                   },
                   {
@@ -136,8 +136,8 @@
                         "name": "value",
                         "value": "m",
                         "span": {
-                          "start": 274,
-                          "end": 283
+                          "start": 283,
+                          "end": 292
                         }
                       }
                     ],
@@ -146,14 +146,14 @@
                         "kind": "Text",
                         "value": "Medium",
                         "span": {
-                          "start": 284,
-                          "end": 290
+                          "start": 293,
+                          "end": 299
                         }
                       }
                     ],
                     "span": {
-                      "start": 266,
-                      "end": 299
+                      "start": 275,
+                      "end": 308
                     }
                   },
                   {
@@ -165,8 +165,8 @@
                         "name": "value",
                         "value": "l",
                         "span": {
-                          "start": 318,
-                          "end": 327
+                          "start": 327,
+                          "end": 336
                         }
                       }
                     ],
@@ -175,26 +175,26 @@
                         "kind": "Text",
                         "value": "Large",
                         "span": {
-                          "start": 328,
-                          "end": 333
+                          "start": 337,
+                          "end": 342
                         }
                       }
                     ],
                     "span": {
-                      "start": 310,
-                      "end": 342
+                      "start": 319,
+                      "end": 351
                     }
                   }
                 ],
                 "span": {
-                  "start": 183,
-                  "end": 360
+                  "start": 192,
+                  "end": 369
                 }
               }
             ],
             "span": {
-              "start": 149,
-              "end": 375
+              "start": 158,
+              "end": 384
             }
           },
           {
@@ -206,8 +206,8 @@
                 "kind": "Text",
                 "value": "Chosen: ",
                 "span": {
-                  "start": 390,
-                  "end": 398
+                  "start": 399,
+                  "end": 407
                 }
               },
               {
@@ -215,29 +215,29 @@
                 "value": {
                   "code": "size.value",
                   "span": {
-                    "start": 399,
-                    "end": 409
+                    "start": 408,
+                    "end": 418
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "size@83",
+                      "binding": "size@92",
                       "span": {
-                        "start": 399,
-                        "end": 409
+                        "start": 408,
+                        "end": 418
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 398,
-                  "end": 410
+                  "start": 407,
+                  "end": 419
                 }
               }
             ],
             "span": {
-              "start": 382,
-              "end": 419
+              "start": 391,
+              "end": 428
             }
           },
           {
@@ -249,8 +249,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 434,
-                  "end": 447
+                  "start": 443,
+                  "end": 456
                 }
               },
               {
@@ -263,25 +263,25 @@
                     "body": {
                       "code": "(size.value = \"l\")",
                       "span": {
-                        "start": 463,
-                        "end": 481
+                        "start": 472,
+                        "end": 490
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "size@83",
+                          "binding": "size@92",
                           "operator": "=",
                           "span": {
-                            "start": 463,
-                            "end": 481
+                            "start": 472,
+                            "end": 490
                           },
                           "target": {
-                            "start": 464,
-                            "end": 474
+                            "start": 473,
+                            "end": 483
                           },
                           "value": {
-                            "start": 477,
-                            "end": 480
+                            "start": 486,
+                            "end": 489
                           },
                           "arrowBody": true
                         }
@@ -289,18 +289,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 457,
-                      "end": 481
+                      "start": 466,
+                      "end": 490
                     }
                   },
                   "span": {
-                    "start": 457,
-                    "end": 481
+                    "start": 466,
+                    "end": 490
                   }
                 },
                 "span": {
-                  "start": 448,
-                  "end": 482
+                  "start": 457,
+                  "end": 491
                 }
               }
             ],
@@ -309,20 +309,20 @@
                 "kind": "Text",
                 "value": "Largest",
                 "span": {
-                  "start": 483,
-                  "end": 506
+                  "start": 492,
+                  "end": 515
                 }
               }
             ],
             "span": {
-              "start": 426,
-              "end": 515
+              "start": 435,
+              "end": 524
             }
           }
         ],
         "span": {
-          "start": 115,
-          "end": 530
+          "start": 124,
+          "end": 539
         }
       }
     }
@@ -333,8 +333,8 @@
       "name": "default",
       "local": "SizePicker",
       "span": {
-        "start": 36,
-        "end": 537
+        "start": 45,
+        "end": 546
       }
     }
   ],

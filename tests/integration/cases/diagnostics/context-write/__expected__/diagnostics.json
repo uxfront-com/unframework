@@ -7,12 +7,12 @@
     "start": {
       "line": 12,
       "column": 43,
-      "offset": 474
+      "offset": 492
     },
     "end": {
       "line": 12,
       "column": 53,
-      "offset": 484
+      "offset": 502
     },
     "help": "Change it in the component that provides it: a child asks for the change with an event its parent listens to, or binds a model the provider owns."
   }

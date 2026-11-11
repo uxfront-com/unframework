@@ -5,61 +5,61 @@
     {
       "name": "NetworkBadge",
       "span": {
-        "start": 54,
-        "end": 472
+        "start": 63,
+        "end": 481
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "online@103",
+          "id": "online@112",
           "name": "online",
           "kind": "state",
           "span": {
-            "start": 103,
-            "end": 109
+            "start": 112,
+            "end": 118
           }
         },
         {
-          "id": "label@136",
+          "id": "label@145",
           "name": "label",
           "kind": "state",
           "span": {
-            "start": 136,
-            "end": 141
+            "start": 145,
+            "end": 150
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "online@103",
+          "binding": "online@112",
           "type": {
             "code": "boolean",
             "span": {
-              "start": 116,
-              "end": 123
+              "start": 125,
+              "end": 132
             }
           },
           "span": {
-            "start": 97,
-            "end": 127
+            "start": 106,
+            "end": 136
           }
         },
         {
           "kind": "State",
-          "binding": "label@136",
+          "binding": "label@145",
           "initial": {
             "code": "\"Checking the connection\"",
             "span": {
-              "start": 148,
-              "end": 173
+              "start": 157,
+              "end": 182
             },
             "refs": []
           },
           "span": {
-            "start": 130,
-            "end": 175
+            "start": 139,
+            "end": 184
           }
         },
         {
@@ -67,10 +67,10 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "online@103",
+              "binding": "online@112",
               "span": {
-                "start": 185,
-                "end": 191
+                "start": 194,
+                "end": 200
               }
             }
           ],
@@ -79,45 +79,45 @@
               {
                 "name": "value",
                 "span": {
-                  "start": 194,
-                  "end": 199
+                  "start": 203,
+                  "end": 208
                 }
               }
             ],
             "body": {
               "code": "{\n    label.value = value ? \"Online\" : \"Offline\";\n  }",
               "span": {
-                "start": 204,
-                "end": 257
+                "start": 213,
+                "end": 266
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "label@136",
+                  "binding": "label@145",
                   "operator": "=",
                   "span": {
-                    "start": 210,
-                    "end": 252
+                    "start": 219,
+                    "end": 261
                   },
                   "target": {
-                    "start": 210,
-                    "end": 221
+                    "start": 219,
+                    "end": 230
                   },
                   "value": {
-                    "start": 224,
-                    "end": 252
+                    "start": 233,
+                    "end": 261
                   }
                 }
               ]
             },
             "span": {
-              "start": 193,
-              "end": 257
+              "start": 202,
+              "end": 266
             }
           },
           "span": {
-            "start": 179,
-            "end": 259
+            "start": 188,
+            "end": 268
           }
         },
         {
@@ -128,45 +128,45 @@
             "body": {
               "code": "{\n    online.value = navigator.onLine;\n  }",
               "span": {
-                "start": 279,
-                "end": 321
+                "start": 288,
+                "end": 330
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "online@103",
+                  "binding": "online@112",
                   "operator": "=",
                   "span": {
-                    "start": 285,
-                    "end": 316
+                    "start": 294,
+                    "end": 325
                   },
                   "target": {
-                    "start": 285,
-                    "end": 297
+                    "start": 294,
+                    "end": 306
                   },
                   "value": {
-                    "start": 300,
-                    "end": 316
+                    "start": 309,
+                    "end": 325
                   }
                 },
                 {
                   "kind": "Global",
                   "name": "navigator",
                   "span": {
-                    "start": 300,
-                    "end": 309
+                    "start": 309,
+                    "end": 318
                   }
                 }
               ]
             },
             "span": {
-              "start": 273,
-              "end": 321
+              "start": 282,
+              "end": 330
             }
           },
           "span": {
-            "start": 263,
-            "end": 323
+            "start": 272,
+            "end": 332
           }
         }
       ],
@@ -179,8 +179,8 @@
             "name": "class",
             "value": "network-badge",
             "span": {
-              "start": 343,
-              "end": 364
+              "start": 352,
+              "end": 373
             }
           },
           {
@@ -188,8 +188,8 @@
             "name": "role",
             "value": "status",
             "span": {
-              "start": 365,
-              "end": 378
+              "start": 374,
+              "end": 387
             }
           },
           {
@@ -198,31 +198,31 @@
             "value": {
               "code": "online.value === undefined ? \"no\" : \"yes\"",
               "span": {
-                "start": 393,
-                "end": 434
+                "start": 402,
+                "end": 443
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "online@103",
+                  "binding": "online@112",
                   "span": {
-                    "start": 393,
-                    "end": 405
+                    "start": 402,
+                    "end": 414
                   }
                 },
                 {
                   "kind": "Global",
                   "name": "undefined",
                   "span": {
-                    "start": 410,
-                    "end": 419
+                    "start": 419,
+                    "end": 428
                   }
                 }
               ]
             },
             "span": {
-              "start": 379,
-              "end": 435
+              "start": 388,
+              "end": 444
             }
           }
         ],
@@ -232,29 +232,29 @@
             "value": {
               "code": "label.value",
               "span": {
-                "start": 444,
-                "end": 455
+                "start": 453,
+                "end": 464
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "label@136",
+                  "binding": "label@145",
                   "span": {
-                    "start": 444,
-                    "end": 455
+                    "start": 453,
+                    "end": 464
                   }
                 }
               ]
             },
             "span": {
-              "start": 443,
-              "end": 456
+              "start": 452,
+              "end": 465
             }
           }
         ],
         "span": {
-          "start": 340,
-          "end": 465
+          "start": 349,
+          "end": 474
         }
       }
     }
@@ -265,8 +265,8 @@
       "name": "default",
       "local": "NetworkBadge",
       "span": {
-        "start": 54,
-        "end": 472
+        "start": 63,
+        "end": 481
       }
     }
   ],

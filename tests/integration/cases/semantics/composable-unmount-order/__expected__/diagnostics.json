@@ -7,12 +7,12 @@
     "start": {
       "line": 16,
       "column": 39,
-      "offset": 359
+      "offset": 368
     },
     "end": {
       "line": 16,
       "column": 56,
-      "offset": 376
+      "offset": 385
     },
     "target": "astro"
   },
@@ -24,12 +24,12 @@
     "start": {
       "line": 7,
       "column": 3,
-      "offset": 217
+      "offset": 226
     },
     "end": {
       "line": 10,
       "column": 5,
-      "offset": 306
+      "offset": 315
     },
     "target": "astro"
   },
@@ -41,12 +41,12 @@
     "start": {
       "line": 7,
       "column": 3,
-      "offset": 217
+      "offset": 226
     },
     "end": {
       "line": 10,
       "column": 5,
-      "offset": 306
+      "offset": 315
     },
     "target": "react"
   },
@@ -58,12 +58,12 @@
     "start": {
       "line": 7,
       "column": 3,
-      "offset": 217
+      "offset": 226
     },
     "end": {
       "line": 10,
       "column": 5,
-      "offset": 306
+      "offset": 315
     },
     "target": "solid"
   }

@@ -5,8 +5,8 @@
     {
       "name": "Temperature",
       "span": {
-        "start": 119,
-        "end": 742
+        "start": 128,
+        "end": 751
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "number",
             "span": {
-              "start": 108,
-              "end": 114
+              "start": 117,
+              "end": 123
             }
           },
-          "binding": "celsius@157",
+          "binding": "celsius@166",
           "span": {
-            "start": 99,
-            "end": 115
+            "start": 108,
+            "end": 124
           }
         }
       ],
@@ -31,25 +31,25 @@
         "type": {
           "code": "TemperatureProps",
           "span": {
-            "start": 168,
-            "end": 184
+            "start": 177,
+            "end": 193
           }
         },
         "span": {
-          "start": 155,
-          "end": 184
+          "start": 164,
+          "end": 193
         }
       },
       "types": [
         "TemperatureProps"
       ],
       "emits": {
-        "binding": "emit@196",
+        "binding": "emit@205",
         "type": {
           "code": "{ reading: [celsius: number, previous: number] }",
           "span": {
-            "start": 215,
-            "end": 263
+            "start": 224,
+            "end": 272
           }
         },
         "events": [
@@ -61,13 +61,13 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 236,
-                    "end": 242
+                    "start": 245,
+                    "end": 251
                   }
                 },
                 "span": {
-                  "start": 227,
-                  "end": 242
+                  "start": 236,
+                  "end": 251
                 }
               },
               {
@@ -75,146 +75,146 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 254,
-                    "end": 260
+                    "start": 263,
+                    "end": 269
                   }
                 },
                 "span": {
-                  "start": 244,
-                  "end": 260
+                  "start": 253,
+                  "end": 269
                 }
               }
             ],
             "span": {
-              "start": 217,
-              "end": 261
+              "start": 226,
+              "end": 270
             }
           }
         ],
         "span": {
-          "start": 190,
-          "end": 267
+          "start": 199,
+          "end": 276
         }
       },
       "bindings": [
         {
-          "id": "celsius@157",
+          "id": "celsius@166",
           "name": "celsius",
           "kind": "prop",
           "span": {
-            "start": 157,
-            "end": 164
+            "start": 166,
+            "end": 173
           }
         },
         {
-          "id": "emit@196",
+          "id": "emit@205",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 196,
-            "end": 200
+            "start": 205,
+            "end": 209
           }
         },
         {
-          "id": "fahrenheit@277",
+          "id": "fahrenheit@286",
           "name": "fahrenheit",
           "kind": "derived",
           "span": {
-            "start": 277,
-            "end": 287
+            "start": 286,
+            "end": 296
           }
         },
         {
-          "id": "level@350",
+          "id": "level@359",
           "name": "level",
           "kind": "derived",
           "span": {
-            "start": 350,
-            "end": 355
+            "start": 359,
+            "end": 364
           }
         }
       ],
       "setup": [
         {
           "kind": "Derived",
-          "binding": "fahrenheit@277",
+          "binding": "fahrenheit@286",
           "getter": {
             "parameters": [],
             "body": {
               "code": "Math.round((celsius * 9) / 5 + 32)",
               "span": {
-                "start": 305,
-                "end": 339
+                "start": 314,
+                "end": 348
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "Math",
                   "span": {
-                    "start": 305,
-                    "end": 309
+                    "start": 314,
+                    "end": 318
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "celsius@157",
+                  "binding": "celsius@166",
                   "span": {
-                    "start": 317,
-                    "end": 324
+                    "start": 326,
+                    "end": 333
                   }
                 }
               ]
             },
             "expression": true,
             "span": {
-              "start": 299,
-              "end": 339
+              "start": 308,
+              "end": 348
             }
           },
           "span": {
-            "start": 271,
-            "end": 341
+            "start": 280,
+            "end": 350
           }
         },
         {
           "kind": "Derived",
-          "binding": "level@350",
+          "binding": "level@359",
           "getter": {
             "parameters": [],
             "body": {
               "code": "(celsius >= 30 ? \"hot\" : celsius <= 5 ? \"cold\" : \"mild\")",
               "span": {
-                "start": 373,
-                "end": 429
+                "start": 382,
+                "end": 438
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "celsius@157",
+                  "binding": "celsius@166",
                   "span": {
-                    "start": 374,
-                    "end": 381
+                    "start": 383,
+                    "end": 390
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "celsius@157",
+                  "binding": "celsius@166",
                   "span": {
-                    "start": 398,
-                    "end": 405
+                    "start": 407,
+                    "end": 414
                   }
                 }
               ]
             },
             "expression": true,
             "span": {
-              "start": 367,
-              "end": 429
+              "start": 376,
+              "end": 438
             }
           },
           "span": {
-            "start": 344,
-            "end": 431
+            "start": 353,
+            "end": 440
           }
         },
         {
@@ -227,29 +227,29 @@
                 "body": {
                   "code": "celsius",
                   "span": {
-                    "start": 452,
-                    "end": 459
+                    "start": 461,
+                    "end": 468
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "celsius@157",
+                      "binding": "celsius@166",
                       "span": {
-                        "start": 452,
-                        "end": 459
+                        "start": 461,
+                        "end": 468
                       }
                     }
                   ]
                 },
                 "expression": true,
                 "span": {
-                  "start": 446,
-                  "end": 459
+                  "start": 455,
+                  "end": 468
                 }
               },
               "span": {
-                "start": 446,
-                "end": 459
+                "start": 455,
+                "end": 468
               }
             }
           ],
@@ -258,54 +258,54 @@
               {
                 "name": "value",
                 "span": {
-                  "start": 466,
-                  "end": 471
+                  "start": 475,
+                  "end": 480
                 }
               },
               {
                 "name": "previous",
                 "span": {
-                  "start": 473,
-                  "end": 481
+                  "start": 482,
+                  "end": 490
                 }
               }
             ],
             "body": {
               "code": "{\n      emit(\"reading\", value, previous);\n    }",
               "span": {
-                "start": 486,
-                "end": 533
+                "start": 495,
+                "end": 542
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@196",
+                  "binding": "emit@205",
                   "event": "reading",
                   "span": {
-                    "start": 494,
-                    "end": 526
+                    "start": 503,
+                    "end": 535
                   },
                   "arguments": [
                     {
-                      "start": 510,
-                      "end": 515
+                      "start": 519,
+                      "end": 524
                     },
                     {
-                      "start": 517,
-                      "end": 525
+                      "start": 526,
+                      "end": 534
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 465,
-              "end": 533
+              "start": 474,
+              "end": 542
             }
           },
           "span": {
-            "start": 435,
-            "end": 539
+            "start": 444,
+            "end": 548
           }
         }
       ],
@@ -318,8 +318,8 @@
             "name": "class",
             "value": "temperature",
             "span": {
-              "start": 564,
-              "end": 583
+              "start": 573,
+              "end": 592
             }
           },
           {
@@ -328,23 +328,23 @@
             "value": {
               "code": "level.value",
               "span": {
-                "start": 596,
-                "end": 607
+                "start": 605,
+                "end": 616
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "level@350",
+                  "binding": "level@359",
                   "span": {
-                    "start": 596,
-                    "end": 607
+                    "start": 605,
+                    "end": 616
                   }
                 }
               ]
             },
             "span": {
-              "start": 584,
-              "end": 608
+              "start": 593,
+              "end": 617
             }
           }
         ],
@@ -359,37 +359,37 @@
                 "value": {
                   "code": "celsius",
                   "span": {
-                    "start": 620,
-                    "end": 627
+                    "start": 629,
+                    "end": 636
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "celsius@157",
+                      "binding": "celsius@166",
                       "span": {
-                        "start": 620,
-                        "end": 627
+                        "start": 629,
+                        "end": 636
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 619,
-                  "end": 628
+                  "start": 628,
+                  "end": 637
                 }
               },
               {
                 "kind": "Text",
                 "value": " °C",
                 "span": {
-                  "start": 628,
-                  "end": 631
+                  "start": 637,
+                  "end": 640
                 }
               }
             ],
             "span": {
-              "start": 616,
-              "end": 635
+              "start": 625,
+              "end": 644
             }
           },
           {
@@ -402,37 +402,37 @@
                 "value": {
                   "code": "fahrenheit.value",
                   "span": {
-                    "start": 646,
-                    "end": 662
+                    "start": 655,
+                    "end": 671
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "fahrenheit@277",
+                      "binding": "fahrenheit@286",
                       "span": {
-                        "start": 646,
-                        "end": 662
+                        "start": 655,
+                        "end": 671
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 645,
-                  "end": 663
+                  "start": 654,
+                  "end": 672
                 }
               },
               {
                 "kind": "Text",
                 "value": " °F",
                 "span": {
-                  "start": 663,
-                  "end": 666
+                  "start": 672,
+                  "end": 675
                 }
               }
             ],
             "span": {
-              "start": 642,
-              "end": 670
+              "start": 651,
+              "end": 679
             }
           },
           {
@@ -444,8 +444,8 @@
                 "kind": "Text",
                 "value": "Feels ",
                 "span": {
-                  "start": 689,
-                  "end": 695
+                  "start": 698,
+                  "end": 704
                 }
               },
               {
@@ -453,35 +453,35 @@
                 "value": {
                   "code": "level.value",
                   "span": {
-                    "start": 696,
-                    "end": 707
+                    "start": 705,
+                    "end": 716
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "level@350",
+                      "binding": "level@359",
                       "span": {
-                        "start": 696,
-                        "end": 707
+                        "start": 705,
+                        "end": 716
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 695,
-                  "end": 708
+                  "start": 704,
+                  "end": 717
                 }
               }
             ],
             "span": {
-              "start": 677,
-              "end": 721
+              "start": 686,
+              "end": 730
             }
           }
         ],
         "span": {
-          "start": 556,
-          "end": 735
+          "start": 565,
+          "end": 744
         }
       }
     }
@@ -492,8 +492,8 @@
       "name": "default",
       "local": "Temperature",
       "span": {
-        "start": 119,
-        "end": 742
+        "start": 128,
+        "end": 751
       }
     }
   ],
@@ -503,8 +503,8 @@
       "exported": true,
       "code": "interface TemperatureProps {\n  celsius: number;\n}",
       "span": {
-        "start": 68,
-        "end": 117
+        "start": 77,
+        "end": 126
       }
     }
   ]

@@ -8,8 +8,8 @@
     {
       "name": "useTotal",
       "span": {
-        "start": 216,
-        "end": 450
+        "start": 225,
+        "end": 459
       },
       "parameters": [
         {
@@ -18,14 +18,14 @@
           "type": {
             "code": "() => number",
             "span": {
-              "start": 248,
-              "end": 260
+              "start": 257,
+              "end": 269
             }
           },
-          "binding": "price@241",
+          "binding": "price@250",
           "span": {
-            "start": 241,
-            "end": 260
+            "start": 250,
+            "end": 269
           }
         },
         {
@@ -34,163 +34,163 @@
           "type": {
             "code": "() => number",
             "span": {
-              "start": 272,
-              "end": 284
+              "start": 281,
+              "end": 293
             }
           },
-          "binding": "quantity@262",
+          "binding": "quantity@271",
           "span": {
-            "start": 262,
-            "end": 284
+            "start": 271,
+            "end": 293
           }
         }
       ],
       "types": [],
       "bindings": [
         {
-          "id": "price@241",
+          "id": "price@250",
           "name": "price",
           "kind": "argument",
           "span": {
-            "start": 241,
-            "end": 246
+            "start": 250,
+            "end": 255
           }
         },
         {
-          "id": "quantity@262",
+          "id": "quantity@271",
           "name": "quantity",
           "kind": "argument",
           "span": {
-            "start": 262,
-            "end": 270
+            "start": 271,
+            "end": 279
           }
         },
         {
-          "id": "total@296",
+          "id": "total@305",
           "name": "total",
           "kind": "derived",
           "span": {
-            "start": 296,
-            "end": 301
+            "start": 305,
+            "end": 310
           }
         },
         {
-          "id": "label@350",
+          "id": "label@359",
           "name": "label",
           "kind": "derived",
           "span": {
-            "start": 350,
-            "end": 355
+            "start": 359,
+            "end": 364
           }
         }
       ],
       "setup": [
         {
           "kind": "Derived",
-          "binding": "total@296",
+          "binding": "total@305",
           "getter": {
             "parameters": [],
             "body": {
               "code": "price() * quantity()",
               "span": {
-                "start": 319,
-                "end": 339
+                "start": 328,
+                "end": 348
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "price@241",
+                  "binding": "price@250",
                   "span": {
-                    "start": 319,
-                    "end": 324
+                    "start": 328,
+                    "end": 333
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "quantity@262",
+                  "binding": "quantity@271",
                   "span": {
-                    "start": 329,
-                    "end": 337
+                    "start": 338,
+                    "end": 346
                   }
                 }
               ]
             },
             "expression": true,
             "span": {
-              "start": 313,
-              "end": 339
+              "start": 322,
+              "end": 348
             }
           },
           "span": {
-            "start": 290,
-            "end": 341
+            "start": 299,
+            "end": 350
           }
         },
         {
           "kind": "Derived",
-          "binding": "label@350",
+          "binding": "label@359",
           "getter": {
             "parameters": [],
             "body": {
               "code": "`${quantity()} × ${price()} = ${total.value}`",
               "span": {
-                "start": 373,
-                "end": 418
+                "start": 382,
+                "end": 427
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "quantity@262",
+                  "binding": "quantity@271",
                   "span": {
-                    "start": 376,
-                    "end": 384
+                    "start": 385,
+                    "end": 393
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "price@241",
+                  "binding": "price@250",
                   "span": {
-                    "start": 392,
-                    "end": 397
+                    "start": 401,
+                    "end": 406
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "total@296",
+                  "binding": "total@305",
                   "span": {
-                    "start": 405,
-                    "end": 416
+                    "start": 414,
+                    "end": 425
                   }
                 }
               ]
             },
             "expression": true,
             "span": {
-              "start": 367,
-              "end": 418
+              "start": 376,
+              "end": 427
             }
           },
           "span": {
-            "start": 344,
-            "end": 420
+            "start": 353,
+            "end": 429
           }
         }
       ],
       "returns": [
         {
           "name": "total",
-          "binding": "total@296",
+          "binding": "total@305",
           "span": {
-            "start": 433,
-            "end": 438
+            "start": 442,
+            "end": 447
           }
         },
         {
           "name": "label",
-          "binding": "label@350",
+          "binding": "label@359",
           "span": {
-            "start": 440,
-            "end": 445
+            "start": 449,
+            "end": 454
           }
         }
       ]

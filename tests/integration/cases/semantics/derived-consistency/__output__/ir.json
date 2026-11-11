@@ -5,8 +5,8 @@
     {
       "name": "SeatPicker",
       "span": {
-        "start": 121,
-        "end": 1145
+        "start": 130,
+        "end": 1154
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "number",
             "span": {
-              "start": 110,
-              "end": 116
+              "start": 119,
+              "end": 125
             }
           },
-          "binding": "pricePerSeat@158",
+          "binding": "pricePerSeat@167",
           "span": {
-            "start": 96,
-            "end": 117
+            "start": 105,
+            "end": 126
           }
         }
       ],
@@ -31,25 +31,25 @@
         "type": {
           "code": "SeatPickerProps",
           "span": {
-            "start": 174,
-            "end": 189
+            "start": 183,
+            "end": 198
           }
         },
         "span": {
-          "start": 156,
-          "end": 189
+          "start": 165,
+          "end": 198
         }
       },
       "types": [
         "SeatPickerProps"
       ],
       "emits": {
-        "binding": "emit@201",
+        "binding": "emit@210",
         "type": {
           "code": "{ quote: [seats: number, total: number, summary: string] }",
           "span": {
-            "start": 220,
-            "end": 278
+            "start": 229,
+            "end": 287
           }
         },
         "events": [
@@ -61,13 +61,13 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 237,
-                    "end": 243
+                    "start": 246,
+                    "end": 252
                   }
                 },
                 "span": {
-                  "start": 230,
-                  "end": 243
+                  "start": 239,
+                  "end": 252
                 }
               },
               {
@@ -75,13 +75,13 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 252,
-                    "end": 258
+                    "start": 261,
+                    "end": 267
                   }
                 },
                 "span": {
-                  "start": 245,
-                  "end": 258
+                  "start": 254,
+                  "end": 267
                 }
               },
               {
@@ -89,408 +89,408 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 269,
-                    "end": 275
+                    "start": 278,
+                    "end": 284
                   }
                 },
                 "span": {
-                  "start": 260,
-                  "end": 275
+                  "start": 269,
+                  "end": 284
                 }
               }
             ],
             "span": {
-              "start": 222,
-              "end": 276
+              "start": 231,
+              "end": 285
             }
           }
         ],
         "span": {
-          "start": 195,
-          "end": 282
+          "start": 204,
+          "end": 291
         }
       },
       "bindings": [
         {
-          "id": "pricePerSeat@158",
+          "id": "pricePerSeat@167",
           "name": "pricePerSeat",
           "kind": "prop",
           "span": {
-            "start": 158,
-            "end": 170
+            "start": 167,
+            "end": 179
           }
         },
         {
-          "id": "emit@201",
+          "id": "emit@210",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 201,
-            "end": 205
+            "start": 210,
+            "end": 214
           }
         },
         {
-          "id": "seats@292",
+          "id": "seats@301",
           "name": "seats",
           "kind": "state",
           "span": {
-            "start": 292,
-            "end": 297
+            "start": 301,
+            "end": 306
           }
         },
         {
-          "id": "total@316",
+          "id": "total@325",
           "name": "total",
           "kind": "derived",
           "span": {
-            "start": 316,
-            "end": 321
+            "start": 325,
+            "end": 330
           }
         },
         {
-          "id": "summary@376",
+          "id": "summary@385",
           "name": "summary",
           "kind": "derived",
           "span": {
-            "start": 376,
-            "end": 383
+            "start": 385,
+            "end": 392
           }
         },
         {
-          "id": "addSeat@515",
+          "id": "addSeat@524",
           "name": "addSeat",
           "kind": "localFn",
           "span": {
-            "start": 515,
-            "end": 522
+            "start": 524,
+            "end": 531
           }
         },
         {
-          "id": "addGroupWithGuide@625",
+          "id": "addGroupWithGuide@634",
           "name": "addGroupWithGuide",
           "kind": "localFn",
           "span": {
-            "start": 625,
-            "end": 642
+            "start": 634,
+            "end": 651
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "seats@292",
+          "binding": "seats@301",
           "initial": {
             "code": "1",
             "span": {
-              "start": 304,
-              "end": 305
+              "start": 313,
+              "end": 314
             },
             "refs": []
           },
           "span": {
-            "start": 286,
-            "end": 307
+            "start": 295,
+            "end": 316
           }
         },
         {
           "kind": "Derived",
-          "binding": "total@316",
+          "binding": "total@325",
           "getter": {
             "parameters": [],
             "body": {
               "code": "seats.value * pricePerSeat",
               "span": {
-                "start": 339,
-                "end": 365
+                "start": 348,
+                "end": 374
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "seats@292",
+                  "binding": "seats@301",
                   "span": {
-                    "start": 339,
-                    "end": 350
+                    "start": 348,
+                    "end": 359
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "pricePerSeat@158",
+                  "binding": "pricePerSeat@167",
                   "span": {
-                    "start": 353,
-                    "end": 365
+                    "start": 362,
+                    "end": 374
                   }
                 }
               ]
             },
             "expression": true,
             "span": {
-              "start": 333,
-              "end": 365
+              "start": 342,
+              "end": 374
             }
           },
           "span": {
-            "start": 310,
-            "end": 367
+            "start": 319,
+            "end": 376
           }
         },
         {
           "kind": "Derived",
-          "binding": "summary@376",
+          "binding": "summary@385",
           "getter": {
             "parameters": [],
             "body": {
               "code": "seats.value === 1 ? `1 seat for ${total.value}` : `${seats.value} seats for ${total.value}`",
               "span": {
-                "start": 405,
-                "end": 496
+                "start": 414,
+                "end": 505
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "seats@292",
+                  "binding": "seats@301",
                   "span": {
-                    "start": 405,
-                    "end": 416
+                    "start": 414,
+                    "end": 425
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "total@316",
+                  "binding": "total@325",
                   "span": {
-                    "start": 439,
-                    "end": 450
+                    "start": 448,
+                    "end": 459
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "seats@292",
+                  "binding": "seats@301",
                   "span": {
-                    "start": 458,
-                    "end": 469
+                    "start": 467,
+                    "end": 478
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "total@316",
+                  "binding": "total@325",
                   "span": {
-                    "start": 483,
-                    "end": 494
+                    "start": 492,
+                    "end": 503
                   }
                 }
               ]
             },
             "expression": true,
             "span": {
-              "start": 395,
-              "end": 496
+              "start": 404,
+              "end": 505
             }
           },
           "span": {
-            "start": 370,
-            "end": 502
+            "start": 379,
+            "end": 511
           }
         },
         {
           "kind": "Function",
-          "binding": "addSeat@515",
+          "binding": "addSeat@524",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    seats.value += 1;\n    emit(\"quote\", seats.value, total.value, summary.value);\n  }",
               "span": {
-                "start": 525,
-                "end": 612
+                "start": 534,
+                "end": 621
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "seats@292",
+                  "binding": "seats@301",
                   "operator": "+=",
                   "span": {
-                    "start": 531,
-                    "end": 547
+                    "start": 540,
+                    "end": 556
                   },
                   "target": {
-                    "start": 531,
-                    "end": 542
+                    "start": 540,
+                    "end": 551
                   },
                   "value": {
-                    "start": 546,
-                    "end": 547
+                    "start": 555,
+                    "end": 556
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@201",
+                  "binding": "emit@210",
                   "event": "quote",
                   "span": {
-                    "start": 553,
-                    "end": 607
+                    "start": 562,
+                    "end": 616
                   },
                   "arguments": [
                     {
-                      "start": 567,
-                      "end": 578
+                      "start": 576,
+                      "end": 587
                     },
                     {
-                      "start": 580,
-                      "end": 591
+                      "start": 589,
+                      "end": 600
                     },
                     {
-                      "start": 593,
-                      "end": 606
+                      "start": 602,
+                      "end": 615
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "seats@292",
+                  "binding": "seats@301",
                   "span": {
-                    "start": 567,
-                    "end": 578
+                    "start": 576,
+                    "end": 587
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "total@316",
+                  "binding": "total@325",
                   "span": {
-                    "start": 580,
-                    "end": 591
+                    "start": 589,
+                    "end": 600
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "summary@376",
+                  "binding": "summary@385",
                   "span": {
-                    "start": 593,
-                    "end": 606
+                    "start": 602,
+                    "end": 615
                   }
                 }
               ]
             },
             "span": {
-              "start": 522,
-              "end": 612
+              "start": 531,
+              "end": 621
             }
           },
           "span": {
-            "start": 506,
-            "end": 612
+            "start": 515,
+            "end": 621
           }
         },
         {
           "kind": "Function",
-          "binding": "addGroupWithGuide@625",
+          "binding": "addGroupWithGuide@634",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    seats.value += 4;\n    const groupTotal = total.value;\n    seats.value += 1;\n    emit(\"quote\", seats.value, total.value, `${summary.value}, ${groupTotal} without the guide`);\n  }",
               "span": {
-                "start": 645,
-                "end": 828
+                "start": 654,
+                "end": 837
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "seats@292",
+                  "binding": "seats@301",
                   "operator": "+=",
                   "span": {
-                    "start": 651,
-                    "end": 667
+                    "start": 660,
+                    "end": 676
                   },
                   "target": {
-                    "start": 651,
-                    "end": 662
+                    "start": 660,
+                    "end": 671
                   },
                   "value": {
-                    "start": 666,
-                    "end": 667
+                    "start": 675,
+                    "end": 676
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "total@316",
+                  "binding": "total@325",
                   "span": {
-                    "start": 692,
-                    "end": 703
+                    "start": 701,
+                    "end": 712
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "seats@292",
+                  "binding": "seats@301",
                   "operator": "+=",
                   "span": {
-                    "start": 709,
-                    "end": 725
+                    "start": 718,
+                    "end": 734
                   },
                   "target": {
-                    "start": 709,
-                    "end": 720
+                    "start": 718,
+                    "end": 729
                   },
                   "value": {
-                    "start": 724,
-                    "end": 725
+                    "start": 733,
+                    "end": 734
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@201",
+                  "binding": "emit@210",
                   "event": "quote",
                   "span": {
-                    "start": 731,
-                    "end": 823
+                    "start": 740,
+                    "end": 832
                   },
                   "arguments": [
                     {
-                      "start": 745,
-                      "end": 756
+                      "start": 754,
+                      "end": 765
                     },
                     {
-                      "start": 758,
-                      "end": 769
+                      "start": 767,
+                      "end": 778
                     },
                     {
-                      "start": 771,
-                      "end": 822
+                      "start": 780,
+                      "end": 831
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "seats@292",
+                  "binding": "seats@301",
                   "span": {
-                    "start": 745,
-                    "end": 756
+                    "start": 754,
+                    "end": 765
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "total@316",
+                  "binding": "total@325",
                   "span": {
-                    "start": 758,
-                    "end": 769
+                    "start": 767,
+                    "end": 778
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "summary@376",
+                  "binding": "summary@385",
                   "span": {
-                    "start": 774,
-                    "end": 787
+                    "start": 783,
+                    "end": 796
                   }
                 }
               ]
             },
             "span": {
-              "start": 642,
-              "end": 828
+              "start": 651,
+              "end": 837
             }
           },
           "span": {
-            "start": 616,
-            "end": 828
+            "start": 625,
+            "end": 837
           }
         }
       ],
@@ -503,8 +503,8 @@
             "name": "class",
             "value": "seat-picker",
             "span": {
-              "start": 854,
-              "end": 873
+              "start": 863,
+              "end": 882
             }
           },
           {
@@ -512,8 +512,8 @@
             "name": "aria-label",
             "value": "Seats",
             "span": {
-              "start": 874,
-              "end": 892
+              "start": 883,
+              "end": 901
             }
           }
         ],
@@ -527,8 +527,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 903,
-                  "end": 916
+                  "start": 912,
+                  "end": 925
                 }
               }
             ],
@@ -538,29 +538,29 @@
                 "value": {
                   "code": "summary.value",
                   "span": {
-                    "start": 918,
-                    "end": 931
+                    "start": 927,
+                    "end": 940
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "summary@376",
+                      "binding": "summary@385",
                       "span": {
-                        "start": 918,
-                        "end": 931
+                        "start": 927,
+                        "end": 940
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 917,
-                  "end": 932
+                  "start": 926,
+                  "end": 941
                 }
               }
             ],
             "span": {
-              "start": 900,
-              "end": 936
+              "start": 909,
+              "end": 945
             }
           },
           {
@@ -572,8 +572,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 951,
-                  "end": 964
+                  "start": 960,
+                  "end": 973
                 }
               },
               {
@@ -581,15 +581,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "addSeat@515",
+                  "binding": "addSeat@524",
                   "span": {
-                    "start": 974,
-                    "end": 981
+                    "start": 983,
+                    "end": 990
                   }
                 },
                 "span": {
-                  "start": 965,
-                  "end": 982
+                  "start": 974,
+                  "end": 991
                 }
               }
             ],
@@ -598,14 +598,14 @@
                 "kind": "Text",
                 "value": "Add a seat",
                 "span": {
-                  "start": 983,
-                  "end": 1009
+                  "start": 992,
+                  "end": 1018
                 }
               }
             ],
             "span": {
-              "start": 943,
-              "end": 1018
+              "start": 952,
+              "end": 1027
             }
           },
           {
@@ -617,8 +617,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 1033,
-                  "end": 1046
+                  "start": 1042,
+                  "end": 1055
                 }
               },
               {
@@ -626,15 +626,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "addGroupWithGuide@625",
+                  "binding": "addGroupWithGuide@634",
                   "span": {
-                    "start": 1056,
-                    "end": 1073
+                    "start": 1065,
+                    "end": 1082
                   }
                 },
                 "span": {
-                  "start": 1047,
-                  "end": 1074
+                  "start": 1056,
+                  "end": 1083
                 }
               }
             ],
@@ -643,20 +643,20 @@
                 "kind": "Text",
                 "value": "Add a group and a guide",
                 "span": {
-                  "start": 1075,
-                  "end": 1114
+                  "start": 1084,
+                  "end": 1123
                 }
               }
             ],
             "span": {
-              "start": 1025,
-              "end": 1123
+              "start": 1034,
+              "end": 1132
             }
           }
         ],
         "span": {
-          "start": 845,
-          "end": 1138
+          "start": 854,
+          "end": 1147
         }
       }
     }
@@ -667,8 +667,8 @@
       "name": "default",
       "local": "SeatPicker",
       "span": {
-        "start": 121,
-        "end": 1145
+        "start": 130,
+        "end": 1154
       }
     }
   ],
@@ -678,8 +678,8 @@
       "exported": true,
       "code": "interface SeatPickerProps {\n  pricePerSeat: number;\n}",
       "span": {
-        "start": 66,
-        "end": 119
+        "start": 75,
+        "end": 128
       }
     }
   ]

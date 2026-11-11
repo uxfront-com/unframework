@@ -7,12 +7,12 @@
     "start": {
       "line": 16,
       "column": 7,
-      "offset": 500
+      "offset": 509
     },
     "end": {
       "line": 16,
       "column": 45,
-      "offset": 538
+      "offset": 547
     },
     "help": "Derive the value with `computed`, or write it from `onMounted` and a watcher without `immediate`."
   }

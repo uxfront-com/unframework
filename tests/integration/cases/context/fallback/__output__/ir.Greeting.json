@@ -5,8 +5,8 @@
     {
       "name": "Greeting",
       "span": {
-        "start": 93,
-        "end": 293
+        "start": 102,
+        "end": 302
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 144,
-              "end": 150
+              "start": 153,
+              "end": 159
             }
           },
-          "binding": "name@128",
+          "binding": "name@137",
           "span": {
-            "start": 138,
-            "end": 150
+            "start": 147,
+            "end": 159
           }
         }
       ],
@@ -31,52 +31,52 @@
         "type": {
           "code": "{ name: string }",
           "span": {
-            "start": 136,
-            "end": 152
+            "start": 145,
+            "end": 161
           }
         },
         "span": {
-          "start": 126,
-          "end": 152
+          "start": 135,
+          "end": 161
         }
       },
       "types": [],
       "bindings": [
         {
-          "id": "name@128",
+          "id": "name@137",
           "name": "name",
           "kind": "prop",
           "span": {
-            "start": 128,
-            "end": 132
+            "start": 137,
+            "end": 141
           }
         },
         {
-          "id": "locale@164",
+          "id": "locale@173",
           "name": "locale",
           "kind": "context",
           "span": {
-            "start": 164,
-            "end": 170
+            "start": 173,
+            "end": 179
           }
         }
       ],
       "setup": [
         {
           "kind": "Inject",
-          "binding": "locale@164",
+          "binding": "locale@173",
           "key": "LocaleKey",
           "fallback": {
             "code": "\"en\"",
             "span": {
-              "start": 191,
-              "end": 195
+              "start": 200,
+              "end": 204
             },
             "refs": []
           },
           "span": {
-            "start": 158,
-            "end": 197
+            "start": 167,
+            "end": 206
           }
         }
       ],
@@ -90,31 +90,31 @@
             "value": {
               "code": "locale === \"pt\" ? \"Olá\" : \"Hello\"",
               "span": {
-                "start": 224,
-                "end": 257
+                "start": 233,
+                "end": 266
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "locale@164",
+                  "binding": "locale@173",
                   "span": {
-                    "start": 224,
-                    "end": 230
+                    "start": 233,
+                    "end": 239
                   }
                 }
               ]
             },
             "span": {
-              "start": 223,
-              "end": 258
+              "start": 232,
+              "end": 267
             }
           },
           {
             "kind": "Text",
             "value": ", ",
             "span": {
-              "start": 258,
-              "end": 260
+              "start": 267,
+              "end": 269
             }
           },
           {
@@ -122,31 +122,31 @@
             "value": {
               "code": "name",
               "span": {
-                "start": 261,
-                "end": 265
+                "start": 270,
+                "end": 274
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "name@128",
+                  "binding": "name@137",
                   "span": {
-                    "start": 261,
-                    "end": 265
+                    "start": 270,
+                    "end": 274
                   }
                 }
               ]
             },
             "span": {
-              "start": 260,
-              "end": 266
+              "start": 269,
+              "end": 275
             }
           },
           {
             "kind": "Text",
             "value": " (",
             "span": {
-              "start": 266,
-              "end": 268
+              "start": 275,
+              "end": 277
             }
           },
           {
@@ -154,37 +154,37 @@
             "value": {
               "code": "locale",
               "span": {
-                "start": 269,
-                "end": 275
+                "start": 278,
+                "end": 284
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "locale@164",
+                  "binding": "locale@173",
                   "span": {
-                    "start": 269,
-                    "end": 275
+                    "start": 278,
+                    "end": 284
                   }
                 }
               ]
             },
             "span": {
-              "start": 268,
-              "end": 276
+              "start": 277,
+              "end": 285
             }
           },
           {
             "kind": "Text",
             "value": ")",
             "span": {
-              "start": 276,
-              "end": 282
+              "start": 285,
+              "end": 291
             }
           }
         ],
         "span": {
-          "start": 213,
-          "end": 286
+          "start": 222,
+          "end": 295
         }
       }
     }
@@ -195,8 +195,8 @@
       "name": "default",
       "local": "Greeting",
       "span": {
-        "start": 93,
-        "end": 293
+        "start": 102,
+        "end": 302
       }
     }
   ],
@@ -246,14 +246,14 @@
           "imported": "LocaleKey",
           "local": "LocaleKey",
           "span": {
-            "start": 48,
-            "end": 57
+            "start": 57,
+            "end": 66
           }
         }
       ],
       "span": {
-        "start": 39,
-        "end": 91
+        "start": 48,
+        "end": 100
       }
     }
   ]

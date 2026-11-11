@@ -2,7 +2,7 @@
   {
     "code": "UF1204",
     "severity": "error",
-    "message": "\"./tokens.ts\" reaches \"palette.ts\", which imports \"react\": a shared module is copied unchanged into every framework's output, so it imports no framework, and no `unframework`.",
+    "message": "\"./tokens.ts\" reaches \"palette.ts\", which imports \"react\": a shared module is copied unchanged into every framework's output, so it imports no framework, and no `@uxfront/unframework`.",
     "file": "diagnostics/framework-in-shared-module/Badge.uf.tsx",
     "start": {
       "line": 3,

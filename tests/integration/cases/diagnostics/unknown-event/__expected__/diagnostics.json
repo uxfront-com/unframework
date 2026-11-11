@@ -7,12 +7,12 @@
     "start": {
       "line": 8,
       "column": 27,
-      "offset": 298
+      "offset": 307
     },
     "end": {
       "line": 8,
       "column": 55,
-      "offset": 326
+      "offset": 335
     },
     "target": "astro"
   },
@@ -24,12 +24,12 @@
     "start": {
       "line": 18,
       "column": 19,
-      "offset": 493
+      "offset": 502
     },
     "end": {
       "line": 18,
       "column": 25,
-      "offset": 499
+      "offset": 508
     },
     "help": "Listen to an event SaveButton declares with `defineEmits`, or listen on an element inside it.",
     "fixes": [
@@ -39,8 +39,8 @@
         "edits": [
           {
             "span": {
-              "start": 493,
-              "end": 499
+              "start": 502,
+              "end": 508
             },
             "text": "onSave"
           }

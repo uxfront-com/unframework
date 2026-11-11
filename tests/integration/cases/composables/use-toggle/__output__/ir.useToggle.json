@@ -8,8 +8,8 @@
     {
       "name": "useToggle",
       "span": {
-        "start": 175,
-        "end": 383
+        "start": 184,
+        "end": 392
       },
       "parameters": [
         {
@@ -18,198 +18,198 @@
           "type": {
             "code": "boolean",
             "span": {
-              "start": 210,
-              "end": 217
+              "start": 219,
+              "end": 226
             }
           },
-          "binding": "initial@201",
+          "binding": "initial@210",
           "span": {
-            "start": 201,
-            "end": 217
+            "start": 210,
+            "end": 226
           }
         }
       ],
       "types": [],
       "bindings": [
         {
-          "id": "initial@201",
+          "id": "initial@210",
           "name": "initial",
           "kind": "argument",
           "span": {
-            "start": 201,
-            "end": 208
+            "start": 210,
+            "end": 217
           }
         },
         {
-          "id": "on@229",
+          "id": "on@238",
           "name": "on",
           "kind": "state",
           "span": {
-            "start": 229,
-            "end": 231
+            "start": 238,
+            "end": 240
           }
         },
         {
-          "id": "toggle@260",
+          "id": "toggle@269",
           "name": "toggle",
           "kind": "localFn",
           "span": {
-            "start": 260,
-            "end": 266
+            "start": 269,
+            "end": 275
           }
         },
         {
-          "id": "close@313",
+          "id": "close@322",
           "name": "close",
           "kind": "localFn",
           "span": {
-            "start": 313,
-            "end": 318
+            "start": 322,
+            "end": 327
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "on@229",
+          "binding": "on@238",
           "initial": {
             "code": "initial",
             "span": {
-              "start": 238,
-              "end": 245
+              "start": 247,
+              "end": 254
             },
             "refs": [
               {
                 "kind": "Binding",
-                "binding": "initial@201",
+                "binding": "initial@210",
                 "span": {
-                  "start": 238,
-                  "end": 245
+                  "start": 247,
+                  "end": 254
                 }
               }
             ]
           },
           "span": {
-            "start": 223,
-            "end": 247
+            "start": 232,
+            "end": 256
           }
         },
         {
           "kind": "Function",
-          "binding": "toggle@260",
+          "binding": "toggle@269",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    on.value = !on.value;\n  }",
               "span": {
-                "start": 269,
-                "end": 300
+                "start": 278,
+                "end": 309
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "on@229",
+                  "binding": "on@238",
                   "operator": "=",
                   "span": {
-                    "start": 275,
-                    "end": 295
+                    "start": 284,
+                    "end": 304
                   },
                   "target": {
-                    "start": 275,
-                    "end": 283
+                    "start": 284,
+                    "end": 292
                   },
                   "value": {
-                    "start": 286,
-                    "end": 295
+                    "start": 295,
+                    "end": 304
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "on@229",
+                  "binding": "on@238",
                   "span": {
-                    "start": 287,
-                    "end": 295
+                    "start": 296,
+                    "end": 304
                   }
                 }
               ]
             },
             "span": {
-              "start": 266,
-              "end": 300
+              "start": 275,
+              "end": 309
             }
           },
           "span": {
-            "start": 251,
-            "end": 300
+            "start": 260,
+            "end": 309
           }
         },
         {
           "kind": "Function",
-          "binding": "close@313",
+          "binding": "close@322",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    on.value = false;\n  }",
               "span": {
-                "start": 321,
-                "end": 348
+                "start": 330,
+                "end": 357
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "on@229",
+                  "binding": "on@238",
                   "operator": "=",
                   "span": {
-                    "start": 327,
-                    "end": 343
+                    "start": 336,
+                    "end": 352
                   },
                   "target": {
-                    "start": 327,
-                    "end": 335
+                    "start": 336,
+                    "end": 344
                   },
                   "value": {
-                    "start": 338,
-                    "end": 343
+                    "start": 347,
+                    "end": 352
                   }
                 }
               ]
             },
             "span": {
-              "start": 318,
-              "end": 348
+              "start": 327,
+              "end": 357
             }
           },
           "span": {
-            "start": 304,
-            "end": 348
+            "start": 313,
+            "end": 357
           }
         }
       ],
       "returns": [
         {
           "name": "on",
-          "binding": "on@229",
+          "binding": "on@238",
           "span": {
-            "start": 361,
-            "end": 363
+            "start": 370,
+            "end": 372
           }
         },
         {
           "name": "toggle",
-          "binding": "toggle@260",
+          "binding": "toggle@269",
           "span": {
-            "start": 365,
-            "end": 371
+            "start": 374,
+            "end": 380
           }
         },
         {
           "name": "close",
-          "binding": "close@313",
+          "binding": "close@322",
           "span": {
-            "start": 373,
-            "end": 378
+            "start": 382,
+            "end": 387
           }
         }
       ]

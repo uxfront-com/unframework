@@ -4,5 +4,5 @@ error[UF1201]: "react" is a React module, and components are framework-free.
 1 | import { useState } from "react";
   |                          ^^^^^^^
   |
-  = help: Write the component with the authoring API from "unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.
+  = help: Write the component with the authoring API from "@uxfront/unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.
   = see: https://unframework.dev/diagnostics/UF1201

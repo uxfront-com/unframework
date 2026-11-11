@@ -7,12 +7,12 @@
     "start": {
       "line": 7,
       "column": 30,
-      "offset": 361
+      "offset": 370
     },
     "end": {
       "line": 7,
       "column": 44,
-      "offset": 375
+      "offset": 384
     },
     "help": "Name the event in camelCase, as its own word: `change`, `levelChange`, `select`.",
     "fixes": [
@@ -22,15 +22,15 @@
         "edits": [
           {
             "span": {
-              "start": 361,
-              "end": 375
+              "start": 370,
+              "end": 384
             },
             "text": "levelChange"
           },
           {
             "span": {
-              "start": 481,
-              "end": 493
+              "start": 490,
+              "end": 502
             },
             "text": "levelChange"
           }

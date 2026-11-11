@@ -5,8 +5,8 @@
     {
       "name": "Form",
       "span": {
-        "start": 73,
-        "end": 482
+        "start": 82,
+        "end": 491
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 120,
-              "end": 126
+              "start": 129,
+              "end": 135
             }
           },
-          "binding": "city@104",
+          "binding": "city@113",
           "span": {
-            "start": 114,
-            "end": 126
+            "start": 123,
+            "end": 135
           }
         }
       ],
@@ -31,65 +31,65 @@
         "type": {
           "code": "{ city: string }",
           "span": {
-            "start": 112,
-            "end": 128
+            "start": 121,
+            "end": 137
           }
         },
         "span": {
-          "start": 102,
-          "end": 128
+          "start": 111,
+          "end": 137
         }
       },
       "types": [],
       "bindings": [
         {
-          "id": "city@104",
+          "id": "city@113",
           "name": "city",
           "kind": "prop",
           "span": {
-            "start": 104,
-            "end": 108
+            "start": 113,
+            "end": 117
           }
         },
         {
-          "id": "cleared@140",
+          "id": "cleared@149",
           "name": "cleared",
           "kind": "state",
           "span": {
-            "start": 140,
-            "end": 147
+            "start": 149,
+            "end": 156
           }
         },
         {
-          "id": "clear@177",
+          "id": "clear@186",
           "name": "clear",
           "kind": "localFn",
           "span": {
-            "start": 177,
-            "end": 182
+            "start": 186,
+            "end": 191
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "cleared@140",
+          "binding": "cleared@149",
           "initial": {
             "code": "\"nothing\"",
             "span": {
-              "start": 154,
-              "end": 163
+              "start": 163,
+              "end": 172
             },
             "refs": []
           },
           "span": {
-            "start": 134,
-            "end": 165
+            "start": 143,
+            "end": 174
           }
         },
         {
           "kind": "Function",
-          "binding": "clear@177",
+          "binding": "clear@186",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -98,50 +98,50 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 190,
-                    "end": 196
+                    "start": 199,
+                    "end": 205
                   }
                 },
                 "span": {
-                  "start": 183,
-                  "end": 196
+                  "start": 192,
+                  "end": 205
                 }
               }
             ],
             "body": {
               "code": "{\n    cleared.value = label;\n  }",
               "span": {
-                "start": 198,
-                "end": 230
+                "start": 207,
+                "end": 239
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "cleared@140",
+                  "binding": "cleared@149",
                   "operator": "=",
                   "span": {
-                    "start": 204,
-                    "end": 225
+                    "start": 213,
+                    "end": 234
                   },
                   "target": {
-                    "start": 204,
-                    "end": 217
+                    "start": 213,
+                    "end": 226
                   },
                   "value": {
-                    "start": 220,
-                    "end": 225
+                    "start": 229,
+                    "end": 234
                   }
                 }
               ]
             },
             "span": {
-              "start": 182,
-              "end": 230
+              "start": 191,
+              "end": 239
             }
           },
           "span": {
-            "start": 168,
-            "end": 230
+            "start": 177,
+            "end": 239
           }
         }
       ],
@@ -154,8 +154,8 @@
             "name": "aria-label",
             "value": "Address",
             "span": {
-              "start": 255,
-              "end": 275
+              "start": 264,
+              "end": 284
             }
           }
         ],
@@ -170,14 +170,14 @@
                 "value": {
                   "code": "\"Street\"",
                   "span": {
-                    "start": 296,
-                    "end": 304
+                    "start": 305,
+                    "end": 313
                   },
                   "refs": []
                 },
                 "span": {
-                  "start": 290,
-                  "end": 304
+                  "start": 299,
+                  "end": 313
                 }
               },
               {
@@ -185,22 +185,22 @@
                 "event": "clear",
                 "handler": {
                   "kind": "Function",
-                  "binding": "clear@177",
+                  "binding": "clear@186",
                   "span": {
-                    "start": 314,
-                    "end": 319
+                    "start": 323,
+                    "end": 328
                   }
                 },
                 "span": {
-                  "start": 305,
-                  "end": 320
+                  "start": 314,
+                  "end": 329
                 }
               }
             ],
             "fills": [],
             "span": {
-              "start": 283,
-              "end": 323
+              "start": 292,
+              "end": 332
             }
           },
           {
@@ -213,23 +213,23 @@
                 "value": {
                   "code": "city",
                   "span": {
-                    "start": 344,
-                    "end": 348
+                    "start": 353,
+                    "end": 357
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "city@104",
+                      "binding": "city@113",
                       "span": {
-                        "start": 344,
-                        "end": 348
+                        "start": 353,
+                        "end": 357
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 337,
-                  "end": 349
+                  "start": 346,
+                  "end": 358
                 }
               },
               {
@@ -238,14 +238,14 @@
                 "value": {
                   "code": "\"warn\"",
                   "span": {
-                    "start": 355,
-                    "end": 361
+                    "start": 364,
+                    "end": 370
                   },
                   "refs": []
                 },
                 "span": {
-                  "start": 350,
-                  "end": 361
+                  "start": 359,
+                  "end": 370
                 }
               },
               {
@@ -258,24 +258,24 @@
                       {
                         "name": "label",
                         "span": {
-                          "start": 372,
-                          "end": 377
+                          "start": 381,
+                          "end": 386
                         }
                       }
                     ],
                     "body": {
                       "code": "clear(label.toUpperCase())",
                       "span": {
-                        "start": 382,
-                        "end": 408
+                        "start": 391,
+                        "end": 417
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "clear@177",
+                          "binding": "clear@186",
                           "span": {
-                            "start": 382,
-                            "end": 387
+                            "start": 391,
+                            "end": 396
                           },
                           "call": true
                         }
@@ -283,25 +283,25 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 371,
-                      "end": 408
+                      "start": 380,
+                      "end": 417
                     }
                   },
                   "span": {
-                    "start": 371,
-                    "end": 408
+                    "start": 380,
+                    "end": 417
                   }
                 },
                 "span": {
-                  "start": 362,
-                  "end": 409
+                  "start": 371,
+                  "end": 418
                 }
               }
             ],
             "fills": [],
             "span": {
-              "start": 330,
-              "end": 412
+              "start": 339,
+              "end": 421
             }
           },
           {
@@ -313,8 +313,8 @@
                 "kind": "Text",
                 "value": "Cleared: ",
                 "span": {
-                  "start": 427,
-                  "end": 436
+                  "start": 436,
+                  "end": 445
                 }
               },
               {
@@ -322,35 +322,35 @@
                 "value": {
                   "code": "cleared.value",
                   "span": {
-                    "start": 437,
-                    "end": 450
+                    "start": 446,
+                    "end": 459
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "cleared@140",
+                      "binding": "cleared@149",
                       "span": {
-                        "start": 437,
-                        "end": 450
+                        "start": 446,
+                        "end": 459
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 436,
-                  "end": 451
+                  "start": 445,
+                  "end": 460
                 }
               }
             ],
             "span": {
-              "start": 419,
-              "end": 460
+              "start": 428,
+              "end": 469
             }
           }
         ],
         "span": {
-          "start": 246,
-          "end": 475
+          "start": 255,
+          "end": 484
         }
       }
     }
@@ -361,8 +361,8 @@
       "name": "default",
       "local": "Form",
       "span": {
-        "start": 73,
-        "end": 482
+        "start": 82,
+        "end": 491
       }
     }
   ],
@@ -416,14 +416,14 @@
           "imported": "default",
           "local": "Field",
           "span": {
-            "start": 43,
-            "end": 48
+            "start": 52,
+            "end": 57
           }
         }
       ],
       "span": {
-        "start": 36,
-        "end": 71
+        "start": 45,
+        "end": 80
       }
     }
   ]

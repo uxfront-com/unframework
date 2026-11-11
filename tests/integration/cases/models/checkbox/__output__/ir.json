@@ -5,37 +5,37 @@
     {
       "name": "Terms",
       "span": {
-        "start": 36,
-        "end": 429
+        "start": 45,
+        "end": 438
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "agreed@78",
+          "id": "agreed@87",
           "name": "agreed",
           "kind": "state",
           "span": {
-            "start": 78,
-            "end": 84
+            "start": 87,
+            "end": 93
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "agreed@78",
+          "binding": "agreed@87",
           "initial": {
             "code": "false",
             "span": {
-              "start": 91,
-              "end": 96
+              "start": 100,
+              "end": 105
             },
             "refs": []
           },
           "span": {
-            "start": 72,
-            "end": 98
+            "start": 81,
+            "end": 107
           }
         }
       ],
@@ -48,8 +48,8 @@
             "name": "aria-label",
             "value": "Terms",
             "span": {
-              "start": 123,
-              "end": 141
+              "start": 132,
+              "end": 150
             }
           }
         ],
@@ -68,8 +68,8 @@
                     "name": "type",
                     "value": "checkbox",
                     "span": {
-                      "start": 172,
-                      "end": 187
+                      "start": 181,
+                      "end": 196
                     }
                   },
                   {
@@ -77,45 +77,45 @@
                     "value": {
                       "code": "agreed.value",
                       "span": {
-                        "start": 197,
-                        "end": 209
+                        "start": 206,
+                        "end": 218
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "agreed@78",
+                          "binding": "agreed@87",
                           "span": {
-                            "start": 197,
-                            "end": 209
+                            "start": 206,
+                            "end": 218
                           }
                         }
                       ]
                     },
                     "control": "checkbox",
                     "span": {
-                      "start": 188,
-                      "end": 210
+                      "start": 197,
+                      "end": 219
                     }
                   }
                 ],
                 "children": [],
                 "span": {
-                  "start": 165,
-                  "end": 213
+                  "start": 174,
+                  "end": 222
                 }
               },
               {
                 "kind": "Text",
                 "value": " I agree",
                 "span": {
-                  "start": 213,
-                  "end": 228
+                  "start": 222,
+                  "end": 237
                 }
               }
             ],
             "span": {
-              "start": 149,
-              "end": 236
+              "start": 158,
+              "end": 245
             }
           },
           {
@@ -128,29 +128,29 @@
                 "value": {
                   "code": "agreed.value ? \"Agreed\" : \"Not agreed\"",
                   "span": {
-                    "start": 252,
-                    "end": 290
+                    "start": 261,
+                    "end": 299
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "agreed@78",
+                      "binding": "agreed@87",
                       "span": {
-                        "start": 252,
-                        "end": 264
+                        "start": 261,
+                        "end": 273
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 251,
-                  "end": 291
+                  "start": 260,
+                  "end": 300
                 }
               }
             ],
             "span": {
-              "start": 243,
-              "end": 300
+              "start": 252,
+              "end": 309
             }
           },
           {
@@ -162,8 +162,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 315,
-                  "end": 328
+                  "start": 324,
+                  "end": 337
                 }
               },
               {
@@ -176,52 +176,52 @@
                     "body": {
                       "code": "(agreed.value = !agreed.value)",
                       "span": {
-                        "start": 344,
-                        "end": 374
+                        "start": 353,
+                        "end": 383
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "agreed@78",
+                          "binding": "agreed@87",
                           "operator": "=",
                           "span": {
-                            "start": 344,
-                            "end": 374
+                            "start": 353,
+                            "end": 383
                           },
                           "target": {
-                            "start": 345,
-                            "end": 357
+                            "start": 354,
+                            "end": 366
                           },
                           "value": {
-                            "start": 360,
-                            "end": 373
+                            "start": 369,
+                            "end": 382
                           },
                           "arrowBody": true
                         },
                         {
                           "kind": "Binding",
-                          "binding": "agreed@78",
+                          "binding": "agreed@87",
                           "span": {
-                            "start": 361,
-                            "end": 373
+                            "start": 370,
+                            "end": 382
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 338,
-                      "end": 374
+                      "start": 347,
+                      "end": 383
                     }
                   },
                   "span": {
-                    "start": 338,
-                    "end": 374
+                    "start": 347,
+                    "end": 383
                   }
                 },
                 "span": {
-                  "start": 329,
-                  "end": 375
+                  "start": 338,
+                  "end": 384
                 }
               }
             ],
@@ -230,20 +230,20 @@
                 "kind": "Text",
                 "value": "Toggle",
                 "span": {
-                  "start": 376,
-                  "end": 398
+                  "start": 385,
+                  "end": 407
                 }
               }
             ],
             "span": {
-              "start": 307,
-              "end": 407
+              "start": 316,
+              "end": 416
             }
           }
         ],
         "span": {
-          "start": 114,
-          "end": 422
+          "start": 123,
+          "end": 431
         }
       }
     }
@@ -254,8 +254,8 @@
       "name": "default",
       "local": "Terms",
       "span": {
-        "start": 36,
-        "end": 429
+        "start": 45,
+        "end": 438
       }
     }
   ],

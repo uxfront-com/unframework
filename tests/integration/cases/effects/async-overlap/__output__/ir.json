@@ -5,18 +5,18 @@
     {
       "name": "InboxLookup",
       "span": {
-        "start": 79,
-        "end": 4337
+        "start": 88,
+        "end": 4346
       },
       "props": [],
       "types": [],
       "emits": {
-        "binding": "emit@127",
+        "binding": "emit@136",
         "type": {
           "code": "{\n    looked: [sender: string];\n    dropped: [sender: string];\n    sorted: [order: string];\n    scaled: [order: string];\n    busy: [count: number, loading: boolean];\n    failed: [message: string, loading: boolean];\n    counted: [count: number];\n  }",
           "span": {
-            "start": 146,
-            "end": 394
+            "start": 155,
+            "end": 403
           }
         },
         "events": [
@@ -28,19 +28,19 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 169,
-                    "end": 175
+                    "start": 178,
+                    "end": 184
                   }
                 },
                 "span": {
-                  "start": 161,
-                  "end": 175
+                  "start": 170,
+                  "end": 184
                 }
               }
             ],
             "span": {
-              "start": 152,
-              "end": 176
+              "start": 161,
+              "end": 185
             }
           },
           {
@@ -51,19 +51,19 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 200,
-                    "end": 206
+                    "start": 209,
+                    "end": 215
                   }
                 },
                 "span": {
-                  "start": 192,
-                  "end": 206
+                  "start": 201,
+                  "end": 215
                 }
               }
             ],
             "span": {
-              "start": 182,
-              "end": 207
+              "start": 191,
+              "end": 216
             }
           },
           {
@@ -74,19 +74,19 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 229,
-                    "end": 235
+                    "start": 238,
+                    "end": 244
                   }
                 },
                 "span": {
-                  "start": 222,
-                  "end": 235
+                  "start": 231,
+                  "end": 244
                 }
               }
             ],
             "span": {
-              "start": 213,
-              "end": 236
+              "start": 222,
+              "end": 245
             }
           },
           {
@@ -97,19 +97,19 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 258,
-                    "end": 264
+                    "start": 267,
+                    "end": 273
                   }
                 },
                 "span": {
-                  "start": 251,
-                  "end": 264
+                  "start": 260,
+                  "end": 273
                 }
               }
             ],
             "span": {
-              "start": 242,
-              "end": 265
+              "start": 251,
+              "end": 274
             }
           },
           {
@@ -120,13 +120,13 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 285,
-                    "end": 291
+                    "start": 294,
+                    "end": 300
                   }
                 },
                 "span": {
-                  "start": 278,
-                  "end": 291
+                  "start": 287,
+                  "end": 300
                 }
               },
               {
@@ -134,19 +134,19 @@
                 "type": {
                   "code": "boolean",
                   "span": {
-                    "start": 302,
-                    "end": 309
+                    "start": 311,
+                    "end": 318
                   }
                 },
                 "span": {
-                  "start": 293,
-                  "end": 309
+                  "start": 302,
+                  "end": 318
                 }
               }
             ],
             "span": {
-              "start": 271,
-              "end": 310
+              "start": 280,
+              "end": 319
             }
           },
           {
@@ -157,13 +157,13 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 334,
-                    "end": 340
+                    "start": 343,
+                    "end": 349
                   }
                 },
                 "span": {
-                  "start": 325,
-                  "end": 340
+                  "start": 334,
+                  "end": 349
                 }
               },
               {
@@ -171,19 +171,19 @@
                 "type": {
                   "code": "boolean",
                   "span": {
-                    "start": 351,
-                    "end": 358
+                    "start": 360,
+                    "end": 367
                   }
                 },
                 "span": {
-                  "start": 342,
-                  "end": 358
+                  "start": 351,
+                  "end": 367
                 }
               }
             ],
             "span": {
-              "start": 316,
-              "end": 359
+              "start": 325,
+              "end": 368
             }
           },
           {
@@ -194,616 +194,616 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 382,
-                    "end": 388
+                    "start": 391,
+                    "end": 397
                   }
                 },
                 "span": {
-                  "start": 375,
-                  "end": 388
+                  "start": 384,
+                  "end": 397
                 }
               }
             ],
             "span": {
-              "start": 365,
-              "end": 389
+              "start": 374,
+              "end": 398
             }
           }
         ],
         "span": {
-          "start": 121,
-          "end": 398
+          "start": 130,
+          "end": 407
         }
       },
       "bindings": [
         {
-          "id": "emit@127",
+          "id": "emit@136",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 127,
-            "end": 131
+            "start": 136,
+            "end": 140
           }
         },
         {
-          "id": "sender@408",
+          "id": "sender@417",
           "name": "sender",
           "kind": "state",
           "span": {
-            "start": 408,
-            "end": 414
+            "start": 417,
+            "end": 423
           }
         },
         {
-          "id": "order@434",
+          "id": "order@443",
           "name": "order",
           "kind": "state",
           "span": {
-            "start": 434,
-            "end": 439
+            "start": 443,
+            "end": 448
           }
         },
         {
-          "id": "answers@465",
+          "id": "answers@474",
           "name": "answers",
           "kind": "state",
           "span": {
-            "start": 465,
-            "end": 472
+            "start": 474,
+            "end": 481
           }
         },
         {
-          "id": "ordering@502",
+          "id": "ordering@511",
           "name": "ordering",
           "kind": "state",
           "span": {
-            "start": 502,
-            "end": 510
+            "start": 511,
+            "end": 519
           }
         },
         {
-          "id": "messages@534",
+          "id": "messages@543",
           "name": "messages",
           "kind": "state",
           "span": {
-            "start": 534,
-            "end": 542
+            "start": 543,
+            "end": 551
           }
         },
         {
-          "id": "loading@572",
+          "id": "loading@581",
           "name": "loading",
           "kind": "state",
           "span": {
-            "start": 572,
-            "end": 579
+            "start": 581,
+            "end": 588
           }
         },
         {
-          "id": "failure@602",
+          "id": "failure@611",
           "name": "failure",
           "kind": "state",
           "span": {
-            "start": 602,
-            "end": 609
+            "start": 611,
+            "end": 618
           }
         },
         {
-          "id": "unread@629",
+          "id": "unread@638",
           "name": "unread",
           "kind": "state",
           "span": {
-            "start": 629,
-            "end": 635
+            "start": 638,
+            "end": 644
           }
         },
         {
-          "id": "lookupReplies@652",
+          "id": "lookupReplies@661",
           "name": "lookupReplies",
           "kind": "localVar",
           "span": {
-            "start": 652,
-            "end": 665
+            "start": 661,
+            "end": 674
           }
         },
         {
-          "id": "orderReply@706",
+          "id": "orderReply@715",
           "name": "orderReply",
           "kind": "localVar",
           "span": {
-            "start": 706,
-            "end": 716
+            "start": 715,
+            "end": 725
           }
         },
         {
-          "id": "respond@762",
+          "id": "respond@771",
           "name": "respond",
           "kind": "localVar",
           "span": {
-            "start": 762,
-            "end": 769
+            "start": 771,
+            "end": 778
           }
         },
         {
-          "id": "fail@817",
+          "id": "fail@826",
           "name": "fail",
           "kind": "localVar",
           "span": {
-            "start": 817,
-            "end": 821
+            "start": 826,
+            "end": 830
           }
         },
         {
-          "id": "lookupReply@873",
+          "id": "lookupReply@882",
           "name": "lookupReply",
           "kind": "localFn",
           "span": {
-            "start": 873,
-            "end": 884
+            "start": 882,
+            "end": 893
           }
         },
         {
-          "id": "answerLookups@1027",
+          "id": "answerLookups@1036",
           "name": "answerLookups",
           "kind": "localFn",
           "span": {
-            "start": 1027,
-            "end": 1040
+            "start": 1036,
+            "end": 1049
           }
         },
         {
-          "id": "request@1172",
+          "id": "request@1181",
           "name": "request",
           "kind": "localFn",
           "span": {
-            "start": 1172,
-            "end": 1179
+            "start": 1181,
+            "end": 1188
           }
         },
         {
-          "id": "load@2300",
+          "id": "load@2309",
           "name": "load",
           "kind": "localFn",
           "span": {
-            "start": 2300,
-            "end": 2304
+            "start": 2309,
+            "end": 2313
           }
         },
         {
-          "id": "refresh@2585",
+          "id": "refresh@2594",
           "name": "refresh",
           "kind": "localFn",
           "span": {
-            "start": 2585,
-            "end": 2592
+            "start": 2594,
+            "end": 2601
           }
         },
         {
-          "id": "markTwice@2710",
+          "id": "markTwice@2719",
           "name": "markTwice",
           "kind": "localFn",
           "span": {
-            "start": 2710,
-            "end": 2719
+            "start": 2719,
+            "end": 2728
           }
         },
         {
-          "id": "line@3277",
+          "id": "line@3286",
           "name": "line",
           "kind": "loopVar",
           "span": {
-            "start": 3277,
-            "end": 3281
+            "start": 3286,
+            "end": 3290
           }
         },
         {
-          "id": "index@3283",
+          "id": "index@3292",
           "name": "index",
           "kind": "loopVar",
           "span": {
-            "start": 3283,
-            "end": 3288
+            "start": 3292,
+            "end": 3297
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "sender@408",
+          "binding": "sender@417",
           "initial": {
             "code": "\"\"",
             "span": {
-              "start": 421,
-              "end": 423
+              "start": 430,
+              "end": 432
             },
             "refs": []
           },
           "span": {
-            "start": 402,
-            "end": 425
+            "start": 411,
+            "end": 434
           }
         },
         {
           "kind": "State",
-          "binding": "order@434",
+          "binding": "order@443",
           "initial": {
             "code": "\"newest\"",
             "span": {
-              "start": 446,
-              "end": 454
+              "start": 455,
+              "end": 463
             },
             "refs": []
           },
           "span": {
-            "start": 428,
-            "end": 456
+            "start": 437,
+            "end": 465
           }
         },
         {
           "kind": "State",
-          "binding": "answers@465",
+          "binding": "answers@474",
           "type": {
             "code": "string[]",
             "span": {
-              "start": 479,
-              "end": 487
+              "start": 488,
+              "end": 496
             }
           },
           "initial": {
             "code": "[]",
             "span": {
-              "start": 489,
-              "end": 491
+              "start": 498,
+              "end": 500
             },
             "refs": []
           },
           "span": {
-            "start": 459,
-            "end": 493
+            "start": 468,
+            "end": 502
           }
         },
         {
           "kind": "State",
-          "binding": "ordering@502",
+          "binding": "ordering@511",
           "initial": {
             "code": "\"none\"",
             "span": {
-              "start": 517,
-              "end": 523
+              "start": 526,
+              "end": 532
             },
             "refs": []
           },
           "span": {
-            "start": 496,
-            "end": 525
+            "start": 505,
+            "end": 534
           }
         },
         {
           "kind": "State",
-          "binding": "messages@534",
+          "binding": "messages@543",
           "type": {
             "code": "string[]",
             "span": {
-              "start": 549,
-              "end": 557
+              "start": 558,
+              "end": 566
             }
           },
           "initial": {
             "code": "[]",
             "span": {
-              "start": 559,
-              "end": 561
+              "start": 568,
+              "end": 570
             },
             "refs": []
           },
           "span": {
-            "start": 528,
-            "end": 563
+            "start": 537,
+            "end": 572
           }
         },
         {
           "kind": "State",
-          "binding": "loading@572",
+          "binding": "loading@581",
           "initial": {
             "code": "false",
             "span": {
-              "start": 586,
-              "end": 591
+              "start": 595,
+              "end": 600
             },
             "refs": []
           },
           "span": {
-            "start": 566,
-            "end": 593
+            "start": 575,
+            "end": 602
           }
         },
         {
           "kind": "State",
-          "binding": "failure@602",
+          "binding": "failure@611",
           "initial": {
             "code": "\"\"",
             "span": {
-              "start": 616,
-              "end": 618
+              "start": 625,
+              "end": 627
             },
             "refs": []
           },
           "span": {
-            "start": 596,
-            "end": 620
+            "start": 605,
+            "end": 629
           }
         },
         {
           "kind": "State",
-          "binding": "unread@629",
+          "binding": "unread@638",
           "initial": {
             "code": "0",
             "span": {
-              "start": 642,
-              "end": 643
+              "start": 651,
+              "end": 652
             },
             "refs": []
           },
           "span": {
-            "start": 623,
-            "end": 645
+            "start": 632,
+            "end": 654
           }
         },
         {
           "kind": "Variable",
-          "binding": "lookupReplies@652",
+          "binding": "lookupReplies@661",
           "type": {
             "code": "((text: string) => void)[]",
             "span": {
-              "start": 667,
-              "end": 693
+              "start": 676,
+              "end": 702
             }
           },
           "initial": {
             "code": "[]",
             "span": {
-              "start": 696,
-              "end": 698
+              "start": 705,
+              "end": 707
             },
             "refs": []
           },
           "span": {
-            "start": 648,
-            "end": 699
+            "start": 657,
+            "end": 708
           }
         },
         {
           "kind": "Variable",
-          "binding": "orderReply@706",
+          "binding": "orderReply@715",
           "type": {
             "code": "((text: string) => void) | undefined",
             "span": {
-              "start": 718,
-              "end": 754
+              "start": 727,
+              "end": 763
             }
           },
           "span": {
-            "start": 702,
-            "end": 755
+            "start": 711,
+            "end": 764
           }
         },
         {
           "kind": "Variable",
-          "binding": "respond@762",
+          "binding": "respond@771",
           "type": {
             "code": "((list: string[]) => void) | undefined",
             "span": {
-              "start": 771,
-              "end": 809
+              "start": 780,
+              "end": 818
             }
           },
           "span": {
-            "start": 758,
-            "end": 810
+            "start": 767,
+            "end": 819
           }
         },
         {
           "kind": "Variable",
-          "binding": "fail@817",
+          "binding": "fail@826",
           "type": {
             "code": "((error: Error) => void) | undefined",
             "span": {
-              "start": 823,
-              "end": 859
+              "start": 832,
+              "end": 868
             }
           },
           "span": {
-            "start": 813,
-            "end": 860
+            "start": 822,
+            "end": 869
           }
         },
         {
           "kind": "Function",
-          "binding": "lookupReply@873",
+          "binding": "lookupReply@882",
           "form": "declaration",
           "function": {
             "parameters": [],
             "returnType": {
               "code": "Promise<string>",
               "span": {
-                "start": 888,
-                "end": 903
+                "start": 897,
+                "end": 912
               }
             },
             "body": {
               "code": "{\n    return new Promise<string>((resolve) => {\n      lookupReplies = [...lookupReplies, resolve];\n    });\n  }",
               "span": {
-                "start": 904,
-                "end": 1014
+                "start": 913,
+                "end": 1023
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "Promise",
                   "span": {
-                    "start": 921,
-                    "end": 928
+                    "start": 930,
+                    "end": 937
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "lookupReplies@652",
+                  "binding": "lookupReplies@661",
                   "operator": "=",
                   "span": {
-                    "start": 958,
-                    "end": 1001
+                    "start": 967,
+                    "end": 1010
                   },
                   "target": {
-                    "start": 958,
-                    "end": 971
+                    "start": 967,
+                    "end": 980
                   },
                   "value": {
-                    "start": 974,
-                    "end": 1001
+                    "start": 983,
+                    "end": 1010
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "lookupReplies@652",
+                  "binding": "lookupReplies@661",
                   "span": {
-                    "start": 978,
-                    "end": 991
+                    "start": 987,
+                    "end": 1000
                   }
                 }
               ]
             },
             "span": {
-              "start": 884,
-              "end": 1014
+              "start": 893,
+              "end": 1023
             }
           },
           "span": {
-            "start": 864,
-            "end": 1014
+            "start": 873,
+            "end": 1023
           }
         },
         {
           "kind": "Function",
-          "binding": "answerLookups@1027",
+          "binding": "answerLookups@1036",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    const waiting = lookupReplies;\n    lookupReplies = [];\n    waiting.forEach((resolve) => resolve(\"found\"));\n  }",
               "span": {
-                "start": 1043,
-                "end": 1159
+                "start": 1052,
+                "end": 1168
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "lookupReplies@652",
+                  "binding": "lookupReplies@661",
                   "span": {
-                    "start": 1065,
-                    "end": 1078
+                    "start": 1074,
+                    "end": 1087
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "lookupReplies@652",
+                  "binding": "lookupReplies@661",
                   "operator": "=",
                   "span": {
-                    "start": 1084,
-                    "end": 1102
+                    "start": 1093,
+                    "end": 1111
                   },
                   "target": {
-                    "start": 1084,
-                    "end": 1097
+                    "start": 1093,
+                    "end": 1106
                   },
                   "value": {
-                    "start": 1100,
-                    "end": 1102
+                    "start": 1109,
+                    "end": 1111
                   }
                 }
               ]
             },
             "span": {
-              "start": 1040,
-              "end": 1159
+              "start": 1049,
+              "end": 1168
             }
           },
           "span": {
-            "start": 1018,
-            "end": 1159
+            "start": 1027,
+            "end": 1168
           }
         },
         {
           "kind": "Function",
-          "binding": "request@1172",
+          "binding": "request@1181",
           "form": "declaration",
           "function": {
             "parameters": [],
             "returnType": {
               "code": "Promise<string[]>",
               "span": {
-                "start": 1183,
-                "end": 1200
+                "start": 1192,
+                "end": 1209
               }
             },
             "body": {
               "code": "{\n    return new Promise<string[]>((resolve, reject) => {\n      respond = resolve;\n      fail = reject;\n    });\n  }",
               "span": {
-                "start": 1201,
-                "end": 1316
+                "start": 1210,
+                "end": 1325
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "Promise",
                   "span": {
-                    "start": 1218,
-                    "end": 1225
+                    "start": 1227,
+                    "end": 1234
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "respond@762",
+                  "binding": "respond@771",
                   "operator": "=",
                   "span": {
-                    "start": 1265,
-                    "end": 1282
+                    "start": 1274,
+                    "end": 1291
                   },
                   "target": {
-                    "start": 1265,
-                    "end": 1272
+                    "start": 1274,
+                    "end": 1281
                   },
                   "value": {
-                    "start": 1275,
-                    "end": 1282
+                    "start": 1284,
+                    "end": 1291
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "fail@817",
+                  "binding": "fail@826",
                   "operator": "=",
                   "span": {
-                    "start": 1290,
-                    "end": 1303
+                    "start": 1299,
+                    "end": 1312
                   },
                   "target": {
-                    "start": 1290,
-                    "end": 1294
+                    "start": 1299,
+                    "end": 1303
                   },
                   "value": {
-                    "start": 1297,
-                    "end": 1303
+                    "start": 1306,
+                    "end": 1312
                   }
                 }
               ]
             },
             "span": {
-              "start": 1179,
-              "end": 1316
+              "start": 1188,
+              "end": 1325
             }
           },
           "span": {
-            "start": 1163,
-            "end": 1316
+            "start": 1172,
+            "end": 1325
           }
         },
         {
@@ -811,10 +811,10 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "sender@408",
+              "binding": "sender@417",
               "span": {
-                "start": 1326,
-                "end": 1332
+                "start": 1335,
+                "end": 1341
               }
             }
           ],
@@ -824,106 +824,106 @@
               {
                 "name": "value",
                 "span": {
-                  "start": 1341,
-                  "end": 1346
+                  "start": 1350,
+                  "end": 1355
                 }
               },
               {
                 "name": "previous",
                 "span": {
-                  "start": 1348,
-                  "end": 1356
+                  "start": 1357,
+                  "end": 1365
                 }
               },
               {
                 "name": "onCleanup",
                 "span": {
-                  "start": 1358,
-                  "end": 1367
+                  "start": 1367,
+                  "end": 1376
                 }
               }
             ],
             "body": {
               "code": "{\n    let cancelled = false;\n    onCleanup(() => {\n      cancelled = true;\n      emit(\"dropped\", value);\n    });\n    emit(\"looked\", value);\n    const text = await lookupReply();\n    if (!cancelled) {\n      answers.value = [...answers.value, `${value}: ${text}`];\n    }\n  }",
               "span": {
-                "start": 1372,
-                "end": 1644
+                "start": 1381,
+                "end": 1653
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@127",
+                  "binding": "emit@136",
                   "event": "dropped",
                   "span": {
-                    "start": 1453,
-                    "end": 1475
+                    "start": 1462,
+                    "end": 1484
                   },
                   "arguments": [
                     {
-                      "start": 1469,
-                      "end": 1474
+                      "start": 1478,
+                      "end": 1483
                     }
                   ]
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@127",
+                  "binding": "emit@136",
                   "event": "looked",
                   "span": {
-                    "start": 1489,
-                    "end": 1510
+                    "start": 1498,
+                    "end": 1519
                   },
                   "arguments": [
                     {
-                      "start": 1504,
-                      "end": 1509
+                      "start": 1513,
+                      "end": 1518
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "lookupReply@873",
+                  "binding": "lookupReply@882",
                   "span": {
-                    "start": 1535,
-                    "end": 1546
+                    "start": 1544,
+                    "end": 1555
                   },
                   "call": true
                 },
                 {
                   "kind": "Write",
-                  "binding": "answers@465",
+                  "binding": "answers@474",
                   "operator": "=",
                   "span": {
-                    "start": 1578,
-                    "end": 1633
+                    "start": 1587,
+                    "end": 1642
                   },
                   "target": {
-                    "start": 1578,
-                    "end": 1591
+                    "start": 1587,
+                    "end": 1600
                   },
                   "value": {
-                    "start": 1594,
-                    "end": 1633
+                    "start": 1603,
+                    "end": 1642
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "answers@465",
+                  "binding": "answers@474",
                   "span": {
-                    "start": 1598,
-                    "end": 1611
+                    "start": 1607,
+                    "end": 1620
                   }
                 }
               ]
             },
             "span": {
-              "start": 1334,
-              "end": 1644
+              "start": 1343,
+              "end": 1653
             }
           },
           "span": {
-            "start": 1320,
-            "end": 1646
+            "start": 1329,
+            "end": 1655
           }
         },
         {
@@ -934,38 +934,38 @@
               {
                 "name": "onCleanup",
                 "span": {
-                  "start": 1669,
-                  "end": 1678
+                  "start": 1678,
+                  "end": 1687
                 }
               }
             ],
             "body": {
               "code": "{\n    const current = order.value;\n    let cancelled = false;\n    onCleanup(() => {\n      cancelled = true;\n    });\n    emit(\"sorted\", current);\n    const text = await new Promise<string>((resolve) => {\n      orderReply = resolve;\n    });\n    if (!cancelled) {\n      ordering.value = `${current} ${text}`;\n      emit(\"scaled\", current);\n    }\n  }",
               "span": {
-                "start": 1683,
-                "end": 2029
+                "start": 1692,
+                "end": 2038
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "order@434",
+                  "binding": "order@443",
                   "span": {
-                    "start": 1705,
-                    "end": 1716
+                    "start": 1714,
+                    "end": 1725
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@127",
+                  "binding": "emit@136",
                   "event": "sorted",
                   "span": {
-                    "start": 1803,
-                    "end": 1826
+                    "start": 1812,
+                    "end": 1835
                   },
                   "arguments": [
                     {
-                      "start": 1818,
-                      "end": 1825
+                      "start": 1827,
+                      "end": 1834
                     }
                   ]
                 },
@@ -973,69 +973,69 @@
                   "kind": "Global",
                   "name": "Promise",
                   "span": {
-                    "start": 1855,
-                    "end": 1862
+                    "start": 1864,
+                    "end": 1871
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "orderReply@706",
+                  "binding": "orderReply@715",
                   "operator": "=",
                   "span": {
-                    "start": 1892,
-                    "end": 1912
+                    "start": 1901,
+                    "end": 1921
                   },
                   "target": {
-                    "start": 1892,
-                    "end": 1902
+                    "start": 1901,
+                    "end": 1911
                   },
                   "value": {
-                    "start": 1905,
-                    "end": 1912
+                    "start": 1914,
+                    "end": 1921
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "ordering@502",
+                  "binding": "ordering@511",
                   "operator": "=",
                   "span": {
-                    "start": 1950,
-                    "end": 1987
+                    "start": 1959,
+                    "end": 1996
                   },
                   "target": {
-                    "start": 1950,
-                    "end": 1964
+                    "start": 1959,
+                    "end": 1973
                   },
                   "value": {
-                    "start": 1967,
-                    "end": 1987
+                    "start": 1976,
+                    "end": 1996
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@127",
+                  "binding": "emit@136",
                   "event": "scaled",
                   "span": {
-                    "start": 1995,
-                    "end": 2018
+                    "start": 2004,
+                    "end": 2027
                   },
                   "arguments": [
                     {
-                      "start": 2010,
-                      "end": 2017
+                      "start": 2019,
+                      "end": 2026
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 1662,
-              "end": 2029
+              "start": 1671,
+              "end": 2038
             }
           },
           "span": {
-            "start": 1650,
-            "end": 2031
+            "start": 1659,
+            "end": 2040
           }
         },
         {
@@ -1043,18 +1043,18 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "messages@534",
+              "binding": "messages@543",
               "span": {
-                "start": 2042,
-                "end": 2050
+                "start": 2051,
+                "end": 2059
               }
             },
             {
               "kind": "Ref",
-              "binding": "loading@572",
+              "binding": "loading@581",
               "span": {
-                "start": 2052,
-                "end": 2059
+                "start": 2061,
+                "end": 2068
               }
             }
           ],
@@ -1069,52 +1069,52 @@
                     "busy"
                   ],
                   "span": {
-                    "start": 2063,
-                    "end": 2075
+                    "start": 2072,
+                    "end": 2084
                   }
                 },
                 "span": {
-                  "start": 2063,
-                  "end": 2075
+                  "start": 2072,
+                  "end": 2084
                 }
               }
             ],
             "body": {
               "code": "{\n    emit(\"busy\", list.length, busy);\n  }",
               "span": {
-                "start": 2080,
-                "end": 2122
+                "start": 2089,
+                "end": 2131
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@127",
+                  "binding": "emit@136",
                   "event": "busy",
                   "span": {
-                    "start": 2086,
-                    "end": 2117
+                    "start": 2095,
+                    "end": 2126
                   },
                   "arguments": [
                     {
-                      "start": 2099,
-                      "end": 2110
+                      "start": 2108,
+                      "end": 2119
                     },
                     {
-                      "start": 2112,
-                      "end": 2116
+                      "start": 2121,
+                      "end": 2125
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 2062,
-              "end": 2122
+              "start": 2071,
+              "end": 2131
             }
           },
           "span": {
-            "start": 2035,
-            "end": 2124
+            "start": 2044,
+            "end": 2133
           }
         },
         {
@@ -1122,18 +1122,18 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "failure@602",
+              "binding": "failure@611",
               "span": {
-                "start": 2135,
-                "end": 2142
+                "start": 2144,
+                "end": 2151
               }
             },
             {
               "kind": "Ref",
-              "binding": "loading@572",
+              "binding": "loading@581",
               "span": {
-                "start": 2144,
-                "end": 2151
+                "start": 2153,
+                "end": 2160
               }
             }
           ],
@@ -1148,52 +1148,52 @@
                     "busy"
                   ],
                   "span": {
-                    "start": 2155,
-                    "end": 2170
+                    "start": 2164,
+                    "end": 2179
                   }
                 },
                 "span": {
-                  "start": 2155,
-                  "end": 2170
+                  "start": 2164,
+                  "end": 2179
                 }
               }
             ],
             "body": {
               "code": "{\n    emit(\"failed\", message, busy);\n  }",
               "span": {
-                "start": 2175,
-                "end": 2215
+                "start": 2184,
+                "end": 2224
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@127",
+                  "binding": "emit@136",
                   "event": "failed",
                   "span": {
-                    "start": 2181,
-                    "end": 2210
+                    "start": 2190,
+                    "end": 2219
                   },
                   "arguments": [
                     {
-                      "start": 2196,
-                      "end": 2203
+                      "start": 2205,
+                      "end": 2212
                     },
                     {
-                      "start": 2205,
-                      "end": 2209
+                      "start": 2214,
+                      "end": 2218
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 2154,
-              "end": 2215
+              "start": 2163,
+              "end": 2224
             }
           },
           "span": {
-            "start": 2128,
-            "end": 2217
+            "start": 2137,
+            "end": 2226
           }
         },
         {
@@ -1201,10 +1201,10 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "unread@629",
+              "binding": "unread@638",
               "span": {
-                "start": 2227,
-                "end": 2233
+                "start": 2236,
+                "end": 2242
               }
             }
           ],
@@ -1213,48 +1213,48 @@
               {
                 "name": "value",
                 "span": {
-                  "start": 2236,
-                  "end": 2241
+                  "start": 2245,
+                  "end": 2250
                 }
               }
             ],
             "body": {
               "code": "{\n    emit(\"counted\", value);\n  }",
               "span": {
-                "start": 2246,
-                "end": 2279
+                "start": 2255,
+                "end": 2288
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@127",
+                  "binding": "emit@136",
                   "event": "counted",
                   "span": {
-                    "start": 2252,
-                    "end": 2274
+                    "start": 2261,
+                    "end": 2283
                   },
                   "arguments": [
                     {
-                      "start": 2268,
-                      "end": 2273
+                      "start": 2277,
+                      "end": 2282
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 2235,
-              "end": 2279
+              "start": 2244,
+              "end": 2288
             }
           },
           "span": {
-            "start": 2221,
-            "end": 2281
+            "start": 2230,
+            "end": 2290
           }
         },
         {
           "kind": "Function",
-          "binding": "load@2300",
+          "binding": "load@2309",
           "form": "declaration",
           "function": {
             "async": true,
@@ -1262,127 +1262,127 @@
             "body": {
               "code": "{\n    loading.value = true;\n    failure.value = \"\";\n    try {\n      const list = await request();\n      messages.value = list;\n    } catch (error) {\n      failure.value = error instanceof Error ? error.message : \"unknown\";\n    }\n    loading.value = false;\n  }",
               "span": {
-                "start": 2307,
-                "end": 2566
+                "start": 2316,
+                "end": 2575
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "loading@572",
+                  "binding": "loading@581",
                   "operator": "=",
                   "span": {
-                    "start": 2313,
-                    "end": 2333
+                    "start": 2322,
+                    "end": 2342
                   },
                   "target": {
-                    "start": 2313,
-                    "end": 2326
+                    "start": 2322,
+                    "end": 2335
                   },
                   "value": {
-                    "start": 2329,
-                    "end": 2333
+                    "start": 2338,
+                    "end": 2342
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "failure@602",
+                  "binding": "failure@611",
                   "operator": "=",
                   "span": {
-                    "start": 2339,
-                    "end": 2357
+                    "start": 2348,
+                    "end": 2366
                   },
                   "target": {
-                    "start": 2339,
-                    "end": 2352
+                    "start": 2348,
+                    "end": 2361
                   },
                   "value": {
-                    "start": 2355,
-                    "end": 2357
+                    "start": 2364,
+                    "end": 2366
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "request@1172",
+                  "binding": "request@1181",
                   "span": {
-                    "start": 2394,
-                    "end": 2401
+                    "start": 2403,
+                    "end": 2410
                   },
                   "call": true
                 },
                 {
                   "kind": "Write",
-                  "binding": "messages@534",
+                  "binding": "messages@543",
                   "operator": "=",
                   "span": {
-                    "start": 2411,
-                    "end": 2432
+                    "start": 2420,
+                    "end": 2441
                   },
                   "target": {
-                    "start": 2411,
-                    "end": 2425
+                    "start": 2420,
+                    "end": 2434
                   },
                   "value": {
-                    "start": 2428,
-                    "end": 2432
+                    "start": 2437,
+                    "end": 2441
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "failure@602",
+                  "binding": "failure@611",
                   "operator": "=",
                   "span": {
-                    "start": 2462,
-                    "end": 2528
+                    "start": 2471,
+                    "end": 2537
                   },
                   "target": {
-                    "start": 2462,
-                    "end": 2475
+                    "start": 2471,
+                    "end": 2484
                   },
                   "value": {
-                    "start": 2478,
-                    "end": 2528
+                    "start": 2487,
+                    "end": 2537
                   }
                 },
                 {
                   "kind": "Global",
                   "name": "Error",
                   "span": {
-                    "start": 2495,
-                    "end": 2500
+                    "start": 2504,
+                    "end": 2509
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "loading@572",
+                  "binding": "loading@581",
                   "operator": "=",
                   "span": {
-                    "start": 2540,
-                    "end": 2561
+                    "start": 2549,
+                    "end": 2570
                   },
                   "target": {
-                    "start": 2540,
-                    "end": 2553
+                    "start": 2549,
+                    "end": 2562
                   },
                   "value": {
-                    "start": 2556,
-                    "end": 2561
+                    "start": 2565,
+                    "end": 2570
                   }
                 }
               ]
             },
             "span": {
-              "start": 2304,
-              "end": 2566
+              "start": 2313,
+              "end": 2575
             }
           },
           "span": {
-            "start": 2285,
-            "end": 2566
+            "start": 2294,
+            "end": 2575
           }
         },
         {
           "kind": "Function",
-          "binding": "refresh@2585",
+          "binding": "refresh@2594",
           "form": "declaration",
           "function": {
             "async": true,
@@ -1390,85 +1390,85 @@
             "body": {
               "code": "{\n    loading.value = true;\n    messages.value = await request();\n    loading.value = false;\n  }",
               "span": {
-                "start": 2595,
-                "end": 2691
+                "start": 2604,
+                "end": 2700
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "loading@572",
+                  "binding": "loading@581",
                   "operator": "=",
                   "span": {
-                    "start": 2601,
-                    "end": 2621
+                    "start": 2610,
+                    "end": 2630
                   },
                   "target": {
-                    "start": 2601,
-                    "end": 2614
+                    "start": 2610,
+                    "end": 2623
                   },
                   "value": {
-                    "start": 2617,
-                    "end": 2621
+                    "start": 2626,
+                    "end": 2630
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "messages@534",
+                  "binding": "messages@543",
                   "operator": "=",
                   "span": {
-                    "start": 2627,
-                    "end": 2659
+                    "start": 2636,
+                    "end": 2668
                   },
                   "target": {
-                    "start": 2627,
-                    "end": 2641
+                    "start": 2636,
+                    "end": 2650
                   },
                   "value": {
-                    "start": 2644,
-                    "end": 2659
+                    "start": 2653,
+                    "end": 2668
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "request@1172",
+                  "binding": "request@1181",
                   "span": {
-                    "start": 2650,
-                    "end": 2657
+                    "start": 2659,
+                    "end": 2666
                   },
                   "call": true
                 },
                 {
                   "kind": "Write",
-                  "binding": "loading@572",
+                  "binding": "loading@581",
                   "operator": "=",
                   "span": {
-                    "start": 2665,
-                    "end": 2686
+                    "start": 2674,
+                    "end": 2695
                   },
                   "target": {
-                    "start": 2665,
-                    "end": 2678
+                    "start": 2674,
+                    "end": 2687
                   },
                   "value": {
-                    "start": 2681,
-                    "end": 2686
+                    "start": 2690,
+                    "end": 2695
                   }
                 }
               ]
             },
             "span": {
-              "start": 2592,
-              "end": 2691
+              "start": 2601,
+              "end": 2700
             }
           },
           "span": {
-            "start": 2570,
-            "end": 2691
+            "start": 2579,
+            "end": 2700
           }
         },
         {
           "kind": "Function",
-          "binding": "markTwice@2710",
+          "binding": "markTwice@2719",
           "form": "declaration",
           "function": {
             "async": true,
@@ -1476,45 +1476,45 @@
             "body": {
               "code": "{\n    const bump = () => {\n      unread.value += 1;\n    };\n    bump();\n    bump();\n    await nextTick();\n    bump();\n    bump();\n  }",
               "span": {
-                "start": 2722,
-                "end": 2854
+                "start": 2731,
+                "end": 2863
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "unread@629",
+                  "binding": "unread@638",
                   "operator": "+=",
                   "span": {
-                    "start": 2755,
-                    "end": 2772
+                    "start": 2764,
+                    "end": 2781
                   },
                   "target": {
-                    "start": 2755,
-                    "end": 2767
+                    "start": 2764,
+                    "end": 2776
                   },
                   "value": {
-                    "start": 2771,
-                    "end": 2772
+                    "start": 2780,
+                    "end": 2781
                   }
                 },
                 {
                   "kind": "Api",
                   "api": "nextTick",
                   "span": {
-                    "start": 2815,
-                    "end": 2823
+                    "start": 2824,
+                    "end": 2832
                   }
                 }
               ]
             },
             "span": {
-              "start": 2719,
-              "end": 2854
+              "start": 2728,
+              "end": 2863
             }
           },
           "span": {
-            "start": 2695,
-            "end": 2854
+            "start": 2704,
+            "end": 2863
           }
         }
       ],
@@ -1527,8 +1527,8 @@
             "name": "class",
             "value": "inbox-lookup",
             "span": {
-              "start": 2880,
-              "end": 2900
+              "start": 2889,
+              "end": 2909
             }
           },
           {
@@ -1536,8 +1536,8 @@
             "name": "aria-label",
             "value": "Inbox",
             "span": {
-              "start": 2901,
-              "end": 2919
+              "start": 2910,
+              "end": 2928
             }
           }
         ],
@@ -1551,8 +1551,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 2935,
-                  "end": 2948
+                  "start": 2944,
+                  "end": 2957
                 }
               },
               {
@@ -1565,25 +1565,25 @@
                     "body": {
                       "code": "(sender.value = \"Ann\")",
                       "span": {
-                        "start": 2964,
-                        "end": 2986
+                        "start": 2973,
+                        "end": 2995
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "sender@408",
+                          "binding": "sender@417",
                           "operator": "=",
                           "span": {
-                            "start": 2964,
-                            "end": 2986
+                            "start": 2973,
+                            "end": 2995
                           },
                           "target": {
-                            "start": 2965,
-                            "end": 2977
+                            "start": 2974,
+                            "end": 2986
                           },
                           "value": {
-                            "start": 2980,
-                            "end": 2985
+                            "start": 2989,
+                            "end": 2994
                           },
                           "arrowBody": true
                         }
@@ -1591,18 +1591,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 2958,
-                      "end": 2986
+                      "start": 2967,
+                      "end": 2995
                     }
                   },
                   "span": {
-                    "start": 2958,
-                    "end": 2986
+                    "start": 2967,
+                    "end": 2995
                   }
                 },
                 "span": {
-                  "start": 2949,
-                  "end": 2987
+                  "start": 2958,
+                  "end": 2996
                 }
               }
             ],
@@ -1611,14 +1611,14 @@
                 "kind": "Text",
                 "value": "Find Ann",
                 "span": {
-                  "start": 2988,
-                  "end": 3012
+                  "start": 2997,
+                  "end": 3021
                 }
               }
             ],
             "span": {
-              "start": 2927,
-              "end": 3021
+              "start": 2936,
+              "end": 3030
             }
           },
           {
@@ -1630,8 +1630,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 3036,
-                  "end": 3049
+                  "start": 3045,
+                  "end": 3058
                 }
               },
               {
@@ -1644,25 +1644,25 @@
                     "body": {
                       "code": "(sender.value = \"Anna\")",
                       "span": {
-                        "start": 3065,
-                        "end": 3088
+                        "start": 3074,
+                        "end": 3097
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "sender@408",
+                          "binding": "sender@417",
                           "operator": "=",
                           "span": {
-                            "start": 3065,
-                            "end": 3088
+                            "start": 3074,
+                            "end": 3097
                           },
                           "target": {
-                            "start": 3066,
-                            "end": 3078
+                            "start": 3075,
+                            "end": 3087
                           },
                           "value": {
-                            "start": 3081,
-                            "end": 3087
+                            "start": 3090,
+                            "end": 3096
                           },
                           "arrowBody": true
                         }
@@ -1670,18 +1670,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 3059,
-                      "end": 3088
+                      "start": 3068,
+                      "end": 3097
                     }
                   },
                   "span": {
-                    "start": 3059,
-                    "end": 3088
+                    "start": 3068,
+                    "end": 3097
                   }
                 },
                 "span": {
-                  "start": 3050,
-                  "end": 3089
+                  "start": 3059,
+                  "end": 3098
                 }
               }
             ],
@@ -1690,14 +1690,14 @@
                 "kind": "Text",
                 "value": "Find Anna",
                 "span": {
-                  "start": 3090,
-                  "end": 3115
+                  "start": 3099,
+                  "end": 3124
                 }
               }
             ],
             "span": {
-              "start": 3028,
-              "end": 3124
+              "start": 3037,
+              "end": 3133
             }
           },
           {
@@ -1709,8 +1709,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 3139,
-                  "end": 3152
+                  "start": 3148,
+                  "end": 3161
                 }
               },
               {
@@ -1718,15 +1718,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "answerLookups@1027",
+                  "binding": "answerLookups@1036",
                   "span": {
-                    "start": 3162,
-                    "end": 3175
+                    "start": 3171,
+                    "end": 3184
                   }
                 },
                 "span": {
-                  "start": 3153,
-                  "end": 3176
+                  "start": 3162,
+                  "end": 3185
                 }
               }
             ],
@@ -1735,14 +1735,14 @@
                 "kind": "Text",
                 "value": "Answer lookups",
                 "span": {
-                  "start": 3177,
-                  "end": 3207
+                  "start": 3186,
+                  "end": 3216
                 }
               }
             ],
             "span": {
-              "start": 3131,
-              "end": 3216
+              "start": 3140,
+              "end": 3225
             }
           },
           {
@@ -1754,8 +1754,8 @@
                 "name": "aria-label",
                 "value": "Answers",
                 "span": {
-                  "start": 3227,
-                  "end": 3247
+                  "start": 3236,
+                  "end": 3256
                 }
               }
             ],
@@ -1765,35 +1765,35 @@
                 "source": {
                   "code": "answers.value",
                   "span": {
-                    "start": 3258,
-                    "end": 3271
+                    "start": 3267,
+                    "end": 3280
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "answers@465",
+                      "binding": "answers@474",
                       "span": {
-                        "start": 3258,
-                        "end": 3271
+                        "start": 3267,
+                        "end": 3280
                       }
                     }
                   ]
                 },
-                "item": "line@3277",
-                "index": "index@3283",
+                "item": "line@3286",
+                "index": "index@3292",
                 "key": {
                   "code": "index",
                   "span": {
-                    "start": 3314,
-                    "end": 3319
+                    "start": 3323,
+                    "end": 3328
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "index@3283",
+                      "binding": "index@3292",
                       "span": {
-                        "start": 3314,
-                        "end": 3319
+                        "start": 3323,
+                        "end": 3328
                       }
                     }
                   ]
@@ -1808,40 +1808,40 @@
                       "value": {
                         "code": "line",
                         "span": {
-                          "start": 3322,
-                          "end": 3326
+                          "start": 3331,
+                          "end": 3335
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "line@3277",
+                            "binding": "line@3286",
                             "span": {
-                              "start": 3322,
-                              "end": 3326
+                              "start": 3331,
+                              "end": 3335
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 3321,
-                        "end": 3327
+                        "start": 3330,
+                        "end": 3336
                       }
                     }
                   ],
                   "span": {
-                    "start": 3305,
-                    "end": 3332
+                    "start": 3314,
+                    "end": 3341
                   }
                 },
                 "span": {
-                  "start": 3258,
-                  "end": 3343
+                  "start": 3267,
+                  "end": 3352
                 }
               }
             ],
             "span": {
-              "start": 3223,
-              "end": 3356
+              "start": 3232,
+              "end": 3365
             }
           },
           {
@@ -1853,8 +1853,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 3379,
-                  "end": 3392
+                  "start": 3388,
+                  "end": 3401
                 }
               },
               {
@@ -1867,52 +1867,52 @@
                     "body": {
                       "code": "(order.value = order.value === \"newest\" ? \"oldest\" : \"newest\")",
                       "span": {
-                        "start": 3416,
-                        "end": 3478
+                        "start": 3425,
+                        "end": 3487
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "order@434",
+                          "binding": "order@443",
                           "operator": "=",
                           "span": {
-                            "start": 3416,
-                            "end": 3478
+                            "start": 3425,
+                            "end": 3487
                           },
                           "target": {
-                            "start": 3417,
-                            "end": 3428
+                            "start": 3426,
+                            "end": 3437
                           },
                           "value": {
-                            "start": 3431,
-                            "end": 3477
+                            "start": 3440,
+                            "end": 3486
                           },
                           "arrowBody": true
                         },
                         {
                           "kind": "Binding",
-                          "binding": "order@434",
+                          "binding": "order@443",
                           "span": {
-                            "start": 3431,
-                            "end": 3442
+                            "start": 3440,
+                            "end": 3451
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 3410,
-                      "end": 3478
+                      "start": 3419,
+                      "end": 3487
                     }
                   },
                   "span": {
-                    "start": 3410,
-                    "end": 3478
+                    "start": 3419,
+                    "end": 3487
                   }
                 },
                 "span": {
-                  "start": 3401,
-                  "end": 3479
+                  "start": 3410,
+                  "end": 3488
                 }
               }
             ],
@@ -1921,14 +1921,14 @@
                 "kind": "Text",
                 "value": "Switch order",
                 "span": {
-                  "start": 3487,
-                  "end": 3515
+                  "start": 3496,
+                  "end": 3524
                 }
               }
             ],
             "span": {
-              "start": 3363,
-              "end": 3524
+              "start": 3372,
+              "end": 3533
             }
           },
           {
@@ -1940,8 +1940,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 3539,
-                  "end": 3552
+                  "start": 3548,
+                  "end": 3561
                 }
               },
               {
@@ -1954,34 +1954,34 @@
                     "body": {
                       "code": "orderReply?.(\"ready\")",
                       "span": {
-                        "start": 3568,
-                        "end": 3589
+                        "start": 3577,
+                        "end": 3598
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "orderReply@706",
+                          "binding": "orderReply@715",
                           "span": {
-                            "start": 3568,
-                            "end": 3578
+                            "start": 3577,
+                            "end": 3587
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 3562,
-                      "end": 3589
+                      "start": 3571,
+                      "end": 3598
                     }
                   },
                   "span": {
-                    "start": 3562,
-                    "end": 3589
+                    "start": 3571,
+                    "end": 3598
                   }
                 },
                 "span": {
-                  "start": 3553,
-                  "end": 3590
+                  "start": 3562,
+                  "end": 3599
                 }
               }
             ],
@@ -1990,14 +1990,14 @@
                 "kind": "Text",
                 "value": "Answer order",
                 "span": {
-                  "start": 3591,
-                  "end": 3619
+                  "start": 3600,
+                  "end": 3628
                 }
               }
             ],
             "span": {
-              "start": 3531,
-              "end": 3628
+              "start": 3540,
+              "end": 3637
             }
           },
           {
@@ -2009,8 +2009,8 @@
                 "kind": "Text",
                 "value": "Order: ",
                 "span": {
-                  "start": 3638,
-                  "end": 3645
+                  "start": 3647,
+                  "end": 3654
                 }
               },
               {
@@ -2018,29 +2018,29 @@
                 "value": {
                   "code": "ordering.value",
                   "span": {
-                    "start": 3646,
-                    "end": 3660
+                    "start": 3655,
+                    "end": 3669
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "ordering@502",
+                      "binding": "ordering@511",
                       "span": {
-                        "start": 3646,
-                        "end": 3660
+                        "start": 3655,
+                        "end": 3669
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 3645,
-                  "end": 3661
+                  "start": 3654,
+                  "end": 3670
                 }
               }
             ],
             "span": {
-              "start": 3635,
-              "end": 3665
+              "start": 3644,
+              "end": 3674
             }
           },
           {
@@ -2052,8 +2052,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 3680,
-                  "end": 3693
+                  "start": 3689,
+                  "end": 3702
                 }
               },
               {
@@ -2061,15 +2061,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "load@2300",
+                  "binding": "load@2309",
                   "span": {
-                    "start": 3703,
-                    "end": 3707
+                    "start": 3712,
+                    "end": 3716
                   }
                 },
                 "span": {
-                  "start": 3694,
-                  "end": 3708
+                  "start": 3703,
+                  "end": 3717
                 }
               }
             ],
@@ -2078,14 +2078,14 @@
                 "kind": "Text",
                 "value": "Load",
                 "span": {
-                  "start": 3709,
-                  "end": 3729
+                  "start": 3718,
+                  "end": 3738
                 }
               }
             ],
             "span": {
-              "start": 3672,
-              "end": 3738
+              "start": 3681,
+              "end": 3747
             }
           },
           {
@@ -2097,8 +2097,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 3753,
-                  "end": 3766
+                  "start": 3762,
+                  "end": 3775
                 }
               },
               {
@@ -2106,15 +2106,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "refresh@2585",
+                  "binding": "refresh@2594",
                   "span": {
-                    "start": 3776,
-                    "end": 3783
+                    "start": 3785,
+                    "end": 3792
                   }
                 },
                 "span": {
-                  "start": 3767,
-                  "end": 3784
+                  "start": 3776,
+                  "end": 3793
                 }
               }
             ],
@@ -2123,14 +2123,14 @@
                 "kind": "Text",
                 "value": "Refresh",
                 "span": {
-                  "start": 3785,
-                  "end": 3808
+                  "start": 3794,
+                  "end": 3817
                 }
               }
             ],
             "span": {
-              "start": 3745,
-              "end": 3817
+              "start": 3754,
+              "end": 3826
             }
           },
           {
@@ -2142,8 +2142,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 3832,
-                  "end": 3845
+                  "start": 3841,
+                  "end": 3854
                 }
               },
               {
@@ -2156,34 +2156,34 @@
                     "body": {
                       "code": "respond?.([\"Hello\", \"Welcome\"])",
                       "span": {
-                        "start": 3861,
-                        "end": 3892
+                        "start": 3870,
+                        "end": 3901
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "respond@762",
+                          "binding": "respond@771",
                           "span": {
-                            "start": 3861,
-                            "end": 3868
+                            "start": 3870,
+                            "end": 3877
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 3855,
-                      "end": 3892
+                      "start": 3864,
+                      "end": 3901
                     }
                   },
                   "span": {
-                    "start": 3855,
-                    "end": 3892
+                    "start": 3864,
+                    "end": 3901
                   }
                 },
                 "span": {
-                  "start": 3846,
-                  "end": 3893
+                  "start": 3855,
+                  "end": 3902
                 }
               }
             ],
@@ -2192,14 +2192,14 @@
                 "kind": "Text",
                 "value": "Reply",
                 "span": {
-                  "start": 3894,
-                  "end": 3915
+                  "start": 3903,
+                  "end": 3924
                 }
               }
             ],
             "span": {
-              "start": 3824,
-              "end": 3924
+              "start": 3833,
+              "end": 3933
             }
           },
           {
@@ -2211,8 +2211,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 3939,
-                  "end": 3952
+                  "start": 3948,
+                  "end": 3961
                 }
               },
               {
@@ -2225,42 +2225,42 @@
                     "body": {
                       "code": "fail?.(new Error(\"offline\"))",
                       "span": {
-                        "start": 3968,
-                        "end": 3996
+                        "start": 3977,
+                        "end": 4005
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "fail@817",
+                          "binding": "fail@826",
                           "span": {
-                            "start": 3968,
-                            "end": 3972
+                            "start": 3977,
+                            "end": 3981
                           }
                         },
                         {
                           "kind": "Global",
                           "name": "Error",
                           "span": {
-                            "start": 3979,
-                            "end": 3984
+                            "start": 3988,
+                            "end": 3993
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 3962,
-                      "end": 3996
+                      "start": 3971,
+                      "end": 4005
                     }
                   },
                   "span": {
-                    "start": 3962,
-                    "end": 3996
+                    "start": 3971,
+                    "end": 4005
                   }
                 },
                 "span": {
-                  "start": 3953,
-                  "end": 3997
+                  "start": 3962,
+                  "end": 4006
                 }
               }
             ],
@@ -2269,14 +2269,14 @@
                 "kind": "Text",
                 "value": "Fail",
                 "span": {
-                  "start": 3998,
-                  "end": 4018
+                  "start": 4007,
+                  "end": 4027
                 }
               }
             ],
             "span": {
-              "start": 3931,
-              "end": 4027
+              "start": 3940,
+              "end": 4036
             }
           },
           {
@@ -2288,8 +2288,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 4037,
-                  "end": 4050
+                  "start": 4046,
+                  "end": 4059
                 }
               }
             ],
@@ -2299,31 +2299,31 @@
                 "value": {
                   "code": "loading.value ? \"Loading\" : `${messages.value.length} messages`",
                   "span": {
-                    "start": 4061,
-                    "end": 4124
+                    "start": 4070,
+                    "end": 4133
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "loading@572",
+                      "binding": "loading@581",
                       "span": {
-                        "start": 4061,
-                        "end": 4074
+                        "start": 4070,
+                        "end": 4083
                       }
                     },
                     {
                       "kind": "Binding",
-                      "binding": "messages@534",
+                      "binding": "messages@543",
                       "span": {
-                        "start": 4092,
-                        "end": 4106
+                        "start": 4101,
+                        "end": 4115
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 4060,
-                  "end": 4125
+                  "start": 4069,
+                  "end": 4134
                 }
               },
               {
@@ -2331,37 +2331,37 @@
                 "value": {
                   "code": "failure.value === \"\" ? \"\" : `, ${failure.value}`",
                   "span": {
-                    "start": 4135,
-                    "end": 4183
+                    "start": 4144,
+                    "end": 4192
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "failure@602",
+                      "binding": "failure@611",
                       "span": {
-                        "start": 4135,
-                        "end": 4148
+                        "start": 4144,
+                        "end": 4157
                       }
                     },
                     {
                       "kind": "Binding",
-                      "binding": "failure@602",
+                      "binding": "failure@611",
                       "span": {
-                        "start": 4168,
-                        "end": 4181
+                        "start": 4177,
+                        "end": 4190
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 4134,
-                  "end": 4184
+                  "start": 4143,
+                  "end": 4193
                 }
               }
             ],
             "span": {
-              "start": 4034,
-              "end": 4195
+              "start": 4043,
+              "end": 4204
             }
           },
           {
@@ -2373,8 +2373,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 4210,
-                  "end": 4223
+                  "start": 4219,
+                  "end": 4232
                 }
               },
               {
@@ -2382,15 +2382,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "markTwice@2710",
+                  "binding": "markTwice@2719",
                   "span": {
-                    "start": 4233,
-                    "end": 4242
+                    "start": 4242,
+                    "end": 4251
                   }
                 },
                 "span": {
-                  "start": 4224,
-                  "end": 4243
+                  "start": 4233,
+                  "end": 4252
                 }
               }
             ],
@@ -2399,14 +2399,14 @@
                 "kind": "Text",
                 "value": "Mark twice",
                 "span": {
-                  "start": 4244,
-                  "end": 4270
+                  "start": 4253,
+                  "end": 4279
                 }
               }
             ],
             "span": {
-              "start": 4202,
-              "end": 4279
+              "start": 4211,
+              "end": 4288
             }
           },
           {
@@ -2418,8 +2418,8 @@
                 "kind": "Text",
                 "value": "Unread: ",
                 "span": {
-                  "start": 4289,
-                  "end": 4297
+                  "start": 4298,
+                  "end": 4306
                 }
               },
               {
@@ -2427,35 +2427,35 @@
                 "value": {
                   "code": "unread.value",
                   "span": {
-                    "start": 4298,
-                    "end": 4310
+                    "start": 4307,
+                    "end": 4319
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "unread@629",
+                      "binding": "unread@638",
                       "span": {
-                        "start": 4298,
-                        "end": 4310
+                        "start": 4307,
+                        "end": 4319
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 4297,
-                  "end": 4311
+                  "start": 4306,
+                  "end": 4320
                 }
               }
             ],
             "span": {
-              "start": 4286,
-              "end": 4315
+              "start": 4295,
+              "end": 4324
             }
           }
         ],
         "span": {
-          "start": 2871,
-          "end": 4330
+          "start": 2880,
+          "end": 4339
         }
       }
     }
@@ -2466,8 +2466,8 @@
       "name": "default",
       "local": "InboxLookup",
       "span": {
-        "start": 79,
-        "end": 4337
+        "start": 88,
+        "end": 4346
       }
     }
   ],

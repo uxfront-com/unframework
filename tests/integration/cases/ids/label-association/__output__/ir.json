@@ -5,8 +5,8 @@
     {
       "name": "EmailField",
       "span": {
-        "start": 109,
-        "end": 448
+        "start": 118,
+        "end": 457
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 82,
-              "end": 88
+              "start": 91,
+              "end": 97
             }
           },
-          "binding": "label@146",
+          "binding": "label@155",
           "span": {
-            "start": 75,
-            "end": 89
+            "start": 84,
+            "end": 98
           }
         },
         {
@@ -31,14 +31,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 98,
-              "end": 104
+              "start": 107,
+              "end": 113
             }
           },
-          "binding": "hint@153",
+          "binding": "hint@162",
           "span": {
-            "start": 92,
-            "end": 105
+            "start": 101,
+            "end": 114
           }
         }
       ],
@@ -47,13 +47,13 @@
         "type": {
           "code": "EmailFieldProps",
           "span": {
-            "start": 161,
-            "end": 176
+            "start": 170,
+            "end": 185
           }
         },
         "span": {
-          "start": 144,
-          "end": 176
+          "start": 153,
+          "end": 185
         }
       },
       "types": [
@@ -61,57 +61,57 @@
       ],
       "bindings": [
         {
-          "id": "label@146",
+          "id": "label@155",
           "name": "label",
           "kind": "prop",
           "span": {
-            "start": 146,
-            "end": 151
+            "start": 155,
+            "end": 160
           }
         },
         {
-          "id": "hint@153",
+          "id": "hint@162",
           "name": "hint",
           "kind": "prop",
           "span": {
-            "start": 153,
-            "end": 157
+            "start": 162,
+            "end": 166
           }
         },
         {
-          "id": "inputId@188",
+          "id": "inputId@197",
           "name": "inputId",
           "kind": "localConst",
           "span": {
-            "start": 188,
-            "end": 195
+            "start": 197,
+            "end": 204
           }
         },
         {
-          "id": "hintId@215",
+          "id": "hintId@224",
           "name": "hintId",
           "kind": "localConst",
           "span": {
-            "start": 215,
-            "end": 221
+            "start": 224,
+            "end": 230
           }
         }
       ],
       "setup": [
         {
           "kind": "Id",
-          "binding": "inputId@188",
+          "binding": "inputId@197",
           "span": {
-            "start": 182,
-            "end": 206
+            "start": 191,
+            "end": 215
           }
         },
         {
           "kind": "Id",
-          "binding": "hintId@215",
+          "binding": "hintId@224",
           "span": {
-            "start": 209,
-            "end": 232
+            "start": 218,
+            "end": 241
           }
         }
       ],
@@ -124,8 +124,8 @@
             "name": "class",
             "value": "email-field",
             "span": {
-              "start": 254,
-              "end": 273
+              "start": 263,
+              "end": 282
             }
           }
         ],
@@ -140,23 +140,23 @@
                 "value": {
                   "code": "inputId",
                   "span": {
-                    "start": 293,
-                    "end": 300
+                    "start": 302,
+                    "end": 309
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "inputId@188",
+                      "binding": "inputId@197",
                       "span": {
-                        "start": 293,
-                        "end": 300
+                        "start": 302,
+                        "end": 309
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 288,
-                  "end": 301
+                  "start": 297,
+                  "end": 310
                 }
               }
             ],
@@ -166,29 +166,29 @@
                 "value": {
                   "code": "label",
                   "span": {
-                    "start": 303,
-                    "end": 308
+                    "start": 312,
+                    "end": 317
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "label@146",
+                      "binding": "label@155",
                       "span": {
-                        "start": 303,
-                        "end": 308
+                        "start": 312,
+                        "end": 317
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 302,
-                  "end": 309
+                  "start": 311,
+                  "end": 318
                 }
               }
             ],
             "span": {
-              "start": 281,
-              "end": 317
+              "start": 290,
+              "end": 326
             }
           },
           {
@@ -201,23 +201,23 @@
                 "value": {
                   "code": "inputId",
                   "span": {
-                    "start": 335,
-                    "end": 342
+                    "start": 344,
+                    "end": 351
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "inputId@188",
+                      "binding": "inputId@197",
                       "span": {
-                        "start": 335,
-                        "end": 342
+                        "start": 344,
+                        "end": 351
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 331,
-                  "end": 343
+                  "start": 340,
+                  "end": 352
                 }
               },
               {
@@ -225,8 +225,8 @@
                 "name": "name",
                 "value": "email",
                 "span": {
-                  "start": 344,
-                  "end": 356
+                  "start": 353,
+                  "end": 365
                 }
               },
               {
@@ -234,8 +234,8 @@
                 "name": "type",
                 "value": "email",
                 "span": {
-                  "start": 357,
-                  "end": 369
+                  "start": 366,
+                  "end": 378
                 }
               },
               {
@@ -244,30 +244,30 @@
                 "value": {
                   "code": "hintId",
                   "span": {
-                    "start": 388,
-                    "end": 394
+                    "start": 397,
+                    "end": 403
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "hintId@215",
+                      "binding": "hintId@224",
                       "span": {
-                        "start": 388,
-                        "end": 394
+                        "start": 397,
+                        "end": 403
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 370,
-                  "end": 395
+                  "start": 379,
+                  "end": 404
                 }
               }
             ],
             "children": [],
             "span": {
-              "start": 324,
-              "end": 398
+              "start": 333,
+              "end": 407
             }
           },
           {
@@ -280,23 +280,23 @@
                 "value": {
                   "code": "hintId",
                   "span": {
-                    "start": 412,
-                    "end": 418
+                    "start": 421,
+                    "end": 427
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "hintId@215",
+                      "binding": "hintId@224",
                       "span": {
-                        "start": 412,
-                        "end": 418
+                        "start": 421,
+                        "end": 427
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 408,
-                  "end": 419
+                  "start": 417,
+                  "end": 428
                 }
               }
             ],
@@ -306,35 +306,35 @@
                 "value": {
                   "code": "hint",
                   "span": {
-                    "start": 421,
-                    "end": 425
+                    "start": 430,
+                    "end": 434
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "hint@153",
+                      "binding": "hint@162",
                       "span": {
-                        "start": 421,
-                        "end": 425
+                        "start": 430,
+                        "end": 434
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 420,
-                  "end": 426
+                  "start": 429,
+                  "end": 435
                 }
               }
             ],
             "span": {
-              "start": 405,
-              "end": 430
+              "start": 414,
+              "end": 439
             }
           }
         ],
         "span": {
-          "start": 249,
-          "end": 441
+          "start": 258,
+          "end": 450
         }
       }
     }
@@ -345,8 +345,8 @@
       "name": "default",
       "local": "EmailField",
       "span": {
-        "start": 109,
-        "end": 448
+        "start": 118,
+        "end": 457
       }
     }
   ],
@@ -356,8 +356,8 @@
       "exported": true,
       "code": "interface EmailFieldProps {\n  label: string;\n  hint: string;\n}",
       "span": {
-        "start": 45,
-        "end": 107
+        "start": 54,
+        "end": 116
       }
     }
   ]

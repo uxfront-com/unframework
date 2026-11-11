@@ -7,12 +7,12 @@
     "start": {
       "line": 8,
       "column": 27,
-      "offset": 305
+      "offset": 314
     },
     "end": {
       "line": 8,
       "column": 55,
-      "offset": 333
+      "offset": 342
     },
     "target": "astro"
   },
@@ -24,12 +24,12 @@
     "start": {
       "line": 18,
       "column": 25,
-      "offset": 506
+      "offset": 515
     },
     "end": {
       "line": 18,
       "column": 29,
-      "offset": 510
+      "offset": 519
     },
     "help": "Write `onSave`.",
     "fixes": [
@@ -39,8 +39,8 @@
         "edits": [
           {
             "span": {
-              "start": 506,
-              "end": 510
+              "start": 515,
+              "end": 519
             },
             "text": ""
           }

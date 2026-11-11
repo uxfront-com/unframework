@@ -5,8 +5,8 @@
     {
       "name": "SizeForm",
       "span": {
-        "start": 194,
-        "end": 484
+        "start": 203,
+        "end": 493
       },
       "props": [],
       "types": [
@@ -14,69 +14,69 @@
       ],
       "bindings": [
         {
-          "id": "sizes@239",
+          "id": "sizes@248",
           "name": "sizes",
           "kind": "localConst",
           "span": {
-            "start": 239,
-            "end": 244
+            "start": 248,
+            "end": 253
           }
         },
         {
-          "id": "size@280",
+          "id": "size@289",
           "name": "size",
           "kind": "state",
           "span": {
-            "start": 280,
-            "end": 284
+            "start": 289,
+            "end": 293
           }
         }
       ],
       "setup": [
         {
           "kind": "Const",
-          "binding": "sizes@239",
+          "binding": "sizes@248",
           "type": {
             "code": "Size[]",
             "span": {
-              "start": 246,
-              "end": 252
+              "start": 255,
+              "end": 261
             }
           },
           "value": {
             "code": "[\"s\", \"m\", \"l\"]",
             "span": {
-              "start": 255,
-              "end": 270
+              "start": 264,
+              "end": 279
             },
             "refs": []
           },
           "span": {
-            "start": 233,
-            "end": 271
+            "start": 242,
+            "end": 280
           }
         },
         {
           "kind": "State",
-          "binding": "size@280",
+          "binding": "size@289",
           "type": {
             "code": "Size",
             "span": {
-              "start": 291,
-              "end": 295
+              "start": 300,
+              "end": 304
             }
           },
           "initial": {
             "code": "\"m\"",
             "span": {
-              "start": 297,
-              "end": 300
+              "start": 306,
+              "end": 309
             },
             "refs": []
           },
           "span": {
-            "start": 274,
-            "end": 302
+            "start": 283,
+            "end": 311
           }
         }
       ],
@@ -89,8 +89,8 @@
             "name": "aria-label",
             "value": "Size",
             "span": {
-              "start": 327,
-              "end": 344
+              "start": 336,
+              "end": 353
             }
           }
         ],
@@ -105,14 +105,14 @@
                 "value": {
                   "code": "\"Size\"",
                   "span": {
-                    "start": 366,
-                    "end": 372
+                    "start": 375,
+                    "end": 381
                   },
                   "refs": []
                 },
                 "span": {
-                  "start": 360,
-                  "end": 372
+                  "start": 369,
+                  "end": 381
                 }
               },
               {
@@ -121,23 +121,23 @@
                 "value": {
                   "code": "sizes",
                   "span": {
-                    "start": 382,
-                    "end": 387
+                    "start": 391,
+                    "end": 396
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "sizes@239",
+                      "binding": "sizes@248",
                       "span": {
-                        "start": 382,
-                        "end": 387
+                        "start": 391,
+                        "end": 396
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 373,
-                  "end": 388
+                  "start": 382,
+                  "end": 397
                 }
               },
               {
@@ -146,30 +146,30 @@
                 "value": {
                   "code": "size.value",
                   "span": {
-                    "start": 404,
-                    "end": 414
+                    "start": 413,
+                    "end": 423
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "size@280",
+                      "binding": "size@289",
                       "span": {
-                        "start": 404,
-                        "end": 414
+                        "start": 413,
+                        "end": 423
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 389,
-                  "end": 415
+                  "start": 398,
+                  "end": 424
                 }
               }
             ],
             "fills": [],
             "span": {
-              "start": 352,
-              "end": 418
+              "start": 361,
+              "end": 427
             }
           },
           {
@@ -181,8 +181,8 @@
                 "kind": "Text",
                 "value": "Chosen: ",
                 "span": {
-                  "start": 433,
-                  "end": 441
+                  "start": 442,
+                  "end": 450
                 }
               },
               {
@@ -190,35 +190,35 @@
                 "value": {
                   "code": "size.value",
                   "span": {
-                    "start": 442,
-                    "end": 452
+                    "start": 451,
+                    "end": 461
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "size@280",
+                      "binding": "size@289",
                       "span": {
-                        "start": 442,
-                        "end": 452
+                        "start": 451,
+                        "end": 461
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 441,
-                  "end": 453
+                  "start": 450,
+                  "end": 462
                 }
               }
             ],
             "span": {
-              "start": 425,
-              "end": 462
+              "start": 434,
+              "end": 471
             }
           }
         ],
         "span": {
-          "start": 318,
-          "end": 477
+          "start": 327,
+          "end": 486
         }
       }
     }
@@ -229,8 +229,8 @@
       "name": "default",
       "local": "SizeForm",
       "span": {
-        "start": 194,
-        "end": 484
+        "start": 203,
+        "end": 493
       }
     }
   ],
@@ -240,8 +240,8 @@
       "exported": false,
       "code": "type Size = \"s\" | \"m\" | \"l\";",
       "span": {
-        "start": 75,
-        "end": 103
+        "start": 84,
+        "end": 112
       }
     }
   ],
@@ -299,14 +299,14 @@
           "imported": "default",
           "local": "Select",
           "span": {
-            "start": 43,
-            "end": 49
+            "start": 52,
+            "end": 58
           }
         }
       ],
       "span": {
-        "start": 36,
-        "end": 73
+        "start": 45,
+        "end": 82
       }
     }
   ]

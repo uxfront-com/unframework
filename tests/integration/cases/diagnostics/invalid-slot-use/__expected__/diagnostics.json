@@ -7,12 +7,12 @@
     "start": {
       "line": 8,
       "column": 29,
-      "offset": 347
+      "offset": 365
     },
     "end": {
       "line": 8,
       "column": 44,
-      "offset": 362
+      "offset": 380
     },
     "help": "Write `slots.default?.()`."
   }

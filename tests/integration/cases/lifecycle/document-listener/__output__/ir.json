@@ -5,18 +5,18 @@
     {
       "name": "ShortcutTip",
       "span": {
-        "start": 80,
-        "end": 1426
+        "start": 89,
+        "end": 1435
       },
       "props": [],
       "types": [],
       "emits": {
-        "binding": "emit@128",
+        "binding": "emit@137",
         "type": {
           "code": "{ dismissed: []; shortcut: [key: string, count: number] }",
           "span": {
-            "start": 147,
-            "end": 204
+            "start": 156,
+            "end": 213
           }
         },
         "events": [
@@ -24,8 +24,8 @@
             "name": "dismissed",
             "parameters": [],
             "span": {
-              "start": 149,
-              "end": 162
+              "start": 158,
+              "end": 171
             }
           },
           {
@@ -36,13 +36,13 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 180,
-                    "end": 186
+                    "start": 189,
+                    "end": 195
                   }
                 },
                 "span": {
-                  "start": 175,
-                  "end": 186
+                  "start": 184,
+                  "end": 195
                 }
               },
               {
@@ -50,144 +50,144 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 195,
-                    "end": 201
+                    "start": 204,
+                    "end": 210
                   }
                 },
                 "span": {
-                  "start": 188,
-                  "end": 201
+                  "start": 197,
+                  "end": 210
                 }
               }
             ],
             "span": {
-              "start": 164,
-              "end": 202
+              "start": 173,
+              "end": 211
             }
           }
         ],
         "span": {
-          "start": 122,
-          "end": 208
+          "start": 131,
+          "end": 217
         }
       },
       "bindings": [
         {
-          "id": "emit@128",
+          "id": "emit@137",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 128,
-            "end": 132
+            "start": 137,
+            "end": 141
           }
         },
         {
-          "id": "open@218",
+          "id": "open@227",
           "name": "open",
           "kind": "state",
           "span": {
-            "start": 218,
-            "end": 222
+            "start": 227,
+            "end": 231
           }
         },
         {
-          "id": "enabled@244",
+          "id": "enabled@253",
           "name": "enabled",
           "kind": "state",
           "span": {
-            "start": 244,
-            "end": 251
+            "start": 253,
+            "end": 260
           }
         },
         {
-          "id": "count@274",
+          "id": "count@283",
           "name": "count",
           "kind": "state",
           "span": {
-            "start": 274,
-            "end": 279
+            "start": 283,
+            "end": 288
           }
         },
         {
-          "id": "onEscape@302",
+          "id": "onEscape@311",
           "name": "onEscape",
           "kind": "localFn",
           "span": {
-            "start": 302,
-            "end": 310
+            "start": 311,
+            "end": 319
           }
         },
         {
-          "id": "onShortcut@442",
+          "id": "onShortcut@451",
           "name": "onShortcut",
           "kind": "localFn",
           "span": {
-            "start": 442,
-            "end": 452
+            "start": 451,
+            "end": 461
           }
         },
         {
-          "id": "toggle@600",
+          "id": "toggle@609",
           "name": "toggle",
           "kind": "localFn",
           "span": {
-            "start": 600,
-            "end": 606
+            "start": 609,
+            "end": 615
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "open@218",
+          "binding": "open@227",
           "initial": {
             "code": "true",
             "span": {
-              "start": 229,
-              "end": 233
+              "start": 238,
+              "end": 242
             },
             "refs": []
           },
           "span": {
-            "start": 212,
-            "end": 235
+            "start": 221,
+            "end": 244
           }
         },
         {
           "kind": "State",
-          "binding": "enabled@244",
+          "binding": "enabled@253",
           "initial": {
             "code": "false",
             "span": {
-              "start": 258,
-              "end": 263
+              "start": 267,
+              "end": 272
             },
             "refs": []
           },
           "span": {
-            "start": 238,
-            "end": 265
+            "start": 247,
+            "end": 274
           }
         },
         {
           "kind": "State",
-          "binding": "count@274",
+          "binding": "count@283",
           "initial": {
             "code": "0",
             "span": {
-              "start": 286,
-              "end": 287
+              "start": 295,
+              "end": 296
             },
             "refs": []
           },
           "span": {
-            "start": 268,
-            "end": 289
+            "start": 277,
+            "end": 298
           }
         },
         {
           "kind": "Function",
-          "binding": "onEscape@302",
+          "binding": "onEscape@311",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -196,65 +196,65 @@
                 "type": {
                   "code": "KeyboardEvent",
                   "span": {
-                    "start": 318,
-                    "end": 331
+                    "start": 327,
+                    "end": 340
                   }
                 },
                 "span": {
-                  "start": 311,
-                  "end": 331
+                  "start": 320,
+                  "end": 340
                 }
               }
             ],
             "body": {
               "code": "{\n    if (event.key === \"Escape\") {\n      open.value = false;\n      emit(\"dismissed\");\n    }\n  }",
               "span": {
-                "start": 333,
-                "end": 429
+                "start": 342,
+                "end": 438
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "open@218",
+                  "binding": "open@227",
                   "operator": "=",
                   "span": {
-                    "start": 375,
-                    "end": 393
+                    "start": 384,
+                    "end": 402
                   },
                   "target": {
-                    "start": 375,
-                    "end": 385
+                    "start": 384,
+                    "end": 394
                   },
                   "value": {
-                    "start": 388,
-                    "end": 393
+                    "start": 397,
+                    "end": 402
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@128",
+                  "binding": "emit@137",
                   "event": "dismissed",
                   "span": {
-                    "start": 401,
-                    "end": 418
+                    "start": 410,
+                    "end": 427
                   },
                   "arguments": []
                 }
               ]
             },
             "span": {
-              "start": 310,
-              "end": 429
+              "start": 319,
+              "end": 438
             }
           },
           "span": {
-            "start": 293,
-            "end": 429
+            "start": 302,
+            "end": 438
           }
         },
         {
           "kind": "Function",
-          "binding": "onShortcut@442",
+          "binding": "onShortcut@451",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -263,127 +263,127 @@
                 "type": {
                   "code": "KeyboardEvent",
                   "span": {
-                    "start": 460,
-                    "end": 473
+                    "start": 469,
+                    "end": 482
                   }
                 },
                 "span": {
-                  "start": 453,
-                  "end": 473
+                  "start": 462,
+                  "end": 482
                 }
               }
             ],
             "body": {
               "code": "{\n    if (event.key === \"k\") {\n      count.value += 1;\n      emit(\"shortcut\", event.key, count.value);\n    }\n  }",
               "span": {
-                "start": 475,
-                "end": 587
+                "start": 484,
+                "end": 596
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "count@274",
+                  "binding": "count@283",
                   "operator": "+=",
                   "span": {
-                    "start": 512,
-                    "end": 528
+                    "start": 521,
+                    "end": 537
                   },
                   "target": {
-                    "start": 512,
-                    "end": 523
+                    "start": 521,
+                    "end": 532
                   },
                   "value": {
-                    "start": 527,
-                    "end": 528
+                    "start": 536,
+                    "end": 537
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@128",
+                  "binding": "emit@137",
                   "event": "shortcut",
                   "span": {
-                    "start": 536,
-                    "end": 576
+                    "start": 545,
+                    "end": 585
                   },
                   "arguments": [
                     {
-                      "start": 553,
-                      "end": 562
+                      "start": 562,
+                      "end": 571
                     },
                     {
-                      "start": 564,
-                      "end": 575
+                      "start": 573,
+                      "end": 584
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "count@274",
+                  "binding": "count@283",
                   "span": {
-                    "start": 564,
-                    "end": 575
+                    "start": 573,
+                    "end": 584
                   }
                 }
               ]
             },
             "span": {
-              "start": 452,
-              "end": 587
+              "start": 461,
+              "end": 596
             }
           },
           "span": {
-            "start": 433,
-            "end": 587
+            "start": 442,
+            "end": 596
           }
         },
         {
           "kind": "Function",
-          "binding": "toggle@600",
+          "binding": "toggle@609",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    enabled.value = !enabled.value;\n  }",
               "span": {
-                "start": 609,
-                "end": 650
+                "start": 618,
+                "end": 659
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "enabled@244",
+                  "binding": "enabled@253",
                   "operator": "=",
                   "span": {
-                    "start": 615,
-                    "end": 645
+                    "start": 624,
+                    "end": 654
                   },
                   "target": {
-                    "start": 615,
-                    "end": 628
+                    "start": 624,
+                    "end": 637
                   },
                   "value": {
-                    "start": 631,
-                    "end": 645
+                    "start": 640,
+                    "end": 654
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "enabled@244",
+                  "binding": "enabled@253",
                   "span": {
-                    "start": 632,
-                    "end": 645
+                    "start": 641,
+                    "end": 654
                   }
                 }
               ]
             },
             "span": {
-              "start": 606,
-              "end": 650
+              "start": 615,
+              "end": 659
             }
           },
           "span": {
-            "start": 591,
-            "end": 650
+            "start": 600,
+            "end": 659
           }
         },
         {
@@ -391,10 +391,10 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "enabled@244",
+              "binding": "enabled@253",
               "span": {
-                "start": 665,
-                "end": 672
+                "start": 674,
+                "end": 681
               }
             }
           ],
@@ -403,61 +403,61 @@
               {
                 "name": "on",
                 "span": {
-                  "start": 679,
-                  "end": 681
+                  "start": 688,
+                  "end": 690
                 }
               }
             ],
             "body": {
               "code": "{\n      if (on) {\n        document.addEventListener(\"keydown\", onShortcut);\n      } else {\n        document.removeEventListener(\"keydown\", onShortcut);\n      }\n    }",
               "span": {
-                "start": 686,
-                "end": 851
+                "start": 695,
+                "end": 860
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "document",
                   "span": {
-                    "start": 712,
-                    "end": 720
+                    "start": 721,
+                    "end": 729
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "onShortcut@442",
+                  "binding": "onShortcut@451",
                   "span": {
-                    "start": 749,
-                    "end": 759
+                    "start": 758,
+                    "end": 768
                   }
                 },
                 {
                   "kind": "Global",
                   "name": "document",
                   "span": {
-                    "start": 785,
-                    "end": 793
+                    "start": 794,
+                    "end": 802
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "onShortcut@442",
+                  "binding": "onShortcut@451",
                   "span": {
-                    "start": 825,
-                    "end": 835
+                    "start": 834,
+                    "end": 844
                   }
                 }
               ]
             },
             "span": {
-              "start": 678,
-              "end": 851
+              "start": 687,
+              "end": 860
             }
           },
           "post": true,
           "span": {
-            "start": 654,
-            "end": 880
+            "start": 663,
+            "end": 889
           }
         },
         {
@@ -468,36 +468,36 @@
             "body": {
               "code": "{\n    document.addEventListener(\"keydown\", onEscape);\n  }",
               "span": {
-                "start": 900,
-                "end": 957
+                "start": 909,
+                "end": 966
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "document",
                   "span": {
-                    "start": 906,
-                    "end": 914
+                    "start": 915,
+                    "end": 923
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "onEscape@302",
+                  "binding": "onEscape@311",
                   "span": {
-                    "start": 943,
-                    "end": 951
+                    "start": 952,
+                    "end": 960
                   }
                 }
               ]
             },
             "span": {
-              "start": 894,
-              "end": 957
+              "start": 903,
+              "end": 966
             }
           },
           "span": {
-            "start": 884,
-            "end": 959
+            "start": 893,
+            "end": 968
           }
         },
         {
@@ -508,52 +508,52 @@
             "body": {
               "code": "{\n    document.removeEventListener(\"keydown\", onEscape);\n    document.removeEventListener(\"keydown\", onShortcut);\n  }",
               "span": {
-                "start": 981,
-                "end": 1098
+                "start": 990,
+                "end": 1107
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "document",
                   "span": {
-                    "start": 987,
-                    "end": 995
+                    "start": 996,
+                    "end": 1004
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "onEscape@302",
+                  "binding": "onEscape@311",
                   "span": {
-                    "start": 1027,
-                    "end": 1035
+                    "start": 1036,
+                    "end": 1044
                   }
                 },
                 {
                   "kind": "Global",
                   "name": "document",
                   "span": {
-                    "start": 1042,
-                    "end": 1050
+                    "start": 1051,
+                    "end": 1059
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "onShortcut@442",
+                  "binding": "onShortcut@451",
                   "span": {
-                    "start": 1082,
-                    "end": 1092
+                    "start": 1091,
+                    "end": 1101
                   }
                 }
               ]
             },
             "span": {
-              "start": 975,
-              "end": 1098
+              "start": 984,
+              "end": 1107
             }
           },
           "span": {
-            "start": 963,
-            "end": 1100
+            "start": 972,
+            "end": 1109
           }
         }
       ],
@@ -566,8 +566,8 @@
             "name": "class",
             "value": "shortcut-tip",
             "span": {
-              "start": 1126,
-              "end": 1146
+              "start": 1135,
+              "end": 1155
             }
           },
           {
@@ -575,8 +575,8 @@
             "name": "aria-label",
             "value": "Shortcuts",
             "span": {
-              "start": 1147,
-              "end": 1169
+              "start": 1156,
+              "end": 1178
             }
           }
         ],
@@ -591,29 +591,29 @@
                 "value": {
                   "code": "open.value ? \"Press Escape to hide this tip.\" : \"Tip hidden.\"",
                   "span": {
-                    "start": 1181,
-                    "end": 1242
+                    "start": 1190,
+                    "end": 1251
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "open@218",
+                      "binding": "open@227",
                       "span": {
-                        "start": 1181,
-                        "end": 1191
+                        "start": 1190,
+                        "end": 1200
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 1180,
-                  "end": 1243
+                  "start": 1189,
+                  "end": 1252
                 }
               }
             ],
             "span": {
-              "start": 1177,
-              "end": 1247
+              "start": 1186,
+              "end": 1256
             }
           },
           {
@@ -625,8 +625,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 1262,
-                  "end": 1275
+                  "start": 1271,
+                  "end": 1284
                 }
               },
               {
@@ -635,23 +635,23 @@
                 "value": {
                   "code": "enabled.value",
                   "span": {
-                    "start": 1290,
-                    "end": 1303
+                    "start": 1299,
+                    "end": 1312
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "enabled@244",
+                      "binding": "enabled@253",
                       "span": {
-                        "start": 1290,
-                        "end": 1303
+                        "start": 1299,
+                        "end": 1312
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 1276,
-                  "end": 1304
+                  "start": 1285,
+                  "end": 1313
                 }
               },
               {
@@ -659,15 +659,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "toggle@600",
+                  "binding": "toggle@609",
                   "span": {
-                    "start": 1314,
-                    "end": 1320
+                    "start": 1323,
+                    "end": 1329
                   }
                 },
                 "span": {
-                  "start": 1305,
-                  "end": 1321
+                  "start": 1314,
+                  "end": 1330
                 }
               }
             ],
@@ -676,14 +676,14 @@
                 "kind": "Text",
                 "value": "Shortcut K",
                 "span": {
-                  "start": 1322,
-                  "end": 1348
+                  "start": 1331,
+                  "end": 1357
                 }
               }
             ],
             "span": {
-              "start": 1254,
-              "end": 1357
+              "start": 1263,
+              "end": 1366
             }
           },
           {
@@ -695,8 +695,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 1367,
-                  "end": 1380
+                  "start": 1376,
+                  "end": 1389
                 }
               }
             ],
@@ -705,8 +705,8 @@
                 "kind": "Text",
                 "value": "Used: ",
                 "span": {
-                  "start": 1381,
-                  "end": 1387
+                  "start": 1390,
+                  "end": 1396
                 }
               },
               {
@@ -714,35 +714,35 @@
                 "value": {
                   "code": "count.value",
                   "span": {
-                    "start": 1388,
-                    "end": 1399
+                    "start": 1397,
+                    "end": 1408
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "count@274",
+                      "binding": "count@283",
                       "span": {
-                        "start": 1388,
-                        "end": 1399
+                        "start": 1397,
+                        "end": 1408
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 1387,
-                  "end": 1400
+                  "start": 1396,
+                  "end": 1409
                 }
               }
             ],
             "span": {
-              "start": 1364,
-              "end": 1404
+              "start": 1373,
+              "end": 1413
             }
           }
         ],
         "span": {
-          "start": 1117,
-          "end": 1419
+          "start": 1126,
+          "end": 1428
         }
       }
     }
@@ -753,8 +753,8 @@
       "name": "default",
       "local": "ShortcutTip",
       "span": {
-        "start": 80,
-        "end": 1426
+        "start": 89,
+        "end": 1435
       }
     }
   ],

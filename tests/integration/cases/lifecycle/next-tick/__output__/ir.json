@@ -5,18 +5,18 @@
     {
       "name": "ShippingDetails",
       "span": {
-        "start": 75,
-        "end": 792
+        "start": 84,
+        "end": 801
       },
       "props": [],
       "types": [],
       "emits": {
-        "binding": "emit@127",
+        "binding": "emit@136",
         "type": {
           "code": "{ toggled: [items: number] }",
           "span": {
-            "start": 146,
-            "end": 174
+            "start": 155,
+            "end": 183
           }
         },
         "events": [
@@ -28,100 +28,100 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 165,
-                    "end": 171
+                    "start": 174,
+                    "end": 180
                   }
                 },
                 "span": {
-                  "start": 158,
-                  "end": 171
+                  "start": 167,
+                  "end": 180
                 }
               }
             ],
             "span": {
-              "start": 148,
-              "end": 172
+              "start": 157,
+              "end": 181
             }
           }
         ],
         "span": {
-          "start": 121,
-          "end": 178
+          "start": 130,
+          "end": 187
         }
       },
       "bindings": [
         {
-          "id": "emit@127",
+          "id": "emit@136",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 127,
-            "end": 131
+            "start": 136,
+            "end": 140
           }
         },
         {
-          "id": "open@188",
+          "id": "open@197",
           "name": "open",
           "kind": "state",
           "span": {
-            "start": 188,
-            "end": 192
+            "start": 197,
+            "end": 201
           }
         },
         {
-          "id": "details@215",
+          "id": "details@224",
           "name": "details",
           "kind": "templateRef",
           "span": {
-            "start": 215,
-            "end": 222
+            "start": 224,
+            "end": 231
           }
         },
         {
-          "id": "toggle@279",
+          "id": "toggle@288",
           "name": "toggle",
           "kind": "localFn",
           "span": {
-            "start": 279,
-            "end": 285
+            "start": 288,
+            "end": 294
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "open@188",
+          "binding": "open@197",
           "initial": {
             "code": "false",
             "span": {
-              "start": 199,
-              "end": 204
+              "start": 208,
+              "end": 213
             },
             "refs": []
           },
           "span": {
-            "start": 182,
-            "end": 206
+            "start": 191,
+            "end": 215
           }
         },
         {
           "kind": "TemplateRef",
-          "binding": "details@215",
+          "binding": "details@224",
           "type": {
             "code": "HTMLUListElement",
             "span": {
-              "start": 240,
-              "end": 256
+              "start": 249,
+              "end": 265
             }
           },
           "span": {
-            "start": 209,
-            "end": 260
+            "start": 218,
+            "end": 269
           }
         },
         {
           "kind": "Function",
-          "binding": "toggle@279",
+          "binding": "toggle@288",
           "form": "declaration",
           "function": {
             "async": true,
@@ -129,76 +129,76 @@
             "body": {
               "code": "{\n    open.value = !open.value;\n    await nextTick();\n    emit(\"toggled\", details.value?.childElementCount ?? 0);\n  }",
               "span": {
-                "start": 288,
-                "end": 405
+                "start": 297,
+                "end": 414
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "open@188",
+                  "binding": "open@197",
                   "operator": "=",
                   "span": {
-                    "start": 294,
-                    "end": 318
+                    "start": 303,
+                    "end": 327
                   },
                   "target": {
-                    "start": 294,
-                    "end": 304
+                    "start": 303,
+                    "end": 313
                   },
                   "value": {
-                    "start": 307,
-                    "end": 318
+                    "start": 316,
+                    "end": 327
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "open@188",
+                  "binding": "open@197",
                   "span": {
-                    "start": 308,
-                    "end": 318
+                    "start": 317,
+                    "end": 327
                   }
                 },
                 {
                   "kind": "Api",
                   "api": "nextTick",
                   "span": {
-                    "start": 330,
-                    "end": 338
+                    "start": 339,
+                    "end": 347
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@127",
+                  "binding": "emit@136",
                   "event": "toggled",
                   "span": {
-                    "start": 346,
-                    "end": 400
+                    "start": 355,
+                    "end": 409
                   },
                   "arguments": [
                     {
-                      "start": 362,
-                      "end": 399
+                      "start": 371,
+                      "end": 408
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "details@215",
+                  "binding": "details@224",
                   "span": {
-                    "start": 362,
-                    "end": 375
+                    "start": 371,
+                    "end": 384
                   }
                 }
               ]
             },
             "span": {
-              "start": 285,
-              "end": 405
+              "start": 294,
+              "end": 414
             }
           },
           "span": {
-            "start": 264,
-            "end": 405
+            "start": 273,
+            "end": 414
           }
         }
       ],
@@ -211,8 +211,8 @@
             "name": "class",
             "value": "shipping-details",
             "span": {
-              "start": 431,
-              "end": 455
+              "start": 440,
+              "end": 464
             }
           },
           {
@@ -220,8 +220,8 @@
             "name": "aria-label",
             "value": "Shipping",
             "span": {
-              "start": 456,
-              "end": 477
+              "start": 465,
+              "end": 486
             }
           }
         ],
@@ -235,8 +235,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 493,
-                  "end": 506
+                  "start": 502,
+                  "end": 515
                 }
               },
               {
@@ -245,23 +245,23 @@
                 "value": {
                   "code": "open.value",
                   "span": {
-                    "start": 522,
-                    "end": 532
+                    "start": 531,
+                    "end": 541
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "open@188",
+                      "binding": "open@197",
                       "span": {
-                        "start": 522,
-                        "end": 532
+                        "start": 531,
+                        "end": 541
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 507,
-                  "end": 533
+                  "start": 516,
+                  "end": 542
                 }
               },
               {
@@ -269,15 +269,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "toggle@279",
+                  "binding": "toggle@288",
                   "span": {
-                    "start": 543,
-                    "end": 549
+                    "start": 552,
+                    "end": 558
                   }
                 },
                 "span": {
-                  "start": 534,
-                  "end": 550
+                  "start": 543,
+                  "end": 559
                 }
               }
             ],
@@ -286,14 +286,14 @@
                 "kind": "Text",
                 "value": "Shipping details",
                 "span": {
-                  "start": 551,
-                  "end": 583
+                  "start": 560,
+                  "end": 592
                 }
               }
             ],
             "span": {
-              "start": 485,
-              "end": 592
+              "start": 494,
+              "end": 601
             }
           },
           {
@@ -303,16 +303,16 @@
                 "condition": {
                   "code": "open.value",
                   "span": {
-                    "start": 600,
-                    "end": 610
+                    "start": 609,
+                    "end": 619
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "open@188",
+                      "binding": "open@197",
                       "span": {
-                        "start": 600,
-                        "end": 610
+                        "start": 609,
+                        "end": 619
                       }
                     }
                   ]
@@ -324,10 +324,10 @@
                     "attributes": [
                       {
                         "kind": "Ref",
-                        "binding": "details@215",
+                        "binding": "details@224",
                         "span": {
-                          "start": 628,
-                          "end": 641
+                          "start": 637,
+                          "end": 650
                         }
                       }
                     ],
@@ -341,14 +341,14 @@
                             "kind": "Text",
                             "value": "Ships in two days",
                             "span": {
-                              "start": 657,
-                              "end": 674
+                              "start": 666,
+                              "end": 683
                             }
                           }
                         ],
                         "span": {
-                          "start": 653,
-                          "end": 679
+                          "start": 662,
+                          "end": 688
                         }
                       },
                       {
@@ -360,14 +360,14 @@
                             "kind": "Text",
                             "value": "Free returns",
                             "span": {
-                              "start": 694,
-                              "end": 706
+                              "start": 703,
+                              "end": 715
                             }
                           }
                         ],
                         "span": {
-                          "start": 690,
-                          "end": 711
+                          "start": 699,
+                          "end": 720
                         }
                       },
                       {
@@ -379,38 +379,38 @@
                             "kind": "Text",
                             "value": "Tracked delivery",
                             "span": {
-                              "start": 726,
-                              "end": 742
+                              "start": 735,
+                              "end": 751
                             }
                           }
                         ],
                         "span": {
-                          "start": 722,
-                          "end": 747
+                          "start": 731,
+                          "end": 756
                         }
                       }
                     ],
                     "span": {
-                      "start": 624,
-                      "end": 761
+                      "start": 633,
+                      "end": 770
                     }
                   }
                 ],
                 "span": {
-                  "start": 600,
-                  "end": 769
+                  "start": 609,
+                  "end": 778
                 }
               }
             ],
             "span": {
-              "start": 600,
-              "end": 769
+              "start": 609,
+              "end": 778
             }
           }
         ],
         "span": {
-          "start": 422,
-          "end": 785
+          "start": 431,
+          "end": 794
         }
       }
     }
@@ -421,8 +421,8 @@
       "name": "default",
       "local": "ShippingDetails",
       "span": {
-        "start": 75,
-        "end": 792
+        "start": 84,
+        "end": 801
       }
     }
   ],

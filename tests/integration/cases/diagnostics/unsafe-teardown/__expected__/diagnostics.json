@@ -7,12 +7,12 @@
     "start": {
       "line": 11,
       "column": 20,
-      "offset": 517
+      "offset": 526
     },
     "end": {
       "line": 11,
       "column": 30,
-      "offset": 527
+      "offset": 536
     },
     "help": "Read the element in the callback that sets up the work (`onMounted`, the watcher's callback), and keep it in a local or a setup `let` for the teardown."
   }

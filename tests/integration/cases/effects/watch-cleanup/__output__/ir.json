@@ -5,18 +5,18 @@
     {
       "name": "ChannelPicker",
       "span": {
-        "start": 56,
-        "end": 795
+        "start": 65,
+        "end": 804
       },
       "props": [],
       "types": [],
       "emits": {
-        "binding": "emit@106",
+        "binding": "emit@115",
         "type": {
           "code": "{ join: [channel: string]; leave: [channel: string] }",
           "span": {
-            "start": 125,
-            "end": 178
+            "start": 134,
+            "end": 187
           }
         },
         "events": [
@@ -28,19 +28,19 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 143,
-                    "end": 149
+                    "start": 152,
+                    "end": 158
                   }
                 },
                 "span": {
-                  "start": 134,
-                  "end": 149
+                  "start": 143,
+                  "end": 158
                 }
               }
             ],
             "span": {
-              "start": 127,
-              "end": 150
+              "start": 136,
+              "end": 159
             }
           },
           {
@@ -51,62 +51,62 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 169,
-                    "end": 175
+                    "start": 178,
+                    "end": 184
                   }
                 },
                 "span": {
-                  "start": 160,
-                  "end": 175
+                  "start": 169,
+                  "end": 184
                 }
               }
             ],
             "span": {
-              "start": 152,
-              "end": 176
+              "start": 161,
+              "end": 185
             }
           }
         ],
         "span": {
-          "start": 100,
-          "end": 182
+          "start": 109,
+          "end": 191
         }
       },
       "bindings": [
         {
-          "id": "emit@106",
+          "id": "emit@115",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 106,
-            "end": 110
+            "start": 115,
+            "end": 119
           }
         },
         {
-          "id": "channel@192",
+          "id": "channel@201",
           "name": "channel",
           "kind": "state",
           "span": {
-            "start": 192,
-            "end": 199
+            "start": 201,
+            "end": 208
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "channel@192",
+          "binding": "channel@201",
           "initial": {
             "code": "\"general\"",
             "span": {
-              "start": 206,
-              "end": 215
+              "start": 215,
+              "end": 224
             },
             "refs": []
           },
           "span": {
-            "start": 186,
-            "end": 217
+            "start": 195,
+            "end": 226
           }
         },
         {
@@ -119,29 +119,29 @@
                 "body": {
                   "code": "channel.value.toLowerCase()",
                   "span": {
-                    "start": 238,
-                    "end": 265
+                    "start": 247,
+                    "end": 274
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "channel@192",
+                      "binding": "channel@201",
                       "span": {
-                        "start": 238,
-                        "end": 251
+                        "start": 247,
+                        "end": 260
                       }
                     }
                   ]
                 },
                 "expression": true,
                 "span": {
-                  "start": 232,
-                  "end": 265
+                  "start": 241,
+                  "end": 274
                 }
               },
               "span": {
-                "start": 232,
-                "end": 265
+                "start": 241,
+                "end": 274
               }
             }
           ],
@@ -150,73 +150,73 @@
               {
                 "name": "name",
                 "span": {
-                  "start": 272,
-                  "end": 276
+                  "start": 281,
+                  "end": 285
                 }
               },
               {
                 "name": "previous",
                 "span": {
-                  "start": 278,
-                  "end": 286
+                  "start": 287,
+                  "end": 295
                 }
               },
               {
                 "name": "onCleanup",
                 "span": {
-                  "start": 288,
-                  "end": 297
+                  "start": 297,
+                  "end": 306
                 }
               }
             ],
             "body": {
               "code": "{\n      emit(\"join\", name);\n      onCleanup(() => {\n        emit(\"leave\", name);\n      });\n    }",
               "span": {
-                "start": 302,
-                "end": 398
+                "start": 311,
+                "end": 407
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@106",
+                  "binding": "emit@115",
                   "event": "join",
                   "span": {
-                    "start": 310,
-                    "end": 328
+                    "start": 319,
+                    "end": 337
                   },
                   "arguments": [
                     {
-                      "start": 323,
-                      "end": 327
+                      "start": 332,
+                      "end": 336
                     }
                   ]
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@106",
+                  "binding": "emit@115",
                   "event": "leave",
                   "span": {
-                    "start": 362,
-                    "end": 381
+                    "start": 371,
+                    "end": 390
                   },
                   "arguments": [
                     {
-                      "start": 376,
-                      "end": 380
+                      "start": 385,
+                      "end": 389
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 271,
-              "end": 398
+              "start": 280,
+              "end": 407
             }
           },
           "immediate": true,
           "span": {
-            "start": 221,
-            "end": 429
+            "start": 230,
+            "end": 438
           }
         }
       ],
@@ -229,8 +229,8 @@
             "name": "class",
             "value": "channel-picker",
             "span": {
-              "start": 455,
-              "end": 477
+              "start": 464,
+              "end": 486
             }
           },
           {
@@ -238,8 +238,8 @@
             "name": "aria-label",
             "value": "Channels",
             "span": {
-              "start": 478,
-              "end": 499
+              "start": 487,
+              "end": 508
             }
           }
         ],
@@ -253,8 +253,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 510,
-                  "end": 523
+                  "start": 519,
+                  "end": 532
                 }
               }
             ],
@@ -263,8 +263,8 @@
                 "kind": "Text",
                 "value": "Channel: #",
                 "span": {
-                  "start": 524,
-                  "end": 534
+                  "start": 533,
+                  "end": 543
                 }
               },
               {
@@ -272,29 +272,29 @@
                 "value": {
                   "code": "channel.value",
                   "span": {
-                    "start": 535,
-                    "end": 548
+                    "start": 544,
+                    "end": 557
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "channel@192",
+                      "binding": "channel@201",
                       "span": {
-                        "start": 535,
-                        "end": 548
+                        "start": 544,
+                        "end": 557
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 534,
-                  "end": 549
+                  "start": 543,
+                  "end": 558
                 }
               }
             ],
             "span": {
-              "start": 507,
-              "end": 553
+              "start": 516,
+              "end": 562
             }
           },
           {
@@ -306,8 +306,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 568,
-                  "end": 581
+                  "start": 577,
+                  "end": 590
                 }
               },
               {
@@ -320,25 +320,25 @@
                     "body": {
                       "code": "(channel.value = \"random\")",
                       "span": {
-                        "start": 597,
-                        "end": 623
+                        "start": 606,
+                        "end": 632
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "channel@192",
+                          "binding": "channel@201",
                           "operator": "=",
                           "span": {
-                            "start": 597,
-                            "end": 623
+                            "start": 606,
+                            "end": 632
                           },
                           "target": {
-                            "start": 598,
-                            "end": 611
+                            "start": 607,
+                            "end": 620
                           },
                           "value": {
-                            "start": 614,
-                            "end": 622
+                            "start": 623,
+                            "end": 631
                           },
                           "arrowBody": true
                         }
@@ -346,18 +346,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 591,
-                      "end": 623
+                      "start": 600,
+                      "end": 632
                     }
                   },
                   "span": {
-                    "start": 591,
-                    "end": 623
+                    "start": 600,
+                    "end": 632
                   }
                 },
                 "span": {
-                  "start": 582,
-                  "end": 624
+                  "start": 591,
+                  "end": 633
                 }
               }
             ],
@@ -366,14 +366,14 @@
                 "kind": "Text",
                 "value": "Join #random",
                 "span": {
-                  "start": 625,
-                  "end": 653
+                  "start": 634,
+                  "end": 662
                 }
               }
             ],
             "span": {
-              "start": 560,
-              "end": 662
+              "start": 569,
+              "end": 671
             }
           },
           {
@@ -385,8 +385,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 677,
-                  "end": 690
+                  "start": 686,
+                  "end": 699
                 }
               },
               {
@@ -399,25 +399,25 @@
                     "body": {
                       "code": "(channel.value = \"General\")",
                       "span": {
-                        "start": 706,
-                        "end": 733
+                        "start": 715,
+                        "end": 742
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "channel@192",
+                          "binding": "channel@201",
                           "operator": "=",
                           "span": {
-                            "start": 706,
-                            "end": 733
+                            "start": 715,
+                            "end": 742
                           },
                           "target": {
-                            "start": 707,
-                            "end": 720
+                            "start": 716,
+                            "end": 729
                           },
                           "value": {
-                            "start": 723,
-                            "end": 732
+                            "start": 732,
+                            "end": 741
                           },
                           "arrowBody": true
                         }
@@ -425,18 +425,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 700,
-                      "end": 733
+                      "start": 709,
+                      "end": 742
                     }
                   },
                   "span": {
-                    "start": 700,
-                    "end": 733
+                    "start": 709,
+                    "end": 742
                   }
                 },
                 "span": {
-                  "start": 691,
-                  "end": 734
+                  "start": 700,
+                  "end": 743
                 }
               }
             ],
@@ -445,20 +445,20 @@
                 "kind": "Text",
                 "value": "Join #General",
                 "span": {
-                  "start": 735,
-                  "end": 764
+                  "start": 744,
+                  "end": 773
                 }
               }
             ],
             "span": {
-              "start": 669,
-              "end": 773
+              "start": 678,
+              "end": 782
             }
           }
         ],
         "span": {
-          "start": 446,
-          "end": 788
+          "start": 455,
+          "end": 797
         }
       }
     }
@@ -469,8 +469,8 @@
       "name": "default",
       "local": "ChannelPicker",
       "span": {
-        "start": 56,
-        "end": 795
+        "start": 65,
+        "end": 804
       }
     }
   ],

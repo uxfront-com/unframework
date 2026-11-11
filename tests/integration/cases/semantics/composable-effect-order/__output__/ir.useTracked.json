@@ -8,8 +8,8 @@
     {
       "name": "useTracked",
       "span": {
-        "start": 217,
-        "end": 488
+        "start": 226,
+        "end": 497
       },
       "parameters": [
         {
@@ -18,62 +18,62 @@
           "type": {
             "code": "(entry: string) => void",
             "span": {
-              "start": 252,
-              "end": 275
+              "start": 261,
+              "end": 284
             }
           },
-          "binding": "report@244",
+          "binding": "report@253",
           "span": {
-            "start": 244,
-            "end": 275
+            "start": 253,
+            "end": 284
           }
         }
       ],
       "types": [],
       "bindings": [
         {
-          "id": "report@244",
+          "id": "report@253",
           "name": "report",
           "kind": "argument",
           "span": {
-            "start": 244,
-            "end": 250
+            "start": 253,
+            "end": 259
           }
         },
         {
-          "id": "count@287",
+          "id": "count@296",
           "name": "count",
           "kind": "state",
           "span": {
-            "start": 287,
-            "end": 292
+            "start": 296,
+            "end": 301
           }
         },
         {
-          "id": "increment@418",
+          "id": "increment@427",
           "name": "increment",
           "kind": "localFn",
           "span": {
-            "start": 418,
-            "end": 427
+            "start": 427,
+            "end": 436
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "count@287",
+          "binding": "count@296",
           "initial": {
             "code": "0",
             "span": {
-              "start": 299,
-              "end": 300
+              "start": 308,
+              "end": 309
             },
             "refs": []
           },
           "span": {
-            "start": 281,
-            "end": 302
+            "start": 290,
+            "end": 311
           }
         },
         {
@@ -81,10 +81,10 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "count@287",
+              "binding": "count@296",
               "span": {
-                "start": 312,
-                "end": 317
+                "start": 321,
+                "end": 326
               }
             }
           ],
@@ -93,29 +93,29 @@
             "body": {
               "code": "report(\"composable watcher\")",
               "span": {
-                "start": 325,
-                "end": 353
+                "start": 334,
+                "end": 362
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "report@244",
+                  "binding": "report@253",
                   "span": {
-                    "start": 325,
-                    "end": 331
+                    "start": 334,
+                    "end": 340
                   }
                 }
               ]
             },
             "expression": true,
             "span": {
-              "start": 319,
-              "end": 353
+              "start": 328,
+              "end": 362
             }
           },
           "span": {
-            "start": 306,
-            "end": 355
+            "start": 315,
+            "end": 364
           }
         },
         {
@@ -126,85 +126,85 @@
             "body": {
               "code": "report(\"composable mounted\")",
               "span": {
-                "start": 375,
-                "end": 403
+                "start": 384,
+                "end": 412
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "report@244",
+                  "binding": "report@253",
                   "span": {
-                    "start": 375,
-                    "end": 381
+                    "start": 384,
+                    "end": 390
                   }
                 }
               ]
             },
             "expression": true,
             "span": {
-              "start": 369,
-              "end": 403
+              "start": 378,
+              "end": 412
             }
           },
           "span": {
-            "start": 359,
-            "end": 405
+            "start": 368,
+            "end": 414
           }
         },
         {
           "kind": "Function",
-          "binding": "increment@418",
+          "binding": "increment@427",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    count.value++;\n  }",
               "span": {
-                "start": 430,
-                "end": 454
+                "start": 439,
+                "end": 463
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "count@287",
+                  "binding": "count@296",
                   "operator": "++",
                   "span": {
-                    "start": 436,
-                    "end": 449
+                    "start": 445,
+                    "end": 458
                   },
                   "target": {
-                    "start": 436,
-                    "end": 447
+                    "start": 445,
+                    "end": 456
                   }
                 }
               ]
             },
             "span": {
-              "start": 427,
-              "end": 454
+              "start": 436,
+              "end": 463
             }
           },
           "span": {
-            "start": 409,
-            "end": 454
+            "start": 418,
+            "end": 463
           }
         }
       ],
       "returns": [
         {
           "name": "count",
-          "binding": "count@287",
+          "binding": "count@296",
           "span": {
-            "start": 467,
-            "end": 472
+            "start": 476,
+            "end": 481
           }
         },
         {
           "name": "increment",
-          "binding": "increment@418",
+          "binding": "increment@427",
           "span": {
-            "start": 474,
-            "end": 483
+            "start": 483,
+            "end": 492
           }
         }
       ]

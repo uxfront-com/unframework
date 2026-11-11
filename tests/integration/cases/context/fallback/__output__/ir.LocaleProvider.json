@@ -5,8 +5,8 @@
     {
       "name": "LocaleProvider",
       "span": {
-        "start": 180,
-        "end": 395
+        "start": 198,
+        "end": 413
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 241,
-              "end": 247
+              "start": 259,
+              "end": 265
             }
           },
-          "binding": "locale@221",
+          "binding": "locale@239",
           "span": {
-            "start": 233,
-            "end": 247
+            "start": 251,
+            "end": 265
           }
         }
       ],
@@ -31,23 +31,23 @@
         "type": {
           "code": "{ locale: string }",
           "span": {
-            "start": 231,
-            "end": 249
+            "start": 249,
+            "end": 267
           }
         },
         "span": {
-          "start": 219,
-          "end": 249
+          "start": 237,
+          "end": 267
         }
       },
       "types": [],
       "slots": {
-        "binding": "slots@261",
+        "binding": "slots@279",
         "type": {
           "code": "{ default?(): Element }",
           "span": {
-            "start": 281,
-            "end": 304
+            "start": 299,
+            "end": 322
           }
         },
         "slots": [
@@ -55,33 +55,33 @@
             "name": "default",
             "optional": true,
             "span": {
-              "start": 283,
-              "end": 302
+              "start": 301,
+              "end": 320
             }
           }
         ],
         "span": {
-          "start": 255,
-          "end": 308
+          "start": 273,
+          "end": 326
         }
       },
       "bindings": [
         {
-          "id": "locale@221",
+          "id": "locale@239",
           "name": "locale",
           "kind": "prop",
           "span": {
-            "start": 221,
-            "end": 227
+            "start": 239,
+            "end": 245
           }
         },
         {
-          "id": "slots@261",
+          "id": "slots@279",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 261,
-            "end": 266
+            "start": 279,
+            "end": 284
           }
         }
       ],
@@ -92,23 +92,23 @@
           "value": {
             "code": "locale",
             "span": {
-              "start": 330,
-              "end": 336
+              "start": 348,
+              "end": 354
             },
             "refs": [
               {
                 "kind": "Binding",
-                "binding": "locale@221",
+                "binding": "locale@239",
                 "span": {
-                  "start": 330,
-                  "end": 336
+                  "start": 348,
+                  "end": 354
                 }
               }
             ]
           },
           "span": {
-            "start": 311,
-            "end": 338
+            "start": 329,
+            "end": 356
           }
         }
       ],
@@ -122,23 +122,23 @@
             "value": {
               "code": "locale",
               "span": {
-                "start": 359,
-                "end": 365
+                "start": 377,
+                "end": 383
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "locale@221",
+                  "binding": "locale@239",
                   "span": {
-                    "start": 359,
-                    "end": 365
+                    "start": 377,
+                    "end": 383
                   }
                 }
               ]
             },
             "span": {
-              "start": 353,
-              "end": 366
+              "start": 371,
+              "end": 384
             }
           }
         ],
@@ -148,14 +148,14 @@
             "slot": "default",
             "fallback": [],
             "span": {
-              "start": 367,
-              "end": 386
+              "start": 385,
+              "end": 404
             }
           }
         ],
         "span": {
-          "start": 348,
-          "end": 392
+          "start": 366,
+          "end": 410
         }
       }
     }
@@ -166,8 +166,8 @@
       "name": "default",
       "local": "LocaleProvider",
       "span": {
-        "start": 180,
-        "end": 395
+        "start": 198,
+        "end": 413
       }
     }
   ],
@@ -179,13 +179,13 @@
       "type": {
         "code": "string",
         "span": {
-          "start": 148,
-          "end": 154
+          "start": 166,
+          "end": 172
         }
       },
       "span": {
-        "start": 111,
-        "end": 178
+        "start": 129,
+        "end": 196
       }
     }
   ]
