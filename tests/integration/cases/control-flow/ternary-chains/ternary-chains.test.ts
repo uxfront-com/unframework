@@ -1,6 +1,6 @@
 // control-flow/ternary-chains: an else-if chain of conditionals whose branches are text, several
 // nodes (a fragment of an element, text and interpolations), a single element, and a final else.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import OrderStatus from "./OrderStatus.uf.tsx";

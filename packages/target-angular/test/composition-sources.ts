@@ -4,7 +4,7 @@
 export const COMPOSITION_SOURCES: Readonly<Record<string, string>> = {
   // A select's options in a list and a group, their values bound, static or their text, with
   // no-break spaces at a text's edges and a label that may be `null`.
-  Picker: `import { ref } from "unframework";
+  Picker: `import { ref } from "@uxfront/unframework";
 export default function Picker() {
   const choice = ref("b");
   const options = ref(["a", "b"]);
@@ -25,7 +25,7 @@ export default function Picker() {
 }
 `,
   // A native v-model beside a listener of its event, before or after it, plain or once.
-  Agree: `import { ref } from "unframework";
+  Agree: `import { ref } from "@uxfront/unframework";
 export default function Agree() {
   const agreed = ref(false);
   const text = ref("");
@@ -42,8 +42,8 @@ export default function Agree() {
 }
 `,
   // Bindings named like the members composition declares, and a loop's item called `template`.
-  Names: `import { defineSlots, ref } from "unframework";
-import type { Element } from "unframework";
+  Names: `import { defineSlots, ref } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 export default function Names() {
   const slots = defineSlots<{ title?(): Element; row?(props: { item: string }): Element }>();
   const style = ref("s");
@@ -58,8 +58,8 @@ export default function Names() {
 }
 `,
   // A loop's item named like a slot's query, where the slot renders and is tested.
-  Steps: `import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+  Steps: `import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 export default function Steps() {
   const slots = defineSlots<{ title?(): Element }>();
   return (
@@ -71,8 +71,8 @@ export default function Steps() {
 }
 `,
   // A slot named like another's context type, beside a local type named like its directive.
-  Card: `import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+  Card: `import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 type CardTitle = "h1" | "h2";
 export default function Card({ level }: { level: CardTitle }) {
   const slots = defineSlots<{
@@ -88,8 +88,8 @@ export default function Card({ level }: { level: CardTitle }) {
 }
 `,
   // The same pair of slots, with no type.
-  Tabs: `import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+  Tabs: `import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 export default function Tabs() {
   const slots = defineSlots<{
     tab?(props: { text: string }): Element;
@@ -104,7 +104,7 @@ export default function Tabs() {
 }
 `,
   // An event named like a helper the template calls.
-  Chooser: `import { defineEmits, ref } from "unframework";
+  Chooser: `import { defineEmits, ref } from "@uxfront/unframework";
 export default function Chooser() {
   const emit = defineEmits<{ selectedValues: [values: string[]] }>();
   const picked = ref<string[]>([]);
@@ -128,8 +128,8 @@ export default function Chooser() {
 export const COMPOSED_SOURCES: Readonly<Record<string, string>> = {
   // Models whose bindings are named apart from them, one like a slot's query, each bound by a
   // consumer through the model's own name.
-  Basket: `import { defineModel, defineSlots, ref } from "unframework";
-import type { Element } from "unframework";
+  Basket: `import { defineModel, defineSlots, ref } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 function Counter() {
   const count = defineModel<number>("value", { default: 0 });
   return <button type="button" onClick={() => (count.value = count.value + 1)}>{count.value}</button>;
@@ -158,7 +158,7 @@ export default function Basket() {
 }
 `,
   // A model with no default, its binding named apart from it, bound by a consumer.
-  Order: `import { defineModel, ref } from "unframework";
+  Order: `import { defineModel, ref } from "@uxfront/unframework";
 function Qty() {
   const amount = defineModel<number>("value");
   return <output>{amount.value ?? "None"}</output>;
@@ -170,7 +170,7 @@ export default function Order() {
 `,
   // A model with no type, no default and an alias, written by its component and bound by a
   // consumer.
-  Score: `import { defineModel, ref } from "unframework";
+  Score: `import { defineModel, ref } from "@uxfront/unframework";
 function Tally() {
   const total = defineModel("count");
   return <button type="button" onClick={() => (total.value = 1)}>Set</button>;
@@ -181,8 +181,8 @@ export default function Score() {
 }
 `,
   // A key's owner filling a child's slot whose directive is named like the key.
-  Shelf: `import { defineSlots, provide } from "unframework";
-import type { Element, InjectionKey } from "unframework";
+  Shelf: `import { defineSlots, provide } from "@uxfront/unframework";
+import type { Element, InjectionKey } from "@uxfront/unframework";
 export const CardTitle: InjectionKey<string> = Symbol("uf.title");
 function Card() {
   const slots = defineSlots<{ title?(): Element }>();
@@ -194,8 +194,8 @@ export default function Shelf() {
 }
 `,
   // A slot whose directive is named like a child the component imports.
-  Page: `import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+  Page: `import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 function CardTitle() {
   return <h2>Title</h2>;
 }

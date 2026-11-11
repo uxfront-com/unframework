@@ -169,7 +169,7 @@ export default function Swatch({ colour, turn, paint, order }: SwatchProps) {
 }
 `,
   // Without fallthrough, nothing reads its props: `_props`.
-  Plain: `import { defineOptions } from "unframework";
+  Plain: `import { defineOptions } from "@uxfront/unframework";
 
 export default function Plain(_: { note?: string }) {
   defineOptions({ inheritAttrs: false });
@@ -440,7 +440,7 @@ export default function NarrowingForms({ box, items, maybe, on, rows, count, not
   // M2 (ADR-0045 to ADR-0049): every watcher the helper takes (one source and an array, lazy
   // and immediate, the array's values annotated as a mutable tuple), `watchEffect` with a cleanup
   // parameter named otherwise, writes the scheduler coalesces, and emits.
-  Watchers: `import { defineEmits, ref, watch, watchEffect } from "unframework";
+  Watchers: `import { defineEmits, ref, watch, watchEffect } from "@uxfront/unframework";
 
 export interface WatchersProps {
   label: string;
@@ -541,7 +541,7 @@ export default function Watchers({ label }: WatchersProps) {
   // the component also listens to once made native, two listeners of one event on one element
   // (the second added from its `ref` callback, with a template ref), a plain and a once listener
   // of one phase in both orders (both added from the `ref` callback), and `focus`/`change`.
-  Listeners: `import { defineEmits, ref, useTemplateRef } from "unframework";
+  Listeners: `import { defineEmits, ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function Listeners() {
   const emit = defineEmits<{ logged: [entries: string[]] }>();
@@ -619,7 +619,7 @@ export default function Listeners() {
   // state no code writes, an id, \`onMounted\`/\`onUnmounted\`, a template ref in a branch and
   // one kept in a setup \`let\` typed \`T | null\` for the teardown, an async handler, and
   // \`nextTick\`.
-  Lifecycle: `import { defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef } from "unframework";
+  Lifecycle: `import { defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef } from "@uxfront/unframework";
 
 export interface LifecycleProps {
   title: string;
@@ -710,7 +710,7 @@ export default function Lifecycle({ title }: LifecycleProps) {
 `,
   // Listeners whose event Solid's props type otherwise than the DOM: \`click\` taken as a
   // \`PointerEvent\`, \`encrypted\` off a media element. Each goes through its element's \`ref\`.
-  DomTypes: `import { ref } from "unframework";
+  DomTypes: `import { ref } from "@uxfront/unframework";
 
 export default function DomTypes() {
   const last = ref("none");
@@ -734,7 +734,7 @@ export default function DomTypes() {
   // function's continuation and its run that declares between two changes; an async
   // \`watchEffect\`; a pre watcher deriving what a post watcher measures in the DOM; and an arrow
   // a setup function hands to another (untracked, \`solid/reactivity\`).
-  Runs: `import { defineEmits, onMounted, ref, useTemplateRef, watch, watchEffect } from "unframework";
+  Runs: `import { defineEmits, onMounted, ref, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";
 
 export interface RunsProps {
   label: string;
@@ -852,7 +852,7 @@ export default function Runs({ label }: RunsProps) {
   // arrow called twice), which the scheduler coalesces as any other; callbacks
   // \`solid/reactivity\` reads as tracked (a continuation reading in \`filter\`'s callback, an
   // arrow kept in a variable); and \`onUnmounted\` hooks that run after every cleanup, in order.
-  AsyncRuns: `import { defineEmits, onUnmounted, ref, watch, watchEffect } from "unframework";
+  AsyncRuns: `import { defineEmits, onUnmounted, ref, watch, watchEffect } from "@uxfront/unframework";
 
 export default function AsyncRuns() {
   const emit = defineEmits<{
@@ -990,7 +990,7 @@ export default function AsyncRuns() {
   // a function that writes first, an \`await\` that may not run (\`??\`), a throw after a write in
   // a \`try\`, a callback parameter and an object's arrows called after an \`await\`, a \`catch\`
   // that returns, a validate-then-save guard, and a statement with two \`await\`s.
-  Coalesced: `import { defineEmits, ref, watch } from "unframework";
+  Coalesced: `import { defineEmits, ref, watch } from "@uxfront/unframework";
 
 export default function Coalesced() {
   const emit = defineEmits<{
@@ -1184,7 +1184,7 @@ export default function Coalesced() {
   // A compound write's target a condition narrows (ADR-0046): its operator reads it, through a
   // call TypeScript never narrows, so the read is asserted; a plain write, \`??=\`, and a target
   // that cannot be absent are not.
-  NarrowedWrites: `import { ref } from "unframework";
+  NarrowedWrites: `import { ref } from "@uxfront/unframework";
 
 export default function NarrowedWrites() {
   const count = ref<number | null>(null);
@@ -1226,7 +1226,7 @@ export default function NarrowedWrites() {
   );
 }
 `,
-  NarrowedReads: `import { computed, defineEmits, ref, watch } from "unframework";
+  NarrowedReads: `import { computed, defineEmits, ref, watch } from "@uxfront/unframework";
 
 interface Member {
   id: number;
@@ -1342,7 +1342,7 @@ export default function NarrowedReads({ owner, members }: NarrowedReadsProps) {
 `,
   // Branches whose tests narrow nothing, read as everywhere else (a comparison, a value whose
   // type has no union), beside one a literal union narrows: L4 checks the plain reads.
-  PlainBranches: `import { computed, ref } from "unframework";
+  PlainBranches: `import { computed, ref } from "@uxfront/unframework";
 
 type Tone = "info" | "warning";
 
@@ -1382,7 +1382,7 @@ export default function PlainBranches({ count, tags, tone, member }: PlainBranch
 `,
   // Branches narrowed on state, whose \`when\` reads each signal once, and a handler inside a
   // narrowed branch, which reads the branch's accessor.
-  NarrowedState: `import { defineEmits, ref } from "unframework";
+  NarrowedState: `import { defineEmits, ref } from "@uxfront/unframework";
 
 interface User {
   name: string;
@@ -1433,8 +1433,8 @@ export default function NarrowedState({ member }: NarrowedStateProps) {
   // tested in a condition and in an attribute, a required model, text models that may be
   // nullish, a `<textarea>` with a modifier, a root spread's `class`, and a `<select>`'s options
   // in a conditional and without a `value`.
-  TestedSlots: `import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+  TestedSlots: `import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export default function TestedSlots() {
   const slots = defineSlots<{ title?(): Element; default?(): Element }>();
@@ -1446,7 +1446,7 @@ export default function TestedSlots() {
   );
 }
 `,
-  RequiredModel: `import { defineModel } from "unframework";
+  RequiredModel: `import { defineModel } from "@uxfront/unframework";
 
 export default function RequiredModel() {
   const text = defineModel<string>("text", { required: true });
@@ -1457,7 +1457,7 @@ export default function RequiredModel() {
   );
 }
 `,
-  NullableFields: `import { ref } from "unframework";
+  NullableFields: `import { ref } from "@uxfront/unframework";
 
 export default function NullableFields() {
   const name = ref<string | null>(null);
@@ -1476,7 +1476,7 @@ export default function NullableFields() {
   return <div {...attrs}>x</div>;
 }
 `,
-  ConditionalOptions: `import { ref } from "unframework";
+  ConditionalOptions: `import { ref } from "@uxfront/unframework";
 
 export default function ConditionalOptions({ extra }: { extra: boolean }) {
   const size = ref("l");
@@ -1498,8 +1498,8 @@ export default function ConditionalOptions({ extra }: { extra: boolean }) {
   // Slots a list's row tests, a tested slot the component forwards, options matched by an
   // interpolated text, options a child component renders, and a modified textarea whose model
   // may be nullish (test/composition.browser.test.ts mounts the first four).
-  RowSlots: `import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+  RowSlots: `import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export default function RowSlots({ items }: { items: string[] }) {
   const slots = defineSlots<{ badge?(): Element }>();
@@ -1515,8 +1515,8 @@ export default function RowSlots({ items }: { items: string[] }) {
   );
 }
 `,
-  ForwardedSlot: `import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+  ForwardedSlot: `import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export default function ForwardedSlot({ depth }: { depth: number }) {
   const slots = defineSlots<{ default?(): Element }>();
@@ -1529,7 +1529,7 @@ export default function ForwardedSlot({ depth }: { depth: number }) {
   );
 }
 `,
-  OptionText: `import { ref } from "unframework";
+  OptionText: `import { ref } from "@uxfront/unframework";
 
 export default function OptionText({ unit }: { unit: string }) {
   const amount = ref("2 kg");
@@ -1541,7 +1541,7 @@ export default function OptionText({ unit }: { unit: string }) {
   );
 }
 `,
-  SelectRows: `import { ref } from "unframework";
+  SelectRows: `import { ref } from "@uxfront/unframework";
 
 export default function SelectRows({ values }: { values: string[] }) {
   const size = ref("y");
@@ -1563,7 +1563,7 @@ function SelectRow({ value }: { value: string }) {
   return <option value={value}>{value}</option>;
 }
 `,
-  NullableArea: `import { ref } from "unframework";
+  NullableArea: `import { ref } from "@uxfront/unframework";
 
 export default function NullableArea() {
   const note = ref<string>();
@@ -1573,14 +1573,14 @@ export default function NullableArea() {
   // A number field that recasts its text once it changes, and a `<select>` whose state matches
   // none of its options, as Vue's `vModelText` and `vModelSelect` do
   // (test/composition.browser.test.ts mounts both).
-  NumberText: `import { ref } from "unframework";
+  NumberText: `import { ref } from "@uxfront/unframework";
 
 export default function NumberText() {
   const weight = ref(1);
   return <input aria-label="Weight" v-model_number={weight.value} />;
 }
 `,
-  UnmatchedSelect: `import { ref } from "unframework";
+  UnmatchedSelect: `import { ref } from "@uxfront/unframework";
 
 export default function UnmatchedSelect() {
   const size = ref("xl");
@@ -1602,7 +1602,7 @@ export default function UnmatchedSelect() {
 `,
   // A `<select>` whose selected option leaves its list while the state stays
   // (test/composition.browser.test.ts mounts it).
-  ListedSelect: `import { ref } from "unframework";
+  ListedSelect: `import { ref } from "@uxfront/unframework";
 
 export default function ListedSelect() {
   const size = ref("m");
@@ -1624,7 +1624,7 @@ export default function ListedSelect() {
 }
 `,
   // A template ref beside a `v-model` that needs the element's `ref` too: one `ref` callback.
-  TemplateRefModel: `import { ref, useTemplateRef } from "unframework";
+  TemplateRefModel: `import { ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function TemplateRefModel() {
   const box = useTemplateRef<HTMLInputElement>();
@@ -1639,7 +1639,7 @@ export default function TemplateRefModel() {
   );
 }
 `,
-  RefSelect: `import { ref, useTemplateRef } from "unframework";
+  RefSelect: `import { ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function RefSelect({ values }: { values: string[] }) {
   const field = useTemplateRef<HTMLSelectElement>();
@@ -1662,7 +1662,7 @@ function SelectRow({ value }: { value: string }) {
   return <option value={value}>{value}</option>;
 }
 `,
-  RefMarkedSelect: `import { ref, useTemplateRef } from "unframework";
+  RefMarkedSelect: `import { ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function RefMarkedSelect() {
   const field = useTemplateRef<HTMLSelectElement>();

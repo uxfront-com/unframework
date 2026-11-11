@@ -1,6 +1,6 @@
 // slots/shared-names: two fills of one child each destructure `({ item })`, and a sibling
 // child's fill takes `item` again (ADR-0054). Each name is in scope in its own fill alone.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Chart from "./Chart.uf.tsx";

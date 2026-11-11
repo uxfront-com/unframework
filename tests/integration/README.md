@@ -6,7 +6,7 @@ by the same expectations: one expectation, verified seven times. A feature is do
 
 ```sh
 pnpm test                 # everything, from the repo root (turbo); or, in this package:
-pnpm --filter @unframework/integration test -- --project "browser:vue"   # a subset
+pnpm --filter @unframework.dev/integration test -- --project "browser:vue"   # a subset
 pnpm test:update          # rewrite the golden outputs and the shared expectations (never in CI)
 pnpm test:baselines       # rewrite the Linux screenshot baselines, in Docker
 pnpm test:baselines:download   # or copy in the ones CI generated for this branch (or a <run-id>)
@@ -24,7 +24,7 @@ cases/basics/hello/
 ├── hello.test.ts                      the browser spec, written once and run on every target
 ├── case.json                          optional: { description, main, ssr: { <scenario>: { props } }, ssrThrows: { props }, axe: [rule ids], requires: why, reference, colorScheme }
 ├── __output__/
-│   ├── ir.json                        the IR snapshot, validated against @unframework/ir's schema
+│   ├── ir.json                        the IR snapshot, validated against @unframework.dev/ir's schema
 │   └── <target>/<files>               the golden outputs: formatted, reviewed, checked in place
 ├── __expected__/                      shared by all seven targets
 │   ├── diagnostics.json               the expected diagnostics ([] when there are none)
@@ -124,7 +124,7 @@ cases/components/form/
   loads each child before it compiles the parent, and Astro's render server asks the browser
   project to resolve and compile it, since the browser imports only the main component.
 
-The `.html` expectations use the canonical format of `@unframework/testing/normalize`: one node
+The `.html` expectations use the canonical format of `@unframework.dev/testing/normalize`: one node
 per line, JSON-quoted text and attribute values, and form-control state as `uf:*`
 pseudo-attributes. The normaliser removes framework noise, and only the target's own (ADR-0031):
 every comment, which frameworks use as anchors; the attributes its framework adds, such as
@@ -159,11 +159,11 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
 
 1. Create `cases/<area>/<name>/<Name>.uf.tsx` and, unless it is a diagnostics case,
    `<name>.test.ts`. The area, the name and every scenario (of `expectParity` and of
-   `case.json`'s `ssr`) are kebab-case (`KEBAB_CASE` in `@unframework/testing/node`): words of
+   `case.json`'s `ssr`) are kebab-case (`KEBAB_CASE` in `@unframework.dev/testing/node`): words of
    `a-z` and `0-9` joined by single hyphens, such as `after-click`. A spec:
 
    ```ts
-   import { describeTargets, it, mountScenario } from "@unframework/testing";
+   import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
    import { expect } from "vitest";
 
    import Counter from "./Counter.uf.tsx";
@@ -285,7 +285,7 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
 
 **L15's budgets** (ADR-0078). The default run leaves the `bench` project out, since it times 20
 compiles of every case, so a run without it fills each L15 cell with `skip(not in this run)`.
-`pnpm --filter @unframework/integration budgets` runs it alone, and so do CI's `Bench` job and
+`pnpm --filter @unframework.dev/integration budgets` runs it alone, and so do CI's `Bench` job and
 `pnpm test:canaries L15`.
 
 `pnpm test:budgets:update` measures every cell and writes `budgets.json`,
@@ -318,7 +318,7 @@ from the test's own errors (and L9 for a step no `expectParity` compared), then 
 with every failed layer. A test skipped by capability records the skip on every browser layer
 before it is skipped; the matrix (version 5) also keeps each test's scenarios and capability
 skip by the test's name, which the summary compares and lists. The parity reporter writes
-`.reports/parity-matrix.<run>.json`; `pnpm --filter @unframework/integration summary` merges them
+`.reports/parity-matrix.<run>.json`; `pnpm --filter @unframework.dev/integration summary` merges them
 into `parity-matrix.json` and `parity-matrix.md` (CI's job summary). `UF_BROWSER=firefox` or
 `webkit` runs the browser projects in that engine (ADR-0066): L10 compares each target with the
 reference's capture from the same run, nothing is written, and the matrices go to `.reports/<engine>/`, merged
@@ -419,7 +419,7 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   and the listeners run in the DOM's order. The Qwik browser project checks that state, which
   the contract covers (ADR-0050): before the component renders, and again before each input of
   an action, its adapter loads every segment the component's QRLs reference and resolves the
-  QRLs (`@unframework/target-qwik/toolchain`, `loads.ts`). It never orders an import: one it did
+  QRLs (`@unframework.dev/target-qwik/toolchain`, `loads.ts`). It never orders an import: one it did
   not preload is handed over as the browser answers it. So no browser test sees a listener's
   first run, which the contract declares instead (ADR-0050, the semantics page's "Outside the
   contract"): until its code has loaded, a listener runs after the event's dispatch, so it reads
@@ -470,9 +470,9 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   output for, or cannot compile yet.
 - `harness/canaries.ts`, `canary-verdict.ts`, `load-failures.ts`: the canaries, how
   `pnpm test:canaries` judges each run, and the specs a canary run could not load.
-- `@unframework/testing`: `describeTargets`, `mount`, `expectParity`, the normaliser, the write
+- `@unframework.dev/testing`: `describeTargets`, `mount`, `expectParity`, the normaliser, the write
   policy, the visual capture and the parity reporter.
-- `@unframework/target-<name>/toolchain`: each framework's Vite plugins, mount adapter (with its
+- `@unframework.dev/target-<name>/toolchain`: each framework's Vite plugins, mount adapter (with its
   rerender), server renderer, compiler check (L3), type check (L4), lint (L5) and production
   compile (L15).
 - `../toolchains/<name>`: the checkers and tsconfigs that type-check each target's outputs,

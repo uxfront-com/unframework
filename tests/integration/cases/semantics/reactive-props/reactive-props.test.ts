@@ -1,7 +1,7 @@
 // semantics/reactive-props: rendering again with new props updates text, attributes, the class,
 // the style, the branch and the list; a prop the new props leave out is absent again. Lists are
 // checked for content and order only: M1 does not guarantee DOM identity on reorder (ADR-0036).
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import UploadStatus from "./UploadStatus.uf.tsx";

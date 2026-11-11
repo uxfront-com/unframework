@@ -1,4 +1,4 @@
-import { defineEmits, onMounted, onUnmounted, ref, watch } from "unframework";
+import { defineEmits, onMounted, onUnmounted, ref, watch } from "@uxfront/unframework";
 
 export default function ShortcutTip() {
   const emit = defineEmits<{ dismissed: []; shortcut: [key: string, count: number] }>();

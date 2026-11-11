@@ -2,7 +2,7 @@
 // `&&`, `?:` and `!`, a chain that splits at `!member`, nested `&&`, a list item that may be null,
 // `uptime !== undefined`, `typeof storage` and a plan's `kind`), and renders when, and only when,
 // the test holds. A zero uptime and a zero storage are values, not absences.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import AccountSummary from "./AccountSummary.uf.tsx";

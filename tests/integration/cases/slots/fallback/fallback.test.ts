@@ -1,6 +1,6 @@
 // slots/fallback: a notice renders fallback content for its default and its action slots
 // (ADR-0054). One parent fills both, the other leaves them empty.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Board from "./Board.uf.tsx";

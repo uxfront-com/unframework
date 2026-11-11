@@ -1,8 +1,8 @@
-import Button from "@unframework/e2e-design-system/source/Button.uf.tsx";
-import Card from "@unframework/e2e-design-system/source/Card.uf.tsx";
-import Counter from "@unframework/e2e-design-system/source/Counter.uf.tsx";
-import TextField from "@unframework/e2e-design-system/source/TextField.uf.tsx";
-import { useToggle } from "@unframework/e2e-design-system/source/useToggle.uf.ts";
+import Button from "@unframework.dev/e2e-design-system/source/Button.uf.tsx";
+import Card from "@unframework.dev/e2e-design-system/source/Card.uf.tsx";
+import Counter from "@unframework.dev/e2e-design-system/source/Counter.uf.tsx";
+import TextField from "@unframework.dev/e2e-design-system/source/TextField.uf.tsx";
+import { useToggle } from "@unframework.dev/e2e-design-system/source/useToggle.uf.ts";
 import { createSignal } from "solid-js";
 
 export function Showcase() {

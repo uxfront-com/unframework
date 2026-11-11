@@ -5,8 +5,8 @@
     {
       "name": "Disclosure",
       "span": {
-        "start": 44,
-        "end": 412
+        "start": 53,
+        "end": 421
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 99,
-              "end": 105
+              "start": 108,
+              "end": 114
             }
           },
-          "binding": "title@81",
+          "binding": "title@90",
           "span": {
-            "start": 92,
-            "end": 105
+            "start": 101,
+            "end": 114
           }
         }
       ],
@@ -31,59 +31,59 @@
         "type": {
           "code": "{ title: string }",
           "span": {
-            "start": 90,
-            "end": 107
+            "start": 99,
+            "end": 116
           }
         },
         "span": {
-          "start": 79,
-          "end": 107
+          "start": 88,
+          "end": 116
         }
       },
       "types": [],
       "bindings": [
         {
-          "id": "title@81",
+          "id": "title@90",
           "name": "title",
           "kind": "prop",
           "span": {
-            "start": 81,
-            "end": 86
+            "start": 90,
+            "end": 95
           }
         },
         {
-          "id": "open@119",
+          "id": "open@128",
           "name": "open",
           "kind": "model",
           "span": {
-            "start": 119,
-            "end": 123
+            "start": 128,
+            "end": 132
           }
         }
       ],
       "setup": [
         {
           "kind": "Model",
-          "binding": "open@119",
+          "binding": "open@128",
           "name": "open",
           "type": {
             "code": "boolean",
             "span": {
-              "start": 138,
-              "end": 145
+              "start": 147,
+              "end": 154
             }
           },
           "default": {
             "code": "false",
             "span": {
-              "start": 166,
-              "end": 171
+              "start": 175,
+              "end": 180
             },
             "refs": []
           },
           "span": {
-            "start": 113,
-            "end": 175
+            "start": 122,
+            "end": 184
           }
         }
       ],
@@ -96,8 +96,8 @@
             "name": "class",
             "value": "disclosure",
             "span": {
-              "start": 196,
-              "end": 214
+              "start": 205,
+              "end": 223
             }
           }
         ],
@@ -111,8 +111,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 230,
-                  "end": 243
+                  "start": 239,
+                  "end": 252
                 }
               },
               {
@@ -121,23 +121,23 @@
                 "value": {
                   "code": "open.value",
                   "span": {
-                    "start": 259,
-                    "end": 269
+                    "start": 268,
+                    "end": 278
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "open@119",
+                      "binding": "open@128",
                       "span": {
-                        "start": 259,
-                        "end": 269
+                        "start": 268,
+                        "end": 278
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 244,
-                  "end": 270
+                  "start": 253,
+                  "end": 279
                 }
               },
               {
@@ -150,52 +150,52 @@
                     "body": {
                       "code": "(open.value = !open.value)",
                       "span": {
-                        "start": 286,
-                        "end": 312
+                        "start": 295,
+                        "end": 321
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "open@119",
+                          "binding": "open@128",
                           "operator": "=",
                           "span": {
-                            "start": 286,
-                            "end": 312
+                            "start": 295,
+                            "end": 321
                           },
                           "target": {
-                            "start": 287,
-                            "end": 297
+                            "start": 296,
+                            "end": 306
                           },
                           "value": {
-                            "start": 300,
-                            "end": 311
+                            "start": 309,
+                            "end": 320
                           },
                           "arrowBody": true
                         },
                         {
                           "kind": "Binding",
-                          "binding": "open@119",
+                          "binding": "open@128",
                           "span": {
-                            "start": 301,
-                            "end": 311
+                            "start": 310,
+                            "end": 320
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 280,
-                      "end": 312
+                      "start": 289,
+                      "end": 321
                     }
                   },
                   "span": {
-                    "start": 280,
-                    "end": 312
+                    "start": 289,
+                    "end": 321
                   }
                 },
                 "span": {
-                  "start": 271,
-                  "end": 313
+                  "start": 280,
+                  "end": 322
                 }
               }
             ],
@@ -205,29 +205,29 @@
                 "value": {
                   "code": "title",
                   "span": {
-                    "start": 324,
-                    "end": 329
+                    "start": 333,
+                    "end": 338
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "title@81",
+                      "binding": "title@90",
                       "span": {
-                        "start": 324,
-                        "end": 329
+                        "start": 333,
+                        "end": 338
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 323,
-                  "end": 330
+                  "start": 332,
+                  "end": 339
                 }
               }
             ],
             "span": {
-              "start": 222,
-              "end": 346
+              "start": 231,
+              "end": 355
             }
           },
           {
@@ -237,16 +237,16 @@
                 "condition": {
                   "code": "open.value",
                   "span": {
-                    "start": 354,
-                    "end": 364
+                    "start": 363,
+                    "end": 373
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "open@119",
+                      "binding": "open@128",
                       "span": {
-                        "start": 354,
-                        "end": 364
+                        "start": 363,
+                        "end": 373
                       }
                     }
                   ]
@@ -261,8 +261,8 @@
                         "kind": "Text",
                         "value": "Details of ",
                         "span": {
-                          "start": 371,
-                          "end": 382
+                          "start": 380,
+                          "end": 391
                         }
                       },
                       {
@@ -270,47 +270,47 @@
                         "value": {
                           "code": "title",
                           "span": {
-                            "start": 383,
-                            "end": 388
+                            "start": 392,
+                            "end": 397
                           },
                           "refs": [
                             {
                               "kind": "Binding",
-                              "binding": "title@81",
+                              "binding": "title@90",
                               "span": {
-                                "start": 383,
-                                "end": 388
+                                "start": 392,
+                                "end": 397
                               }
                             }
                           ]
                         },
                         "span": {
-                          "start": 382,
-                          "end": 389
+                          "start": 391,
+                          "end": 398
                         }
                       }
                     ],
                     "span": {
-                      "start": 368,
-                      "end": 393
+                      "start": 377,
+                      "end": 402
                     }
                   }
                 ],
                 "span": {
-                  "start": 354,
-                  "end": 393
+                  "start": 363,
+                  "end": 402
                 }
               }
             ],
             "span": {
-              "start": 354,
-              "end": 393
+              "start": 363,
+              "end": 402
             }
           }
         ],
         "span": {
-          "start": 191,
-          "end": 405
+          "start": 200,
+          "end": 414
         }
       }
     }
@@ -321,8 +321,8 @@
       "name": "default",
       "local": "Disclosure",
       "span": {
-        "start": 44,
-        "end": 412
+        "start": 53,
+        "end": 421
       }
     }
   ],

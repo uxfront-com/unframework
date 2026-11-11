@@ -1,7 +1,7 @@
 // state/helpers-after-use: `function` declarations are hoisted, so the setup calls them before
 // they are declared: a helper that reads nothing from initial values, a getter and an inline
 // handler, and one that reads state and a prop from an initial value, a watcher and a handler.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import PriceTag from "./PriceTag.uf.tsx";

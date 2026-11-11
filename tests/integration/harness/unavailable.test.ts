@@ -1,8 +1,8 @@
 // The stand-in for an ssr or browser project whose configuration could not be built (its
 // toolchain or the unplugin did not load). It fails every case the project owes, at each of
 // its layers, with the reason: a project that cannot start never looks green or goes missing.
-import { recordLayer } from "@unframework/testing/node";
-import type { LayerName } from "@unframework/testing/node";
+import { recordLayer } from "@unframework.dev/testing/node";
+import type { LayerName } from "@unframework.dev/testing/node";
 import { describe, inject, it } from "vitest";
 
 import { errorState, listCases } from "./cases.ts";

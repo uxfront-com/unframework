@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Card, Counter, TextField, useToggle } from "@unframework/e2e-design-system/svelte";
+  import { Button, Card, Counter, TextField, useToggle } from "@unframework.dev/e2e-design-system/svelte";
 
   let presses = $state(0);
   let name = $state("");

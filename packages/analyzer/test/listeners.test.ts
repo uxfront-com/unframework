@@ -2,7 +2,7 @@
 // event and one option (UF3004, UF3006), handlers that name a local function or are written in
 // place (UF3029), and template refs attached once, outside lists (UF3027). Every run checks the
 // IR's invariants.
-import type { Attribute, ElementNode, FunctionItem } from "@unframework/ir";
+import type { Attribute, ElementNode, FunctionItem } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { listenerName } from "../src/listeners.ts";

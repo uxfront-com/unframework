@@ -1,4 +1,4 @@
-import { defineEmits, nextTick, ref, watch, watchEffect } from "unframework";
+import { defineEmits, nextTick, ref, watch, watchEffect } from "@uxfront/unframework";
 
 export default function InboxLookup() {
   const emit = defineEmits<{

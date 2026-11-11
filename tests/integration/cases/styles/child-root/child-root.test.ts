@@ -1,7 +1,7 @@
 // styles/child-root: the child-root rule (ADR-0063). A styled toolbar's `.button` rule styles
 // the root of each unstyled child button, which carries the toolbar's scope attribute, and its
 // `.icon` rule leaves the icon inside the child alone.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Toolbar from "./Toolbar.uf.tsx";

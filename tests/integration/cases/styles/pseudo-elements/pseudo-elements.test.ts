@@ -1,7 +1,7 @@
 // styles/pseudo-elements: `::before` and `::after` (ADR-0063). The compiler puts the scope
 // attribute before the pseudo-element, `.tag[data-uf-<id>]::before`; L10 captures both
 // pseudo-elements' styles.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Tag from "./Tag.uf.tsx";

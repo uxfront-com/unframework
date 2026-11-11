@@ -13,10 +13,10 @@ export default defineConfig({
     // the whitespace and the spellings they report.
     "tests/integration/cases/diagnostics/**",
     "packages/testing/test/parity/cases/**/__expected__/**",
-    // Generated from the IR's types: `pnpm --filter @unframework/ir generate --check` compares
+    // Generated from the IR's types: `pnpm --filter @unframework.dev/ir generate --check` compares
     // it byte for byte.
     "packages/ir/schema/**",
-    // Vendored verbatim from @vue/runtime-dom: `pnpm --filter unframework vendor:jsx --check`
+    // Vendored verbatim from @vue/runtime-dom: `pnpm --filter @uxfront/unframework vendor:jsx --check`
     // and the unframework tests compare it byte for byte.
     "packages/unframework/src/vendor/**",
     // Written by Styleframe's transpiler for the corpus's configuration: the harness compares it

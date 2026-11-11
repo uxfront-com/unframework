@@ -1,4 +1,4 @@
-# @unframework/parser
+# @unframework.dev/parser
 
 Reads Unframework sources (plan §5.1, P1):
 

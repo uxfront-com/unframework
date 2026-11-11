@@ -8,8 +8,8 @@
     {
       "name": "useMediaQuery",
       "span": {
-        "start": 236,
-        "end": 649
+        "start": 245,
+        "end": 658
       },
       "parameters": [
         {
@@ -18,136 +18,136 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 273,
-              "end": 279
+              "start": 282,
+              "end": 288
             }
           },
-          "binding": "query@266",
+          "binding": "query@275",
           "span": {
-            "start": 266,
-            "end": 279
+            "start": 275,
+            "end": 288
           }
         }
       ],
       "types": [],
       "bindings": [
         {
-          "id": "query@266",
+          "id": "query@275",
           "name": "query",
           "kind": "argument",
           "span": {
-            "start": 266,
-            "end": 271
+            "start": 275,
+            "end": 280
           }
         },
         {
-          "id": "matches@291",
+          "id": "matches@300",
           "name": "matches",
           "kind": "state",
           "span": {
-            "start": 291,
-            "end": 298
+            "start": 300,
+            "end": 307
           }
         },
         {
-          "id": "list@319",
+          "id": "list@328",
           "name": "list",
           "kind": "localVar",
           "span": {
-            "start": 319,
-            "end": 323
+            "start": 328,
+            "end": 332
           }
         },
         {
-          "id": "update@365",
+          "id": "update@374",
           "name": "update",
           "kind": "localFn",
           "span": {
-            "start": 365,
-            "end": 371
+            "start": 374,
+            "end": 380
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "matches@291",
+          "binding": "matches@300",
           "initial": {
             "code": "false",
             "span": {
-              "start": 305,
-              "end": 310
+              "start": 314,
+              "end": 319
             },
             "refs": []
           },
           "span": {
-            "start": 285,
-            "end": 312
+            "start": 294,
+            "end": 321
           }
         },
         {
           "kind": "Variable",
-          "binding": "list@319",
+          "binding": "list@328",
           "type": {
             "code": "MediaQueryList | undefined",
             "span": {
-              "start": 325,
-              "end": 351
+              "start": 334,
+              "end": 360
             }
           },
           "span": {
-            "start": 315,
-            "end": 352
+            "start": 324,
+            "end": 361
           }
         },
         {
           "kind": "Function",
-          "binding": "update@365",
+          "binding": "update@374",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    matches.value = list?.matches ?? false;\n  }",
               "span": {
-                "start": 374,
-                "end": 423
+                "start": 383,
+                "end": 432
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "matches@291",
+                  "binding": "matches@300",
                   "operator": "=",
                   "span": {
-                    "start": 380,
-                    "end": 418
+                    "start": 389,
+                    "end": 427
                   },
                   "target": {
-                    "start": 380,
-                    "end": 393
+                    "start": 389,
+                    "end": 402
                   },
                   "value": {
-                    "start": 396,
-                    "end": 418
+                    "start": 405,
+                    "end": 427
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "list@319",
+                  "binding": "list@328",
                   "span": {
-                    "start": 396,
-                    "end": 400
+                    "start": 405,
+                    "end": 409
                   }
                 }
               ]
             },
             "span": {
-              "start": 371,
-              "end": 423
+              "start": 380,
+              "end": 432
             }
           },
           "span": {
-            "start": 356,
-            "end": 423
+            "start": 365,
+            "end": 432
           }
         },
         {
@@ -158,78 +158,78 @@
             "body": {
               "code": "{\n    list = window.matchMedia(query);\n    update();\n    list.addEventListener(\"change\", update);\n  }",
               "span": {
-                "start": 443,
-                "end": 544
+                "start": 452,
+                "end": 553
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "list@319",
+                  "binding": "list@328",
                   "operator": "=",
                   "span": {
-                    "start": 449,
-                    "end": 480
+                    "start": 458,
+                    "end": 489
                   },
                   "target": {
-                    "start": 449,
-                    "end": 453
+                    "start": 458,
+                    "end": 462
                   },
                   "value": {
-                    "start": 456,
-                    "end": 480
+                    "start": 465,
+                    "end": 489
                   }
                 },
                 {
                   "kind": "Global",
                   "name": "window",
                   "span": {
-                    "start": 456,
-                    "end": 462
+                    "start": 465,
+                    "end": 471
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "query@266",
+                  "binding": "query@275",
                   "span": {
-                    "start": 474,
-                    "end": 479
+                    "start": 483,
+                    "end": 488
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "update@365",
+                  "binding": "update@374",
                   "span": {
-                    "start": 486,
-                    "end": 492
+                    "start": 495,
+                    "end": 501
                   },
                   "call": true
                 },
                 {
                   "kind": "Binding",
-                  "binding": "list@319",
+                  "binding": "list@328",
                   "span": {
-                    "start": 500,
-                    "end": 504
+                    "start": 509,
+                    "end": 513
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "update@365",
+                  "binding": "update@374",
                   "span": {
-                    "start": 532,
-                    "end": 538
+                    "start": 541,
+                    "end": 547
                   }
                 }
               ]
             },
             "span": {
-              "start": 437,
-              "end": 544
+              "start": 446,
+              "end": 553
             }
           },
           "span": {
-            "start": 427,
-            "end": 546
+            "start": 436,
+            "end": 555
           }
         },
         {
@@ -240,46 +240,46 @@
             "body": {
               "code": "{\n    list?.removeEventListener(\"change\", update);\n  }",
               "span": {
-                "start": 568,
-                "end": 622
+                "start": 577,
+                "end": 631
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "list@319",
+                  "binding": "list@328",
                   "span": {
-                    "start": 574,
-                    "end": 578
+                    "start": 583,
+                    "end": 587
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "update@365",
+                  "binding": "update@374",
                   "span": {
-                    "start": 610,
-                    "end": 616
+                    "start": 619,
+                    "end": 625
                   }
                 }
               ]
             },
             "span": {
-              "start": 562,
-              "end": 622
+              "start": 571,
+              "end": 631
             }
           },
           "span": {
-            "start": 550,
-            "end": 624
+            "start": 559,
+            "end": 633
           }
         }
       ],
       "returns": [
         {
           "name": "matches",
-          "binding": "matches@291",
+          "binding": "matches@300",
           "span": {
-            "start": 637,
-            "end": 644
+            "start": 646,
+            "end": 653
           }
         }
       ]

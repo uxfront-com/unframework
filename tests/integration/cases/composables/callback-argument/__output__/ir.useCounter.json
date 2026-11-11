@@ -8,8 +8,8 @@
     {
       "name": "useCounter",
       "span": {
-        "start": 252,
-        "end": 573
+        "start": 261,
+        "end": 582
       },
       "parameters": [
         {
@@ -18,14 +18,14 @@
           "type": {
             "code": "number",
             "span": {
-              "start": 286,
-              "end": 292
+              "start": 295,
+              "end": 301
             }
           },
-          "binding": "limit@279",
+          "binding": "limit@288",
           "span": {
-            "start": 279,
-            "end": 292
+            "start": 288,
+            "end": 301
           }
         },
         {
@@ -34,263 +34,263 @@
           "type": {
             "code": "(count: number) => void",
             "span": {
-              "start": 303,
-              "end": 326
+              "start": 312,
+              "end": 335
             }
           },
-          "binding": "onLimit@294",
+          "binding": "onLimit@303",
           "span": {
-            "start": 294,
-            "end": 326
+            "start": 303,
+            "end": 335
           }
         }
       ],
       "types": [],
       "bindings": [
         {
-          "id": "limit@279",
+          "id": "limit@288",
           "name": "limit",
           "kind": "argument",
           "span": {
-            "start": 279,
-            "end": 284
+            "start": 288,
+            "end": 293
           }
         },
         {
-          "id": "onLimit@294",
+          "id": "onLimit@303",
           "name": "onLimit",
           "kind": "argument",
           "span": {
-            "start": 294,
-            "end": 301
+            "start": 303,
+            "end": 310
           }
         },
         {
-          "id": "count@338",
+          "id": "count@347",
           "name": "count",
           "kind": "state",
           "span": {
-            "start": 338,
-            "end": 343
+            "start": 347,
+            "end": 352
           }
         },
         {
-          "id": "step@362",
+          "id": "step@371",
           "name": "step",
           "kind": "localConst",
           "span": {
-            "start": 362,
-            "end": 366
+            "start": 371,
+            "end": 375
           }
         },
         {
-          "id": "increment@384",
+          "id": "increment@393",
           "name": "increment",
           "kind": "localFn",
           "span": {
-            "start": 384,
-            "end": 393
+            "start": 393,
+            "end": 402
           }
         },
         {
-          "id": "reset@492",
+          "id": "reset@501",
           "name": "reset",
           "kind": "localFn",
           "span": {
-            "start": 492,
-            "end": 497
+            "start": 501,
+            "end": 506
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "count@338",
+          "binding": "count@347",
           "initial": {
             "code": "0",
             "span": {
-              "start": 350,
-              "end": 351
+              "start": 359,
+              "end": 360
             },
             "refs": []
           },
           "span": {
-            "start": 332,
-            "end": 353
+            "start": 341,
+            "end": 362
           }
         },
         {
           "kind": "Const",
-          "binding": "step@362",
+          "binding": "step@371",
           "value": {
             "code": "1",
             "span": {
-              "start": 369,
-              "end": 370
+              "start": 378,
+              "end": 379
             },
             "refs": []
           },
           "span": {
-            "start": 356,
-            "end": 371
+            "start": 365,
+            "end": 380
           }
         },
         {
           "kind": "Function",
-          "binding": "increment@384",
+          "binding": "increment@393",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    count.value += step;\n    if (count.value === limit) onLimit(count.value);\n  }",
               "span": {
-                "start": 396,
-                "end": 479
+                "start": 405,
+                "end": 488
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "count@338",
+                  "binding": "count@347",
                   "operator": "+=",
                   "span": {
-                    "start": 402,
-                    "end": 421
+                    "start": 411,
+                    "end": 430
                   },
                   "target": {
-                    "start": 402,
-                    "end": 413
+                    "start": 411,
+                    "end": 422
                   },
                   "value": {
-                    "start": 417,
-                    "end": 421
+                    "start": 426,
+                    "end": 430
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "step@362",
+                  "binding": "step@371",
                   "span": {
-                    "start": 417,
-                    "end": 421
+                    "start": 426,
+                    "end": 430
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "count@338",
+                  "binding": "count@347",
                   "span": {
-                    "start": 431,
-                    "end": 442
+                    "start": 440,
+                    "end": 451
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "limit@279",
+                  "binding": "limit@288",
                   "span": {
-                    "start": 447,
-                    "end": 452
-                  }
-                },
-                {
-                  "kind": "Binding",
-                  "binding": "onLimit@294",
-                  "span": {
-                    "start": 454,
+                    "start": 456,
                     "end": 461
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "count@338",
+                  "binding": "onLimit@303",
                   "span": {
-                    "start": 462,
-                    "end": 473
+                    "start": 463,
+                    "end": 470
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "count@347",
+                  "span": {
+                    "start": 471,
+                    "end": 482
                   }
                 }
               ]
             },
             "span": {
-              "start": 393,
-              "end": 479
+              "start": 402,
+              "end": 488
             }
           },
           "span": {
-            "start": 375,
-            "end": 479
+            "start": 384,
+            "end": 488
           }
         },
         {
           "kind": "Function",
-          "binding": "reset@492",
+          "binding": "reset@501",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    count.value = 0;\n  }",
               "span": {
-                "start": 500,
-                "end": 526
+                "start": 509,
+                "end": 535
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "count@338",
+                  "binding": "count@347",
                   "operator": "=",
                   "span": {
-                    "start": 506,
-                    "end": 521
+                    "start": 515,
+                    "end": 530
                   },
                   "target": {
-                    "start": 506,
-                    "end": 517
+                    "start": 515,
+                    "end": 526
                   },
                   "value": {
-                    "start": 520,
-                    "end": 521
+                    "start": 529,
+                    "end": 530
                   }
                 }
               ]
             },
             "span": {
-              "start": 497,
-              "end": 526
+              "start": 506,
+              "end": 535
             }
           },
           "span": {
-            "start": 483,
-            "end": 526
+            "start": 492,
+            "end": 535
           }
         }
       ],
       "returns": [
         {
           "name": "count",
-          "binding": "count@338",
+          "binding": "count@347",
           "span": {
-            "start": 539,
-            "end": 544
+            "start": 548,
+            "end": 553
           }
         },
         {
           "name": "step",
-          "binding": "step@362",
+          "binding": "step@371",
           "span": {
-            "start": 546,
-            "end": 550
+            "start": 555,
+            "end": 559
           }
         },
         {
           "name": "increment",
-          "binding": "increment@384",
+          "binding": "increment@393",
           "span": {
-            "start": 552,
-            "end": 561
+            "start": 561,
+            "end": 570
           }
         },
         {
           "name": "reset",
-          "binding": "reset@492",
+          "binding": "reset@501",
           "span": {
-            "start": 563,
-            "end": 568
+            "start": 572,
+            "end": 577
           }
         }
       ]

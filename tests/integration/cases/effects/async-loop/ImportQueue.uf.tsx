@@ -1,4 +1,4 @@
-import { defineEmits, nextTick, ref, watch } from "unframework";
+import { defineEmits, nextTick, ref, watch } from "@uxfront/unframework";
 
 export interface ImportQueueProps {
   files: string[];

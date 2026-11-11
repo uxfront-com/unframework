@@ -62,7 +62,7 @@ const CARD =
 /** A component that exposes one function and renders its label in a tag. */
 const exposing = (name: string, tag: string): string =>
   [
-    'import { defineExpose } from "unframework";',
+    'import { defineExpose } from "@uxfront/unframework";',
     "",
     `export default function ${name}({ label }: { label: string }) {`,
     "  function bump() {}",
@@ -122,8 +122,8 @@ describe("svelte composition across files", () => {
   // every expression between the child's tags.
   it("keeps a parent's binding named like a slot it fills", async () => {
     const card = [
-      'import { defineSlots } from "unframework";',
-      'import type { Element } from "unframework";',
+      'import { defineSlots } from "@uxfront/unframework";',
+      'import type { Element } from "@uxfront/unframework";',
       "",
       "export default function Card() {",
       "  const slots = defineSlots<{ header?(): Element; default?(): Element }>();",
@@ -198,7 +198,7 @@ describe("svelte composition across files", () => {
   // parent whose root it is passes none on.
   it("passes no fallthrough to a root component that takes none", checker, async () => {
     const field = [
-      'import { defineOptions } from "unframework";',
+      'import { defineOptions } from "@uxfront/unframework";',
       "",
       "export default function Field({ label }: { label: string }) {",
       "  defineOptions({ inheritAttrs: false });",
@@ -224,8 +224,8 @@ describe("svelte composition across files", () => {
   // consumer imports neither, only the key, whose type carries its value's.
   it("types an injected key from the key it imports", checker, async () => {
     const provider = [
-      'import { defineSlots, provide, ref } from "unframework";',
-      'import type { Element, InjectionKey, Ref } from "unframework";',
+      'import { defineSlots, provide, ref } from "@uxfront/unframework";',
+      'import type { Element, InjectionKey, Ref } from "@uxfront/unframework";',
       "",
       "interface Box {",
       "  size: number;",
@@ -244,7 +244,7 @@ describe("svelte composition across files", () => {
       "",
     ].join("\n");
     const reader = [
-      'import { inject, ref } from "unframework";',
+      'import { inject, ref } from "@uxfront/unframework";',
       "",
       'import { BoxKey, ErrorKey } from "./Provider.uf.tsx";',
       "",
@@ -268,8 +268,8 @@ describe("svelte composition across files", () => {
   // A key whose value type is named `<Key>Value`, a name an output could have given it.
   it("types a key whose value type the module declares as `<Key>Value`", checker, async () => {
     const provider = [
-      'import { defineSlots, provide } from "unframework";',
-      'import type { Element, InjectionKey } from "unframework";',
+      'import { defineSlots, provide } from "@uxfront/unframework";',
+      'import type { Element, InjectionKey } from "@uxfront/unframework";',
       "",
       "export interface ThemeValue {",
       "  tone: string;",
@@ -285,7 +285,7 @@ describe("svelte composition across files", () => {
       "",
     ].join("\n");
     const reader = [
-      'import { inject } from "unframework";',
+      'import { inject } from "@uxfront/unframework";',
       "",
       'import { Theme } from "./Provider.uf.tsx";',
       "",
@@ -305,8 +305,8 @@ describe("svelte composition across files", () => {
   // name an output could have given the key's value type (`<Key>Value`) clashes with it.
   it("types a key beside another type named `<Key>Value`", checker, async () => {
     const provider = [
-      'import { defineSlots, provide, ref } from "unframework";',
-      'import type { Element, InjectionKey, Ref } from "unframework";',
+      'import { defineSlots, provide, ref } from "@uxfront/unframework";',
+      'import type { Element, InjectionKey, Ref } from "@uxfront/unframework";',
       "",
       "export interface ThemeValue {",
       "  tone: string;",
@@ -323,7 +323,7 @@ describe("svelte composition across files", () => {
       "",
     ].join("\n");
     const reader = [
-      'import { inject, ref } from "unframework";',
+      'import { inject, ref } from "@uxfront/unframework";',
       "",
       'import { Theme } from "./Provider.uf.tsx";',
       "",
@@ -342,8 +342,8 @@ describe("svelte composition across files", () => {
 
   it("types a key beside a component named `<Key>Value`", checker, async () => {
     const provider = [
-      'import { defineSlots, provide } from "unframework";',
-      'import type { Element, InjectionKey } from "unframework";',
+      'import { defineSlots, provide } from "@uxfront/unframework";',
+      'import type { Element, InjectionKey } from "@uxfront/unframework";',
       "",
       'import ThemeValue from "./ThemeValue.uf.tsx";',
       "",
@@ -363,7 +363,7 @@ describe("svelte composition across files", () => {
     ].join("\n");
     const themeValue = "export default function ThemeValue() {\n  return <hr />;\n}\n";
     const reader = [
-      'import { inject } from "unframework";',
+      'import { inject } from "@uxfront/unframework";',
       "",
       'import { Theme } from "./Provider.uf.tsx";',
       "",
@@ -385,8 +385,8 @@ describe("svelte composition across files", () => {
   // A key imported under two names is imported under both, as the source writes it.
   it("injects a key imported under two names", checker, async () => {
     const provider = [
-      'import { defineSlots, provide } from "unframework";',
-      'import type { Element, InjectionKey } from "unframework";',
+      'import { defineSlots, provide } from "@uxfront/unframework";',
+      'import type { Element, InjectionKey } from "@uxfront/unframework";',
       "",
       'export const Theme: InjectionKey<string> = Symbol("uf.theme");',
       "",
@@ -398,7 +398,7 @@ describe("svelte composition across files", () => {
       "",
     ].join("\n");
     const reader = [
-      'import { inject } from "unframework";',
+      'import { inject } from "@uxfront/unframework";',
       "",
       'import { Theme, Theme as Mode } from "./Provider.uf.tsx";',
       "",
@@ -427,8 +427,8 @@ describe("svelte composition across files", () => {
   // written as the source writes it: a snippet named like either must not hide it.
   it("keeps an exposed function and a fill's parameter named like a slot they fill", async () => {
     const card = [
-      'import { defineSlots } from "unframework";',
-      'import type { Element } from "unframework";',
+      'import { defineSlots } from "@uxfront/unframework";',
+      'import type { Element } from "@uxfront/unframework";',
       "",
       "export default function Card() {",
       "  const slots = defineSlots<{",
@@ -447,8 +447,8 @@ describe("svelte composition across files", () => {
       "",
     ].join("\n");
     const table = [
-      'import { defineSlots } from "unframework";',
-      'import type { Element } from "unframework";',
+      'import { defineSlots } from "@uxfront/unframework";',
+      'import type { Element } from "@uxfront/unframework";',
       "",
       "export default function Table({ rows }: { rows: string[] }) {",
       "  const slots = defineSlots<{ row?(props: { header: string }): Element }>();",
@@ -463,7 +463,7 @@ describe("svelte composition across files", () => {
       "",
     ].join("\n");
     const page = [
-      'import { defineExpose } from "unframework";',
+      'import { defineExpose } from "@uxfront/unframework";',
       "",
       'import Card from "./Card.uf.tsx";',
       'import Table from "./Table.uf.tsx";',
@@ -514,8 +514,8 @@ describe("svelte composition across files", () => {
   // which Svelte wants declared with `$state` (`non_reactive_update`).
   it("declares a ref on a <component is> chosen in a block with $state", async () => {
     const rows = [
-      'import { defineSlots } from "unframework";',
-      'import type { Element } from "unframework";',
+      'import { defineSlots } from "@uxfront/unframework";',
+      'import type { Element } from "@uxfront/unframework";',
       "",
       "export default function Rows({ rows }: { rows: string[] }) {",
       "  const slots = defineSlots<{ row?(props: { row: string; index: number }): Element }>();",
@@ -530,7 +530,7 @@ describe("svelte composition across files", () => {
       "",
     ].join("\n");
     const list = [
-      'import { useTemplateRef } from "unframework";',
+      'import { useTemplateRef } from "@uxfront/unframework";',
       "",
       'import Card from "./Card.uf.tsx";',
       'import Chip from "./Chip.uf.tsx";',

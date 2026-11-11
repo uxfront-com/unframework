@@ -1,6 +1,6 @@
 // models/select-multiple: `v-model` on a <select multiple> binds an array of the selected
 // options' values (ADR-0054), both ways.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ToppingPicker from "./ToppingPicker.uf.tsx";

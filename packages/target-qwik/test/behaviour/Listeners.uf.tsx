@@ -1,4 +1,4 @@
-import { defineEmits, ref } from "unframework";
+import { defineEmits, ref } from "@uxfront/unframework";
 
 // Events keep DOM semantics (ADR-0047): capture before the target and bubble after it,
 // `stopPropagation()` and `preventDefault()` while the event is dispatched, once, passive, and

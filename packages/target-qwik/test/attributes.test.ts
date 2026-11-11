@@ -8,7 +8,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { formatOutput } from "@unframework/codegen";
+import { formatOutput } from "@unframework.dev/codegen";
 import {
   BOOLEAN_ATTRIBUTES,
   createComponent,
@@ -18,7 +18,7 @@ import {
   createStaticAttribute,
   NUMBER_TYPED_ATTRIBUTES,
   NUMBER_TYPED_GLOBAL_ATTRIBUTES,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { enumeratedValues } from "../../analyzer/src/enumerated.ts";

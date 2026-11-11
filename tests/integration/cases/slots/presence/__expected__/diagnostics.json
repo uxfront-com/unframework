@@ -7,12 +7,12 @@
     "start": {
       "line": 9,
       "column": 8,
-      "offset": 366
+      "offset": 384
     },
     "end": {
       "line": 9,
       "column": 21,
-      "offset": 379
+      "offset": 397
     },
     "target": "angular"
   },
@@ -24,12 +24,12 @@
     "start": {
       "line": 9,
       "column": 8,
-      "offset": 366
+      "offset": 384
     },
     "end": {
       "line": 9,
       "column": 21,
-      "offset": 379
+      "offset": 397
     },
     "target": "qwik"
   }

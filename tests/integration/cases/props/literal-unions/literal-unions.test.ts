@@ -1,6 +1,6 @@
 // props/literal-unions: string and number literal unions mapped to class names and to text,
 // with literal defaults.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import StatusPill from "./StatusPill.uf.tsx";

@@ -1,5 +1,5 @@
 // models/select: `v-model` on a <select> binds the selected option's value (ADR-0054), both ways.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import SizePicker from "./SizePicker.uf.tsx";

@@ -6,8 +6,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { MATRIX_VERSION } from "@unframework/testing/node";
-import type { MatrixCells, MatrixTests, ParityMatrix } from "@unframework/testing/node";
+import { MATRIX_VERSION } from "@unframework.dev/testing/node";
+import type { MatrixCells, MatrixTests, ParityMatrix } from "@unframework.dev/testing/node";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { diffMatrices, diffStable, parseDiffArgs, readMatrix } from "../scripts/matrix-diff.ts";

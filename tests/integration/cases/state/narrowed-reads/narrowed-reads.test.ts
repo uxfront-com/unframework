@@ -5,7 +5,7 @@
 // handle is cleared with no test at all. A handler shown only while `page.value < pageCount.value`
 // writes the page and emits it: the emit sees the new page. Switching from a password to a link
 // renders a text field where the password field was: it starts empty.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import TeamInvite from "./TeamInvite.uf.tsx";

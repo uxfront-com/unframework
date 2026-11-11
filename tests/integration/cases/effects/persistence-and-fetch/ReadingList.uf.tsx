@@ -1,4 +1,4 @@
-import { defineEmits, ref, watch, watchEffect } from "unframework";
+import { defineEmits, ref, watch, watchEffect } from "@uxfront/unframework";
 
 export interface ReadingListProps {
   shelves: string[];

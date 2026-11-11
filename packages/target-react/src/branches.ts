@@ -18,9 +18,9 @@ import {
   jsxChildren,
   jsxElement,
   jsxExpression,
-} from "@unframework/codegen";
-import type { ImportSet, JsxContext } from "@unframework/codegen";
-import type { ElementNode, IfBranch, IfNode, RenderNode } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { ImportSet, JsxContext } from "@unframework.dev/codegen";
+import type { ElementNode, IfBranch, IfNode, RenderNode } from "@unframework.dev/ir";
 
 type Expression =
   | ReturnType<typeof js.nullLiteral>

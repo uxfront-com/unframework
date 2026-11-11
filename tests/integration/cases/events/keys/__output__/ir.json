@@ -5,8 +5,8 @@
     {
       "name": "CommandMenu",
       "span": {
-        "start": 126,
-        "end": 1830
+        "start": 135,
+        "end": 1839
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string[]",
             "span": {
-              "start": 113,
-              "end": 121
+              "start": 122,
+              "end": 130
             }
           },
-          "binding": "commands@164",
+          "binding": "commands@173",
           "span": {
-            "start": 103,
-            "end": 122
+            "start": 112,
+            "end": 131
           }
         }
       ],
@@ -31,25 +31,25 @@
         "type": {
           "code": "CommandMenuProps",
           "span": {
-            "start": 176,
-            "end": 192
+            "start": 185,
+            "end": 201
           }
         },
         "span": {
-          "start": 162,
-          "end": 192
+          "start": 171,
+          "end": 201
         }
       },
       "types": [
         "CommandMenuProps"
       ],
       "emits": {
-        "binding": "emit@204",
+        "binding": "emit@213",
         "type": {
           "code": "{ run: [command: string]; dismiss: [] }",
           "span": {
-            "start": 223,
-            "end": 262
+            "start": 232,
+            "end": 271
           }
         },
         "events": [
@@ -61,169 +61,169 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 240,
-                    "end": 246
+                    "start": 249,
+                    "end": 255
                   }
                 },
                 "span": {
-                  "start": 231,
-                  "end": 246
+                  "start": 240,
+                  "end": 255
                 }
               }
             ],
             "span": {
-              "start": 225,
-              "end": 247
+              "start": 234,
+              "end": 256
             }
           },
           {
             "name": "dismiss",
             "parameters": [],
             "span": {
-              "start": 249,
-              "end": 260
+              "start": 258,
+              "end": 269
             }
           }
         ],
         "span": {
-          "start": 198,
-          "end": 266
+          "start": 207,
+          "end": 275
         }
       },
       "bindings": [
         {
-          "id": "commands@164",
+          "id": "commands@173",
           "name": "commands",
           "kind": "prop",
           "span": {
-            "start": 164,
-            "end": 172
+            "start": 173,
+            "end": 181
           }
         },
         {
-          "id": "emit@204",
+          "id": "emit@213",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 204,
-            "end": 208
+            "start": 213,
+            "end": 217
           }
         },
         {
-          "id": "active@276",
+          "id": "active@285",
           "name": "active",
           "kind": "state",
           "span": {
-            "start": 276,
-            "end": 282
+            "start": 285,
+            "end": 291
           }
         },
         {
-          "id": "query@301",
+          "id": "query@310",
           "name": "query",
           "kind": "state",
           "span": {
-            "start": 301,
-            "end": 306
+            "start": 310,
+            "end": 315
           }
         },
         {
-          "id": "shortcutField@326",
+          "id": "shortcutField@335",
           "name": "shortcutField",
           "kind": "templateRef",
           "span": {
-            "start": 326,
-            "end": 339
+            "start": 335,
+            "end": 348
           }
         },
         {
-          "id": "handleKey@390",
+          "id": "handleKey@399",
           "name": "handleKey",
           "kind": "localFn",
           "span": {
-            "start": 390,
-            "end": 399
+            "start": 399,
+            "end": 408
           }
         },
         {
-          "id": "clearShortcut@902",
+          "id": "clearShortcut@911",
           "name": "clearShortcut",
           "kind": "localFn",
           "span": {
-            "start": 902,
-            "end": 915
+            "start": 911,
+            "end": 924
           }
         },
         {
-          "id": "command@1430",
+          "id": "command@1439",
           "name": "command",
           "kind": "loopVar",
           "span": {
-            "start": 1430,
-            "end": 1437
+            "start": 1439,
+            "end": 1446
           }
         },
         {
-          "id": "index@1439",
+          "id": "index@1448",
           "name": "index",
           "kind": "loopVar",
           "span": {
-            "start": 1439,
-            "end": 1444
+            "start": 1448,
+            "end": 1453
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "active@276",
+          "binding": "active@285",
           "initial": {
             "code": "0",
             "span": {
-              "start": 289,
-              "end": 290
+              "start": 298,
+              "end": 299
             },
             "refs": []
           },
           "span": {
-            "start": 270,
-            "end": 292
+            "start": 279,
+            "end": 301
           }
         },
         {
           "kind": "State",
-          "binding": "query@301",
+          "binding": "query@310",
           "initial": {
             "code": "\"\"",
             "span": {
-              "start": 313,
-              "end": 315
+              "start": 322,
+              "end": 324
             },
             "refs": []
           },
           "span": {
-            "start": 295,
-            "end": 317
+            "start": 304,
+            "end": 326
           }
         },
         {
           "kind": "TemplateRef",
-          "binding": "shortcutField@326",
+          "binding": "shortcutField@335",
           "type": {
             "code": "HTMLInputElement",
             "span": {
-              "start": 357,
-              "end": 373
+              "start": 366,
+              "end": 382
             }
           },
           "span": {
-            "start": 320,
-            "end": 377
+            "start": 329,
+            "end": 386
           }
         },
         {
           "kind": "Function",
-          "binding": "handleKey@390",
+          "binding": "handleKey@399",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -232,38 +232,38 @@
                 "type": {
                   "code": "KeyboardEvent",
                   "span": {
-                    "start": 407,
-                    "end": 420
+                    "start": 416,
+                    "end": 429
                   }
                 },
                 "event": "KeyboardEvent",
                 "span": {
-                  "start": 400,
-                  "end": 420
+                  "start": 409,
+                  "end": 429
                 }
               }
             ],
             "body": {
               "code": "{\n    if (event.key === \"Enter\") event.preventDefault();\n    if (event.key === \"ArrowDown\") {\n      active.value = (active.value + 1) % commands.length;\n    } else if (event.key === \"ArrowUp\") {\n      active.value = (active.value + commands.length - 1) % commands.length;\n    } else if (event.key === \"Enter\") {\n      emit(\"run\", commands[active.value] ?? query.value);\n    } else if (event.key === \"Escape\") {\n      active.value = 0;\n      emit(\"dismiss\");\n    }\n  }",
               "span": {
-                "start": 422,
-                "end": 889
+                "start": 431,
+                "end": 898
               },
               "refs": [
                 {
                   "kind": "Event",
                   "member": "key",
                   "span": {
-                    "start": 432,
-                    "end": 441
+                    "start": 441,
+                    "end": 450
                   }
                 },
                 {
                   "kind": "Event",
                   "member": "preventDefault",
                   "span": {
-                    "start": 455,
-                    "end": 475
+                    "start": 464,
+                    "end": 484
                   },
                   "call": true
                 },
@@ -271,171 +271,171 @@
                   "kind": "Event",
                   "member": "key",
                   "span": {
-                    "start": 487,
-                    "end": 496
+                    "start": 496,
+                    "end": 505
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "active@276",
+                  "binding": "active@285",
                   "operator": "=",
                   "span": {
-                    "start": 522,
-                    "end": 573
+                    "start": 531,
+                    "end": 582
                   },
                   "target": {
-                    "start": 522,
-                    "end": 534
+                    "start": 531,
+                    "end": 543
                   },
                   "value": {
-                    "start": 537,
-                    "end": 573
+                    "start": 546,
+                    "end": 582
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "active@276",
+                  "binding": "active@285",
                   "span": {
-                    "start": 538,
-                    "end": 550
+                    "start": 547,
+                    "end": 559
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "commands@164",
+                  "binding": "commands@173",
                   "span": {
-                    "start": 558,
-                    "end": 566
+                    "start": 567,
+                    "end": 575
                   }
                 },
                 {
                   "kind": "Event",
                   "member": "key",
                   "span": {
-                    "start": 590,
-                    "end": 599
+                    "start": 599,
+                    "end": 608
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "active@276",
+                  "binding": "active@285",
                   "operator": "=",
                   "span": {
-                    "start": 623,
-                    "end": 692
+                    "start": 632,
+                    "end": 701
                   },
                   "target": {
-                    "start": 623,
-                    "end": 635
+                    "start": 632,
+                    "end": 644
                   },
                   "value": {
-                    "start": 638,
-                    "end": 692
+                    "start": 647,
+                    "end": 701
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "active@276",
+                  "binding": "active@285",
                   "span": {
-                    "start": 639,
-                    "end": 651
+                    "start": 648,
+                    "end": 660
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "commands@164",
+                  "binding": "commands@173",
                   "span": {
-                    "start": 654,
-                    "end": 662
+                    "start": 663,
+                    "end": 671
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "commands@164",
+                  "binding": "commands@173",
                   "span": {
-                    "start": 677,
-                    "end": 685
+                    "start": 686,
+                    "end": 694
                   }
                 },
                 {
                   "kind": "Event",
                   "member": "key",
                   "span": {
-                    "start": 709,
-                    "end": 718
+                    "start": 718,
+                    "end": 727
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@204",
+                  "binding": "emit@213",
                   "event": "run",
                   "span": {
-                    "start": 740,
-                    "end": 790
+                    "start": 749,
+                    "end": 799
                   },
                   "arguments": [
                     {
-                      "start": 752,
-                      "end": 789
+                      "start": 761,
+                      "end": 798
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "commands@164",
-                  "span": {
-                    "start": 752,
-                    "end": 760
-                  }
-                },
-                {
-                  "kind": "Binding",
-                  "binding": "active@276",
+                  "binding": "commands@173",
                   "span": {
                     "start": 761,
-                    "end": 773
+                    "end": 769
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "query@301",
+                  "binding": "active@285",
                   "span": {
-                    "start": 778,
-                    "end": 789
+                    "start": 770,
+                    "end": 782
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "query@310",
+                  "span": {
+                    "start": 787,
+                    "end": 798
                   }
                 },
                 {
                   "kind": "Event",
                   "member": "key",
                   "span": {
-                    "start": 807,
-                    "end": 816
+                    "start": 816,
+                    "end": 825
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "active@276",
+                  "binding": "active@285",
                   "operator": "=",
                   "span": {
-                    "start": 839,
-                    "end": 855
+                    "start": 848,
+                    "end": 864
                   },
                   "target": {
-                    "start": 839,
-                    "end": 851
+                    "start": 848,
+                    "end": 860
                   },
                   "value": {
-                    "start": 854,
-                    "end": 855
+                    "start": 863,
+                    "end": 864
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@204",
+                  "binding": "emit@213",
                   "event": "dismiss",
                   "span": {
-                    "start": 863,
-                    "end": 878
+                    "start": 872,
+                    "end": 887
                   },
                   "arguments": []
                 }
@@ -447,67 +447,67 @@
                 "condition": {
                   "code": "event.key === \"Enter\"",
                   "span": {
-                    "start": 432,
-                    "end": 453
+                    "start": 441,
+                    "end": 462
                   },
                   "refs": [
                     {
                       "kind": "Event",
                       "member": "key",
                       "span": {
-                        "start": 432,
-                        "end": 441
+                        "start": 441,
+                        "end": 450
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 428,
-                  "end": 478
+                  "start": 437,
+                  "end": 487
                 }
               }
             ],
             "span": {
-              "start": 399,
-              "end": 889
+              "start": 408,
+              "end": 898
             }
           },
           "span": {
-            "start": 381,
-            "end": 889
+            "start": 390,
+            "end": 898
           }
         },
         {
           "kind": "Function",
-          "binding": "clearShortcut@902",
+          "binding": "clearShortcut@911",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    const input = shortcutField.value;\n    if (input) input.value = \"\";\n  }",
               "span": {
-                "start": 918,
-                "end": 995
+                "start": 927,
+                "end": 1004
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "shortcutField@326",
+                  "binding": "shortcutField@335",
                   "span": {
-                    "start": 938,
-                    "end": 957
+                    "start": 947,
+                    "end": 966
                   }
                 }
               ]
             },
             "span": {
-              "start": 915,
-              "end": 995
+              "start": 924,
+              "end": 1004
             }
           },
           "span": {
-            "start": 893,
-            "end": 995
+            "start": 902,
+            "end": 1004
           }
         }
       ],
@@ -520,8 +520,8 @@
             "name": "class",
             "value": "command-menu",
             "span": {
-              "start": 1021,
-              "end": 1041
+              "start": 1030,
+              "end": 1050
             }
           },
           {
@@ -529,8 +529,8 @@
             "name": "aria-label",
             "value": "Command menu",
             "span": {
-              "start": 1042,
-              "end": 1067
+              "start": 1051,
+              "end": 1076
             }
           }
         ],
@@ -544,8 +544,8 @@
                 "name": "role",
                 "value": "search",
                 "span": {
-                  "start": 1081,
-                  "end": 1094
+                  "start": 1090,
+                  "end": 1103
                 }
               },
               {
@@ -553,8 +553,8 @@
                 "name": "aria-label",
                 "value": "Commands",
                 "span": {
-                  "start": 1095,
-                  "end": 1116
+                  "start": 1104,
+                  "end": 1125
                 }
               }
             ],
@@ -568,8 +568,8 @@
                     "kind": "Text",
                     "value": "Command",
                     "span": {
-                      "start": 1133,
-                      "end": 1162
+                      "start": 1142,
+                      "end": 1171
                     }
                   },
                   {
@@ -581,8 +581,8 @@
                         "name": "name",
                         "value": "command",
                         "span": {
-                          "start": 1181,
-                          "end": 1195
+                          "start": 1190,
+                          "end": 1204
                         }
                       },
                       {
@@ -596,33 +596,33 @@
                                 "name": "event",
                                 "event": "InputEvent",
                                 "span": {
-                                  "start": 1218,
-                                  "end": 1223
+                                  "start": 1227,
+                                  "end": 1232
                                 }
                               }
                             ],
                             "body": {
                               "code": "(query.value = (event.currentTarget as HTMLInputElement).value)",
                               "span": {
-                                "start": 1228,
-                                "end": 1291
+                                "start": 1237,
+                                "end": 1300
                               },
                               "refs": [
                                 {
                                   "kind": "Write",
-                                  "binding": "query@301",
+                                  "binding": "query@310",
                                   "operator": "=",
                                   "span": {
-                                    "start": 1228,
-                                    "end": 1291
+                                    "start": 1237,
+                                    "end": 1300
                                   },
                                   "target": {
-                                    "start": 1229,
-                                    "end": 1240
+                                    "start": 1238,
+                                    "end": 1249
                                   },
                                   "value": {
-                                    "start": 1243,
-                                    "end": 1290
+                                    "start": 1252,
+                                    "end": 1299
                                   },
                                   "arrowBody": true
                                 },
@@ -630,26 +630,26 @@
                                   "kind": "Event",
                                   "member": "currentTarget",
                                   "span": {
-                                    "start": 1244,
-                                    "end": 1263
+                                    "start": 1253,
+                                    "end": 1272
                                   }
                                 }
                               ]
                             },
                             "expression": true,
                             "span": {
-                              "start": 1217,
-                              "end": 1291
+                              "start": 1226,
+                              "end": 1300
                             }
                           },
                           "span": {
-                            "start": 1217,
-                            "end": 1291
+                            "start": 1226,
+                            "end": 1300
                           }
                         },
                         "span": {
-                          "start": 1208,
-                          "end": 1292
+                          "start": 1217,
+                          "end": 1301
                         }
                       },
                       {
@@ -657,34 +657,34 @@
                         "event": "keydown",
                         "handler": {
                           "kind": "Function",
-                          "binding": "handleKey@390",
+                          "binding": "handleKey@399",
                           "span": {
-                            "start": 1316,
-                            "end": 1325
+                            "start": 1325,
+                            "end": 1334
                           }
                         },
                         "span": {
-                          "start": 1305,
-                          "end": 1326
+                          "start": 1314,
+                          "end": 1335
                         }
                       }
                     ],
                     "children": [],
                     "span": {
-                      "start": 1162,
-                      "end": 1339
+                      "start": 1171,
+                      "end": 1348
                     }
                   }
                 ],
                 "span": {
-                  "start": 1126,
-                  "end": 1356
+                  "start": 1135,
+                  "end": 1365
                 }
               }
             ],
             "span": {
-              "start": 1075,
-              "end": 1370
+              "start": 1084,
+              "end": 1379
             }
           },
           {
@@ -696,8 +696,8 @@
                 "name": "aria-label",
                 "value": "Suggestions",
                 "span": {
-                  "start": 1381,
-                  "end": 1405
+                  "start": 1390,
+                  "end": 1414
                 }
               }
             ],
@@ -707,35 +707,35 @@
                 "source": {
                   "code": "commands",
                   "span": {
-                    "start": 1416,
-                    "end": 1424
+                    "start": 1425,
+                    "end": 1433
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "commands@164",
+                      "binding": "commands@173",
                       "span": {
-                        "start": 1416,
-                        "end": 1424
+                        "start": 1425,
+                        "end": 1433
                       }
                     }
                   ]
                 },
-                "item": "command@1430",
-                "index": "index@1439",
+                "item": "command@1439",
+                "index": "index@1448",
                 "key": {
                   "code": "command",
                   "span": {
-                    "start": 1470,
-                    "end": 1477
+                    "start": 1479,
+                    "end": 1486
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "command@1430",
+                      "binding": "command@1439",
                       "span": {
-                        "start": 1470,
-                        "end": 1477
+                        "start": 1479,
+                        "end": 1486
                       }
                     }
                   ]
@@ -750,39 +750,39 @@
                       "value": {
                         "code": "index === active.value ? \"true\" : undefined",
                         "span": {
-                          "start": 1493,
-                          "end": 1536
+                          "start": 1502,
+                          "end": 1545
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "index@1439",
+                            "binding": "index@1448",
                             "span": {
-                              "start": 1493,
-                              "end": 1498
+                              "start": 1502,
+                              "end": 1507
                             }
                           },
                           {
                             "kind": "Binding",
-                            "binding": "active@276",
+                            "binding": "active@285",
                             "span": {
-                              "start": 1503,
-                              "end": 1515
+                              "start": 1512,
+                              "end": 1524
                             }
                           },
                           {
                             "kind": "Global",
                             "name": "undefined",
                             "span": {
-                              "start": 1527,
-                              "end": 1536
+                              "start": 1536,
+                              "end": 1545
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 1479,
-                        "end": 1537
+                        "start": 1488,
+                        "end": 1546
                       }
                     }
                   ],
@@ -792,40 +792,40 @@
                       "value": {
                         "code": "command",
                         "span": {
-                          "start": 1552,
-                          "end": 1559
+                          "start": 1561,
+                          "end": 1568
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "command@1430",
+                            "binding": "command@1439",
                             "span": {
-                              "start": 1552,
-                              "end": 1559
+                              "start": 1561,
+                              "end": 1568
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 1551,
-                        "end": 1560
+                        "start": 1560,
+                        "end": 1569
                       }
                     }
                   ],
                   "span": {
-                    "start": 1461,
-                    "end": 1576
+                    "start": 1470,
+                    "end": 1585
                   }
                 },
                 "span": {
-                  "start": 1416,
-                  "end": 1587
+                  "start": 1425,
+                  "end": 1596
                 }
               }
             ],
             "span": {
-              "start": 1377,
-              "end": 1600
+              "start": 1386,
+              "end": 1609
             }
           },
           {
@@ -837,8 +837,8 @@
                 "kind": "Text",
                 "value": "Shortcut name",
                 "span": {
-                  "start": 1614,
-                  "end": 1645
+                  "start": 1623,
+                  "end": 1654
                 }
               },
               {
@@ -850,16 +850,16 @@
                     "name": "name",
                     "value": "shortcut",
                     "span": {
-                      "start": 1662,
-                      "end": 1677
+                      "start": 1671,
+                      "end": 1686
                     }
                   },
                   {
                     "kind": "Ref",
-                    "binding": "shortcutField@326",
+                    "binding": "shortcutField@335",
                     "span": {
-                      "start": 1688,
-                      "end": 1707
+                      "start": 1697,
+                      "end": 1716
                     }
                   },
                   {
@@ -873,32 +873,32 @@
                             "name": "event",
                             "event": "KeyboardEvent",
                             "span": {
-                              "start": 1730,
-                              "end": 1735
+                              "start": 1739,
+                              "end": 1744
                             }
                           }
                         ],
                         "body": {
                           "code": "event.key === \"Escape\" && clearShortcut()",
                           "span": {
-                            "start": 1740,
-                            "end": 1781
+                            "start": 1749,
+                            "end": 1790
                           },
                           "refs": [
                             {
                               "kind": "Event",
                               "member": "key",
                               "span": {
-                                "start": 1740,
-                                "end": 1749
+                                "start": 1749,
+                                "end": 1758
                               }
                             },
                             {
                               "kind": "Binding",
-                              "binding": "clearShortcut@902",
+                              "binding": "clearShortcut@911",
                               "span": {
-                                "start": 1766,
-                                "end": 1779
+                                "start": 1775,
+                                "end": 1788
                               },
                               "call": true
                             }
@@ -906,37 +906,37 @@
                         },
                         "expression": true,
                         "span": {
-                          "start": 1729,
-                          "end": 1781
+                          "start": 1738,
+                          "end": 1790
                         }
                       },
                       "span": {
-                        "start": 1729,
-                        "end": 1781
+                        "start": 1738,
+                        "end": 1790
                       }
                     },
                     "span": {
-                      "start": 1718,
-                      "end": 1782
+                      "start": 1727,
+                      "end": 1791
                     }
                   }
                 ],
                 "children": [],
                 "span": {
-                  "start": 1645,
-                  "end": 1793
+                  "start": 1654,
+                  "end": 1802
                 }
               }
             ],
             "span": {
-              "start": 1607,
-              "end": 1808
+              "start": 1616,
+              "end": 1817
             }
           }
         ],
         "span": {
-          "start": 1012,
-          "end": 1823
+          "start": 1021,
+          "end": 1832
         }
       }
     }
@@ -947,8 +947,8 @@
       "name": "default",
       "local": "CommandMenu",
       "span": {
-        "start": 126,
-        "end": 1830
+        "start": 135,
+        "end": 1839
       }
     }
   ],
@@ -958,8 +958,8 @@
       "exported": true,
       "code": "interface CommandMenuProps {\n  commands: string[];\n}",
       "span": {
-        "start": 72,
-        "end": 124
+        "start": 81,
+        "end": 133
       }
     }
   ]

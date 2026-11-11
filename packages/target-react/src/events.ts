@@ -7,8 +7,8 @@
 // callback (`listen`), and every listener of that event in the component does too, so their
 // order stays the DOM's. `test/events.test.ts` pins the table against react-dom's registrations
 // and @types/react's props.
-import { EVENT_INTERFACES, isVoidElement } from "@unframework/ir";
-import type { ElementNode, EventAttribute } from "@unframework/ir";
+import { EVENT_INTERFACES, isVoidElement } from "@unframework.dev/ir";
+import type { ElementNode, EventAttribute } from "@unframework.dev/ir";
 
 /** How React declares an event's listener prop, where it has one that keeps the DOM's semantics. */
 export interface ReactEventProp {

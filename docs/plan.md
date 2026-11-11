@@ -38,7 +38,7 @@ milestone in §9 ends with what it settled and what changed from this plan.
   - **Props:** declared in the function signature.
   - **Body:** the setup, which runs once.
   - **APIs:** `ref`, `computed`, `watch` and the `defineEmits` / `defineModel` / `defineSlots` /
-    `defineExpose` macros, all imported from `unframework` and erased at build time.
+    `defineExpose` macros, all imported from `@uxfront/unframework` and erased at build time.
   - **JSX:** the returned JSX is the template. Control flow is plain JS (ternaries, `&&`, `.map`), and
     `v-model` is the one directive.
   - **Styles:** a sibling CSS file that the component imports and the compiler scopes.
@@ -68,8 +68,8 @@ milestone in §9 ends with what it settled and what changed from this plan.
 
 - **Tooling:**
   - an unplugin plugin for every bundler, and a CLI
-  - `@unframework/testing`, the same harness the corpus uses
-  - `@unframework/visual`, for cross-framework visual parity and a seven-up preview
+  - `@unframework.dev/testing`, the same harness the corpus uses
+  - `@unframework.dev/visual`, for cross-framework visual parity and a seven-up preview
   - a TS 7.1 content mapper for full consumer typing in editors
   - later, a component manifest and an MCP server
 - **Milestones:**
@@ -184,7 +184,7 @@ From the v1 source, its ADRs and the Inkline monorepo (`~/Workspace/inkline`):
 
 ```tsx
 // Counter.uf.tsx
-import { computed, defineEmits, ref } from "unframework";
+import { computed, defineEmits, ref } from "@uxfront/unframework";
 import "./Counter.css";
 
 export interface CounterProps {
@@ -236,10 +236,10 @@ export default function Counter({ initial = 0, step = 1 }: CounterProps) {
   - Its body is the setup, and it runs once per instance (§4.5).
   - Each exported component compiles to its own file for every target.
   - A non-exported component is local to its file, and still becomes a sibling file in each output.
-- **The authoring API (D2)** comes from `unframework`: types, plus inert stubs that the compiler
-  recognises by binding (not by name) and erases. No `unframework` import survives into any output.
-- **JSX types.** `tsconfig` sets `"jsx": "preserve"` and `"jsxImportSource": "unframework"`. The
-  `unframework/jsx-runtime` types follow ADR-003: intrinsic elements are vendored from Vue's
+- **The authoring API (D2)** comes from `@uxfront/unframework`: types, plus inert stubs that the compiler
+  recognises by binding (not by name) and erases. No `@uxfront/unframework` import survives into any output.
+- **JSX types.** `tsconfig` sets `"jsx": "preserve"` and `"jsxImportSource": "@uxfront/unframework"`. The
+  `@uxfront/unframework/jsx-runtime` types follow ADR-003: intrinsic elements are vendored from Vue's
   `@vue/runtime-dom` JSX types (HTML attribute names, Vue event names), behind an owned alias, with
   probe tests that pin what they catch (D13).
 
@@ -311,7 +311,7 @@ The JSX a component returns is its template.
   - `<component is={href ? "a" : "button"}>` over a statically known set of tags or components
 - **Whitespace** follows JSX rules, which are the source of truth. The compiler emits explicit text
   for every template target.
-- **Later (M8):** `<Transition>` and `<Teleport>` (imported from `unframework`), `innerHTML` (with a
+- **Later (M8):** `<Transition>` and `<Teleport>` (imported from `@uxfront/unframework`), `innerHTML` (with a
   warning), and portable directives.
 
 ### 4.4 Styles
@@ -411,25 +411,25 @@ Each package follows the `@uxfront/scene` model:
 - `isolatedDeclarations` is on.
 - Tests run under Vitest 5.
 
-| Package                         | Role                                                                                                                                                                      | Depends on                                          |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `@unframework/parser`           | Parses `.uf.tsx` / `.uf.ts` into a TS-ESTree AST with spans, finds the components, parses stylesheets.                                                                    | `oxc-parser`, `lightningcss`                        |
-| `@unframework/ir`               | IR types, builders, visitors, JSON schema, versioning and migrations. Pure data.                                                                                          | none                                                |
-| `@unframework/diagnostics`      | The diagnostic type, the catalogue, code frames, JSON/SARIF output, fixes.                                                                                                | none                                                |
-| `@unframework/type-oracle`      | The `TypeOracle` interface, the syntactic resolver, and the adapter contract test suite.                                                                                  | `oxc-parser`, `oxc-resolver`                        |
-| `@unframework/type-oracle-tsgo` | The tsgo adapter: `typescript/unstable/sync` now, the TS 7.1 API later. The only package that imports `typescript`.                                                       | `typescript` (exact pin)                            |
-| `@unframework/analyzer`         | P2 and P3: bindings, macros, reactivity, cross-component checks, lowering into IR.                                                                                        | `parser`, `ir`, `type-oracle`, `diagnostics`        |
-| `@unframework/codegen`          | The target kit: JS, JSX and markup builders, the rewrite engine, CSS scoper, import manager, source maps, `defineTarget`.                                                 | `ir`, `magic-string`, `oxc-codegen`, `lightningcss` |
-| `@unframework/target-<name>` ×7 | One framework each: `emit()`, capabilities, options, and a `/toolchain` entry for tests.                                                                                  | `ir`, `codegen`                                     |
-| `@unframework/compiler`         | The project graph, `compile()`, caching, plugins and config resolution.                                                                                                   | `analyzer`, the targets                             |
-| `unframework`                   | The authoring API and `unframework/jsx-runtime` types (root export, types and stubs only), `defineConfig`, the `unframework` bin, and tooling re-exported under subpaths. | lazy-loaded tooling                                 |
-| `@unframework/unplugin`         | The bundler plugin (`/vite`, `/rolldown`, `/rollup`, `/webpack`, `/rspack`, `/esbuild`, `/bun`, …).                                                                       | `compiler`, `unplugin`                              |
-| `@unframework/cli`              | `build`, `check`, `test`, `preview`, `visual`, `manifest`, `explain`, `fix` and `init`.                                                                                   | `compiler`                                          |
-| `@unframework/language-tools`   | The TS 7.1 content mapper for `.uf.tsx`: consumer typing and UF diagnostics in editors and tsgo (not built yet, ADR-0072).                                                | `compiler`                                          |
-| `@unframework/testing`          | The cross-target test API, mount adapters, matchers and a Vitest preset. Private until M7.                                                                                | `vitest`, the targets' toolchains                   |
-| `@unframework/visual`           | The visual parity runner, its report, and the seven-up preview server.                                                                                                    | `testing`                                           |
-| `@unframework/mcp`              | The MCP server for agents (M9).                                                                                                                                           | `compiler`, `testing`                               |
-| `create-unframework`            | The project scaffolder (M6).                                                                                                                                              | none                                                |
+| Package                             | Role                                                                                                                                                                               | Depends on                                          |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `@unframework.dev/parser`           | Parses `.uf.tsx` / `.uf.ts` into a TS-ESTree AST with spans, finds the components, parses stylesheets.                                                                             | `oxc-parser`, `lightningcss`                        |
+| `@unframework.dev/ir`               | IR types, builders, visitors, JSON schema, versioning and migrations. Pure data.                                                                                                   | none                                                |
+| `@unframework.dev/diagnostics`      | The diagnostic type, the catalogue, code frames, JSON/SARIF output, fixes.                                                                                                         | none                                                |
+| `@unframework.dev/type-oracle`      | The `TypeOracle` interface, the syntactic resolver, and the adapter contract test suite.                                                                                           | `oxc-parser`, `oxc-resolver`                        |
+| `@unframework.dev/type-oracle-tsgo` | The tsgo adapter: `typescript/unstable/sync` now, the TS 7.1 API later. The only package that imports `typescript`.                                                                | `typescript` (exact pin)                            |
+| `@unframework.dev/analyzer`         | P2 and P3: bindings, macros, reactivity, cross-component checks, lowering into IR.                                                                                                 | `parser`, `ir`, `type-oracle`, `diagnostics`        |
+| `@unframework.dev/codegen`          | The target kit: JS, JSX and markup builders, the rewrite engine, CSS scoper, import manager, source maps, `defineTarget`.                                                          | `ir`, `magic-string`, `oxc-codegen`, `lightningcss` |
+| `@unframework.dev/target-<name>` ×7 | One framework each: `emit()`, capabilities, options, and a `/toolchain` entry for tests.                                                                                           | `ir`, `codegen`                                     |
+| `@unframework.dev/compiler`         | The project graph, `compile()`, caching, plugins and config resolution.                                                                                                            | `analyzer`, the targets                             |
+| `@uxfront/unframework`              | The authoring API and `@uxfront/unframework/jsx-runtime` types (root export, types and stubs only), `defineConfig`, the `unframework` bin, and tooling re-exported under subpaths. | lazy-loaded tooling                                 |
+| `@unframework.dev/unplugin`         | The bundler plugin (`/vite`, `/rolldown`, `/rollup`, `/webpack`, `/rspack`, `/esbuild`, `/bun`, …).                                                                                | `compiler`, `unplugin`                              |
+| `@unframework.dev/cli`              | `build`, `check`, `test`, `preview`, `visual`, `manifest`, `explain`, `fix` and `init`.                                                                                            | `compiler`                                          |
+| `@unframework.dev/language-tools`   | The TS 7.1 content mapper for `.uf.tsx`: consumer typing and UF diagnostics in editors and tsgo (not built yet, ADR-0072).                                                         | `compiler`                                          |
+| `@unframework.dev/testing`          | The cross-target test API, mount adapters, matchers and a Vitest preset. Private until M7.                                                                                         | `vitest`, the targets' toolchains                   |
+| `@unframework.dev/visual`           | The visual parity runner, its report, and the seven-up preview server.                                                                                                             | `testing`                                           |
+| `@unframework.dev/mcp`              | The MCP server for agents (M9).                                                                                                                                                    | `compiler`, `testing`                               |
+| `create-unframework`                | The project scaffolder (M6).                                                                                                                                                       | none                                                |
 
 **Layering rules.** A dependency-cruiser-style test enforces these:
 
@@ -586,7 +586,7 @@ declared by macros in the body, and TypeScript cannot see a body (ADR-008). Four
 Each one is useful on its own.
 
 1. **Stock tsgo: no false errors.**
-   - `unframework`'s JSX `IntrinsicAttributes` accepts `on${Capitalize<string>}` handlers,
+   - `@uxfront/unframework`'s JSX `IntrinsicAttributes` accepts `on${Capitalize<string>}` handlers,
      `v-model` / `v-model:${string}` and slot-object children on every component.
    - Legitimate code never fails to type-check, but payloads are not checked.
    - This replaces v1's blanket `[attr: string]: any` with targeted index signatures, and probe tests
@@ -599,7 +599,7 @@ Each one is useful on its own.
 
    These surface in `check`, the CLI and editors.
 
-3. **The content mapper (not built yet, ADR-0072).** `@unframework/language-tools` is a TS 7.1
+3. **The content mapper (not built yet, ADR-0072).** `@unframework.dev/language-tools` is a TS 7.1
    content mapper for `.uf.tsx`.
    - It serves virtual TSX that adds each component's macro-declared events, models and slots to its
      exported signature, plus span maps and the compiler's diagnostics.
@@ -625,7 +625,7 @@ export interface Target {
   readonly options?: StandardSchemaV1; // validated target options
   emit(component: UfComponent, context: EmitContext): OutputFile[];
 }
-// `@unframework/target-react/toolchain` (tests and tooling only): Vite plugins, SSR renderer,
+// `@unframework.dev/target-react/toolchain` (tests and tooling only): Vite plugins, SSR renderer,
 // mount adapter, typecheck and lint commands, settle hooks.
 ```
 
@@ -638,7 +638,7 @@ export interface Target {
 
 ### 5.8 Code generation, formatting and source maps
 
-- **`@unframework/codegen` provides:**
+- **`@unframework.dev/codegen` provides:**
   - builders for JS and TS (oxc-codegen), JSX, and markup (Vue, Svelte, Angular and Astro templates),
     with the escaping each syntax needs
   - the rewrite engine (§5.4)
@@ -775,7 +775,7 @@ tests/integration/cases/state/counter/
 
 ```ts
 // counter.test.ts: written once, runs on every target
-import { describeTargets, mount } from "@unframework/testing";
+import { describeTargets, mount } from "@unframework.dev/testing";
 import Counter from "./Counter.uf.tsx";
 
 describeTargets("counter", () => {
@@ -809,8 +809,8 @@ carries that reason into the parity matrix (§7.7).
 | L5  | Idiom and lint      | Framework lint rules pass with zero warnings. Conformance invariants are AST-based, not substring checks.                                                          | oxlint, eslint-plugin-react-hooks, -solid, -vue, -svelte, angular-eslint, -qwik, -astro                                                             | M1                         |
 | L6  | SSR parity          | Normalised server HTML equals `__expected__/ssr.*.html` on every target.                                                                                           | each framework's server renderer, and the Astro Container API                                                                                       | M0                         |
 | L7  | DOM and a11y parity | The client-rendered DOM (with form-control properties) and the accessibility tree equal the shared expectations.                                                   | Vitest Browser Mode with Playwright (Chromium)                                                                                                      | M0                         |
-| L8  | Behaviour           | The spec's own assertions: text, emitted events, model updates, focus, rerendering with new props.                                                                 | `@unframework/testing`                                                                                                                              | M1                         |
-| L9  | Interaction traces  | After every scripted step, the normalised DOM, ARIA tree and event log equal the shared trace.                                                                     | the `@unframework/testing` recorder                                                                                                                 | M2                         |
+| L8  | Behaviour           | The spec's own assertions: text, emitted events, model updates, focus, rerendering with new props.                                                                 | `@unframework.dev/testing`                                                                                                                          | M1                         |
+| L9  | Interaction traces  | After every scripted step, the normalised DOM, ARIA tree and event log equal the shared trace.                                                                     | the `@unframework.dev/testing` recorder                                                                                                             | M2                         |
 | L10 | Visual parity       | Element geometry and selected computed styles match first, because they explain a difference. Then pixels match the one shared baseline.                           | `toMatchScreenshot` and a geometry snapshot                                                                                                         | M0                         |
 | L11 | Accessibility       | axe-core reports zero violations, or exactly the declared list.                                                                                                    | axe-core in the browser                                                                                                                             | M0                         |
 | L12 | Hydration           | Server render, then hydrate: no mismatch warnings, the DOM equals the client render, and interactions still work.                                                  | each framework's hydrate API                                                                                                                        | M8                         |
@@ -835,7 +835,7 @@ tests/integration/vitest.config.ts   (Vitest 5 projects)
   transform.
 - **The browser tests run the reviewed code.** A guard asserts that the plugin's output equals the
   committed golden file.
-- **Mount adapters.** `@unframework/testing/<target>` provides:
+- **Mount adapters.** `@unframework.dev/testing/<target>` provides:
   - `mount(component, { props, slots, models, on })`
   - `getBy*` queries that return Vitest locators
   - `user`, which sends real CDP events
@@ -955,7 +955,7 @@ The counts below are targets for each milestone's exit. Every case runs on all s
 
 ```ts
 // unframework.config.ts
-import { defineConfig } from "unframework/config";
+import { defineConfig } from "@uxfront/unframework/config";
 
 export default defineConfig({
   targets: ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"],
@@ -969,7 +969,7 @@ export default defineConfig({
 
 ### 8.2 The bundler plugin
 
-`@unframework/unplugin` covers Vite, Rolldown, Rollup, webpack, Rspack/Rsbuild, esbuild and Bun.
+`@unframework.dev/unplugin` covers Vite, Rolldown, Rollup, webpack, Rspack/Rsbuild, esbuild and Bun. It works like this:
 
 - **App mode.** A React app imports `Button.uf.tsx` and receives React.
 - **Virtual ids.**
@@ -990,7 +990,7 @@ export default defineConfig({
   - Nuxt, SvelteKit, SolidStart, Qwik City and Analog, through Vite.
   - The Angular CLI (`@angular/build`) has no plugin API, so Angular apps consume a prebuilt package or
     use Analog.
-- **Type-checking `.uf.tsx` inside a host app** needs `jsxImportSource: "unframework"` for those files,
+- **Type-checking `.uf.tsx` inside a host app** needs `jsxImportSource: "@uxfront/unframework"` for those files,
   through a scoped tsconfig or the per-file pragma. M6 settles which.
 
 ### 8.3 CLI
@@ -1024,7 +1024,7 @@ framework's official packager:
 It also generates `exports` for subpath packages (`my-ds/react`, `my-ds/vue`, …) and barrel files.
 Consumers of a published package get each framework's native types for free.
 
-### 8.5 `@unframework/testing`
+### 8.5 `@unframework.dev/testing`
 
 This is the API the corpus is written in. It is published once it is stable (M7), and it includes:
 
@@ -1036,7 +1036,7 @@ This is the API the corpus is written in. It is published once it is stable (M7)
 
 A design-system team tests its own components exactly the way Unframework tests the compiler.
 
-### 8.6 `@unframework/visual`
+### 8.6 `@unframework.dev/visual`
 
 - **Examples** are `*.example.uf.tsx` files. They are components with no props, so they are portable
   by construction.
@@ -1135,7 +1135,7 @@ seven target lanes and a harness lane, which suits parallel agents. The loop for
 - `codegen`: the printer, the markup builder and the oxfmt step
 - the seven `target-*` packages, each with a toolchain
 - `compiler`
-- `unframework`, with the authoring stubs and the vendored JSX types
+- `@uxfront/unframework`, with the authoring stubs and the vendored JSX types
 - `unplugin`, for Vite only
 - `testing`, private: all seven mount adapters, the SSR renderers and normalisation
 
@@ -1148,7 +1148,7 @@ seven target lanes and a harness lane, which suits parallel agents. The loop for
 4. Virtual ids through each framework's Vite plugin, with `enforce: "pre"` ahead of the JSX plugins.
 5. TypeScript 6 checkers beside TypeScript 7 in one workspace.
 6. `.uf.tsx` under tsgo:
-   - The `unframework` JSX types raise no false errors on consumers.
+   - The `@uxfront/unframework` JSX types raise no false errors on consumers.
    - Probe tests pin what the types do and do not catch.
    - Find out whether a TS 7.1 content mapper (7.1 nightly) can claim `.uf.tsx`.
 
@@ -1260,7 +1260,7 @@ a report that gates no pull request.
 - The `tsgo` adapter on `typescript/unstable/sync`, ported to the stable 7.1 API once it ships (planned
   for Nov 24, 2026).
 - Consumer typing layers 1 and 3 (§5.6): JSX types with probe tests, and
-  `@unframework/language-tools` as a content mapper.
+  `@unframework.dev/language-tools` as a content mapper.
 - `*.uf.ts` composables compiled for each target.
 - Shared modules.
 - The project graph and incremental invalidation.
@@ -1278,7 +1278,7 @@ a report that gates no pull request.
 **As built:** done, with ADR-0067 to ADR-0072, but for layer 3 of §5.6:
 
 - The content mapper is left out. TypeScript 7.1 refuses `.uf.tsx` as a content mapper's extension
-  (TS18066), so `@unframework/language-tools` waits for the extension to be settled (ADR-0072,
+  (TS18066), so `@unframework.dev/language-tools` waits for the extension to be settled (ADR-0072,
   Proposed). The compiler catches consumer misuse of events, models and slots, and probes pin
   that stock tsgo reports no false errors, but tsgo itself doesn't check them yet.
 - The `tsgo` adapter runs on `typescript/unstable/sync`. Its port to the stable 7.1 API waits for
@@ -1307,9 +1307,9 @@ a report that gates no pull request.
 
 **Scope:**
 
-- Publish `@unframework/testing`: `describeTargets`, `mount`, the matchers and `defineTestConfig`.
+- Publish `@unframework.dev/testing`: `describeTargets`, `mount`, the matchers and `defineTestConfig`.
 - `unframework test`.
-- `@unframework/visual`: example discovery, the runner and the HTML report.
+- `@unframework.dev/visual`: example discovery, the runner and the HTML report.
 - `unframework preview`.
 - Documentation.
 - A stretch goal: property-based interaction fuzzing that compares traces across targets.
@@ -1408,24 +1408,24 @@ Then `1.0.0` ships.
 
 ### To confirm
 
-Each of these has its record in `docs/adrs/`. D5, D6 and D9 are Accepted. The others stay Proposed,
+Each of these has its record in `docs/adrs/`. D5, D6, D9 and D12 are Accepted. The others stay Proposed,
 and the plan proceeds on the recommendation unless told otherwise.
 
-| ID  | Decision                          | Record             | Recommendation                                                                                                                      | Alternatives                                                |
-| --- | --------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| D1  | Source extension                  | ADR-0005, Proposed | `.uf.tsx` for components and `.uf.ts` for composables                                                                               | plain `.tsx` with include globs; `.uf` with the TSX grammar |
-| D2  | Authoring import and JSX runtime  | ADR-0006, Proposed | `unframework`, with `jsxImportSource: "unframework"`                                                                                | macros as globals, with no import                           |
-| D3  | Canonical forms                   | ADR-0007, Proposed | Destructured signature props, named models, children for the default slot and a slot object for the others, one channel per concern | accept every Vue JSX form (`v-slots`, `withModifiers`)      |
-| D4  | State updates                     | ADR-0008, Proposed | Values are replaced whole. Mutating a ref's contents in place is an error, with a fix.                                              | `reactive()` and deep mutation (immer-style lowering)       |
-| D5  | CSS scoping algorithm             | ADR-0009, Accepted | Vue's attribute algorithm, applied by the compiler on every target                                                                  | CSS Modules-style class hashing                             |
-| D6  | Angular host element              | ADR-0010, Accepted | An element selector with a `display: contents` host, unwrapped in normalisation. Attribute selectors as an option.                  | attribute selectors by default                              |
-| D7  | Target versions                   | ADR-0011, Proposed | React 19, Vue 3.5 (3.6-compatible), Svelte 5, Solid 1.9 then 2, Angular 22, Qwik 2 (experimental), Astro 7 (static)                 | Qwik 1.x; Solid 2 only                                      |
-| D8  | Output event and model names      | ADR-0012, Proposed | React and Solid `onChange` / `onOpenChange`; Svelte `onchange`; Qwik `onChange$`; Angular `output()` / `model()`                    | camelCase everywhere, including Svelte                      |
-| D9  | Visual baselines                  | ADR-0013, Accepted | Linux baselines in CI, plus a live cross-target mode                                                                                | live mode only, as in v1                                    |
-| D10 | Reference target for expectations | ADR-0014, Proposed | Vue                                                                                                                                 | hand-written expectations only                              |
-| D11 | Runtime                           | ADR-0015, Proposed | None. Inline helpers only where a framework lacks a primitive.                                                                      | a tiny `@unframework/runtime-<target>`                      |
-| D12 | Package naming                    | ADR-0016, Proposed | `unframework` (the umbrella and the authoring API) plus `@unframework/*`                                                            | everything scoped                                           |
-| D13 | JSX attribute and event names     | ADR-0017, Proposed | HTML and Vue names (`class`, `for`, `onKeydown`), vendored from `@vue/runtime-dom`'s JSX types                                      | React names (`className`, `htmlFor`, `onKeyDown`)           |
+| ID  | Decision                          | Record                                  | Recommendation                                                                                                                      | Alternatives                                                                                    |
+| --- | --------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| D1  | Source extension                  | ADR-0005, Proposed                      | `.uf.tsx` for components and `.uf.ts` for composables                                                                               | plain `.tsx` with include globs; `.uf` with the TSX grammar                                     |
+| D2  | Authoring import and JSX runtime  | ADR-0006, Proposed, amended by ADR-0090 | `@uxfront/unframework`, with `jsxImportSource: "@uxfront/unframework"`                                                              | macros as globals, with no import                                                               |
+| D3  | Canonical forms                   | ADR-0007, Proposed                      | Destructured signature props, named models, children for the default slot and a slot object for the others, one channel per concern | accept every Vue JSX form (`v-slots`, `withModifiers`)                                          |
+| D4  | State updates                     | ADR-0008, Proposed                      | Values are replaced whole. Mutating a ref's contents in place is an error, with a fix.                                              | `reactive()` and deep mutation (immer-style lowering)                                           |
+| D5  | CSS scoping algorithm             | ADR-0009, Accepted                      | Vue's attribute algorithm, applied by the compiler on every target                                                                  | CSS Modules-style class hashing                                                                 |
+| D6  | Angular host element              | ADR-0010, Accepted                      | An element selector with a `display: contents` host, unwrapped in normalisation. Attribute selectors as an option.                  | attribute selectors by default                                                                  |
+| D7  | Target versions                   | ADR-0011, Proposed                      | React 19, Vue 3.5 (3.6-compatible), Svelte 5, Solid 1.9 then 2, Angular 22, Qwik 2 (experimental), Astro 7 (static)                 | Qwik 1.x; Solid 2 only                                                                          |
+| D8  | Output event and model names      | ADR-0012, Proposed                      | React and Solid `onChange` / `onOpenChange`; Svelte `onchange`; Qwik `onChange$`; Angular `output()` / `model()`                    | camelCase everywhere, including Svelte                                                          |
+| D9  | Visual baselines                  | ADR-0013, Accepted                      | Linux baselines in CI, plus a live cross-target mode                                                                                | live mode only, as in v1                                                                        |
+| D10 | Reference target for expectations | ADR-0014, Proposed                      | Vue                                                                                                                                 | hand-written expectations only                                                                  |
+| D11 | Runtime                           | ADR-0015, Proposed                      | None. Inline helpers only where a framework lacks a primitive.                                                                      | a tiny `@unframework.dev/runtime-<target>`                                                      |
+| D12 | Package naming                    | ADR-0090, Accepted                      | `@uxfront/unframework` (the umbrella and the authoring API) plus `@unframework.dev/*`                                               | the unscoped `unframework` and the `@unframework` scope (ADR-0016), both owned by others on npm |
+| D13 | JSX attribute and event names     | ADR-0017, Proposed                      | HTML and Vue names (`class`, `for`, `onKeydown`), vendored from `@vue/runtime-dom`'s JSX types                                      | React names (`className`, `htmlFor`, `onKeyDown`)                                               |
 
 ---
 

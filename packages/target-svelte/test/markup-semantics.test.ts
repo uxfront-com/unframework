@@ -5,8 +5,8 @@
 // rules. The emitter's own output is tested by emit.test.ts and the corpus.
 import { join } from "node:path";
 
-import { printMarkup, svelteDialect } from "@unframework/codegen";
-import type { MarkupOptions } from "@unframework/codegen";
+import { printMarkup, svelteDialect } from "@unframework.dev/codegen";
+import type { MarkupOptions } from "@unframework.dev/codegen";
 import type { Component } from "svelte";
 import { compile } from "svelte/compiler";
 import { afterAll, describe, expect, it } from "vitest";

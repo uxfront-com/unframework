@@ -1,5 +1,5 @@
 {
-  "name": "@unframework/target-astro",
+  "name": "@unframework.dev/target-astro",
   "version": "0.0.0",
   "private": true,
   "description": "The Astro 7 target of the Unframework compiler: emits idiomatic Astro components from the portable IR, declares their capabilities, and provides the toolchain the tests use.",
@@ -56,8 +56,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@unframework/codegen": "workspace:*",
-    "@unframework/ir": "workspace:*"
+    "@unframework.dev/codegen": "workspace:*",
+    "@unframework.dev/ir": "workspace:*"
   },
   "devDependencies": {
     "@astrojs/compiler-rs": "catalog:",

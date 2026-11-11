@@ -14,8 +14,8 @@ import {
   liveTypes,
   printProgram,
   typeDeclarationCode,
-} from "@unframework/codegen";
-import type { EmitContext, OutputFile } from "@unframework/codegen";
+} from "@unframework.dev/codegen";
+import type { EmitContext, OutputFile } from "@unframework.dev/codegen";
 import type {
   BindingId,
   FunctionItem,
@@ -23,7 +23,7 @@ import type {
   Prop,
   UfComponent,
   UfComposable,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { section } from "./frontmatter.ts";
 import { moduleReads } from "./modules.ts";

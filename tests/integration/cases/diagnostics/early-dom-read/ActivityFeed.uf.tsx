@@ -1,6 +1,6 @@
 // UF2018 early-dom-read: the watcher reads the list through a template ref, but a watcher runs
 // before the DOM has updated; the likely fix runs it after the update with `{ flush: "post" }`.
-import { defineEmits, ref, useTemplateRef, watch } from "unframework";
+import { defineEmits, ref, useTemplateRef, watch } from "@uxfront/unframework";
 
 export default function ActivityFeed() {
   const emit = defineEmits<{ rendered: [count: number] }>();

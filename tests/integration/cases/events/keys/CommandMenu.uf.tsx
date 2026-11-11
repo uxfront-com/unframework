@@ -1,4 +1,4 @@
-import { defineEmits, ref, useTemplateRef } from "unframework";
+import { defineEmits, ref, useTemplateRef } from "@uxfront/unframework";
 
 export interface CommandMenuProps {
   commands: string[];

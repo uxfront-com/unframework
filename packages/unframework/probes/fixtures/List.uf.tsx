@@ -1,4 +1,4 @@
-import { defineEmits, defineSlots, type Element } from "unframework";
+import { defineEmits, defineSlots, type Element } from "@uxfront/unframework";
 
 export interface Item {
   id: string;

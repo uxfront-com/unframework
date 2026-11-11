@@ -1,6 +1,6 @@
 // Legitimate consumer code that must type-check under stock tsgo (plan §5.6 layer 1: "no false
 // errors"). Nothing here may error. Payloads, model types and slot props are deliberately unchecked.
-import { ref, useTemplateRef, type Element } from "unframework";
+import { ref, useTemplateRef, type Element } from "@uxfront/unframework";
 
 import Button from "../fixtures/Button.uf.tsx";
 import Counter from "../fixtures/Counter.uf.tsx";

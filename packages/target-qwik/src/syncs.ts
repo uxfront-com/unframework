@@ -3,9 +3,9 @@
 // on some events only runs in a `sync$` handler: a function the loader calls as it dispatches,
 // which captures nothing, so it reads only the event and the element Qwik passes it. The controls
 // of an element's listeners of one event run in one (./listeners.ts).
-import { parseCodeSource, rewriteCode } from "@unframework/codegen";
-import type { LiftedControl } from "@unframework/codegen";
-import type { FunctionCode, Span } from "@unframework/ir";
+import { parseCodeSource, rewriteCode } from "@unframework.dev/codegen";
+import type { LiftedControl } from "@unframework.dev/codegen";
+import type { FunctionCode, Span } from "@unframework.dev/ir";
 
 import { readsName } from "./handlers.ts";
 import type { SetupPlan } from "./plan.ts";

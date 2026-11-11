@@ -1,4 +1,4 @@
-import type { RenderNode } from "@unframework/ir";
+import type { RenderNode } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { applyAndRecheck, codes, component, only, problems, root, run } from "./helpers.ts";

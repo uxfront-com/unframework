@@ -7,8 +7,8 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { scopeStylesheet } from "@unframework/codegen";
-import type { ModuleApi, UfModule } from "@unframework/ir";
+import { scopeStylesheet } from "@unframework.dev/codegen";
+import type { ModuleApi, UfModule } from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { analyze } from "../../analyzer/src/index.ts";

@@ -7,7 +7,7 @@
 // writes. Two handlers size a field and set its class, one through a template ref, one through
 // `event.currentTarget`, where other elements bind a class and a style, and every target keeps
 // both when the component renders again.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import TaskBoard from "./TaskBoard.uf.tsx";

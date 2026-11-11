@@ -5,37 +5,37 @@
     {
       "name": "Counter",
       "span": {
-        "start": 212,
-        "end": 481
+        "start": 230,
+        "end": 499
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "count@256",
+          "id": "count@274",
           "name": "count",
           "kind": "state",
           "span": {
-            "start": 256,
-            "end": 261
+            "start": 274,
+            "end": 279
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "count@256",
+          "binding": "count@274",
           "initial": {
             "code": "1",
             "span": {
-              "start": 268,
-              "end": 269
+              "start": 286,
+              "end": 287
             },
             "refs": []
           },
           "span": {
-            "start": 250,
-            "end": 271
+            "start": 268,
+            "end": 289
           }
         },
         {
@@ -44,23 +44,23 @@
           "value": {
             "code": "count",
             "span": {
-              "start": 292,
-              "end": 297
+              "start": 310,
+              "end": 315
             },
             "refs": [
               {
                 "kind": "Binding",
-                "binding": "count@256",
+                "binding": "count@274",
                 "span": {
-                  "start": 292,
-                  "end": 297
+                  "start": 310,
+                  "end": 315
                 }
               }
             ]
           },
           "span": {
-            "start": 274,
-            "end": 299
+            "start": 292,
+            "end": 317
           }
         }
       ],
@@ -73,8 +73,8 @@
             "name": "aria-label",
             "value": "Counter",
             "span": {
-              "start": 324,
-              "end": 344
+              "start": 342,
+              "end": 362
             }
           }
         ],
@@ -85,8 +85,8 @@
             "attributes": [],
             "fills": [],
             "span": {
-              "start": 352,
-              "end": 363
+              "start": 370,
+              "end": 381
             }
           },
           {
@@ -98,8 +98,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 378,
-                  "end": 391
+                  "start": 396,
+                  "end": 409
                 }
               },
               {
@@ -112,25 +112,25 @@
                     "body": {
                       "code": "(count.value += 1)",
                       "span": {
-                        "start": 407,
-                        "end": 425
+                        "start": 425,
+                        "end": 443
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "count@256",
+                          "binding": "count@274",
                           "operator": "+=",
                           "span": {
-                            "start": 407,
-                            "end": 425
+                            "start": 425,
+                            "end": 443
                           },
                           "target": {
-                            "start": 408,
-                            "end": 419
+                            "start": 426,
+                            "end": 437
                           },
                           "value": {
-                            "start": 423,
-                            "end": 424
+                            "start": 441,
+                            "end": 442
                           },
                           "arrowBody": true
                         }
@@ -138,18 +138,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 401,
-                      "end": 425
+                      "start": 419,
+                      "end": 443
                     }
                   },
                   "span": {
-                    "start": 401,
-                    "end": 425
+                    "start": 419,
+                    "end": 443
                   }
                 },
                 "span": {
-                  "start": 392,
-                  "end": 426
+                  "start": 410,
+                  "end": 444
                 }
               }
             ],
@@ -158,20 +158,20 @@
                 "kind": "Text",
                 "value": "Add one",
                 "span": {
-                  "start": 427,
-                  "end": 450
+                  "start": 445,
+                  "end": 468
                 }
               }
             ],
             "span": {
-              "start": 370,
-              "end": 459
+              "start": 388,
+              "end": 477
             }
           }
         ],
         "span": {
-          "start": 315,
-          "end": 474
+          "start": 333,
+          "end": 492
         }
       }
     }
@@ -182,8 +182,8 @@
       "name": "default",
       "local": "Counter",
       "span": {
-        "start": 212,
-        "end": 481
+        "start": 230,
+        "end": 499
       }
     }
   ],
@@ -216,14 +216,14 @@
           "imported": "default",
           "local": "Display",
           "span": {
-            "start": 106,
-            "end": 113
+            "start": 124,
+            "end": 131
           }
         }
       ],
       "span": {
-        "start": 99,
-        "end": 138
+        "start": 117,
+        "end": 156
       }
     }
   ],
@@ -234,14 +234,14 @@
       "type": {
         "code": "Ref<number>",
         "span": {
-          "start": 176,
-          "end": 187
+          "start": 194,
+          "end": 205
         }
       },
       "ref": "Ref",
       "span": {
-        "start": 140,
-        "end": 210
+        "start": 158,
+        "end": 228
       }
     }
   ]

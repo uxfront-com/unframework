@@ -1,11 +1,11 @@
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 // The Astro mount adapter's rerender in Chromium (ADR-0043). Astro's own tests run in Node, and
 // its adapter needs the page and the toolchain's `ufAstroRender` command, which this package's
 // browser project provides (vitest.config.ts). A hand-written Astro component
 // (./fixtures/Badge.uf.tsx.astro, named like the unplugin's virtual ids), rendered again with new
 // props, updates its text, an attribute, a branch and a list, and a prop the new props lack takes
 // its default again: a rerender is a new server render. Nothing is logged, on the server or here.
-import { mount } from "@unframework/target-astro/toolchain/client";
+import { mount } from "@unframework.dev/target-astro/toolchain/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 /** What the test reads back: the text, the attributes, the branch and the list. */

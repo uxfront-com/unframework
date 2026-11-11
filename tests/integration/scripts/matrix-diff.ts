@@ -13,8 +13,8 @@
 // Exit 2 is a bad argument or a file that is not a matrix.
 import { readFileSync } from "node:fs";
 
-import { MATRIX_VERSION, outcomeOfCell, stringifyMatrix } from "@unframework/testing/node";
-import type { ParityMatrix } from "@unframework/testing/node";
+import { MATRIX_VERSION, outcomeOfCell, stringifyMatrix } from "@unframework.dev/testing/node";
+import type { ParityMatrix } from "@unframework.dev/testing/node";
 
 const USAGE =
   "Usage: matrix-diff.ts <a> <b> [--case <id>]…, or --stable <a1> <a2> <b1> <b2> [--case <id>]…";

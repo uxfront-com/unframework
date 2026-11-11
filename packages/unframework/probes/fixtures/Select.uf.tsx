@@ -1,4 +1,4 @@
-import { defineEmits, defineModel, defineSlots, type Element } from "unframework";
+import { defineEmits, defineModel, defineSlots, type Element } from "@uxfront/unframework";
 
 import type { Option } from "./types.ts";
 

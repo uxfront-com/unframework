@@ -1,6 +1,6 @@
 // components/acronym-names: props named `imageURL` and `userID` and an event named `pickedURL`
 // keep their names through every target's spelling (ADR-0053).
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Profile from "./Profile.uf.tsx";

@@ -1,7 +1,7 @@
 // jsx/whitespace: significant whitespace written as string-literal children (`{" "}` between
 // elements, edge spaces, `{"\n"}` in the middle of a `pre`, tabs and line breaks) and text beside
 // expressions renders exactly, on every target.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import ShippingLabel from "./ShippingLabel.uf.tsx";

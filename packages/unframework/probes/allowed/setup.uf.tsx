@@ -1,5 +1,13 @@
 // Legitimate setup code (plan §4.2). Nothing here may error.
-import { computed, defineEmits, defineModel, inject, provide, ref, watch } from "unframework";
+import {
+  computed,
+  defineEmits,
+  defineModel,
+  inject,
+  provide,
+  ref,
+  watch,
+} from "@uxfront/unframework";
 
 import { TabsKey } from "../fixtures/keys.ts";
 

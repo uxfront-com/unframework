@@ -1,8 +1,8 @@
 // The type declarations an Angular component file keeps (`declaredTypes`), read from the parsed
 // declaration: a header's type parameters may hold a `{` or an `=` of their own, and their
 // constraints and defaults name types the file must keep (ADR-0068).
-import { createTypeDeclaration, span } from "@unframework/ir";
-import type { TypeDeclaration } from "@unframework/ir";
+import { createTypeDeclaration, span } from "@unframework.dev/ir";
+import type { TypeDeclaration } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { atConstraints, declaredTypes, withoutUndefined } from "../src/types.ts";

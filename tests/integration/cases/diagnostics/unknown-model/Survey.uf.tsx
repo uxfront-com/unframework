@@ -1,6 +1,6 @@
 // UF3037 unknown-model: `v-model:<name>` binds a model the component declares; `picked` is
 // misspelt `pikced`, and the likely fix renames it.
-import { defineModel, ref } from "unframework";
+import { defineModel, ref } from "@uxfront/unframework";
 
 function Choice() {
   const picked = defineModel<string>("picked", { default: "" });

@@ -3,7 +3,7 @@
 // in a browser. A test that requires an unsupported capability is skipped, with the reason, on
 // every layer it would have recorded, and so is a test of a case the target has no output for;
 // an interaction where nothing runs is refused.
-import type { CapabilityCell } from "@unframework/codegen";
+import type { CapabilityCell } from "@unframework.dev/codegen";
 import { inject } from "vitest";
 
 import { noOutputSkip, requiresSkip } from "../layers.ts";

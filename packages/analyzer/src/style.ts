@@ -3,7 +3,7 @@
 // render in no particular order, so no two may set what the other sets, and every value is one
 // the targets write alike.
 
-import type { Fix } from "@unframework/diagnostics";
+import type { Fix } from "@unframework.dev/diagnostics";
 import {
   angularLowercases,
   angularMisreads,
@@ -16,10 +16,10 @@ import {
   isCssPropertyName,
   isCustomProperty,
   UNITLESS_PROPERTIES,
-} from "@unframework/ir";
-import type { Span, StyleAttribute, StyleDeclaration } from "@unframework/ir";
-import type { AST } from "@unframework/parser";
-import { parseDeclarations } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { Span, StyleAttribute, StyleDeclaration } from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
+import { parseDeclarations } from "@unframework.dev/parser";
 
 import { Reporter } from "./context.ts";
 import { checkExpression, span } from "./expressions.ts";

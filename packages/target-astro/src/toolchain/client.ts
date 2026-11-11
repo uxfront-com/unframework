@@ -2,7 +2,7 @@
 // server renders the component (the `ufAstroRender` command) and this adapter only inserts the
 // HTML. Nothing is hydrated and no handler is attached; `<script>` elements parsed from HTML
 // never run.
-import type { MountAdapter } from "@unframework/codegen";
+import type { MountAdapter } from "@unframework.dev/codegen";
 import { commands } from "vitest/browser";
 
 import { assertSerialisableProps, isAstroComponentRef } from "./protocol.ts";

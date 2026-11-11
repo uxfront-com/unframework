@@ -1,6 +1,6 @@
 // slots/default: a parent passes children, which fill the child's default slot (ADR-0054); the
 // child renders them where it calls `slots.default?.()`.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Greeting from "./Greeting.uf.tsx";

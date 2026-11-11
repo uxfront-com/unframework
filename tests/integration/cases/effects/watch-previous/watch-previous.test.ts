@@ -1,6 +1,6 @@
 // effects/watch-previous: `watch(zoom, (value, previous) => …)` gets the source's new value and
 // the value it had at the watcher's last callback; a write of the same value runs no callback.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ZoomControl from "./ZoomControl.uf.tsx";

@@ -1,6 +1,6 @@
 import type * as AST from "@oxc-project/types";
-import { expressionsOf, walk } from "@unframework/ir";
-import type { UfComponent, UfModule } from "@unframework/ir";
+import { expressionsOf, walk } from "@unframework.dev/ir";
+import type { UfComponent, UfModule } from "@unframework.dev/ir";
 
 import { importDeclaration, importDefaultSpecifier, importSpecifier } from "./js/builders.ts";
 import { NameScope } from "./names.ts";

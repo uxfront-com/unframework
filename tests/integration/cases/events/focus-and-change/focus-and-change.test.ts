@@ -6,7 +6,7 @@
 // `click`, then `input`, then `change`, and a click a listener prevented fires no `change`; a
 // text field's `change` reaches a plain and a `once` listener of one element when the edit is
 // committed, the `once` listener only the first time.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ProfileFields from "./ProfileFields.uf.tsx";

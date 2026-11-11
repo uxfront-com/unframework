@@ -12,8 +12,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { FrameworkCompileResult, ToolchainFile, ToolchainMessage } from "@unframework/codegen";
-import { checkLayers, formatError } from "@unframework/testing/node";
+import type {
+  FrameworkCompileResult,
+  ToolchainFile,
+  ToolchainMessage,
+} from "@unframework.dev/codegen";
+import { checkLayers, formatError } from "@unframework.dev/testing/node";
 import { beforeAll, describe, inject, it } from "vitest";
 
 import { errorState, listCases } from "./cases.ts";

@@ -5,8 +5,8 @@
     {
       "name": "SizePicker",
       "span": {
-        "start": 118,
-        "end": 888
+        "start": 127,
+        "end": 897
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 88,
-              "end": 94
+              "start": 97,
+              "end": 103
             }
           },
-          "binding": "legend@155",
+          "binding": "legend@164",
           "span": {
-            "start": 80,
-            "end": 95
+            "start": 89,
+            "end": 104
           }
         },
         {
@@ -31,14 +31,14 @@
           "type": {
             "code": "string[]",
             "span": {
-              "start": 105,
-              "end": 113
+              "start": 114,
+              "end": 122
             }
           },
-          "binding": "sizes@163",
+          "binding": "sizes@172",
           "span": {
-            "start": 98,
-            "end": 114
+            "start": 107,
+            "end": 123
           }
         }
       ],
@@ -47,13 +47,13 @@
         "type": {
           "code": "SizePickerProps",
           "span": {
-            "start": 172,
-            "end": 187
+            "start": 181,
+            "end": 196
           }
         },
         "span": {
-          "start": 153,
-          "end": 187
+          "start": 162,
+          "end": 196
         }
       },
       "types": [
@@ -61,114 +61,114 @@
       ],
       "bindings": [
         {
-          "id": "legend@155",
+          "id": "legend@164",
           "name": "legend",
           "kind": "prop",
           "span": {
-            "start": 155,
-            "end": 161
+            "start": 164,
+            "end": 170
           }
         },
         {
-          "id": "sizes@163",
+          "id": "sizes@172",
           "name": "sizes",
           "kind": "prop",
           "span": {
-            "start": 163,
-            "end": 168
+            "start": 172,
+            "end": 177
           }
         },
         {
-          "id": "group@199",
+          "id": "group@208",
           "name": "group",
           "kind": "localConst",
           "span": {
-            "start": 199,
-            "end": 204
+            "start": 208,
+            "end": 213
           }
         },
         {
-          "id": "hintId@224",
+          "id": "hintId@233",
           "name": "hintId",
           "kind": "localConst",
           "span": {
-            "start": 224,
-            "end": 230
+            "start": 233,
+            "end": 239
           }
         },
         {
-          "id": "picked@250",
+          "id": "picked@259",
           "name": "picked",
           "kind": "state",
           "span": {
-            "start": 250,
-            "end": 256
+            "start": 259,
+            "end": 265
           }
         },
         {
-          "id": "choose@280",
+          "id": "choose@289",
           "name": "choose",
           "kind": "localFn",
           "span": {
-            "start": 280,
-            "end": 286
+            "start": 289,
+            "end": 295
           }
         },
         {
-          "id": "size@495",
+          "id": "size@504",
           "name": "size",
           "kind": "loopVar",
           "span": {
-            "start": 495,
-            "end": 499
+            "start": 504,
+            "end": 508
           }
         },
         {
-          "id": "index@501",
+          "id": "index@510",
           "name": "index",
           "kind": "loopVar",
           "span": {
-            "start": 501,
-            "end": 506
+            "start": 510,
+            "end": 515
           }
         }
       ],
       "setup": [
         {
           "kind": "Id",
-          "binding": "group@199",
+          "binding": "group@208",
           "span": {
-            "start": 193,
-            "end": 215
+            "start": 202,
+            "end": 224
           }
         },
         {
           "kind": "Id",
-          "binding": "hintId@224",
+          "binding": "hintId@233",
           "span": {
-            "start": 218,
-            "end": 241
+            "start": 227,
+            "end": 250
           }
         },
         {
           "kind": "State",
-          "binding": "picked@250",
+          "binding": "picked@259",
           "initial": {
             "code": "\"\"",
             "span": {
-              "start": 263,
-              "end": 265
+              "start": 272,
+              "end": 274
             },
             "refs": []
           },
           "span": {
-            "start": 244,
-            "end": 267
+            "start": 253,
+            "end": 276
           }
         },
         {
           "kind": "Function",
-          "binding": "choose@280",
+          "binding": "choose@289",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -177,50 +177,50 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 293,
-                    "end": 299
+                    "start": 302,
+                    "end": 308
                   }
                 },
                 "span": {
-                  "start": 287,
-                  "end": 299
+                  "start": 296,
+                  "end": 308
                 }
               }
             ],
             "body": {
               "code": "{\n    picked.value = size;\n  }",
               "span": {
-                "start": 301,
-                "end": 331
+                "start": 310,
+                "end": 340
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "picked@250",
+                  "binding": "picked@259",
                   "operator": "=",
                   "span": {
-                    "start": 307,
-                    "end": 326
+                    "start": 316,
+                    "end": 335
                   },
                   "target": {
-                    "start": 307,
-                    "end": 319
+                    "start": 316,
+                    "end": 328
                   },
                   "value": {
-                    "start": 322,
-                    "end": 326
+                    "start": 331,
+                    "end": 335
                   }
                 }
               ]
             },
             "span": {
-              "start": 286,
-              "end": 331
+              "start": 295,
+              "end": 340
             }
           },
           "span": {
-            "start": 271,
-            "end": 331
+            "start": 280,
+            "end": 340
           }
         }
       ],
@@ -233,8 +233,8 @@
             "name": "class",
             "value": "size-picker",
             "span": {
-              "start": 358,
-              "end": 377
+              "start": 367,
+              "end": 386
             }
           },
           {
@@ -243,23 +243,23 @@
             "value": {
               "code": "hintId",
               "span": {
-                "start": 396,
-                "end": 402
+                "start": 405,
+                "end": 411
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "hintId@224",
+                  "binding": "hintId@233",
                   "span": {
-                    "start": 396,
-                    "end": 402
+                    "start": 405,
+                    "end": 411
                   }
                 }
               ]
             },
             "span": {
-              "start": 378,
-              "end": 403
+              "start": 387,
+              "end": 412
             }
           }
         ],
@@ -274,29 +274,29 @@
                 "value": {
                   "code": "legend",
                   "span": {
-                    "start": 420,
-                    "end": 426
+                    "start": 429,
+                    "end": 435
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "legend@155",
+                      "binding": "legend@164",
                       "span": {
-                        "start": 420,
-                        "end": 426
+                        "start": 429,
+                        "end": 435
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 419,
-                  "end": 427
+                  "start": 428,
+                  "end": 436
                 }
               }
             ],
             "span": {
-              "start": 411,
-              "end": 436
+              "start": 420,
+              "end": 445
             }
           },
           {
@@ -309,23 +309,23 @@
                 "value": {
                   "code": "hintId",
                   "span": {
-                    "start": 450,
-                    "end": 456
+                    "start": 459,
+                    "end": 465
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "hintId@224",
+                      "binding": "hintId@233",
                       "span": {
-                        "start": 450,
-                        "end": 456
+                        "start": 459,
+                        "end": 465
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 446,
-                  "end": 457
+                  "start": 455,
+                  "end": 466
                 }
               }
             ],
@@ -334,14 +334,14 @@
                 "kind": "Text",
                 "value": "Pick one size.",
                 "span": {
-                  "start": 458,
-                  "end": 472
+                  "start": 467,
+                  "end": 481
                 }
               }
             ],
             "span": {
-              "start": 443,
-              "end": 476
+              "start": 452,
+              "end": 485
             }
           },
           {
@@ -349,35 +349,35 @@
             "source": {
               "code": "sizes",
               "span": {
-                "start": 484,
-                "end": 489
+                "start": 493,
+                "end": 498
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "sizes@163",
+                  "binding": "sizes@172",
                   "span": {
-                    "start": 484,
-                    "end": 489
+                    "start": 493,
+                    "end": 498
                   }
                 }
               ]
             },
-            "item": "size@495",
-            "index": "index@501",
+            "item": "size@504",
+            "index": "index@510",
             "key": {
               "code": "size",
               "span": {
-                "start": 531,
-                "end": 535
+                "start": 540,
+                "end": 544
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "size@495",
+                  "binding": "size@504",
                   "span": {
-                    "start": 531,
-                    "end": 535
+                    "start": 540,
+                    "end": 544
                   }
                 }
               ]
@@ -391,8 +391,8 @@
                   "name": "class",
                   "value": "size",
                   "span": {
-                    "start": 537,
-                    "end": 549
+                    "start": 546,
+                    "end": 558
                   }
                 }
               ],
@@ -406,8 +406,8 @@
                       "name": "type",
                       "value": "radio",
                       "span": {
-                        "start": 580,
-                        "end": 592
+                        "start": 589,
+                        "end": 601
                       }
                     },
                     {
@@ -416,31 +416,31 @@
                       "value": {
                         "code": "`${group}-${index}`",
                         "span": {
-                          "start": 609,
-                          "end": 628
+                          "start": 618,
+                          "end": 637
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "group@199",
+                            "binding": "group@208",
                             "span": {
-                              "start": 612,
-                              "end": 617
+                              "start": 621,
+                              "end": 626
                             }
                           },
                           {
                             "kind": "Binding",
-                            "binding": "index@501",
+                            "binding": "index@510",
                             "span": {
-                              "start": 621,
-                              "end": 626
+                              "start": 630,
+                              "end": 635
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 605,
-                        "end": 629
+                        "start": 614,
+                        "end": 638
                       }
                     },
                     {
@@ -449,23 +449,23 @@
                       "value": {
                         "code": "group",
                         "span": {
-                          "start": 648,
-                          "end": 653
+                          "start": 657,
+                          "end": 662
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "group@199",
+                            "binding": "group@208",
                             "span": {
-                              "start": 648,
-                              "end": 653
+                              "start": 657,
+                              "end": 662
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 642,
-                        "end": 654
+                        "start": 651,
+                        "end": 663
                       }
                     },
                     {
@@ -474,23 +474,23 @@
                       "value": {
                         "code": "size",
                         "span": {
-                          "start": 674,
-                          "end": 678
+                          "start": 683,
+                          "end": 687
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "size@495",
+                            "binding": "size@504",
                             "span": {
-                              "start": 674,
-                              "end": 678
+                              "start": 683,
+                              "end": 687
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 667,
-                        "end": 679
+                        "start": 676,
+                        "end": 688
                       }
                     },
                     {
@@ -503,50 +503,50 @@
                           "body": {
                             "code": "choose(size)",
                             "span": {
-                              "start": 708,
-                              "end": 720
+                              "start": 717,
+                              "end": 729
                             },
                             "refs": [
                               {
                                 "kind": "Binding",
-                                "binding": "choose@280",
+                                "binding": "choose@289",
                                 "span": {
-                                  "start": 708,
-                                  "end": 714
+                                  "start": 717,
+                                  "end": 723
                                 },
                                 "call": true
                               },
                               {
                                 "kind": "Binding",
-                                "binding": "size@495",
+                                "binding": "size@504",
                                 "span": {
-                                  "start": 715,
-                                  "end": 719
+                                  "start": 724,
+                                  "end": 728
                                 }
                               }
                             ]
                           },
                           "expression": true,
                           "span": {
-                            "start": 702,
-                            "end": 720
+                            "start": 711,
+                            "end": 729
                           }
                         },
                         "span": {
-                          "start": 702,
-                          "end": 720
+                          "start": 711,
+                          "end": 729
                         }
                       },
                       "span": {
-                        "start": 692,
-                        "end": 721
+                        "start": 701,
+                        "end": 730
                       }
                     }
                   ],
                   "children": [],
                   "span": {
-                    "start": 561,
-                    "end": 734
+                    "start": 570,
+                    "end": 743
                   }
                 },
                 {
@@ -559,31 +559,31 @@
                       "value": {
                         "code": "`${group}-${index}`",
                         "span": {
-                          "start": 757,
-                          "end": 776
+                          "start": 766,
+                          "end": 785
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "group@199",
+                            "binding": "group@208",
                             "span": {
-                              "start": 760,
-                              "end": 765
+                              "start": 769,
+                              "end": 774
                             }
                           },
                           {
                             "kind": "Binding",
-                            "binding": "index@501",
+                            "binding": "index@510",
                             "span": {
-                              "start": 769,
-                              "end": 774
+                              "start": 778,
+                              "end": 783
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 752,
-                        "end": 777
+                        "start": 761,
+                        "end": 786
                       }
                     }
                   ],
@@ -593,40 +593,40 @@
                       "value": {
                         "code": "size",
                         "span": {
-                          "start": 779,
-                          "end": 783
+                          "start": 788,
+                          "end": 792
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "size@495",
+                            "binding": "size@504",
                             "span": {
-                              "start": 779,
-                              "end": 783
+                              "start": 788,
+                              "end": 792
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 778,
-                        "end": 784
+                        "start": 787,
+                        "end": 793
                       }
                     }
                   ],
                   "span": {
-                    "start": 745,
-                    "end": 792
+                    "start": 754,
+                    "end": 801
                   }
                 }
               ],
               "span": {
-                "start": 521,
-                "end": 807
+                "start": 530,
+                "end": 816
               }
             },
             "span": {
-              "start": 484,
-              "end": 816
+              "start": 493,
+              "end": 825
             }
           },
           {
@@ -639,35 +639,35 @@
                 "value": {
                   "code": "picked.value || \"none\"",
                   "span": {
-                    "start": 833,
-                    "end": 855
+                    "start": 842,
+                    "end": 864
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "picked@250",
+                      "binding": "picked@259",
                       "span": {
-                        "start": 833,
-                        "end": 845
+                        "start": 842,
+                        "end": 854
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 832,
-                  "end": 856
+                  "start": 841,
+                  "end": 865
                 }
               }
             ],
             "span": {
-              "start": 824,
-              "end": 865
+              "start": 833,
+              "end": 874
             }
           }
         ],
         "span": {
-          "start": 348,
-          "end": 881
+          "start": 357,
+          "end": 890
         }
       }
     }
@@ -678,8 +678,8 @@
       "name": "default",
       "local": "SizePicker",
       "span": {
-        "start": 118,
-        "end": 888
+        "start": 127,
+        "end": 897
       }
     }
   ],
@@ -689,8 +689,8 @@
       "exported": true,
       "code": "interface SizePickerProps {\n  legend: string;\n  sizes: string[];\n}",
       "span": {
-        "start": 50,
-        "end": 116
+        "start": 59,
+        "end": 125
       }
     }
   ]

@@ -1,6 +1,6 @@
 // context/reactive: a parent provides a ref under an `InjectionKey<Ref<number>>` (ADR-0054). The
 // child that injects it reads `count.value`, and renders each write of the parent's.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Counter from "./Counter.uf.tsx";

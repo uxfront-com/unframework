@@ -1,5 +1,5 @@
 // UF2030 invalid-expose: a component exposes its local functions by name; `volume` is state.
-import { defineExpose, ref } from "unframework";
+import { defineExpose, ref } from "@uxfront/unframework";
 
 export default function Player({ src }: { src: string }) {
   const volume = ref(1);

@@ -1,6 +1,6 @@
 // props/destructured-defaults: string, number, boolean, array and object defaults, taken when a
 // prop is left out or passed as undefined, and overridden when it is given.
-import { describeTargets, mount, mountScenario } from "@unframework/testing";
+import { describeTargets, mount, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import Notice from "./Notice.uf.tsx";

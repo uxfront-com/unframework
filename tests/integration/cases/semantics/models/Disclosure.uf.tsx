@@ -1,4 +1,4 @@
-import { defineModel } from "unframework";
+import { defineModel } from "@uxfront/unframework";
 
 export default function Disclosure({ title }: { title: string }) {
   const open = defineModel<boolean>("open", { default: false });

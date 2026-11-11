@@ -6,7 +6,7 @@
 import { sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { analyze, enumeratedValues, staticTokens } from "@unframework/analyzer";
+import { analyze, enumeratedValues, staticTokens } from "@unframework.dev/analyzer";
 import {
   ARIA_ATTRIBUTES,
   checkInvariants,
@@ -31,9 +31,9 @@ import {
   SVG_TEXT_ELEMENTS,
   TRUE_VALUED_ATTRIBUTES,
   URL_ATTRIBUTES,
-} from "@unframework/ir";
-import type { Namespace, UfComponent, UfModule } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { Namespace, UfComponent, UfModule } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import type { Plugin } from "vite";
 import type { TestProjectInlineConfiguration, ViteUserConfig } from "vitest/config";
 import type { BrowserProviderOption } from "vitest/node";

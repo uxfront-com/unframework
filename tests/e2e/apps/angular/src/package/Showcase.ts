@@ -7,7 +7,7 @@ import {
   Counter,
   TextField,
   useToggle,
-} from "@unframework/e2e-design-system/angular";
+} from "@unframework.dev/e2e-design-system/angular";
 
 @Component({
   selector: "app-showcase",

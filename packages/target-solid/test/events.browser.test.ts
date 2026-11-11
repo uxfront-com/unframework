@@ -2,7 +2,7 @@
 // target emits one, calls the `onChange` prop the adapter passes for the test's `change`
 // listener; a rerender, which replaces the props, keeps it. Written with Solid's tagged
 // templates, as the rerender test is.
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { createSignal, mergeProps } from "solid-js";
 import html from "solid-js/html";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";

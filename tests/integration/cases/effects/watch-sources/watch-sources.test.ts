@@ -1,7 +1,7 @@
 // effects/watch-sources: a getter over two refs runs only when its value changes; an array of refs
 // runs when any of them changes, once for two writes in one handler, with the values destructured;
 // a getter of a prop runs when a rerender changes it.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import PriceRange from "./PriceRange.uf.tsx";

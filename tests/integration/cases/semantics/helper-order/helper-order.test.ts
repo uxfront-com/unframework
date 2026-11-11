@@ -4,7 +4,7 @@
 // runs first; two watchers of one source read through that helper and directly; a `computed` only
 // a handler reads gives the handler its value. The order of two watchers is not part of the
 // contract, so they emit events of their own; the hooks of one mount run in their order.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import NameSorter from "./NameSorter.uf.tsx";

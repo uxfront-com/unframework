@@ -5,18 +5,18 @@
     {
       "name": "DraftEditor",
       "span": {
-        "start": 73,
-        "end": 761
+        "start": 82,
+        "end": 770
       },
       "props": [],
       "types": [],
       "emits": {
-        "binding": "emit@121",
+        "binding": "emit@130",
         "type": {
           "code": "{ saved: [count: number] }",
           "span": {
-            "start": 140,
-            "end": 166
+            "start": 149,
+            "end": 175
           }
         },
         "events": [
@@ -28,76 +28,76 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 157,
-                    "end": 163
+                    "start": 166,
+                    "end": 172
                   }
                 },
                 "span": {
-                  "start": 150,
-                  "end": 163
+                  "start": 159,
+                  "end": 172
                 }
               }
             ],
             "span": {
-              "start": 142,
-              "end": 164
+              "start": 151,
+              "end": 173
             }
           }
         ],
         "span": {
-          "start": 115,
-          "end": 170
+          "start": 124,
+          "end": 179
         }
       },
       "bindings": [
         {
-          "id": "emit@121",
+          "id": "emit@130",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 121,
-            "end": 125
+            "start": 130,
+            "end": 134
           }
         },
         {
-          "id": "saves@180",
+          "id": "saves@189",
           "name": "saves",
           "kind": "state",
           "span": {
-            "start": 180,
-            "end": 185
+            "start": 189,
+            "end": 194
           }
         },
         {
-          "id": "onShortcut@208",
+          "id": "onShortcut@217",
           "name": "onShortcut",
           "kind": "localFn",
           "span": {
-            "start": 208,
-            "end": 218
+            "start": 217,
+            "end": 227
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "saves@180",
+          "binding": "saves@189",
           "initial": {
             "code": "0",
             "span": {
-              "start": 192,
-              "end": 193
+              "start": 201,
+              "end": 202
             },
             "refs": []
           },
           "span": {
-            "start": 174,
-            "end": 195
+            "start": 183,
+            "end": 204
           }
         },
         {
           "kind": "Function",
-          "binding": "onShortcut@208",
+          "binding": "onShortcut@217",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -106,73 +106,73 @@
                 "type": {
                   "code": "KeyboardEvent",
                   "span": {
-                    "start": 226,
-                    "end": 239
+                    "start": 235,
+                    "end": 248
                   }
                 },
                 "span": {
-                  "start": 219,
-                  "end": 239
+                  "start": 228,
+                  "end": 248
                 }
               }
             ],
             "body": {
               "code": "{\n    if (event.key !== \"s\" || !event.ctrlKey) return;\n    event.preventDefault();\n    saves.value += 1;\n    emit(\"saved\", saves.value);\n  }",
               "span": {
-                "start": 241,
-                "end": 381
+                "start": 250,
+                "end": 390
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "saves@180",
+                  "binding": "saves@189",
                   "operator": "+=",
                   "span": {
-                    "start": 328,
-                    "end": 344
+                    "start": 337,
+                    "end": 353
                   },
                   "target": {
-                    "start": 328,
-                    "end": 339
+                    "start": 337,
+                    "end": 348
                   },
                   "value": {
-                    "start": 343,
-                    "end": 344
+                    "start": 352,
+                    "end": 353
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@121",
+                  "binding": "emit@130",
                   "event": "saved",
                   "span": {
-                    "start": 350,
-                    "end": 376
+                    "start": 359,
+                    "end": 385
                   },
                   "arguments": [
                     {
-                      "start": 364,
-                      "end": 375
+                      "start": 373,
+                      "end": 384
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "saves@180",
+                  "binding": "saves@189",
                   "span": {
-                    "start": 364,
-                    "end": 375
+                    "start": 373,
+                    "end": 384
                   }
                 }
               ]
             },
             "span": {
-              "start": 218,
-              "end": 381
+              "start": 227,
+              "end": 390
             }
           },
           "span": {
-            "start": 199,
-            "end": 381
+            "start": 208,
+            "end": 390
           }
         },
         {
@@ -183,36 +183,36 @@
             "body": {
               "code": "{\n    document.addEventListener(\"keydown\", onShortcut);\n  }",
               "span": {
-                "start": 401,
-                "end": 460
+                "start": 410,
+                "end": 469
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "document",
                   "span": {
-                    "start": 407,
-                    "end": 415
+                    "start": 416,
+                    "end": 424
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "onShortcut@208",
+                  "binding": "onShortcut@217",
                   "span": {
-                    "start": 444,
-                    "end": 454
+                    "start": 453,
+                    "end": 463
                   }
                 }
               ]
             },
             "span": {
-              "start": 395,
-              "end": 460
+              "start": 404,
+              "end": 469
             }
           },
           "span": {
-            "start": 385,
-            "end": 462
+            "start": 394,
+            "end": 471
           }
         },
         {
@@ -223,36 +223,36 @@
             "body": {
               "code": "{\n    document.removeEventListener(\"keydown\", onShortcut);\n  }",
               "span": {
-                "start": 484,
-                "end": 546
+                "start": 493,
+                "end": 555
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "document",
                   "span": {
-                    "start": 490,
-                    "end": 498
+                    "start": 499,
+                    "end": 507
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "onShortcut@208",
+                  "binding": "onShortcut@217",
                   "span": {
-                    "start": 530,
-                    "end": 540
+                    "start": 539,
+                    "end": 549
                   }
                 }
               ]
             },
             "span": {
-              "start": 478,
-              "end": 546
+              "start": 487,
+              "end": 555
             }
           },
           "span": {
-            "start": 466,
-            "end": 548
+            "start": 475,
+            "end": 557
           }
         }
       ],
@@ -265,8 +265,8 @@
             "name": "class",
             "value": "draft-editor",
             "span": {
-              "start": 574,
-              "end": 594
+              "start": 583,
+              "end": 603
             }
           },
           {
@@ -274,8 +274,8 @@
             "name": "aria-label",
             "value": "Draft",
             "span": {
-              "start": 595,
-              "end": 613
+              "start": 604,
+              "end": 622
             }
           }
         ],
@@ -289,8 +289,8 @@
                 "kind": "Text",
                 "value": "Draft",
                 "span": {
-                  "start": 628,
-                  "end": 651
+                  "start": 637,
+                  "end": 660
                 }
               },
               {
@@ -302,21 +302,21 @@
                     "name": "name",
                     "value": "draft",
                     "span": {
-                      "start": 661,
-                      "end": 673
+                      "start": 670,
+                      "end": 682
                     }
                   }
                 ],
                 "children": [],
                 "span": {
-                  "start": 651,
-                  "end": 676
+                  "start": 660,
+                  "end": 685
                 }
               }
             ],
             "span": {
-              "start": 621,
-              "end": 691
+              "start": 630,
+              "end": 700
             }
           },
           {
@@ -328,8 +328,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 701,
-                  "end": 714
+                  "start": 710,
+                  "end": 723
                 }
               }
             ],
@@ -338,8 +338,8 @@
                 "kind": "Text",
                 "value": "Saved: ",
                 "span": {
-                  "start": 715,
-                  "end": 722
+                  "start": 724,
+                  "end": 731
                 }
               },
               {
@@ -347,35 +347,35 @@
                 "value": {
                   "code": "saves.value",
                   "span": {
-                    "start": 723,
-                    "end": 734
+                    "start": 732,
+                    "end": 743
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "saves@180",
+                      "binding": "saves@189",
                       "span": {
-                        "start": 723,
-                        "end": 734
+                        "start": 732,
+                        "end": 743
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 722,
-                  "end": 735
+                  "start": 731,
+                  "end": 744
                 }
               }
             ],
             "span": {
-              "start": 698,
-              "end": 739
+              "start": 707,
+              "end": 748
             }
           }
         ],
         "span": {
-          "start": 565,
-          "end": 754
+          "start": 574,
+          "end": 763
         }
       }
     }
@@ -386,8 +386,8 @@
       "name": "default",
       "local": "DraftEditor",
       "span": {
-        "start": 73,
-        "end": 761
+        "start": 82,
+        "end": 770
       }
     }
   ],

@@ -1,6 +1,6 @@
 // models/text-field: `v-model` on a text input without a `type` and on an email input binds their
 // value (ADR-0054): typing writes the state, and a write of the state shows in the field.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ContactForm from "./ContactForm.uf.tsx";

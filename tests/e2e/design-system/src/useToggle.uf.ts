@@ -1,4 +1,4 @@
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export function useToggle(initial: boolean) {
   const on = ref(initial);

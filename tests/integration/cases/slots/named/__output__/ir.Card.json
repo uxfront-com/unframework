@@ -5,18 +5,18 @@
     {
       "name": "Card",
       "span": {
-        "start": 88,
-        "end": 410
+        "start": 106,
+        "end": 428
       },
       "props": [],
       "types": [],
       "slots": {
-        "binding": "slots@129",
+        "binding": "slots@147",
         "type": {
           "code": "{ header?(): Element; default?(): Element; footer?(): Element }",
           "span": {
-            "start": 149,
-            "end": 212
+            "start": 167,
+            "end": 230
           }
         },
         "slots": [
@@ -24,40 +24,40 @@
             "name": "header",
             "optional": true,
             "span": {
-              "start": 151,
-              "end": 170
+              "start": 169,
+              "end": 188
             }
           },
           {
             "name": "default",
             "optional": true,
             "span": {
-              "start": 171,
-              "end": 191
+              "start": 189,
+              "end": 209
             }
           },
           {
             "name": "footer",
             "optional": true,
             "span": {
-              "start": 192,
-              "end": 210
+              "start": 210,
+              "end": 228
             }
           }
         ],
         "span": {
-          "start": 123,
-          "end": 216
+          "start": 141,
+          "end": 234
         }
       },
       "bindings": [
         {
-          "id": "slots@129",
+          "id": "slots@147",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 129,
-            "end": 134
+            "start": 147,
+            "end": 152
           }
         }
       ],
@@ -71,8 +71,8 @@
             "name": "class",
             "value": "card",
             "span": {
-              "start": 241,
-              "end": 253
+              "start": 259,
+              "end": 271
             }
           }
         ],
@@ -87,14 +87,14 @@
                 "slot": "header",
                 "fallback": [],
                 "span": {
-                  "start": 269,
-                  "end": 287
+                  "start": 287,
+                  "end": 305
                 }
               }
             ],
             "span": {
-              "start": 261,
-              "end": 296
+              "start": 279,
+              "end": 314
             }
           },
           {
@@ -106,8 +106,8 @@
                 "name": "class",
                 "value": "body",
                 "span": {
-                  "start": 308,
-                  "end": 320
+                  "start": 326,
+                  "end": 338
                 }
               }
             ],
@@ -117,14 +117,14 @@
                 "slot": "default",
                 "fallback": [],
                 "span": {
-                  "start": 321,
-                  "end": 340
+                  "start": 339,
+                  "end": 358
                 }
               }
             ],
             "span": {
-              "start": 303,
-              "end": 346
+              "start": 321,
+              "end": 364
             }
           },
           {
@@ -137,20 +137,20 @@
                 "slot": "footer",
                 "fallback": [],
                 "span": {
-                  "start": 361,
-                  "end": 379
+                  "start": 379,
+                  "end": 397
                 }
               }
             ],
             "span": {
-              "start": 353,
-              "end": 388
+              "start": 371,
+              "end": 406
             }
           }
         ],
         "span": {
-          "start": 232,
-          "end": 403
+          "start": 250,
+          "end": 421
         }
       }
     }
@@ -161,8 +161,8 @@
       "name": "default",
       "local": "Card",
       "span": {
-        "start": 88,
-        "end": 410
+        "start": 106,
+        "end": 428
       }
     }
   ],

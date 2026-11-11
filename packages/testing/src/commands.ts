@@ -1,6 +1,6 @@
-// The browser commands the parity layers call (`@unframework/testing/node` implements them).
+// The browser commands the parity layers call (`@unframework.dev/testing/node` implements them).
 // Types only: the browser side imports them through the `vitest/browser` augmentation.
-import type { MountEvent } from "@unframework/codegen";
+import type { MountEvent } from "@unframework.dev/codegen";
 
 import type { ColorScheme } from "./harness.ts";
 import type { CaptureRequest, CaptureResult } from "./visual-types.ts";

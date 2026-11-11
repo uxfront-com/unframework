@@ -3,7 +3,7 @@
 // fails every case.
 import { join } from "node:path";
 
-import type { FrameworkCompileResult, ToolchainMessage } from "@unframework/codegen";
+import type { FrameworkCompileResult, ToolchainMessage } from "@unframework.dev/codegen";
 import { describe, expect, it } from "vitest";
 
 import { ROOT } from "./paths.ts";

@@ -35,8 +35,8 @@ import {
   typeNames,
   typeSpecifier,
   writtenValue,
-} from "@unframework/codegen";
-import type { EmitContext, OutputFile, RewriteRules } from "@unframework/codegen";
+} from "@unframework.dev/codegen";
+import type { EmitContext, OutputFile, RewriteRules } from "@unframework.dev/codegen";
 import type {
   Binding,
   FunctionCode,
@@ -45,7 +45,7 @@ import type {
   UfComponent,
   UfComposable,
   WatchItem,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { annotation, arrow, defaulted, parameterBinding } from "./effects.ts";
 import { moduleReads } from "./modules.ts";

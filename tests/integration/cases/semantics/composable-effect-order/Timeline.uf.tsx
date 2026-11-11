@@ -1,4 +1,4 @@
-import { onMounted, ref, watch } from "unframework";
+import { onMounted, ref, watch } from "@uxfront/unframework";
 
 import { useTracked } from "./useTracked.uf.ts";
 

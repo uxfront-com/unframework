@@ -7,12 +7,12 @@
     "start": {
       "line": 11,
       "column": 5,
-      "offset": 413
+      "offset": 422
     },
     "end": {
       "line": 11,
       "column": 10,
-      "offset": 418
+      "offset": 427
     },
     "help": "Move the call to the top level of the component's body, as a statement or a `const`'s value."
   }

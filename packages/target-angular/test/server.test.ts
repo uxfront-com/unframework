@@ -3,7 +3,7 @@
 // Vite server, and Angular's packages linked as they load, so this worker never loads Angular's
 // compiler, and the order in which the component and the renderer load cannot matter (the
 // harness loads the component first).
-import type { SsrRenderer } from "@unframework/codegen";
+import type { SsrRenderer } from "@unframework.dev/codegen";
 import { describe, expect, it } from "vitest";
 
 describe("the server renderer", () => {

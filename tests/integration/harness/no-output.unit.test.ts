@@ -11,8 +11,8 @@ import {
   recordLayer,
   recordStandIn,
   summarise,
-} from "@unframework/testing/node";
-import type { LayerTask, QuarantineEntry, UfLayerMeta } from "@unframework/testing/node";
+} from "@unframework.dev/testing/node";
+import type { LayerTask, QuarantineEntry, UfLayerMeta } from "@unframework.dev/testing/node";
 import type { Plugin } from "vite";
 import { afterEach, describe, expect, it } from "vitest";
 

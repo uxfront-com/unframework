@@ -5,18 +5,18 @@
     {
       "name": "SaveDraft",
       "span": {
-        "start": 59,
-        "end": 717
+        "start": 68,
+        "end": 726
       },
       "props": [],
       "types": [],
       "emits": {
-        "binding": "emit@105",
+        "binding": "emit@114",
         "type": {
           "code": "{ saved: [attempt: number, status: string] }",
           "span": {
-            "start": 124,
-            "end": 168
+            "start": 133,
+            "end": 177
           }
         },
         "events": [
@@ -28,13 +28,13 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 143,
-                    "end": 149
+                    "start": 152,
+                    "end": 158
                   }
                 },
                 "span": {
-                  "start": 134,
-                  "end": 149
+                  "start": 143,
+                  "end": 158
                 }
               },
               {
@@ -42,101 +42,101 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 159,
-                    "end": 165
+                    "start": 168,
+                    "end": 174
                   }
                 },
                 "span": {
-                  "start": 151,
-                  "end": 165
+                  "start": 160,
+                  "end": 174
                 }
               }
             ],
             "span": {
-              "start": 126,
-              "end": 166
+              "start": 135,
+              "end": 175
             }
           }
         ],
         "span": {
-          "start": 99,
-          "end": 172
+          "start": 108,
+          "end": 181
         }
       },
       "bindings": [
         {
-          "id": "emit@105",
+          "id": "emit@114",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 105,
-            "end": 109
+            "start": 114,
+            "end": 118
           }
         },
         {
-          "id": "status@182",
+          "id": "status@191",
           "name": "status",
           "kind": "state",
           "span": {
-            "start": 182,
-            "end": 188
+            "start": 191,
+            "end": 197
           }
         },
         {
-          "id": "attempts@217",
+          "id": "attempts@226",
           "name": "attempts",
           "kind": "state",
           "span": {
-            "start": 217,
-            "end": 225
+            "start": 226,
+            "end": 234
           }
         },
         {
-          "id": "save@254",
+          "id": "save@263",
           "name": "save",
           "kind": "localFn",
           "span": {
-            "start": 254,
-            "end": 258
+            "start": 263,
+            "end": 267
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "status@182",
+          "binding": "status@191",
           "initial": {
             "code": "\"Not saved\"",
             "span": {
-              "start": 195,
-              "end": 206
+              "start": 204,
+              "end": 215
             },
             "refs": []
           },
           "span": {
-            "start": 176,
-            "end": 208
+            "start": 185,
+            "end": 217
           }
         },
         {
           "kind": "State",
-          "binding": "attempts@217",
+          "binding": "attempts@226",
           "initial": {
             "code": "0",
             "span": {
-              "start": 232,
-              "end": 233
+              "start": 241,
+              "end": 242
             },
             "refs": []
           },
           "span": {
-            "start": 211,
-            "end": 235
+            "start": 220,
+            "end": 244
           }
         },
         {
           "kind": "Function",
-          "binding": "save@254",
+          "binding": "save@263",
           "form": "declaration",
           "function": {
             "async": true,
@@ -144,147 +144,147 @@
             "body": {
               "code": "{\n    status.value = \"Saving\";\n    attempts.value += 1;\n    await Promise.resolve();\n    status.value = \"Checking\";\n    await nextTick();\n    status.value = `Saved, attempt ${attempts.value}`;\n    emit(\"saved\", attempts.value, status.value);\n  }",
               "span": {
-                "start": 261,
-                "end": 506
+                "start": 270,
+                "end": 515
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "status@182",
+                  "binding": "status@191",
                   "operator": "=",
                   "span": {
-                    "start": 267,
-                    "end": 290
+                    "start": 276,
+                    "end": 299
                   },
                   "target": {
-                    "start": 267,
-                    "end": 279
+                    "start": 276,
+                    "end": 288
                   },
                   "value": {
-                    "start": 282,
-                    "end": 290
+                    "start": 291,
+                    "end": 299
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "attempts@217",
+                  "binding": "attempts@226",
                   "operator": "+=",
                   "span": {
-                    "start": 296,
-                    "end": 315
+                    "start": 305,
+                    "end": 324
                   },
                   "target": {
-                    "start": 296,
-                    "end": 310
+                    "start": 305,
+                    "end": 319
                   },
                   "value": {
-                    "start": 314,
-                    "end": 315
+                    "start": 323,
+                    "end": 324
                   }
                 },
                 {
                   "kind": "Global",
                   "name": "Promise",
                   "span": {
-                    "start": 327,
-                    "end": 334
+                    "start": 336,
+                    "end": 343
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "status@182",
+                  "binding": "status@191",
                   "operator": "=",
                   "span": {
-                    "start": 350,
-                    "end": 375
+                    "start": 359,
+                    "end": 384
                   },
                   "target": {
-                    "start": 350,
-                    "end": 362
+                    "start": 359,
+                    "end": 371
                   },
                   "value": {
-                    "start": 365,
-                    "end": 375
+                    "start": 374,
+                    "end": 384
                   }
                 },
                 {
                   "kind": "Api",
                   "api": "nextTick",
                   "span": {
-                    "start": 387,
-                    "end": 395
+                    "start": 396,
+                    "end": 404
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "status@182",
+                  "binding": "status@191",
                   "operator": "=",
                   "span": {
-                    "start": 403,
-                    "end": 452
+                    "start": 412,
+                    "end": 461
                   },
                   "target": {
-                    "start": 403,
-                    "end": 415
+                    "start": 412,
+                    "end": 424
                   },
                   "value": {
-                    "start": 418,
-                    "end": 452
+                    "start": 427,
+                    "end": 461
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "attempts@217",
+                  "binding": "attempts@226",
                   "span": {
-                    "start": 436,
-                    "end": 450
+                    "start": 445,
+                    "end": 459
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@105",
+                  "binding": "emit@114",
                   "event": "saved",
                   "span": {
-                    "start": 458,
-                    "end": 501
+                    "start": 467,
+                    "end": 510
                   },
                   "arguments": [
                     {
-                      "start": 472,
-                      "end": 486
+                      "start": 481,
+                      "end": 495
                     },
                     {
-                      "start": 488,
-                      "end": 500
+                      "start": 497,
+                      "end": 509
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "attempts@217",
+                  "binding": "attempts@226",
                   "span": {
-                    "start": 472,
-                    "end": 486
+                    "start": 481,
+                    "end": 495
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "status@182",
+                  "binding": "status@191",
                   "span": {
-                    "start": 488,
-                    "end": 500
+                    "start": 497,
+                    "end": 509
                   }
                 }
               ]
             },
             "span": {
-              "start": 258,
-              "end": 506
+              "start": 267,
+              "end": 515
             }
           },
           "span": {
-            "start": 239,
-            "end": 506
+            "start": 248,
+            "end": 515
           }
         }
       ],
@@ -297,8 +297,8 @@
             "name": "class",
             "value": "save-draft",
             "span": {
-              "start": 532,
-              "end": 550
+              "start": 541,
+              "end": 559
             }
           },
           {
@@ -306,8 +306,8 @@
             "name": "aria-label",
             "value": "Draft",
             "span": {
-              "start": 551,
-              "end": 569
+              "start": 560,
+              "end": 578
             }
           }
         ],
@@ -321,8 +321,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 580,
-                  "end": 593
+                  "start": 589,
+                  "end": 602
                 }
               }
             ],
@@ -332,29 +332,29 @@
                 "value": {
                   "code": "status.value",
                   "span": {
-                    "start": 595,
-                    "end": 607
+                    "start": 604,
+                    "end": 616
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "status@182",
+                      "binding": "status@191",
                       "span": {
-                        "start": 595,
-                        "end": 607
+                        "start": 604,
+                        "end": 616
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 594,
-                  "end": 608
+                  "start": 603,
+                  "end": 617
                 }
               }
             ],
             "span": {
-              "start": 577,
-              "end": 612
+              "start": 586,
+              "end": 621
             }
           },
           {
@@ -366,8 +366,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 627,
-                  "end": 640
+                  "start": 636,
+                  "end": 649
                 }
               },
               {
@@ -375,15 +375,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "save@254",
+                  "binding": "save@263",
                   "span": {
-                    "start": 650,
-                    "end": 654
+                    "start": 659,
+                    "end": 663
                   }
                 },
                 "span": {
-                  "start": 641,
-                  "end": 655
+                  "start": 650,
+                  "end": 664
                 }
               }
             ],
@@ -392,20 +392,20 @@
                 "kind": "Text",
                 "value": "Save the draft",
                 "span": {
-                  "start": 656,
-                  "end": 686
+                  "start": 665,
+                  "end": 695
                 }
               }
             ],
             "span": {
-              "start": 619,
-              "end": 695
+              "start": 628,
+              "end": 704
             }
           }
         ],
         "span": {
-          "start": 523,
-          "end": 710
+          "start": 532,
+          "end": 719
         }
       }
     }
@@ -416,8 +416,8 @@
       "name": "default",
       "local": "SaveDraft",
       "span": {
-        "start": 59,
-        "end": 717
+        "start": 68,
+        "end": 726
       }
     }
   ],

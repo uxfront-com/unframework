@@ -5,18 +5,18 @@
     {
       "name": "Frame",
       "span": {
-        "start": 110,
-        "end": 377
+        "start": 128,
+        "end": 395
       },
       "props": [],
       "types": [],
       "slots": {
-        "binding": "slots@152",
+        "binding": "slots@170",
         "type": {
           "code": "{ default?(): Element; label?(props: { text: string }): Element }",
           "span": {
-            "start": 172,
-            "end": 237
+            "start": 190,
+            "end": 255
           }
         },
         "slots": [
@@ -24,8 +24,8 @@
             "name": "default",
             "optional": true,
             "span": {
-              "start": 174,
-              "end": 194
+              "start": 192,
+              "end": 212
             }
           },
           {
@@ -34,29 +34,29 @@
             "props": {
               "code": "{ text: string }",
               "span": {
-                "start": 209,
-                "end": 225
+                "start": 227,
+                "end": 243
               }
             },
             "span": {
-              "start": 195,
-              "end": 235
+              "start": 213,
+              "end": 253
             }
           }
         ],
         "span": {
-          "start": 146,
-          "end": 241
+          "start": 164,
+          "end": 259
         }
       },
       "bindings": [
         {
-          "id": "slots@152",
+          "id": "slots@170",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 152,
-            "end": 157
+            "start": 170,
+            "end": 175
           }
         }
       ],
@@ -70,8 +70,8 @@
             "name": "class",
             "value": "frame",
             "span": {
-              "start": 265,
-              "end": 278
+              "start": 283,
+              "end": 296
             }
           }
         ],
@@ -81,8 +81,8 @@
             "slot": "default",
             "fallback": [],
             "span": {
-              "start": 286,
-              "end": 305
+              "start": 304,
+              "end": 323
             }
           },
           {
@@ -91,21 +91,21 @@
             "props": {
               "code": "{ text: \"Harbour at dusk\" }",
               "span": {
-                "start": 327,
-                "end": 354
+                "start": 345,
+                "end": 372
               },
               "refs": []
             },
             "fallback": [],
             "span": {
-              "start": 312,
-              "end": 356
+              "start": 330,
+              "end": 374
             }
           }
         ],
         "span": {
-          "start": 257,
-          "end": 370
+          "start": 275,
+          "end": 388
         }
       },
       "styles": [
@@ -127,8 +127,8 @@
       "name": "default",
       "local": "Frame",
       "span": {
-        "start": 110,
-        "end": 377
+        "start": 128,
+        "end": 395
       }
     }
   ],

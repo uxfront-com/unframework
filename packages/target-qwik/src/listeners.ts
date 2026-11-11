@@ -28,9 +28,9 @@ import {
   js,
   parseCodeSource,
   rewriteCode,
-} from "@unframework/codegen";
-import type { CodeKind, JsxContext, LiftedControl } from "@unframework/codegen";
-import { walk } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { CodeKind, JsxContext, LiftedControl } from "@unframework.dev/codegen";
+import { walk } from "@unframework.dev/ir";
 import type {
   DynamicNode,
   ElementNode,
@@ -38,7 +38,7 @@ import type {
   FunctionCode,
   ModelAttribute,
   Parameter,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { modelListener } from "./composition.ts";
 import { qwikListenerProp } from "./events.ts";

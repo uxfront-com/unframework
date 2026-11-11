@@ -194,7 +194,7 @@ export default class TodoList {
 
 /** File name → source. */
 export const M2_SOURCES: Readonly<Record<string, string>> = {
-  "Seeded.uf.tsx": `import { computed, ref } from "unframework";
+  "Seeded.uf.tsx": `import { computed, ref } from "@uxfront/unframework";
 
 export interface SeededProps {
   start: number;
@@ -229,7 +229,7 @@ export default function Seeded({ start, unit = "kg" }: SeededProps) {
   );
 }
 `,
-  "Handlers.uf.tsx": `import { defineEmits, ref } from "unframework";
+  "Handlers.uf.tsx": `import { defineEmits, ref } from "@uxfront/unframework";
 
 export interface Item {
   id: string;
@@ -314,7 +314,7 @@ export default function Handlers({ items, owner }: HandlersProps) {
   );
 }
 `,
-  "Options.uf.tsx": `import { ref } from "unframework";
+  "Options.uf.tsx": `import { ref } from "@uxfront/unframework";
 
 export interface OptionsProps {
   rows: string[];
@@ -351,7 +351,7 @@ export default function Options({ rows, open }: OptionsProps) {
   );
 }
 `,
-  "Watchers.uf.tsx": `import { computed, defineEmits, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch, watchEffect } from "unframework";
+  "Watchers.uf.tsx": `import { computed, defineEmits, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";
 
 export interface WatchersProps {
   size: number;
@@ -447,7 +447,7 @@ export default function Watchers({ size }: WatchersProps) {
   );
 }
 `,
-  "Ids.uf.tsx": `import { defineEmits, onMounted, useId } from "unframework";
+  "Ids.uf.tsx": `import { defineEmits, onMounted, useId } from "@uxfront/unframework";
 
 export default function Ids() {
   const emit = defineEmits<{ ticked: [count: number] }>();
@@ -473,7 +473,7 @@ export default function Ids() {
   );
 }
 `,
-  "Sorter.uf.tsx": `import { ref } from "unframework";
+  "Sorter.uf.tsx": `import { ref } from "@uxfront/unframework";
 
 export default function Sorter() {
   const names = ref(["Cy", "Al"].toSorted((a, b) => compare(a, b)));
@@ -496,7 +496,7 @@ export default function Sorter() {
   );
 }
 `,
-  "InlineEditor.uf.tsx": `import { defineEmits, nextTick, ref, useTemplateRef } from "unframework";
+  "InlineEditor.uf.tsx": `import { defineEmits, nextTick, ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function InlineEditor() {
   const emit = defineEmits<{ focused: [label: string]; renamed: [name: string] }>();
@@ -535,7 +535,7 @@ export default function InlineEditor() {
   );
 }
 `,
-  "AsyncEffects.uf.tsx": `import { defineEmits, ref, watch, watchEffect } from "unframework";
+  "AsyncEffects.uf.tsx": `import { defineEmits, ref, watch, watchEffect } from "@uxfront/unframework";
 
 export interface AsyncEffectsProps {
   id: number;
@@ -576,7 +576,7 @@ export default function AsyncEffects({ id }: AsyncEffectsProps) {
   );
 }
 `,
-  "SeededLets.uf.tsx": `import { computed, defineEmits, ref } from "unframework";
+  "SeededLets.uf.tsx": `import { computed, defineEmits, ref } from "@uxfront/unframework";
 
 export interface SeededLetsProps {
   limit: number;
@@ -616,7 +616,7 @@ export default function SeededLets({ limit, label = "Vote", start = 0, note }: S
   );
 }
 `,
-  "SeededTypes.uf.tsx": `import { defineEmits } from "unframework";
+  "SeededTypes.uf.tsx": `import { defineEmits } from "@uxfront/unframework";
 
 type Mode = "list" | "grid";
 
@@ -688,7 +688,7 @@ export default function SeededTypes({ title, items, note, step = 1, mode, ratio 
   );
 }
 `,
-  "ListenerOrder.uf.tsx": `import { defineEmits, ref } from "unframework";
+  "ListenerOrder.uf.tsx": `import { defineEmits, ref } from "@uxfront/unframework";
 
 export interface ListenerOrderProps {
   rows: string[];
@@ -786,7 +786,7 @@ export default function ListenerOrder({ rows }: ListenerOrderProps) {
   );
 }
 `,
-  "ListenerPairs.uf.tsx": `import { computed, defineEmits, ref } from "unframework";
+  "ListenerPairs.uf.tsx": `import { computed, defineEmits, ref } from "@uxfront/unframework";
 
 interface Entry {
   id: number;
@@ -899,7 +899,7 @@ export default function ListenerPairs({ entries, data, owner }: ListenerPairsPro
   );
 }
 `,
-  "Deleting.uf.tsx": `import { defineEmits } from "unframework";
+  "Deleting.uf.tsx": `import { defineEmits } from "@uxfront/unframework";
 
 export interface DeletingProps {
   ids: number[];
@@ -942,7 +942,7 @@ export default function Deleting({ ids }: DeletingProps) {
   );
 }
 `,
-  "Shadowed.uf.tsx": `import { ref } from "unframework";
+  "Shadowed.uf.tsx": `import { ref } from "@uxfront/unframework";
 
 export interface ShadowedProps {
   rows: string[];
@@ -979,7 +979,7 @@ export default function Shadowed({ rows }: ShadowedProps) {
   );
 }
 `,
-  "Returns.uf.tsx": `import { ref } from "unframework";
+  "Returns.uf.tsx": `import { ref } from "@uxfront/unframework";
 
 export interface ReturnsProps {
   rows: string[];
@@ -1083,7 +1083,7 @@ export default function Returns({ rows }: ReturnsProps) {
   );
 }
 `,
-  "Collisions.uf.tsx": `import { defineEmits, ref, useTemplateRef, watch } from "unframework";
+  "Collisions.uf.tsx": `import { defineEmits, ref, useTemplateRef, watch } from "@uxfront/unframework";
 
 interface Settings {
   name: string;
@@ -1149,7 +1149,7 @@ export default function Collisions({ rows }: CollisionsProps) {
   );
 }
 `,
-  "Narrowing.uf.tsx": `import { computed, defineEmits, ref, useTemplateRef, watch } from "unframework";
+  "Narrowing.uf.tsx": `import { computed, defineEmits, ref, useTemplateRef, watch } from "@uxfront/unframework";
 
 interface Member {
   id: number;
@@ -1250,7 +1250,7 @@ export default function Narrowing({ user, rows }: NarrowingProps) {
   );
 }
 `,
-  "Elements.uf.tsx": `import { defineEmits, onMounted, onUnmounted, ref, useTemplateRef } from "unframework";
+  "Elements.uf.tsx": `import { defineEmits, onMounted, onUnmounted, ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function Elements() {
   const emit = defineEmits<{ handled: []; found: [same: boolean] }>();
@@ -1295,7 +1295,7 @@ export default function Elements() {
   );
 }
 `,
-  "Teardowns.uf.tsx": `import { defineEmits, onMounted, onUnmounted, ref, watch, watchEffect } from "unframework";
+  "Teardowns.uf.tsx": `import { defineEmits, onMounted, onUnmounted, ref, watch, watchEffect } from "@uxfront/unframework";
 
 export default function Teardowns() {
   const emit = defineEmits<{ stopped: [which: string]; counted: [count: number] }>();
@@ -1346,7 +1346,7 @@ export default function Teardowns() {
   );
 }
 `,
-  "Tuples.uf.tsx": `import { defineEmits, ref, watch } from "unframework";
+  "Tuples.uf.tsx": `import { defineEmits, ref, watch } from "@uxfront/unframework";
 
 export interface TuplesProps {
   label: string;

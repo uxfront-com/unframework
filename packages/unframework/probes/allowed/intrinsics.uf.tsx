@@ -1,5 +1,5 @@
 // Legitimate element code (plan §4.3). Nothing here may error.
-import { ref, useTemplateRef } from "unframework";
+import { ref, useTemplateRef } from "@uxfront/unframework";
 
 import Button from "../fixtures/Button.uf.tsx";
 import Counter from "../fixtures/Counter.uf.tsx";

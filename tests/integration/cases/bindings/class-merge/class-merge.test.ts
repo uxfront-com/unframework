@@ -1,7 +1,7 @@
 // bindings/class-merge: a typed spread whose `class` key merges with the element's own class,
 // static on one element and a class binding on the other; the spread's other keys render as
 // attributes.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import TextLink from "./TextLink.uf.tsx";

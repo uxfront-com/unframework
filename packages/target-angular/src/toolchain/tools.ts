@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { resolveInstalled } from "@unframework/codegen/toolchain-node";
+import { resolveInstalled } from "@unframework.dev/codegen/toolchain-node";
 import type { Plugin, Rolldown } from "vite";
 
 /** TypeScript compiler options, as `NgtscProgram` reads them (TS and Angular options merged). */

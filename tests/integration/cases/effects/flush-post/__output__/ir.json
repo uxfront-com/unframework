@@ -5,18 +5,18 @@
     {
       "name": "MessageList",
       "span": {
-        "start": 72,
-        "end": 814
+        "start": 81,
+        "end": 823
       },
       "props": [],
       "types": [],
       "emits": {
-        "binding": "emit@120",
+        "binding": "emit@129",
         "type": {
           "code": "{ rendered: [count: number] }",
           "span": {
-            "start": 139,
-            "end": 168
+            "start": 148,
+            "end": 177
           }
         },
         "events": [
@@ -28,104 +28,104 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 159,
-                    "end": 165
+                    "start": 168,
+                    "end": 174
                   }
                 },
                 "span": {
-                  "start": 152,
-                  "end": 165
+                  "start": 161,
+                  "end": 174
                 }
               }
             ],
             "span": {
-              "start": 141,
-              "end": 166
+              "start": 150,
+              "end": 175
             }
           }
         ],
         "span": {
-          "start": 114,
-          "end": 172
+          "start": 123,
+          "end": 181
         }
       },
       "bindings": [
         {
-          "id": "emit@120",
+          "id": "emit@129",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 120,
-            "end": 124
+            "start": 129,
+            "end": 133
           }
         },
         {
-          "id": "messages@182",
+          "id": "messages@191",
           "name": "messages",
           "kind": "state",
           "span": {
-            "start": 182,
-            "end": 190
+            "start": 191,
+            "end": 199
           }
         },
         {
-          "id": "list@231",
+          "id": "list@240",
           "name": "list",
           "kind": "templateRef",
           "span": {
-            "start": 231,
-            "end": 235
+            "start": 240,
+            "end": 244
           }
         },
         {
-          "id": "add@417",
+          "id": "add@426",
           "name": "add",
           "kind": "localFn",
           "span": {
-            "start": 417,
-            "end": 420
+            "start": 426,
+            "end": 429
           }
         },
         {
-          "id": "message@631",
+          "id": "message@640",
           "name": "message",
           "kind": "loopVar",
           "span": {
-            "start": 631,
-            "end": 638
+            "start": 640,
+            "end": 647
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "messages@182",
+          "binding": "messages@191",
           "initial": {
             "code": "[\"Welcome to the team\"]",
             "span": {
-              "start": 197,
-              "end": 220
+              "start": 206,
+              "end": 229
             },
             "refs": []
           },
           "span": {
-            "start": 176,
-            "end": 222
+            "start": 185,
+            "end": 231
           }
         },
         {
           "kind": "TemplateRef",
-          "binding": "list@231",
+          "binding": "list@240",
           "type": {
             "code": "HTMLUListElement",
             "span": {
-              "start": 253,
-              "end": 269
+              "start": 262,
+              "end": 278
             }
           },
           "span": {
-            "start": 225,
-            "end": 273
+            "start": 234,
+            "end": 282
           }
         },
         {
@@ -133,10 +133,10 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "messages@182",
+              "binding": "messages@191",
               "span": {
-                "start": 288,
-                "end": 296
+                "start": 297,
+                "end": 305
               }
             }
           ],
@@ -145,102 +145,102 @@
             "body": {
               "code": "{\n      emit(\"rendered\", list.value?.childElementCount ?? 0);\n    }",
               "span": {
-                "start": 308,
-                "end": 375
+                "start": 317,
+                "end": 384
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@120",
+                  "binding": "emit@129",
                   "event": "rendered",
                   "span": {
-                    "start": 316,
-                    "end": 368
+                    "start": 325,
+                    "end": 377
                   },
                   "arguments": [
                     {
-                      "start": 333,
-                      "end": 367
+                      "start": 342,
+                      "end": 376
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "list@231",
+                  "binding": "list@240",
                   "span": {
-                    "start": 333,
-                    "end": 343
+                    "start": 342,
+                    "end": 352
                   }
                 }
               ]
             },
             "span": {
-              "start": 302,
-              "end": 375
+              "start": 311,
+              "end": 384
             }
           },
           "post": true,
           "span": {
-            "start": 277,
-            "end": 404
+            "start": 286,
+            "end": 413
           }
         },
         {
           "kind": "Function",
-          "binding": "add@417",
+          "binding": "add@426",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    messages.value = [...messages.value, `Message ${messages.value.length + 1}`];\n  }",
               "span": {
-                "start": 423,
-                "end": 510
+                "start": 432,
+                "end": 519
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "messages@182",
+                  "binding": "messages@191",
                   "operator": "=",
                   "span": {
-                    "start": 429,
-                    "end": 505
+                    "start": 438,
+                    "end": 514
                   },
                   "target": {
-                    "start": 429,
-                    "end": 443
+                    "start": 438,
+                    "end": 452
                   },
                   "value": {
-                    "start": 446,
-                    "end": 505
+                    "start": 455,
+                    "end": 514
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "messages@182",
+                  "binding": "messages@191",
                   "span": {
-                    "start": 450,
-                    "end": 464
+                    "start": 459,
+                    "end": 473
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "messages@182",
+                  "binding": "messages@191",
                   "span": {
-                    "start": 477,
-                    "end": 491
+                    "start": 486,
+                    "end": 500
                   }
                 }
               ]
             },
             "span": {
-              "start": 420,
-              "end": 510
+              "start": 429,
+              "end": 519
             }
           },
           "span": {
-            "start": 408,
-            "end": 510
+            "start": 417,
+            "end": 519
           }
         }
       ],
@@ -253,8 +253,8 @@
             "name": "class",
             "value": "message-list",
             "span": {
-              "start": 536,
-              "end": 556
+              "start": 545,
+              "end": 565
             }
           },
           {
@@ -262,8 +262,8 @@
             "name": "aria-label",
             "value": "Messages",
             "span": {
-              "start": 557,
-              "end": 578
+              "start": 566,
+              "end": 587
             }
           }
         ],
@@ -274,10 +274,10 @@
             "attributes": [
               {
                 "kind": "Ref",
-                "binding": "list@231",
+                "binding": "list@240",
                 "span": {
-                  "start": 590,
-                  "end": 600
+                  "start": 599,
+                  "end": 609
                 }
               }
             ],
@@ -287,34 +287,34 @@
                 "source": {
                   "code": "messages.value",
                   "span": {
-                    "start": 611,
-                    "end": 625
+                    "start": 620,
+                    "end": 634
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "messages@182",
+                      "binding": "messages@191",
                       "span": {
-                        "start": 611,
-                        "end": 625
+                        "start": 620,
+                        "end": 634
                       }
                     }
                   ]
                 },
-                "item": "message@631",
+                "item": "message@640",
                 "key": {
                   "code": "message",
                   "span": {
-                    "start": 664,
-                    "end": 671
+                    "start": 673,
+                    "end": 680
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "message@631",
+                      "binding": "message@640",
                       "span": {
-                        "start": 664,
-                        "end": 671
+                        "start": 673,
+                        "end": 680
                       }
                     }
                   ]
@@ -329,40 +329,40 @@
                       "value": {
                         "code": "message",
                         "span": {
-                          "start": 674,
-                          "end": 681
+                          "start": 683,
+                          "end": 690
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "message@631",
+                            "binding": "message@640",
                             "span": {
-                              "start": 674,
-                              "end": 681
+                              "start": 683,
+                              "end": 690
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 673,
-                        "end": 682
+                        "start": 682,
+                        "end": 691
                       }
                     }
                   ],
                   "span": {
-                    "start": 655,
-                    "end": 687
+                    "start": 664,
+                    "end": 696
                   }
                 },
                 "span": {
-                  "start": 611,
-                  "end": 698
+                  "start": 620,
+                  "end": 707
                 }
               }
             ],
             "span": {
-              "start": 586,
-              "end": 711
+              "start": 595,
+              "end": 720
             }
           },
           {
@@ -374,8 +374,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 726,
-                  "end": 739
+                  "start": 735,
+                  "end": 748
                 }
               },
               {
@@ -383,15 +383,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "add@417",
+                  "binding": "add@426",
                   "span": {
-                    "start": 749,
-                    "end": 752
+                    "start": 758,
+                    "end": 761
                   }
                 },
                 "span": {
-                  "start": 740,
-                  "end": 753
+                  "start": 749,
+                  "end": 762
                 }
               }
             ],
@@ -400,20 +400,20 @@
                 "kind": "Text",
                 "value": "Add a message",
                 "span": {
-                  "start": 754,
-                  "end": 783
+                  "start": 763,
+                  "end": 792
                 }
               }
             ],
             "span": {
-              "start": 718,
-              "end": 792
+              "start": 727,
+              "end": 801
             }
           }
         ],
         "span": {
-          "start": 527,
-          "end": 807
+          "start": 536,
+          "end": 816
         }
       }
     }
@@ -424,8 +424,8 @@
       "name": "default",
       "local": "MessageList",
       "span": {
-        "start": 72,
-        "end": 814
+        "start": 81,
+        "end": 823
       }
     }
   ],

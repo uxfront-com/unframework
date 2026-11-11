@@ -18,9 +18,9 @@
 // (`function check(…) {…}`): a plain function, which runs at once and keeps its returns and the
 // narrowing of a type predicate's or an assertion function's signature (TypeScript narrows
 // through an assertion only when it calls it by name, TS2776).
-import { functionSource, parseCodeSource } from "@unframework/codegen";
-import type { CodeKind } from "@unframework/codegen";
-import type { FunctionCode, Parameter } from "@unframework/ir";
+import { functionSource, parseCodeSource } from "@unframework.dev/codegen";
+import type { CodeKind } from "@unframework.dev/codegen";
+import type { FunctionCode, Parameter } from "@unframework.dev/ir";
 
 /** A node of oxc's syntax tree, as far as these walks read it. */
 interface Node {

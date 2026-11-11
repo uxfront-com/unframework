@@ -1,6 +1,6 @@
 // styleframe/recipe-variants: a recipe's variants, driven by props (ADR-0064). An absent prop takes
 // the recipe's default variant, as Styleframe's runtime decides on every target.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Button from "./Button.uf.tsx";

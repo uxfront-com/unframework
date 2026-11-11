@@ -1,7 +1,7 @@
 // events/async-handlers: an async handler writes, awaits a resolved promise, writes, awaits
 // `nextTick()`, reads what it wrote before the awaits, writes again and emits after them. The
 // interaction settles once the continuations have run.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import SaveDraft from "./SaveDraft.uf.tsx";

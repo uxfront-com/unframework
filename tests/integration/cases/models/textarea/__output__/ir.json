@@ -5,37 +5,37 @@
     {
       "name": "NoteEditor",
       "span": {
-        "start": 36,
-        "end": 378
+        "start": 45,
+        "end": 387
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "note@83",
+          "id": "note@92",
           "name": "note",
           "kind": "state",
           "span": {
-            "start": 83,
-            "end": 87
+            "start": 92,
+            "end": 96
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "note@83",
+          "binding": "note@92",
           "initial": {
             "code": "\"Buy milk\"",
             "span": {
-              "start": 94,
-              "end": 104
+              "start": 103,
+              "end": 113
             },
             "refs": []
           },
           "span": {
-            "start": 77,
-            "end": 106
+            "start": 86,
+            "end": 115
           }
         }
       ],
@@ -48,8 +48,8 @@
             "name": "aria-label",
             "value": "Note",
             "span": {
-              "start": 131,
-              "end": 148
+              "start": 140,
+              "end": 157
             }
           }
         ],
@@ -63,8 +63,8 @@
                 "name": "aria-label",
                 "value": "Text",
                 "span": {
-                  "start": 166,
-                  "end": 183
+                  "start": 175,
+                  "end": 192
                 }
               },
               {
@@ -72,31 +72,31 @@
                 "value": {
                   "code": "note.value",
                   "span": {
-                    "start": 193,
-                    "end": 203
+                    "start": 202,
+                    "end": 212
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "note@83",
+                      "binding": "note@92",
                       "span": {
-                        "start": 193,
-                        "end": 203
+                        "start": 202,
+                        "end": 212
                       }
                     }
                   ]
                 },
                 "control": "textarea",
                 "span": {
-                  "start": 184,
-                  "end": 204
+                  "start": 193,
+                  "end": 213
                 }
               }
             ],
             "children": [],
             "span": {
-              "start": 156,
-              "end": 207
+              "start": 165,
+              "end": 216
             }
           },
           {
@@ -109,37 +109,37 @@
                 "value": {
                   "code": "note.value.length",
                   "span": {
-                    "start": 223,
-                    "end": 240
+                    "start": 232,
+                    "end": 249
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "note@83",
+                      "binding": "note@92",
                       "span": {
-                        "start": 223,
-                        "end": 233
+                        "start": 232,
+                        "end": 242
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 222,
-                  "end": 241
+                  "start": 231,
+                  "end": 250
                 }
               },
               {
                 "kind": "Text",
                 "value": " characters",
                 "span": {
-                  "start": 241,
-                  "end": 252
+                  "start": 250,
+                  "end": 261
                 }
               }
             ],
             "span": {
-              "start": 214,
-              "end": 261
+              "start": 223,
+              "end": 270
             }
           },
           {
@@ -151,8 +151,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 276,
-                  "end": 289
+                  "start": 285,
+                  "end": 298
                 }
               },
               {
@@ -165,25 +165,25 @@
                     "body": {
                       "code": "(note.value = \"\")",
                       "span": {
-                        "start": 305,
-                        "end": 322
+                        "start": 314,
+                        "end": 331
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "note@83",
+                          "binding": "note@92",
                           "operator": "=",
                           "span": {
-                            "start": 305,
-                            "end": 322
+                            "start": 314,
+                            "end": 331
                           },
                           "target": {
-                            "start": 306,
-                            "end": 316
+                            "start": 315,
+                            "end": 325
                           },
                           "value": {
-                            "start": 319,
-                            "end": 321
+                            "start": 328,
+                            "end": 330
                           },
                           "arrowBody": true
                         }
@@ -191,18 +191,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 299,
-                      "end": 322
+                      "start": 308,
+                      "end": 331
                     }
                   },
                   "span": {
-                    "start": 299,
-                    "end": 322
+                    "start": 308,
+                    "end": 331
                   }
                 },
                 "span": {
-                  "start": 290,
-                  "end": 323
+                  "start": 299,
+                  "end": 332
                 }
               }
             ],
@@ -211,20 +211,20 @@
                 "kind": "Text",
                 "value": "Discard",
                 "span": {
-                  "start": 324,
-                  "end": 347
+                  "start": 333,
+                  "end": 356
                 }
               }
             ],
             "span": {
-              "start": 268,
-              "end": 356
+              "start": 277,
+              "end": 365
             }
           }
         ],
         "span": {
-          "start": 122,
-          "end": 371
+          "start": 131,
+          "end": 380
         }
       }
     }
@@ -235,8 +235,8 @@
       "name": "default",
       "local": "NoteEditor",
       "span": {
-        "start": 36,
-        "end": 378
+        "start": 45,
+        "end": 387
       }
     }
   ],

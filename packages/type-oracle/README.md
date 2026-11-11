@@ -1,4 +1,4 @@
-# @unframework/type-oracle
+# @unframework.dev/type-oracle
 
 The TypeOracle interface and the syntactic resolver (plan §5.5).
 
@@ -78,7 +78,7 @@ The TypeOracle interface and the syntactic resolver (plan §5.5).
   with no name. With `{ canonical: true }` it sorts unions and members, prints that recursion as
   `(cycle ^n)` and an unresolved opaque node as `(unresolved)`, which is how the contract
   compares two adapters.
-- **The contract** (`@unframework/type-oracle/contract`):
+- **The contract** (`@unframework.dev/type-oracle/contract`):
   `typeOracleContract(name, factory, options)` registers one Vitest test per case, over the
   fixture projects in `test/fixtures/`. The factory gets each project's `root` and returns the
   adapter under test. Every adapter runs it from its own tests. A conditional and a mapped type

@@ -1,6 +1,6 @@
 // dynamic/prop-union: `<component is={tag}>`, where the prop `tag` is typed `"h1" | "h2" | "h3"`,
 // renders the tag the parent passes (ADR-0054).
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Outline from "./Outline.uf.tsx";

@@ -1,6 +1,6 @@
 // UF2017 invalid-emit: `emit("closed")` names an event the component does not declare: it
 // declares `close`.
-import { defineEmits } from "unframework";
+import { defineEmits } from "@uxfront/unframework";
 
 export default function SettingsDialog() {
   const emit = defineEmits<{ close: [] }>();

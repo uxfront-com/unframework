@@ -5,8 +5,8 @@
     {
       "name": "Section",
       "span": {
-        "start": 36,
-        "end": 407
+        "start": 45,
+        "end": 416
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 88,
-              "end": 94
+              "start": 97,
+              "end": 103
             }
           },
-          "binding": "title@70",
+          "binding": "title@79",
           "span": {
-            "start": 81,
-            "end": 94
+            "start": 90,
+            "end": 103
           }
         }
       ],
@@ -31,51 +31,51 @@
         "type": {
           "code": "{ title: string }",
           "span": {
-            "start": 79,
-            "end": 96
+            "start": 88,
+            "end": 105
           }
         },
         "span": {
-          "start": 68,
-          "end": 96
+          "start": 77,
+          "end": 105
         }
       },
       "types": [],
       "bindings": [
         {
-          "id": "title@70",
+          "id": "title@79",
           "name": "title",
           "kind": "prop",
           "span": {
-            "start": 70,
-            "end": 75
+            "start": 79,
+            "end": 84
           }
         },
         {
-          "id": "nested@108",
+          "id": "nested@117",
           "name": "nested",
           "kind": "state",
           "span": {
-            "start": 108,
-            "end": 114
+            "start": 117,
+            "end": 123
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "nested@108",
+          "binding": "nested@117",
           "initial": {
             "code": "false",
             "span": {
-              "start": 121,
-              "end": 126
+              "start": 130,
+              "end": 135
             },
             "refs": []
           },
           "span": {
-            "start": 102,
-            "end": 128
+            "start": 111,
+            "end": 137
           }
         }
       ],
@@ -89,16 +89,16 @@
             "is": {
               "code": "nested.value ? \"h3\" : \"h2\"",
               "span": {
-                "start": 175,
-                "end": 201
+                "start": 184,
+                "end": 210
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "nested@108",
+                  "binding": "nested@117",
                   "span": {
-                    "start": 175,
-                    "end": 187
+                    "start": 184,
+                    "end": 196
                   }
                 }
               ]
@@ -119,8 +119,8 @@
                 "name": "class",
                 "value": "title",
                 "span": {
-                  "start": 203,
-                  "end": 216
+                  "start": 212,
+                  "end": 225
                 }
               }
             ],
@@ -130,29 +130,29 @@
                 "value": {
                   "code": "title",
                   "span": {
-                    "start": 227,
-                    "end": 232
+                    "start": 236,
+                    "end": 241
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "title@70",
+                      "binding": "title@79",
                       "span": {
-                        "start": 227,
-                        "end": 232
+                        "start": 236,
+                        "end": 241
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 226,
-                  "end": 233
+                  "start": 235,
+                  "end": 242
                 }
               }
             ],
             "span": {
-              "start": 160,
-              "end": 252
+              "start": 169,
+              "end": 261
             }
           },
           {
@@ -164,8 +164,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 267,
-                  "end": 280
+                  "start": 276,
+                  "end": 289
                 }
               },
               {
@@ -178,52 +178,52 @@
                     "body": {
                       "code": "(nested.value = !nested.value)",
                       "span": {
-                        "start": 296,
-                        "end": 326
+                        "start": 305,
+                        "end": 335
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "nested@108",
+                          "binding": "nested@117",
                           "operator": "=",
                           "span": {
-                            "start": 296,
-                            "end": 326
+                            "start": 305,
+                            "end": 335
                           },
                           "target": {
-                            "start": 297,
-                            "end": 309
+                            "start": 306,
+                            "end": 318
                           },
                           "value": {
-                            "start": 312,
-                            "end": 325
+                            "start": 321,
+                            "end": 334
                           },
                           "arrowBody": true
                         },
                         {
                           "kind": "Binding",
-                          "binding": "nested@108",
+                          "binding": "nested@117",
                           "span": {
-                            "start": 313,
-                            "end": 325
+                            "start": 322,
+                            "end": 334
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 290,
-                      "end": 326
+                      "start": 299,
+                      "end": 335
                     }
                   },
                   "span": {
-                    "start": 290,
-                    "end": 326
+                    "start": 299,
+                    "end": 335
                   }
                 },
                 "span": {
-                  "start": 281,
-                  "end": 327
+                  "start": 290,
+                  "end": 336
                 }
               }
             ],
@@ -233,35 +233,35 @@
                 "value": {
                   "code": "nested.value ? \"Lift\" : \"Nest\"",
                   "span": {
-                    "start": 338,
-                    "end": 368
+                    "start": 347,
+                    "end": 377
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "nested@108",
+                      "binding": "nested@117",
                       "span": {
-                        "start": 338,
-                        "end": 350
+                        "start": 347,
+                        "end": 359
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 337,
-                  "end": 369
+                  "start": 346,
+                  "end": 378
                 }
               }
             ],
             "span": {
-              "start": 259,
-              "end": 385
+              "start": 268,
+              "end": 394
             }
           }
         ],
         "span": {
-          "start": 144,
-          "end": 400
+          "start": 153,
+          "end": 409
         }
       }
     }
@@ -272,8 +272,8 @@
       "name": "default",
       "local": "Section",
       "span": {
-        "start": 36,
-        "end": 407
+        "start": 45,
+        "end": 416
       }
     }
   ],

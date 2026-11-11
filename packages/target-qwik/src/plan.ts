@@ -4,9 +4,9 @@
 // handler, a task, a `useComputed$` getter) can capture only serialisable values: never a plain
 // function (optimizer C02), so a function a `$` scope calls is a QRL, whose calls are awaited
 // (./calls.ts), or, when it captures nothing of the component, a module-level function.
-import { bindingOf, parseCodeSource, writtenValue } from "@unframework/codegen";
-import type { CodeKind, ImportSet, RewriteRules, RewriteSite } from "@unframework/codegen";
-import { expressionsOf, functionsOf, summarizeCode, walk } from "@unframework/ir";
+import { bindingOf, parseCodeSource, writtenValue } from "@unframework.dev/codegen";
+import type { CodeKind, ImportSet, RewriteRules, RewriteSite } from "@unframework.dev/codegen";
+import { expressionsOf, functionsOf, summarizeCode, walk } from "@unframework.dev/ir";
 import type {
   Binding,
   BindingId,
@@ -28,7 +28,7 @@ import type {
   UfModule,
   UseArgument,
   UseItem,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { fillExpressions, planComposition } from "./composition.ts";
 import type { CompositionPlan } from "./composition.ts";

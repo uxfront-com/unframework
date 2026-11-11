@@ -1,5 +1,5 @@
-// The configuration's types, in a file with no imports. `unframework/config` reaches them through
-// `@unframework/compiler/config-types`, so that a project's config type-checks without the
+// The configuration's types, in a file with no imports. `@uxfront/unframework/config` reaches them through
+// `@unframework.dev/compiler/config-types`, so that a project's config type-checks without the
 // compiler's whole type graph, which `skipLibCheck: false` would hold against it (ADR-0076).
 
 /** The names of the built-in targets. */
@@ -12,7 +12,7 @@ export interface PackageConfig {
   resolveFrom?: string | Partial<Record<TargetName, string>>;
 }
 
-/** The configuration as a project writes it, with `defineConfig` from `unframework/config`. */
+/** The configuration as a project writes it, with `defineConfig` from `@uxfront/unframework/config`. */
 export interface UnframeworkConfig {
   /** Defaults to all seven targets. */
   targets?: readonly TargetName[];

@@ -1,7 +1,7 @@
 // styles/hover-state: a scoped `:hover` rule (ADR-0063), captured at rest and after
 // `view.user.hover` moves the pointer onto the button (ADR-0050). Astro runs no client code, so
 // its hover test is skipped by capability.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Action from "./Action.uf.tsx";

@@ -3,8 +3,8 @@
 // render it as an attribute), `class:list` and style objects. Astro's compiler reads balanced
 // JavaScript in `{…}`, braces in strings, templates and regular expressions included, so
 // expression code is printed as written.
-import { BINDABLE_BOOLEAN_ATTRIBUTES } from "@unframework/ir";
-import type { ForNode, RenderNode } from "@unframework/ir";
+import { BINDABLE_BOOLEAN_ATTRIBUTES } from "@unframework.dev/ir";
+import type { ForNode, RenderNode } from "@unframework.dev/ir";
 
 import { referencedBindings } from "../references.ts";
 import {

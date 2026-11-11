@@ -1,5 +1,5 @@
 // The Solid SSR renderer (Node, inside the `ssr:solid` project).
-import type { SsrRenderer } from "@unframework/codegen";
+import type { SsrRenderer } from "@unframework.dev/codegen";
 import { createComponent, renderToStringAsync } from "solid-js/web";
 
 import { asComponent } from "./component.ts";

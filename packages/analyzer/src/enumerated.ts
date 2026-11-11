@@ -8,7 +8,7 @@
 // table against those types with tsgo, both ways: what it accepts every target accepts, and
 // every attribute a target restricts is here.
 
-import type { Namespace, Span } from "@unframework/ir";
+import type { Namespace, Span } from "@unframework.dev/ir";
 
 import { ARIA_ROLES } from "./aria.ts";
 import { list } from "./attribute-names.ts";

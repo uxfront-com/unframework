@@ -1,5 +1,5 @@
 {
-  "name": "@unframework/codegen",
+  "name": "@unframework.dev/codegen",
   "version": "0.0.0",
   "private": true,
   "description": "The Unframework target kit: defineTarget, the JS, JSX and markup printers with each syntax's escaping, the import manager and the oxfmt formatting step.",
@@ -52,9 +52,9 @@
     "@jridgewell/trace-mapping": "catalog:",
     "@oxc-project/types": "catalog:",
     "@standard-schema/spec": "catalog:",
-    "@unframework/diagnostics": "workspace:*",
-    "@unframework/ir": "workspace:*",
-    "@unframework/parser": "workspace:*",
+    "@unframework.dev/diagnostics": "workspace:*",
+    "@unframework.dev/ir": "workspace:*",
+    "@unframework.dev/parser": "workspace:*",
     "magic-string": "catalog:",
     "oxc-codegen": "catalog:",
     "oxfmt": "catalog:",
@@ -63,7 +63,7 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
-    "@unframework/analyzer": "workspace:*",
+    "@unframework.dev/analyzer": "workspace:*",
     "@uxfront/typescript-config": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "playwright": "catalog:",

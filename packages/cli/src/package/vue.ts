@@ -3,7 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import type { OutputFile } from "@unframework/compiler";
+import type { OutputFile } from "@unframework.dev/compiler";
 
 import type { Packager } from "./packager.ts";
 import {

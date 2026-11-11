@@ -1,5 +1,5 @@
 {
-  "name": "@unframework/compiler",
+  "name": "@unframework.dev/compiler",
   "version": "0.0.0",
   "private": true,
   "description": "The Unframework compiler: compile() turns one .uf.tsx source into native React, Vue, Svelte, Solid, Angular, Qwik and Astro components.",
@@ -52,19 +52,19 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@unframework/analyzer": "workspace:*",
-    "@unframework/codegen": "workspace:*",
-    "@unframework/diagnostics": "workspace:*",
-    "@unframework/ir": "workspace:*",
-    "@unframework/parser": "workspace:*",
-    "@unframework/target-angular": "workspace:*",
-    "@unframework/target-astro": "workspace:*",
-    "@unframework/target-qwik": "workspace:*",
-    "@unframework/target-react": "workspace:*",
-    "@unframework/target-solid": "workspace:*",
-    "@unframework/target-svelte": "workspace:*",
-    "@unframework/target-vue": "workspace:*",
-    "@unframework/type-oracle": "workspace:*"
+    "@unframework.dev/analyzer": "workspace:*",
+    "@unframework.dev/codegen": "workspace:*",
+    "@unframework.dev/diagnostics": "workspace:*",
+    "@unframework.dev/ir": "workspace:*",
+    "@unframework.dev/parser": "workspace:*",
+    "@unframework.dev/target-angular": "workspace:*",
+    "@unframework.dev/target-astro": "workspace:*",
+    "@unframework.dev/target-qwik": "workspace:*",
+    "@unframework.dev/target-react": "workspace:*",
+    "@unframework.dev/target-solid": "workspace:*",
+    "@unframework.dev/target-svelte": "workspace:*",
+    "@unframework.dev/target-vue": "workspace:*",
+    "@unframework.dev/type-oracle": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

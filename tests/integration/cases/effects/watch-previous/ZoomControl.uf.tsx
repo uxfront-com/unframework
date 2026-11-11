@@ -1,4 +1,4 @@
-import { ref, watch } from "unframework";
+import { ref, watch } from "@uxfront/unframework";
 
 export default function ZoomControl() {
   const zoom = ref(100);

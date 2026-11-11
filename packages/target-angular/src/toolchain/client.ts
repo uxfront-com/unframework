@@ -3,7 +3,7 @@
 import { createComponent, outputBinding, provideZonelessChangeDetection } from "@angular/core";
 import type { Binding, ComponentRef } from "@angular/core";
 import { createApplication } from "@angular/platform-browser";
-import type { MountAdapter, MountEvent, MountListener } from "@unframework/codegen";
+import type { MountAdapter, MountEvent, MountListener } from "@unframework.dev/codegen";
 
 import { outputName } from "../outputs.ts";
 import { angularComponent } from "./component.ts";

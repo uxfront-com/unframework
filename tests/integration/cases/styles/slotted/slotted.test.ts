@@ -2,7 +2,7 @@
 // caption the gallery fills into the frame's slot, which the gallery stamps with the frame's
 // `-s` attribute at compile time, and not the gallery's own caption outside the frame. A scoped
 // fill takes it too, and the fill of a `<component is>` takes the `-s` of each candidate.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Gallery from "./Gallery.uf.tsx";

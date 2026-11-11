@@ -1,7 +1,7 @@
 // styles/focus-visible: a scoped `:focus-visible` rule (ADR-0063), captured before and after
 // `view.user.tab` moves the keyboard's focus onto the button (ADR-0050), which draws the ring.
 // Astro runs no client code, so its keyboard test is skipped by capability.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Continue from "./Continue.uf.tsx";

@@ -14,6 +14,6 @@
       "column": 64,
       "offset": 248
     },
-    "help": "Write the type out with interfaces, aliases, unions and object types, or compile with the tsgo type oracle, `@unframework/type-oracle-tsgo`."
+    "help": "Write the type out with interfaces, aliases, unions and object types, or compile with the tsgo type oracle, `@unframework.dev/type-oracle-tsgo`."
   }
 ]

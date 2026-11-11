@@ -1,5 +1,5 @@
-import { defineTarget } from "@unframework/codegen";
-import { builtinTargets, TARGET_NAMES } from "@unframework/compiler";
+import { defineTarget } from "@unframework.dev/codegen";
+import { builtinTargets, TARGET_NAMES } from "@unframework.dev/compiler";
 import { describe, expect, it } from "vitest";
 
 import {

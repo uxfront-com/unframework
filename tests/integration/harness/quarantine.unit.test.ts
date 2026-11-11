@@ -1,5 +1,5 @@
-import { settleOutcome } from "@unframework/testing/node";
-import type { QuarantineEntry } from "@unframework/testing/node";
+import { settleOutcome } from "@unframework.dev/testing/node";
+import type { QuarantineEntry } from "@unframework.dev/testing/node";
 import { describe, expect, it } from "vitest";
 
 import { listCases } from "./cases.ts";

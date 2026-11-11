@@ -1,7 +1,7 @@
 // composables/getter-argument: getters passed to a composable are read reactively (ADR-0069): a
 // prop's getter gives its value on the first render and its new value after a rerender, and a
 // getter of the caller's state gives each new value after a write.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Basket from "./Basket.uf.tsx";

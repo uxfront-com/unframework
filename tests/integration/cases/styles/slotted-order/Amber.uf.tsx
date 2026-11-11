@@ -1,6 +1,6 @@
 import "./Amber.css";
-import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export default function Amber() {
   const slots = defineSlots<{ default?(): Element }>();

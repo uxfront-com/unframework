@@ -11,7 +11,7 @@ import { readFile as readText } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { Diagnostic } from "@unframework/diagnostics";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
 
 import { compile, createFileResolver, createSyntacticOracle } from "../../compiler/src/index.ts";
 import type { TargetName } from "../../compiler/src/index.ts";

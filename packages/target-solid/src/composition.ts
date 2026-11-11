@@ -19,8 +19,8 @@
 //   `useContext(Key) ?? fallback`. A key of a ref holds `refObject`, an object whose `value`
 //   getter reads the signal (`reactive-context`, emulated): written in place, because
 //   `solid/reactivity` (L5) reports a signal handed to a function there.
-import { childImports, keyImports, keyOwner, scopeRoots } from "@unframework/codegen";
-import type { ImportSet } from "@unframework/codegen";
+import { childImports, keyImports, keyOwner, scopeRoots } from "@unframework.dev/codegen";
+import type { ImportSet } from "@unframework.dev/codegen";
 import type {
   Binding,
   InjectionKeyDeclaration,
@@ -29,7 +29,7 @@ import type {
   TypeDeclaration,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { generatedInterface } from "./generics.ts";
 import type { GeneratedInterface } from "./generics.ts";

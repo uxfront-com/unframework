@@ -15,8 +15,8 @@ import {
   parseExpression,
   pascalCase,
   rewriteCode,
-} from "@unframework/codegen";
-import type { LiveOptions } from "@unframework/codegen";
+} from "@unframework.dev/codegen";
+import type { LiveOptions } from "@unframework.dev/codegen";
 import type {
   BindingId,
   Code,
@@ -30,7 +30,7 @@ import type {
   UfComponent,
   UfModule,
   UseItem,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { unreachable } from "./spelling.ts";
 import type { Spelling } from "./spelling.ts";

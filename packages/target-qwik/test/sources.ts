@@ -5,8 +5,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 
-import { formatOutput } from "@unframework/codegen";
-import type { ModuleApi } from "@unframework/ir";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { ModuleApi } from "@unframework.dev/ir";
 import type { Plugin } from "vite";
 
 import { analyze, componentImports } from "../../analyzer/src/index.ts";

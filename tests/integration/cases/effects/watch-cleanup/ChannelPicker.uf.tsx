@@ -1,4 +1,4 @@
-import { defineEmits, ref, watch } from "unframework";
+import { defineEmits, ref, watch } from "@uxfront/unframework";
 
 export default function ChannelPicker() {
   const emit = defineEmits<{ join: [channel: string]; leave: [channel: string] }>();

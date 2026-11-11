@@ -1,4 +1,4 @@
-import { computed, ref } from "unframework";
+import { computed, ref } from "@uxfront/unframework";
 
 import type { CounterProps } from "./types";
 

@@ -8,7 +8,7 @@ import {
   isBlockElement,
   isVoidElement,
   WHITESPACE_PRESERVING_ELEMENTS,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Attribute,
   ComponentAttribute,
@@ -33,7 +33,7 @@ import type {
   StyleAttribute,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { functionSource, handlerText } from "../functions.ts";
 import { parseExpression } from "../parse.ts";

@@ -1,6 +1,6 @@
 // slots/scoped: a list renders its scoped slot inside `.map`, with each item and its index
 // (ADR-0054). One fill destructures the slot's props, the other names them.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Ranking from "./Ranking.uf.tsx";

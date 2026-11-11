@@ -1,7 +1,7 @@
 // fallthrough/class-and-style: a consumer's `class` and `style` merge into the child's root
 // element (ADR-0054): the class tokens join, and the consumer's declaration wins where both set
 // a property. Toggling state updates what falls through.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Tags from "./Tags.uf.tsx";

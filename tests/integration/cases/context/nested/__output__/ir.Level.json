@@ -5,8 +5,8 @@
     {
       "name": "Level",
       "span": {
-        "start": 186,
-        "end": 520
+        "start": 204,
+        "end": 538
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 236,
-              "end": 242
+              "start": 254,
+              "end": 260
             }
           },
-          "binding": "title@218",
+          "binding": "title@236",
           "span": {
-            "start": 229,
-            "end": 242
+            "start": 247,
+            "end": 260
           }
         }
       ],
@@ -31,23 +31,23 @@
         "type": {
           "code": "{ title: string }",
           "span": {
-            "start": 227,
-            "end": 244
+            "start": 245,
+            "end": 262
           }
         },
         "span": {
-          "start": 216,
-          "end": 244
+          "start": 234,
+          "end": 262
         }
       },
       "types": [],
       "slots": {
-        "binding": "slots@256",
+        "binding": "slots@274",
         "type": {
           "code": "{ default?(): Element }",
           "span": {
-            "start": 276,
-            "end": 299
+            "start": 294,
+            "end": 317
           }
         },
         "slots": [
@@ -55,61 +55,61 @@
             "name": "default",
             "optional": true,
             "span": {
-              "start": 278,
-              "end": 297
+              "start": 296,
+              "end": 315
             }
           }
         ],
         "span": {
-          "start": 250,
-          "end": 303
+          "start": 268,
+          "end": 321
         }
       },
       "bindings": [
         {
-          "id": "title@218",
+          "id": "title@236",
           "name": "title",
           "kind": "prop",
           "span": {
-            "start": 218,
-            "end": 223
+            "start": 236,
+            "end": 241
           }
         },
         {
-          "id": "slots@256",
+          "id": "slots@274",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 256,
-            "end": 261
+            "start": 274,
+            "end": 279
           }
         },
         {
-          "id": "depth@312",
+          "id": "depth@330",
           "name": "depth",
           "kind": "context",
           "span": {
-            "start": 312,
-            "end": 317
+            "start": 330,
+            "end": 335
           }
         }
       ],
       "setup": [
         {
           "kind": "Inject",
-          "binding": "depth@312",
+          "binding": "depth@330",
           "key": "DepthKey",
           "fallback": {
             "code": "0",
             "span": {
-              "start": 337,
-              "end": 338
+              "start": 355,
+              "end": 356
             },
             "refs": []
           },
           "span": {
-            "start": 306,
-            "end": 340
+            "start": 324,
+            "end": 358
           }
         },
         {
@@ -118,23 +118,23 @@
           "value": {
             "code": "depth + 1",
             "span": {
-              "start": 361,
-              "end": 370
+              "start": 379,
+              "end": 388
             },
             "refs": [
               {
                 "kind": "Binding",
-                "binding": "depth@312",
+                "binding": "depth@330",
                 "span": {
-                  "start": 361,
-                  "end": 366
+                  "start": 379,
+                  "end": 384
                 }
               }
             ]
           },
           "span": {
-            "start": 343,
-            "end": 372
+            "start": 361,
+            "end": 390
           }
         }
       ],
@@ -148,23 +148,23 @@
             "value": {
               "code": "title",
               "span": {
-                "start": 409,
-                "end": 414
+                "start": 427,
+                "end": 432
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "title@218",
+                  "binding": "title@236",
                   "span": {
-                    "start": 409,
-                    "end": 414
+                    "start": 427,
+                    "end": 432
                   }
                 }
               ]
             },
             "span": {
-              "start": 397,
-              "end": 415
+              "start": 415,
+              "end": 433
             }
           }
         ],
@@ -179,31 +179,31 @@
                 "value": {
                   "code": "title",
                   "span": {
-                    "start": 437,
-                    "end": 442
+                    "start": 455,
+                    "end": 460
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "title@218",
+                      "binding": "title@236",
                       "span": {
-                        "start": 437,
-                        "end": 442
+                        "start": 455,
+                        "end": 460
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 436,
-                  "end": 443
+                  "start": 454,
+                  "end": 461
                 }
               },
               {
                 "kind": "Text",
                 "value": " at depth ",
                 "span": {
-                  "start": 443,
-                  "end": 453
+                  "start": 461,
+                  "end": 471
                 }
               },
               {
@@ -211,29 +211,29 @@
                 "value": {
                   "code": "depth",
                   "span": {
-                    "start": 454,
-                    "end": 459
+                    "start": 472,
+                    "end": 477
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "depth@312",
+                      "binding": "depth@330",
                       "span": {
-                        "start": 454,
-                        "end": 459
+                        "start": 472,
+                        "end": 477
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 453,
-                  "end": 460
+                  "start": 471,
+                  "end": 478
                 }
               }
             ],
             "span": {
-              "start": 423,
-              "end": 472
+              "start": 441,
+              "end": 490
             }
           },
           {
@@ -241,14 +241,14 @@
             "slot": "default",
             "fallback": [],
             "span": {
-              "start": 479,
-              "end": 498
+              "start": 497,
+              "end": 516
             }
           }
         ],
         "span": {
-          "start": 388,
-          "end": 513
+          "start": 406,
+          "end": 531
         }
       }
     }
@@ -259,8 +259,8 @@
       "name": "default",
       "local": "Level",
       "span": {
-        "start": 186,
-        "end": 520
+        "start": 204,
+        "end": 538
       }
     }
   ],
@@ -272,13 +272,13 @@
       "type": {
         "code": "number",
         "span": {
-          "start": 155,
-          "end": 161
+          "start": 173,
+          "end": 179
         }
       },
       "span": {
-        "start": 119,
-        "end": 184
+        "start": 137,
+        "end": 202
       }
     }
   ]

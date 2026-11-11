@@ -2,7 +2,7 @@
 // file (ADR-0053). It passes a static prop, a bound one and leaves another to its default, and
 // listens to the child's event with a local function and with an arrow function. The parent
 // shows the payload it received.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Form from "./Form.uf.tsx";

@@ -19,8 +19,8 @@ import {
   createSlotOutlet,
   createText,
   span,
-} from "@unframework/ir";
-import type { ComponentApi, UfComponent } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { ComponentApi, UfComponent } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { styled } from "../../ir/test/fixtures.ts";

@@ -1,5 +1,5 @@
 // The toolchain contract (plan §5.7): what tests and tooling need to build, check and run a
-// target's output. A target ships it as `@unframework/<target>/toolchain` (Node),
+// target's output. A target ships it as `@unframework.dev/<target>/toolchain` (Node),
 // `…/toolchain/client` (the browser mount adapter) and `…/toolchain/server` (the SSR
 // renderer). Types only: nothing here runs, and the target's main entry never imports it.
 import type { Plugin, UserConfig } from "vite";

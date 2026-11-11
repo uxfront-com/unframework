@@ -1,6 +1,6 @@
 // What a component branded by the content mapper (TypedComponent) gets: exact props. This simulates
 // the mapper's virtual output by hand, so layer 3 stays pinned even before the mapper exists.
-import type { TypedComponent } from "unframework";
+import type { TypedComponent } from "@uxfront/unframework";
 
 interface PickerProps {
   label: string;

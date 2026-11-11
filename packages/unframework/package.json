@@ -1,5 +1,5 @@
 {
-  "name": "unframework",
+  "name": "@uxfront/unframework",
   "version": "0.0.0",
   "private": true,
   "description": "Write a component once, get native React, Vue, Svelte, Solid, Angular, Qwik and Astro: the authoring API and JSX types for .uf.tsx components.",
@@ -70,8 +70,8 @@
     "vendor:jsx": "node scripts/vendor-jsx.ts"
   },
   "dependencies": {
-    "@unframework/cli": "workspace:*",
-    "@unframework/compiler": "workspace:*",
+    "@unframework.dev/cli": "workspace:*",
+    "@unframework.dev/compiler": "workspace:*",
     "csstype": "catalog:"
   },
   "devDependencies": {

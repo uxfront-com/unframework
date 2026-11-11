@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
-import { DOM_EVENTS } from "@unframework/ir";
+import { DOM_EVENTS } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { DELEGATED_EVENTS, SOLID_EVENT_PROPS } from "../src/listeners.ts";
@@ -64,7 +64,7 @@ describe("solid's event table", () => {
 
 /** A component that records lines in its state, with `setup` before its return of `jsx`. */
 function probe(setup: string, jsx: string): string {
-  return `import { ref, useTemplateRef } from "unframework";\n\nexport default function Probe() {\n  const log = ref<string[]>([]);\n${setup}\n  function record(line: string) {\n    log.value = [...log.value, line];\n  }\n\n  return (\n    ${jsx}\n  );\n}\n`;
+  return `import { ref, useTemplateRef } from "@uxfront/unframework";\n\nexport default function Probe() {\n  const log = ref<string[]>([]);\n${setup}\n  function record(line: string) {\n    log.value = [...log.value, line];\n  }\n\n  return (\n    ${jsx}\n  );\n}\n`;
 }
 
 describe("solid listeners (src/listeners.ts)", () => {

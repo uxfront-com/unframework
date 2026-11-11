@@ -209,5 +209,5 @@ export {
   sourceNames,
   typeNames,
 } from "./names.ts";
-export type { Diagnostic, DiagnosticCode } from "@unframework/diagnostics";
+export type { Diagnostic, DiagnosticCode } from "@unframework.dev/diagnostics";
 export type * from "./toolchain.ts";

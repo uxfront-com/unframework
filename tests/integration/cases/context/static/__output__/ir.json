@@ -5,8 +5,8 @@
     {
       "name": "ThemeProvider",
       "span": {
-        "start": 255,
-        "end": 446
+        "start": 273,
+        "end": 464
       },
       "props": [],
       "types": [
@@ -20,14 +20,14 @@
           "value": {
             "code": "{ accent: \"teal\", label: \"Teal\" }",
             "span": {
-              "start": 317,
-              "end": 350
+              "start": 335,
+              "end": 368
             },
             "refs": []
           },
           "span": {
-            "start": 299,
-            "end": 352
+            "start": 317,
+            "end": 370
           }
         }
       ],
@@ -40,8 +40,8 @@
             "name": "aria-label",
             "value": "Themed",
             "span": {
-              "start": 377,
-              "end": 396
+              "start": 395,
+              "end": 414
             }
           }
         ],
@@ -56,27 +56,27 @@
                 "value": {
                   "code": "\"New\"",
                   "span": {
-                    "start": 416,
-                    "end": 421
+                    "start": 434,
+                    "end": 439
                   },
                   "refs": []
                 },
                 "span": {
-                  "start": 411,
-                  "end": 421
+                  "start": 429,
+                  "end": 439
                 }
               }
             ],
             "fills": [],
             "span": {
-              "start": 404,
-              "end": 424
+              "start": 422,
+              "end": 442
             }
           }
         ],
         "span": {
-          "start": 368,
-          "end": 439
+          "start": 386,
+          "end": 457
         }
       }
     }
@@ -87,8 +87,8 @@
       "name": "default",
       "local": "ThemeProvider",
       "span": {
-        "start": 255,
-        "end": 446
+        "start": 273,
+        "end": 464
       }
     }
   ],
@@ -98,8 +98,8 @@
       "exported": true,
       "code": "interface Theme {\n  accent: string;\n  label: string;\n}",
       "span": {
-        "start": 133,
-        "end": 187
+        "start": 151,
+        "end": 205
       }
     }
   ],
@@ -137,14 +137,14 @@
           "imported": "default",
           "local": "Badge",
           "span": {
-            "start": 96,
-            "end": 101
+            "start": 114,
+            "end": 119
           }
         }
       ],
       "span": {
-        "start": 89,
-        "end": 124
+        "start": 107,
+        "end": 142
       }
     }
   ],
@@ -155,13 +155,13 @@
       "type": {
         "code": "Theme",
         "span": {
-          "start": 225,
-          "end": 230
+          "start": 243,
+          "end": 248
         }
       },
       "span": {
-        "start": 189,
-        "end": 253
+        "start": 207,
+        "end": 271
       }
     }
   ]

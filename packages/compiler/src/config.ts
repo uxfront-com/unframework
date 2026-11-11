@@ -4,9 +4,9 @@ import { existsSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { closest } from "@unframework/analyzer";
-import { createDiagnostic } from "@unframework/diagnostics";
-import type { Diagnostic, DiagnosticCode } from "@unframework/diagnostics";
+import { closest } from "@unframework.dev/analyzer";
+import { createDiagnostic } from "@unframework.dev/diagnostics";
+import type { Diagnostic, DiagnosticCode } from "@unframework.dev/diagnostics";
 
 import type { PackageConfig, TargetName } from "./config-types.ts";
 import { builtinTargets, TARGET_NAMES } from "./targets.ts";

@@ -2,7 +2,7 @@
 // the composable's ref and derived value after it, and sees the write (semantics contract, read
 // after write, across a composable's boundary, ADR-0069). React's caller reads them through the
 // hook's live readers, never the render's values.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Cart from "./Cart.uf.tsx";

@@ -7,12 +7,12 @@
     "start": {
       "line": 13,
       "column": 5,
-      "offset": 553
+      "offset": 562
     },
     "end": {
       "line": 15,
       "column": 7,
-      "offset": 630
+      "offset": 639
     },
     "help": "Make the function `async`, `await nextTick()`, and write the callback's code after it.",
     "fixes": [
@@ -22,15 +22,15 @@
         "edits": [
           {
             "span": {
-              "start": 508,
-              "end": 508
+              "start": 517,
+              "end": 517
             },
             "text": "async "
           },
           {
             "span": {
-              "start": 553,
-              "end": 631
+              "start": 562,
+              "end": 640
             },
             "text": "await nextTick();\n    emit(\"copied\", label.value?.textContent ?? \"\");"
           }

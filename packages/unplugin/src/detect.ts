@@ -3,8 +3,8 @@
 // framework plugins' own: none of them is a dependency of this package.
 import { readFileSync, realpathSync, statSync } from "node:fs";
 
-import type { TargetName } from "@unframework/compiler";
-import { createDiagnostic, formatDiagnostic } from "@unframework/diagnostics";
+import type { TargetName } from "@unframework.dev/compiler";
+import { createDiagnostic, formatDiagnostic } from "@unframework.dev/diagnostics";
 
 /** What these checks read of a Vite plugin. */
 interface NamedPlugin {

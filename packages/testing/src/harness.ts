@@ -1,8 +1,8 @@
 // What the integration harness provides to every project (`test.provide`), so the browser API,
 // the browser commands and the Node drivers agree on the cases, the mode and the write policy.
 // Types only, plus pure helpers: the values are computed once per run in Node
-// (`createHarnessRun` in `@unframework/testing/node`).
-import type { Capabilities } from "@unframework/codegen";
+// (`createHarnessRun` in `@unframework.dev/testing/node`).
+import type { Capabilities } from "@unframework.dev/codegen";
 
 import type { QuarantineEntry } from "./layers.ts";
 

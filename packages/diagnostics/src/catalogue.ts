@@ -1,3 +1,4 @@
+import { AUTHORING_PACKAGE } from "./authoring-package.ts";
 import type { DiagnosticCode, Severity } from "./types.ts";
 
 /** The documentation of one diagnostic code. */
@@ -184,10 +185,10 @@ const entries: CatalogueEntry[] = [
       "compiler writes each framework's code for you: hooks in React, refs in Vue, runes in",
       "Svelte, signals in Solid.",
       "",
-      "Write the component with the authoring API from `unframework` instead:",
+      `Write the component with the authoring API from \`${AUTHORING_PACKAGE}\` instead:`,
       "",
       "```tsx",
-      'import { ref } from "unframework";',
+      `import { ref } from "${AUTHORING_PACKAGE}";`,
       "",
       "export default function Counter() {",
       "  const count = ref(0);",
@@ -250,7 +251,7 @@ const entries: CatalogueEntry[] = [
     description: [
       "A component may read values and types from a relative `.ts` module, which the compiler copies",
       "into every output tree unchanged (ADR-0070). Every framework's output loads that copy, so it",
-      "cannot import a framework, or `unframework`, whose authoring API exists only in `.uf.tsx` and",
+      `cannot import a framework, or \`${AUTHORING_PACKAGE}\`, whose authoring API exists only in \`.uf.tsx\` and`,
       "`.uf.ts` files. This one does, itself or through another `.ts` module it imports. The diagnostic",
       "points at the component's import of the shared module, and the component is compiled for no",
       "target.",
@@ -694,12 +695,12 @@ const entries: CatalogueEntry[] = [
     severity: "error",
     title: "The import is not part of unframework's API",
     description: [
-      'A component imports the authoring API by name from `"unframework"`: `ref`, `computed`,',
+      `A component imports the authoring API by name from \`"${AUTHORING_PACKAGE}"\`: \`ref\`, \`computed\`,`,
       "`watch`, `watchEffect`, `onMounted`, `onUnmounted`, `nextTick`, `defineEmits`,",
       "`defineModel`, `defineSlots`, `defineExpose`, `defineOptions`, `provide`, `inject`,",
       "`useTemplateRef` and `useId`, and the package's types. The compiler recognises each API by the",
       "binding its import declares, and erases the import, so a namespace or a default import, an",
-      "import that imports nothing, a value imported from a subpath (`unframework/jsx-runtime` holds",
+      `import that imports nothing, a value imported from a subpath (\`${AUTHORING_PACKAGE}/jsx-runtime\` holds`,
       "types only) and a name the package does not export as an API mean nothing.",
       "",
       "Vue's APIs that unframework writes another way are reported with their canonical form:",
@@ -762,7 +763,7 @@ const entries: CatalogueEntry[] = [
     severity: "error",
     title: "A copied annotation names an authoring type",
     description: [
-      'The compiler erases the import from `"unframework"`, and copies the annotations of setup code',
+      `The compiler erases the import from \`"${AUTHORING_PACKAGE}"\`, and copies the annotations of setup code`,
       "and props into the outputs, where nothing declares `Ref`, `OnCleanup` or the package's other",
       "types: an output that copied one would not type-check.",
       "",
@@ -1138,7 +1139,7 @@ const entries: CatalogueEntry[] = [
       "shorthand object of the state, derived values, functions and constants a caller may use.",
       "",
       "```ts",
-      'import { ref } from "unframework";',
+      `import { ref } from "${AUTHORING_PACKAGE}";`,
       "",
       "export function useToggle(initial: boolean) {",
       "  const on = ref(initial);",
@@ -2472,7 +2473,7 @@ const entries: CatalogueEntry[] = [
       "reports them at their span rather than guess.",
       "",
       "Write the type with the constructs above, or compile with the tsgo type oracle,",
-      "`@unframework/type-oracle-tsgo`, which resolves every construct through TypeScript.",
+      "`@unframework.dev/type-oracle-tsgo`, which resolves every construct through TypeScript.",
     ].join("\n"),
   },
   {
@@ -2559,7 +2560,7 @@ const entries: CatalogueEntry[] = [
       "by JSON Pointer.",
       "",
       "Fix the field, or remove it. Write the configuration with `defineConfig` from",
-      "`unframework/config`: its types let an editor flag a wrong field as you write it.",
+      `\`${AUTHORING_PACKAGE}/config\`: its types let an editor flag a wrong field as you write it.`,
     ].join("\n"),
   },
   {

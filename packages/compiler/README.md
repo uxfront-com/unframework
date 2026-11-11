@@ -1,9 +1,9 @@
-# @unframework/compiler
+# @unframework.dev/compiler
 
 The Unframework compiler (plan §5.1):
 
 ```ts
-import { compile } from "@unframework/compiler";
+import { compile } from "@unframework.dev/compiler";
 
 const result = await compile(source, {
   filename: "src/Hello.uf.tsx",
@@ -31,7 +31,7 @@ the scope id its API carries, and caches by their text too: a sheet it cannot re
 The resolver's `module` reads each shared `.ts` module the source imports or re-exports from, a
 type re-export alone included (ADR-0070), a specifier without an extension naming its `.ts`, and
 `createFileResolver` follows its relative imports through every `.ts` module they reach, each
-once, noting the first framework or `unframework` import (UF1204) and the first relative import it
+once, noting the first framework or `@uxfront/unframework` import (UF1204) and the first relative import it
 cannot read (UF1202). A value import of a module it
 cannot read, or without a resolver, is UF1202. Each output tree beside a component's files holds a
 copy of every module the source reaches, unchanged, at its path relative to the source: neither
@@ -137,7 +137,7 @@ and the hook's result is dropped.
 bundler plugin doesn't call them: it takes explicit options.
 
 ```ts
-import { loadConfig, resolveConfig } from "@unframework/compiler";
+import { loadConfig, resolveConfig } from "@unframework.dev/compiler";
 
 async function readConfig(root: string) {
   const loaded = await loadConfig(root);

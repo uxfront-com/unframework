@@ -7,12 +7,12 @@
     "start": {
       "line": 11,
       "column": 40,
-      "offset": 325
+      "offset": 334
     },
     "end": {
       "line": 11,
       "column": 44,
-      "offset": 329
+      "offset": 338
     },
     "target": "qwik"
   },
@@ -24,12 +24,12 @@
     "start": {
       "line": 13,
       "column": 3,
-      "offset": 349
+      "offset": 358
     },
     "end": {
       "line": 18,
       "column": 5,
-      "offset": 451
+      "offset": 460
     },
     "target": "astro"
   }

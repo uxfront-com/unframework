@@ -14,9 +14,9 @@ import { createRequire } from "node:module";
 import { dirname, join, relative, sep } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 
-import type { OutputFile, ResolvedConfig, TargetName } from "@unframework/compiler";
-import { createDiagnostic } from "@unframework/diagnostics";
-import type { Diagnostic, DiagnosticCode } from "@unframework/diagnostics";
+import type { OutputFile, ResolvedConfig, TargetName } from "@unframework.dev/compiler";
+import { createDiagnostic } from "@unframework.dev/diagnostics";
+import type { Diagnostic, DiagnosticCode } from "@unframework.dev/diagnostics";
 
 import { angular } from "./angular.ts";
 import { astro } from "./astro.ts";

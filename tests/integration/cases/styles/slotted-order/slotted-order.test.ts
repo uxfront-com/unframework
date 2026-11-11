@@ -3,7 +3,7 @@
 // `:slotted(.caption)` rules, of equal specificity, both match it, and the sheet that loads later
 // sets its colour. Every target that loads sheets in import order must load the children's in the
 // reference's order; Angular and Qwik load them in render order, and skip (`sheet-order`).
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Shelf from "./Shelf.uf.tsx";

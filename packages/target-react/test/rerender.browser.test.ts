@@ -2,7 +2,7 @@
 // again with new props through the toolchain's adapter, updates its text, an attribute, a
 // branch and a list, and a prop the new props lack takes its default again. The adapter
 // settles before it resolves, so the DOM is read at once, and nothing is logged.
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { createElement } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 

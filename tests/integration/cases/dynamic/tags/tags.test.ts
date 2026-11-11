@@ -1,6 +1,6 @@
 // dynamic/tags: `<component is={nested.value ? "h3" : "h2"}>` renders one of two tags (ADR-0054),
 // with the class and the text on whichever it renders, and switches when the condition does.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Section from "./Section.uf.tsx";

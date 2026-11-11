@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 
-import { docsUrl, lookup } from "@unframework/diagnostics";
+import { docsUrl, lookup } from "@unframework.dev/diagnostics";
 
 import type { RunCommand } from "./command.ts";
 

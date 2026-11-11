@@ -4,7 +4,7 @@
 // toolchain's adapter. The corpus checks the same contract on every target (L8, L9); these tests
 // pin React's shapes on what the corpus does not reach: a listener changed by a rerender,
 // StrictMode's second mount, nothing logged, and an app's render without `act`.
-import type { MountedComponent, MountListener } from "@unframework/codegen";
+import type { MountedComponent, MountListener } from "@unframework.dev/codegen";
 import { act as reactAct, createElement, StrictMode } from "react";
 import type { ComponentType } from "react";
 import { createRoot } from "react-dom/client";

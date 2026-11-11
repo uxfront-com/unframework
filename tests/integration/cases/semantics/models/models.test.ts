@@ -2,7 +2,7 @@
 // (`v-model:open`) and unbound beside it. Bound, it shows the parent's value, and its own write
 // changes the parent's state; unbound, it keeps local state seeded by its `default`, which no
 // write of the parent's reaches.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Panels from "./Panels.uf.tsx";

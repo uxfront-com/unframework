@@ -3,7 +3,7 @@
 // click removed (React keys nested branches apart). A branch narrowed by `!== null` on a state
 // reads the narrowed value's member, and a handler in a branch narrowed on a prop reads the
 // narrowed prop.
-import { describeTargets, it, mount, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mount, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import AccountMenu from "./AccountMenu.uf.tsx";

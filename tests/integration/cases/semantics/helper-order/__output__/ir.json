@@ -5,18 +5,18 @@
     {
       "name": "NameSorter",
       "span": {
-        "start": 77,
-        "end": 1423
+        "start": 86,
+        "end": 1432
       },
       "props": [],
       "types": [],
       "emits": {
-        "binding": "emit@124",
+        "binding": "emit@133",
         "type": {
           "code": "{\n    started: [text: string];\n    firstSeen: [text: string];\n    secondSeen: [count: number];\n    total: [letters: number];\n  }",
           "span": {
-            "start": 143,
-            "end": 271
+            "start": 152,
+            "end": 280
           }
         },
         "events": [
@@ -28,19 +28,19 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 165,
-                    "end": 171
+                    "start": 174,
+                    "end": 180
                   }
                 },
                 "span": {
-                  "start": 159,
-                  "end": 171
+                  "start": 168,
+                  "end": 180
                 }
               }
             ],
             "span": {
-              "start": 149,
-              "end": 172
+              "start": 158,
+              "end": 181
             }
           },
           {
@@ -51,19 +51,19 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 196,
-                    "end": 202
+                    "start": 205,
+                    "end": 211
                   }
                 },
                 "span": {
-                  "start": 190,
-                  "end": 202
+                  "start": 199,
+                  "end": 211
                 }
               }
             ],
             "span": {
-              "start": 178,
-              "end": 203
+              "start": 187,
+              "end": 212
             }
           },
           {
@@ -74,19 +74,19 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 229,
-                    "end": 235
+                    "start": 238,
+                    "end": 244
                   }
                 },
                 "span": {
-                  "start": 222,
-                  "end": 235
+                  "start": 231,
+                  "end": 244
                 }
               }
             ],
             "span": {
-              "start": 209,
-              "end": 236
+              "start": 218,
+              "end": 245
             }
           },
           {
@@ -97,151 +97,151 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 259,
-                    "end": 265
+                    "start": 268,
+                    "end": 274
                   }
                 },
                 "span": {
-                  "start": 250,
-                  "end": 265
+                  "start": 259,
+                  "end": 274
                 }
               }
             ],
             "span": {
-              "start": 242,
-              "end": 266
+              "start": 251,
+              "end": 275
             }
           }
         ],
         "span": {
-          "start": 118,
-          "end": 275
+          "start": 127,
+          "end": 284
         }
       },
       "bindings": [
         {
-          "id": "emit@124",
+          "id": "emit@133",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 124,
-            "end": 128
+            "start": 133,
+            "end": 137
           }
         },
         {
-          "id": "names@285",
+          "id": "names@294",
           "name": "names",
           "kind": "state",
           "span": {
-            "start": 285,
-            "end": 290
+            "start": 294,
+            "end": 299
           }
         },
         {
-          "id": "count@354",
+          "id": "count@363",
           "name": "count",
           "kind": "state",
           "span": {
-            "start": 354,
-            "end": 359
+            "start": 363,
+            "end": 368
           }
         },
         {
-          "id": "doubled@639",
+          "id": "doubled@648",
           "name": "doubled",
           "kind": "derived",
           "span": {
-            "start": 639,
-            "end": 646
+            "start": 648,
+            "end": 655
           }
         },
         {
-          "id": "letters@690",
+          "id": "letters@699",
           "name": "letters",
           "kind": "derived",
           "span": {
-            "start": 690,
-            "end": 697
+            "start": 699,
+            "end": 706
           }
         },
         {
-          "id": "compare@757",
+          "id": "compare@766",
           "name": "compare",
           "kind": "localFn",
           "span": {
-            "start": 757,
-            "end": 764
+            "start": 766,
+            "end": 773
           }
         },
         {
-          "id": "describe@852",
+          "id": "describe@861",
           "name": "describe",
           "kind": "localFn",
           "span": {
-            "start": 852,
-            "end": 860
+            "start": 861,
+            "end": 869
           }
         },
         {
-          "id": "add@928",
+          "id": "add@937",
           "name": "add",
           "kind": "localFn",
           "span": {
-            "start": 928,
-            "end": 931
+            "start": 937,
+            "end": 940
           }
         },
         {
-          "id": "report@1046",
+          "id": "report@1055",
           "name": "report",
           "kind": "localFn",
           "span": {
-            "start": 1046,
-            "end": 1052
+            "start": 1055,
+            "end": 1061
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "names@285",
+          "binding": "names@294",
           "initial": {
             "code": "[\"Cy\", \"Al\"].toSorted((a, b) => compare(a, b))",
             "span": {
-              "start": 297,
-              "end": 343
+              "start": 306,
+              "end": 352
             },
             "refs": [
               {
                 "kind": "Binding",
-                "binding": "compare@757",
+                "binding": "compare@766",
                 "span": {
-                  "start": 329,
-                  "end": 336
+                  "start": 338,
+                  "end": 345
                 },
                 "call": true
               }
             ]
           },
           "span": {
-            "start": 279,
-            "end": 345
+            "start": 288,
+            "end": 354
           }
         },
         {
           "kind": "State",
-          "binding": "count@354",
+          "binding": "count@363",
           "initial": {
             "code": "0",
             "span": {
-              "start": 366,
-              "end": 367
+              "start": 375,
+              "end": 376
             },
             "refs": []
           },
           "span": {
-            "start": 348,
-            "end": 369
+            "start": 357,
+            "end": 378
           }
         },
         {
@@ -252,44 +252,44 @@
             "body": {
               "code": "{\n    emit(\"started\", `first ${describe()}`);\n  }",
               "span": {
-                "start": 389,
-                "end": 438
+                "start": 398,
+                "end": 447
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@124",
+                  "binding": "emit@133",
                   "event": "started",
                   "span": {
-                    "start": 395,
-                    "end": 433
+                    "start": 404,
+                    "end": 442
                   },
                   "arguments": [
                     {
-                      "start": 411,
-                      "end": 432
+                      "start": 420,
+                      "end": 441
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "describe@852",
+                  "binding": "describe@861",
                   "span": {
-                    "start": 420,
-                    "end": 428
+                    "start": 429,
+                    "end": 437
                   },
                   "call": true
                 }
               ]
             },
             "span": {
-              "start": 383,
-              "end": 438
+              "start": 392,
+              "end": 447
             }
           },
           "span": {
-            "start": 373,
-            "end": 440
+            "start": 382,
+            "end": 449
           }
         },
         {
@@ -300,35 +300,35 @@
             "body": {
               "code": "{\n    emit(\"started\", \"second\");\n  }",
               "span": {
-                "start": 460,
-                "end": 496
+                "start": 469,
+                "end": 505
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@124",
+                  "binding": "emit@133",
                   "event": "started",
                   "span": {
-                    "start": 466,
-                    "end": 491
+                    "start": 475,
+                    "end": 500
                   },
                   "arguments": [
                     {
-                      "start": 482,
-                      "end": 490
+                      "start": 491,
+                      "end": 499
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 454,
-              "end": 496
+              "start": 463,
+              "end": 505
             }
           },
           "span": {
-            "start": 444,
-            "end": 498
+            "start": 453,
+            "end": 507
           }
         },
         {
@@ -336,10 +336,10 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "count@354",
+              "binding": "count@363",
               "span": {
-                "start": 508,
-                "end": 513
+                "start": 517,
+                "end": 522
               }
             }
           ],
@@ -348,44 +348,44 @@
             "body": {
               "code": "{\n    emit(\"firstSeen\", describe());\n  }",
               "span": {
-                "start": 521,
-                "end": 561
+                "start": 530,
+                "end": 570
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@124",
+                  "binding": "emit@133",
                   "event": "firstSeen",
                   "span": {
-                    "start": 527,
-                    "end": 556
+                    "start": 536,
+                    "end": 565
                   },
                   "arguments": [
                     {
-                      "start": 545,
-                      "end": 555
+                      "start": 554,
+                      "end": 564
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "describe@852",
+                  "binding": "describe@861",
                   "span": {
-                    "start": 545,
-                    "end": 553
+                    "start": 554,
+                    "end": 562
                   },
                   "call": true
                 }
               ]
             },
             "span": {
-              "start": 515,
-              "end": 561
+              "start": 524,
+              "end": 570
             }
           },
           "span": {
-            "start": 502,
-            "end": 563
+            "start": 511,
+            "end": 572
           }
         },
         {
@@ -393,10 +393,10 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "count@354",
+              "binding": "count@363",
               "span": {
-                "start": 573,
-                "end": 578
+                "start": 582,
+                "end": 587
               }
             }
           ],
@@ -405,114 +405,114 @@
               {
                 "name": "value",
                 "span": {
-                  "start": 581,
-                  "end": 586
+                  "start": 590,
+                  "end": 595
                 }
               }
             ],
             "body": {
               "code": "{\n    emit(\"secondSeen\", value);\n  }",
               "span": {
-                "start": 591,
-                "end": 627
+                "start": 600,
+                "end": 636
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@124",
+                  "binding": "emit@133",
                   "event": "secondSeen",
                   "span": {
-                    "start": 597,
-                    "end": 622
+                    "start": 606,
+                    "end": 631
                   },
                   "arguments": [
                     {
-                      "start": 616,
-                      "end": 621
+                      "start": 625,
+                      "end": 630
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 580,
-              "end": 627
+              "start": 589,
+              "end": 636
             }
           },
           "span": {
-            "start": 567,
-            "end": 629
+            "start": 576,
+            "end": 638
           }
         },
         {
           "kind": "Derived",
-          "binding": "doubled@639",
+          "binding": "doubled@648",
           "getter": {
             "parameters": [],
             "body": {
               "code": "count.value * 2",
               "span": {
-                "start": 664,
-                "end": 679
+                "start": 673,
+                "end": 688
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "count@354",
+                  "binding": "count@363",
                   "span": {
-                    "start": 664,
-                    "end": 675
+                    "start": 673,
+                    "end": 684
                   }
                 }
               ]
             },
             "expression": true,
             "span": {
-              "start": 658,
-              "end": 679
+              "start": 667,
+              "end": 688
             }
           },
           "span": {
-            "start": 633,
-            "end": 681
+            "start": 642,
+            "end": 690
           }
         },
         {
           "kind": "Derived",
-          "binding": "letters@690",
+          "binding": "letters@699",
           "getter": {
             "parameters": [],
             "body": {
               "code": "names.value.join(\"\").length",
               "span": {
-                "start": 715,
-                "end": 742
+                "start": 724,
+                "end": 751
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "names@285",
+                  "binding": "names@294",
                   "span": {
-                    "start": 715,
-                    "end": 726
+                    "start": 724,
+                    "end": 735
                   }
                 }
               ]
             },
             "expression": true,
             "span": {
-              "start": 709,
-              "end": 742
+              "start": 718,
+              "end": 751
             }
           },
           "span": {
-            "start": 684,
-            "end": 744
+            "start": 693,
+            "end": 753
           }
         },
         {
           "kind": "Function",
-          "binding": "compare@757",
+          "binding": "compare@766",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -521,13 +521,13 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 768,
-                    "end": 774
+                    "start": 777,
+                    "end": 783
                   }
                 },
                 "span": {
-                  "start": 765,
-                  "end": 774
+                  "start": 774,
+                  "end": 783
                 }
               },
               {
@@ -535,84 +535,84 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 779,
-                    "end": 785
+                    "start": 788,
+                    "end": 794
                   }
                 },
                 "span": {
-                  "start": 776,
-                  "end": 785
+                  "start": 785,
+                  "end": 794
                 }
               }
             ],
             "returnType": {
               "code": "number",
               "span": {
-                "start": 788,
-                "end": 794
+                "start": 797,
+                "end": 803
               }
             },
             "body": {
               "code": "{\n    return a < b ? -1 : a > b ? 1 : 0;\n  }",
               "span": {
-                "start": 795,
-                "end": 839
+                "start": 804,
+                "end": 848
               },
               "refs": []
             },
             "span": {
-              "start": 764,
-              "end": 839
+              "start": 773,
+              "end": 848
             }
           },
           "span": {
-            "start": 748,
-            "end": 839
+            "start": 757,
+            "end": 848
           }
         },
         {
           "kind": "Function",
-          "binding": "describe@852",
+          "binding": "describe@861",
           "form": "declaration",
           "function": {
             "parameters": [],
             "returnType": {
               "code": "string",
               "span": {
-                "start": 864,
-                "end": 870
+                "start": 873,
+                "end": 879
               }
             },
             "body": {
               "code": "{\n    return `doubled ${doubled.value}`;\n  }",
               "span": {
-                "start": 871,
-                "end": 915
+                "start": 880,
+                "end": 924
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "doubled@639",
+                  "binding": "doubled@648",
                   "span": {
-                    "start": 895,
-                    "end": 908
+                    "start": 904,
+                    "end": 917
                   }
                 }
               ]
             },
             "span": {
-              "start": 860,
-              "end": 915
+              "start": 869,
+              "end": 924
             }
           },
           "span": {
-            "start": 843,
-            "end": 915
+            "start": 852,
+            "end": 924
           }
         },
         {
           "kind": "Function",
-          "binding": "add@928",
+          "binding": "add@937",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -621,131 +621,131 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 938,
-                    "end": 944
+                    "start": 947,
+                    "end": 953
                   }
                 },
                 "span": {
-                  "start": 932,
-                  "end": 944
+                  "start": 941,
+                  "end": 953
                 }
               }
             ],
             "body": {
               "code": "{\n    names.value = [...names.value, name].toSorted(compare);\n    count.value += 1;\n  }",
               "span": {
-                "start": 946,
-                "end": 1033
+                "start": 955,
+                "end": 1042
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "names@285",
+                  "binding": "names@294",
                   "operator": "=",
                   "span": {
-                    "start": 952,
-                    "end": 1006
+                    "start": 961,
+                    "end": 1015
                   },
                   "target": {
-                    "start": 952,
-                    "end": 963
+                    "start": 961,
+                    "end": 972
                   },
                   "value": {
-                    "start": 966,
-                    "end": 1006
+                    "start": 975,
+                    "end": 1015
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "names@285",
+                  "binding": "names@294",
                   "span": {
-                    "start": 970,
-                    "end": 981
+                    "start": 979,
+                    "end": 990
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "compare@757",
+                  "binding": "compare@766",
                   "span": {
-                    "start": 998,
-                    "end": 1005
+                    "start": 1007,
+                    "end": 1014
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "count@354",
+                  "binding": "count@363",
                   "operator": "+=",
                   "span": {
-                    "start": 1012,
-                    "end": 1028
+                    "start": 1021,
+                    "end": 1037
                   },
                   "target": {
-                    "start": 1012,
-                    "end": 1023
+                    "start": 1021,
+                    "end": 1032
                   },
                   "value": {
-                    "start": 1027,
-                    "end": 1028
+                    "start": 1036,
+                    "end": 1037
                   }
                 }
               ]
             },
             "span": {
-              "start": 931,
-              "end": 1033
+              "start": 940,
+              "end": 1042
             }
           },
           "span": {
-            "start": 919,
-            "end": 1033
+            "start": 928,
+            "end": 1042
           }
         },
         {
           "kind": "Function",
-          "binding": "report@1046",
+          "binding": "report@1055",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    emit(\"total\", letters.value);\n  }",
               "span": {
-                "start": 1055,
-                "end": 1094
+                "start": 1064,
+                "end": 1103
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@124",
+                  "binding": "emit@133",
                   "event": "total",
                   "span": {
-                    "start": 1061,
-                    "end": 1089
+                    "start": 1070,
+                    "end": 1098
                   },
                   "arguments": [
                     {
-                      "start": 1075,
-                      "end": 1088
+                      "start": 1084,
+                      "end": 1097
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "letters@690",
+                  "binding": "letters@699",
                   "span": {
-                    "start": 1075,
-                    "end": 1088
+                    "start": 1084,
+                    "end": 1097
                   }
                 }
               ]
             },
             "span": {
-              "start": 1052,
-              "end": 1094
+              "start": 1061,
+              "end": 1103
             }
           },
           "span": {
-            "start": 1037,
-            "end": 1094
+            "start": 1046,
+            "end": 1103
           }
         }
       ],
@@ -758,8 +758,8 @@
             "name": "class",
             "value": "name-sorter",
             "span": {
-              "start": 1120,
-              "end": 1139
+              "start": 1129,
+              "end": 1148
             }
           },
           {
@@ -767,8 +767,8 @@
             "name": "aria-label",
             "value": "Names",
             "span": {
-              "start": 1140,
-              "end": 1158
+              "start": 1149,
+              "end": 1167
             }
           }
         ],
@@ -782,8 +782,8 @@
                 "kind": "Text",
                 "value": "Names: ",
                 "span": {
-                  "start": 1169,
-                  "end": 1176
+                  "start": 1178,
+                  "end": 1185
                 }
               },
               {
@@ -791,29 +791,29 @@
                 "value": {
                   "code": "names.value.join(\", \")",
                   "span": {
-                    "start": 1177,
-                    "end": 1199
+                    "start": 1186,
+                    "end": 1208
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "names@285",
+                      "binding": "names@294",
                       "span": {
-                        "start": 1177,
-                        "end": 1188
+                        "start": 1186,
+                        "end": 1197
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 1176,
-                  "end": 1200
+                  "start": 1185,
+                  "end": 1209
                 }
               }
             ],
             "span": {
-              "start": 1166,
-              "end": 1204
+              "start": 1175,
+              "end": 1213
             }
           },
           {
@@ -825,8 +825,8 @@
                 "kind": "Text",
                 "value": "Added: ",
                 "span": {
-                  "start": 1214,
-                  "end": 1221
+                  "start": 1223,
+                  "end": 1230
                 }
               },
               {
@@ -834,29 +834,29 @@
                 "value": {
                   "code": "count.value",
                   "span": {
-                    "start": 1222,
-                    "end": 1233
+                    "start": 1231,
+                    "end": 1242
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "count@354",
+                      "binding": "count@363",
                       "span": {
-                        "start": 1222,
-                        "end": 1233
+                        "start": 1231,
+                        "end": 1242
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 1221,
-                  "end": 1234
+                  "start": 1230,
+                  "end": 1243
                 }
               }
             ],
             "span": {
-              "start": 1211,
-              "end": 1238
+              "start": 1220,
+              "end": 1247
             }
           },
           {
@@ -868,8 +868,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 1253,
-                  "end": 1266
+                  "start": 1262,
+                  "end": 1275
                 }
               },
               {
@@ -882,16 +882,16 @@
                     "body": {
                       "code": "add(\"Bo\")",
                       "span": {
-                        "start": 1282,
-                        "end": 1291
+                        "start": 1291,
+                        "end": 1300
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "add@928",
+                          "binding": "add@937",
                           "span": {
-                            "start": 1282,
-                            "end": 1285
+                            "start": 1291,
+                            "end": 1294
                           },
                           "call": true
                         }
@@ -899,18 +899,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 1276,
-                      "end": 1291
+                      "start": 1285,
+                      "end": 1300
                     }
                   },
                   "span": {
-                    "start": 1276,
-                    "end": 1291
+                    "start": 1285,
+                    "end": 1300
                   }
                 },
                 "span": {
-                  "start": 1267,
-                  "end": 1292
+                  "start": 1276,
+                  "end": 1301
                 }
               }
             ],
@@ -919,14 +919,14 @@
                 "kind": "Text",
                 "value": "Add Bo",
                 "span": {
-                  "start": 1293,
-                  "end": 1315
+                  "start": 1302,
+                  "end": 1324
                 }
               }
             ],
             "span": {
-              "start": 1245,
-              "end": 1324
+              "start": 1254,
+              "end": 1333
             }
           },
           {
@@ -938,8 +938,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 1339,
-                  "end": 1352
+                  "start": 1348,
+                  "end": 1361
                 }
               },
               {
@@ -947,15 +947,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "report@1046",
+                  "binding": "report@1055",
                   "span": {
-                    "start": 1362,
-                    "end": 1368
+                    "start": 1371,
+                    "end": 1377
                   }
                 },
                 "span": {
-                  "start": 1353,
-                  "end": 1369
+                  "start": 1362,
+                  "end": 1378
                 }
               }
             ],
@@ -964,20 +964,20 @@
                 "kind": "Text",
                 "value": "Report",
                 "span": {
-                  "start": 1370,
-                  "end": 1392
+                  "start": 1379,
+                  "end": 1401
                 }
               }
             ],
             "span": {
-              "start": 1331,
-              "end": 1401
+              "start": 1340,
+              "end": 1410
             }
           }
         ],
         "span": {
-          "start": 1111,
-          "end": 1416
+          "start": 1120,
+          "end": 1425
         }
       }
     }
@@ -988,8 +988,8 @@
       "name": "default",
       "local": "NameSorter",
       "span": {
-        "start": 77,
-        "end": 1423
+        "start": 86,
+        "end": 1432
       }
     }
   ],

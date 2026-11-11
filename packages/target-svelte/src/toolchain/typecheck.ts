@@ -3,14 +3,14 @@
 // L3's, so they are not checked here a second time and stay attributed to L3 in the matrix.
 import { resolve } from "node:path";
 
-import type { ToolchainContext, ToolchainMessage } from "@unframework/codegen";
+import type { ToolchainContext, ToolchainMessage } from "@unframework.dev/codegen";
 import {
   assertFilesToCheck,
   checkerFailed,
   diagnosticsByFile,
   resolveToolBin,
   runChecker,
-} from "@unframework/codegen/toolchain-node";
+} from "@unframework.dev/codegen/toolchain-node";
 
 /** One `--output machine-verbose` diagnostic. Lines and characters are 0-based. */
 interface MachineDiagnostic {

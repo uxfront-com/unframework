@@ -5,18 +5,18 @@
     {
       "name": "SignupForm",
       "span": {
-        "start": 49,
-        "end": 1998
+        "start": 58,
+        "end": 2007
       },
       "props": [],
       "types": [],
       "emits": {
-        "binding": "emit@96",
+        "binding": "emit@105",
         "type": {
           "code": "{\n    signup: [fullName: string, email: string, plan: string, newsletter: boolean];\n  }",
           "span": {
-            "start": 115,
-            "end": 202
+            "start": 124,
+            "end": 211
           }
         },
         "events": [
@@ -28,13 +28,13 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 140,
-                    "end": 146
+                    "start": 149,
+                    "end": 155
                   }
                 },
                 "span": {
-                  "start": 130,
-                  "end": 146
+                  "start": 139,
+                  "end": 155
                 }
               },
               {
@@ -42,13 +42,13 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 155,
-                    "end": 161
+                    "start": 164,
+                    "end": 170
                   }
                 },
                 "span": {
-                  "start": 148,
-                  "end": 161
+                  "start": 157,
+                  "end": 170
                 }
               },
               {
@@ -56,13 +56,13 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 169,
-                    "end": 175
+                    "start": 178,
+                    "end": 184
                   }
                 },
                 "span": {
-                  "start": 163,
-                  "end": 175
+                  "start": 172,
+                  "end": 184
                 }
               },
               {
@@ -70,176 +70,176 @@
                 "type": {
                   "code": "boolean",
                   "span": {
-                    "start": 189,
-                    "end": 196
+                    "start": 198,
+                    "end": 205
                   }
                 },
                 "span": {
-                  "start": 177,
-                  "end": 196
+                  "start": 186,
+                  "end": 205
                 }
               }
             ],
             "span": {
-              "start": 121,
-              "end": 197
+              "start": 130,
+              "end": 206
             }
           }
         ],
         "span": {
-          "start": 90,
-          "end": 206
+          "start": 99,
+          "end": 215
         }
       },
       "bindings": [
         {
-          "id": "emit@96",
+          "id": "emit@105",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 96,
-            "end": 100
+            "start": 105,
+            "end": 109
           }
         },
         {
-          "id": "fullName@216",
+          "id": "fullName@225",
           "name": "fullName",
           "kind": "state",
           "span": {
-            "start": 216,
-            "end": 224
+            "start": 225,
+            "end": 233
           }
         },
         {
-          "id": "email@244",
+          "id": "email@253",
           "name": "email",
           "kind": "state",
           "span": {
-            "start": 244,
-            "end": 249
+            "start": 253,
+            "end": 258
           }
         },
         {
-          "id": "plan@269",
+          "id": "plan@278",
           "name": "plan",
           "kind": "state",
           "span": {
-            "start": 269,
-            "end": 273
+            "start": 278,
+            "end": 282
           }
         },
         {
-          "id": "newsletter@297",
+          "id": "newsletter@306",
           "name": "newsletter",
           "kind": "state",
           "span": {
-            "start": 297,
-            "end": 307
+            "start": 306,
+            "end": 316
           }
         },
         {
-          "id": "focused@330",
+          "id": "focused@339",
           "name": "focused",
           "kind": "state",
           "span": {
-            "start": 330,
-            "end": 337
+            "start": 339,
+            "end": 346
           }
         },
         {
-          "id": "submit@365",
+          "id": "submit@374",
           "name": "submit",
           "kind": "localFn",
           "span": {
-            "start": 365,
-            "end": 371
+            "start": 374,
+            "end": 380
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "fullName@216",
+          "binding": "fullName@225",
           "initial": {
             "code": "\"\"",
             "span": {
-              "start": 231,
-              "end": 233
+              "start": 240,
+              "end": 242
             },
             "refs": []
           },
           "span": {
-            "start": 210,
-            "end": 235
+            "start": 219,
+            "end": 244
           }
         },
         {
           "kind": "State",
-          "binding": "email@244",
+          "binding": "email@253",
           "initial": {
             "code": "\"\"",
             "span": {
-              "start": 256,
-              "end": 258
+              "start": 265,
+              "end": 267
             },
             "refs": []
           },
           "span": {
-            "start": 238,
-            "end": 260
+            "start": 247,
+            "end": 269
           }
         },
         {
           "kind": "State",
-          "binding": "plan@269",
+          "binding": "plan@278",
           "initial": {
             "code": "\"free\"",
             "span": {
-              "start": 280,
-              "end": 286
+              "start": 289,
+              "end": 295
             },
             "refs": []
           },
           "span": {
-            "start": 263,
-            "end": 288
+            "start": 272,
+            "end": 297
           }
         },
         {
           "kind": "State",
-          "binding": "newsletter@297",
+          "binding": "newsletter@306",
           "initial": {
             "code": "false",
             "span": {
-              "start": 314,
-              "end": 319
+              "start": 323,
+              "end": 328
             },
             "refs": []
           },
           "span": {
-            "start": 291,
-            "end": 321
+            "start": 300,
+            "end": 330
           }
         },
         {
           "kind": "State",
-          "binding": "focused@330",
+          "binding": "focused@339",
           "initial": {
             "code": "\"none\"",
             "span": {
-              "start": 344,
-              "end": 350
+              "start": 353,
+              "end": 359
             },
             "refs": []
           },
           "span": {
-            "start": 324,
-            "end": 352
+            "start": 333,
+            "end": 361
           }
         },
         {
           "kind": "Function",
-          "binding": "submit@365",
+          "binding": "submit@374",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -248,90 +248,90 @@
                 "type": {
                   "code": "SubmitEvent",
                   "span": {
-                    "start": 379,
-                    "end": 390
+                    "start": 388,
+                    "end": 399
                   }
                 },
                 "event": "SubmitEvent",
                 "span": {
-                  "start": 372,
-                  "end": 390
+                  "start": 381,
+                  "end": 399
                 }
               }
             ],
             "body": {
               "code": "{\n    event.preventDefault();\n    emit(\"signup\", fullName.value, email.value, plan.value, newsletter.value);\n  }",
               "span": {
-                "start": 392,
-                "end": 504
+                "start": 401,
+                "end": 513
               },
               "refs": [
                 {
                   "kind": "Event",
                   "member": "preventDefault",
                   "span": {
-                    "start": 398,
-                    "end": 418
+                    "start": 407,
+                    "end": 427
                   },
                   "call": true
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@96",
+                  "binding": "emit@105",
                   "event": "signup",
                   "span": {
-                    "start": 426,
-                    "end": 499
+                    "start": 435,
+                    "end": 508
                   },
                   "arguments": [
                     {
-                      "start": 441,
-                      "end": 455
+                      "start": 450,
+                      "end": 464
                     },
                     {
-                      "start": 457,
-                      "end": 468
+                      "start": 466,
+                      "end": 477
                     },
                     {
-                      "start": 470,
-                      "end": 480
+                      "start": 479,
+                      "end": 489
                     },
                     {
-                      "start": 482,
-                      "end": 498
+                      "start": 491,
+                      "end": 507
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "fullName@216",
+                  "binding": "fullName@225",
                   "span": {
-                    "start": 441,
-                    "end": 455
+                    "start": 450,
+                    "end": 464
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "email@244",
+                  "binding": "email@253",
                   "span": {
-                    "start": 457,
-                    "end": 468
+                    "start": 466,
+                    "end": 477
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "plan@269",
+                  "binding": "plan@278",
                   "span": {
-                    "start": 470,
-                    "end": 480
+                    "start": 479,
+                    "end": 489
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "newsletter@297",
+                  "binding": "newsletter@306",
                   "span": {
-                    "start": 482,
-                    "end": 498
+                    "start": 491,
+                    "end": 507
                   }
                 }
               ]
@@ -340,19 +340,19 @@
               {
                 "method": "preventDefault",
                 "span": {
-                  "start": 398,
-                  "end": 421
+                  "start": 407,
+                  "end": 430
                 }
               }
             ],
             "span": {
-              "start": 371,
-              "end": 504
+              "start": 380,
+              "end": 513
             }
           },
           "span": {
-            "start": 356,
-            "end": 504
+            "start": 365,
+            "end": 513
           }
         }
       ],
@@ -365,8 +365,8 @@
             "name": "class",
             "value": "signup-form",
             "span": {
-              "start": 527,
-              "end": 546
+              "start": 536,
+              "end": 555
             }
           },
           {
@@ -374,8 +374,8 @@
             "name": "aria-label",
             "value": "Sign up",
             "span": {
-              "start": 547,
-              "end": 567
+              "start": 556,
+              "end": 576
             }
           },
           {
@@ -383,15 +383,15 @@
             "event": "submit",
             "handler": {
               "kind": "Function",
-              "binding": "submit@365",
+              "binding": "submit@374",
               "span": {
-                "start": 578,
-                "end": 584
+                "start": 587,
+                "end": 593
               }
             },
             "span": {
-              "start": 568,
-              "end": 585
+              "start": 577,
+              "end": 594
             }
           }
         ],
@@ -405,8 +405,8 @@
                 "kind": "Text",
                 "value": "Name",
                 "span": {
-                  "start": 600,
-                  "end": 622
+                  "start": 609,
+                  "end": 631
                 }
               },
               {
@@ -418,8 +418,8 @@
                     "name": "name",
                     "value": "name",
                     "span": {
-                      "start": 639,
-                      "end": 650
+                      "start": 648,
+                      "end": 659
                     }
                   },
                   {
@@ -433,33 +433,33 @@
                             "name": "event",
                             "event": "Event",
                             "span": {
-                              "start": 672,
-                              "end": 677
+                              "start": 681,
+                              "end": 686
                             }
                           }
                         ],
                         "body": {
                           "code": "(fullName.value = (event.currentTarget as HTMLInputElement).value)",
                           "span": {
-                            "start": 682,
-                            "end": 748
+                            "start": 691,
+                            "end": 757
                           },
                           "refs": [
                             {
                               "kind": "Write",
-                              "binding": "fullName@216",
+                              "binding": "fullName@225",
                               "operator": "=",
                               "span": {
-                                "start": 682,
-                                "end": 748
+                                "start": 691,
+                                "end": 757
                               },
                               "target": {
-                                "start": 683,
-                                "end": 697
+                                "start": 692,
+                                "end": 706
                               },
                               "value": {
-                                "start": 700,
-                                "end": 747
+                                "start": 709,
+                                "end": 756
                               },
                               "arrowBody": true
                             },
@@ -467,26 +467,26 @@
                               "kind": "Event",
                               "member": "currentTarget",
                               "span": {
-                                "start": 701,
-                                "end": 720
+                                "start": 710,
+                                "end": 729
                               }
                             }
                           ]
                         },
                         "expression": true,
                         "span": {
-                          "start": 671,
-                          "end": 748
+                          "start": 680,
+                          "end": 757
                         }
                       },
                       "span": {
-                        "start": 671,
-                        "end": 748
+                        "start": 680,
+                        "end": 757
                       }
                     },
                     "span": {
-                      "start": 661,
-                      "end": 749
+                      "start": 670,
+                      "end": 758
                     }
                   },
                   {
@@ -499,25 +499,25 @@
                         "body": {
                           "code": "(focused.value = \"name\")",
                           "span": {
-                            "start": 775,
-                            "end": 799
+                            "start": 784,
+                            "end": 808
                           },
                           "refs": [
                             {
                               "kind": "Write",
-                              "binding": "focused@330",
+                              "binding": "focused@339",
                               "operator": "=",
                               "span": {
-                                "start": 775,
-                                "end": 799
+                                "start": 784,
+                                "end": 808
                               },
                               "target": {
-                                "start": 776,
-                                "end": 789
+                                "start": 785,
+                                "end": 798
                               },
                               "value": {
-                                "start": 792,
-                                "end": 798
+                                "start": 801,
+                                "end": 807
                               },
                               "arrowBody": true
                             }
@@ -525,18 +525,18 @@
                         },
                         "expression": true,
                         "span": {
-                          "start": 769,
-                          "end": 799
+                          "start": 778,
+                          "end": 808
                         }
                       },
                       "span": {
-                        "start": 769,
-                        "end": 799
+                        "start": 778,
+                        "end": 808
                       }
                     },
                     "span": {
-                      "start": 760,
-                      "end": 800
+                      "start": 769,
+                      "end": 809
                     }
                   },
                   {
@@ -549,25 +549,25 @@
                         "body": {
                           "code": "(focused.value = \"none\")",
                           "span": {
-                            "start": 825,
-                            "end": 849
+                            "start": 834,
+                            "end": 858
                           },
                           "refs": [
                             {
                               "kind": "Write",
-                              "binding": "focused@330",
+                              "binding": "focused@339",
                               "operator": "=",
                               "span": {
-                                "start": 825,
-                                "end": 849
+                                "start": 834,
+                                "end": 858
                               },
                               "target": {
-                                "start": 826,
-                                "end": 839
+                                "start": 835,
+                                "end": 848
                               },
                               "value": {
-                                "start": 842,
-                                "end": 848
+                                "start": 851,
+                                "end": 857
                               },
                               "arrowBody": true
                             }
@@ -575,31 +575,31 @@
                         },
                         "expression": true,
                         "span": {
-                          "start": 819,
-                          "end": 849
+                          "start": 828,
+                          "end": 858
                         }
                       },
                       "span": {
-                        "start": 819,
-                        "end": 849
+                        "start": 828,
+                        "end": 858
                       }
                     },
                     "span": {
-                      "start": 811,
-                      "end": 850
+                      "start": 820,
+                      "end": 859
                     }
                   }
                 ],
                 "children": [],
                 "span": {
-                  "start": 622,
-                  "end": 861
+                  "start": 631,
+                  "end": 870
                 }
               }
             ],
             "span": {
-              "start": 593,
-              "end": 876
+              "start": 602,
+              "end": 885
             }
           },
           {
@@ -611,8 +611,8 @@
                 "kind": "Text",
                 "value": "Email",
                 "span": {
-                  "start": 890,
-                  "end": 913
+                  "start": 899,
+                  "end": 922
                 }
               },
               {
@@ -624,8 +624,8 @@
                     "name": "name",
                     "value": "email",
                     "span": {
-                      "start": 930,
-                      "end": 942
+                      "start": 939,
+                      "end": 951
                     }
                   },
                   {
@@ -633,8 +633,8 @@
                     "name": "type",
                     "value": "email",
                     "span": {
-                      "start": 953,
-                      "end": 965
+                      "start": 962,
+                      "end": 974
                     }
                   },
                   {
@@ -648,33 +648,33 @@
                             "name": "event",
                             "event": "InputEvent",
                             "span": {
-                              "start": 986,
-                              "end": 991
+                              "start": 995,
+                              "end": 1000
                             }
                           }
                         ],
                         "body": {
                           "code": "(email.value = (event.currentTarget as HTMLInputElement).value)",
                           "span": {
-                            "start": 996,
-                            "end": 1059
+                            "start": 1005,
+                            "end": 1068
                           },
                           "refs": [
                             {
                               "kind": "Write",
-                              "binding": "email@244",
+                              "binding": "email@253",
                               "operator": "=",
                               "span": {
-                                "start": 996,
-                                "end": 1059
+                                "start": 1005,
+                                "end": 1068
                               },
                               "target": {
-                                "start": 997,
-                                "end": 1008
+                                "start": 1006,
+                                "end": 1017
                               },
                               "value": {
-                                "start": 1011,
-                                "end": 1058
+                                "start": 1020,
+                                "end": 1067
                               },
                               "arrowBody": true
                             },
@@ -682,26 +682,26 @@
                               "kind": "Event",
                               "member": "currentTarget",
                               "span": {
-                                "start": 1012,
-                                "end": 1031
+                                "start": 1021,
+                                "end": 1040
                               }
                             }
                           ]
                         },
                         "expression": true,
                         "span": {
-                          "start": 985,
-                          "end": 1059
+                          "start": 994,
+                          "end": 1068
                         }
                       },
                       "span": {
-                        "start": 985,
-                        "end": 1059
+                        "start": 994,
+                        "end": 1068
                       }
                     },
                     "span": {
-                      "start": 976,
-                      "end": 1060
+                      "start": 985,
+                      "end": 1069
                     }
                   },
                   {
@@ -714,25 +714,25 @@
                         "body": {
                           "code": "(focused.value = \"email\")",
                           "span": {
-                            "start": 1086,
-                            "end": 1111
+                            "start": 1095,
+                            "end": 1120
                           },
                           "refs": [
                             {
                               "kind": "Write",
-                              "binding": "focused@330",
+                              "binding": "focused@339",
                               "operator": "=",
                               "span": {
-                                "start": 1086,
-                                "end": 1111
+                                "start": 1095,
+                                "end": 1120
                               },
                               "target": {
-                                "start": 1087,
-                                "end": 1100
+                                "start": 1096,
+                                "end": 1109
                               },
                               "value": {
-                                "start": 1103,
-                                "end": 1110
+                                "start": 1112,
+                                "end": 1119
                               },
                               "arrowBody": true
                             }
@@ -740,18 +740,18 @@
                         },
                         "expression": true,
                         "span": {
-                          "start": 1080,
-                          "end": 1111
+                          "start": 1089,
+                          "end": 1120
                         }
                       },
                       "span": {
-                        "start": 1080,
-                        "end": 1111
+                        "start": 1089,
+                        "end": 1120
                       }
                     },
                     "span": {
-                      "start": 1071,
-                      "end": 1112
+                      "start": 1080,
+                      "end": 1121
                     }
                   },
                   {
@@ -764,25 +764,25 @@
                         "body": {
                           "code": "(focused.value = \"none\")",
                           "span": {
-                            "start": 1137,
-                            "end": 1161
+                            "start": 1146,
+                            "end": 1170
                           },
                           "refs": [
                             {
                               "kind": "Write",
-                              "binding": "focused@330",
+                              "binding": "focused@339",
                               "operator": "=",
                               "span": {
-                                "start": 1137,
-                                "end": 1161
+                                "start": 1146,
+                                "end": 1170
                               },
                               "target": {
-                                "start": 1138,
-                                "end": 1151
+                                "start": 1147,
+                                "end": 1160
                               },
                               "value": {
-                                "start": 1154,
-                                "end": 1160
+                                "start": 1163,
+                                "end": 1169
                               },
                               "arrowBody": true
                             }
@@ -790,31 +790,31 @@
                         },
                         "expression": true,
                         "span": {
-                          "start": 1131,
-                          "end": 1161
+                          "start": 1140,
+                          "end": 1170
                         }
                       },
                       "span": {
-                        "start": 1131,
-                        "end": 1161
+                        "start": 1140,
+                        "end": 1170
                       }
                     },
                     "span": {
-                      "start": 1123,
-                      "end": 1162
+                      "start": 1132,
+                      "end": 1171
                     }
                   }
                 ],
                 "children": [],
                 "span": {
-                  "start": 913,
-                  "end": 1173
+                  "start": 922,
+                  "end": 1182
                 }
               }
             ],
             "span": {
-              "start": 883,
-              "end": 1188
+              "start": 892,
+              "end": 1197
             }
           },
           {
@@ -826,8 +826,8 @@
                 "kind": "Text",
                 "value": "Plan",
                 "span": {
-                  "start": 1202,
-                  "end": 1224
+                  "start": 1211,
+                  "end": 1233
                 }
               },
               {
@@ -839,8 +839,8 @@
                     "name": "name",
                     "value": "plan",
                     "span": {
-                      "start": 1242,
-                      "end": 1253
+                      "start": 1251,
+                      "end": 1262
                     }
                   },
                   {
@@ -854,33 +854,33 @@
                             "name": "event",
                             "event": "Event",
                             "span": {
-                              "start": 1275,
-                              "end": 1280
+                              "start": 1284,
+                              "end": 1289
                             }
                           }
                         ],
                         "body": {
                           "code": "(plan.value = (event.currentTarget as HTMLSelectElement).value)",
                           "span": {
-                            "start": 1285,
-                            "end": 1348
+                            "start": 1294,
+                            "end": 1357
                           },
                           "refs": [
                             {
                               "kind": "Write",
-                              "binding": "plan@269",
+                              "binding": "plan@278",
                               "operator": "=",
                               "span": {
-                                "start": 1285,
-                                "end": 1348
+                                "start": 1294,
+                                "end": 1357
                               },
                               "target": {
-                                "start": 1286,
-                                "end": 1296
+                                "start": 1295,
+                                "end": 1305
                               },
                               "value": {
-                                "start": 1299,
-                                "end": 1347
+                                "start": 1308,
+                                "end": 1356
                               },
                               "arrowBody": true
                             },
@@ -888,26 +888,26 @@
                               "kind": "Event",
                               "member": "currentTarget",
                               "span": {
-                                "start": 1300,
-                                "end": 1319
+                                "start": 1309,
+                                "end": 1328
                               }
                             }
                           ]
                         },
                         "expression": true,
                         "span": {
-                          "start": 1274,
-                          "end": 1348
+                          "start": 1283,
+                          "end": 1357
                         }
                       },
                       "span": {
-                        "start": 1274,
-                        "end": 1348
+                        "start": 1283,
+                        "end": 1357
                       }
                     },
                     "span": {
-                      "start": 1264,
-                      "end": 1349
+                      "start": 1273,
+                      "end": 1358
                     }
                   }
                 ],
@@ -921,8 +921,8 @@
                         "name": "value",
                         "value": "free",
                         "span": {
-                          "start": 1378,
-                          "end": 1390
+                          "start": 1387,
+                          "end": 1399
                         }
                       }
                     ],
@@ -931,14 +931,14 @@
                         "kind": "Text",
                         "value": "Free",
                         "span": {
-                          "start": 1391,
-                          "end": 1395
+                          "start": 1400,
+                          "end": 1404
                         }
                       }
                     ],
                     "span": {
-                      "start": 1370,
-                      "end": 1404
+                      "start": 1379,
+                      "end": 1413
                     }
                   },
                   {
@@ -950,8 +950,8 @@
                         "name": "value",
                         "value": "pro",
                         "span": {
-                          "start": 1423,
-                          "end": 1434
+                          "start": 1432,
+                          "end": 1443
                         }
                       }
                     ],
@@ -960,26 +960,26 @@
                         "kind": "Text",
                         "value": "Pro",
                         "span": {
-                          "start": 1435,
-                          "end": 1438
+                          "start": 1444,
+                          "end": 1447
                         }
                       }
                     ],
                     "span": {
-                      "start": 1415,
-                      "end": 1447
+                      "start": 1424,
+                      "end": 1456
                     }
                   }
                 ],
                 "span": {
-                  "start": 1224,
-                  "end": 1465
+                  "start": 1233,
+                  "end": 1474
                 }
               }
             ],
             "span": {
-              "start": 1195,
-              "end": 1480
+              "start": 1204,
+              "end": 1489
             }
           },
           {
@@ -996,8 +996,8 @@
                     "name": "name",
                     "value": "newsletter",
                     "span": {
-                      "start": 1520,
-                      "end": 1537
+                      "start": 1529,
+                      "end": 1546
                     }
                   },
                   {
@@ -1005,8 +1005,8 @@
                     "name": "type",
                     "value": "checkbox",
                     "span": {
-                      "start": 1548,
-                      "end": 1563
+                      "start": 1557,
+                      "end": 1572
                     }
                   },
                   {
@@ -1020,33 +1020,33 @@
                             "name": "event",
                             "event": "Event",
                             "span": {
-                              "start": 1585,
-                              "end": 1590
+                              "start": 1594,
+                              "end": 1599
                             }
                           }
                         ],
                         "body": {
                           "code": "(newsletter.value = (event.currentTarget as HTMLInputElement).checked)",
                           "span": {
-                            "start": 1607,
-                            "end": 1677
+                            "start": 1616,
+                            "end": 1686
                           },
                           "refs": [
                             {
                               "kind": "Write",
-                              "binding": "newsletter@297",
+                              "binding": "newsletter@306",
                               "operator": "=",
                               "span": {
-                                "start": 1607,
-                                "end": 1677
+                                "start": 1616,
+                                "end": 1686
                               },
                               "target": {
-                                "start": 1608,
-                                "end": 1624
+                                "start": 1617,
+                                "end": 1633
                               },
                               "value": {
-                                "start": 1627,
-                                "end": 1676
+                                "start": 1636,
+                                "end": 1685
                               },
                               "arrowBody": true
                             },
@@ -1054,47 +1054,47 @@
                               "kind": "Event",
                               "member": "currentTarget",
                               "span": {
-                                "start": 1628,
-                                "end": 1647
+                                "start": 1637,
+                                "end": 1656
                               }
                             }
                           ]
                         },
                         "expression": true,
                         "span": {
-                          "start": 1584,
-                          "end": 1677
+                          "start": 1593,
+                          "end": 1686
                         }
                       },
                       "span": {
-                        "start": 1584,
-                        "end": 1677
+                        "start": 1593,
+                        "end": 1686
                       }
                     },
                     "span": {
-                      "start": 1574,
-                      "end": 1689
+                      "start": 1583,
+                      "end": 1698
                     }
                   }
                 ],
                 "children": [],
                 "span": {
-                  "start": 1503,
-                  "end": 1700
+                  "start": 1512,
+                  "end": 1709
                 }
               },
               {
                 "kind": "Text",
                 "value": "Send me the newsletter",
                 "span": {
-                  "start": 1700,
-                  "end": 1738
+                  "start": 1709,
+                  "end": 1747
                 }
               }
             ],
             "span": {
-              "start": 1487,
-              "end": 1746
+              "start": 1496,
+              "end": 1755
             }
           },
           {
@@ -1106,8 +1106,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 1756,
-                  "end": 1769
+                  "start": 1765,
+                  "end": 1778
                 }
               }
             ],
@@ -1117,61 +1117,61 @@
                 "value": {
                   "code": "`Name: ${fullName.value}; email: ${email.value}; plan: ${plan.value}; newsletter: ${newsletter.value ? \"yes\" : \"no\"}; focus: ${focused.value}`",
                   "span": {
-                    "start": 1780,
-                    "end": 1922
+                    "start": 1789,
+                    "end": 1931
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "fullName@216",
+                      "binding": "fullName@225",
                       "span": {
-                        "start": 1789,
-                        "end": 1803
+                        "start": 1798,
+                        "end": 1812
                       }
                     },
                     {
                       "kind": "Binding",
-                      "binding": "email@244",
+                      "binding": "email@253",
                       "span": {
-                        "start": 1815,
-                        "end": 1826
+                        "start": 1824,
+                        "end": 1835
                       }
                     },
                     {
                       "kind": "Binding",
-                      "binding": "plan@269",
+                      "binding": "plan@278",
                       "span": {
-                        "start": 1837,
-                        "end": 1847
+                        "start": 1846,
+                        "end": 1856
                       }
                     },
                     {
                       "kind": "Binding",
-                      "binding": "newsletter@297",
+                      "binding": "newsletter@306",
                       "span": {
-                        "start": 1864,
-                        "end": 1880
+                        "start": 1873,
+                        "end": 1889
                       }
                     },
                     {
                       "kind": "Binding",
-                      "binding": "focused@330",
+                      "binding": "focused@339",
                       "span": {
-                        "start": 1907,
-                        "end": 1920
+                        "start": 1916,
+                        "end": 1929
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 1779,
-                  "end": 1923
+                  "start": 1788,
+                  "end": 1932
                 }
               }
             ],
             "span": {
-              "start": 1753,
-              "end": 1934
+              "start": 1762,
+              "end": 1943
             }
           },
           {
@@ -1183,8 +1183,8 @@
                 "name": "type",
                 "value": "submit",
                 "span": {
-                  "start": 1949,
-                  "end": 1962
+                  "start": 1958,
+                  "end": 1971
                 }
               }
             ],
@@ -1193,20 +1193,20 @@
                 "kind": "Text",
                 "value": "Sign up",
                 "span": {
-                  "start": 1963,
-                  "end": 1970
+                  "start": 1972,
+                  "end": 1979
                 }
               }
             ],
             "span": {
-              "start": 1941,
-              "end": 1979
+              "start": 1950,
+              "end": 1988
             }
           }
         ],
         "span": {
-          "start": 521,
-          "end": 1991
+          "start": 530,
+          "end": 2000
         }
       }
     }
@@ -1217,8 +1217,8 @@
       "name": "default",
       "local": "SignupForm",
       "span": {
-        "start": 49,
-        "end": 1998
+        "start": 58,
+        "end": 2007
       }
     }
   ],

@@ -3,7 +3,7 @@
 // dispatch): a key under a condition on the event alone, a form's submission (by its button and
 // by Enter), and a link's navigation. The harness fails a test whose submission or navigation is
 // not prevented (semantics contract, prevent default).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import TagForm from "./TagForm.uf.tsx";

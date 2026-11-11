@@ -1,6 +1,6 @@
 // components/local-sibling: a component renders a component its file declares without exporting
 // it, which becomes a sibling file in every output (plan §4.1, ADR-0053).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Card from "./Card.uf.tsx";

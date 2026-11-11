@@ -1,8 +1,8 @@
 /**
- * Re-vendors the JSX element types that `unframework/jsx-runtime` is built on (ADR-0017).
+ * Re-vendors the JSX element types that `@uxfront/unframework/jsx-runtime` is built on (ADR-0017).
  *
- *   pnpm --filter unframework vendor:jsx         rewrite src/vendor/vue-jsx.d.ts from the installed upstream
- *   pnpm --filter unframework vendor:jsx --check fail if src/vendor/vue-jsx.d.ts has drifted
+ *   pnpm --filter @uxfront/unframework vendor:jsx         rewrite src/vendor/vue-jsx.d.ts from the installed upstream
+ *   pnpm --filter @uxfront/unframework vendor:jsx --check fail if src/vendor/vue-jsx.d.ts has drifted
  *
  * The upstream is `@vue/runtime-dom`, pinned exactly in this package's devDependencies. It ships no
  * separate JSX file: `src/jsx.ts` is rolled up into `dist/runtime-dom.d.ts`, so this script cuts one
@@ -12,7 +12,7 @@
  * `src/jsx-runtime.ts`.
  *
  * To move to a new upstream: bump the exact devDependency, install, run this script, read the diff,
- * then run the probes (`pnpm --filter unframework test`), which pin what the surface catches.
+ * then run the probes (`pnpm --filter @uxfront/unframework test`), which pin what the surface catches.
  */
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -123,7 +123,7 @@ export function renderVendoredJsx(upstream: UpstreamSnapshot): string {
   const header = `/* eslint-disable */
 // oxlint-disable -- vendored verbatim, see below.
 /**
- * VENDORED - DO NOT EDIT BY HAND. Regenerate with \`pnpm --filter unframework vendor:jsx\`.
+ * VENDORED - DO NOT EDIT BY HAND. Regenerate with \`pnpm --filter @uxfront/unframework vendor:jsx\`.
  *
  * Upstream: ${UPSTREAM.package}@${upstream.version}, ${UPSTREAM.file} lines ${start + 1}-${end + 1}
  *           (the rolled-up form of vuejs/core packages/runtime-dom/src/jsx.ts)
@@ -147,7 +147,7 @@ if (import.meta.main) {
     if (readFileSync(VENDORED_FILE, "utf8") !== output) {
       console.error(
         `vendor-jsx: ${VENDORED_FILE} has drifted from ${UPSTREAM.package}. ` +
-          "Run `pnpm --filter unframework vendor:jsx` and review the diff.",
+          "Run `pnpm --filter @uxfront/unframework vendor:jsx` and review the diff.",
       );
       process.exit(1);
     }

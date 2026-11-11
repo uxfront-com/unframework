@@ -1,4 +1,4 @@
-import { defineEmits, ref, watch } from "unframework";
+import { defineEmits, ref, watch } from "@uxfront/unframework";
 
 // Watch timing (ADR-0048): once per run of a handler, only on a change, the previous value of the
 // last callback, a cleanup right before the next callback and on unmount, never on a run that

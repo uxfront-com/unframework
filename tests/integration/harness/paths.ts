@@ -4,7 +4,7 @@ import { realpathSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { BrowserEngine } from "@unframework/testing/node";
+import type { BrowserEngine } from "@unframework.dev/testing/node";
 
 /** The integration package: the Vitest root of every project. */
 export const ROOT: string = realpathSync(fileURLToPath(new URL("..", import.meta.url)));

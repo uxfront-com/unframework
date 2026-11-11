@@ -2,10 +2,10 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { formatOutput } from "@unframework/codegen";
-import type { EmitContext, OutputFile } from "@unframework/codegen";
-import { checkInvariants } from "@unframework/ir";
-import type { UfModule } from "@unframework/ir";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { EmitContext, OutputFile } from "@unframework.dev/codegen";
+import { checkInvariants } from "@unframework.dev/ir";
+import type { UfModule } from "@unframework.dev/ir";
 import { createSSRApp } from "vue";
 import type { Component } from "vue";
 import { compileScript, compileTemplate, parse } from "vue/compiler-sfc";

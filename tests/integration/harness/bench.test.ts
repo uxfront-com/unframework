@@ -3,8 +3,8 @@
 // out of the default run (`harnessProjects`), since twenty iterations per case would slow every
 // `pnpm test`. A canary's fresh compile is what's measured under one, and a canary of some cases
 // measures only those, beside the case every time is a ratio of.
-import type { TargetName } from "@unframework/compiler";
-import { checkLayers, NO_OUTPUT_SKIP } from "@unframework/testing/node";
+import type { TargetName } from "@unframework.dev/compiler";
+import { checkLayers, NO_OUTPUT_SKIP } from "@unframework.dev/testing/node";
 import { beforeAll, describe, expect, inject, it } from "vitest";
 
 import {

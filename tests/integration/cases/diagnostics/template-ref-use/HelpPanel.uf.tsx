@@ -1,6 +1,6 @@
 // UF3028 template-ref-use: `el.textContent = …` rewrites the text of an element the template
 // renders, which every framework renders from state; render the text from state instead.
-import { useTemplateRef } from "unframework";
+import { useTemplateRef } from "@uxfront/unframework";
 
 export default function HelpPanel() {
   const panel = useTemplateRef<HTMLElement>();

@@ -5,37 +5,37 @@
     {
       "name": "SearchField",
       "span": {
-        "start": 290,
-        "end": 438
+        "start": 299,
+        "end": 447
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "query@323",
+          "id": "query@332",
           "name": "query",
           "kind": "model",
           "span": {
-            "start": 323,
-            "end": 328
+            "start": 332,
+            "end": 337
           }
         }
       ],
       "setup": [
         {
           "kind": "Model",
-          "binding": "query@323",
+          "binding": "query@332",
           "name": "query",
           "type": {
             "code": "string",
             "span": {
-              "start": 343,
-              "end": 349
+              "start": 352,
+              "end": 358
             }
           },
           "span": {
-            "start": 317,
-            "end": 360
+            "start": 326,
+            "end": 369
           }
         }
       ],
@@ -48,8 +48,8 @@
             "name": "type",
             "value": "search",
             "span": {
-              "start": 377,
-              "end": 390
+              "start": 386,
+              "end": 399
             }
           },
           {
@@ -57,8 +57,8 @@
             "name": "aria-label",
             "value": "Search",
             "span": {
-              "start": 391,
-              "end": 410
+              "start": 400,
+              "end": 419
             }
           },
           {
@@ -66,31 +66,31 @@
             "value": {
               "code": "query.value",
               "span": {
-                "start": 420,
-                "end": 431
+                "start": 429,
+                "end": 440
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "query@323",
+                  "binding": "query@332",
                   "span": {
-                    "start": 420,
-                    "end": 431
+                    "start": 429,
+                    "end": 440
                   }
                 }
               ]
             },
             "control": "text",
             "span": {
-              "start": 411,
-              "end": 432
+              "start": 420,
+              "end": 441
             }
           }
         ],
         "children": [],
         "span": {
-          "start": 370,
-          "end": 435
+          "start": 379,
+          "end": 444
         }
       }
     }

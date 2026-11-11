@@ -1,12 +1,12 @@
 // The Astro toolchain (plan §5.7): how tests and tooling build, check and run Astro output.
 // Heavy tools (Astro, its compiler, Vite, the TypeScript 6 checker) load on first use, so a
 // config that imports every target's toolchain pays only for the projects it runs.
-import type { Toolchain } from "@unframework/codegen";
+import type { Toolchain } from "@unframework.dev/codegen";
 import {
   lintWithEslint,
   lintWithOxlint,
   mergeLintResults,
-} from "@unframework/codegen/toolchain-node";
+} from "@unframework.dev/codegen/toolchain-node";
 
 import { astroBrowserRef } from "./browser.ts";
 import { astroTypecheck } from "./check.ts";
@@ -28,8 +28,8 @@ export const toolchain: Toolchain = {
     return { plugins: [astroBrowserRef()] };
   },
   browserCommands: (context) => ({ ufAstroRender: createAstroRenderCommand(context) }),
-  client: "@unframework/target-astro/toolchain/client",
-  server: "@unframework/target-astro/toolchain/server",
+  client: "@unframework.dev/target-astro/toolchain/client",
+  server: "@unframework.dev/target-astro/toolchain/server",
   frameworkCompile: astroFrameworkCompile,
 
   frameworkEmit: astroFrameworkEmit,

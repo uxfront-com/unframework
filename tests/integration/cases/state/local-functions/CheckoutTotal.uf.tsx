@@ -1,4 +1,4 @@
-import { computed, defineEmits, ref } from "unframework";
+import { computed, defineEmits, ref } from "@uxfront/unframework";
 
 export type ShippingMethod = "standard" | "express";
 

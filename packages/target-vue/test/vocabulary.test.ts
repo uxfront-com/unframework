@@ -23,8 +23,8 @@ import {
   SVG_ELEMENT_ATTRIBUTES,
   SVG_ELEMENTS,
   SVG_GLOBAL_ATTRIBUTES,
-} from "@unframework/ir";
-import type { ElementNode } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { ElementNode } from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { analyze } from "../../analyzer/src/index.ts";

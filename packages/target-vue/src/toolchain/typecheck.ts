@@ -1,14 +1,14 @@
 // L4 for Vue: one vue-tsc run (TypeScript 6, from the toolchain directory) over every file.
 import { resolve } from "node:path";
 
-import type { ToolchainContext, ToolchainMessage } from "@unframework/codegen";
+import type { ToolchainContext, ToolchainMessage } from "@unframework.dev/codegen";
 import {
   assertFilesToCheck,
   checkerFailed,
   diagnosticsByFile,
   resolveToolBin,
   runChecker,
-} from "@unframework/codegen/toolchain-node";
+} from "@unframework.dev/codegen/toolchain-node";
 
 /** A `--pretty false` diagnostic: `path(line,column): error TS2322: message`. */
 const LOCATED = /^(.+)\((\d+),(\d+)\): (error|warning|message) (TS\d+): (.*)$/;

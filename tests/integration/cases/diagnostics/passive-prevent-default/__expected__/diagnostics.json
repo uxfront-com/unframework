@@ -7,12 +7,12 @@
     "start": {
       "line": 16,
       "column": 11,
-      "offset": 604
+      "offset": 613
     },
     "end": {
       "line": 16,
       "column": 33,
-      "offset": 626
+      "offset": 635
     },
     "help": "Remove the call, or make the listener not passive (`onWheel`) where it must prevent the default.",
     "fixes": [
@@ -22,8 +22,8 @@
         "edits": [
           {
             "span": {
-              "start": 593,
-              "end": 627
+              "start": 602,
+              "end": 636
             },
             "text": ""
           }

@@ -1,6 +1,6 @@
 // slots/presence: a card wraps its title and its body only when the parent fills them, and
 // renders a placeholder for an empty body (ADR-0054's presence, `slots.title` as a condition).
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Cards from "./Cards.uf.tsx";

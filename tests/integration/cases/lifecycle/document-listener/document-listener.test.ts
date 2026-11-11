@@ -3,7 +3,7 @@
 // `onUnmounted` removes it, even after the component rendered again, so a key pressed once the
 // component is gone reaches nothing of it; a watcher adds another when a toggle turns on and
 // removes it when it turns off, so the key counts only while it is on, and once per press.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ShortcutTip from "./ShortcutTip.uf.tsx";

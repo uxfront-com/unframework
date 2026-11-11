@@ -3,7 +3,7 @@
 // stops the container's bubble listener only; `onClickOnce` runs once, then lets later clicks
 // through to its container; `onWheelPassive` is a passive listener that reads the delta. The
 // containers that listen are presentational wrappers around buttons (UF3030).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import EventLog from "./EventLog.uf.tsx";

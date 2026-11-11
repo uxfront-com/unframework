@@ -1,4 +1,4 @@
-import { useTemplateRef } from "unframework";
+import { useTemplateRef } from "@uxfront/unframework";
 
 import Counter from "./Counter.uf.tsx";
 

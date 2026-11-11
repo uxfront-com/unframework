@@ -6,7 +6,7 @@
 // whole, after the references inside its value or arguments, so React, Solid and Angular can
 // turn `count.value += step` into a setter call.
 import type * as AST from "@oxc-project/types";
-import { functionsOf } from "@unframework/ir";
+import { functionsOf } from "@unframework.dev/ir";
 import type {
   ApiReference,
   Binding,
@@ -23,7 +23,7 @@ import type {
   Span,
   UfComponent,
   WriteReference,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { MagicString } from "magic-string";
 
 import { isNode, parseCodeSource, parseExpression, visitNodes } from "./parse.ts";

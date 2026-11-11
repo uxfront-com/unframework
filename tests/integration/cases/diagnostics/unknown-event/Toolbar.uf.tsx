@@ -1,6 +1,6 @@
 // UF3036 unknown-event: `onX` on a component listens to an event it declares; `onSave` is
 // misspelt `onSvae`, and the likely fix renames it.
-import { defineEmits, ref } from "unframework";
+import { defineEmits, ref } from "@uxfront/unframework";
 
 function SaveButton() {
   const emit = defineEmits<{ save: [] }>();

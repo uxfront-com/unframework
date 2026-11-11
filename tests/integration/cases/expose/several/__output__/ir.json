@@ -5,36 +5,36 @@
     {
       "name": "Controls",
       "span": {
-        "start": 88,
-        "end": 496
+        "start": 97,
+        "end": 505
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "counter@133",
+          "id": "counter@142",
           "name": "counter",
           "kind": "templateRef",
           "span": {
-            "start": 133,
-            "end": 140
+            "start": 142,
+            "end": 149
           }
         }
       ],
       "setup": [
         {
           "kind": "TemplateRef",
-          "binding": "counter@133",
+          "binding": "counter@142",
           "type": {
             "code": "{ increment(): void; reset(): void }",
             "span": {
-              "start": 158,
-              "end": 194
+              "start": 167,
+              "end": 203
             }
           },
           "span": {
-            "start": 127,
-            "end": 198
+            "start": 136,
+            "end": 207
           }
         }
       ],
@@ -47,8 +47,8 @@
             "name": "class",
             "value": "controls",
             "span": {
-              "start": 219,
-              "end": 235
+              "start": 228,
+              "end": 244
             }
           }
         ],
@@ -59,10 +59,10 @@
             "attributes": [
               {
                 "kind": "Ref",
-                "binding": "counter@133",
+                "binding": "counter@142",
                 "span": {
-                  "start": 252,
-                  "end": 265
+                  "start": 261,
+                  "end": 274
                 }
               },
               {
@@ -71,21 +71,21 @@
                 "value": {
                   "code": "10",
                   "span": {
-                    "start": 273,
-                    "end": 275
+                    "start": 282,
+                    "end": 284
                   },
                   "refs": []
                 },
                 "span": {
-                  "start": 266,
-                  "end": 276
+                  "start": 275,
+                  "end": 285
                 }
               }
             ],
             "fills": [],
             "span": {
-              "start": 243,
-              "end": 279
+              "start": 252,
+              "end": 288
             }
           },
           {
@@ -97,8 +97,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 294,
-                  "end": 307
+                  "start": 303,
+                  "end": 316
                 }
               },
               {
@@ -111,34 +111,34 @@
                     "body": {
                       "code": "counter.value?.increment()",
                       "span": {
-                        "start": 323,
-                        "end": 349
+                        "start": 332,
+                        "end": 358
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "counter@133",
+                          "binding": "counter@142",
                           "span": {
-                            "start": 323,
-                            "end": 336
+                            "start": 332,
+                            "end": 345
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 317,
-                      "end": 349
+                      "start": 326,
+                      "end": 358
                     }
                   },
                   "span": {
-                    "start": 317,
-                    "end": 349
+                    "start": 326,
+                    "end": 358
                   }
                 },
                 "span": {
-                  "start": 308,
-                  "end": 350
+                  "start": 317,
+                  "end": 359
                 }
               }
             ],
@@ -147,14 +147,14 @@
                 "kind": "Text",
                 "value": "More",
                 "span": {
-                  "start": 351,
-                  "end": 371
+                  "start": 360,
+                  "end": 380
                 }
               }
             ],
             "span": {
-              "start": 286,
-              "end": 380
+              "start": 295,
+              "end": 389
             }
           },
           {
@@ -166,8 +166,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 395,
-                  "end": 408
+                  "start": 404,
+                  "end": 417
                 }
               },
               {
@@ -180,34 +180,34 @@
                     "body": {
                       "code": "counter.value?.reset()",
                       "span": {
-                        "start": 424,
-                        "end": 446
+                        "start": 433,
+                        "end": 455
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "counter@133",
+                          "binding": "counter@142",
                           "span": {
-                            "start": 424,
-                            "end": 437
+                            "start": 433,
+                            "end": 446
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 418,
-                      "end": 446
+                      "start": 427,
+                      "end": 455
                     }
                   },
                   "span": {
-                    "start": 418,
-                    "end": 446
+                    "start": 427,
+                    "end": 455
                   }
                 },
                 "span": {
-                  "start": 409,
-                  "end": 447
+                  "start": 418,
+                  "end": 456
                 }
               }
             ],
@@ -216,20 +216,20 @@
                 "kind": "Text",
                 "value": "Reset",
                 "span": {
-                  "start": 448,
-                  "end": 469
+                  "start": 457,
+                  "end": 478
                 }
               }
             ],
             "span": {
-              "start": 387,
-              "end": 478
+              "start": 396,
+              "end": 487
             }
           }
         ],
         "span": {
-          "start": 214,
-          "end": 489
+          "start": 223,
+          "end": 498
         }
       }
     }
@@ -240,8 +240,8 @@
       "name": "default",
       "local": "Controls",
       "span": {
-        "start": 88,
-        "end": 496
+        "start": 97,
+        "end": 505
       }
     }
   ],
@@ -283,14 +283,14 @@
           "imported": "default",
           "local": "Counter",
           "span": {
-            "start": 54,
-            "end": 61
+            "start": 63,
+            "end": 70
           }
         }
       ],
       "span": {
-        "start": 47,
-        "end": 86
+        "start": 56,
+        "end": 95
       }
     }
   ]

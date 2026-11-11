@@ -1,13 +1,15 @@
 // `unframework init` (plan §8.3, ADR-0076, ADR-0080). The files are strings here, so they ship in
-// `dist` with no copy step. No test file until `@unframework/testing` is public (M7).
+// `dist` with no copy step. No test file until `@unframework.dev/testing` is public (M7).
 import { lstatSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import type { Stats } from "node:fs";
 import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 
+import { AUTHORING_PACKAGE } from "@unframework.dev/diagnostics";
+
 import type { RunCommand } from "./command.ts";
 
-const CONFIG = `import { defineConfig } from "unframework/config";
+const CONFIG = `import { defineConfig } from "${AUTHORING_PACKAGE}/config";
 
 export default defineConfig({
   targets: ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"],
@@ -47,7 +49,7 @@ const TSCONFIG = `${JSON.stringify(
       noEmit: true,
       allowImportingTsExtensions: true,
       jsx: "preserve",
-      jsxImportSource: "unframework",
+      jsxImportSource: AUTHORING_PACKAGE,
     },
     include: ["**/*.uf.tsx", "**/*.uf.ts"],
     exclude: ["dist"],

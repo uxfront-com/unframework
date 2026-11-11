@@ -24,9 +24,9 @@ import {
   SVG_ELEMENTS,
   SVG_GLOBAL_ATTRIBUTES,
   UNRENDERABLE_ELEMENTS,
-} from "@unframework/ir";
-import type { Namespace } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { Namespace } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { isTargetStringAttribute, nameProblem } from "../src/attribute-names.ts";

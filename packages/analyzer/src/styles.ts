@@ -2,11 +2,11 @@
 // sheet of the module's one component. The compiler reads each sheet through its resolver before
 // analysis, and scopes it in codegen after; the analyser checks the import, lowers the sheet into
 // the IR, and gives the component its scope id.
-import { createDiagnostic } from "@unframework/diagnostics";
-import { createStyleSheet } from "@unframework/ir";
-import type { StyleSheet } from "@unframework/ir";
-import { parseStylesheet } from "@unframework/parser";
-import type { AST, ParsedModule } from "@unframework/parser";
+import { createDiagnostic } from "@unframework.dev/diagnostics";
+import { createStyleSheet } from "@unframework.dev/ir";
+import type { StyleSheet } from "@unframework.dev/ir";
+import { parseStylesheet } from "@unframework.dev/parser";
+import type { AST, ParsedModule } from "@unframework.dev/parser";
 
 import type { Reporter } from "./context.ts";
 

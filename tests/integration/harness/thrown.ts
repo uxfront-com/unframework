@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { originalPositionFor, TraceMap } from "@jridgewell/trace-mapping";
-import type { MapStackRequest, MapStackResult } from "@unframework/testing/node";
+import type { MapStackRequest, MapStackResult } from "@unframework.dev/testing/node";
 import type { ViteDevServer } from "vite";
 
 import { CASES_DIR } from "./paths.ts";

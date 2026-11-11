@@ -5,8 +5,8 @@
     {
       "name": "FruitPicker",
       "span": {
-        "start": 169,
-        "end": 1348
+        "start": 178,
+        "end": 1357
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "Fruit[]",
             "span": {
-              "start": 157,
-              "end": 164
+              "start": 166,
+              "end": 173
             }
           },
-          "binding": "fruits@207",
+          "binding": "fruits@216",
           "span": {
-            "start": 149,
-            "end": 165
+            "start": 158,
+            "end": 174
           }
         }
       ],
@@ -31,13 +31,13 @@
         "type": {
           "code": "FruitPickerProps",
           "span": {
-            "start": 217,
-            "end": 233
+            "start": 226,
+            "end": 242
           }
         },
         "span": {
-          "start": 205,
-          "end": 233
+          "start": 214,
+          "end": 242
         }
       },
       "types": [
@@ -45,12 +45,12 @@
         "FruitPickerProps"
       ],
       "emits": {
-        "binding": "emit@245",
+        "binding": "emit@254",
         "type": {
           "code": "{ kept: [name: string, colour: string] }",
           "span": {
-            "start": 264,
-            "end": 304
+            "start": 273,
+            "end": 313
           }
         },
         "events": [
@@ -62,13 +62,13 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 279,
-                    "end": 285
+                    "start": 288,
+                    "end": 294
                   }
                 },
                 "span": {
-                  "start": 273,
-                  "end": 285
+                  "start": 282,
+                  "end": 294
                 }
               },
               {
@@ -76,160 +76,160 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 295,
-                    "end": 301
+                    "start": 304,
+                    "end": 310
                   }
                 },
                 "span": {
-                  "start": 287,
-                  "end": 301
+                  "start": 296,
+                  "end": 310
                 }
               }
             ],
             "span": {
-              "start": 266,
-              "end": 302
+              "start": 275,
+              "end": 311
             }
           }
         ],
         "span": {
-          "start": 239,
-          "end": 308
+          "start": 248,
+          "end": 317
         }
       },
       "bindings": [
         {
-          "id": "fruits@207",
+          "id": "fruits@216",
           "name": "fruits",
           "kind": "prop",
           "span": {
-            "start": 207,
-            "end": 213
+            "start": 216,
+            "end": 222
           }
         },
         {
-          "id": "emit@245",
+          "id": "emit@254",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 245,
-            "end": 249
+            "start": 254,
+            "end": 258
           }
         },
         {
-          "id": "selected@318",
+          "id": "selected@327",
           "name": "selected",
           "kind": "state",
           "span": {
-            "start": 318,
-            "end": 326
+            "start": 327,
+            "end": 335
           }
         },
         {
-          "id": "basket@362",
+          "id": "basket@371",
           "name": "basket",
           "kind": "state",
           "span": {
-            "start": 362,
-            "end": 368
+            "start": 371,
+            "end": 377
           }
         },
         {
-          "id": "pick@401",
+          "id": "pick@410",
           "name": "pick",
           "kind": "localFn",
           "span": {
-            "start": 401,
-            "end": 405
+            "start": 410,
+            "end": 414
           }
         },
         {
-          "id": "keep@466",
+          "id": "keep@475",
           "name": "keep",
           "kind": "localFn",
           "span": {
-            "start": 466,
-            "end": 470
+            "start": 475,
+            "end": 479
           }
         },
         {
-          "id": "fruit@788",
+          "id": "fruit@797",
           "name": "fruit",
           "kind": "loopVar",
           "span": {
-            "start": 788,
-            "end": 793
+            "start": 797,
+            "end": 802
           }
         },
         {
-          "id": "fruit@1217",
+          "id": "fruit@1226",
           "name": "fruit",
           "kind": "loopVar",
           "span": {
-            "start": 1217,
-            "end": 1222
+            "start": 1226,
+            "end": 1231
           }
         },
         {
-          "id": "index@1224",
+          "id": "index@1233",
           "name": "index",
           "kind": "loopVar",
           "span": {
-            "start": 1224,
-            "end": 1229
+            "start": 1233,
+            "end": 1238
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "selected@318",
+          "binding": "selected@327",
           "type": {
             "code": "Fruit | null",
             "span": {
-              "start": 333,
-              "end": 345
+              "start": 342,
+              "end": 354
             }
           },
           "initial": {
             "code": "null",
             "span": {
-              "start": 347,
-              "end": 351
+              "start": 356,
+              "end": 360
             },
             "refs": []
           },
           "span": {
-            "start": 312,
-            "end": 353
+            "start": 321,
+            "end": 362
           }
         },
         {
           "kind": "State",
-          "binding": "basket@362",
+          "binding": "basket@371",
           "type": {
             "code": "Fruit[]",
             "span": {
-              "start": 375,
-              "end": 382
+              "start": 384,
+              "end": 391
             }
           },
           "initial": {
             "code": "[]",
             "span": {
-              "start": 384,
-              "end": 386
+              "start": 393,
+              "end": 395
             },
             "refs": []
           },
           "span": {
-            "start": 356,
-            "end": 388
+            "start": 365,
+            "end": 397
           }
         },
         {
           "kind": "Function",
-          "binding": "pick@401",
+          "binding": "pick@410",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -238,135 +238,135 @@
                 "type": {
                   "code": "Fruit",
                   "span": {
-                    "start": 413,
-                    "end": 418
+                    "start": 422,
+                    "end": 427
                   }
                 },
                 "span": {
-                  "start": 406,
-                  "end": 418
+                  "start": 415,
+                  "end": 427
                 }
               }
             ],
             "body": {
               "code": "{\n    selected.value = fruit;\n  }",
               "span": {
-                "start": 420,
-                "end": 453
+                "start": 429,
+                "end": 462
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "selected@318",
+                  "binding": "selected@327",
                   "operator": "=",
                   "span": {
-                    "start": 426,
-                    "end": 448
+                    "start": 435,
+                    "end": 457
                   },
                   "target": {
-                    "start": 426,
-                    "end": 440
+                    "start": 435,
+                    "end": 449
                   },
                   "value": {
-                    "start": 443,
-                    "end": 448
+                    "start": 452,
+                    "end": 457
                   }
                 }
               ]
             },
             "span": {
-              "start": 405,
-              "end": 453
+              "start": 414,
+              "end": 462
             }
           },
           "span": {
-            "start": 392,
-            "end": 453
+            "start": 401,
+            "end": 462
           }
         },
         {
           "kind": "Function",
-          "binding": "keep@466",
+          "binding": "keep@475",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    const current = selected.value;\n    if (!current) return;\n    const copy = structuredClone(current);\n    basket.value = [...basket.value, copy];\n    emit(\"kept\", copy.name, copy.colour);\n  }",
               "span": {
-                "start": 473,
-                "end": 669
+                "start": 482,
+                "end": 678
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "selected@318",
+                  "binding": "selected@327",
                   "span": {
-                    "start": 495,
-                    "end": 509
+                    "start": 504,
+                    "end": 518
                   }
                 },
                 {
                   "kind": "Global",
                   "name": "structuredClone",
                   "span": {
-                    "start": 554,
-                    "end": 569
+                    "start": 563,
+                    "end": 578
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "basket@362",
+                  "binding": "basket@371",
                   "operator": "=",
                   "span": {
-                    "start": 584,
-                    "end": 622
+                    "start": 593,
+                    "end": 631
                   },
                   "target": {
-                    "start": 584,
-                    "end": 596
+                    "start": 593,
+                    "end": 605
                   },
                   "value": {
-                    "start": 599,
-                    "end": 622
+                    "start": 608,
+                    "end": 631
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "basket@362",
+                  "binding": "basket@371",
                   "span": {
-                    "start": 603,
-                    "end": 615
+                    "start": 612,
+                    "end": 624
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@245",
+                  "binding": "emit@254",
                   "event": "kept",
                   "span": {
-                    "start": 628,
-                    "end": 664
+                    "start": 637,
+                    "end": 673
                   },
                   "arguments": [
                     {
-                      "start": 641,
-                      "end": 650
+                      "start": 650,
+                      "end": 659
                     },
                     {
-                      "start": 652,
-                      "end": 663
+                      "start": 661,
+                      "end": 672
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 470,
-              "end": 669
+              "start": 479,
+              "end": 678
             }
           },
           "span": {
-            "start": 457,
-            "end": 669
+            "start": 466,
+            "end": 678
           }
         }
       ],
@@ -379,8 +379,8 @@
             "name": "class",
             "value": "fruit-picker",
             "span": {
-              "start": 695,
-              "end": 715
+              "start": 704,
+              "end": 724
             }
           },
           {
@@ -388,8 +388,8 @@
             "name": "aria-label",
             "value": "Fruit",
             "span": {
-              "start": 716,
-              "end": 734
+              "start": 725,
+              "end": 743
             }
           }
         ],
@@ -403,8 +403,8 @@
                 "name": "aria-label",
                 "value": "Fruits",
                 "span": {
-                  "start": 746,
-                  "end": 765
+                  "start": 755,
+                  "end": 774
                 }
               }
             ],
@@ -414,34 +414,34 @@
                 "source": {
                   "code": "fruits",
                   "span": {
-                    "start": 776,
-                    "end": 782
+                    "start": 785,
+                    "end": 791
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "fruits@207",
+                      "binding": "fruits@216",
                       "span": {
-                        "start": 776,
-                        "end": 782
+                        "start": 785,
+                        "end": 791
                       }
                     }
                   ]
                 },
-                "item": "fruit@788",
+                "item": "fruit@797",
                 "key": {
                   "code": "fruit.name",
                   "span": {
-                    "start": 819,
-                    "end": 829
+                    "start": 828,
+                    "end": 838
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "fruit@788",
+                      "binding": "fruit@797",
                       "span": {
-                        "start": 819,
-                        "end": 824
+                        "start": 828,
+                        "end": 833
                       }
                     }
                   ]
@@ -460,8 +460,8 @@
                           "name": "type",
                           "value": "button",
                           "span": {
-                            "start": 866,
-                            "end": 879
+                            "start": 875,
+                            "end": 888
                           }
                         },
                         {
@@ -470,31 +470,31 @@
                           "value": {
                             "code": "fruit === selected.value",
                             "span": {
-                              "start": 908,
-                              "end": 932
+                              "start": 917,
+                              "end": 941
                             },
                             "refs": [
                               {
                                 "kind": "Binding",
-                                "binding": "fruit@788",
+                                "binding": "fruit@797",
                                 "span": {
-                                  "start": 908,
-                                  "end": 913
+                                  "start": 917,
+                                  "end": 922
                                 }
                               },
                               {
                                 "kind": "Binding",
-                                "binding": "selected@318",
+                                "binding": "selected@327",
                                 "span": {
-                                  "start": 918,
-                                  "end": 932
+                                  "start": 927,
+                                  "end": 941
                                 }
                               }
                             ]
                           },
                           "span": {
-                            "start": 894,
-                            "end": 933
+                            "start": 903,
+                            "end": 942
                           }
                         },
                         {
@@ -507,43 +507,43 @@
                               "body": {
                                 "code": "pick(fruit)",
                                 "span": {
-                                  "start": 963,
-                                  "end": 974
+                                  "start": 972,
+                                  "end": 983
                                 },
                                 "refs": [
                                   {
                                     "kind": "Binding",
-                                    "binding": "pick@401",
+                                    "binding": "pick@410",
                                     "span": {
-                                      "start": 963,
-                                      "end": 967
+                                      "start": 972,
+                                      "end": 976
                                     },
                                     "call": true
                                   },
                                   {
                                     "kind": "Binding",
-                                    "binding": "fruit@788",
+                                    "binding": "fruit@797",
                                     "span": {
-                                      "start": 968,
-                                      "end": 973
+                                      "start": 977,
+                                      "end": 982
                                     }
                                   }
                                 ]
                               },
                               "expression": true,
                               "span": {
-                                "start": 957,
-                                "end": 974
+                                "start": 966,
+                                "end": 983
                               }
                             },
                             "span": {
-                              "start": 957,
-                              "end": 974
+                              "start": 966,
+                              "end": 983
                             }
                           },
                           "span": {
-                            "start": 948,
-                            "end": 975
+                            "start": 957,
+                            "end": 984
                           }
                         }
                       ],
@@ -553,46 +553,46 @@
                           "value": {
                             "code": "fruit.name",
                             "span": {
-                              "start": 1005,
-                              "end": 1015
+                              "start": 1014,
+                              "end": 1024
                             },
                             "refs": [
                               {
                                 "kind": "Binding",
-                                "binding": "fruit@788",
+                                "binding": "fruit@797",
                                 "span": {
-                                  "start": 1005,
-                                  "end": 1010
+                                  "start": 1014,
+                                  "end": 1019
                                 }
                               }
                             ]
                           },
                           "span": {
-                            "start": 1004,
-                            "end": 1016
+                            "start": 1013,
+                            "end": 1025
                           }
                         }
                       ],
                       "span": {
-                        "start": 844,
-                        "end": 1038
+                        "start": 853,
+                        "end": 1047
                       }
                     }
                   ],
                   "span": {
-                    "start": 810,
-                    "end": 1054
+                    "start": 819,
+                    "end": 1063
                   }
                 },
                 "span": {
-                  "start": 776,
-                  "end": 1065
+                  "start": 785,
+                  "end": 1074
                 }
               }
             ],
             "span": {
-              "start": 742,
-              "end": 1078
+              "start": 751,
+              "end": 1087
             }
           },
           {
@@ -604,8 +604,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 1093,
-                  "end": 1106
+                  "start": 1102,
+                  "end": 1115
                 }
               },
               {
@@ -613,15 +613,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "keep@466",
+                  "binding": "keep@475",
                   "span": {
-                    "start": 1116,
-                    "end": 1120
+                    "start": 1125,
+                    "end": 1129
                   }
                 },
                 "span": {
-                  "start": 1107,
-                  "end": 1121
+                  "start": 1116,
+                  "end": 1130
                 }
               }
             ],
@@ -630,14 +630,14 @@
                 "kind": "Text",
                 "value": "Keep a copy",
                 "span": {
-                  "start": 1122,
-                  "end": 1149
+                  "start": 1131,
+                  "end": 1158
                 }
               }
             ],
             "span": {
-              "start": 1085,
-              "end": 1158
+              "start": 1094,
+              "end": 1167
             }
           },
           {
@@ -649,8 +649,8 @@
                 "name": "aria-label",
                 "value": "Basket",
                 "span": {
-                  "start": 1169,
-                  "end": 1188
+                  "start": 1178,
+                  "end": 1197
                 }
               }
             ],
@@ -660,35 +660,35 @@
                 "source": {
                   "code": "basket.value",
                   "span": {
-                    "start": 1199,
-                    "end": 1211
+                    "start": 1208,
+                    "end": 1220
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "basket@362",
+                      "binding": "basket@371",
                       "span": {
-                        "start": 1199,
-                        "end": 1211
+                        "start": 1208,
+                        "end": 1220
                       }
                     }
                   ]
                 },
-                "item": "fruit@1217",
-                "index": "index@1224",
+                "item": "fruit@1226",
+                "index": "index@1233",
                 "key": {
                   "code": "index",
                   "span": {
-                    "start": 1255,
-                    "end": 1260
+                    "start": 1264,
+                    "end": 1269
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "index@1224",
+                      "binding": "index@1233",
                       "span": {
-                        "start": 1255,
-                        "end": 1260
+                        "start": 1264,
+                        "end": 1269
                       }
                     }
                   ]
@@ -703,54 +703,54 @@
                       "value": {
                         "code": "`${fruit.name} (${fruit.colour})`",
                         "span": {
-                          "start": 1263,
-                          "end": 1296
+                          "start": 1272,
+                          "end": 1305
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "fruit@1217",
+                            "binding": "fruit@1226",
                             "span": {
-                              "start": 1266,
-                              "end": 1271
+                              "start": 1275,
+                              "end": 1280
                             }
                           },
                           {
                             "kind": "Binding",
-                            "binding": "fruit@1217",
+                            "binding": "fruit@1226",
                             "span": {
-                              "start": 1281,
-                              "end": 1286
+                              "start": 1290,
+                              "end": 1295
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 1262,
-                        "end": 1297
+                        "start": 1271,
+                        "end": 1306
                       }
                     }
                   ],
                   "span": {
-                    "start": 1246,
-                    "end": 1302
+                    "start": 1255,
+                    "end": 1311
                   }
                 },
                 "span": {
-                  "start": 1199,
-                  "end": 1313
+                  "start": 1208,
+                  "end": 1322
                 }
               }
             ],
             "span": {
-              "start": 1165,
-              "end": 1326
+              "start": 1174,
+              "end": 1335
             }
           }
         ],
         "span": {
-          "start": 686,
-          "end": 1341
+          "start": 695,
+          "end": 1350
         }
       }
     }
@@ -761,8 +761,8 @@
       "name": "default",
       "local": "FruitPicker",
       "span": {
-        "start": 169,
-        "end": 1348
+        "start": 178,
+        "end": 1357
       }
     }
   ],
@@ -772,8 +772,8 @@
       "exported": true,
       "code": "interface Fruit {\n  name: string;\n  colour: string;\n}",
       "span": {
-        "start": 56,
-        "end": 109
+        "start": 65,
+        "end": 118
       }
     },
     {
@@ -781,8 +781,8 @@
       "exported": true,
       "code": "interface FruitPickerProps {\n  fruits: Fruit[];\n}",
       "span": {
-        "start": 118,
-        "end": 167
+        "start": 127,
+        "end": 176
       }
     }
   ]

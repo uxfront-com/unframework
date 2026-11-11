@@ -1,4 +1,4 @@
-import { defineEmits, onMounted, watch } from "unframework";
+import { defineEmits, onMounted, watch } from "@uxfront/unframework";
 
 export interface SectionHeadingProps {
   title: string;

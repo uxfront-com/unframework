@@ -1,7 +1,7 @@
 // The sources and the lowering the scoped-styles tests share (ADR-0063): each source is lowered
 // as `compile()` lowers it, with the sheets and the child APIs its resolver would read.
-import { formatOutput } from "@unframework/codegen";
-import type { ModuleApi, UfModule } from "@unframework/ir";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { ModuleApi, UfModule } from "@unframework.dev/ir";
 import { expect } from "vitest";
 
 import { analyze } from "../../analyzer/src/index.ts";

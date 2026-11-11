@@ -1,4 +1,4 @@
-// `unframework/config` (plan §8.1, ADR-0016): the entry a project's `unframework.config.ts` imports.
+// `@uxfront/unframework/config` (plan §8.1, ADR-0016): the entry a project's `unframework.config.ts` imports.
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -28,19 +28,19 @@ describe("defineConfig", () => {
     "writes a config that loadConfig reads under Node's type stripping",
     { timeout: 30_000 },
     () => {
-      // Inside the package, so that `unframework/config` resolves by its own name. `.probes-*` is ignored.
+      // Inside the package, so that `@uxfront/unframework/config` resolves by its own name. `.probes-*` is ignored.
       const root = mkdtempSync(join(PACKAGE, ".probes-config-"));
       directories.push(root);
       writeFileSync(
         join(root, "unframework.config.ts"),
-        `import { defineConfig } from "unframework/config";
-import type { UnframeworkConfig } from "unframework/config";
+        `import { defineConfig } from "@uxfront/unframework/config";
+import type { UnframeworkConfig } from "@uxfront/unframework/config";
 
 const config: UnframeworkConfig = { targets: ["vue"], srcDir: "components" };
 export default defineConfig(config);
 `,
       );
-      const script = `import { loadConfig, resolveConfig } from "@unframework/compiler";
+      const script = `import { loadConfig, resolveConfig } from "@unframework.dev/compiler";
 const loaded = await loadConfig(process.argv[1]);
 const resolved = await resolveConfig(loaded.raw, loaded);
 console.log(JSON.stringify({ loaded: loaded.diagnostics, ...resolved }));`;

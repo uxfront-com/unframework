@@ -5,8 +5,8 @@
     {
       "name": "SectionHeading",
       "span": {
-        "start": 121,
-        "end": 512
+        "start": 130,
+        "end": 521
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 110,
-              "end": 116
+              "start": 119,
+              "end": 125
             }
           },
-          "binding": "title@162",
+          "binding": "title@171",
           "span": {
-            "start": 103,
-            "end": 117
+            "start": 112,
+            "end": 126
           }
         }
       ],
@@ -31,25 +31,25 @@
         "type": {
           "code": "SectionHeadingProps",
           "span": {
-            "start": 171,
-            "end": 190
+            "start": 180,
+            "end": 199
           }
         },
         "span": {
-          "start": 160,
-          "end": 190
+          "start": 169,
+          "end": 199
         }
       },
       "types": [
         "SectionHeadingProps"
       ],
       "emits": {
-        "binding": "emit@202",
+        "binding": "emit@211",
         "type": {
           "code": "{ change: [title: string, previous?: string]; ready: [] }",
           "span": {
-            "start": 221,
-            "end": 278
+            "start": 230,
+            "end": 287
           }
         },
         "events": [
@@ -61,13 +61,13 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 239,
-                    "end": 245
+                    "start": 248,
+                    "end": 254
                   }
                 },
                 "span": {
-                  "start": 232,
-                  "end": 245
+                  "start": 241,
+                  "end": 254
                 }
               },
               {
@@ -76,52 +76,52 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 258,
-                    "end": 264
+                    "start": 267,
+                    "end": 273
                   }
                 },
                 "span": {
-                  "start": 247,
-                  "end": 264
+                  "start": 256,
+                  "end": 273
                 }
               }
             ],
             "span": {
-              "start": 223,
-              "end": 265
+              "start": 232,
+              "end": 274
             }
           },
           {
             "name": "ready",
             "parameters": [],
             "span": {
-              "start": 267,
-              "end": 276
+              "start": 276,
+              "end": 285
             }
           }
         ],
         "span": {
-          "start": 196,
-          "end": 282
+          "start": 205,
+          "end": 291
         }
       },
       "bindings": [
         {
-          "id": "title@162",
+          "id": "title@171",
           "name": "title",
           "kind": "prop",
           "span": {
-            "start": 162,
-            "end": 167
+            "start": 171,
+            "end": 176
           }
         },
         {
-          "id": "emit@202",
+          "id": "emit@211",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 202,
-            "end": 206
+            "start": 211,
+            "end": 215
           }
         }
       ],
@@ -136,29 +136,29 @@
                 "body": {
                   "code": "title",
                   "span": {
-                    "start": 303,
-                    "end": 308
+                    "start": 312,
+                    "end": 317
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "title@162",
+                      "binding": "title@171",
                       "span": {
-                        "start": 303,
-                        "end": 308
+                        "start": 312,
+                        "end": 317
                       }
                     }
                   ]
                 },
                 "expression": true,
                 "span": {
-                  "start": 297,
-                  "end": 308
+                  "start": 306,
+                  "end": 317
                 }
               },
               "span": {
-                "start": 297,
-                "end": 308
+                "start": 306,
+                "end": 317
               }
             }
           ],
@@ -167,55 +167,55 @@
               {
                 "name": "value",
                 "span": {
-                  "start": 315,
-                  "end": 320
+                  "start": 324,
+                  "end": 329
                 }
               },
               {
                 "name": "previous",
                 "span": {
-                  "start": 322,
-                  "end": 330
+                  "start": 331,
+                  "end": 339
                 }
               }
             ],
             "body": {
               "code": "{\n      emit(\"change\", value, previous);\n    }",
               "span": {
-                "start": 335,
-                "end": 381
+                "start": 344,
+                "end": 390
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@202",
+                  "binding": "emit@211",
                   "event": "change",
                   "span": {
-                    "start": 343,
-                    "end": 374
+                    "start": 352,
+                    "end": 383
                   },
                   "arguments": [
                     {
-                      "start": 358,
-                      "end": 363
+                      "start": 367,
+                      "end": 372
                     },
                     {
-                      "start": 365,
-                      "end": 373
+                      "start": 374,
+                      "end": 382
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 314,
-              "end": 381
+              "start": 323,
+              "end": 390
             }
           },
           "immediate": true,
           "span": {
-            "start": 286,
-            "end": 412
+            "start": 295,
+            "end": 421
           }
         },
         {
@@ -226,30 +226,30 @@
             "body": {
               "code": "{\n    emit(\"ready\");\n  }",
               "span": {
-                "start": 432,
-                "end": 456
+                "start": 441,
+                "end": 465
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@202",
+                  "binding": "emit@211",
                   "event": "ready",
                   "span": {
-                    "start": 438,
-                    "end": 451
+                    "start": 447,
+                    "end": 460
                   },
                   "arguments": []
                 }
               ]
             },
             "span": {
-              "start": 426,
-              "end": 456
+              "start": 435,
+              "end": 465
             }
           },
           "span": {
-            "start": 416,
-            "end": 458
+            "start": 425,
+            "end": 467
           }
         }
       ],
@@ -262,8 +262,8 @@
             "name": "class",
             "value": "section-heading",
             "span": {
-              "start": 473,
-              "end": 496
+              "start": 482,
+              "end": 505
             }
           }
         ],
@@ -273,29 +273,29 @@
             "value": {
               "code": "title",
               "span": {
-                "start": 498,
-                "end": 503
+                "start": 507,
+                "end": 512
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "title@162",
+                  "binding": "title@171",
                   "span": {
-                    "start": 498,
-                    "end": 503
+                    "start": 507,
+                    "end": 512
                   }
                 }
               ]
             },
             "span": {
-              "start": 497,
-              "end": 504
+              "start": 506,
+              "end": 513
             }
           }
         ],
         "span": {
-          "start": 469,
-          "end": 509
+          "start": 478,
+          "end": 518
         }
       }
     }
@@ -306,8 +306,8 @@
       "name": "default",
       "local": "SectionHeading",
       "span": {
-        "start": 121,
-        "end": 512
+        "start": 130,
+        "end": 521
       }
     }
   ],
@@ -317,8 +317,8 @@
       "exported": true,
       "code": "interface SectionHeadingProps {\n  title: string;\n}",
       "span": {
-        "start": 69,
-        "end": 119
+        "start": 78,
+        "end": 128
       }
     }
   ]

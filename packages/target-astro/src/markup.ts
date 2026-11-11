@@ -7,14 +7,14 @@ import {
   operand,
   printMarkup,
   rewriteExpression,
-} from "@unframework/codegen";
+} from "@unframework.dev/codegen";
 import type {
   MarkupDialect,
   MarkupOptions,
   MarkupPiece,
   PrintedAttribute,
   RewriteRules,
-} from "@unframework/codegen";
+} from "@unframework.dev/codegen";
 import type {
   Attribute,
   ComponentAttribute,
@@ -24,7 +24,7 @@ import type {
   Span,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { isRenderProp, SPREAD_STYLE } from "./composition.ts";
 import type { AstroRender } from "./composition.ts";

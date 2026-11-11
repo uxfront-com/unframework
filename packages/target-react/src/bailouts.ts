@@ -6,8 +6,8 @@
 // own spelling can make one: an emit is an optional call (`onSaved?.(id)`), which inside a `try`
 // block is a value block. Each shape here is one React Compiler 1.0 bails out on, pinned by a probe
 // in test/toolchain.test.ts that fails once the compiler compiles it.
-import { parseCodeSource } from "@unframework/codegen";
-import type { CodeKind } from "@unframework/codegen";
+import { parseCodeSource } from "@unframework.dev/codegen";
+import type { CodeKind } from "@unframework.dev/codegen";
 
 /** Code of the component's function: a statement of its body, its returned JSX, a prop's default. */
 export interface ComponentCode {

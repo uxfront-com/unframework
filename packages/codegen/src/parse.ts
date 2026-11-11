@@ -3,8 +3,8 @@
 // its literals, never to re-print it. Setup code is an expression (an initial value, an arrow's
 // expression body) or statements (a function's block body), ADR-0045.
 import type * as AST from "@oxc-project/types";
-import { parseModule } from "@unframework/parser";
-import type { ParsedModule } from "@unframework/parser";
+import { parseModule } from "@unframework.dev/parser";
+import type { ParsedModule } from "@unframework.dev/parser";
 
 /** A comment in parsed code. */
 export type ExpressionComment = ParsedModule["comments"][number];
@@ -42,12 +42,12 @@ const STATEMENTS_SUFFIX = "\n}";
 
 /**
  * Parses code that must be exactly one expression, with its comments, through
- * `@unframework/parser` (oxc). Offsets in the result are relative to `code`. Throws when the
+ * `@unframework.dev/parser` (oxc). Offsets in the result are relative to `code`. Throws when the
  * code is not one complete expression: printers splice only code the analyser accepted, so
  * that is a compiler bug, reported as an internal error.
  */
 export function parseExpressionSource(code: string): ParsedExpression {
-  // `@unframework/parser` has no expression entry: wrap the code in parentheses and parse a
+  // `@unframework.dev/parser` has no expression entry: wrap the code in parentheses and parse a
   // module. Code that closes the wrapper's parentheses itself (`a) + (b`) parses too, but
   // then the expression reaches past the code, which the span check rejects.
   const parsed = parseModule("expression.tsx", `${EXPRESSION_PREFIX}${code}${EXPRESSION_SUFFIX}`);

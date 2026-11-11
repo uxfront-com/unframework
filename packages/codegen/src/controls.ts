@@ -25,9 +25,9 @@ import type {
   FunctionCode,
   Span,
   UfComponent,
-} from "@unframework/ir";
-import { functionsOf } from "@unframework/ir";
-import { visitorKeys } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import { functionsOf } from "@unframework.dev/ir";
+import { visitorKeys } from "@unframework.dev/parser";
 
 import { parseCodeSource } from "./parse.ts";
 

@@ -1,6 +1,6 @@
 // control-flow/conditional-text: a conditional between two strings is text; conditionals between
 // an element and text sit at both edges of their element, the text keeping its edge space.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import SaveIndicator from "./SaveIndicator.uf.tsx";

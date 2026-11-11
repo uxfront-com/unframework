@@ -7,8 +7,8 @@
 // prop or of a member whose own type is known so. Otherwise none, and the class types the field
 // by a method that computes the initial value (./members.ts). A target reads no type oracle:
 // shapes reach the analyser alone (ADR-0067).
-import { parseExpression } from "@unframework/codegen";
-import type { BindingId, Code, TypeDeclaration } from "@unframework/ir";
+import { parseExpression } from "@unframework.dev/codegen";
+import type { BindingId, Code, TypeDeclaration } from "@unframework.dev/ir";
 
 import { bindingById } from "./plan.ts";
 import type { Plan } from "./plan.ts";

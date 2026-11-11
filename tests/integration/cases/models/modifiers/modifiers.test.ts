@@ -1,7 +1,7 @@
 // models/modifiers: `v-model`'s modifiers on text inputs (ADR-0054), as Vue's `vModelText`
 // applies them: `trim` trims what it writes, `lazy` writes on `change` rather than on each
 // `input`, and `number` casts the text with `looseToNumber`, keeping the number's leading part.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Profile from "./Profile.uf.tsx";

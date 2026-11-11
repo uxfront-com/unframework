@@ -1,4 +1,11 @@
-import { defineEmits, onMounted, onUnmounted, ref, useTemplateRef, watch } from "unframework";
+import {
+  defineEmits,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch,
+} from "@uxfront/unframework";
 
 export default function DraftPanel() {
   const emit = defineEmits<{

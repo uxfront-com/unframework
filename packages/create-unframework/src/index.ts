@@ -1,5 +1,6 @@
-// `create-unframework <dir>` (plan §5.2, ADR-0076). It keeps no dependencies, so `init` comes from
-// the `unframework` the new project installs, and the two can't disagree on what it writes.
+// `create-unframework <dir>` (plan §5.2, ADR-0076). It keeps no dependencies, so `init` comes
+// from the `@uxfront/unframework` the new project installs, and the two can't disagree on what
+// it writes.
 import { spawnSync } from "node:child_process";
 import { existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -12,10 +13,13 @@ export interface Io {
   stderr(text: string): void;
 }
 
+/** The package that holds the authoring API and the `unframework` bin (ADR-0090). */
+const PACKAGE = "@uxfront/unframework";
+
 const USAGE = "Usage: create-unframework <dir>\n";
 
 const MANIFEST = `${JSON.stringify(
-  { private: true, type: "module", dependencies: { unframework: "latest" } },
+  { private: true, type: "module", dependencies: { [PACKAGE]: "latest" } },
   null,
   2,
 )}
@@ -30,14 +34,13 @@ const PROCESS_IO: Io = {
 };
 
 /**
- * The bin of the `unframework` installed in `project`. It looks nowhere else, since an ancestor's
- * copy or one on `NODE_PATH`, which pnpm's bin shims set, isn't the project's own.
+ * The `unframework` bin of the package installed in `project`. It looks nowhere else, since an
+ * ancestor's copy or one on `NODE_PATH`, which pnpm's bin shims set, isn't the project's own.
  */
 function projectBin(project: string): string | undefined {
-  const manifest = join(project, "node_modules", "unframework", "package.json");
+  const manifest = join(project, "node_modules", PACKAGE, "package.json");
   if (!existsSync(manifest)) return undefined;
-  // The name on npm belongs to a third party until a release settles it (ADR-0076), so an
-  // installed `unframework` may not have this bin.
+  // Whatever is installed under the name may not have this bin, like a release from before it.
   const bin: unknown = JSON.parse(readFileSync(manifest, "utf8")).bin?.unframework;
   return typeof bin === "string" ? join(dirname(manifest), bin) : undefined;
 }

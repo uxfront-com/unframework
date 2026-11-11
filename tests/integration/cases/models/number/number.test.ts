@@ -1,6 +1,6 @@
 // models/number: `v-model` on a number and a range input binds a number (ADR-0054): the input's
 // text is cast as Vue's `looseToNumber` casts it, so the state adds as a number does.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Quantity from "./Quantity.uf.tsx";

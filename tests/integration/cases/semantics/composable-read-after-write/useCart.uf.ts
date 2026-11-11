@@ -1,6 +1,6 @@
 // A composable whose functions write its state (ADR-0069): its caller reads the returned ref
 // right after calling one, in the same client code.
-import { computed, ref } from "unframework";
+import { computed, ref } from "@uxfront/unframework";
 
 export function useCart() {
   const items = ref(0);

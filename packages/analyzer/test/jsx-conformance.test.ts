@@ -8,7 +8,7 @@
 // that holds one is compared as if it held another character there.
 import { parseSync, types } from "@babel/core";
 import type { Node } from "@babel/core";
-import { unkeptCharacter } from "@unframework/ir";
+import { unkeptCharacter } from "@unframework.dev/ir";
 import { defaultTreeAdapter, html as spec, parseFragment } from "parse5";
 import type { DefaultTreeAdapterTypes } from "parse5";
 import { transformWithEsbuild, transformWithOxc } from "vite";

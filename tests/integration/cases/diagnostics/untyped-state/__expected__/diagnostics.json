@@ -7,12 +7,12 @@
     "start": {
       "line": 8,
       "column": 7,
-      "offset": 350
+      "offset": 359
     },
     "end": {
       "line": 8,
       "column": 12,
-      "offset": 355
+      "offset": 364
     },
     "help": "Annotate it, as in `let timer: ReturnType<typeof setTimeout> | undefined;`, or give it an initial value."
   }

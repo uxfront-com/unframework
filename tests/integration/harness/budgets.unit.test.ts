@@ -4,8 +4,8 @@ import { cpSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { Worker } from "node:worker_threads";
 
-import { TARGET_NAMES } from "@unframework/compiler";
-import type { TargetName } from "@unframework/compiler";
+import { TARGET_NAMES } from "@unframework.dev/compiler";
+import type { TargetName } from "@unframework.dev/compiler";
 import { describe, expect, it } from "vitest";
 
 import {

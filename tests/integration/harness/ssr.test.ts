@@ -5,9 +5,9 @@
 import { readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 
-import type { SsrRenderer } from "@unframework/codegen";
-import { builtinTargets } from "@unframework/compiler";
-import type { TargetName } from "@unframework/compiler";
+import type { SsrRenderer } from "@unframework.dev/codegen";
+import { builtinTargets } from "@unframework.dev/compiler";
+import type { TargetName } from "@unframework.dev/compiler";
 import {
   checkLayers,
   diffLines,
@@ -16,8 +16,8 @@ import {
   settleArtefact,
   sharedArtefactContext,
   ssrScenarios,
-} from "@unframework/testing/node";
-import { isNormalizeTarget, normalizeHtml } from "@unframework/testing/normalize";
+} from "@unframework.dev/testing/node";
+import { isNormalizeTarget, normalizeHtml } from "@unframework.dev/testing/normalize";
 import { beforeAll, describe, inject, it } from "vitest";
 
 import { errorState, listCases, specTests } from "./cases.ts";

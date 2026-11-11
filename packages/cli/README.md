@@ -1,6 +1,6 @@
-# @unframework/cli
+# @unframework.dev/cli
 
-The `unframework` command line (plan §8.3, ADR-0076). The `unframework` package's bin runs it, so a
+The `unframework` command line (plan §8.3, ADR-0076). The `@uxfront/unframework` package's bin runs it, so a
 project runs it as `unframework <command>`, from the directory that holds its
 `unframework.config.ts`. A project with no config takes the defaults.
 
@@ -34,7 +34,7 @@ writes it:
 - **A barrel,** `index.ts`, which exports each exported component and composable under its name. A
   default export takes its component's name.
 
-`--type-oracle` overrides the config's `typeOracle`. `tsgo` loads `@unframework/type-oracle-tsgo`
+`--type-oracle` overrides the config's `typeOracle`. `tsgo` loads `@unframework.dev/type-oracle-tsgo`
 only then. With `strict` in the config, a portability warning (`UF4xxx`) counts as an error.
 
 A successful build prints only its warnings and notes, on standard error. A build with an error diagnostic from a compile or from what `--package` checks first, or with a
@@ -170,4 +170,4 @@ The example's config is an ES module, so there `check` and `build` exit 2 with U
 `"type": "module"`, or rename the file `unframework.config.mts`. A `package.json` with no `type` works,
 with a warning from Node.
 
-`init` writes no test yet, because `@unframework/testing` stays private until M7.
+`init` writes no test yet, because `@unframework.dev/testing` stays private until M7.

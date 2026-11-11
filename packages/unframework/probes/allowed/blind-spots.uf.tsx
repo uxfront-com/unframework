@@ -1,7 +1,7 @@
 // Mistakes stock tsgo deliberately does NOT catch. Each one is pinned here as clean code, so a change
 // that starts catching it fails the suite (move it to ../caught and update the README), and each
 // names the layer that does catch it.
-import { computed, onMounted, ref } from "unframework";
+import { computed, onMounted, ref } from "@uxfront/unframework";
 
 // A stylesheet another component already owns (plan §4.4). Caught by: compiler.
 import "../fixtures/Counter.css";

@@ -13,14 +13,14 @@ import {
 import { dirname, join, posix } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { Toolchain } from "@unframework/codegen";
-import type { TargetName } from "@unframework/compiler";
-import { toolchain as angular } from "@unframework/target-angular/toolchain";
-import { toolchain as qwik } from "@unframework/target-qwik/toolchain";
-import { toolchain as react } from "@unframework/target-react/toolchain";
-import { toolchain as solid } from "@unframework/target-solid/toolchain";
-import { toolchain as svelte } from "@unframework/target-svelte/toolchain";
-import { toolchain as vue } from "@unframework/target-vue/toolchain";
+import type { Toolchain } from "@unframework.dev/codegen";
+import type { TargetName } from "@unframework.dev/compiler";
+import { toolchain as angular } from "@unframework.dev/target-angular/toolchain";
+import { toolchain as qwik } from "@unframework.dev/target-qwik/toolchain";
+import { toolchain as react } from "@unframework.dev/target-react/toolchain";
+import { toolchain as solid } from "@unframework.dev/target-solid/toolchain";
+import { toolchain as svelte } from "@unframework.dev/target-svelte/toolchain";
+import { toolchain as vue } from "@unframework.dev/target-vue/toolchain";
 import { build as astroBuild, dev as astroDev } from "astro";
 import { build, createServer } from "vite";
 import type { InlineConfig, Plugin, Rollup, ViteDevServer } from "vite";
@@ -43,7 +43,7 @@ const BUTTON =
   'import "./Button.css";\nimport Icon from "./Icon.uf.tsx";\nimport type { Tone } from "./types";\n\nexport default function Button({ tone = "calm" }: { tone?: Tone }) {\n  return <button class="kit" data-tone={tone}><Icon />Kit button</button>;\n}\n';
 const ICON = 'export default function Icon() {\n  return <i class="icon">Kit icon</i>;\n}\n';
 const TOGGLE =
-  'import { ref } from "unframework";\n\nexport function useToggle() {\n  const on = ref(false);\n  return { on };\n}\n';
+  'import { ref } from "@uxfront/unframework";\n\nexport function useToggle() {\n  const on = ref(false);\n  return { on };\n}\n';
 
 /** The package as npm installs it: a `./source/*` subpath, and entries that hide the extension. */
 const KIT: Record<string, string> = {

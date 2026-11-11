@@ -1,6 +1,6 @@
 // What the harness provides to its own projects, besides `target` and `ufHarness` (declared by
-// @unframework/testing).
-import type {} from "@unframework/testing/node";
+// @unframework.dev/testing).
+import type {} from "@unframework.dev/testing/node";
 
 declare module "vitest" {
   interface ProvidedContext {

@@ -9,7 +9,7 @@ describe("solid module bindings (src/composable.ts)", () => {
   it("declares the constants a component reaches, and hoists a function that reads only them", async () => {
     const output = await emitSource(
       [
-        'import { ref } from "unframework";',
+        'import { ref } from "@uxfront/unframework";',
         "",
         "const BASE = 2;",
         "const STEP = BASE * 3;",
@@ -38,7 +38,7 @@ describe("solid module bindings (src/composable.ts)", () => {
   it("keeps in the component a setup constant named like a module's constant", async () => {
     const output = await emitSource(
       [
-        'import { ref } from "unframework";',
+        'import { ref } from "@uxfront/unframework";',
         "",
         "const LIMIT = 3;",
         "const caption = (n: number) => `${n} of ${LIMIT}`;",

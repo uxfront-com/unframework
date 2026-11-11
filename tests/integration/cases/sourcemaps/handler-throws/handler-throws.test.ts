@@ -1,6 +1,6 @@
 // sourcemaps/handler-throws: an error a click handler throws names its authored line (L14,
 // ADR-0078). The handler runs only on the click, so the first render is the same as any button's.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ChargeButton from "./ChargeButton.uf.tsx";

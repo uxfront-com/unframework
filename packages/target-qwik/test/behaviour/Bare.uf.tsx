@@ -1,4 +1,4 @@
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 // Listeners that only make a control (ADR-0047): a form whose submit listener only prevents the
 // submission, and a toolbar button whose mousedown listener only prevents the focus moving.

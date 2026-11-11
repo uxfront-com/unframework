@@ -1,4 +1,4 @@
-# @unframework/target-astro
+# @unframework.dev/target-astro
 
 The Astro 7 target of the Unframework compiler: static `.astro` components with no client
 runtime. Astro renders a component once, on the server, so the output is the component's initial
@@ -62,7 +62,7 @@ per component (ADR-0034, ADR-0046):
       A setup binding named `Astro` is declared under a claimed name (`Astro_1`). The analyser
       rejects copied code with a line that is only `---` (UF1002), which would end the frontmatter
       for the linter and the formatter.
-- **The markup**, printed by the Astro markup dialect (`@unframework/codegen`'s `astroDialect`,
+- **The markup**, printed by the Astro markup dialect (`@unframework.dev/codegen`'s `astroDialect`,
   owned with this target), whose expressions are printed as written:
   - `{expr}` interpolations, and `name={expr}` bindings;
   - conditionals as ternary chains ending in `null`, never `&&`, which renders a falsy left side
@@ -174,7 +174,7 @@ Every other capability is native.
 
 Its toolchain, for tests and tooling (the target's main entry never loads it):
 
-- **`@unframework/target-astro/toolchain`**: for `ssr` projects, Astro's own Vite pipeline
+- **`@unframework.dev/target-astro/toolchain`**: for `ssr` projects, Astro's own Vite pipeline
   (`getViteConfig`, with the dev toolbar off), so virtual `.uf.tsx.astro` ids compile as real
   `.astro` files. For `browser` projects, no Astro plugins (in the browser they replace components
   with stubs that throw): a compiled component becomes a plain reference, and the `ufAstroRender`

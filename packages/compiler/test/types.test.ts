@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import type { TypeOracle } from "@unframework/type-oracle";
+import type { TypeOracle } from "@unframework.dev/type-oracle";
 import { describe, expect, it } from "vitest";
 
 import { compile, createFileResolver, createSyntacticOracle } from "../src/index.ts";

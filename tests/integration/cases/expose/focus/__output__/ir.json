@@ -5,36 +5,36 @@
     {
       "name": "Header",
       "span": {
-        "start": 96,
-        "end": 390
+        "start": 105,
+        "end": 399
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "search@139",
+          "id": "search@148",
           "name": "search",
           "kind": "templateRef",
           "span": {
-            "start": 139,
-            "end": 145
+            "start": 148,
+            "end": 154
           }
         }
       ],
       "setup": [
         {
           "kind": "TemplateRef",
-          "binding": "search@139",
+          "binding": "search@148",
           "type": {
             "code": "{ focus(): void }",
             "span": {
-              "start": 163,
-              "end": 180
+              "start": 172,
+              "end": 189
             }
           },
           "span": {
-            "start": 133,
-            "end": 184
+            "start": 142,
+            "end": 193
           }
         }
       ],
@@ -47,8 +47,8 @@
             "name": "class",
             "value": "header",
             "span": {
-              "start": 208,
-              "end": 222
+              "start": 217,
+              "end": 231
             }
           }
         ],
@@ -59,10 +59,10 @@
             "attributes": [
               {
                 "kind": "Ref",
-                "binding": "search@139",
+                "binding": "search@148",
                 "span": {
-                  "start": 243,
-                  "end": 255
+                  "start": 252,
+                  "end": 264
                 }
               },
               {
@@ -71,21 +71,21 @@
                 "value": {
                   "code": "\"Find\"",
                   "span": {
-                    "start": 262,
-                    "end": 268
+                    "start": 271,
+                    "end": 277
                   },
                   "refs": []
                 },
                 "span": {
-                  "start": 256,
-                  "end": 268
+                  "start": 265,
+                  "end": 277
                 }
               }
             ],
             "fills": [],
             "span": {
-              "start": 230,
-              "end": 271
+              "start": 239,
+              "end": 280
             }
           },
           {
@@ -97,8 +97,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 286,
-                  "end": 299
+                  "start": 295,
+                  "end": 308
                 }
               },
               {
@@ -111,34 +111,34 @@
                     "body": {
                       "code": "search.value?.focus()",
                       "span": {
-                        "start": 315,
-                        "end": 336
+                        "start": 324,
+                        "end": 345
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "search@139",
+                          "binding": "search@148",
                           "span": {
-                            "start": 315,
-                            "end": 327
+                            "start": 324,
+                            "end": 336
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 309,
-                      "end": 336
+                      "start": 318,
+                      "end": 345
                     }
                   },
                   "span": {
-                    "start": 309,
-                    "end": 336
+                    "start": 318,
+                    "end": 345
                   }
                 },
                 "span": {
-                  "start": 300,
-                  "end": 337
+                  "start": 309,
+                  "end": 346
                 }
               }
             ],
@@ -147,20 +147,20 @@
                 "kind": "Text",
                 "value": "Search",
                 "span": {
-                  "start": 338,
-                  "end": 360
+                  "start": 347,
+                  "end": 369
                 }
               }
             ],
             "span": {
-              "start": 278,
-              "end": 369
+              "start": 287,
+              "end": 378
             }
           }
         ],
         "span": {
-          "start": 200,
-          "end": 383
+          "start": 209,
+          "end": 392
         }
       }
     }
@@ -171,8 +171,8 @@
       "name": "default",
       "local": "Header",
       "span": {
-        "start": 96,
-        "end": 390
+        "start": 105,
+        "end": 399
       }
     }
   ],
@@ -213,14 +213,14 @@
           "imported": "default",
           "local": "SearchField",
           "span": {
-            "start": 54,
-            "end": 65
+            "start": 63,
+            "end": 74
           }
         }
       ],
       "span": {
-        "start": 47,
-        "end": 94
+        "start": 56,
+        "end": 103
       }
     }
   ]

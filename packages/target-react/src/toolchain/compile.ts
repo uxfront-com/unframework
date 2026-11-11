@@ -4,8 +4,12 @@
 import { createRequire } from "node:module";
 
 import type * as Babel from "@babel/core";
-import type { FrameworkCompileResult, ToolchainFile, ToolchainMessage } from "@unframework/codegen";
-import { assertFilesToCompile } from "@unframework/codegen/toolchain-node";
+import type {
+  FrameworkCompileResult,
+  ToolchainFile,
+  ToolchainMessage,
+} from "@unframework.dev/codegen";
+import { assertFilesToCompile } from "@unframework.dev/codegen/toolchain-node";
 import type { LoggerEvent, PluginOptions } from "babel-plugin-react-compiler";
 
 /**

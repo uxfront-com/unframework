@@ -1,4 +1,4 @@
-import { defineModel } from "unframework";
+import { defineModel } from "@uxfront/unframework";
 
 export default function Stepper({ label }: { label: string }) {
   const value = defineModel<number>("value", { default: 0 });

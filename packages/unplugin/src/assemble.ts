@@ -4,10 +4,10 @@
 // component's file while each other component loads under a component id (ADR-0053). A script
 // module keeps the `.uf.tsx` file's exports; a markup file's module has only a default export, so
 // a main component exported by name is refused there.
-import { composeJoinedMap, withLineStarts } from "@unframework/codegen";
-import type { OutputFile, SourceMapV3 } from "@unframework/codegen";
-import { parseModule } from "@unframework/parser";
-import type { AST } from "@unframework/parser";
+import { composeJoinedMap, withLineStarts } from "@unframework.dev/codegen";
+import type { OutputFile, SourceMapV3 } from "@unframework.dev/codegen";
+import { parseModule } from "@unframework.dev/parser";
+import type { AST } from "@unframework.dev/parser";
 import { Bundle, MagicString } from "magic-string";
 
 /** The code a module loads, with its map when it has one, or why it has none. */

@@ -1,4 +1,4 @@
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 import Chart from "./Chart.uf.tsx";
 

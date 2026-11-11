@@ -25,7 +25,7 @@ function frameworkImport(): Diagnostic {
     file,
     span: reactSpan,
     message: '"react" is a React module, and components are framework-free.',
-    help: 'Write the component with the authoring API from "unframework".',
+    help: 'Write the component with the authoring API from "@uxfront/unframework".',
   });
 }
 
@@ -130,7 +130,7 @@ describe("formatDiagnostic", () => {
       1 | import { useState } from "react";
         |                          ^^^^^^^
         |
-        = help: Write the component with the authoring API from "unframework".
+        = help: Write the component with the authoring API from "@uxfront/unframework".
         = see: https://unframework.dev/diagnostics/UF1201"
     `);
   });
@@ -155,7 +155,7 @@ describe("formatDiagnostic", () => {
       1 | import { useState } from "react";
         |                          ^^^^^^^ imported here
         |
-        = help: Write the component with the authoring API from "unframework".
+        = help: Write the component with the authoring API from "@uxfront/unframework".
         = fix (safe): Remove the import"
     `);
   });
@@ -165,7 +165,7 @@ describe("formatDiagnostic", () => {
       [
         'error[UF1201]: "react" is a React module, and components are framework-free.',
         " --> Widget.uf.tsx",
-        '  = help: Write the component with the authoring API from "unframework".',
+        '  = help: Write the component with the authoring API from "@uxfront/unframework".',
       ].join("\n"),
     );
   });

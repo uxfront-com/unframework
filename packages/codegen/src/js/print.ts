@@ -1,5 +1,5 @@
 import type * as AST from "@oxc-project/types";
-import type { TypeDeclaration } from "@unframework/ir";
+import type { TypeDeclaration } from "@unframework.dev/ir";
 import { printSync } from "oxc-codegen";
 
 import { typeDeclarationCode } from "../exports.ts";

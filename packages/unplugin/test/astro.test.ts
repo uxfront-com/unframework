@@ -86,7 +86,7 @@ const builtPage = (name: string) => readFileSync(join(root, `dist-${name}/index.
 
 describe("the Astro integration", () => {
   it("is the package's ./astro entry, in source and once published", async () => {
-    const entry = await import("@unframework/unplugin/astro");
+    const entry = await import("@unframework.dev/unplugin/astro");
     expect(entry.default).toBe(unframework);
     const manifest = JSON.parse(
       readFileSync(new URL("../package.json", import.meta.url), "utf8"),

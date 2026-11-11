@@ -29,7 +29,7 @@ if (import.meta.main) {
   if (process.argv.includes("--check")) {
     if (readFileSync(output, "utf8") !== schema) {
       console.error(
-        "schema/ir.schema.json is stale: run `pnpm --filter @unframework/ir generate`.",
+        "schema/ir.schema.json is stale: run `pnpm --filter @unframework.dev/ir generate`.",
       );
       process.exit(1);
     }

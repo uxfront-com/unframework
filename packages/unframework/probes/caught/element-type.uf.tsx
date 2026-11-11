@@ -1,5 +1,5 @@
 // What JSX.Element (opaque, branded) and the non-global JSX namespace mean for authors.
-import { defineSlots, type Element } from "unframework";
+import { defineSlots, type Element } from "@uxfront/unframework";
 
 function ReturnsAString() {
   return "not JSX";
@@ -17,7 +17,7 @@ export function JsxIsNotAValue() {
 }
 
 export function JsxNamespaceIsNotGlobal() {
-  // @ts-expect-error TS2503 `JSX` is not a global: `import { type JSX } from "unframework"` (or `Element`)
+  // @ts-expect-error TS2503 `JSX` is not a global: `import { type JSX } from "@uxfront/unframework"` (or `Element`)
   const slots = defineSlots<{ default?(): JSX.Element }>();
   return <div>{slots.default?.()}</div>;
 }

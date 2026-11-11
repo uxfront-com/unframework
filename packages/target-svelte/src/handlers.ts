@@ -6,9 +6,9 @@
 // the annotation all extend: the members the handler may use are those every target's event
 // carries (`PORTABLE_EVENT_MEMBERS`, UF3032), which that interface has. An unannotated parameter
 // of a setup function takes the nearest interface of what it receives.
-import { codeKind, parseCodeSource } from "@unframework/codegen";
-import { EVENT_INTERFACES, extendsEventInterface, walk } from "@unframework/ir";
-import type { BindingId, FunctionCode, Handler, Parameter, UfComponent } from "@unframework/ir";
+import { codeKind, parseCodeSource } from "@unframework.dev/codegen";
+import { EVENT_INTERFACES, extendsEventInterface, walk } from "@unframework.dev/ir";
+import type { BindingId, FunctionCode, Handler, Parameter, UfComponent } from "@unframework.dev/ir";
 
 import { visit } from "./ast.ts";
 import { commonInterface, handlerInterface } from "./events.ts";

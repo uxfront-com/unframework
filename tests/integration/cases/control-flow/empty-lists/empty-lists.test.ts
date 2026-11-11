@@ -1,6 +1,6 @@
 // control-flow/empty-lists: an empty list renders an empty element beside a "nothing here"
 // branch; an optional list prop defaults to an empty array.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import MessageList from "./MessageList.uf.tsx";

@@ -5,94 +5,94 @@
     {
       "name": "Timeline",
       "span": {
-        "start": 104,
-        "end": 858
+        "start": 113,
+        "end": 867
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "entries@149",
+          "id": "entries@158",
           "name": "entries",
           "kind": "state",
           "span": {
-            "start": 149,
-            "end": 156
+            "start": 158,
+            "end": 165
           }
         },
         {
-          "id": "record@190",
+          "id": "record@199",
           "name": "record",
           "kind": "localFn",
           "span": {
-            "start": 190,
-            "end": 196
+            "start": 199,
+            "end": 205
           }
         },
         {
-          "id": "count@328",
+          "id": "count@337",
           "name": "count",
           "kind": "usedState",
           "span": {
-            "start": 328,
-            "end": 333
+            "start": 337,
+            "end": 342
           }
         },
         {
-          "id": "increment@335",
+          "id": "increment@344",
           "name": "increment",
           "kind": "usedFn",
           "span": {
-            "start": 335,
-            "end": 344
+            "start": 344,
+            "end": 353
           }
         },
         {
-          "id": "entry@755",
+          "id": "entry@764",
           "name": "entry",
           "kind": "loopVar",
           "span": {
-            "start": 755,
-            "end": 760
+            "start": 764,
+            "end": 769
           }
         },
         {
-          "id": "index@762",
+          "id": "index@771",
           "name": "index",
           "kind": "loopVar",
           "span": {
-            "start": 762,
-            "end": 767
+            "start": 771,
+            "end": 776
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "entries@149",
+          "binding": "entries@158",
           "type": {
             "code": "string[]",
             "span": {
-              "start": 163,
-              "end": 171
+              "start": 172,
+              "end": 180
             }
           },
           "initial": {
             "code": "[]",
             "span": {
-              "start": 173,
-              "end": 175
+              "start": 182,
+              "end": 184
             },
             "refs": []
           },
           "span": {
-            "start": 143,
-            "end": 177
+            "start": 152,
+            "end": 186
           }
         },
         {
           "kind": "Function",
-          "binding": "record@190",
+          "binding": "record@199",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -101,58 +101,58 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 204,
-                    "end": 210
+                    "start": 213,
+                    "end": 219
                   }
                 },
                 "span": {
-                  "start": 197,
-                  "end": 210
+                  "start": 206,
+                  "end": 219
                 }
               }
             ],
             "body": {
               "code": "{\n    entries.value = [...entries.value, entry];\n  }",
               "span": {
-                "start": 212,
-                "end": 264
+                "start": 221,
+                "end": 273
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "entries@149",
+                  "binding": "entries@158",
                   "operator": "=",
                   "span": {
-                    "start": 218,
-                    "end": 259
+                    "start": 227,
+                    "end": 268
                   },
                   "target": {
-                    "start": 218,
-                    "end": 231
+                    "start": 227,
+                    "end": 240
                   },
                   "value": {
-                    "start": 234,
-                    "end": 259
+                    "start": 243,
+                    "end": 268
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "entries@149",
+                  "binding": "entries@158",
                   "span": {
-                    "start": 238,
-                    "end": 251
+                    "start": 247,
+                    "end": 260
                   }
                 }
               ]
             },
             "span": {
-              "start": 196,
-              "end": 264
+              "start": 205,
+              "end": 273
             }
           },
           "span": {
-            "start": 181,
-            "end": 264
+            "start": 190,
+            "end": 273
           }
         },
         {
@@ -163,16 +163,16 @@
             "body": {
               "code": "record(\"caller mounted first\")",
               "span": {
-                "start": 284,
-                "end": 314
+                "start": 293,
+                "end": 323
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "record@190",
+                  "binding": "record@199",
                   "span": {
-                    "start": 284,
-                    "end": 290
+                    "start": 293,
+                    "end": 299
                   },
                   "call": true
                 }
@@ -180,13 +180,13 @@
             },
             "expression": true,
             "span": {
-              "start": 278,
-              "end": 314
+              "start": 287,
+              "end": 323
             }
           },
           "span": {
-            "start": 268,
-            "end": 316
+            "start": 277,
+            "end": 325
           }
         },
         {
@@ -200,24 +200,24 @@
                   {
                     "name": "entry",
                     "span": {
-                      "start": 361,
-                      "end": 366
+                      "start": 370,
+                      "end": 375
                     }
                   }
                 ],
                 "body": {
                   "code": "record(entry)",
                   "span": {
-                    "start": 371,
-                    "end": 384
+                    "start": 380,
+                    "end": 393
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "record@190",
+                      "binding": "record@199",
                       "span": {
-                        "start": 371,
-                        "end": 377
+                        "start": 380,
+                        "end": 386
                       },
                       "call": true
                     }
@@ -225,38 +225,38 @@
                 },
                 "expression": true,
                 "span": {
-                  "start": 360,
-                  "end": 384
+                  "start": 369,
+                  "end": 393
                 }
               },
               "span": {
-                "start": 360,
-                "end": 384
+                "start": 369,
+                "end": 393
               }
             }
           ],
           "members": [
             {
               "member": "count",
-              "binding": "count@328",
+              "binding": "count@337",
               "span": {
-                "start": 328,
-                "end": 333
+                "start": 337,
+                "end": 342
               }
             },
             {
               "member": "increment",
-              "binding": "increment@335",
+              "binding": "increment@344",
               "span": {
-                "start": 335,
-                "end": 344
+                "start": 344,
+                "end": 353
               }
             }
           ],
           "hasEffects": true,
           "span": {
-            "start": 320,
-            "end": 386
+            "start": 329,
+            "end": 395
           }
         },
         {
@@ -269,29 +269,29 @@
                 "body": {
                   "code": "count.value",
                   "span": {
-                    "start": 407,
-                    "end": 418
+                    "start": 416,
+                    "end": 427
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "count@328",
+                      "binding": "count@337",
                       "span": {
-                        "start": 407,
-                        "end": 418
+                        "start": 416,
+                        "end": 427
                       }
                     }
                   ]
                 },
                 "expression": true,
                 "span": {
-                  "start": 401,
-                  "end": 418
+                  "start": 410,
+                  "end": 427
                 }
               },
               "span": {
-                "start": 401,
-                "end": 418
+                "start": 410,
+                "end": 427
               }
             }
           ],
@@ -300,16 +300,16 @@
             "body": {
               "code": "record(\"caller watcher\")",
               "span": {
-                "start": 430,
-                "end": 454
+                "start": 439,
+                "end": 463
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "record@190",
+                  "binding": "record@199",
                   "span": {
-                    "start": 430,
-                    "end": 436
+                    "start": 439,
+                    "end": 445
                   },
                   "call": true
                 }
@@ -317,13 +317,13 @@
             },
             "expression": true,
             "span": {
-              "start": 424,
-              "end": 454
+              "start": 433,
+              "end": 463
             }
           },
           "span": {
-            "start": 390,
-            "end": 460
+            "start": 399,
+            "end": 469
           }
         },
         {
@@ -334,16 +334,16 @@
             "body": {
               "code": "record(\"caller mounted last\")",
               "span": {
-                "start": 480,
-                "end": 509
+                "start": 489,
+                "end": 518
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "record@190",
+                  "binding": "record@199",
                   "span": {
-                    "start": 480,
-                    "end": 486
+                    "start": 489,
+                    "end": 495
                   },
                   "call": true
                 }
@@ -351,13 +351,13 @@
             },
             "expression": true,
             "span": {
-              "start": 474,
-              "end": 509
+              "start": 483,
+              "end": 518
             }
           },
           "span": {
-            "start": 464,
-            "end": 511
+            "start": 473,
+            "end": 520
           }
         }
       ],
@@ -370,8 +370,8 @@
             "name": "class",
             "value": "timeline",
             "span": {
-              "start": 537,
-              "end": 553
+              "start": 546,
+              "end": 562
             }
           },
           {
@@ -379,8 +379,8 @@
             "name": "aria-label",
             "value": "Timeline",
             "span": {
-              "start": 554,
-              "end": 575
+              "start": 563,
+              "end": 584
             }
           }
         ],
@@ -394,8 +394,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 586,
-                  "end": 599
+                  "start": 595,
+                  "end": 608
                 }
               }
             ],
@@ -404,8 +404,8 @@
                 "kind": "Text",
                 "value": "Count: ",
                 "span": {
-                  "start": 600,
-                  "end": 607
+                  "start": 609,
+                  "end": 616
                 }
               },
               {
@@ -413,29 +413,29 @@
                 "value": {
                   "code": "count.value",
                   "span": {
-                    "start": 608,
-                    "end": 619
+                    "start": 617,
+                    "end": 628
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "count@328",
+                      "binding": "count@337",
                       "span": {
-                        "start": 608,
-                        "end": 619
+                        "start": 617,
+                        "end": 628
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 607,
-                  "end": 620
+                  "start": 616,
+                  "end": 629
                 }
               }
             ],
             "span": {
-              "start": 583,
-              "end": 624
+              "start": 592,
+              "end": 633
             }
           },
           {
@@ -447,8 +447,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 639,
-                  "end": 652
+                  "start": 648,
+                  "end": 661
                 }
               },
               {
@@ -461,16 +461,16 @@
                     "body": {
                       "code": "increment()",
                       "span": {
-                        "start": 668,
-                        "end": 679
+                        "start": 677,
+                        "end": 688
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "increment@335",
+                          "binding": "increment@344",
                           "span": {
-                            "start": 668,
-                            "end": 677
+                            "start": 677,
+                            "end": 686
                           },
                           "call": true
                         }
@@ -478,18 +478,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 662,
-                      "end": 679
+                      "start": 671,
+                      "end": 688
                     }
                   },
                   "span": {
-                    "start": 662,
-                    "end": 679
+                    "start": 671,
+                    "end": 688
                   }
                 },
                 "span": {
-                  "start": 653,
-                  "end": 680
+                  "start": 662,
+                  "end": 689
                 }
               }
             ],
@@ -498,14 +498,14 @@
                 "kind": "Text",
                 "value": "Increment",
                 "span": {
-                  "start": 681,
-                  "end": 706
+                  "start": 690,
+                  "end": 715
                 }
               }
             ],
             "span": {
-              "start": 631,
-              "end": 715
+              "start": 640,
+              "end": 724
             }
           },
           {
@@ -518,35 +518,35 @@
                 "source": {
                   "code": "entries.value",
                   "span": {
-                    "start": 736,
-                    "end": 749
+                    "start": 745,
+                    "end": 758
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "entries@149",
+                      "binding": "entries@158",
                       "span": {
-                        "start": 736,
-                        "end": 749
+                        "start": 745,
+                        "end": 758
                       }
                     }
                   ]
                 },
-                "item": "entry@755",
-                "index": "index@762",
+                "item": "entry@764",
+                "index": "index@771",
                 "key": {
                   "code": "index",
                   "span": {
-                    "start": 793,
-                    "end": 798
+                    "start": 802,
+                    "end": 807
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "index@762",
+                      "binding": "index@771",
                       "span": {
-                        "start": 793,
-                        "end": 798
+                        "start": 802,
+                        "end": 807
                       }
                     }
                   ]
@@ -561,46 +561,46 @@
                       "value": {
                         "code": "entry",
                         "span": {
-                          "start": 801,
-                          "end": 806
+                          "start": 810,
+                          "end": 815
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "entry@755",
+                            "binding": "entry@764",
                             "span": {
-                              "start": 801,
-                              "end": 806
+                              "start": 810,
+                              "end": 815
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 800,
-                        "end": 807
+                        "start": 809,
+                        "end": 816
                       }
                     }
                   ],
                   "span": {
-                    "start": 784,
-                    "end": 812
+                    "start": 793,
+                    "end": 821
                   }
                 },
                 "span": {
-                  "start": 736,
-                  "end": 823
+                  "start": 745,
+                  "end": 832
                 }
               }
             ],
             "span": {
-              "start": 722,
-              "end": 836
+              "start": 731,
+              "end": 845
             }
           }
         ],
         "span": {
-          "start": 528,
-          "end": 851
+          "start": 537,
+          "end": 860
         }
       }
     }
@@ -611,8 +611,8 @@
       "name": "default",
       "local": "Timeline",
       "span": {
-        "start": 104,
-        "end": 858
+        "start": 113,
+        "end": 867
       }
     }
   ],
@@ -657,14 +657,14 @@
           "imported": "useTracked",
           "local": "useTracked",
           "span": {
-            "start": 63,
-            "end": 73
+            "start": 72,
+            "end": 82
           }
         }
       ],
       "span": {
-        "start": 54,
-        "end": 102
+        "start": 63,
+        "end": 111
       }
     }
   ]

@@ -19,8 +19,8 @@ import {
   UNBINDABLE_ATTRIBUTES,
   UNDECLARED_ATTRIBUTES,
   UNRENDERABLE_ELEMENTS,
-} from "@unframework/ir";
-import type { ElementNode, FragmentNode } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { ElementNode, FragmentNode } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { defineTarget, htmlDialect, printMarkup, vueDialect } from "../src/index.ts";

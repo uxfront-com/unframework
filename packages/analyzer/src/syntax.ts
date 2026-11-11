@@ -1,7 +1,7 @@
-import { applyEdits } from "@unframework/diagnostics";
-import type { Fix, Span, TextEdit } from "@unframework/diagnostics";
-import { parseModule } from "@unframework/parser";
-import type { ParseError, ParsedModule } from "@unframework/parser";
+import { applyEdits } from "@unframework.dev/diagnostics";
+import type { Fix, Span, TextEdit } from "@unframework.dev/diagnostics";
+import { parseModule } from "@unframework.dev/parser";
+import type { ParseError, ParsedModule } from "@unframework.dev/parser";
 
 /**
  * oxc's error for a `}` or `>` in JSX text, which advises `{'}'}` (a string expression, which

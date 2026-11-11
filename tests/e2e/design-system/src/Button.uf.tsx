@@ -1,6 +1,6 @@
 import "./Button.css";
-import { defineEmits, defineSlots } from "unframework";
-import type { Element } from "unframework";
+import { defineEmits, defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 import type { ButtonVariant } from "./types";
 

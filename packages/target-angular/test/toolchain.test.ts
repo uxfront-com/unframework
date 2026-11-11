@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import { join, resolve } from "node:path";
 
-import type { ToolchainContext } from "@unframework/codegen";
+import type { ToolchainContext } from "@unframework.dev/codegen";
 import type { Plugin } from "vite";
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -36,7 +36,7 @@ describe("the toolchain", () => {
   it("names its runtime entries after the package's exports", () => {
     expect(toolchain.name).toBe("angular");
     for (const specifier of [toolchain.client, toolchain.server]) {
-      const subpath = specifier.replace("@unframework/target-angular", ".");
+      const subpath = specifier.replace("@unframework.dev/target-angular", ".");
       expect(manifest.exports, specifier).toHaveProperty([subpath]);
     }
   });

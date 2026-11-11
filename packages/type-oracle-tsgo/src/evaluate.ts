@@ -13,7 +13,7 @@ import type {
   TypeNode as ShapeNode,
   TypeParameterNode,
   TypeShape,
-} from "@unframework/type-oracle";
+} from "@unframework.dev/type-oracle";
 import { ModifierFlags, SyntaxKind } from "typescript/unstable/ast";
 import type { Node, SourceFile } from "typescript/unstable/ast";
 import {

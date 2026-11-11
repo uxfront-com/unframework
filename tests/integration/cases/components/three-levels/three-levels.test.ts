@@ -1,6 +1,6 @@
 // components/three-levels: a page renders two sections, and each section a heading, each
 // component imported from a file of its own (ADR-0053). Props pass down two levels.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Page from "./Page.uf.tsx";

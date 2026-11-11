@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-import unframework from "@unframework/unplugin/vite";
+import unframework from "@unframework.dev/unplugin/vite";
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 

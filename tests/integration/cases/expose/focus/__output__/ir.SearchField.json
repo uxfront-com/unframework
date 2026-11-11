@@ -5,8 +5,8 @@
     {
       "name": "SearchField",
       "span": {
-        "start": 61,
-        "end": 372
+        "start": 70,
+        "end": 381
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 117,
-              "end": 123
+              "start": 126,
+              "end": 132
             }
           },
-          "binding": "label@99",
+          "binding": "label@108",
           "span": {
-            "start": 110,
-            "end": 123
+            "start": 119,
+            "end": 132
           }
         }
       ],
@@ -31,101 +31,101 @@
         "type": {
           "code": "{ label: string }",
           "span": {
-            "start": 108,
-            "end": 125
+            "start": 117,
+            "end": 134
           }
         },
         "span": {
-          "start": 97,
-          "end": 125
+          "start": 106,
+          "end": 134
         }
       },
       "types": [],
       "exposes": {
         "functions": [
-          "focus@192"
+          "focus@201"
         ],
         "span": {
-          "start": 234,
-          "end": 257
+          "start": 243,
+          "end": 266
         }
       },
       "bindings": [
         {
-          "id": "label@99",
+          "id": "label@108",
           "name": "label",
           "kind": "prop",
           "span": {
-            "start": 99,
-            "end": 104
+            "start": 108,
+            "end": 113
           }
         },
         {
-          "id": "input@137",
+          "id": "input@146",
           "name": "input",
           "kind": "templateRef",
           "span": {
-            "start": 137,
-            "end": 142
+            "start": 146,
+            "end": 151
           }
         },
         {
-          "id": "focus@192",
+          "id": "focus@201",
           "name": "focus",
           "kind": "localFn",
           "span": {
-            "start": 192,
-            "end": 197
+            "start": 201,
+            "end": 206
           }
         }
       ],
       "setup": [
         {
           "kind": "TemplateRef",
-          "binding": "input@137",
+          "binding": "input@146",
           "type": {
             "code": "HTMLInputElement",
             "span": {
-              "start": 160,
-              "end": 176
+              "start": 169,
+              "end": 185
             }
           },
           "span": {
-            "start": 131,
-            "end": 180
+            "start": 140,
+            "end": 189
           }
         },
         {
           "kind": "Function",
-          "binding": "focus@192",
+          "binding": "focus@201",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    input.value?.focus();\n  }",
               "span": {
-                "start": 200,
-                "end": 231
+                "start": 209,
+                "end": 240
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "input@137",
+                  "binding": "input@146",
                   "span": {
-                    "start": 206,
-                    "end": 217
+                    "start": 215,
+                    "end": 226
                   }
                 }
               ]
             },
             "span": {
-              "start": 197,
-              "end": 231
+              "start": 206,
+              "end": 240
             }
           },
           "span": {
-            "start": 183,
-            "end": 231
+            "start": 192,
+            "end": 240
           }
         }
       ],
@@ -138,8 +138,8 @@
             "name": "class",
             "value": "search",
             "span": {
-              "start": 281,
-              "end": 295
+              "start": 290,
+              "end": 304
             }
           }
         ],
@@ -149,23 +149,23 @@
             "value": {
               "code": "label",
               "span": {
-                "start": 304,
-                "end": 309
+                "start": 313,
+                "end": 318
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "label@99",
+                  "binding": "label@108",
                   "span": {
-                    "start": 304,
-                    "end": 309
+                    "start": 313,
+                    "end": 318
                   }
                 }
               ]
             },
             "span": {
-              "start": 303,
-              "end": 310
+              "start": 312,
+              "end": 319
             }
           },
           {
@@ -174,10 +174,10 @@
             "attributes": [
               {
                 "kind": "Ref",
-                "binding": "input@137",
+                "binding": "input@146",
                 "span": {
-                  "start": 324,
-                  "end": 335
+                  "start": 333,
+                  "end": 344
                 }
               },
               {
@@ -185,21 +185,21 @@
                 "name": "type",
                 "value": "search",
                 "span": {
-                  "start": 336,
-                  "end": 349
+                  "start": 345,
+                  "end": 358
                 }
               }
             ],
             "children": [],
             "span": {
-              "start": 317,
-              "end": 352
+              "start": 326,
+              "end": 361
             }
           }
         ],
         "span": {
-          "start": 274,
-          "end": 365
+          "start": 283,
+          "end": 374
         }
       }
     }
@@ -210,8 +210,8 @@
       "name": "default",
       "local": "SearchField",
       "span": {
-        "start": 61,
-        "end": 372
+        "start": 70,
+        "end": 381
       }
     }
   ],

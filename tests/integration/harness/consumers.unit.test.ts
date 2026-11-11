@@ -4,8 +4,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import type { ToolchainMessage } from "@unframework/codegen";
-import { TARGET_NAMES } from "@unframework/compiler";
+import type { ToolchainMessage } from "@unframework.dev/codegen";
+import { TARGET_NAMES } from "@unframework.dev/compiler";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { listCases } from "./cases.ts";

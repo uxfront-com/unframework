@@ -21,9 +21,9 @@
 //   the options change, where the browser would select the first.
 // - A helper that needs the element (`modelText`, `selectOptions`) is called from the element's
 //   own `ref` callback where it has one (a template ref, an added listener): one `ref` an element.
-import { js, jsxBinding, jsxExpression } from "@unframework/codegen";
-import type { ImportSet, JsxContext } from "@unframework/codegen";
-import type { ElementNode, ModelAttribute, UfComponent } from "@unframework/ir";
+import { js, jsxBinding, jsxExpression } from "@unframework.dev/codegen";
+import type { ImportSet, JsxContext } from "@unframework.dev/codegen";
+import type { ElementNode, ModelAttribute, UfComponent } from "@unframework.dev/ir";
 
 import { genericModelType } from "./generics.ts";
 import { unmarkedOptions } from "./render.ts";

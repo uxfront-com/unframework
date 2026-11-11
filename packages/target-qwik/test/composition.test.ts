@@ -4,8 +4,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { formatOutput } from "@unframework/codegen";
-import type { EmitContext } from "@unframework/codegen";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { EmitContext } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import target from "../src/index.ts";
@@ -54,7 +54,7 @@ describe("qwik target: components and fallthrough", () => {
 
   it("writes a child's event as its QRL prop, and a function it names as a QRL", async () => {
     const contents = await emitSource(
-      `import { defineEmits, ref } from "unframework";
+      `import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function Form() {
   const cleared = ref("");
@@ -78,8 +78,8 @@ function Field() {
 describe("qwik target: slots", () => {
   it("projects the default slot and renders any other as a QRL render prop", async () => {
     const contents = await emitSource(
-      `import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+      `import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export default function Card() {
   const slots = defineSlots<{ default?(): Element; title?(): Element; item?(props: { n: number }): Element }>();
@@ -106,7 +106,7 @@ export default function Card() {
 describe("qwik target: models", () => {
   it("reads a model through a computed of its prop or local signal, and writes it through a setter", async () => {
     const contents = await emitSource(
-      `import { defineModel } from "unframework";
+      `import { defineModel } from "@uxfront/unframework";
 
 export default function Toggle() {
   const open = defineModel<boolean>("open", { default: false });
@@ -127,7 +127,7 @@ export default function Toggle() {
 
   it("reads a control's model in render, so Qwik sets the property", async () => {
     const contents = await emitSource(
-      `import { ref } from "unframework";
+      `import { ref } from "@uxfront/unframework";
 
 export default function Search() {
   const query = ref("");
@@ -150,7 +150,7 @@ export default function Search() {
 describe("qwik target: replaced nodes", () => {
   it("puts a conditional a sibling follows in a fragment of its own", async () => {
     const contents = await emitSource(
-      `import { ref } from "unframework";
+      `import { ref } from "@uxfront/unframework";
 
 export default function Swap() {
   const on = ref(false);
@@ -172,7 +172,7 @@ export default function Swap() {
 describe("qwik target: expose and context", () => {
   it("fills the consumer's ref with the exposed QRLs once in the document", async () => {
     const contents = await emitSource(
-      `import { defineExpose, ref } from "unframework";
+      `import { defineExpose, ref } from "@uxfront/unframework";
 
 export default function Counter() {
   const count = ref(0);
@@ -193,8 +193,8 @@ export default function Counter() {
 
   it("declares a key as a context id, and provides it", async () => {
     const contents = await emitSource(
-      `import { provide, ref } from "unframework";
-import type { InjectionKey, Ref } from "unframework";
+      `import { provide, ref } from "@uxfront/unframework";
+import type { InjectionKey, Ref } from "@uxfront/unframework";
 
 export const CountKey: InjectionKey<Ref<number>> = Symbol("uf.count");
 
@@ -212,8 +212,8 @@ export default function Counter() {
 
   it("injects a key from its module's main component, undefined without a fallback", async () => {
     const contents = await emitSource(
-      `import { inject, provide } from "unframework";
-import type { InjectionKey } from "unframework";
+      `import { inject, provide } from "@uxfront/unframework";
+import type { InjectionKey } from "@uxfront/unframework";
 
 export const LabelKey: InjectionKey<string> = Symbol("uf.label");
 
@@ -254,8 +254,8 @@ describe("qwik target: render callbacks", () => {
 
   it("declares a setup function a fill calls in the fill, so the fill renders at once", async () => {
     const contents = await emitSource(
-      `import { defineSlots, ref } from "unframework";
-import type { Element } from "unframework";
+      `import { defineSlots, ref } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export default function Names() {
   const prefix = ref("Dr ");
@@ -320,8 +320,8 @@ function List() {
   it("declares a `<component is>` in a list inside a fill in the list's callback", async () => {
     // A fill's own props cannot name the candidates: the analyser reports UF3044 for them.
     const contents = await emitSource(
-      `import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+      `import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export interface Cell {
   id: string;
@@ -348,7 +348,7 @@ function Row() {
 
   it("selects an option without a value by its text", async () => {
     const contents = await emitSource(
-      `import { ref } from "unframework";
+      `import { ref } from "@uxfront/unframework";
 
 export default function Pick() {
   const letter = ref("b");
@@ -361,7 +361,7 @@ export default function Pick() {
 
   it("selects an option by the text its expressions render, as the DOM reads it", async () => {
     const contents = await emitSource(
-      `import { ref } from "unframework";
+      `import { ref } from "@uxfront/unframework";
 
 export default function Pick({ sizes, label }: { sizes: number[]; label: string }) {
   const size = ref("2");
@@ -407,8 +407,8 @@ function Base({ text }: { text: string }) {
 });
 
 describe("qwik target: fills, listeners and the optimizer", () => {
-  const board = `import { defineSlots, ref } from "unframework";
-import type { Element } from "unframework";
+  const board = `import { defineSlots, ref } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export default function Board() {
   const chosen = ref("none");
@@ -470,8 +470,8 @@ function Groups() {
     expect(result).toEqual({ errors: [], warnings: [] });
   });
 
-  const spelled = `import { defineSlots, ref } from "unframework";
-import type { Element } from "unframework";
+  const spelled = `import { defineSlots, ref } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export default function Spelled() {
   const mark = ref("*");
@@ -505,8 +505,8 @@ function Rows() {
 describe("qwik target: generic components", () => {
   // ADR-0068: a generic arrow in `component$`, which TypeScript makes a generic component, and
   // the interfaces beside it over the type parameters their members read.
-  const pick = `import { computed, defineEmits, defineExpose, defineModel, defineSlots } from "unframework";
-import type { Element } from "unframework";
+  const pick = `import { computed, defineEmits, defineExpose, defineModel, defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export type PickEvents = "taken";
 
@@ -539,7 +539,7 @@ export default function Pick<T extends { id: string }, U extends string = "x">({
     </ul>
   );
 }`;
-  const multi = `import { defineModel, ref } from "unframework";
+  const multi = `import { defineModel, ref } from "@uxfront/unframework";
 
 export default function Multi<T extends string>({ options }: { options: readonly T[] }) {
   const picked = ref<T[]>([]);
@@ -563,7 +563,7 @@ export default function Multi<T extends string>({ options }: { options: readonly
 }`;
   // Functions whose parameters' types name `T`, in each declared form: they move to module scope
   // with their own `T`, so a getter may call them, and each call infers it.
-  const hoisted = `import { computed, ref } from "unframework";
+  const hoisted = `import { computed, ref } from "@uxfront/unframework";
 
 export default function Hoisted<T>({ items }: { items: T[] }) {
   const last = ref("");
@@ -591,7 +591,7 @@ export default function Hoisted<T>({ items }: { items: T[] }) {
 }`;
   // A forward chain of constraints (`A extends Box<B>, B extends Box<C>, C`): each interface and
   // hoisted function declares all three.
-  const chain = `import { defineEmits } from "unframework";
+  const chain = `import { defineEmits } from "@uxfront/unframework";
 
 interface Box<V> {
   value: V;
@@ -625,7 +625,7 @@ export default function Chain<A extends Box<B>, B extends Box<C>, C>({ items }: 
     .replaceAll("ChainProps<A, B, C>", "ChainProps<C, B, A>");
   // Functions kept in the generic arrow, which getters call: a `computed`'s, and a watcher's
   // sources, alone and in an array.
-  const kept = `import { computed, ref, watch } from "unframework";
+  const kept = `import { computed, ref, watch } from "@uxfront/unframework";
 
 export default function Kept<T>({ items }: { items: T[] }) {
   const nothing: T[] = [];
@@ -683,7 +683,7 @@ export default function Kept<T>({ items }: { items: T[] }) {
   // Kept functions a getter calls and client code too: a listener, a `watchEffect`, an
   // `onMounted` and `defineExpose`. Client code calls their QRLs, so only `empty`, which the
   // template calls as well, keeps a plain declaration in the arrow.
-  const shared = `import { computed, defineExpose, onMounted, ref, watchEffect } from "unframework";
+  const shared = `import { computed, defineExpose, onMounted, ref, watchEffect } from "@uxfront/unframework";
 
 export default function Shared<T>({ items }: { items: T[] }) {
   const picked = ref<T[]>([]);
@@ -719,7 +719,7 @@ export default function Shared<T>({ items }: { items: T[] }) {
   );
 }`;
   // A function whose `T` only its return type names, which reads nothing of the component.
-  const first = `import { defineEmits } from "unframework";
+  const first = `import { defineEmits } from "@uxfront/unframework";
 
 export default function First<T>({ items }: { items: T[] }) {
   const emit = defineEmits<{ pick: [item: T] }>();
@@ -733,8 +733,8 @@ export default function First<T>({ items }: { items: T[] }) {
   return <button type="button" data-count={items.length} onClick={pick}>Pick</button>;
 }`;
   // Types the module imports and re-exports keep their names: the interfaces take others.
-  const named = `import { defineEmits, defineSlots } from "unframework";
-import type { Element } from "unframework";
+  const named = `import { defineEmits, defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 import type { ListEvents } from "./types";
 
 export type { ListSlots } from "./types";
@@ -919,7 +919,7 @@ export default function List<T>({ items }: { items: T[] }) {
 });
 
 describe("qwik target: options read as the DOM reads them", () => {
-  const pick = `import { ref } from "unframework";
+  const pick = `import { ref } from "@uxfront/unframework";
 
 export default function Pick({ hint, sizes }: { hint?: string; sizes: string[] }) {
   const picked = ref("");
@@ -961,7 +961,7 @@ export default function Pick({ hint, sizes }: { hint?: string; sizes: string[] }
   });
 
   it("renders an expression that is always nullish as no text, with no `??` (TS2871)", async () => {
-    const contents = await emitSource(`import { ref } from "unframework";
+    const contents = await emitSource(`import { ref } from "@uxfront/unframework";
 
 export default function Pick({ hint }: { hint?: string }) {
   const picked = ref("");
@@ -989,7 +989,7 @@ export default function Pick({ hint }: { hint?: string }) {
 });
 
 describe("qwik target: a `v-model` beside a listener of its event", () => {
-  const fields = `import { ref } from "unframework";
+  const fields = `import { ref } from "@uxfront/unframework";
 
 export default function Fields() {
   const text = ref("");
@@ -1031,7 +1031,7 @@ export default function Fields() {
 });
 
 describe("qwik target: a `<component is>` with listeners", () => {
-  const toggle = `import { ref } from "unframework";
+  const toggle = `import { ref } from "@uxfront/unframework";
 
 export default function Toggle({ link }: { link: boolean }) {
   const count = ref(0);
@@ -1084,7 +1084,7 @@ export default function Toggle({ link }: { link: boolean }) {
 
 /** A source whose tag, an element or a `<component is>`, holds every kind of listener. */
 function listening(open: string, close: string): string {
-  return `import { defineEmits, ref } from "unframework";
+  return `import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function Toggle({ link }: { link: boolean }) {
   const emit = defineEmits<{ pressed: [key: string] }>();

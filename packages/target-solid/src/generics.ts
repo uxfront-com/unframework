@@ -3,8 +3,8 @@
 // pass. The interfaces the output declares beside the props type (its events', models' and
 // slots') take the type parameters their members read, `PickerSlots<T>`, so a scoped slot's fill
 // is typed with the consumer's `T` (`generic-slot-props`, native).
-import { codeNames, js, typeNames } from "@unframework/codegen";
-import type { Placeholders } from "@unframework/codegen";
+import { codeNames, js, typeNames } from "@unframework.dev/codegen";
+import type { Placeholders } from "@unframework.dev/codegen";
 import type {
   BindingId,
   ConstItem,
@@ -13,7 +13,7 @@ import type {
   TypeDeclaration,
   TypeParameter,
   UfComponent,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 type TypeParameterDeclaration = NonNullable<
   ReturnType<typeof js.functionDeclaration>["typeParameters"]

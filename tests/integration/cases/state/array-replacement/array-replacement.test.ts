@@ -2,7 +2,7 @@
 // filtered, and reordered with toSpliced; the empty state renders when it is empty. The selection
 // lives in a ref of its own, and a reorder starts from a button outside the list, so focus is
 // never inside the list while it reorders (semantics contract, keyed lists).
-import { describeTargets, it, mountScenario, type View } from "@unframework/testing";
+import { describeTargets, it, mountScenario, type View } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import TaskList from "./TaskList.uf.tsx";

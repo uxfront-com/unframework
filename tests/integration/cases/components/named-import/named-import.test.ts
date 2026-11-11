@@ -1,6 +1,6 @@
 // components/named-import: a parent imports two components by name from one file, the second
 // under a name of its own (ADR-0053): each output imports each child's own file.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Status from "./Status.uf.tsx";

@@ -9,15 +9,15 @@ import type {
   ModelItem,
   ModuleApi,
   ProvideItem,
-} from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { analyze, componentImports } from "../src/index.ts";
 import { applyAndRecheck, codeOf, codes, only, problems, run } from "./helpers.ts";
 
 const API =
-  'import { defineModel, defineSlots, inject, provide, ref, useTemplateRef } from "unframework";\nimport type { Element, InjectionKey, Ref } from "unframework";\n';
+  'import { defineModel, defineSlots, inject, provide, ref, useTemplateRef } from "@uxfront/unframework";\nimport type { Element, InjectionKey, Ref } from "@uxfront/unframework";\n';
 
 /** The first node of a kind in a render tree, depth first. */
 function find<T>(value: unknown, kind: string): T {
@@ -117,7 +117,7 @@ describe("defineModel", () => {
     );
     expect(codes(prop.diagnostics)).toEqual(["UF2028"]);
     const event = run(
-      `import { defineEmits, defineModel } from "unframework";\nexport function A() {\n  const emit = defineEmits<{ valueChange: [] }>();\n  const v = defineModel<string>("value");\n  return <button type="button" onClick={() => emit("valueChange")}>{v.value}</button>;\n}`,
+      `import { defineEmits, defineModel } from "@uxfront/unframework";\nexport function A() {\n  const emit = defineEmits<{ valueChange: [] }>();\n  const v = defineModel<string>("value");\n  return <button type="button" onClick={() => emit("valueChange")}>{v.value}</button>;\n}`,
     );
     expect(codes(event.diagnostics)).toEqual(["UF2028"]);
   });
@@ -383,7 +383,7 @@ describe("provide and inject", () => {
   it("imports a key from the module that declares it", () => {
     const parsed = parseModule(
       "Badge.uf.tsx",
-      `import { inject } from "unframework";\nimport { ThemeKey } from "./Theme.uf.tsx";\nexport default function Badge() {\n  const theme = inject(ThemeKey, "light");\n  return <p>{theme}</p>;\n}\n`,
+      `import { inject } from "@uxfront/unframework";\nimport { ThemeKey } from "./Theme.uf.tsx";\nexport default function Badge() {\n  const theme = inject(ThemeKey, "light");\n  return <p>{theme}</p>;\n}\n`,
     );
     const provider = analyze(
       parseModule(
@@ -519,7 +519,7 @@ describe("the first review's findings (UXF-314)", () => {
 
   it("takes a computed for a key of a ComputedRef, and a model for one of a ModelRef (UF2032)", () => {
     const before =
-      'import { computed } from "unframework";\nimport type { ComputedRef } from "unframework";\nexport const DoubleKey: InjectionKey<ComputedRef<number>> = Symbol("uf.double");\n';
+      'import { computed } from "@uxfront/unframework";\nimport type { ComputedRef } from "@uxfront/unframework";\nexport const DoubleKey: InjectionKey<ComputedRef<number>> = Symbol("uf.double");\n';
     const plain = component(
       "const count = ref(1);\n  provide(DoubleKey, count);",
       "<p>{count.value}</p>",
@@ -543,7 +543,7 @@ describe("the first review's findings (UXF-314)", () => {
     );
     expect(codes(once.diagnostics)).toEqual(["UF2007"]);
     const effect = run(
-      `import { inject, ref, watchEffect } from "unframework";\nimport type { InjectionKey, Ref } from "unframework";\n${key}export function A({ on }: { on: boolean }) {\n  const fb = ref(0);\n  const c = inject(CountKey, fb);\n  watchEffect(() => {\n    if (on) console.log(c.value);\n  });\n  return <p />;\n}\n`,
+      `import { inject, ref, watchEffect } from "@uxfront/unframework";\nimport type { InjectionKey, Ref } from "@uxfront/unframework";\n${key}export function A({ on }: { on: boolean }) {\n  const fb = ref(0);\n  const c = inject(CountKey, fb);\n  watchEffect(() => {\n    if (on) console.log(c.value);\n  });\n  return <p />;\n}\n`,
     );
     expect(codes(effect.diagnostics)).toEqual(["UF2015"]);
   });
@@ -573,7 +573,7 @@ describe("the first review's findings (UXF-314)", () => {
   });
 
   it("names a model watched whole, with the getter fix (UF2020)", () => {
-    const source = `import { defineModel, watch } from "unframework";\nexport function A() {\n  const value = defineModel<number>("value", { default: 0 });\n  watch(value, () => {});\n  return <p>{value.value}</p>;\n}\n`;
+    const source = `import { defineModel, watch } from "@uxfront/unframework";\nexport function A() {\n  const value = defineModel<number>("value", { default: 0 });\n  watch(value, () => {});\n  return <p>{value.value}</p>;\n}\n`;
     const { diagnostics } = run(source);
     expect(codes(diagnostics)).toEqual(["UF2020"]);
     expect(diagnostics[0]!.message).toContain("`value` is a model");

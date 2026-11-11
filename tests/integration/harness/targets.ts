@@ -1,8 +1,8 @@
 // The targets a run verifies and their toolchains. Toolchains load lazily, one per project, so a
 // target whose toolchain cannot load fails its own projects (loudly) and no other.
-import type { Toolchain } from "@unframework/codegen";
-import { TARGET_NAMES } from "@unframework/compiler";
-import type { TargetName } from "@unframework/compiler";
+import type { Toolchain } from "@unframework.dev/codegen";
+import { TARGET_NAMES } from "@unframework.dev/compiler";
+import type { TargetName } from "@unframework.dev/compiler";
 
 /** The reference target (D10): Vue's semantics are the source language's. */
 export const REFERENCE: TargetName = "vue";
@@ -26,16 +26,16 @@ export function selectTargets(value: string | undefined): TargetName[] {
   return TARGET_NAMES.filter((name) => requested.includes(name));
 }
 
-/** Loads a target's toolchain (`@unframework/target-<t>/toolchain`). */
+/** Loads a target's toolchain (`@unframework.dev/target-<t>/toolchain`). */
 export async function loadToolchain(target: string): Promise<Toolchain> {
   let module: { toolchain?: Toolchain; default?: Toolchain };
   try {
     module = (await import(
-      /* @vite-ignore */ `@unframework/target-${target}/toolchain`
+      /* @vite-ignore */ `@unframework.dev/target-${target}/toolchain`
     )) as typeof module;
   } catch (error) {
     throw new Error(
-      `The ${target} toolchain (@unframework/target-${target}/toolchain) could not be loaded.`,
+      `The ${target} toolchain (@unframework.dev/target-${target}/toolchain) could not be loaded.`,
       {
         cause: error,
       },
@@ -44,7 +44,7 @@ export async function loadToolchain(target: string): Promise<Toolchain> {
   const toolchain = module.toolchain ?? module.default;
   if (!toolchain || toolchain.name !== target) {
     throw new Error(
-      `@unframework/target-${target}/toolchain must export \`toolchain\` with name "${target}".`,
+      `@unframework.dev/target-${target}/toolchain must export \`toolchain\` with name "${target}".`,
     );
   }
   return toolchain;

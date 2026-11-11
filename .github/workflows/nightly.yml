@@ -59,7 +59,7 @@ jobs:
         env:
           UF_BROWSER: ${{ matrix.browser }}
           HOME: /root
-        run: pnpm --filter @unframework/integration test -- --project 'browser:*'
+        run: pnpm --filter @unframework.dev/integration test -- --project 'browser:*'
 
       - name: Upload the parity matrix
         if: ${{ !cancelled() }}

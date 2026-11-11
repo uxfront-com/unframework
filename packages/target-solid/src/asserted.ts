@@ -22,7 +22,7 @@ import type {
   FunctionCode,
   NarrowedPath,
   Span,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 /** Whether Solid's spelling of a binding of this kind loses a narrowing in `scope`. */
 export function assertsIn(kind: Binding["kind"], scope: NarrowedPath["scope"]): boolean {

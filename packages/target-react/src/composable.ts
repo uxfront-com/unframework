@@ -11,9 +11,9 @@ import {
   printProgram,
   typeNames,
   typeSpecifier,
-} from "@unframework/codegen";
-import type { EmitContext, ImportSet, OutputFile } from "@unframework/codegen";
-import type { ComposableMemberApi, Span, TypeText, UfComposable } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { EmitContext, ImportSet, OutputFile } from "@unframework.dev/codegen";
+import type { ComposableMemberApi, Span, TypeText, UfComposable } from "@unframework.dev/ir";
 
 import { compilerBailout, declaredNames } from "./bailouts.ts";
 import { nextTickHelper } from "./helpers.ts";

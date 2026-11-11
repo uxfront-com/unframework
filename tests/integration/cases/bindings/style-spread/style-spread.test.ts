@@ -3,7 +3,7 @@
 // declaration list on a spread whose source may be absent. The heading's margin reads the
 // spread's custom property, which L10 compares. A child's root spreads a `style` key, which the
 // consumer's `style` merges over: one `style`, never two.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import Panel from "./Panel.uf.tsx";

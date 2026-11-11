@@ -6,8 +6,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { astroDialect, printMarkup } from "@unframework/codegen";
-import type { MarkupOptions } from "@unframework/codegen";
+import { astroDialect, printMarkup } from "@unframework.dev/codegen";
+import type { MarkupOptions } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import {

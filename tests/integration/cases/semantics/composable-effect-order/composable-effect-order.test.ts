@@ -3,7 +3,7 @@
 // reorders a component's effects (ADR-0048) and Solid queues watchers per file, so a hook's
 // effects can't join the caller's order there: `composable-effect-order` is unsupported on both
 // (UF4005), and these tests are skipped by capability.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Timeline from "./Timeline.uf.tsx";

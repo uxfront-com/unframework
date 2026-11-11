@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { compile, createFileResolver, createSyntacticOracle } from "@unframework/compiler";
+import { compile, createFileResolver, createSyntacticOracle } from "@unframework.dev/compiler";
 import { describe, expect, it } from "vitest";
 
 import { project, run, tree, write } from "./helpers.ts";
@@ -39,7 +39,7 @@ export default function Field() {
   return <Card label="Name" />;
 }
 `,
-  "src/useToggle.uf.ts": `import { ref } from "unframework";
+  "src/useToggle.uf.ts": `import { ref } from "@uxfront/unframework";
 
 export function useToggle(initial: boolean) {
   const on = ref(initial);

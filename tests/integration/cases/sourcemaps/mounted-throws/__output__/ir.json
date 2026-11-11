@@ -5,88 +5,88 @@
     {
       "name": "ReportPanel",
       "span": {
-        "start": 73,
-        "end": 376
+        "start": 82,
+        "end": 385
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "open@121",
+          "id": "open@130",
           "name": "open",
           "kind": "state",
           "span": {
-            "start": 121,
-            "end": 125
+            "start": 130,
+            "end": 134
           }
         },
         {
-          "id": "show@152",
+          "id": "show@161",
           "name": "show",
           "kind": "localFn",
           "span": {
-            "start": 152,
-            "end": 156
+            "start": 161,
+            "end": 165
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "open@121",
+          "binding": "open@130",
           "initial": {
             "code": "false",
             "span": {
-              "start": 132,
-              "end": 137
+              "start": 141,
+              "end": 146
             },
             "refs": []
           },
           "span": {
-            "start": 115,
-            "end": 139
+            "start": 124,
+            "end": 148
           }
         },
         {
           "kind": "Function",
-          "binding": "show@152",
+          "binding": "show@161",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    open.value = true;\n  }",
               "span": {
-                "start": 159,
-                "end": 187
+                "start": 168,
+                "end": 196
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "open@121",
+                  "binding": "open@130",
                   "operator": "=",
                   "span": {
-                    "start": 165,
-                    "end": 182
+                    "start": 174,
+                    "end": 191
                   },
                   "target": {
-                    "start": 165,
-                    "end": 175
+                    "start": 174,
+                    "end": 184
                   },
                   "value": {
-                    "start": 178,
-                    "end": 182
+                    "start": 187,
+                    "end": 191
                   }
                 }
               ]
             },
             "span": {
-              "start": 156,
-              "end": 187
+              "start": 165,
+              "end": 196
             }
           },
           "span": {
-            "start": 143,
-            "end": 187
+            "start": 152,
+            "end": 196
           }
         }
       ],
@@ -99,8 +99,8 @@
             "name": "aria-label",
             "value": "Report",
             "span": {
-              "start": 213,
-              "end": 232
+              "start": 222,
+              "end": 241
             }
           }
         ],
@@ -114,8 +114,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 248,
-                  "end": 261
+                  "start": 257,
+                  "end": 270
                 }
               },
               {
@@ -123,15 +123,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "show@152",
+                  "binding": "show@161",
                   "span": {
-                    "start": 271,
-                    "end": 275
+                    "start": 280,
+                    "end": 284
                   }
                 },
                 "span": {
-                  "start": 262,
-                  "end": 276
+                  "start": 271,
+                  "end": 285
                 }
               }
             ],
@@ -140,14 +140,14 @@
                 "kind": "Text",
                 "value": "Show the chart",
                 "span": {
-                  "start": 277,
-                  "end": 307
+                  "start": 286,
+                  "end": 316
                 }
               }
             ],
             "span": {
-              "start": 240,
-              "end": 316
+              "start": 249,
+              "end": 325
             }
           },
           {
@@ -157,16 +157,16 @@
                 "condition": {
                   "code": "open.value",
                   "span": {
-                    "start": 324,
-                    "end": 334
+                    "start": 333,
+                    "end": 343
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "open@121",
+                      "binding": "open@130",
                       "span": {
-                        "start": 324,
-                        "end": 334
+                        "start": 333,
+                        "end": 343
                       }
                     }
                   ]
@@ -178,26 +178,26 @@
                     "attributes": [],
                     "fills": [],
                     "span": {
-                      "start": 337,
-                      "end": 346
+                      "start": 346,
+                      "end": 355
                     }
                   }
                 ],
                 "span": {
-                  "start": 324,
-                  "end": 346
+                  "start": 333,
+                  "end": 355
                 }
               }
             ],
             "span": {
-              "start": 324,
-              "end": 353
+              "start": 333,
+              "end": 362
             }
           }
         ],
         "span": {
-          "start": 204,
-          "end": 369
+          "start": 213,
+          "end": 378
         }
       }
     }
@@ -208,8 +208,8 @@
       "name": "default",
       "local": "ReportPanel",
       "span": {
-        "start": 73,
-        "end": 376
+        "start": 82,
+        "end": 385
       }
     }
   ],
@@ -242,14 +242,14 @@
           "imported": "default",
           "local": "Chart",
           "span": {
-            "start": 43,
-            "end": 48
+            "start": 52,
+            "end": 57
           }
         }
       ],
       "span": {
-        "start": 36,
-        "end": 71
+        "start": 45,
+        "end": 80
       }
     }
   ]

@@ -4,7 +4,7 @@
 // an interval's callback or a microtask's; `await nextTick()` separates two runs. An async watch
 // callback and an async `watchEffect` (whose reads come before its first `await`) run their async
 // part to the end. A promise's `then` callback emits what it reads when it runs.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Mailbox from "./Mailbox.uf.tsx";

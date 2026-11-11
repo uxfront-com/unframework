@@ -35,7 +35,7 @@ import type {
   StyleAttribute,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { handlerText } from "./functions.ts";
 import * as js from "./js/builders.ts";

@@ -5,45 +5,45 @@
     {
       "name": "Choice",
       "span": {
-        "start": 194,
-        "end": 403
+        "start": 203,
+        "end": 412
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "picked@222",
+          "id": "picked@231",
           "name": "picked",
           "kind": "model",
           "span": {
-            "start": 222,
-            "end": 228
+            "start": 231,
+            "end": 237
           }
         }
       ],
       "setup": [
         {
           "kind": "Model",
-          "binding": "picked@222",
+          "binding": "picked@231",
           "name": "picked",
           "type": {
             "code": "string",
             "span": {
-              "start": 243,
-              "end": 249
+              "start": 252,
+              "end": 258
             }
           },
           "default": {
             "code": "\"\"",
             "span": {
-              "start": 272,
-              "end": 274
+              "start": 281,
+              "end": 283
             },
             "refs": []
           },
           "span": {
-            "start": 216,
-            "end": 278
+            "start": 225,
+            "end": 287
           }
         }
       ],
@@ -56,8 +56,8 @@
             "name": "type",
             "value": "button",
             "span": {
-              "start": 302,
-              "end": 315
+              "start": 311,
+              "end": 324
             }
           },
           {
@@ -70,25 +70,25 @@
                 "body": {
                   "code": "(picked.value = \"yes\")",
                   "span": {
-                    "start": 331,
-                    "end": 353
+                    "start": 340,
+                    "end": 362
                   },
                   "refs": [
                     {
                       "kind": "Write",
-                      "binding": "picked@222",
+                      "binding": "picked@231",
                       "operator": "=",
                       "span": {
-                        "start": 331,
-                        "end": 353
+                        "start": 340,
+                        "end": 362
                       },
                       "target": {
-                        "start": 332,
-                        "end": 344
+                        "start": 341,
+                        "end": 353
                       },
                       "value": {
-                        "start": 347,
-                        "end": 352
+                        "start": 356,
+                        "end": 361
                       },
                       "arrowBody": true
                     }
@@ -96,18 +96,18 @@
                 },
                 "expression": true,
                 "span": {
-                  "start": 325,
-                  "end": 353
+                  "start": 334,
+                  "end": 362
                 }
               },
               "span": {
-                "start": 325,
-                "end": 353
+                "start": 334,
+                "end": 362
               }
             },
             "span": {
-              "start": 316,
-              "end": 354
+              "start": 325,
+              "end": 363
             }
           }
         ],
@@ -116,8 +116,8 @@
             "kind": "Text",
             "value": "Yes (",
             "span": {
-              "start": 355,
-              "end": 367
+              "start": 364,
+              "end": 376
             }
           },
           {
@@ -125,37 +125,37 @@
             "value": {
               "code": "picked.value",
               "span": {
-                "start": 368,
-                "end": 380
+                "start": 377,
+                "end": 389
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "picked@222",
+                  "binding": "picked@231",
                   "span": {
-                    "start": 368,
-                    "end": 380
+                    "start": 377,
+                    "end": 389
                   }
                 }
               ]
             },
             "span": {
-              "start": 367,
-              "end": 381
+              "start": 376,
+              "end": 390
             }
           },
           {
             "kind": "Text",
             "value": ")",
             "span": {
-              "start": 381,
-              "end": 387
+              "start": 390,
+              "end": 396
             }
           }
         ],
         "span": {
-          "start": 294,
-          "end": 396
+          "start": 303,
+          "end": 405
         }
       }
     }

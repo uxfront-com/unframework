@@ -4,7 +4,7 @@
 // once per run with the previous value and cleans up before its next call and at unmount, effects
 // and hooks run in the browser after mount, listeners keep their options and their order, a
 // template ref is empty once its element is gone, and nothing is logged.
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 
