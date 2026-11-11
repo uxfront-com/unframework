@@ -207,7 +207,7 @@ function verdicts(checks: readonly Check[]): ("accepted" | "rejected" | "missing
   const key = probeKey({
     probe,
     tsconfig,
-    typescript: `${manifest.version} ${dirname(manifestPath)}`,
+    typescript: `${manifest.version} ${dirname(manifestPath)} ${TSC_FLAGS.join(" ")}`,
     files: [readFileSync(new URL("pnpm-lock.yaml", ROOT), "utf8"), ...authoringSources()],
   });
   // One digit per check, as `A` writes it: 1 accepted, 0 rejected, 2 declares nothing.
@@ -222,13 +222,16 @@ function verdicts(checks: readonly Check[]): ("accepted" | "rejected" | "missing
   );
 }
 
+/** The flags `tsc` runs with, beside the project: part of the cache key. */
+const TSC_FLAGS = ["--pretty", "false"];
+
 /** Runs `tsc` over the probe, and reads each check's verdict digit from the error it reports. */
 function runProbe(checks: readonly Check[], probe: string, tsconfig: string, tsc: string): string {
   writeFileSync(join(folder, "tsconfig.json"), tsconfig);
   writeFileSync(join(folder, "probe.ts"), probe);
   const result = spawnSync(
     process.execPath,
-    [tsc, "-p", join(folder, "tsconfig.json"), "--pretty", "false"],
+    [tsc, "-p", join(folder, "tsconfig.json"), ...TSC_FLAGS],
     { cwd: folder, encoding: "utf8", maxBuffer: 1 << 28 },
   );
   if (result.error) throw new Error(`could not start tsc: ${result.error.message}`);

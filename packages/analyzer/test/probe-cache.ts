@@ -24,7 +24,7 @@ export interface ProbeInputs {
   readonly probe: string;
   /** The `tsconfig.json` it is checked with. */
   readonly tsconfig: string;
-  /** The TypeScript version, and the folder it runs from. */
+  /** The TypeScript version, the folder it runs from and the flags it runs with. */
   readonly typescript: string;
   /**
    * The other files the probe reads, as text: the typed libraries' resolved folders (whose pnpm
