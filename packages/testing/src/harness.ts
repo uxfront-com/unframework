@@ -175,8 +175,8 @@ export function ssrScenarios(config: CaseConfig): Record<string, SsrScenario> {
 
 /**
  * The case a file belongs to: the path of its directory relative to the cases directory, with
- * forward slashes, nested as deep as the project lays its cases out (ADR-0086). Throws for a file outside every case, because its results would have
- * nowhere to go in the parity matrix.
+ * forward slashes, nested as deep as the project lays its cases out (ADR-0086). Throws for a file
+ * outside every case, because its results would have nowhere to go in the parity matrix.
  */
 export function caseOfFile(
   file: string,
