@@ -969,7 +969,7 @@ export default defineConfig({
 
 ### 8.2 The bundler plugin
 
-`@unframework.dev/unplugin` covers Vite, Rolldown, Rollup, webpack, Rspack/Rsbuild, esbuild and Bun.
+`@unframework.dev/unplugin` covers Vite, Rolldown, Rollup, webpack, Rspack/Rsbuild, esbuild and Bun. It works like this:
 
 - **App mode.** A React app imports `Button.uf.tsx` and receives React.
 - **Virtual ids.**
