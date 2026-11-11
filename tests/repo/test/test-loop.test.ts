@@ -16,11 +16,41 @@ import {
 import type { StepResult, StepStatus } from "../../../scripts/test-loop.ts";
 import { root } from "./workspace.ts";
 
-/** The job ids under `jobs:` in CI's workflow, read as text, as the harness's canary tests do. */
+/**
+ * The ids of a workflow's jobs, read as text: every key of the `jobs:` mapping, at the indentation
+ * of its first key. GitHub allows letters, digits, `-` and `_` in an id, and YAML allows a quoted
+ * key and a comment after it, so the pattern takes all of them (a narrower one let `qa_job:` and
+ * `qa-job: # …` through).
+ */
+function workflowJobIds(workflow: string): string[] {
+  const lines = workflow.split(/\r?\n/);
+  const start = lines.findIndex((line) => /^jobs:[ \t]*(?:#.*)?$/.test(line));
+  if (start === -1) return [];
+  const ids: string[] = [];
+  let indent: string | undefined;
+  for (const line of lines.slice(start + 1)) {
+    if (/^[ \t]*(?:#.*)?$/.test(line)) continue;
+    // The next top-level key ends the mapping.
+    if (!/^[ \t]/.test(line)) break;
+    indent ??= /^[ \t]+/.exec(line)?.[0] ?? "";
+    if (!line.startsWith(indent) || /^[ \t]/.test(line.slice(indent.length))) continue;
+    const key = /^(["']?)([A-Za-z_][\w-]*)\1:[ \t]*(?:#.*)?$/.exec(line.slice(indent.length));
+    // A line at the jobs' indentation that isn't a plain key fails the guard, not skips it.
+    ids.push(key?.[2] ?? `<unreadable: ${line.trim()}>`);
+  }
+  return ids;
+}
+
+/** The job ids of CI's workflow. */
 function ciJobs(): string[] {
-  const workflow = readFileSync(join(root, ".github", "workflows", "ci.yml"), "utf8");
-  return [...workflow.slice(workflow.indexOf("\njobs:\n")).matchAll(/^ {2}([a-z0-9-]+):\n/gm)].map(
-    (match) => match[1] ?? "",
+  return workflowJobIds(readFileSync(join(root, ".github", "workflows", "ci.yml"), "utf8"));
+}
+
+/** The job ids the left-out list in `.github/CONTRIBUTING.md` names, from lines like ``- `check`: …``. */
+function contributingExcludedJobs(contributing: string): string[] {
+  const section = contributing.slice(contributing.indexOf("## Verifying a change"));
+  return [...section.matchAll(/^[ \t]*- ((?:`[\w-]+`(?:, | and )?)+):/gm)].flatMap((match) =>
+    [...(match[1] ?? "").matchAll(/`([\w-]+)`/g)].map((id) => id[1] ?? ""),
   );
 }
 
@@ -69,11 +99,61 @@ describe("test:full", () => {
     }
   });
 
-  it("names the jobs it leaves out in .github/CONTRIBUTING.md", () => {
+  it("names the jobs it leaves out in .github/CONTRIBUTING.md's list", () => {
     const contributing = readFileSync(join(root, ".github", "CONTRIBUTING.md"), "utf8");
-    for (const job of Object.keys(EXCLUDED_JOBS)) {
-      expect(contributing, job).toContain(`\`${job}\``);
-    }
+    expect(contributingExcludedJobs(contributing).toSorted()).toEqual(
+      Object.keys(EXCLUDED_JOBS).toSorted(),
+    );
+  });
+});
+
+describe("workflowJobIds", () => {
+  it("reads every job id GitHub allows, with or without a comment, spaces or quotes after it", () => {
+    const workflow = [
+      "name: CI",
+      "on: push",
+      "jobs:",
+      "  # a comment between jobs",
+      "  qa-job:",
+      "    runs-on: ubuntu-latest",
+      "    steps:",
+      "      - run: echo",
+      "  qa_job:",
+      "    runs-on: ubuntu-latest",
+      "  QaJob: # probe",
+      "    runs-on: ubuntu-latest",
+      "  trailing:  ",
+      "    runs-on: ubuntu-latest",
+      "",
+      '  "quoted":',
+      "    runs-on: ubuntu-latest",
+      "  _private:\r",
+      "    runs-on: ubuntu-latest",
+      "concurrency: ci",
+      "  not-a-job:",
+    ].join("\n");
+    expect(workflowJobIds(workflow)).toEqual([
+      "qa-job",
+      "qa_job",
+      "QaJob",
+      "trailing",
+      "quoted",
+      "_private",
+    ]);
+  });
+
+  it("reads jobs at any indentation", () => {
+    expect(workflowJobIds("jobs:\n    one:\n        runs-on: x\n    two:\n")).toEqual([
+      "one",
+      "two",
+    ]);
+  });
+
+  it("turns a line it can't read at the jobs' indentation into an id no step names", () => {
+    expect(workflowJobIds("jobs:\n  one:\n  two: { runs-on: x }\n")).toEqual([
+      "one",
+      "<unreadable: two: { runs-on: x }>",
+    ]);
   });
 });
 
