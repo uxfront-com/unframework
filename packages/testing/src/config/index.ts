@@ -90,7 +90,14 @@ export async function defineTestConfig(options: TestConfigOptions = {}): Promise
     );
   }
 
-  const cases = discoverCases({ root, include: options.include ?? DEFAULT_INCLUDE });
+  const include = options.include ?? DEFAULT_INCLUDE;
+  const cases = discoverCases({ root, include });
+  // A run with nothing to test would pass on nothing, or fail with Vitest's empty suite.
+  if (!cases.length) {
+    throw new Error(
+      `[uf] No test file under ${root} matches ${include.join(", ")}: a case is a directory with one test file, such as test/button/button.test.ts.`,
+    );
+  }
   const harness = createHarnessRun({
     root,
     casesDir: root,

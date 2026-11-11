@@ -229,6 +229,13 @@ describe("defineTestConfig", () => {
     );
   });
 
+  it("refuses a project with nothing to test", async () => {
+    const root = project({ "unframework.config.mjs": 'export default { targets: ["vue"] };\n' });
+    await expect(defineTestConfig({ root })).rejects.toThrow(
+      `[uf] No test file under ${root} matches **/*.test.ts: a case is a directory with one test file`,
+    );
+  });
+
   it("refuses a case the run cannot tell apart before any project loads", async () => {
     const root = project({
       "unframework.config.mjs": 'export default { targets: ["vue"] };\n',
