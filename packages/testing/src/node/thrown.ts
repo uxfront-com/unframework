@@ -61,6 +61,11 @@ export function servedFile(url: string, root: string): string | undefined {
   return pathname.startsWith("/@fs/") ? pathname.slice("/@fs".length) : join(root, pathname);
 }
 
+/** A path's file name. */
+function name(file: string): string | undefined {
+  return file.split(sep).pop();
+}
+
 /** What the command reads of Vitest's context. */
 export interface MapStackContext extends CommandProject {
   project: CommandProject["project"] & { browser?: { vite?: ViteDevServer } };
@@ -89,7 +94,6 @@ export async function ufMapStack(
       .map((file) => join(directory, file)),
   ].filter((file) => existsSync(file));
   const site = throwSite(sources);
-  const name = (file: string) => file.split(sep).pop();
   const expected = `${name(site.file)}:${site.line}`;
   const directories = [...new Set(sources.map((file) => `${dirname(file)}${sep}`))];
   const frame = stackFrames(request.stack).find(({ url }) => {

@@ -212,13 +212,24 @@ function group(setup: ProjectSetup, kind: ProjectKind, target: TargetName): numb
   );
 }
 
+type ToolchainModule = { toolchain?: Toolchain; default?: Toolchain };
+
+/** Each target's toolchain, loaded when its projects are built, so a run loads only its own. */
+const TOOLCHAINS: Readonly<Record<TargetName, () => Promise<ToolchainModule>>> = {
+  react: () => import("@unframework.dev/target-react/toolchain"),
+  vue: () => import("@unframework.dev/target-vue/toolchain"),
+  svelte: () => import("@unframework.dev/target-svelte/toolchain"),
+  solid: () => import("@unframework.dev/target-solid/toolchain"),
+  angular: () => import("@unframework.dev/target-angular/toolchain"),
+  qwik: () => import("@unframework.dev/target-qwik/toolchain"),
+  astro: () => import("@unframework.dev/target-astro/toolchain"),
+};
+
 /** Loads a target's toolchain, refusing one of another name. */
 async function loadToolchain(target: TargetName): Promise<Toolchain> {
-  let module: { toolchain?: Toolchain; default?: Toolchain };
+  let module: ToolchainModule;
   try {
-    module = (await import(
-      /* @vite-ignore */ `@unframework.dev/target-${target}/toolchain`
-    )) as typeof module;
+    module = await TOOLCHAINS[target]();
   } catch (error) {
     throw new Error(
       `[uf] The ${target} toolchain (@unframework.dev/target-${target}/toolchain) could not be loaded: install the ${target} framework and its Vite plugin.`,
