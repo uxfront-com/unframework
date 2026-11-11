@@ -10,8 +10,15 @@ project runs it as `unframework <command>`, from the directory that holds its
 | 1         | Error diagnostics, in a source, because no source was found, or from a packager.                                                        |
 | 2         | A usage error, `init`'s refusal, a config that won't load or is invalid, a project `--package` can't ship, or a failure writing a file. |
 
-`main(argv, io?)` runs a command line, `argv` without Node and the script, and gives the exit code.
-It never throws. `io` holds the working directory and where text goes, and defaults to the process's.
+`main(argv, io?, extra?)` runs a command line, `argv` without Node and the script, and gives the
+exit code. It never throws. `io` holds the working directory and where text goes, and defaults to the
+process's.
+
+`extra` adds commands by name, each a `Command` (`usage`, `summary` and `load()`, which resolves to
+`{ run }`), listed after the built-in ones in the usage text. A package above this one adds its
+commands that way, since `LAYERS` keeps this package from importing it (ADR-0086): the umbrella's
+bin adds `test`, which `@unframework.dev/testing` runs. An extra command may not take a built-in
+one's name, which exits 2.
 
 ## build
 

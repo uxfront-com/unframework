@@ -465,7 +465,9 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   `sources.ts`: how a case's inputs join their diagnostics and golden files.
 - `harness/bench.test.ts`: L15, which reads `budgets.json`. `scripts/budgets.ts`: how it measures,
   and `pnpm test:budgets:update`.
-- `harness/compile.test.ts`, `toolchain.test.ts`, `ssr.test.ts`: the node-side layers;
+- `harness/compile.test.ts`, `toolchain.test.ts`, `ssr.test.ts`: the node-side layers, with
+  `ssr.test.ts` running the testing package's one server render comparison
+  (`describeServerRender`, ADR-0086) with the corpus's skips, and L14's deliberate throws;
   `compile-checks.ts`: L1's fix check, L2's determinism and formatting checks, and the scoped
   sheets' parse; `toolchain-results.ts`: what L3, L4 and L5 make of each tool's report, and the
   files they check; `consumers.ts`: L4's

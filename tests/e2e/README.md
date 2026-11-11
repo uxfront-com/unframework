@@ -16,6 +16,23 @@ Run `prepare-apps` again after you change a package or an app's files, because t
 
 Outside CI, the root `pnpm install` also installs the Chromium that Playwright drives. The script is named `e2e`, not `test`, so the unit job skips it. The package's `test` script runs only the harness's own unit tests, in seconds.
 
+## The design system's own tests
+
+The design system tests its components the way a project would, with `unframework test`
+([ADR-0086](../../docs/adrs/0086-a-projects-tests-with-define-test-config.md)). Each case is a
+directory under `design-system/test/`: `button` and `card` hold a harness parent that fills the
+component's slots, and `counter` and `text-field` point `case.json`'s `main` at the component in
+`src/`. Run them from the repository root, and regenerate their expectations after a change that
+should alter what they render:
+
+```sh
+pnpm --filter @unframework.dev/e2e-design-system parity
+pnpm -C tests/e2e/design-system exec unframework test --update
+```
+
+The script is named `parity`, not `test`, so CI's unit job doesn't pick up its fourteen browser
+and server render projects. Review every file `--update` writes under `__expected__/`.
+
 ## What `prepare-apps` does
 
 It takes four steps:
