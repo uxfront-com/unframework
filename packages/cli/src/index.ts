@@ -2,9 +2,13 @@
 // `explain` starts without the compiler.
 import type { Io, RunCommand } from "./command.ts";
 
-export type { Io } from "./command.ts";
+export type { Io, RunCommand } from "./command.ts";
 
-interface Command {
+/**
+ * A command: its usage line, its summary and how it loads. A package above this one adds its own
+ * commands through `main`'s `extra` (ADR-0086), as the umbrella adds `test`.
+ */
+export interface Command {
   usage: string;
   summary: string;
   load(): Promise<{ run: RunCommand }>;
@@ -45,12 +49,15 @@ const COMMANDS: ReadonlyMap<string, Command> = new Map([
   ],
 ]);
 
-const USAGE = [
-  "Usage: unframework <command>",
-  "",
-  ...[...COMMANDS.values()].flatMap(({ usage, summary }) => [`  ${usage}`, `      ${summary}`]),
-  "",
-].join("\n");
+/** The usage text: every command, the built-in ones first. */
+function usageOf(commands: ReadonlyMap<string, Command>): string {
+  return [
+    "Usage: unframework <command>",
+    "",
+    ...[...commands.values()].flatMap(({ usage, summary }) => [`  ${usage}`, `      ${summary}`]),
+    "",
+  ].join("\n");
+}
 
 const PROCESS_IO: Io = {
   // Read when a command needs it: a caller may change directory after importing this, and a working
@@ -64,18 +71,31 @@ const PROCESS_IO: Io = {
 
 /**
  * Runs a command line, `argv` without Node and the script, and gives the exit code: 0 for success,
- * 1 for error diagnostics, 2 for a usage or configuration error. It never throws.
+ * 1 for error diagnostics or failed tests, 2 for a usage or configuration error. It never throws.
+ * `extra` adds commands by name, after the built-in ones, which it may not replace.
  */
-export async function main(argv: readonly string[], io: Io = PROCESS_IO): Promise<number> {
+export async function main(
+  argv: readonly string[],
+  io: Io = PROCESS_IO,
+  extra: ReadonlyMap<string, Command> = new Map(),
+): Promise<number> {
+  const taken = [...extra.keys()].filter((name) => COMMANDS.has(name));
+  if (taken.length) {
+    io.stderr(
+      `unframework: the extra command(s) ${taken.join(", ")} would replace a built-in one.\n`,
+    );
+    return 2;
+  }
+  const commands: ReadonlyMap<string, Command> = new Map([...COMMANDS, ...extra]);
   const [name, ...args] = argv;
   if (argv.includes("--help") || argv.includes("-h")) {
-    io.stdout(USAGE);
+    io.stdout(usageOf(commands));
     return 0;
   }
-  const command = name === undefined ? undefined : COMMANDS.get(name);
+  const command = name === undefined ? undefined : commands.get(name);
   if (!command) {
     if (name !== undefined) io.stderr(`unframework: unknown command "${name}".\n\n`);
-    io.stderr(USAGE);
+    io.stderr(usageOf(commands));
     return 2;
   }
   try {

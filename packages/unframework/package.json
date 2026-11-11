@@ -36,6 +36,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./config": "./src/config.ts",
+    "./cli": "./src/cli.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./package.json": "./package.json"
@@ -49,6 +50,10 @@
       "./config": {
         "types": "./dist/config.d.ts",
         "default": "./dist/config.js"
+      },
+      "./cli": {
+        "types": "./dist/cli.d.ts",
+        "default": "./dist/cli.js"
       },
       "./jsx-runtime": {
         "types": "./dist/jsx-runtime.d.ts",
@@ -76,11 +81,20 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@unframework.dev/testing": "workspace:*",
     "@uxfront/typescript-config": "catalog:",
     "@vue/runtime-dom": "3.5.43",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "vue": "catalog:"
+  },
+  "peerDependencies": {
+    "@unframework.dev/testing": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@unframework.dev/testing": {
+      "optional": true
+    }
   }
 }
