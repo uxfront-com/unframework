@@ -357,7 +357,7 @@ export default function Badge({ tone = "info", label, size }: BadgeProps) {
   // An unused binding fails L5 (oxlint's no-unused-vars), and so does an empty pattern. Each
   // component takes no `class` or `style` (ADR-0054), so its own props are all it reads.
   it("leaves out the props nothing reads, defaults included", async () => {
-    const props = `import { defineOptions } from "unframework";
+    const props = `import { defineOptions } from "@uxfront/unframework";
 export interface P { label: string; count?: number; tone?: string }\n`;
     expect(
       await output(`${props}export default function A({ label, count = 0, tone }: P) {
@@ -688,7 +688,7 @@ export default function A({ cx, CSSProperties }: P) {
     // A type declaration is a name the source declares too. B takes no `class` or `style`
     // (ADR-0054), so it reads no prop.
     expect(
-      await output(`import { defineOptions } from "unframework";
+      await output(`import { defineOptions } from "@uxfront/unframework";
 interface _props { label?: string }
 export default function B({ label }: _props) {
   defineOptions({ inheritAttrs: false });
@@ -699,7 +699,7 @@ export default function B({ label }: _props) {
 
   it("writes a style as an object, typed as CSSProperties when it sets a custom property", async () => {
     // Neither takes a consumer's \`style\` (ADR-0054): its own is the subject.
-    const source = `import { defineOptions } from "unframework";
+    const source = `import { defineOptions } from "@uxfront/unframework";
 export interface P { gap?: string; size: number }
 export function Plain({ gap }: P) {
   defineOptions({ inheritAttrs: false });
@@ -747,7 +747,7 @@ export default function Notes({ attrs, extra }: P) {
 
   it("writes a <textarea>'s text as its defaultValue", async () => {
     expect(
-      await output(`import { defineOptions } from "unframework";
+      await output(`import { defineOptions } from "@uxfront/unframework";
 export default function Note() {
   defineOptions({ inheritAttrs: false });
   return <textarea name="note">{"  Hello,\\n  world  "}</textarea>;

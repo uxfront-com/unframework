@@ -227,7 +227,7 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
    * arrow, and events with and without a payload (ADR-0047).
    */
   state: [
-    'import { computed, defineEmits, ref } from "unframework";',
+    'import { computed, defineEmits, ref } from "@uxfront/unframework";',
     "",
     "export interface StepperProps {",
     "  initial?: number;",
@@ -284,7 +284,7 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
    * it, `flush: "post"`, and an immediate prop getter.
    */
   watchers: [
-    'import { defineEmits, ref, watch } from "unframework";',
+    'import { defineEmits, ref, watch } from "@uxfront/unframework";',
     "",
     "export default function Pager({ size }: { size: number }) {",
     "  const emit = defineEmits<{",
@@ -356,7 +356,7 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
    * setup `let`, and `onUnmounted` clearing it.
    */
   effects: [
-    'import { defineEmits, onMounted, onUnmounted, ref, useTemplateRef, watchEffect } from "unframework";',
+    'import { defineEmits, onMounted, onUnmounted, ref, useTemplateRef, watchEffect } from "@uxfront/unframework";',
     "",
     "export default function Ticker({ label }: { label: string }) {",
     "  const emit = defineEmits<{",
@@ -413,7 +413,7 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
    * parameters annotated with lib.dom's types where Svelte gives another.
    */
   listeners: [
-    'import { ref } from "unframework";',
+    'import { ref } from "@uxfront/unframework";',
     "",
     "export default function Panel() {",
     "  const log = ref<string[]>([]);",
@@ -479,7 +479,7 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
    * `let`), two ids from one `$props.id()`, and `nextTick`.
    */
   refs: [
-    'import { defineEmits, nextTick, ref, useId, useTemplateRef } from "unframework";',
+    'import { defineEmits, nextTick, ref, useId, useTemplateRef } from "@uxfront/unframework";',
     "",
     "export default function Disclosure() {",
     "  const emit = defineEmits<{ toggled: [items: number] }>();",
@@ -519,7 +519,7 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
   ].join("\n"),
   /** Events of a component whose props are an object, under a name Svelte reserves. */
   objectEvents: [
-    'import { defineEmits } from "unframework";',
+    'import { defineEmits } from "@uxfront/unframework";',
     "",
     "interface ChipProps {",
     "  label: string;",
@@ -543,7 +543,7 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
    * `await` and emits after it.
    */
   watchEdges: [
-    'import { defineEmits, nextTick, ref, watch, watchEffect } from "unframework";',
+    'import { defineEmits, nextTick, ref, watch, watchEffect } from "@uxfront/unframework";',
     "",
     "export default function WatchEdges() {",
     "  const emit = defineEmits<{",
@@ -603,7 +603,7 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
    * type inside a function only.
    */
   flagWatchers: [
-    'import { defineEmits, ref, watch } from "unframework";',
+    'import { defineEmits, ref, watch } from "@uxfront/unframework";',
     "",
     "export default function FlagWatchers() {",
     "  const emit = defineEmits<{",
@@ -639,7 +639,7 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
    * `onUnmounted` hooks in their order, wherever the source declares them.
    */
   teardown: [
-    'import { defineEmits, onUnmounted, ref, watch, watchEffect } from "unframework";',
+    'import { defineEmits, onUnmounted, ref, watch, watchEffect } from "@uxfront/unframework";',
     "",
     "export default function Closing() {",
     "  const emit = defineEmits<{ step: [text: string] }>();",
@@ -680,7 +680,7 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
    * `onMounted` returns, which Svelte would take for a teardown, is dropped.
    */
   effectReturns: [
-    'import { defineEmits, onMounted, ref, watchEffect } from "unframework";',
+    'import { defineEmits, onMounted, ref, watchEffect } from "@uxfront/unframework";',
     "",
     "export default function EffectReturns({ label }: { label: string }) {",
     "  const emit = defineEmits<{ seen: [text: string]; gone: [text: string] }>();",
@@ -722,7 +722,7 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
    * template ref, and an object form's events.
    */
   copiedCode: [
-    'import { computed, defineEmits, nextTick, onMounted, ref, useTemplateRef } from "unframework";',
+    'import { computed, defineEmits, nextTick, onMounted, ref, useTemplateRef } from "@uxfront/unframework";',
     "",
     "export interface Entry {",
     "  id: number;",
@@ -774,7 +774,7 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
    * `oninput` reaches, where Svelte hands an `Event`, and an inline handler's.
    */
   unionEvents: [
-    'import { defineEmits, ref } from "unframework";',
+    'import { defineEmits, ref } from "@uxfront/unframework";',
     "",
     "export default function Choice() {",
     "  const emit = defineEmits<{ activated: [type: string] }>();",

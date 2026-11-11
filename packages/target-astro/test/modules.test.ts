@@ -34,7 +34,7 @@ function frontmatter(output: string): string {
 }
 
 const TOGGLE = [
-  'import { onMounted, ref } from "unframework";',
+  'import { onMounted, ref } from "@uxfront/unframework";',
   "",
   'const LABEL = "Toggle";',
   "",
@@ -83,7 +83,7 @@ describe("astro composables", () => {
     const outputs = await compileSources({
       "useToggle.uf.ts": TOGGLE,
       "Switch.uf.tsx": [
-        'import { defineEmits } from "unframework";',
+        'import { defineEmits } from "@uxfront/unframework";',
         "",
         'import { useToggle } from "./useToggle.uf.ts";',
         "",
@@ -127,7 +127,7 @@ describe("astro composables", () => {
     const outputs = await compileSources({
       "tokens.ts": "export const Astro = 2;\n",
       "useF.uf.ts": [
-        'import { computed } from "unframework";',
+        'import { computed } from "@uxfront/unframework";',
         "",
         'import { Astro } from "./tokens";',
         "",
@@ -147,7 +147,7 @@ describe("astro composables", () => {
   it("declares and reads a module constant named `Astro` under one name of its own", async () => {
     const outputs = await compileSources({
       "useG.uf.ts": [
-        'import { computed } from "unframework";',
+        'import { computed } from "@uxfront/unframework";',
         "",
         "const Astro = 2;",
         "",
@@ -188,7 +188,7 @@ describe("astro composables", () => {
   it("drops a function that calls a callback, and one that is async", async () => {
     const outputs = await compileSources({
       "useCount.uf.ts": [
-        'import { ref } from "unframework";',
+        'import { ref } from "@uxfront/unframework";',
         "",
         "export function useCount(onChange: (n: number) => void) {",
         "  const count = ref(0);",
@@ -222,7 +222,7 @@ describe("astro shared modules", () => {
       "format.ts":
         "export function formatPrice(cents: number): string {\n  return `${cents}`;\n}\n",
       "Price.uf.tsx": [
-        'import { ref } from "unframework";',
+        'import { ref } from "@uxfront/unframework";',
         "",
         'import { formatPrice } from "./format";',
         "",
@@ -255,7 +255,7 @@ describe("astro shared modules", () => {
   it("declares a constant a setup name shadows under a name of its own", async () => {
     const outputs = await compileSources({
       "Stepper.uf.tsx": [
-        'import { ref } from "unframework";',
+        'import { ref } from "@uxfront/unframework";',
         "",
         "const STEP = 1;",
         "const NEXT = { STEP };",
@@ -293,7 +293,7 @@ describe("astro shared modules", () => {
   it("renames a shadowed constant in a `typeof` another constant's value holds", async () => {
     const outputs = await compileSources({
       "Keys.uf.tsx": [
-        'import { ref } from "unframework";',
+        'import { ref } from "@uxfront/unframework";',
         "",
         "const LIMITS = { min: 0, max: 20 };",
         "const KEYS = Object.keys(LIMITS) as (keyof typeof LIMITS)[];",

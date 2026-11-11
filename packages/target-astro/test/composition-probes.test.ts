@@ -21,8 +21,8 @@ import { integrationRoot, toolchainDir } from "./workspace.ts";
 /** Sources whose shapes the corpus has no case for, each emitted as one directory of outputs. */
 const SOURCES: Record<string, string> = {
   Frames: [
-    'import { defineSlots } from "unframework";',
-    'import type { Element } from "unframework";',
+    'import { defineSlots } from "@uxfront/unframework";',
+    'import type { Element } from "@uxfront/unframework";',
     "function Box() {",
     "  const slots = defineSlots<{ title?(): Element; default?(): Element }>();",
     '  return <div><h3>{slots.title?.() ?? "Untitled"}</h3>{slots.default?.()}</div>;',
@@ -53,8 +53,8 @@ const SOURCES: Record<string, string> = {
     "}",
   ].join("\n"),
   Keys: [
-    'import { inject, provide } from "unframework";',
-    'import type { InjectionKey } from "unframework";',
+    'import { inject, provide } from "@uxfront/unframework";',
+    'import type { InjectionKey } from "@uxfront/unframework";',
     "interface Handle { Name: string; el: HTMLElement | null; e: Error }",
     'export const ModeKey: InjectionKey<"Light" | "Dark"> = Symbol("uf.mode");',
     'export const HandleKey: InjectionKey<Handle> = Symbol("uf.handle");',
@@ -76,8 +76,8 @@ const SOURCES: Record<string, string> = {
     "}",
   ].join("\n"),
   Slots: [
-    'import { defineSlots } from "unframework";',
-    'import type { Element } from "unframework";',
+    'import { defineSlots } from "@uxfront/unframework";',
+    'import type { Element } from "@uxfront/unframework";',
     "function List({ items }: { items: string[] }) {",
     "  const slots = defineSlots<{ case?(props: { item: string }): Element; style?(props: { item: string }): Element }>();",
     "  return <ul>{items.map((entry) => <li key={entry}>{slots.case?.({ item: entry })}{slots.style?.({ item: entry })}</li>)}</ul>;",
@@ -87,8 +87,8 @@ const SOURCES: Record<string, string> = {
     "}",
   ].join("\n"),
   ThemeKeys: [
-    'import { inject, provide } from "unframework";',
-    'import type { InjectionKey } from "unframework";',
+    'import { inject, provide } from "@uxfront/unframework";',
+    'import type { InjectionKey } from "@uxfront/unframework";',
     'type Mode = "light" | "dark";',
     "interface Theme {",
     "  mode: Mode;",
@@ -109,8 +109,8 @@ const SOURCES: Record<string, string> = {
     "}",
   ].join("\n"),
   Page: [
-    'import { defineSlots } from "unframework";',
-    'import type { Element } from "unframework";',
+    'import { defineSlots } from "@uxfront/unframework";',
+    'import type { Element } from "@uxfront/unframework";',
     "function List({ items, styleSlot }: { items: string[]; styleSlot: string }) {",
     "  const slots = defineSlots<{ style?(props: { item: string }): Element }>();",
     "  return (",
@@ -132,8 +132,8 @@ const SOURCES: Record<string, string> = {
     "}",
   ].join("\n"),
   Swap: [
-    'import { defineSlots } from "unframework";',
-    'import type { Element } from "unframework";',
+    'import { defineSlots } from "@uxfront/unframework";',
+    'import type { Element } from "@uxfront/unframework";',
     "function A({ items, styleSlot }: { items: string[]; styleSlot?: string }) {",
     "  const slots = defineSlots<{ style?(props: { item: string }): Element }>();",
     "  return (",

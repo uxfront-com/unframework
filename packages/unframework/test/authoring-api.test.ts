@@ -4,7 +4,7 @@ import * as api from "../src/index.ts";
 import * as devRuntime from "../src/jsx-dev-runtime.ts";
 import * as runtime from "../src/jsx-runtime.ts";
 
-/** The runtime surface of `unframework`: plan §4.2, nothing more (everything else is a type). */
+/** The runtime surface of `@uxfront/unframework`: plan §4.2, nothing more (everything else is a type). */
 const AUTHORING_API = [
   "computed",
   "defineEmits",

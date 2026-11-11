@@ -1,4 +1,4 @@
-import { inject } from "unframework";
+import { inject } from "@uxfront/unframework";
 
 import { ThemeKey } from "./ThemeProvider.uf.tsx";
 

@@ -1,6 +1,6 @@
 // UF3004 non-canonical-attribute: React's event names `onKeyDown` and `onDoubleClick` are written
 // with Vue's, `onKeydown` and `onDblclick`; the safe fix renames each.
-import { defineEmits, ref } from "unframework";
+import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function ShortcutField() {
   const emit = defineEmits<{ confirm: [] }>();

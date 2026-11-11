@@ -698,7 +698,7 @@ describe("reads a condition narrows (ADR-0046)", () => {
   it("set a current value they narrow, which `update`'s parameter would not be", () => {
     const module = lower(
       [
-        'import { ref } from "unframework";',
+        'import { ref } from "@uxfront/unframework";',
         "export default function Bump() {",
         "  const count = ref<number | null>(null);",
         "  function bump() {",

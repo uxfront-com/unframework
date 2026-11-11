@@ -1,4 +1,4 @@
-import { defineEmits } from "unframework";
+import { defineEmits } from "@uxfront/unframework";
 
 import { useCart } from "./useCart.uf.ts";
 

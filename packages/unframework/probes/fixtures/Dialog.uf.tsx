@@ -5,7 +5,7 @@ import {
   useId,
   useTemplateRef,
   type JSX,
-} from "unframework";
+} from "@uxfront/unframework";
 
 export interface DialogProps {
   label: string;

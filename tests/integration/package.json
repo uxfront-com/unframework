@@ -46,6 +46,7 @@
     "@unframework.dev/testing": "workspace:*",
     "@unframework.dev/unplugin": "workspace:*",
     "@uxfront/typescript-config": "catalog:",
+    "@uxfront/unframework": "workspace:*",
     "@vitest/browser-playwright": "catalog:",
     "ajv": "catalog:",
     "astro": "catalog:",
@@ -60,7 +61,6 @@
     "svelte": "catalog:",
     "tinybench": "catalog:",
     "tslib": "catalog:",
-    "unframework": "workspace:*",
     "vite": "catalog:",
     "vitest": "catalog:",
     "vue": "catalog:"

@@ -370,7 +370,7 @@ describe("misbehaving plugins", () => {
   // and a server render would differ from the browser's (ADR-0045).
   it("rejects an ir hook's result that moves a local function into a getter, once", async () => {
     const dice = [
-      'import { computed, ref } from "unframework";',
+      'import { computed, ref } from "@uxfront/unframework";',
       "",
       "export default function Dice() {",
       "  const last = ref(1);",

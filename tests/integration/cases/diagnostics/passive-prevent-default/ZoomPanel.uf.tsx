@@ -1,7 +1,7 @@
 // UF3034 passive-prevent-default: the passive `wheel` listener calls `preventDefault()`, which the
 // browser ignores there, and which Angular, running the element's two `wheel` listeners as one,
 // would let prevent the scroll. The safe fix removes the call.
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export default function ZoomPanel() {
   const zoom = ref(1);

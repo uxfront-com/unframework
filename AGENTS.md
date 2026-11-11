@@ -2,7 +2,7 @@
 
 Unframework compiles one `.uf.tsx` component into native React, Vue, Svelte, Solid, Angular, Qwik
 and Astro components. The source is ordinary TSX with Vue-inspired APIs (`ref`, `computed`,
-`defineEmits`, …) imported from `unframework` and erased at build time. The output has no runtime:
+`defineEmits`, …) imported from `@uxfront/unframework` and erased at build time. The output has no runtime:
 each file depends only on its framework, and on any module a styling engine's Vite plugin
 registers, which passes through as written. Every output is verified by executed tests, from golden
 files and each framework's own compiler to server HTML, the DOM, the accessibility tree and pixels
@@ -65,7 +65,7 @@ in a real browser.
   each module's source map, routes edits through the framework's own hot updates, compiles the
   `.uf.tsx` sources a package ships (`./source/*`) and refuses a file outside `server.fs.allow`.
   `@unframework.dev/unplugin/astro` is the Astro integration. `unframework.config.ts`, written with
-  `defineConfig` from `unframework/config`, loads under type stripping (UF7001 to UF7004). The CLI,
+  `defineConfig` from `@uxfront/unframework/config`, loads under type stripping (UF7001 to UF7004). The CLI,
   `@unframework.dev/cli` behind the umbrella's `unframework` bin, runs `build` (with `--package`, one
   package with each target in its framework's format, ADR-0077), `check` (pretty, JSON or SARIF),
   `explain` and `init`, and `create-unframework` starts a project (ADR-0076). A host app checks
@@ -163,8 +163,8 @@ pnpm test:budgets:update              # remeasure and rewrite tests/integration/
 
 # Generated files
 pnpm --filter @unframework.dev/ir generate         # the IR's JSON Schema, after a change to the IR types
-pnpm --filter unframework vendor:jsx           # re-vendor the JSX types after a bump of @vue/runtime-dom
-pnpm --filter unframework probes               # the JSX type probes (they also run in its tests)
+pnpm --filter @uxfront/unframework vendor:jsx           # re-vendor the JSX types after a bump of @vue/runtime-dom
+pnpm --filter @uxfront/unframework probes               # the JSX type probes (they also run in its tests)
 
 pnpm new:package <dir> "<description>"         # a new package; then add it to LAYERS (see below)
 ```
@@ -200,8 +200,8 @@ Generate each of these with its command. The formatter and the linter skip them 
 | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `cases/**/__output__/`, `__expected__/`                     | `pnpm test:update`                                                                            |
 | `cases/**/__screenshots__/`, `__expected__/geometry.*.json` | `pnpm test:baselines:download` (CI's artefact) or `pnpm test:baselines` (Docker, linux/amd64) |
-| `packages/ir/schema/`                                       | `pnpm --filter @unframework.dev/ir generate`                                                      |
-| `packages/unframework/src/vendor/`                          | `pnpm --filter unframework vendor:jsx`                                                        |
+| `packages/ir/schema/`                                       | `pnpm --filter @unframework.dev/ir generate`                                                  |
+| `packages/unframework/src/vendor/`                          | `pnpm --filter @uxfront/unframework vendor:jsx`                                               |
 | `tests/integration/budgets.json`                            | `pnpm test:budgets:update`                                                                    |
 
 ### Never weaken a check

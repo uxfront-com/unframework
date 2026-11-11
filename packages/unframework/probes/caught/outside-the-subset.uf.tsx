@@ -5,7 +5,7 @@ import {
   reactive,
   // @ts-expect-error TS2305 `toRefs()` is outside the subset
   toRefs,
-} from "unframework";
+} from "@uxfront/unframework";
 
 export function ReactiveState() {
   const state = reactive({ count: 0 });

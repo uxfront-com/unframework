@@ -59,7 +59,7 @@ export default function Card() {
     const bare = await output(
       lowered(
         "Bare.uf.tsx",
-        `import { ref } from "unframework";
+        `import { ref } from "@uxfront/unframework";
 export default function Bare() {
   const on = ref(true);
   return <>{on.value ? <b>On</b> : <i>Off</i>}</>;

@@ -69,7 +69,7 @@ const CALLS: Record<string, Record<string, string>> = {
   // A getter the composable reads while it sets up, of a required input (NG0950 in a field).
   "calls/getter-input": {
     "useEager.uf.ts": [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export function useEager(name: () => string) {",
       "  const first = ref(name());",
@@ -88,7 +88,7 @@ const CALLS: Record<string, Record<string, string>> = {
   // A generic composable whose value argument reads an input: `T` is the input's type.
   "calls/generic-input": {
     "useLatest.uf.ts": [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export function useLatest<T>(initial: T) {",
       "  const current = ref(initial);",
@@ -114,7 +114,7 @@ const CALLS: Record<string, Record<string, string>> = {
   // A generic composable with effects after the caller's own hook: called in the constructor.
   "calls/generic-constructor": {
     "useTracked.uf.ts": [
-      'import { onMounted, ref } from "unframework";',
+      'import { onMounted, ref } from "@uxfront/unframework";',
       "",
       "export function useTracked<T>(initial: T) {",
       "  const current = ref(initial);",
@@ -125,7 +125,7 @@ const CALLS: Record<string, Record<string, string>> = {
       "}",
     ].join("\n"),
     "Tracker.uf.tsx": [
-      'import { onMounted, ref } from "unframework";',
+      'import { onMounted, ref } from "@uxfront/unframework";',
       "",
       'import { useTracked } from "./useTracked.uf.ts";',
       "",
@@ -150,7 +150,7 @@ const CALLS: Record<string, Record<string, string>> = {
       "\n",
     ),
     "Editor.uf.tsx": [
-      'import { defineEmits, ref, watch } from "unframework";',
+      'import { defineEmits, ref, watch } from "@uxfront/unframework";',
       "",
       'import { save } from "./api";',
       "",
@@ -175,7 +175,7 @@ const CALLS: Record<string, Record<string, string>> = {
   // A holder named like the `style` input a root element takes.
   "calls/holder-style": {
     "useStyle.uf.ts": [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export function useStyle() {",
       '  const color = ref("red");',
@@ -202,7 +202,7 @@ const CALLS: Record<string, Record<string, string>> = {
   // the inputs are set, so the call stays a field.
   "calls/callback-input": {
     "useAnnounce.uf.ts": [
-      'import { onMounted, ref } from "unframework";',
+      'import { onMounted, ref } from "@uxfront/unframework";',
       "",
       "export function useAnnounce(say: (text: string) => void) {",
       "  const said = ref(false);",
@@ -214,7 +214,7 @@ const CALLS: Record<string, Record<string, string>> = {
       "}",
     ].join("\n"),
     "Announcer.uf.tsx": [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       'import { useAnnounce } from "./useAnnounce.uf.ts";',
       "",
@@ -235,7 +235,7 @@ const CALLS: Record<string, Record<string, string>> = {
   // it there (semantics contract, effect order).
   "calls/order-init": {
     "useLabelled.uf.ts": [
-      'import { onMounted, ref } from "unframework";',
+      'import { onMounted, ref } from "@uxfront/unframework";',
       "",
       "export function useLabelled(report: (entry: string) => void, label: () => string) {",
       "  const seen = ref(label());",
@@ -244,7 +244,7 @@ const CALLS: Record<string, Record<string, string>> = {
       "}",
     ].join("\n"),
     "Labelled.uf.tsx": [
-      'import { onMounted, ref } from "unframework";',
+      'import { onMounted, ref } from "@uxfront/unframework";',
       "",
       'import { useLabelled } from "./useLabelled.uf.ts";',
       "",
@@ -276,7 +276,7 @@ const CALLS: Record<string, Record<string, string>> = {
   // it there.
   "calls/order-watch": {
     "useCounted.uf.ts": [
-      'import { ref, watch } from "unframework";',
+      'import { ref, watch } from "@uxfront/unframework";',
       "",
       "export function useCounted(report: (entry: string) => void) {",
       "  const count = ref(0);",
@@ -288,7 +288,7 @@ const CALLS: Record<string, Record<string, string>> = {
       "}",
     ].join("\n"),
     "Bumper.uf.tsx": [
-      'import { ref, watch } from "unframework";',
+      'import { ref, watch } from "@uxfront/unframework";',
       "",
       'import { useCounted } from "./useCounted.uf.ts";',
       "",
@@ -335,7 +335,7 @@ const CALLS: Record<string, Record<string, string>> = {
       "}",
     ].join("\n"),
     "Actions.uf.tsx": [
-      'import { defineEmits } from "unframework";',
+      'import { defineEmits } from "@uxfront/unframework";',
       "",
       'import { save, track } from "./api";',
       "",
@@ -366,7 +366,7 @@ const CALLS: Record<string, Record<string, string>> = {
   // registered there after it, with the component's injector, a cleanup's ref assigned there.
   "calls/late-effects": {
     "useSeen.uf.ts": [
-      'import { onMounted, ref } from "unframework";',
+      'import { onMounted, ref } from "@uxfront/unframework";',
       "",
       "export function useSeen(label: () => string) {",
       "  const seen = ref(label());",
@@ -377,7 +377,7 @@ const CALLS: Record<string, Record<string, string>> = {
       "}",
     ].join("\n"),
     "Seen.uf.tsx": [
-      'import { ref, watchEffect } from "unframework";',
+      'import { ref, watchEffect } from "@uxfront/unframework";',
       "",
       'import { useSeen } from "./useSeen.uf.ts";',
       "",
@@ -406,7 +406,7 @@ const CALLS: Record<string, Record<string, string>> = {
   // no input.
   "calls/two-calls": {
     "useSeen.uf.ts": [
-      'import { onMounted, ref } from "unframework";',
+      'import { onMounted, ref } from "@uxfront/unframework";',
       "",
       "export function useSeen(label: () => string) {",
       "  const seen = ref(label());",
@@ -417,7 +417,7 @@ const CALLS: Record<string, Record<string, string>> = {
       "}",
     ].join("\n"),
     "useTicks.uf.ts": [
-      'import { onMounted, ref } from "unframework";',
+      'import { onMounted, ref } from "@uxfront/unframework";',
       "",
       "export function useTicks() {",
       "  const ticks = ref(0);",

@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { Button, Card, Counter, TextField, useToggle } from "@unframework.dev/e2e-design-system/vue";
+import {
+  Button,
+  Card,
+  Counter,
+  TextField,
+  useToggle,
+} from "@unframework.dev/e2e-design-system/vue";
 import { ref } from "vue";
 
 const presses = ref(0);

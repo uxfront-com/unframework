@@ -1,4 +1,4 @@
-import { defineSlots, type Element } from "unframework";
+import { defineSlots, type Element } from "@uxfront/unframework";
 
 export interface ButtonProps {
   size?: "sm" | "md" | "lg";

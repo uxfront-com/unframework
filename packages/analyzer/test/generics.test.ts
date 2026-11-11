@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { analyze, componentImports } from "../src/index.ts";
 import { applyAndRecheck, codes, only, problems, run } from "./helpers.ts";
 
-const LIST = `import { defineEmits, defineModel, defineSlots } from "unframework";
+const LIST = `import { defineEmits, defineModel, defineSlots } from "@uxfront/unframework";
 
 export interface ListProps<T> {
   items: T[];
@@ -129,7 +129,7 @@ describe("generic components", () => {
   it.each([
     ["export function A(props: { items: T[] }) { return <p />; }", ["UF6001 T"]],
     [
-      'import { defineEmits } from "unframework";\nexport function A() { const emit = defineEmits<{ pick: [item: T] }>(); return <button type="button" onClick={() => emit("pick", 1)} />; }',
+      'import { defineEmits } from "@uxfront/unframework";\nexport function A() { const emit = defineEmits<{ pick: [item: T] }>(); return <button type="button" onClick={() => emit("pick", 1)} />; }',
       ["UF2009 T"],
     ],
   ])("reports a type parameter outside a generic component in %j", (source, expected) => {

@@ -26,7 +26,7 @@ function lowerWith(source: string, children: Record<string, string>): UfModule {
 const emittedOf = (name: string) => emitted(COMPOSITION_SOURCES[name]!);
 
 /** A component that declares the events `class` and `style`, with `root` as its render. */
-const emitting = (root: string) => `import { defineEmits } from "unframework";
+const emitting = (root: string) => `import { defineEmits } from "@uxfront/unframework";
 export default function Card() {
   const emit = defineEmits<{ class: []; style: [] }>();
   return ${root};
@@ -135,8 +135,8 @@ describe("the names composition declares", () => {
   });
 
   it("reports a prop named like a slot's query (UF2003)", () => {
-    const reported = reportedFor(`import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+    const reported = reportedFor(`import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 export default function Card({ titleTemplate }: { titleTemplate: string }) {
   const slots = defineSlots<{ title?(): Element }>();
   return <div>{slots.title?.()}{titleTemplate}</div>;
@@ -151,8 +151,8 @@ export default function Card({ titleTemplate }: { titleTemplate: string }) {
   });
 
   it("reports an event named like a slot's query (UF2003)", () => {
-    const reported = reportedFor(`import { defineEmits, defineSlots } from "unframework";
-import type { Element } from "unframework";
+    const reported = reportedFor(`import { defineEmits, defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 export default function Card() {
   const slots = defineSlots<{ title?(): Element }>();
   const emit = defineEmits<{ titleTemplate: [] }>();
@@ -184,7 +184,7 @@ export default function Card() {
 
 /** A component with `props`, the events `events` and the setup `setup`, emitting the first event. */
 const declaring = (props: string, events: string, setup = "") =>
-  `import { defineEmits${setup.includes("defineExpose") ? ", defineExpose" : ""} } from "unframework";
+  `import { defineEmits${setup.includes("defineExpose") ? ", defineExpose" : ""} } from "@uxfront/unframework";
 export default function Card(${props}) {
 const emit = defineEmits<{ ${events} }>();
 ${setup}
@@ -195,8 +195,8 @@ return <button type="button" onClick={() => emit("${events.slice(0, events.index
 const card = (
   declaration: string,
   setup: string,
-) => `import { defineSlots${setup ? ", provide" : ""} } from "unframework";
-import type { Element${setup ? ", InjectionKey" : ""} } from "unframework";
+) => `import { defineSlots${setup ? ", provide" : ""} } from "@uxfront/unframework";
+import type { Element${setup ? ", InjectionKey" : ""} } from "@uxfront/unframework";
 ${declaration}
 export default function Card({ level }: { level: CardTitle${setup ? " | undefined" : ""} }) {
   const slots = defineSlots<{ title?(props: { text: string }): Element }>();
@@ -300,7 +300,7 @@ describe("the component's API", () => {
 
   it("reports a model named like the class input of a root that takes it (UF2003)", () => {
     expect(
-      reportedFor(`import { defineModel } from "unframework";
+      reportedFor(`import { defineModel } from "@uxfront/unframework";
 export default function Card() {
   const tone = defineModel<string>("class");
   return <p>{tone.value}</p>;
@@ -328,8 +328,8 @@ export default function Card() {
 
   it("names a slot's directive apart from a key it imports", () => {
     const module = lowerWith(
-      `import { defineSlots, provide } from "unframework";
-import type { Element } from "unframework";
+      `import { defineSlots, provide } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 import { CardTitle } from "./Keys.uf.tsx";
 export default function Card() {
   const slots = defineSlots<{ title?(): Element }>();
@@ -337,7 +337,7 @@ export default function Card() {
   return <h2>{slots.title?.()}</h2>;
 }`,
       {
-        "./Keys.uf.tsx": `import type { Element, InjectionKey } from "unframework";
+        "./Keys.uf.tsx": `import type { Element, InjectionKey } from "@uxfront/unframework";
 export const CardTitle: InjectionKey<string> = Symbol("uf.title");
 export default function Keys() {
   return <p>Keys</p>;
@@ -351,8 +351,8 @@ export default function Keys() {
   });
 
   it("reports two slots of two children filled through one attribute (UF1104)", () => {
-    const reported = reportedFor(`import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+    const reported = reportedFor(`import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 function CardTitle() {
   const slots = defineSlots<{ bar?(): Element }>();
   return <h2>{slots.bar?.()}</h2>;

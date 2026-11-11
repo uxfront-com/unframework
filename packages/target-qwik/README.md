@@ -299,8 +299,8 @@ its function, so the files join into one module (ADR-0053).
 Tests and tooling use three Node and browser entries (plan §5.7, `Toolchain` in
 `@unframework.dev/codegen`):
 
-| Entry                                       | What it is                                                                                                                                                                                                            |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Entry                                           | What it is                                                                                                                                                                                                            |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@unframework.dev/target-qwik/toolchain`        | `toolchain`: the Vite configuration of `browser` and `ssr` projects (`qwikVite` with `srcDir` at the project root, `csr` in the browser, no app entry, HMR, the image dev tool and the inspector off), L3, L4 and L5. |
 | `@unframework.dev/target-qwik/toolchain/client` | `mount`: a client-only render with the qwikloader, settled with Qwik's render promise. Every mount needs a fresh container.                                                                                           |
 | `@unframework.dev/target-qwik/toolchain/server` | `renderToString`: `renderToString` from `@qwik.dev/core/server` into a fragment container, returning only the component's HTML.                                                                                       |

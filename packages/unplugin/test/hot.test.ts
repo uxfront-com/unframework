@@ -416,7 +416,7 @@ describe("what a change reaches", () => {
         "src/Pair.uf.tsx":
           "function Inner() {\n  return <i>one</i>;\n}\n\nexport default function Pair() {\n  return <b><Inner /></b>;\n}\n",
         "src/useCount.uf.ts":
-          'import { ref } from "unframework";\n\nexport function useCount() {\n  const count = ref(1);\n  return { count };\n}\n',
+          'import { ref } from "@uxfront/unframework";\n\nexport function useCount() {\n  const count = ref(1);\n  return { count };\n}\n',
       });
       const hot = await startHot(root, "vue", vue);
       try {
@@ -435,7 +435,7 @@ describe("what a change reaches", () => {
           write(
             root,
             "src/useCount.uf.ts",
-            'import { ref } from "unframework";\n\nexport function useCount() {\n  const count = ref(2);\n  return { count };\n}\n',
+            'import { ref } from "@uxfront/unframework";\n\nexport function useCount() {\n  const count = ref(2);\n  return { count };\n}\n',
           ),
         );
         expect(hot.sent.map((payload) => payload.type)).toContain("full-reload");

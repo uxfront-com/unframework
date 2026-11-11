@@ -168,7 +168,7 @@ export function applyAndRecheck(source: string, diagnostics: readonly Diagnostic
 
 /** Every authoring API M2 lowers, imported as a component writes it. */
 export const API: string =
-  'import { computed, defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef, watch, watchEffect } from "unframework";\n';
+  'import { computed, defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";\n';
 
 /** A component with the API imported, the props and the setup given, returning `jsx`. */
 export function setupOf(

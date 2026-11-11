@@ -5,9 +5,11 @@ import type { Stats } from "node:fs";
 import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 
+import { AUTHORING_PACKAGE } from "@unframework.dev/diagnostics";
+
 import type { RunCommand } from "./command.ts";
 
-const CONFIG = `import { defineConfig } from "unframework/config";
+const CONFIG = `import { defineConfig } from "${AUTHORING_PACKAGE}/config";
 
 export default defineConfig({
   targets: ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"],
@@ -47,7 +49,7 @@ const TSCONFIG = `${JSON.stringify(
       noEmit: true,
       allowImportingTsExtensions: true,
       jsx: "preserve",
-      jsxImportSource: "unframework",
+      jsxImportSource: AUTHORING_PACKAGE,
     },
     include: ["**/*.uf.tsx", "**/*.uf.ts"],
     exclude: ["dist"],

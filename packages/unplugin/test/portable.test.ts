@@ -41,7 +41,7 @@ beforeAll(() => {
   project = createProject({
     "Hello.uf.tsx": HELLO,
     "useToggle.uf.ts":
-      'import { ref } from "unframework";\n\nexport function useToggle() {\n  const on = ref(false);\n  return { on };\n}\n',
+      'import { ref } from "@uxfront/unframework";\n\nexport function useToggle() {\n  const on = ref(false);\n  return { on };\n}\n',
     "Both.uf.tsx": HELLO,
     "Both.uf.ts": "export const notAComposable = 1;\n",
   });

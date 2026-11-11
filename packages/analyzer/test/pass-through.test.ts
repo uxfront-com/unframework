@@ -163,7 +163,7 @@ describe("the passThrough option", () => {
   });
 
   it.each([
-    ["the authoring API", 'import { ref } from "unframework";\n', "unframework", []],
+    ["the authoring API", 'import { ref } from "@uxfront/unframework";\n', "@uxfront/", []],
     ["a framework", 'import { ref } from "vue";\n', "vue", ["UF1201"]],
     ["a component", 'import Child from "virtual:Child.uf.tsx";\n', "virtual:", ["UF1202"]],
     ["a relative module", 'import "./theme.css";\n', ".", ["UF5005"]],

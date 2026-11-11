@@ -1,4 +1,4 @@
-import { defineEmits, onMounted, ref, useTemplateRef } from "unframework";
+import { defineEmits, onMounted, ref, useTemplateRef } from "@uxfront/unframework";
 
 export interface ArticlePreviewProps {
   title: string;

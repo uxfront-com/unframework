@@ -1,4 +1,4 @@
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 // A `v-model` beside a listener of its event: one prop runs the model's handler, then the
 // listener (src/listeners.ts), which reads what the model wrote.

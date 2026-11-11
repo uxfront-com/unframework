@@ -89,7 +89,7 @@ describe("coverageProblems", () => {
   it("reads the setup items, handlers, watch sources and code references of a compile", async () => {
     // A `watch` on a ref and an inline handler: no getter source, no `watchEffect`, no handler
     // that names a function, no emit.
-    const source = `import { ref, watch } from "unframework";
+    const source = `import { ref, watch } from "@uxfront/unframework";
 export default function Clicks() {
   const count = ref(0);
   const last = ref(0);

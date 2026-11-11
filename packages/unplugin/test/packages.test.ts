@@ -43,7 +43,7 @@ const BUTTON =
   'import "./Button.css";\nimport Icon from "./Icon.uf.tsx";\nimport type { Tone } from "./types";\n\nexport default function Button({ tone = "calm" }: { tone?: Tone }) {\n  return <button class="kit" data-tone={tone}><Icon />Kit button</button>;\n}\n';
 const ICON = 'export default function Icon() {\n  return <i class="icon">Kit icon</i>;\n}\n';
 const TOGGLE =
-  'import { ref } from "unframework";\n\nexport function useToggle() {\n  const on = ref(false);\n  return { on };\n}\n';
+  'import { ref } from "@uxfront/unframework";\n\nexport function useToggle() {\n  const on = ref(false);\n  return { on };\n}\n';
 
 /** The package as npm installs it: a `./source/*` subpath, and entries that hide the extension. */
 const KIT: Record<string, string> = {

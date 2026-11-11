@@ -1,4 +1,4 @@
-import { defineEmits } from "unframework";
+import { defineEmits } from "@uxfront/unframework";
 
 export default function Avatar({ imageURL, userID }: { imageURL: string; userID: number }) {
   const emit = defineEmits<{ pickedURL: [url: string] }>();

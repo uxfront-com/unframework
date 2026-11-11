@@ -80,7 +80,7 @@ checked as the declaration its likely fix writes (`analyze.ts`).
   (UF2004) never touches. `analyze(parsed, { modules })` takes each shared module the source
   imports, by specifier (`sharedModuleImports(parsed)` lists them, values or types), as the
   compiler's resolver read it: a value import of one it could not read, or of one that reaches a
-  file it could not read, is UF1202; one that imports a framework or `unframework`, itself or
+  file it could not read, is UF1202; one that imports a framework or `@uxfront/unframework`, itself or
   through another `.ts` (`moduleSpecifiers(parsed)` lists what a module imports), is UF1204, for
   a type import too. Both are module-level errors. The module records its value imports
   (`moduleImports`) and the constants its components read, with those they read in turn
@@ -157,7 +157,7 @@ checked as the declaration its likely fix writes (`analyze.ts`).
     wrong number of arguments, a getter or a callback not written in place, and a member the
     composable doesn't return are UF1002.
 
-- **The authoring API** (`authoring.ts`): named imports from `"unframework"`, recognised by the
+- **The authoring API** (`authoring.ts`): named imports from `"@uxfront/unframework"`, recognised by the
   binding each declares (ADR-0006), as the package exports them (a test reads its `index.ts`).
   Anything else is UF2016.
 - **Composition** (`api.ts`, `components.ts`, ADR-0053 to ADR-0055):

@@ -11,7 +11,7 @@ import { componentImports } from "../src/index.ts";
 import { problems, run } from "./helpers.ts";
 
 const COMPOSABLE = [
-  'import { onMounted, ref } from "unframework";',
+  'import { onMounted, ref } from "@uxfront/unframework";',
   "export function useToggle(initial: boolean, label: () => string, onToggle?: (on: boolean) => void) {",
   "  const on = ref(initial);",
   "  function toggle() {",
@@ -36,7 +36,7 @@ function toggleApi(): ModuleApi {
 /** Analyses a component that imports `useToggle`, with `setup` before it returns `jsx`. */
 function caller(setup: readonly string[], jsx = "<p>{on.value ? label : 'off'}</p>") {
   const source = [
-    'import { ref } from "unframework";',
+    'import { ref } from "@uxfront/unframework";',
     'import { useToggle } from "./useToggle.uf.ts";',
     "export default function Toggle({ label }: { label: string }) {",
     ...setup.map((line) => `  ${line}`),
@@ -52,7 +52,7 @@ function caller(setup: readonly string[], jsx = "<p>{on.value ? label : 'off'}</
 describe("a composable's nullable ref", () => {
   it("is narrowed in client code as the caller's own ref is, from its API's type", () => {
     const composable = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "export function useUser() {",
       "  const user = ref<{ name: string } | null>(null);",
       "  return { user };",
@@ -205,7 +205,7 @@ describe("a composable's call", () => {
 
   it("watches a returned ref through a getter of its value (UF2020, with a safe fix)", () => {
     const source = [
-      'import { watch } from "unframework";',
+      'import { watch } from "@uxfront/unframework";',
       'import { useToggle } from "./useToggle.uf.ts";',
       "export default function Toggle({ label }: { label: string }) {",
       "  const { on } = useToggle(false, () => label);",

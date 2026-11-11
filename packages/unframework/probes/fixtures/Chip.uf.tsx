@@ -1,4 +1,4 @@
-import { defineEmits } from "unframework";
+import { defineEmits } from "@uxfront/unframework";
 
 import type { ChipProps } from "./types.ts";
 

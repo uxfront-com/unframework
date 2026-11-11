@@ -6,7 +6,7 @@ import {
   ref,
   watch,
   watchEffect,
-} from "unframework";
+} from "@uxfront/unframework";
 
 export interface MailboxProps {
   folder: string;

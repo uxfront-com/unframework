@@ -1,4 +1,4 @@
-import { computed, defineEmits, onMounted, ref, watch } from "unframework";
+import { computed, defineEmits, onMounted, ref, watch } from "@uxfront/unframework";
 
 export default function NameSorter() {
   const emit = defineEmits<{

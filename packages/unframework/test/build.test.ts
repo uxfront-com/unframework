@@ -53,8 +53,8 @@ function installBuilt(directory: string, name: string): void {
 
 beforeAll(() => {
   consumer = mkdtempSync(join(tmpdir(), "uf-published-"));
-  installBuilt(PACKAGE, "unframework");
-  // `unframework/config` types its config through the compiler's published leaf of types.
+  installBuilt(PACKAGE, "@uxfront/unframework");
+  // `@uxfront/unframework/config` types its config through the compiler's published leaf of types.
   installBuilt(packageDirectory("@unframework.dev/compiler"), "@unframework.dev/compiler");
   for (const dependency of ["csstype", "vue"]) {
     symlinkSync(packageDirectory(dependency), join(consumer, "node_modules", dependency), "dir");
@@ -88,7 +88,7 @@ describe("the published package", { timeout: 30_000 }, () => {
   });
 
   it("ships the vendored types verbatim, licence included", () => {
-    const dist = join(consumer, "node_modules", "unframework", "dist");
+    const dist = join(consumer, "node_modules", "@uxfront/unframework", "dist");
     expect(readFileSync(join(dist, "vendor", "vue-jsx.d.ts"), "utf8")).toBe(
       readFileSync(join(PACKAGE, "src", "vendor", "vue-jsx.d.ts"), "utf8"),
     );
@@ -97,8 +97,8 @@ describe("the published package", { timeout: 30_000 }, () => {
     );
   });
 
-  it("loads no compiler through unframework/config", () => {
-    const dist = join(consumer, "node_modules", "unframework", "dist");
+  it("loads no compiler through @uxfront/unframework/config", () => {
+    const dist = join(consumer, "node_modules", "@uxfront/unframework", "dist");
     expect(readFileSync(join(dist, "config.js"), "utf8")).not.toMatch(/\bimport\b/);
   });
 });

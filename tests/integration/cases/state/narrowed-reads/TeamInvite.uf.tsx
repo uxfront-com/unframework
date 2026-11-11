@@ -1,4 +1,4 @@
-import { computed, defineEmits, onUnmounted, ref } from "unframework";
+import { computed, defineEmits, onUnmounted, ref } from "@uxfront/unframework";
 
 export interface Member {
   id: number;

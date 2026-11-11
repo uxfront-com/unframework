@@ -59,7 +59,7 @@ export default function A() { return <><B /></>; }`),
 }`),
     ).toEqual(["<p>d</p>"]);
     expect(
-      roots(`import { defineOptions } from "unframework";
+      roots(`import { defineOptions } from "@uxfront/unframework";
 export default function A() {
   defineOptions({ inheritAttrs: false });
   return <p />;

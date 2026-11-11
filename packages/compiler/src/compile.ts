@@ -18,7 +18,13 @@ import type { FormatOutcome, OutputFile, Target } from "@unframework.dev/codegen
 import { createDiagnostic, sortDiagnostics } from "@unframework.dev/diagnostics";
 import type { Diagnostic } from "@unframework.dev/diagnostics";
 import { checkInvariants, validateModule } from "@unframework.dev/ir";
-import type { IrValidationError, ModuleApi, Span, UfComponent, UfModule } from "@unframework.dev/ir";
+import type {
+  IrValidationError,
+  ModuleApi,
+  Span,
+  UfComponent,
+  UfModule,
+} from "@unframework.dev/ir";
 import { parseModule } from "@unframework.dev/parser";
 import type { ParsedModule } from "@unframework.dev/parser";
 import { createSyntacticOracle } from "@unframework.dev/type-oracle";

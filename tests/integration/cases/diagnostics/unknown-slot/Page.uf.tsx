@@ -1,7 +1,7 @@
 // UF3038 unknown-slot: a slot object fills the slots the component declares; `title` is misspelt
 // `tilte`, and the likely fix renames the key.
-import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 function Layout() {
   const slots = defineSlots<{ title?(): Element; default?(): Element }>();

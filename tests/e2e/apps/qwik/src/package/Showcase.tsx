@@ -1,5 +1,11 @@
 import { $, component$, useSignal } from "@qwik.dev/core";
-import { Button, Card, Counter, TextField, useToggle } from "@unframework.dev/e2e-design-system/qwik";
+import {
+  Button,
+  Card,
+  Counter,
+  TextField,
+  useToggle,
+} from "@unframework.dev/e2e-design-system/qwik";
 
 export const Showcase = component$(() => {
   const presses = useSignal(0);

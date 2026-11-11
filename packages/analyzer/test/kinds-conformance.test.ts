@@ -127,7 +127,7 @@ function typeOf(kinds: Kinds): string {
 /** The kinds the analyser gives `x` in a component with the declaration. */
 function kindsOf(declaration: string): Kinds {
   const source = [
-    'import { computed, ref } from "unframework";',
+    'import { computed, ref } from "@uxfront/unframework";',
     'interface Props { flag: boolean; size: "sm" | "md" }',
     `export function A({ flag, size }: Props) { ${declaration} return <p title={String(flag) + size} />; }`,
   ].join("\n");

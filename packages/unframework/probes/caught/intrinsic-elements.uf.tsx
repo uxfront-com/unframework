@@ -1,6 +1,6 @@
 // What the JSX types catch on intrinsic elements (plan §4.3). Each `@ts-expect-error` names the code
 // the probe runner pins (scripts/run-probes.ts): it must stay exactly this error.
-import { useTemplateRef } from "unframework";
+import { useTemplateRef } from "@uxfront/unframework";
 
 export function MisspelledAttribute() {
   // @ts-expect-error TS2322 `clas` is not an attribute (did you mean `class`?)

@@ -5,7 +5,12 @@
 import { encodedMappings, TraceMap } from "@jridgewell/trace-mapping";
 import type { SourceMapSegment } from "@jridgewell/trace-mapping";
 import type { OutputFile, SourceMapV3 } from "@unframework.dev/codegen";
-import { builtinTargets, compile, createFileResolver, TARGET_NAMES } from "@unframework.dev/compiler";
+import {
+  builtinTargets,
+  compile,
+  createFileResolver,
+  TARGET_NAMES,
+} from "@unframework.dev/compiler";
 import type { CompileResult, CompilerPlugin, TargetName } from "@unframework.dev/compiler";
 import { applyFixes } from "@unframework.dev/diagnostics";
 import type { Diagnostic } from "@unframework.dev/diagnostics";

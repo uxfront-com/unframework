@@ -2,7 +2,13 @@
 // their output files and listed in `imports`; a directive per named or scoped slot, which the
 // component's file exports and its consumers list beside it; and the injection keys, which the
 // output of their module's main component declares as `InjectionToken`s.
-import { childImports, kebabCase, keyImports, keyOwner, pascalCase } from "@unframework.dev/codegen";
+import {
+  childImports,
+  kebabCase,
+  keyImports,
+  keyOwner,
+  pascalCase,
+} from "@unframework.dev/codegen";
 import { walk } from "@unframework.dev/ir";
 import type {
   ApiEvent,

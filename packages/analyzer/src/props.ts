@@ -16,10 +16,22 @@ import {
   reservedPropName,
   reservedPropsParameterName,
 } from "@unframework.dev/ir";
-import type { Binding, DeclaredBy, Prop, PropsParameter, Span, TypeText } from "@unframework.dev/ir";
+import type {
+  Binding,
+  DeclaredBy,
+  Prop,
+  PropsParameter,
+  Span,
+  TypeText,
+} from "@unframework.dev/ir";
 import { parseModule, visitorKeys } from "@unframework.dev/parser";
 import type { AST, ParsedModule } from "@unframework.dev/parser";
-import type { ObjectNode, ShapeMember, TypeShape, UnresolvedType } from "@unframework.dev/type-oracle";
+import type {
+  ObjectNode,
+  ShapeMember,
+  TypeShape,
+  UnresolvedType,
+} from "@unframework.dev/type-oracle";
 
 import { Reporter } from "./context.ts";
 import {

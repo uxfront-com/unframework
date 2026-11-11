@@ -32,7 +32,7 @@ export default function Card(props: { label: string }) {
 `,
   "src/Card.css": ".card {\n  color: red;\n}\n",
   "src/shared/format.ts": "export const formatLabel = (label: string): string => label.trim();\n",
-  "src/useToggle.uf.ts": `import { ref } from "unframework";
+  "src/useToggle.uf.ts": `import { ref } from "@uxfront/unframework";
 
 export function useToggle(initial: boolean) {
   const on = ref(initial);

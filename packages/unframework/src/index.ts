@@ -1,7 +1,7 @@
 /**
  * The unframework authoring API (plan §4.2, ADR-0006): types, plus inert stubs.
  *
- * The compiler recognises these by binding, not by name, and erases them: no `unframework` import
+ * The compiler recognises these by binding, not by name, and erases them: no `@uxfront/unframework` import
  * survives into any output. Calling one at runtime means the file was not compiled, so every stub
  * throws instead of pretending to work.
  *

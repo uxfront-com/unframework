@@ -47,7 +47,7 @@ describe("module-level constants", () => {
 
   it("keeps the constants a copied type queries with `typeof`, and those they query", () => {
     const source = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "const LIMITS = { min: 0, max: 9 };",
       "const STEP: typeof LIMITS.max = 3;",
       "const UNUSED = 1;",
@@ -117,7 +117,7 @@ describe("module-level constants", () => {
 
   it("lets a getter call a local function that reads only a constant (UF2014)", () => {
     const source = [
-      'import { computed, ref } from "unframework";',
+      'import { computed, ref } from "@uxfront/unframework";',
       "const STEP = 2;",
       "export function A() {",
       "  const count = ref(0);",
@@ -566,7 +566,7 @@ describe("module-level constants", () => {
   // function's does (UF2014, ADR-0045).
   it("accepts a module function that reads client globals and only client code calls", () => {
     const source = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "const log = (m: string) => { console.log(m); };",
       "const later = (f: () => void) => setTimeout(f, 10);",
       "const title = () => document.title;",
@@ -607,7 +607,7 @@ describe("module-level constants", () => {
   // A function's body runs where it is called, as a local function's does (UF3019, ADR-0045).
   it("reports chance, the clock and the locale in a module's function only where render calls it", () => {
     const handler = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "const stamp = () => Date.now();",
       "const newId = () => crypto.randomUUID();",
       "export function A() {",
@@ -981,8 +981,8 @@ describe("imports of shared modules", () => {
     ],
     [
       "through another module",
-      { file: "tokens.ts", framework: { specifier: "unframework", file: "base.ts" } },
-      '"./tokens" reaches "base.ts", which imports "unframework"',
+      { file: "tokens.ts", framework: { specifier: "@uxfront/unframework", file: "base.ts" } },
+      '"./tokens" reaches "base.ts", which imports "@uxfront/unframework"',
     ],
   ])("reports a shared module that imports a framework %s (UF1204)", (_, shared, message) => {
     for (const specifiers of ["{ sizes }", "type { Size }"]) {
@@ -1022,7 +1022,7 @@ describe("imports of shared modules", () => {
   // A key lives in the `.uf.tsx` module that provides it (ADR-0054): a shared module's is none.
   it("reports a value of a shared module passed to `provide` as its key (UF2032)", () => {
     const source = [
-      'import { provide } from "unframework";',
+      'import { provide } from "@uxfront/unframework";',
       'import { ThemeKey } from "./keys";',
       "export function A() {",
       '  provide(ThemeKey, "dark");',

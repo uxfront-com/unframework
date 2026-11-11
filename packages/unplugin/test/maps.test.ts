@@ -52,7 +52,7 @@ vi.mock("@unframework.dev/compiler", async (importActual) => {
 });
 
 const SHOUT = [
-  'import { computed } from "unframework";',
+  'import { computed } from "@uxfront/unframework";',
   "",
   "export default function Shout({ name }: { name: string }) {",
   '  const loud = computed(() => name.toUpperCase().concat("!"));',
@@ -62,7 +62,7 @@ const SHOUT = [
 ].join("\n");
 
 const TWO = [
-  'import { computed } from "unframework";',
+  'import { computed } from "@uxfront/unframework";',
   "",
   "export default function Up({ name }: { name: string }) {",
   "  const up = computed(() => name.toUpperCase());",
@@ -77,7 +77,7 @@ const TWO = [
 ].join("\n");
 
 const USE_LOUD = [
-  'import { computed } from "unframework";',
+  'import { computed } from "@uxfront/unframework";',
   "",
   "export function useLoud(name: string) {",
   "  const loud = computed(() => name.toUpperCase());",

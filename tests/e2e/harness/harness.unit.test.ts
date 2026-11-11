@@ -171,7 +171,7 @@ describe("workspaceClosure", () => {
 describe("the copy's manifest and workspace", () => {
   const tarballs = {
     ds: "/t/ds.tgz",
-    unframework: "/t/uf.tgz",
+    "@uxfront/unframework": "/t/uf.tgz",
     "@unframework.dev/unplugin": "/t/plugin.tgz",
     "@unframework.dev/ir": "/t/ir.tgz",
   };
@@ -200,7 +200,7 @@ describe("the copy's manifest and workspace", () => {
     expect(copy.dependencies).toEqual({
       vue: "3.5.43",
       ds: "file:/t/ds.tgz",
-      unframework: "file:/t/uf.tgz",
+      "@uxfront/unframework": "file:/t/uf.tgz",
       "@unframework.dev/unplugin": "file:/t/plugin.tgz",
     });
     expect(manifest.dependencies).toEqual({ vue: "3.5.43" });
@@ -210,7 +210,7 @@ describe("the copy's manifest and workspace", () => {
     const workspace = JSON.parse(copyWorkspace(tarballs));
     expect(workspace.overrides).toEqual({
       ds: "file:/t/ds.tgz",
-      unframework: "file:/t/uf.tgz",
+      "@uxfront/unframework": "file:/t/uf.tgz",
       "@unframework.dev/unplugin": "file:/t/plugin.tgz",
       "@unframework.dev/ir": "file:/t/ir.tgz",
     });
@@ -234,15 +234,15 @@ describe("the packed tarballs' record", () => {
   it("names each tarball by its file, and reads it back with its path in the directory", () => {
     const packed = {
       designSystem: "ds",
-      tarballs: { ds: tarball("ds.tgz"), unframework: tarball("uf.tgz") },
+      tarballs: { ds: tarball("ds.tgz"), "@uxfront/unframework": tarball("uf.tgz") },
     };
     writePacked(
-      { ...packed, tarballs: { ds: "/elsewhere/ds.tgz", unframework: "/x/uf.tgz" } },
+      { ...packed, tarballs: { ds: "/elsewhere/ds.tgz", "@uxfront/unframework": "/x/uf.tgz" } },
       scratch,
     );
     expect(JSON.parse(readFileSync(join(scratch, packedFile), "utf8"))).toEqual({
       designSystem: "ds",
-      tarballs: { ds: "ds.tgz", unframework: "uf.tgz" },
+      tarballs: { ds: "ds.tgz", "@uxfront/unframework": "uf.tgz" },
     });
     expect(readPacked(scratch)).toEqual(packed);
   });

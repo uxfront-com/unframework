@@ -37,7 +37,7 @@
     // no dependencies (plan §5.2), so `transit` alone doesn't hash them: a change to `init` must not
     // replay a cached pass.
     "create-unframework#test": {
-      "dependsOn": ["transit", "unframework#transit"],
+      "dependsOn": ["transit", "@uxfront/unframework#transit"],
       "env": ["CI", "UF_*"]
     },
     // The harness exercises its workspace dependencies (compiler, targets, unplugin, testing),

@@ -130,8 +130,8 @@ describe("SVG titles (L4, tsgo)", () => {
 describe("option text (L4, tsgo)", () => {
   it("type-checks an option that holds a number, a sum, or text and a value", async () => {
     const output = await emitSource(
-      `import { defineSlots, ref } from "unframework";
-import type { Element } from "unframework";
+      `import { defineSlots, ref } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export default function Sizes({ n, label, ns }: { n: number; label: string; ns: number[] }) {
   const size = ref("1");

@@ -292,12 +292,12 @@ describe("setup-once reads (UF2007)", () => {
     const { diagnostics } = run(source);
     expect(codes(diagnostics)).toEqual(["UF2007"]);
     expect(applyAndRecheck(source, diagnostics)).toBe(
-      'import { computed } from "unframework";\nexport interface P { name: string }\nexport function A({ name }: P) { const greeting = computed(() => `Hi ${name}`); return <p>{greeting.value}</p>; }',
+      'import { computed } from "@uxfront/unframework";\nexport interface P { name: string }\nexport function A({ name }: P) { const greeting = computed(() => `Hi ${name}`); return <p>{greeting.value}</p>; }',
     );
     const other =
-      'import { ref } from "unframework";\nexport interface P { name: string }\nexport function A({ name }: P) { const count = ref(0); const greeting = `Hi ${name}`; return <p>{greeting}{count.value}</p>; }';
+      'import { ref } from "@uxfront/unframework";\nexport interface P { name: string }\nexport function A({ name }: P) { const count = ref(0); const greeting = `Hi ${name}`; return <p>{greeting}{count.value}</p>; }';
     expect(applyAndRecheck(other, run(other).diagnostics)).toContain(
-      'import { ref, computed } from "unframework";',
+      'import { ref, computed } from "@uxfront/unframework";',
     );
   });
 
@@ -827,8 +827,8 @@ describe("DOM timing (UF2018)", () => {
 describe("erased authoring types (UF2019)", () => {
   it("reports an authoring type in a copied annotation, with the likely fix where it is inferred", () => {
     const source = [
-      'import { ref, watch } from "unframework";',
-      'import type { OnCleanup, Ref } from "unframework";',
+      'import { ref, watch } from "@uxfront/unframework";',
+      'import type { OnCleanup, Ref } from "@uxfront/unframework";',
       "interface Holder { count: Ref<number> }",
       "export function A() { const count: Ref<number> = ref(0); function read(holder: Holder) { return holder.count.value; } watch(count, (value, previous, onCleanup: OnCleanup) => { onCleanup(() => {}); console.log(value); }); return <p>{count.value}</p>; }",
     ].join("\n");

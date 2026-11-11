@@ -10,7 +10,7 @@ import { emitSource, lower } from "./lower.ts";
 
 /** A source with the authoring imports it needs. */
 const source = (imports: string, body: string) =>
-  `import { ${imports} } from "unframework";\n\n${body}`;
+  `import { ${imports} } from "@uxfront/unframework";\n\n${body}`;
 
 describe("qwik target: state, derived values and constants", () => {
   it("writes ref as useSignal, computed as useComputed$, a setup let as a signal", async () => {

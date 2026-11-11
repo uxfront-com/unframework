@@ -220,7 +220,7 @@ describe("react composable calls, narrowed and typed", () => {
     async () => {
       const project = await compileProject({
         "/project/useUser.uf.ts": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           "export function useUser() {",
           "  const user = ref<{ name: string } | null>(null);",
@@ -232,7 +232,7 @@ describe("react composable calls, narrowed and typed", () => {
           "",
         ].join("\n"),
         "/project/Profile.uf.tsx": [
-          'import { defineEmits } from "unframework";',
+          'import { defineEmits } from "@uxfront/unframework";',
           "",
           'import { useUser } from "./useUser.uf.ts";',
           "",
@@ -287,7 +287,7 @@ describe("react composable calls, narrowed and typed", () => {
     async () => {
       const project = await compileProject({
         "/project/Gauge.uf.tsx": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           "const LIMITS = { min: 0, max: 9 };",
           "",
@@ -310,7 +310,7 @@ describe("react composable calls, narrowed and typed", () => {
     async () => {
       const project = await compileProject({
         "/project/useUser.uf.ts": [
-          'import { computed, ref } from "unframework";',
+          'import { computed, ref } from "@uxfront/unframework";',
           "",
           "export function useUser() {",
           "  const user = ref<{ name: string } | null>(null);",
@@ -323,7 +323,7 @@ describe("react composable calls, narrowed and typed", () => {
           "",
         ].join("\n"),
         "/project/Profile.uf.tsx": [
-          'import { defineEmits } from "unframework";',
+          'import { defineEmits } from "@uxfront/unframework";',
           "",
           'import { useUser } from "./useUser.uf.ts";',
           "",
@@ -355,7 +355,7 @@ describe("react composable calls, narrowed and typed", () => {
     async () => {
       const project = await compileProject({
         "/project/Level.uf.tsx": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           "const STEP = 3;",
           "type Level = typeof STEP;",
@@ -367,7 +367,7 @@ describe("react composable calls, narrowed and typed", () => {
           "",
         ].join("\n"),
         "/project/useLevel.uf.ts": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           "const STEP = 3;",
           "type Level = typeof STEP;",
@@ -392,7 +392,7 @@ describe("react composable calls, narrowed and typed", () => {
     async () => {
       const project = await compileProject({
         "/project/Picker.uf.tsx": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           "const LIMITS = { min: 0, max: 9 };",
           "",
@@ -423,7 +423,7 @@ describe("react composable shapes", () => {
     async () => {
       const { diagnostics, outputs } = await compileHook(
         [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           "export function useVariant(seed: () => number) {",
           "  const count = ref(0);",
@@ -452,7 +452,7 @@ describe("react composable shapes", () => {
 
   it("reports a getter or a callback argument held in a constant (UF1002)", async () => {
     const source = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export function useAlias(price: () => number, onPick: (value: number) => void) {",
       "  const read = price;",
@@ -485,7 +485,7 @@ describe("react composable shapes", () => {
     async () => {
       const { diagnostics, outputs } = await compileHook(
         [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           "const STEP = 2;",
           "const LIMIT = STEP * 10;",

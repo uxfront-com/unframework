@@ -1,4 +1,4 @@
-import { computed, ref, watch } from "unframework";
+import { computed, ref, watch } from "@uxfront/unframework";
 
 export interface PriceTagProps {
   /** The unit price, in cents. */

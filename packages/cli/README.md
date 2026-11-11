@@ -1,6 +1,6 @@
 # @unframework.dev/cli
 
-The `unframework` command line (plan §8.3, ADR-0076). The `unframework` package's bin runs it, so a
+The `unframework` command line (plan §8.3, ADR-0076). The `@uxfront/unframework` package's bin runs it, so a
 project runs it as `unframework <command>`, from the directory that holds its
 `unframework.config.ts`. A project with no config takes the defaults.
 

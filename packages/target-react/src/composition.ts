@@ -7,7 +7,13 @@
 // merged into the root. What `defineExpose` exposes is the `ref` prop's handle
 // (`useImperativeHandle`). An injection key is a React context, provided around the template and
 // read with `use`. `<component is>` renders a `const` the body declares.
-import { childImports, keyImports, keyOwner, pascalCase, scopeRoots } from "@unframework.dev/codegen";
+import {
+  childImports,
+  keyImports,
+  keyOwner,
+  pascalCase,
+  scopeRoots,
+} from "@unframework.dev/codegen";
 import type { ChildImport, ImportSet, KeyImport } from "@unframework.dev/codegen";
 import { codeOf, walk } from "@unframework.dev/ir";
 import type {

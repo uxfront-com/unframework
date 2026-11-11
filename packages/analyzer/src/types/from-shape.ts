@@ -4,7 +4,12 @@
 // `from-type.ts`, read from the shape's nodes instead of the module's syntax.
 
 import type { Span } from "@unframework.dev/ir";
-import type { DeclarationRef, ShapeMember, TypeNode, TypeShape } from "@unframework.dev/type-oracle";
+import type {
+  DeclarationRef,
+  ShapeMember,
+  TypeNode,
+  TypeShape,
+} from "@unframework.dev/type-oracle";
 
 import {
   arrayOf,

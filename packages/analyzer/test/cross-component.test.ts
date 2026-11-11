@@ -7,7 +7,7 @@ import { analyze } from "../src/index.ts";
 import { applyAndRecheck, codes, problems, run } from "./helpers.ts";
 
 const API =
-  'import { defineEmits, defineModel, defineSlots, ref } from "unframework";\nimport type { Element } from "unframework";\n';
+  'import { defineEmits, defineModel, defineSlots, ref } from "@uxfront/unframework";\nimport type { Element } from "@uxfront/unframework";\n';
 
 const CHILD = `${API}
 function Field({ label, tone, size }: { label: string; tone?: "info" | "warning" | undefined; size?: 1 | 2 | 3 }) {

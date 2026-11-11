@@ -26,7 +26,7 @@ async function renderSource(source: string, props: Record<string, unknown> = {})
   return renderToString(await loadAstroComponent(scratch.path, source), { props });
 }
 
-const counter = `import { computed, defineEmits, ref } from "unframework";
+const counter = `import { computed, defineEmits, ref } from "@uxfront/unframework";
 
 export interface CounterProps {
   initial?: number;
@@ -55,7 +55,7 @@ export default function Counter({ initial = 0, step = 1 }: CounterProps) {
 }
 `;
 
-const casts = `import { ref } from "unframework";
+const casts = `import { ref } from "@uxfront/unframework";
 
 type Status = "idle" | "busy";
 
@@ -88,7 +88,7 @@ export default function Casts() {
 }
 `;
 
-const conditionals = `import { computed, ref } from "unframework";
+const conditionals = `import { computed, ref } from "@uxfront/unframework";
 
 export interface LevelProps {
   flag: boolean;
@@ -109,7 +109,7 @@ export default function Level({ flag }: LevelProps) {
 }
 `;
 
-const getters = `import { computed, ref } from "unframework";
+const getters = `import { computed, ref } from "@uxfront/unframework";
 
 export type Tier = "low" | "high";
 
@@ -138,7 +138,7 @@ export default function Price({ price }: PriceProps) {
 }
 `;
 
-const functions = `import { computed, ref } from "unframework";
+const functions = `import { computed, ref } from "@uxfront/unframework";
 
 export default function Totals() {
   const rates = { standard: 0, express: 12 };
@@ -178,7 +178,7 @@ const dropped = `import {
   useTemplateRef,
   watch,
   watchEffect,
-} from "unframework";
+} from "@uxfront/unframework";
 
 interface Entry {
   label: string;
@@ -232,7 +232,7 @@ export default function Panel({ heading, delay }: PanelProps) {
 }
 `;
 
-const ids = `import { useId } from "unframework";
+const ids = `import { useId } from "@uxfront/unframework";
 
 export interface FieldProps {
   label: string;
@@ -253,7 +253,7 @@ export default function Field({ label }: FieldProps) {
 `;
 
 // Without fallthrough, which would read `Astro.props`: only the helper names `Astro`.
-const idsUnread = `import { defineOptions, useId } from "unframework";
+const idsUnread = `import { defineOptions, useId } from "@uxfront/unframework";
 
 export interface FieldProps {
   label?: string;
@@ -267,7 +267,7 @@ export default function Field(_props: FieldProps) {
 }
 `;
 
-const astroObject = `import { computed, ref } from "unframework";
+const astroObject = `import { computed, ref } from "@uxfront/unframework";
 
 export interface PlanetProps {
   name: string;
@@ -281,7 +281,7 @@ export default function Planet(Astro: PlanetProps) {
 }
 `;
 
-const astroBinding = `import { ref } from "unframework";
+const astroBinding = `import { ref } from "@uxfront/unframework";
 
 export default function Planet() {
   const Astro = ref("Mars");

@@ -7,6 +7,7 @@ export type {
   Span,
   TextEdit,
 } from "./types.ts";
+export { AUTHORING_PACKAGE } from "./authoring-package.ts";
 export { BANDS, catalogue, docsUrl, lookup } from "./catalogue.ts";
 export type { CatalogueEntry } from "./catalogue.ts";
 export { createDiagnostic, hasErrors, sortDiagnostics } from "./create.ts";

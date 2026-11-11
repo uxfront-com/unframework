@@ -23,7 +23,7 @@ export default function Box() {
 `;
 
 const SLOTS =
-  'import { defineSlots } from "unframework";\nimport type { Element } from "unframework";\n';
+  'import { defineSlots } from "@uxfront/unframework";\nimport type { Element } from "@uxfront/unframework";\n';
 
 /** A resolver over in-memory files under `/project`, which counts its reads. */
 function memoryResolver(files: Record<string, string>) {

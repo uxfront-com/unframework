@@ -31,7 +31,7 @@ const CASES: Record<string, Record<string, string>> = {
   "composables/imported-parameter-type": {
     "types.ts": "export interface Options {\n  step: number;\n}\n",
     "useStep.uf.ts": [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       'import type { Options } from "./types";',
       "",
       "export function useStep(options: Options) {",
@@ -56,7 +56,7 @@ const CASES: Record<string, Record<string, string>> = {
   // A state whose type TypeScript infers as a type parameter, in a composable and a component.
   "generics/inferred-state": {
     "useLatest.uf.ts": [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export function useLatest<T>(initial: T) {",
       "  const latest = ref(initial);",
@@ -68,7 +68,7 @@ const CASES: Record<string, Record<string, string>> = {
       "",
     ].join("\n"),
     "Pick.uf.tsx": [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export default function Pick<T>({ first, second }: { first: T; second: T }) {",
       "  const chosen = ref(first);",
@@ -163,7 +163,7 @@ const CASES: Record<string, Record<string, string>> = {
   // A state initialised by an object literal that holds a type parameter.
   "generics/spread-state": {
     "useCopy.uf.ts": [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export function useCopy<T extends { id: number }>(initial: T) {",
       "  const copy = ref({ ...initial });",

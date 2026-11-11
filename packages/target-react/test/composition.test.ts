@@ -42,7 +42,7 @@ async function outputs(source: string): Promise<Map<string, string>> {
 
 describe("react composition", () => {
   it("keeps a written model's local state while it is unbound, and calls back on a write", async () => {
-    const files = await outputs(`import { defineModel } from "unframework";
+    const files = await outputs(`import { defineModel } from "@uxfront/unframework";
 export default function Toggle() {
   const on = defineModel<boolean>("on", { default: false });
   return <button type="button" onClick={() => (on.value = !on.value)}>{on.value ? "On" : "Off"}</button>;
@@ -60,7 +60,7 @@ export default function Toggle() {
   });
 
   it("destructures a model nothing writes with its default", async () => {
-    const files = await outputs(`import { defineModel } from "unframework";
+    const files = await outputs(`import { defineModel } from "@uxfront/unframework";
 export default function Gauge() {
   const level = defineModel<number>("value", { default: 3 });
   return <meter value={level.value} />;
@@ -70,7 +70,7 @@ export default function Gauge() {
   });
 
   it("binds a child's model to state through its setter", async () => {
-    const files = await outputs(`import { defineModel, ref } from "unframework";
+    const files = await outputs(`import { defineModel, ref } from "@uxfront/unframework";
 function Stepper() {
   const value = defineModel<number>("value", { default: 0 });
   return <button type="button" onClick={() => (value.value += 1)}>{value.value}</button>;
@@ -83,8 +83,8 @@ export default function Order() {
   });
 
   it("passes slots as props and render props, and a forwarded default slot as children", async () => {
-    const files = await outputs(`import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+    const files = await outputs(`import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 function Box() {
   const slots = defineSlots<{ default?(): Element; item?(props: { n: number }): Element }>();
   return <div>{slots.default?.() ?? "Empty"}{slots.item?.({ n: 1 })}</div>;
@@ -104,8 +104,8 @@ export default function Frame() {
   });
 
   it("tests a slot's presence by its prop", async () => {
-    const files = await outputs(`import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+    const files = await outputs(`import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 export default function Card() {
   const slots = defineSlots<{ title?(): Element }>();
   return <section>{slots.title ? <header>{slots.title?.()}</header> : <p>Untitled</p>}</section>;
@@ -116,8 +116,8 @@ export default function Card() {
   });
 
   it("declares a key as a context, provides it around the template and reads it with use", async () => {
-    const files = await outputs(`import { inject, provide } from "unframework";
-import type { InjectionKey } from "unframework";
+    const files = await outputs(`import { inject, provide } from "@uxfront/unframework";
+import type { InjectionKey } from "@uxfront/unframework";
 export const LocaleKey: InjectionKey<string> = Symbol("uf.locale");
 function Greeting() {
   const locale = inject(LocaleKey, "en");
@@ -186,7 +186,7 @@ export default function List<T>({ label, items }: ListProps<T>) {
   return <ul aria-label={label}>{(items.length ? items : empty).map((item, index) => <li key={index}>{describe(item)}</li>)}</ul>;
 }`,
   // A handle that a type parameter types (ADR-0054, ADR-0068).
-  genericExpose: `import { defineExpose, ref } from "unframework";
+  genericExpose: `import { defineExpose, ref } from "@uxfront/unframework";
 export default function Picker<T>({ items }: { items: T[] }) {
   const picked = ref<string>("");
   function choose(item: T): void {
@@ -196,20 +196,20 @@ export default function Picker<T>({ items }: { items: T[] }) {
   return <p>{items.length} {picked.value}</p>;
 }`,
   // An interface whose members name one of two type parameters declares only that one.
-  genericSubset: `import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+  genericSubset: `import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 export default function Pair<T, U extends string = "x">({ items, tag }: { items: T[]; tag: U }) {
   const slots = defineSlots<{ item?(props: { item: T }): Element }>();
   return <ul data-tag={tag}>{items.map((item, index) => <li key={index}>{slots.item?.({ item })}</li>)}</ul>;
 }`,
   // A field bound to state whose type is inferred from a value of the type parameter.
-  genericInferred: `import { ref } from "unframework";
+  genericInferred: `import { ref } from "@uxfront/unframework";
 export default function Pick<T extends string>({ initial }: { initial: T }) {
   const chosen = ref(initial);
   return <input v-model={chosen.value} />;
 }`,
   // A multiple select bound to a model of the type parameter's array.
-  genericMultiple: `import { defineModel } from "unframework";
+  genericMultiple: `import { defineModel } from "@uxfront/unframework";
 export default function Multi<T extends string>({ options }: { options: readonly T[] }) {
   const value = defineModel<T[]>("value", { required: true });
   return (
@@ -219,8 +219,8 @@ export default function Multi<T extends string>({ options }: { options: readonly
   );
 }`,
   // A generic component (ADR-0068) whose event, model and scoped slot name its type parameter.
-  generic: `import { defineEmits, defineModel, defineSlots } from "unframework";
-import type { Element } from "unframework";
+  generic: `import { defineEmits, defineModel, defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 export interface ChooserProps<T extends string> { options: readonly T[] }
 export default function Chooser<T extends string>({ options }: ChooserProps<T>) {
   const emit = defineEmits<{ pick: [value: T] }>();
@@ -254,7 +254,7 @@ export default function Rows({ rows, first }: { rows: Row[]; first?: Row }) {
   );
 }`,
   // A `v-model` beside a listener of the same React prop, and a nullable one.
-  modelListeners: `import { ref } from "unframework";
+  modelListeners: `import { ref } from "@uxfront/unframework";
 export default function Picker() {
   const size = ref("m");
   const changes = ref(0);
@@ -275,8 +275,8 @@ export default function Picker() {
   );
 }`,
   // Scoped slots filled without a parameter, named and default.
-  scopedFills: `import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+  scopedFills: `import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 function List({ items }: { items: number[] }) {
   const slots = defineSlots<{ default?(props: { n: number }): Element; item?(props: { n: number }): Element }>();
   return <ul>{items.map((n) => <li key={n}>{slots.item?.({ n })}{slots.default?.({ n })}</li>)}</ul>;
@@ -286,8 +286,8 @@ export default function Dots() {
 }`,
   // A model without a default, written; slots and models named with keywords; and an exposed
   // function whose parameter is a pattern with a default.
-  namesAndHandles: `import { defineExpose, defineModel, defineSlots, ref } from "unframework";
-import type { Element } from "unframework";
+  namesAndHandles: `import { defineExpose, defineModel, defineSlots, ref } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 export default function Odd() {
   const slots = defineSlots<{ case?(): Element }>();
   const text = defineModel<string>("text");
@@ -306,7 +306,7 @@ export default function Odd() {
   );
 }`,
   // Listeners that read what a `v-model` beside them writes.
-  modelReads: `import { ref } from "unframework";
+  modelReads: `import { ref } from "@uxfront/unframework";
 export default function Reads() {
   const size = ref("m");
   const agreed = ref(false);
@@ -327,7 +327,7 @@ export default function Reads() {
   );
 }`,
   // A required model and an untyped one, written; an exposed function with a default.
-  modelKinds: `import { defineExpose, defineModel } from "unframework";
+  modelKinds: `import { defineExpose, defineModel } from "@uxfront/unframework";
 export default function Kinds() {
   const count = defineModel<number>("count", { required: true });
   const label = defineModel("label");
@@ -467,8 +467,8 @@ describe("react types and generics", () => {
 
   it("closes an interface's type parameters over the constraints that name others", async () => {
     const pick = (
-      await outputs(`import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+      await outputs(`import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 export default function Pick<T, U extends T = T>({ items, chosen }: { items: T[]; chosen: U }) {
   const slots = defineSlots<{ pick?(props: { chosen: U }): Element }>();
   return <p data-n={items.length}>{slots.pick?.({ chosen })}</p>;
@@ -492,7 +492,7 @@ export default function Pick<T, U extends T = T>({ items, chosen }: { items: T[]
 
   it("names its own interfaces apart from the types the module imports and exports", async () => {
     const exported = (
-      await outputs(`import { defineEmits } from "unframework";
+      await outputs(`import { defineEmits } from "@uxfront/unframework";
 export type CardAttributes = "unused";
 export type { CardEvents } from "./types";
 export default function Card({ title }: { title: string }) {
@@ -508,7 +508,7 @@ export default function Card({ title }: { title: string }) {
     const { module } = analyze(
       parseModule(
         "Fixture.uf.tsx",
-        `import { defineEmits } from "unframework";
+        `import { defineEmits } from "@uxfront/unframework";
 export default function Card({ title }: { title: string }) {
   const emit = defineEmits<{ open: [] }>();
   return <button type="button" onClick={() => emit("open")}>{title}</button>;

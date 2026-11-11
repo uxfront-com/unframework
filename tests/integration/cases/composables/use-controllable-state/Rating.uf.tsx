@@ -1,4 +1,4 @@
-import { defineEmits } from "unframework";
+import { defineEmits } from "@uxfront/unframework";
 
 import { useControllableState } from "./useControllableState.uf.ts";
 

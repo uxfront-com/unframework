@@ -1,5 +1,5 @@
-import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 // A scoped slot that FillLists (./FillLists.uf.tsx) fills.
 export default function Groups({ items }: { items: string[] }) {

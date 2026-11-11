@@ -34,7 +34,7 @@ export interface ResolvedModule {
    * file named as `compile()`'s `filename` is, and its text.
    */
   files: { file: string; source: string }[];
-  /** The first import of a framework or `unframework` they make, and its file (UF1204). */
+  /** The first import of a framework or `@uxfront/unframework` they make, and its file (UF1204). */
   framework?: { specifier: string; file: string };
   /**
    * The first relative import among them the resolver could not read, or the first load it

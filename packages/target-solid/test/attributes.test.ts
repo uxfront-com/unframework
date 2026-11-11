@@ -176,7 +176,7 @@ function sweepSource(lines: readonly string[]): string {
 }
 
 describe("solid JSX types against every binding the analyser accepts (L4)", () => {
-  // A binding the authoring types (`unframework`'s, vendored from Vue) and the analyser accept
+  // A binding the authoring types (`@uxfront/unframework`'s, vendored from Vue) and the analyser accept
   // is valid source, which the Solid output must type-check too. Where Solid's types lack the
   // attribute on that element (`fill` on <linearGradient>, `href` on <mpath>) or forbid it
   // (`tabindex` on <dialog>), the output spreads it (src/attributes.ts), alone on its element or
@@ -204,8 +204,11 @@ describe("solid JSX types against every binding the analyser accepts (L4)", () =
         extends: join(repo, "tsconfig.base.json"),
         compilerOptions: {
           jsx: "preserve",
-          jsxImportSource: "unframework",
-          paths: { "unframework/jsx-runtime": [runtime], "unframework/jsx-dev-runtime": [runtime] },
+          jsxImportSource: "@uxfront/unframework",
+          paths: {
+            "@uxfront/unframework/jsx-runtime": [runtime],
+            "@uxfront/unframework/jsx-dev-runtime": [runtime],
+          },
           declaration: false,
           isolatedDeclarations: false,
           noEmit: true,

@@ -1,5 +1,5 @@
-import { provide, ref } from "unframework";
-import type { InjectionKey, Ref } from "unframework";
+import { provide, ref } from "@uxfront/unframework";
+import type { InjectionKey, Ref } from "@uxfront/unframework";
 
 import Display from "./Display.uf.tsx";
 

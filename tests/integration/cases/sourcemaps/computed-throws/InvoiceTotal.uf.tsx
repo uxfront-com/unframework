@@ -1,4 +1,4 @@
-import { computed, ref } from "unframework";
+import { computed, ref } from "@uxfront/unframework";
 
 export interface InvoiceTotalProps {
   quantity: number;

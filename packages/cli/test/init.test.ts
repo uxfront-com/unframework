@@ -31,7 +31,7 @@ describe("init", () => {
     expect(Object.keys(files)).toEqual(SCAFFOLD);
     for (const file of SCAFFOLD) expect(stdout).toContain(`Wrote ${file}\n`);
     expect(files["src/Button.uf.tsx"]).toContain('import "./Button.css";');
-    expect(files["unframework.config.ts"]).toContain('from "unframework/config"');
+    expect(files["unframework.config.ts"]).toContain('from "@uxfront/unframework/config"');
     for (const target of ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"]) {
       expect(files["unframework.config.ts"]).toContain(`"${target}"`);
     }
@@ -57,7 +57,7 @@ describe("init", () => {
         noEmit: true,
         allowImportingTsExtensions: true,
         jsx: "preserve",
-        jsxImportSource: "unframework",
+        jsxImportSource: "@uxfront/unframework",
       },
       include: ["**/*.uf.tsx", "**/*.uf.ts"],
       exclude: ["dist"],
@@ -67,7 +67,7 @@ describe("init", () => {
   it("writes an example that compiles on every target, with only a stylesheet's notes", async () => {
     const root = project({});
     await run(root, "init");
-    // The config imports `unframework/config`, which this package can't resolve (the umbrella sits
+    // The config imports `@uxfront/unframework/config`, which this package can't resolve (the umbrella sits
     // above it): create-unframework's test runs it. With no config, `check` takes all seven targets.
     rmSync(join(root, "unframework.config.ts"));
     const { code, stdout } = await run(root, "check", "--format", "json");

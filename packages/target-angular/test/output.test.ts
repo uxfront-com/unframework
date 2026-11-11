@@ -311,7 +311,7 @@ describe("angular output", () => {
     async () => {
       const source = [
         'import { badge as style, button as host, button as save } from "virtual:styleframe";',
-        'import { defineEmits } from "unframework";',
+        'import { defineEmits } from "@uxfront/unframework";',
         "export default function Probe() {",
         "  const emit = defineEmits<{ save: [] }>();",
         '  return <button type="button" class={[host(), style(), save()]} onClick={() => emit("save")}>Hi</button>;',

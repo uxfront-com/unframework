@@ -15,7 +15,7 @@ import { codeOf, createProject, fakeVue, HELLO, startServer } from "./fixtures.t
 import type { Project, TestServer } from "./fixtures.ts";
 
 const TOGGLE =
-  'import { ref } from "unframework";\n\nexport function useToggle() {\n  const on = ref(false);\n  return { on };\n}\n';
+  'import { ref } from "@uxfront/unframework";\n\nexport function useToggle() {\n  const on = ref(false);\n  return { on };\n}\n';
 
 let project: Project;
 beforeAll(() => {

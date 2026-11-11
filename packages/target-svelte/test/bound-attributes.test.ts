@@ -133,7 +133,7 @@ describe("svelte attribute types", () => {
         )
         .join("");
 
-      // The author's editor: tsgo with the authoring settings and the `unframework` JSX types.
+      // The author's editor: tsgo with the authoring settings and the `@uxfront/unframework` JSX types.
       const sources = scratchDir();
       writeFileSync(
         join(sources, "tsconfig.json"),

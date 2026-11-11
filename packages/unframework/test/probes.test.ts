@@ -17,7 +17,7 @@ const PACKAGE = fileURLToPath(new URL("..", import.meta.url));
 const copies: string[] = [];
 
 /**
- * A copy of the probe tree beside the original, so `unframework` and the base tsconfig resolve
+ * A copy of the probe tree beside the original, so `@uxfront/unframework` and the base tsconfig resolve
  * exactly as they do for it. `edit` changes one file of the copy.
  */
 function probeCopy(file: string, edit: (source: string) => string): string {

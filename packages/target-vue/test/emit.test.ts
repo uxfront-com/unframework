@@ -610,7 +610,7 @@ describe("vue setup (M2, ADR-0045 to ADR-0049)", () => {
     ["ref(Array.from(items))", "shallowRef(Array.from(items))"],
   ])("declares %s as %s", async (written, declared) => {
     const source = [
-      'import { computed, ref } from "unframework";',
+      'import { computed, ref } from "@uxfront/unframework";',
       'type Mode = "on" | "off";',
       "interface Item {",
       "  id: string;",
@@ -651,7 +651,7 @@ describe("vue setup (M2, ADR-0045 to ADR-0049)", () => {
   // array; a `ref` and a `computed` are not shallow, and stay as written.
   it("reads a shallowRef source through a getter, alone or among an array watcher's", async () => {
     const source = [
-      'import { computed, ref, watch } from "unframework";',
+      'import { computed, ref, watch } from "@uxfront/unframework";',
       "export default function Probe() {",
       "  const picks = ref<string[]>([]);",
       "  const selected = ref<{ id: string } | null>(null);",
@@ -687,7 +687,7 @@ describe("vue setup (M2, ADR-0045 to ADR-0049)", () => {
   // the imports, the macros' places and the template's spelling of a ref change.
   it("writes the setup as the source does, with `defineEmits` after the props and refs unwrapped in the template", async () => {
     const source = `
-import { computed, defineEmits, ref } from "unframework";
+import { computed, defineEmits, ref } from "@uxfront/unframework";
 
 export interface StepperProps {
   label: string;
@@ -754,7 +754,7 @@ export default function Stepper({ label, step = 1 }: StepperProps) {
 
   it("keys a template ref by its binding's name, prefixes an id, and writes effects with Vue's APIs", async () => {
     const source = `
-import { defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef, watch, watchEffect } from "unframework";
+import { defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";
 
 export default function Panel({ title }: { title: string }) {
   const emit = defineEmits<{ titled: [title: string, previous?: string]; rendered: [count: number] }>();
@@ -879,7 +879,7 @@ export default function Panel({ title }: { title: string }) {
   // parameter typed as Vue types the event.
   it("writes listeners as Vue does, and moves a handler the template cannot hold to the script", async () => {
     const source = `
-import { defineEmits, ref } from "unframework";
+import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function Log() {
   const emit = defineEmits<{ reset: [] }>();
@@ -945,7 +945,7 @@ export default function Log() {
 
   it("writes a field's model after a capture listener of its input, as `v-model` writes it", async () => {
     const source = `
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export default function Amount() {
   const text = ref(1);
@@ -982,7 +982,7 @@ export default function Amount() {
 
   it("declares the events without a binding when nothing calls `emit`", async () => {
     const source = `
-import { defineEmits } from "unframework";
+import { defineEmits } from "@uxfront/unframework";
 
 export default function Silent() {
   const emit = defineEmits<{ ready: [] }>();
@@ -1009,8 +1009,8 @@ export default function Silent() {
 
     it("imports a component of the same file, binds slots it tests, and exposes last", async () => {
       const files = await emitAll(`
-import { defineExpose, defineOptions, defineSlots } from "unframework";
-import type { Element } from "unframework";
+import { defineExpose, defineOptions, defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 function Icon({ name }: { name: string }) {
   return <i class="icon">{name}</i>;
@@ -1060,8 +1060,8 @@ export default function Card({ title }: { title: string }) {
 
     it("writes props, events and fills in Vue's spelling, and forwards a slot under its presence", async () => {
       const files = await emitAll(`
-import { defineEmits, defineSlots } from "unframework";
-import type { Element } from "unframework";
+import { defineEmits, defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 function Field({ itemLabel }: { itemLabel: string }) {
   const slots = defineSlots<{ default?(): Element; hint?(props: { size: number }): Element }>();
@@ -1121,8 +1121,8 @@ export default function Form() {
     // The first review's inputs (UXF-313): each rendered wrong without a diagnostic.
     it("writes a scoped default fill, slot props Vue would misread, acronyms and built-in names", async () => {
       const files = await emitAll(`
-import { defineEmits, defineSlots } from "unframework";
-import type { Element } from "unframework";
+import { defineEmits, defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 function Transition({ imageURL }: { imageURL: string }) {
   const slots = defineSlots<{ default?(props: { name: string; "data-id": string }): Element }>();
@@ -1198,7 +1198,7 @@ export default function Page() { return <p><${first} /><${second} /></p>; }`);
 
     it("declares a model, defaulting an unbound one to `undefined` as a prop's", async () => {
       expect(
-        await emitSource(`import { defineModel } from "unframework";
+        await emitSource(`import { defineModel } from "@uxfront/unframework";
 export default function Toggle() {
   const on = defineModel<boolean>("on");
   const size = defineModel<number>("size", { default: 2 });
@@ -1216,7 +1216,7 @@ export default function Toggle() {
     });
 
     it("writes a control's v-model with its modifiers, and casts a range input", async () => {
-      const output = await emitSource(`import { ref } from "unframework";
+      const output = await emitSource(`import { ref } from "@uxfront/unframework";
 export default function Form() {
   const name = ref("");
   const count = ref(0);
@@ -1234,7 +1234,7 @@ export default function Form() {
     });
 
     it("binds a component's model by its name", async () => {
-      const files = await emitAll(`import { defineModel, ref } from "unframework";
+      const files = await emitAll(`import { defineModel, ref } from "@uxfront/unframework";
 function Field() {
   const value = defineModel<string>("value", { default: "" });
   return <p>{value.value}</p>;
@@ -1247,8 +1247,8 @@ export default function Form() {
     });
 
     it("declares the module's keys in a plain script block, and unwraps an injected ref", async () => {
-      const files = await emitAll(`import { inject, provide, ref } from "unframework";
-import type { InjectionKey, Ref } from "unframework";
+      const files = await emitAll(`import { inject, provide, ref } from "@uxfront/unframework";
+import type { InjectionKey, Ref } from "@uxfront/unframework";
 export const CountKey: InjectionKey<Ref<number>> = Symbol("uf.count");
 function Display() {
   const none = ref(0);
@@ -1276,7 +1276,7 @@ export default function Counter() {
     });
 
     it("writes <component :is>, a built-in's name under its alias", async () => {
-      const files = await emitAll(`import { ref } from "unframework";
+      const files = await emitAll(`import { ref } from "@uxfront/unframework";
 function Transition({ label }: { label: string }) { return <i>{label}</i>; }
 function Card({ label }: { label: string }) { return <b>{label}</b>; }
 export default function Tag() {
@@ -1297,8 +1297,8 @@ export default function Tag() {
     });
 
     it("binds `slots` where a slot is forwarded through <component :is>", async () => {
-      const files = await emitAll(`import { defineSlots, ref } from "unframework";
-import type { Element } from "unframework";
+      const files = await emitAll(`import { defineSlots, ref } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 function Card() {
   const slots = defineSlots<{ title?(): Element }>();
   return <b>{slots.title?.()}</b>;

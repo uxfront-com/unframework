@@ -54,7 +54,7 @@ describe.each([{ inline: true }, { inline: false }])(
 
     it("renders the state that setup gives, whatever the effects and hooks would write", async () => {
       const source = `
-import { onMounted, ref, watch, watchEffect } from "unframework";
+import { onMounted, ref, watch, watchEffect } from "@uxfront/unframework";
 
 export default function Status() {
   const online = ref<boolean>();

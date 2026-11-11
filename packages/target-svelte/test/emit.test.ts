@@ -592,7 +592,7 @@ describe("svelte setup", () => {
     ['ref(title.split(","))', '$state.raw(untrack(() => title.split(",")))'],
   ])("declares %s as %s", async (written, declared) => {
     const source = [
-      'import { computed, ref } from "unframework";',
+      'import { computed, ref } from "@uxfront/unframework";',
       "",
       'type Mode = "on" | "off";',
       "",
@@ -690,7 +690,7 @@ describe("svelte setup", () => {
   it("declares an untyped template ref `unknown`, holding null", async () => {
     const code = await scriptOf(
       [
-        'import { onMounted, useTemplateRef } from "unframework";',
+        'import { onMounted, useTemplateRef } from "@uxfront/unframework";',
         "",
         "export default function Plain() {",
         "  const box = useTemplateRef();",

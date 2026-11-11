@@ -1,4 +1,4 @@
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export default function Drinks() {
   const drinks = ref<string[]>(["tea"]);

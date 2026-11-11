@@ -1,4 +1,4 @@
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 import { DEFAULT_SIZE, SIZE_ORDER, SIZES } from "./tokens";
 import type { Size } from "./tokens";

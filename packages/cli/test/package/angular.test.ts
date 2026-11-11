@@ -21,7 +21,7 @@ const angular = (files: Readonly<Record<string, string>> = {}, under = "") =>
 const ngc = (directory: string) => check(TOOLCHAIN, "ngc", ["-p", directory, "--pretty", "false"]);
 
 const PANEL = {
-  "src/Panel.uf.tsx": `import { defineSlots } from "unframework";
+  "src/Panel.uf.tsx": `import { defineSlots } from "@uxfront/unframework";
 
 export default function Panel(props: { title: string }) {
   const slots = defineSlots<{ default?: () => unknown; head?: (props: { title: string }) => unknown }>();
@@ -151,7 +151,7 @@ describe("build --package: Angular", () => {
   it("finds a slot directive whose decorator the formatter broke over lines", async () => {
     const slot = "headWithAVeryLongNameThatPushesTheDecoratorPastThePrintWidthOfTheFormatter";
     const root = angular({
-      "src/Panel.uf.tsx": `import { defineSlots } from "unframework";
+      "src/Panel.uf.tsx": `import { defineSlots } from "@uxfront/unframework";
 
 export default function Panel() {
   const slots = defineSlots<{ ${slot}?: () => unknown }>();

@@ -39,8 +39,8 @@ describe("shapeQueries", () => {
   it("names each type an API is declared by, and setup types that name an import", () => {
     const source = [
       'import type { Item } from "./types.ts";',
-      'import { defineEmits, defineModel, defineSlots, ref } from "unframework";',
-      'import type { InjectionKey } from "unframework";',
+      'import { defineEmits, defineModel, defineSlots, ref } from "@uxfront/unframework";',
+      'import type { InjectionKey } from "@uxfront/unframework";',
       "export const Key: InjectionKey<Item> = Symbol();",
       "interface P { a: string }",
       "export function A(props: P) {",
@@ -285,7 +285,7 @@ describe("type exports", () => {
 describe("a spread of a setup value whose type is imported", () => {
   it("renders the keys of the shape the type oracle resolves", async () => {
     const source = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       'import type { Attrs } from "./types.ts";',
       'export function A() { const attrs = ref<Attrs>({ id: "a" }); const more: Attrs = { id: "b" }; return <p {...attrs.value}><a {...more}>x</a></p>; }',
     ].join("\n");
@@ -331,7 +331,7 @@ describe("a spread of a setup value whose type is imported", () => {
 
   it("reads an imported branded primitive as the base did", async () => {
     const source = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       'import type { Size } from "./types.ts";',
       'export function A() { const size = ref<Size>("sm"); const fixed: Size = "md"; return <p title={size.value}>{fixed}</p>; }',
     ].join("\n");
@@ -392,7 +392,7 @@ describe("a spread of a setup value whose type is imported", () => {
 
   it("reports the keys as unknown without the shapes (UF3048)", () => {
     const source = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       'import type { Attrs } from "./types.ts";',
       'export function A() { const attrs = ref<Attrs>({ id: "a" }); return <p {...attrs.value}>x</p>; }',
     ].join("\n");

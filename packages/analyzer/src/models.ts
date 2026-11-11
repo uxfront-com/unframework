@@ -5,7 +5,12 @@
 
 import type { Fix } from "@unframework.dev/diagnostics";
 import { createModelAttribute, createModelBindingAttribute } from "@unframework.dev/ir";
-import type { ComponentApi, ModelAttribute, ModelBindingAttribute, Span } from "@unframework.dev/ir";
+import type {
+  ComponentApi,
+  ModelAttribute,
+  ModelBindingAttribute,
+  Span,
+} from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
 import { parseModule } from "@unframework.dev/parser";
 

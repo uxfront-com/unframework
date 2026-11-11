@@ -3,7 +3,11 @@
 import { createRequire } from "node:module";
 
 import type * as Babel from "@babel/core";
-import type { FrameworkCompileResult, ToolchainFile, ToolchainMessage } from "@unframework.dev/codegen";
+import type {
+  FrameworkCompileResult,
+  ToolchainFile,
+  ToolchainMessage,
+} from "@unframework.dev/codegen";
 import { assertFilesToCompile } from "@unframework.dev/codegen/toolchain-node";
 
 /** dom-expressions' template validation starts every warning with this line. */

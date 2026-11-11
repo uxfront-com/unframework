@@ -27,14 +27,16 @@ const LAYERS: readonly (readonly string[])[] = [
   ["@unframework.dev/testing"],
   ["@unframework.dev/visual", "@unframework.dev/mcp", "create-unframework"],
   // The umbrella: the authoring API, plus tooling re-exported under subpaths.
-  ["unframework"],
+  ["@uxfront/unframework"],
 ];
 
 const layerOf = new Map(
   LAYERS.flatMap((names, layer) => names.map((name) => [name, layer] as const)),
 );
 const isWorkspace = (name: string) =>
-  name === "unframework" || name.startsWith("@unframework.dev/") || name === "create-unframework";
+  name === "@uxfront/unframework" ||
+  name.startsWith("@unframework.dev/") ||
+  name === "create-unframework";
 
 describe("layering", () => {
   const all = packages();
@@ -69,7 +71,9 @@ describe("layering", () => {
       )
       .filter((record) => {
         const imported = packageOf(record.specifier);
-        return imported && imported !== "@unframework.dev/ir" && imported !== "@unframework.dev/codegen";
+        return (
+          imported && imported !== "@unframework.dev/ir" && imported !== "@unframework.dev/codegen"
+        );
       })
       .map((record) => `${record.file} imports ${record.specifier}`);
     expect(violations).toEqual([]);

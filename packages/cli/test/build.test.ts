@@ -39,7 +39,7 @@ export default function Field() {
   return <Card label="Name" />;
 }
 `,
-  "src/useToggle.uf.ts": `import { ref } from "unframework";
+  "src/useToggle.uf.ts": `import { ref } from "@uxfront/unframework";
 
 export function useToggle(initial: boolean) {
   const on = ref(initial);

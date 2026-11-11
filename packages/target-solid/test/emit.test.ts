@@ -367,7 +367,7 @@ describe("solid props", () => {
   ])("keeps an object form %s nothing reads as %s", async (name, declared) => {
     const output = await emitSource(
       [
-        'import { defineOptions } from "unframework";',
+        'import { defineOptions } from "@uxfront/unframework";',
         "",
         `export default function Probe(${name}: { tone?: string }) {`,
         "  defineOptions({ inheritAttrs: false });",
@@ -659,7 +659,7 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
   it("reads state plainly where its type has no union, from its argument or initial value", async () => {
     const output = await emitSource(
       [
-        'import { computed, ref } from "unframework";',
+        'import { computed, ref } from "@uxfront/unframework";',
         "",
         "export default function Probe() {",
         "  const results = ref<string[]>([]);",
@@ -1253,7 +1253,7 @@ describe("solid attributes", () => {
     // ADR-0068: the events' interface reads `T`, the models' none, so only it is generic.
     const output = await emitSource(
       [
-        'import { defineEmits, defineModel } from "unframework";',
+        'import { defineEmits, defineModel } from "@uxfront/unframework";',
         "",
         "export interface PickProps<T extends { id: string }, U = string> {",
         "  items: T[];",
@@ -1292,8 +1292,8 @@ describe("solid attributes", () => {
     // ADR-0068: `T`'s constraint names `U`, whose constraint names `V`.
     const output = await emitSource(
       [
-        'import { defineSlots } from "unframework";',
-        'import type { Element } from "unframework";',
+        'import { defineSlots } from "@uxfront/unframework";',
+        'import type { Element } from "@uxfront/unframework";',
         "",
         "export default function Chain<T extends U, U extends V, V extends string>({ items }: { items: T[] }) {",
         "  const slots = defineSlots<{ item?(props: { item: T }): Element }>();",

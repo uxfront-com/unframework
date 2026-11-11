@@ -1,4 +1,4 @@
-import { computed, defineEmits, watch } from "unframework";
+import { computed, defineEmits, watch } from "@uxfront/unframework";
 
 export interface PageCountProps {
   page?: number;

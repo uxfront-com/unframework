@@ -20,6 +20,7 @@
     "@qwik.dev/core": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@uxfront/unframework": "workspace:*",
     "astro": "catalog:",
     "babel-preset-solid": "catalog:",
     "react": "catalog:",
@@ -27,7 +28,6 @@
     "solid-js": "catalog:",
     "svelte": "catalog:",
     "tsdown": "catalog:",
-    "unframework": "workspace:*",
     "vite": "catalog:",
     "vue": "catalog:"
   }

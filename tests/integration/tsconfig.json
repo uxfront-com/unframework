@@ -6,7 +6,7 @@
   "compilerOptions": {
     "types": ["node", "vite/client"],
     "jsx": "preserve",
-    "jsxImportSource": "unframework",
+    "jsxImportSource": "@uxfront/unframework",
     // Nothing here is published, and a .uf.tsx component has no explicit return type (TS9013).
     "declaration": false,
     "isolatedDeclarations": false

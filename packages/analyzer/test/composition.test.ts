@@ -10,7 +10,7 @@ import { analyze, componentImports } from "../src/index.ts";
 import { applyAndRecheck, codes, problems, run } from "./helpers.ts";
 
 const API =
-  'import { defineEmits, defineExpose, defineOptions, defineSlots, ref, useTemplateRef } from "unframework";\nimport type { Element } from "unframework";\n';
+  'import { defineEmits, defineExpose, defineOptions, defineSlots, ref, useTemplateRef } from "@uxfront/unframework";\nimport type { Element } from "@uxfront/unframework";\n';
 
 /** The first component node of a component's render tree, depth first. */
 function componentNode(render: unknown): ComponentNode {

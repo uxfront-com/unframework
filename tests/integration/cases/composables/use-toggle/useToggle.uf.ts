@@ -1,6 +1,6 @@
 // A composable shared by every component that opens and closes something (ADR-0069): a ref of
 // state, and the functions that change it.
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export function useToggle(initial: boolean) {
   const on = ref(initial);

@@ -1,4 +1,4 @@
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 import Badge from "./Badge.uf.tsx";
 import Tag from "./Tag.uf.tsx";

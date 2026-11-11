@@ -1,4 +1,4 @@
-import { inject, ref } from "unframework";
+import { inject, ref } from "@uxfront/unframework";
 
 import { CountKey } from "./Counter.uf.tsx";
 

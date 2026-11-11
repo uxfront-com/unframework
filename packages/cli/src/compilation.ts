@@ -8,7 +8,12 @@ import {
   loadConfig,
   resolveConfig,
 } from "@unframework.dev/compiler";
-import type { CompileResult, OutputFile, ResolvedConfig, TypeOracle } from "@unframework.dev/compiler";
+import type {
+  CompileResult,
+  OutputFile,
+  ResolvedConfig,
+  TypeOracle,
+} from "@unframework.dev/compiler";
 import { createDiagnostic, hasErrors, sortDiagnostics } from "@unframework.dev/diagnostics";
 import type { Diagnostic, Span } from "@unframework.dev/diagnostics";
 

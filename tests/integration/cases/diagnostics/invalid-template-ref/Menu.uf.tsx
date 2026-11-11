@@ -1,6 +1,6 @@
 // UF3027 invalid-template-ref: `ref={entry}` is on an element inside a list, where Vue gives an
 // array of elements and the other targets the last one; a template ref holds one element.
-import { useTemplateRef } from "unframework";
+import { useTemplateRef } from "@uxfront/unframework";
 
 export interface MenuProps {
   items: string[];

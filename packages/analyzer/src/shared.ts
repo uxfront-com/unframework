@@ -63,7 +63,7 @@ export function sharedModuleImports(parsed: ParsedModule): string[] {
 /**
  * Every specifier a shared module imports or re-exports from, in source order, each once: the
  * modules the compiler follows (another relative `.ts`), allows (a package) or rejects (a framework
- * or `unframework`, UF1204). That is its `import` and `export … from` declarations, its
+ * or `@uxfront/unframework`, UF1204). That is its `import` and `export … from` declarations, its
  * `import x = require("…")` and each `import("…")` it holds, whose module its copy loads later.
  */
 export function moduleSpecifiers(parsed: ParsedModule): string[] {
@@ -138,7 +138,7 @@ export interface SharedModule {
   /** The module's file, relative to the importer, with forward slashes. */
   file: string;
   /**
-   * The first import of a framework or `unframework` the module reaches, itself or through
+   * The first import of a framework or `@uxfront/unframework` the module reaches, itself or through
    * another `.ts` module it imports, with that module's file, relative to the importer (UF1204).
    */
   framework?: { specifier: string; file: string };

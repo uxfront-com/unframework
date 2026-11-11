@@ -1,8 +1,9 @@
-// The authoring API (plan §4.2, ADR-0006): what a component imports from `"unframework"`. The
+// The authoring API (plan §4.2, ADR-0006): what a component imports from `"@uxfront/unframework"`. The
 // compiler recognises each API by the binding its import declares, never by name, so an alias
 // (`import { computed as derive }`) is the API too, and a local `ref` is not. The table is
 // tested against `packages/unframework/src/index.ts`'s exports (`test/authoring.test.ts`).
 
+import { AUTHORING_PACKAGE } from "@unframework.dev/diagnostics";
 import { exportName } from "@unframework.dev/parser";
 import type { AST } from "@unframework.dev/parser";
 
@@ -108,6 +109,8 @@ const VUE_ONLY: ReadonlyMap<string, string> = new Map([
   ["onBeforeUpdate", "a component's lifecycle is `onMounted` and `onUnmounted`"],
 ]);
 
+const IMPORT_HELP = `Import what the component uses, as in \`import { ref } from "${AUTHORING_PACKAGE}";\`.`;
+
 /**
  * Checks an import of the authoring API: named imports of what the package exports. A value
  * import of an API a later milestone lowers is UF1002, naming the milestone; a namespace or a
@@ -117,13 +120,13 @@ const VUE_ONLY: ReadonlyMap<string, string> = new Map([
 export function checkAuthoringImport(statement: AST.ImportDeclaration, reporter: Reporter): void {
   if (statement.importKind === "type") return;
   const specifier = statement.source.value;
-  const root = specifier === "unframework";
+  const root = specifier === AUTHORING_PACKAGE;
   if (!statement.specifiers.length) {
     reporter.report(
       "UF2016",
       statement,
       `\`import "${specifier}"\` imports nothing: a component imports the authoring API by name.`,
-      { help: 'Import what the component uses, as in `import { ref } from "unframework";`.' },
+      { help: IMPORT_HELP },
     );
     return;
   }
@@ -133,7 +136,7 @@ export function checkAuthoringImport(statement: AST.ImportDeclaration, reporter:
         "UF2016",
         item,
         `"${specifier}" has no default export: a component imports the authoring API by name.`,
-        { help: 'Import what the component uses, as in `import { ref } from "unframework";`.' },
+        { help: IMPORT_HELP },
       );
       continue;
     }
@@ -142,7 +145,7 @@ export function checkAuthoringImport(statement: AST.ImportDeclaration, reporter:
         "UF2016",
         item,
         `A namespace import of "${specifier}" hides which API a call uses: the compiler recognises the authoring API by the names its import declares (ADR-0006).`,
-        { help: 'Import what the component uses, as in `import { ref } from "unframework";`.' },
+        { help: IMPORT_HELP },
       );
       continue;
     }
@@ -169,7 +172,7 @@ export function checkAuthoringImport(statement: AST.ImportDeclaration, reporter:
       item,
       vue
         ? `\`${name}\` is Vue's, not unframework's: ${vue}.`
-        : `"unframework" exports no \`${name}\`.`,
+        : `"${AUTHORING_PACKAGE}" exports no \`${name}\`.`,
       {
         help: `The authoring API is ${[...AUTHORING_APIS].map((api) => `\`${api}\``).join(", ")}.`,
       },
@@ -192,7 +195,7 @@ export function authoringBindings(program: AST.Program): Map<object, AuthoringAp
     ) {
       continue;
     }
-    const root = statement.source.value === "unframework";
+    const root = statement.source.value === AUTHORING_PACKAGE;
     for (const item of statement.specifiers) {
       if (item.type === "ImportSpecifier" && item.importKind === "type") continue;
       const name = item.type === "ImportSpecifier" ? exportName(item.imported) : undefined;

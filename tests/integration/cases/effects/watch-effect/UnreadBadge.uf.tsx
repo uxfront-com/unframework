@@ -1,4 +1,4 @@
-import { defineEmits, ref, watchEffect } from "unframework";
+import { defineEmits, ref, watchEffect } from "@uxfront/unframework";
 
 export interface UnreadBadgeProps {
   appName: string;

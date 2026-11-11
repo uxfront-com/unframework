@@ -1,5 +1,5 @@
-import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export default function Notice({ label }: { label: string }) {
   const slots = defineSlots<{ default?(): Element; action?(): Element }>();

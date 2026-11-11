@@ -4,6 +4,7 @@
 // (`CodeFacts`).
 // Each reports at the exact place: the call of a function, the read, the write.
 
+import { AUTHORING_PACKAGE } from "@unframework.dev/diagnostics";
 import type { Fix } from "@unframework.dev/diagnostics";
 import {
   BROWSER_GLOBALS,
@@ -902,7 +903,7 @@ class Rules {
       const declaration = this.#input.program.body.find(
         (statement): statement is AST.ImportDeclaration =>
           statement.type === "ImportDeclaration" &&
-          statement.source.value === "unframework" &&
+          statement.source.value === AUTHORING_PACKAGE &&
           statement.importKind !== "type" &&
           statement.specifiers.some((specifier) => specifier.type === "ImportSpecifier"),
       );
@@ -914,7 +915,7 @@ class Rules {
         const at = first?.start ?? 0;
         edits.push({
           span: { start: at, end: at },
-          text: 'import { computed } from "unframework";\n',
+          text: `import { computed } from "${AUTHORING_PACKAGE}";\n`,
         });
       }
       callee = "computed";
@@ -956,7 +957,7 @@ class Rules {
     const { render, program } = this.#input;
     const erased = new Set<object>();
     for (const statement of program.body) {
-      if (statement.type !== "ImportDeclaration" || statement.source.value !== "unframework") {
+      if (statement.type !== "ImportDeclaration" || statement.source.value !== AUTHORING_PACKAGE) {
         continue;
       }
       for (const specifier of statement.specifiers) {
@@ -1027,7 +1028,7 @@ class Rules {
       this.#reporter.report(
         "UF2019",
         reference,
-        `\`${name}\` is an authoring type, which the compiler erases with its import from "unframework": an output that copied this annotation would name a type nothing declares.`,
+        `\`${name}\` is an authoring type, which the compiler erases with its import from "${AUTHORING_PACKAGE}": an output that copied this annotation would name a type nothing declares.`,
         {
           help: "Leave the annotation out where TypeScript infers the type, or write the type itself.",
           ...(removal

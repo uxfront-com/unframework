@@ -1,3 +1,5 @@
+import { AUTHORING_PACKAGE } from "@unframework.dev/diagnostics";
+
 /** Module specifiers that belong to a UI framework, which a component may never import. */
 const FRAMEWORK_MODULES: readonly (readonly [RegExp, string])[] = [
   [/^(react|react-dom|react-native|next)(\/.*)?$/, "React"],
@@ -23,5 +25,5 @@ export function frameworkOf(specifier: string): string | undefined {
 
 /** Whether a specifier is Unframework's authoring API, which the compiler erases. */
 export function isAuthoringModule(specifier: string): boolean {
-  return specifier === "unframework" || specifier.startsWith("unframework/");
+  return specifier === AUTHORING_PACKAGE || specifier.startsWith(`${AUTHORING_PACKAGE}/`);
 }

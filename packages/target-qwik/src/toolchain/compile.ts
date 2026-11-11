@@ -10,7 +10,11 @@ import { createRequire } from "node:module";
 import { basename, dirname, join } from "node:path";
 
 import type { Diagnostic, Optimizer, TransformModulesOptions } from "@qwik.dev/optimizer";
-import type { FrameworkCompileResult, ToolchainFile, ToolchainMessage } from "@unframework.dev/codegen";
+import type {
+  FrameworkCompileResult,
+  ToolchainFile,
+  ToolchainMessage,
+} from "@unframework.dev/codegen";
 import { assertFilesToCompile } from "@unframework.dev/codegen/toolchain-node";
 import { parseSync } from "oxc-parser";
 

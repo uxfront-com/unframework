@@ -64,7 +64,7 @@ describe("solid's event table", () => {
 
 /** A component that records lines in its state, with `setup` before its return of `jsx`. */
 function probe(setup: string, jsx: string): string {
-  return `import { ref, useTemplateRef } from "unframework";\n\nexport default function Probe() {\n  const log = ref<string[]>([]);\n${setup}\n  function record(line: string) {\n    log.value = [...log.value, line];\n  }\n\n  return (\n    ${jsx}\n  );\n}\n`;
+  return `import { ref, useTemplateRef } from "@uxfront/unframework";\n\nexport default function Probe() {\n  const log = ref<string[]>([]);\n${setup}\n  function record(line: string) {\n    log.value = [...log.value, line];\n  }\n\n  return (\n    ${jsx}\n  );\n}\n`;
 }
 
 describe("solid listeners (src/listeners.ts)", () => {

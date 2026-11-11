@@ -14,7 +14,7 @@ function composables(lines: readonly string[]) {
 }
 
 const TOGGLE = [
-  'import { ref } from "unframework";',
+  'import { ref } from "@uxfront/unframework";',
   "export function useToggle(initial: boolean) {",
   "  const on = ref(initial);",
   "  function toggle() {",
@@ -61,7 +61,7 @@ describe("a composable", () => {
 
   it("gives its API: each parameter's kind, each member's kind and type, and the function flags", () => {
     const { api, diagnostics } = composables([
-      'import { computed, ref } from "unframework";',
+      'import { computed, ref } from "@uxfront/unframework";',
       "export function useCounter(start: number, step: () => number, onChange?: (count: number) => void) {",
       "  const count = ref<number>(start);",
       "  const double = computed<number>(() => count.value * 2);",
@@ -107,7 +107,7 @@ describe("a composable", () => {
 
   it("sets `hasEffects` where its setup runs code in the browser", () => {
     const { api, diagnostics } = composables([
-      'import { onMounted, onUnmounted, ref, watch } from "unframework";',
+      'import { onMounted, onUnmounted, ref, watch } from "@uxfront/unframework";',
       "export function useMediaQuery(query: () => string) {",
       "  const matches = ref(false);",
       "  let list: MediaQueryList | undefined;",
@@ -142,7 +142,7 @@ describe("a composable", () => {
     ["onUnmounted", "onUnmounted(() => {});"],
   ])("sets `hasEffects` for `%s` alone", (api, statement) => {
     const { api: moduleApi, diagnostics } = composables([
-      `import { ${api}, ref } from "unframework";`,
+      `import { ${api}, ref } from "@uxfront/unframework";`,
       "export function useA() {",
       "  const n = ref(0);",
       `  ${statement}`,
@@ -155,7 +155,7 @@ describe("a composable", () => {
 
   it("writes the type a ref's or a derived value's value infers, where the source writes none", () => {
     const { api, diagnostics } = composables([
-      'import { computed, ref } from "unframework";',
+      'import { computed, ref } from "@uxfront/unframework";',
       "export function useUser() {",
       "  const count = ref(0);",
       "  const user = ref<{ name: string } | null>(null);",
@@ -188,7 +188,7 @@ describe("a composable", () => {
 
   it("keeps each composable's own types, and the constants it reads", () => {
     const { module, diagnostics } = composables([
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "interface Item { id: string }",
       "interface Tag { name: string }",
       "const LIMIT = 3;",
@@ -213,7 +213,7 @@ describe("a composable", () => {
 
   it("re-imports the types it imports from a `.uf.ts` module, inline or whole", () => {
     const { module, diagnostics } = composables([
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       'import { type Item } from "./useItem.uf.ts";',
       'import type { Tag } from "./useTag.uf.ts";',
       "export function useA(item: Item, tag: Tag) {",
@@ -236,7 +236,7 @@ describe("a composable", () => {
 
   it("keeps its type parameters, and the module's types and constants it reaches", () => {
     const { module, api, diagnostics } = composables([
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "interface Item { id: string }",
       "const LIMIT = 3;",
       "export function useList<T extends Item>(items: T[]) {",
@@ -272,7 +272,7 @@ describe("a composable", () => {
 
   it("reads a callback in client code, and a getter in a derived value", () => {
     const { diagnostics } = composables([
-      'import { computed } from "unframework";',
+      'import { computed } from "@uxfront/unframework";',
       "export function useLabel(text: () => string, onPick: (value: string) => void) {",
       "  const label = computed(() => text().toUpperCase());",
       "  function pick() {",
@@ -286,7 +286,7 @@ describe("a composable", () => {
 
   it("watches a getter argument through a call of it, with a safe fix", () => {
     const { source, diagnostics } = composables([
-      'import { ref, watch } from "unframework";',
+      'import { ref, watch } from "@uxfront/unframework";',
       "export function useSeen(value: () => number) {",
       "  const seen = ref(0);",
       "  watch(value, () => {",
@@ -303,7 +303,7 @@ describe("a composable", () => {
 
   it("watches an optional getter through an optional call of it", () => {
     const { source, diagnostics } = composables([
-      'import { ref, watch } from "unframework";',
+      'import { ref, watch } from "@uxfront/unframework";',
       "export function useSeen(value?: () => number) {",
       "  const seen = ref(0);",
       "  watch(value, () => {",
@@ -345,7 +345,7 @@ describe("a composable", () => {
     ],
   ])("reads an optional parameter as TypeScript narrows it: %s", (_, type, setup, returned) => {
     const { module, diagnostics } = composables([
-      'import { computed, ref, watch } from "unframework";',
+      'import { computed, ref, watch } from "@uxfront/unframework";',
       `export function useA(p?: ${type}) {`,
       `  ${setup}`,
       `  return { ${returned} };`,
@@ -359,7 +359,7 @@ describe("a composable", () => {
   it("leaves a `.uf.tsx` module's analysis as it was", () => {
     const { module, diagnostics } = run(
       [
-        'import { ref } from "unframework";',
+        'import { ref } from "@uxfront/unframework";',
         "export function Toggle() {",
         "  const count = ref(0);",
         "  return <button>{count.value}</button>;",
@@ -375,7 +375,7 @@ describe("a composable", () => {
 /** A composable `useA` whose setup is `setup`, returning `returned`. */
 function useA(setup: readonly string[], returned = "return { n };", imports = "ref") {
   return composables([
-    `import { ${imports} } from "unframework";`,
+    `import { ${imports} } from "@uxfront/unframework";`,
     "export function useA() {",
     "  const n = ref(1);",
     ...setup.map((line) => `  ${line}`),
@@ -405,7 +405,7 @@ describe("UF2035", () => {
     ["inject", ["const theme = inject(ThemeKey);"], "return { n, theme };"],
   ])("rejects `%s`, which needs a place in the tree", (api, setup, returned) => {
     const { source, diagnostics } = composables([
-      `import { ${api}, ref } from "unframework";`,
+      `import { ${api}, ref } from "@uxfront/unframework";`,
       'import { ThemeKey } from "./Theme.uf.tsx";',
       "export function useA() {",
       "  const n = ref(1);",
@@ -421,7 +421,7 @@ describe("UF2035", () => {
 
   it("rejects a call of a composable another `.uf.ts` module exports", () => {
     const { source, module, diagnostics } = composables([
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       'import { useOther } from "./useOther.uf.ts";',
       "export function useA() {",
       "  const n = ref(1);",
@@ -435,7 +435,7 @@ describe("UF2035", () => {
 
   it("rejects a call of a composable the module declares, wherever the body makes it", () => {
     const { source, diagnostics } = composables([
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "export function useB() {",
       "  const m = ref(1);",
       "  return { m };",
@@ -586,7 +586,7 @@ describe("UF2035", () => {
 
   it("rejects a function that calls a callback where an initial value or a getter calls it (UF2014)", () => {
     const { source, diagnostics } = composables([
-      'import { computed, ref } from "unframework";',
+      'import { computed, ref } from "@uxfront/unframework";',
       "export function useA(onPick: (value: number) => number) {",
       "  function pick() {",
       "    return onPick(1);",
@@ -601,7 +601,7 @@ describe("UF2035", () => {
 
   it("rejects a value import from a `.uf.ts` module that no composable calls, with a fix", () => {
     const { source, diagnostics } = composables([
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       'import { Item } from "./useItem.uf.ts";',
       "export function useA(item: Item) {",
       "  const state = ref<Item>(item);",
@@ -614,7 +614,7 @@ describe("UF2035", () => {
 
   it("rejects a callback read outside client code", () => {
     const { source, diagnostics } = composables([
-      'import { computed } from "unframework";',
+      'import { computed } from "@uxfront/unframework";',
       "export function useA(onPick: (value: number) => void) {",
       "  const picked = computed(() => onPick);",
       "  return { picked };",
@@ -639,7 +639,7 @@ describe("UF2035", () => {
 
   it("rejects an injection key in a `.uf.ts` module (UF1002)", () => {
     const { source, diagnostics } = composables([
-      'import type { InjectionKey } from "unframework";',
+      'import type { InjectionKey } from "@uxfront/unframework";',
       'export const ThemeKey: InjectionKey<string> = Symbol("theme");',
       "export function useA() {",
       "  return {};",
@@ -658,7 +658,7 @@ describe("UF2035", () => {
   });
 
   it("rejects a module that exports no composable", () => {
-    const { source, diagnostics } = composables(['import { ref } from "unframework";']);
+    const { source, diagnostics } = composables(['import { ref } from "@uxfront/unframework";']);
     expect(problems(source, diagnostics)).toEqual(["UF2035 "]);
   });
 });

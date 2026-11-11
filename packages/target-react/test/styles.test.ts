@@ -20,8 +20,8 @@ import { packageDir } from "./fixtures.ts";
 
 /** A child whose sheet uses `:slotted()`, with a default slot and a scoped one. */
 const LIST = `import "./List.css";
-import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export default function List({ names }: { names: string[] }) {
   const slots = defineSlots<{ default?(): Element; item?(props: { name: string }): Element }>();
@@ -170,15 +170,15 @@ export default function Second({ k }: { k: string }) { return <><b class={["a", 
     [
       "a slot in an earlier component",
       "scopeAttributes",
-      `import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+      `import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 export function A() { const slots = defineSlots<{ scopeAttributes?(): Element }>(); return <b>{slots.scopeAttributes?.()}</b>; }
 export default function B() { const slots = defineSlots<{ title?(): Element }>(); return <i>{slots.title?.()}</i>; }`,
     ],
     [
       "a model in an earlier component",
       "scopeAttributes",
-      `import { defineModel } from "unframework";
+      `import { defineModel } from "@uxfront/unframework";
 export function A() {
   const value = defineModel<string>("scopeAttributes", { default: "" });
   return <button type="button" onClick={() => (value.value = "x")}>{value.value}</button>;

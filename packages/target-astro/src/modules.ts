@@ -5,7 +5,12 @@
 // client code reads would be unused (L5). A component's frontmatter is one scope with its
 // setup, so a module name that a top-level name of the component shadows, and that it reaches
 // only through a constant, is declared under a name of its own.
-import { codeNames, parseCodeSource, parseExpressionSource, typeNames } from "@unframework.dev/codegen";
+import {
+  codeNames,
+  parseCodeSource,
+  parseExpressionSource,
+  typeNames,
+} from "@unframework.dev/codegen";
 import type { CodeKind, ImportSet, NameScope } from "@unframework.dev/codegen";
 import type {
   BindingId,
