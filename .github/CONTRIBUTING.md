@@ -58,11 +58,10 @@ pnpm dev
 
 ## Verifying a change
 
-Use `pnpm test:quick` while you work. It runs the unit tests of
-the packages changed since the merge base of `origin/main` and HEAD, the repo invariants and the
-corpus's `compile` project. It runs no `browser:*`, `ssr:*` or `toolchain:*` project and no e2e
-app: those are for before a pull request. Fetch `origin/main` first, or pass `--base <ref>` to
-compare with another branch.
+Use `pnpm test:quick` while you work. It runs the unit tests of the packages changed since the
+merge base of `origin/main` and HEAD, the repo invariants and the corpus's `compile` project. It
+runs no `browser:*`, `ssr:*` or `toolchain:*` project and no e2e app: those are for before a pull
+request. Fetch `origin/main` first, or pass `--base <ref>` to compare with another branch.
 
 A change to the compiler is done when the corpus is green on every target, not when it emits
 code (plan P1). Before you open a pull request:
@@ -71,7 +70,10 @@ code (plan P1). Before you open a pull request:
 2. `pnpm test:full`. It runs what CI's test jobs run: every package's tests, the whole corpus, the
    `bench` project, the e2e apps, and the canaries when the branch changes a path on
    `CANARY_PATHS` (`tests/integration/scripts/canary-paths.ts`). It leaves out the CI jobs it
-   can't stand in for, and `pnpm test:full --list` names each with its reason:
+   can't stand in for, and `pnpm test:full --list` names each with its reason. The `bench` step
+   measures each case's compile time against `basics/hello` in the same run, so run `test:full`
+   with nothing else busy on the machine.
+   The jobs it leaves out:
    - `check`: format, lint and types, which step 1 runs.
    - `changes`: CI's gate, which `test:full` reuses for the canaries alone.
    - `baselines`: it needs Docker. See step 4.
