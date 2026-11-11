@@ -8,9 +8,15 @@ import { dirname, join } from "node:path";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 import type { TestProjectInlineConfiguration } from "vitest/config";
 
-import { parseTestArguments } from "../src/cli.ts";
+import { parseTestArguments, run } from "../src/cli.ts";
 import { discoverCases } from "../src/config/cases.ts";
-import { defineTestConfig, runTargets, selectedTargets } from "../src/config/index.ts";
+import {
+  defineTestConfig,
+  runTargets,
+  selectedTargets,
+  TESTING_PACKAGE,
+  toolchainDirOf,
+} from "../src/config/index.ts";
 
 const roots: string[] = [];
 afterAll(() => {
@@ -58,7 +64,8 @@ async function projectNames(root: string): Promise<string[]> {
 /** A project that tests Vue and React, with one case. */
 function twoTargets(): string {
   return project({
-    "unframework.config.mjs": 'export default { targets: ["vue", "react"] };\n',
+    "unframework.config.ts":
+      'const targets: readonly ("vue" | "react")[] = ["vue", "react"];\nexport default { targets };\n',
     "test/badge/Badge.uf.tsx": COMPONENT,
     "test/badge/badge.test.ts": SPEC,
   });
@@ -255,14 +262,21 @@ describe("defineTestConfig", () => {
     const root = twoTargets();
     const [browser, ssr] = await projectsOf({ root });
     expect(browser!.test?.include).toEqual([join(root, "test/badge/badge.test.ts")]);
+    // Installed, a pre-bundled copy of the package would hold its own Vitest runner.
+    expect(browser!.optimizeDeps?.exclude).toContain("@unframework.dev/testing");
     expect(browser!.test?.provide).toMatchObject({
       target: "vue",
       ufHarness: { casesDir: root, reference: "vue", pixels: "live", cases: { "test/badge": {} } },
       ufNoOutput: {},
     });
+    // `view.expectThrown` calls `ufMapStack`, and the matchers `ufAriaSnapshot` (ADR-0085).
     expect(browser!.test?.browser?.commands).toHaveProperty("ufMapStack");
+    expect(browser!.test?.browser?.commands).toHaveProperty("ufAriaSnapshot");
     expect(ssr!.test?.include).toEqual([expect.stringMatching(/src\/ssr\/spec\.ts$/)]);
     expect(ssr!.test?.exclude).toEqual([]);
+    // Installed, the package is ESM under node_modules: inlined, its imports of each case's
+    // `.uf.tsx` go through the unplugin, not to Node.
+    expect(ssr!.test?.server?.deps?.inline).toEqual([TESTING_PACKAGE]);
     expect(ssr!.test?.provide).toMatchObject({
       ufServer: "@unframework.dev/target-vue/toolchain/server",
       ufSsrCases: [
@@ -273,6 +287,36 @@ describe("defineTestConfig", () => {
         },
       ],
     });
+  });
+});
+
+describe("toolchainDirOf", () => {
+  it("takes toolchainDirs relative to the root, then resolveFrom, then the root", () => {
+    const from = { angular: "/repo/tests/toolchains/angular" };
+    expect(toolchainDirOf("angular", "/p", { angular: "../tools" }, from)).toBe("/tools");
+    expect(toolchainDirOf("angular", "/p", { angular: "/abs/tools" }, from)).toBe("/abs/tools");
+    expect(toolchainDirOf("angular", "/p", undefined, from)).toBe("/repo/tests/toolchains/angular");
+    expect(toolchainDirOf("vue", "/p", { angular: "../tools" }, from)).toBe("/p");
+    expect(toolchainDirOf("vue", "/p", undefined, "/shared")).toBe("/shared");
+  });
+});
+
+describe("TESTING_PACKAGE", () => {
+  it("matches the package wherever npm or pnpm installs it, and nothing else", () => {
+    for (const path of [
+      "/p/node_modules/@unframework.dev/testing/dist/ssr/index.js",
+      "/p/node_modules/.pnpm/@unframework.dev+testing@0.1.0/node_modules/@unframework.dev/testing/dist/ssr/index.js",
+      "C:\\p\\node_modules\\@unframework.dev\\testing\\dist\\ssr\\index.js",
+    ]) {
+      expect(path).toMatch(TESTING_PACKAGE);
+    }
+    for (const path of [
+      "/p/node_modules/@unframework.dev/testing-extra/dist/index.js",
+      "/p/node_modules/@unframework.dev/codegen/dist/index.js",
+      "/repo/packages/testing/src/ssr/index.ts",
+    ]) {
+      expect(path).not.toMatch(TESTING_PACKAGE);
+    }
   });
 });
 
@@ -310,6 +354,12 @@ describe("parseTestArguments", () => {
       vitest: ["--reporter=json", "--target"],
     });
     expect(parseTestArguments([])).toEqual({ targets: [], update: false, vitest: [] });
+  });
+
+  it("prints Vitest's help for -- --help, and runs nothing", async () => {
+    const io = { cwd: project({}), stdout: () => undefined, stderr: () => undefined };
+    // A project with no test file would fail at startup, so 0 means nothing started.
+    expect(await run(["--", "--help"], io)).toBe(0);
   });
 
   it("refuses an unknown target, a missing name and an unknown argument", () => {

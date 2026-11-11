@@ -82,7 +82,9 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
   source, a test file at the root and an unknown `case.json` key throw at startup, naming the fix.
 - **The run** narrows to `UF_TARGETS` (`--target`), always with the reference and any target a
   case names as its own (`runTargets`), and writes with `UF_UPDATE=1` (`--update`). Its scratch
-  goes in the root's `.reports/` and `.live/`. The mode is a project's
+  goes in the root's `.reports/` and `.live/`. Installed under `node_modules`, the package is
+  inlined in the ssr projects (`TESTING_PACKAGE`) and left out of the browser projects' dep
+  optimizer, so its imports go through the project's Vite pipeline and share one Vitest runner. The mode is a project's
   (`resolveHarnessMode({ project })`): pixels compare live unless the project chose `baseline`,
   and CI may compare live. It runs in Chromium alone.
 - **`unframework test [--target <t>]… [--update] [-- <vitest args>]`** passes what follows `--`

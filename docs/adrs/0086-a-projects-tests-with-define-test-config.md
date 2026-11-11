@@ -60,7 +60,10 @@ Three more forces shaped the decision:
 - **One server render comparison.** `@unframework.dev/testing/ssr` exports
   `describeServerRender(cases)`, the scenario loop that was the harness's. The package ships a
   spec that calls it (`./ssr/spec`), which `defineTestConfig`'s `ssr:<target>` projects include by
-  its resolved path, with no exclusion, so Vitest's default `**/node_modules/**` doesn't drop it.
+  its resolved path, with no exclusion, so Vitest's default `**/node_modules/**` doesn't drop it. The ssr projects inline the package
+  (`server.deps.inline`), since Node would otherwise load it and import each `.uf.tsx` past the
+  unplugin, and the browser projects keep it out of the dep optimizer, whose copy would carry a
+  second Vitest runner.
   The cases come from the provided `ufSsrCases`, each main source by its absolute path. The
   corpus's spec calls the same function as it's collected, with its own skips: a case with
   expected compile errors is left out, one with no `diagnostics.json` fails, and one whose every

@@ -4,7 +4,7 @@
 // harness uses (`tests/integration/harness/projects.ts`): each target's toolchain fragment, the
 // unplugin, the parity browser with its commands, the testing setup and the provided run.
 import { realpathSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { Toolchain, ToolchainContext } from "@unframework.dev/codegen";
@@ -57,6 +57,12 @@ export interface TestConfigOptions {
 /** The test files a project's run finds by default. */
 export const DEFAULT_INCLUDE: readonly string[] = ["**/*.test.ts"];
 
+/**
+ * This package's modules, wherever a project installs it: the server render comparison imports
+ * each case's main source, which must go through the project's Vite pipeline.
+ */
+export const TESTING_PACKAGE: RegExp = /[\\/]node_modules[\\/]@unframework\.dev[\\/]testing[\\/]/;
+
 /** How long a test runs at most: a cold browser project's first mount compiles its framework. */
 const TEST_TIMEOUT = 60_000;
 
@@ -105,6 +111,7 @@ export async function defineTestConfig(options: TestConfigOptions = {}): Promise
     mode,
     quarantine: [],
     cases: Object.fromEntries(cases.map((info) => [info.id, info.config])),
+    updateCommand: "unframework test --update",
   });
   const named = caseReferences(harness);
   checkTargets("a case's reference", named, targets);
@@ -119,7 +126,7 @@ export async function defineTestConfig(options: TestConfigOptions = {}): Promise
     cases,
     targets: run,
     toolchainDir: (target) =>
-      options.toolchainDirs?.[target] ?? resolveFrom(config, target) ?? root,
+      toolchainDirOf(target, root, options.toolchainDirs, config.package?.resolveFrom),
   };
   const projects = await Promise.all(
     run.flatMap((target) => [browserProject(setup, target), ssrProject(setup, target)]),
@@ -192,10 +199,19 @@ export function runTargets(
   return targets.filter((name) => selected.includes(name) || writers.includes(name));
 }
 
-/** Where `package.resolveFrom` says a target's tools resolve from, if it says. */
-function resolveFrom(config: ResolvedConfig, target: TargetName): string | undefined {
-  const from = config.package?.resolveFrom;
-  return typeof from === "string" ? from : from?.[target];
+/**
+ * Where a target's compiler stack resolves from: `toolchainDirs`, relative to the root, then
+ * `package.resolveFrom`, which `resolveConfig` has made absolute, then the root (A9).
+ */
+export function toolchainDirOf(
+  target: TargetName,
+  root: string,
+  toolchainDirs: TestConfigOptions["toolchainDirs"],
+  resolveFrom: string | Partial<Record<TargetName, string>> | undefined,
+): string {
+  const own = toolchainDirs?.[target];
+  if (own !== undefined) return resolve(root, own);
+  return (typeof resolveFrom === "string" ? resolveFrom : resolveFrom?.[target]) ?? root;
 }
 
 /** What every project factory reads. */
@@ -304,9 +320,11 @@ async function browserProject(
       root: setup.root,
       plugins: await unpluginOf(target),
       // The testing API's own browser dependencies (CommonJS axe-core, parse5), listed up front:
-      // one discovered mid-run reloads the page.
+      // one discovered mid-run reloads the page. The package itself is not pre-bundled: installed,
+      // it would carry a second copy of Vitest's runner, whose suite the specs' tests never reach.
       optimizeDeps: {
         include: ["@unframework.dev/testing > axe-core", "@unframework.dev/testing > parse5"],
+        exclude: ["@unframework.dev/testing"],
       },
     },
     fragment,
@@ -374,6 +392,10 @@ async function ssrProject(setup: ProjectSetup, target: TargetName): Promise<User
         // resolved path, and with no exclusion, or Vitest's default drops it.
         include: [resolveModule("@unframework.dev/testing/ssr/spec")],
         exclude: [],
+        // Vitest hands an ESM package under `node_modules` to Node, which would import each case's
+        // `.uf.tsx` past the unplugin. Inlined, the comparison's imports go through this
+        // project's Vite pipeline, as the corpus's do from the workspace.
+        server: { deps: { inline: [TESTING_PACKAGE] } },
         provide: {
           target,
           ufHarness: setup.harness,
