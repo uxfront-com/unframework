@@ -17,7 +17,9 @@
 // - traces: a step of a view's trace that no `expectParity` compared fails L9;
 // - behaviour: the test's own errors (its assertions, its hooks, a test without assertions, a
 //   failed unmount) recorded as L8, then one error with every failed layer (ADR-0043);
-// - bounds: `expect.element` waits the project's poll timeout, not the whole test's.
+// - bounds: `expect.element` waits the project's poll timeout, not the whole test's;
+// - matchers: `toHaveNoAxeViolations` and `toHaveAriaTree`, for the specs' own assertions
+//   (ADR-0085).
 import { afterAll, afterEach, aroundEach, beforeAll, beforeEach, inject } from "vitest";
 import type { RunnerTestCase } from "vitest";
 import { commands, userEvent } from "vitest/browser";
@@ -35,6 +37,7 @@ import {
 } from "./browser/console.ts";
 import { installDeterminism } from "./browser/determinism.ts";
 import { boundElementTimeout } from "./browser/element-timeout.ts";
+import { installMatchers } from "./browser/matchers.ts";
 import { installNavigationGuard, takePreventedNavigations } from "./browser/navigation.ts";
 import { currentTarget } from "./browser/target.ts";
 import { closeTraces } from "./browser/trace.ts";
@@ -47,6 +50,7 @@ import type { LayerSubject } from "./layers.ts";
 
 installConsoleCapture();
 boundElementTimeout();
+installMatchers();
 installNavigationGuard();
 
 // The first parameter is the file's fixtures, a destructuring pattern (see the afterAll below).

@@ -4,6 +4,7 @@ import type { UserConfig } from "tsdown";
 const config: UserConfig = defineConfig({
   entry: [
     "src/index.ts",
+    "src/internal.ts",
     "src/setup.ts",
     "src/normalize/index.ts",
     "src/node/index.ts",

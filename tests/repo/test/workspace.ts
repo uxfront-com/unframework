@@ -89,3 +89,29 @@ export function packageOf(specifier: string): string | undefined {
   const parts = specifier.split("/");
   return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
 }
+
+/** A name a module exports, and whether it exports a type only. */
+export interface ExportRecord {
+  name: string;
+  typeOnly: boolean;
+}
+
+/**
+ * The names a module exports, its own and those it re-exports. `export *` and a default export
+ * have no name: each is returned as `*` or `default`, so a caller that pins a module's names
+ * sees it.
+ */
+export function exportsOf(file: string): ExportRecord[] {
+  const { module } = parseSync(file, readFileSync(file, "utf8"));
+  return module.staticExports.flatMap((entry) =>
+    entry.entries.map((item) => ({
+      name:
+        item.exportName.kind === "Name"
+          ? item.exportName.name!
+          : item.exportName.kind === "Default"
+            ? "default"
+            : "*",
+      typeOnly: item.isType,
+    })),
+  );
+}

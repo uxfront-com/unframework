@@ -2,7 +2,7 @@
   "name": "@unframework.dev/testing",
   "version": "0.0.0",
   "private": true,
-  "description": "The cross-target test API: describeTargets, mount, the View and its parity checks, the mount adapters, the SSR renderers and normalisation. Private until M7.",
+  "description": "The cross-target test API: describeTargets, it, mount, mountScenario, the View with its parity checks, and the axe and ARIA matchers. The harness's machinery, the mount adapters, the SSR renderers and normalisation are internal subpaths. Private until its first release.",
   "keywords": [
     "testing",
     "unframework",
@@ -28,6 +28,7 @@
   ],
   "exports": {
     ".": "./src/index.ts",
+    "./harness": "./src/internal.ts",
     "./setup": "./src/setup.ts",
     "./normalize": "./src/normalize/index.ts",
     "./node": "./src/node/index.ts",
@@ -45,6 +46,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
+      },
+      "./harness": {
+        "types": "./dist/internal.d.ts",
+        "default": "./dist/internal.js"
       },
       "./setup": {
         "types": "./dist/setup.d.ts",
