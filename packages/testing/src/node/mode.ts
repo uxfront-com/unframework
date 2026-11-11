@@ -137,6 +137,12 @@ export function resolveHarnessMode(input: ModeInput): HarnessMode {
     );
   }
   if (update && pixels === "baseline" && baselineEnvironment !== BASELINE_ENVIRONMENT) {
+    if (input.project) {
+      // A project chose baselines in its config, so the way out is the run's, not the config's.
+      throw new Error(
+        `[uf] \`unframework test --update\` with \`pixels: "baseline"\` would write the committed Linux baselines, which only ${BASELINE_ENVIRONMENT} writes; this run is ${baselineEnvironment ?? `on ${here}, outside it`}. Run \`UF_PIXELS=live unframework test --update\` to update every other expectation.`,
+      );
+    }
     throw new Error(
       `[uf] UF_UPDATE with baseline pixels would write the committed Linux baselines, which only ${BASELINE_ENVIRONMENT} writes (\`pnpm test:baselines\`); this run is ${baselineEnvironment ?? `on ${here}, outside it`}. Unset UF_PIXELS (or set it to live) to update everything else.`,
     );
@@ -237,6 +243,8 @@ export interface HarnessRunOptions {
   mode: HarnessMode;
   quarantine: QuarantineEntry[];
   cases: Record<string, CaseConfig>;
+  /** The command a failure names to write the artefacts (`HarnessContext.updateCommand`). */
+  updateCommand?: string;
 }
 
 const RUN = Symbol.for("unframework.harness.run");
@@ -279,6 +287,7 @@ export function createHarnessRun(options: HarnessRunOptions): HarnessContext {
     diffsDir: join(scratch.diffs, runId),
     quarantine,
     cases: options.cases,
+    ...(options.updateCommand === undefined ? {} : { updateCommand: options.updateCommand }),
   };
   store[RUN] = run;
   return run;

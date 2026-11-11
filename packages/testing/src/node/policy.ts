@@ -62,9 +62,18 @@ export interface ArtefactContext {
   ledgerDir?: string;
   /** The reference target's name, for messages. */
   reference?: string;
+  /**
+   * The command that writes the artefacts, for messages: `pnpm test:update` in the corpus, and
+   * `unframework test --update` in a project's tests (ADR-0086).
+   */
+  updateCommand?: string;
 }
 
-const UPDATE_HINT = "Run `pnpm test:update` and review the diff if the change is intended.";
+/** The corpus's command that writes the artefacts. */
+const CORPUS_UPDATE = "pnpm test:update";
+
+const updateHint = (command: string = CORPUS_UPDATE) =>
+  `Run \`${command}\` and review the diff if the change is intended.`;
 
 /**
  * Settles one artefact. `actual` is what this run produced; `undefined` means the artefact must
@@ -102,7 +111,7 @@ export function settleArtefact(
       ? {
           pass: false,
           status: "stale",
-          message: `Stale artefact ${rel}: this run no longer produces it. Run \`pnpm test:update\` to delete it.`,
+          message: `Stale artefact ${rel}: this run no longer produces it. Run \`${context.updateCommand ?? CORPUS_UPDATE}\` to delete it.`,
         }
       : { pass: true, status: "matched", message: "" };
   }
@@ -114,7 +123,7 @@ export function settleArtefact(
     return {
       pass: false,
       status: "missing",
-      message: `Missing artefact ${rel}. Run \`pnpm test:update\` to write it${writer}.`,
+      message: `Missing artefact ${rel}. Run \`${context.updateCommand ?? CORPUS_UPDATE}\` to write it${writer}.`,
     };
   }
   const expected = readFileSync(path, "utf8");
@@ -124,7 +133,7 @@ export function settleArtefact(
     pass: false,
     status: "mismatch",
     message:
-      `${against} differs from this run's output:\n${diffLines(expected, actual)}\n${context.update ? "" : UPDATE_HINT}`.trimEnd(),
+      `${against} differs from this run's output:\n${diffLines(expected, actual)}\n${context.update ? "" : updateHint(context.updateCommand)}`.trimEnd(),
   };
 }
 
@@ -166,7 +175,7 @@ export function settleArtefactDirectory(
   return {
     pass: false,
     status: problems.every((problem) => problem.startsWith("Missing")) ? "missing" : "mismatch",
-    message: `${problems.join("\n\n")}\n${UPDATE_HINT}`,
+    message: `${problems.join("\n\n")}\n${updateHint()}`,
   };
 }
 

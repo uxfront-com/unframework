@@ -80,6 +80,7 @@ export function sharedArtefactContext(
     update: harness.update,
     root: displayRoot(harness),
     ledgerDir: harness.ledgerDir,
+    ...(harness.updateCommand === undefined ? {} : { updateCommand: harness.updateCommand }),
     reference: caseReference(harness, caseId),
   };
 }

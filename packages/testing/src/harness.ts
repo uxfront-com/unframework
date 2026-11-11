@@ -85,6 +85,11 @@ export interface HarnessContext {
   reference: string;
   /** Update mode (`UF_UPDATE=1`): writes artefacts instead of only comparing. */
   update: boolean;
+  /**
+   * The command that writes the artefacts, which a failure names: `pnpm test:update` when absent
+   * (the corpus), `unframework test --update` in a project's tests (ADR-0086).
+   */
+  updateCommand?: string;
   pixels: PixelMode;
   /** The canary installed in this run (`UF_CANARY`), or `null`. */
   canary: string | null;

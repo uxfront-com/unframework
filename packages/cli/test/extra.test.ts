@@ -69,6 +69,16 @@ describe("extra commands", () => {
     expect(sink.err).toBe("unframework test: install @unframework.dev/testing\n");
   });
 
+  it("passes a --help after -- on to the command", async () => {
+    const seen: string[][] = [];
+    const sink = io();
+    expect(await main(["test", "--", "--help"], sink, new Map([["test", command(0, seen)]]))).toBe(
+      0,
+    );
+    expect(seen).toEqual([["--", "--help"]]);
+    expect(sink.out).toBe("ran\n");
+  });
+
   it("refuses one that would replace a built-in command", async () => {
     const sink = io();
     expect(await main(["build"], sink, new Map([["build", command(0)]]))).toBe(2);
