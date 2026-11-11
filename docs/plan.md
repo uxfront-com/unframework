@@ -944,7 +944,7 @@ The counts below are targets for each milestone's exit. Every case runs on all s
 - **Wall-clock budget:** under 15 minutes for about 250 cases. Sharding, and one checker run per target
   rather than one per case, keep it there.
 - **Artefacts:** the parity matrix, visual diffs, and Vitest trace views for failures.
-- **No retries.** A parity failure is never retried. A flaky parity test is a bug in the compiler or
+- **No retries.** A parity failure is never retried, ever. A flaky parity test is a bug in the compiler or
   the harness.
 
 ---
