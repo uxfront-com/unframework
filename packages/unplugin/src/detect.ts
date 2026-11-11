@@ -1,6 +1,8 @@
 // Which target an app's Vite configuration asks for, and what in it the outputs can't work with
 // (plan §8.2, ADR-0075, ADR-0026). Both read the plugins by the names they register, which are the
 // framework plugins' own: none of them is a dependency of this package.
+import { readFileSync, realpathSync, statSync } from "node:fs";
+
 import type { TargetName } from "@unframework/compiler";
 import { createDiagnostic, formatDiagnostic } from "@unframework/diagnostics";
 
@@ -61,9 +63,15 @@ export function detectTarget(
   return { error: formatDiagnostic(diagnostic, undefined) };
 }
 
-/** What plugin-vue's `api.options` holds of the option UF7010 reads. */
+/** What plugin-vue's `api.options` holds of the options UF7010 reads and `fillVueScriptFs` fills. */
+interface VueOptions {
+  template?: { compilerOptions?: { whitespace?: unknown } };
+  script?: { fs?: unknown };
+}
+
+/** plugin-vue's `api`, whose `options` is a getter and a setter over the options it compiles with. */
 interface VueApi {
-  options?: { template?: { compilerOptions?: { whitespace?: unknown } } };
+  options?: VueOptions;
 }
 
 /**
@@ -86,4 +94,59 @@ export function hostOptionWarning(
     help: 'Remove the option, or set it to "condense".',
   });
   return formatDiagnostic(diagnostic, undefined);
+}
+
+/** What Vue's `compileScript` reads imported types through: plugin-vue's `script.fs`. */
+interface ScriptFs {
+  fileExists(file: string): boolean;
+  readFile(file: string): string | undefined;
+  realpath(file: string): string;
+}
+
+/** The errors that mean a path names no file to read, which TypeScript's `sys` reports as none. */
+const NO_FILE: ReadonlySet<unknown> = new Set(["ENOENT", "ENOTDIR", "EISDIR"]);
+
+const isNoFile = (error: unknown): boolean =>
+  error instanceof Error && "code" in error && NO_FILE.has(error.code);
+
+/**
+ * Node's file system, in the shape TypeScript's `sys` gives `compileScript`: a directory is no
+ * file, a missing file reads as `undefined` and a path that can't be resolved is its own real path.
+ * Any other error, such as a file it may not read, throws.
+ */
+export const NODE_SCRIPT_FS: ScriptFs = {
+  fileExists: (file) => statSync(file, { throwIfNoEntry: false })?.isFile() ?? false,
+  readFile(file) {
+    try {
+      return readFileSync(file, "utf8");
+    } catch (error) {
+      if (isNoFile(error)) return undefined;
+      throw error;
+    }
+  },
+  realpath(file) {
+    try {
+      return realpathSync(file);
+    } catch (error) {
+      if (isNoFile(error)) return file;
+      throw error;
+    }
+  },
+};
+
+/**
+ * Gives plugin-vue Node's file system for imported types, unless the app gave its own (ADR-0082).
+ * Vue's `compileScript` reads a props type imported from another module through `script.fs`, or
+ * through TypeScript's `sys` without one, and TypeScript 7 doesn't export `sys`. plugin-vue passes
+ * no `fs`, so on TypeScript 7 every component whose props type comes from another module fails to
+ * compile: the outputs, and the app's own `.vue` files too. The options are replaced through
+ * plugin-vue's setter, never changed in place, so the app's own object stays as it wrote it.
+ * plugin-vue's `configResolved` rebuilds its options from the current ones, so the fill holds
+ * whichever of the two plugins' hooks runs first.
+ */
+export function fillVueScriptFs(plugins: readonly NamedPlugin[]): void {
+  const api = plugins.find(({ name }) => name === VUE_PLUGIN)?.api as VueApi | undefined;
+  const options = api?.options;
+  if (!api || !options || options.script?.fs != null) return;
+  api.options = { ...options, script: { ...options.script, fs: NODE_SCRIPT_FS } };
 }
