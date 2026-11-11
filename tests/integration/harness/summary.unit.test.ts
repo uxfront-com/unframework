@@ -143,14 +143,19 @@ describe("CI's parity job", () => {
   it("waits for every job that runs harness projects, which together run each project once", () => {
     expect(runs.map((run) => run.name)).toEqual([
       "integration-compile",
-      ...TARGETS.map((target) => `integration-toolchains (${target})`),
+      "integration-toolchains",
       "integration-ssr",
       ...TARGETS.map((target) => `integration-browser (${target})`),
       "bench",
     ]);
     expect(runs.flatMap((run) => run.projects).toSorted()).toEqual(PARITY.toSorted());
     expect(runs.filter((run) => !run.uploads)).toEqual([]);
-    expect(parityNeeds.toSorted()).toEqual([...new Set(runs.map((run) => run.job))].toSorted());
+    // It also waits for `changes`, which skips it with the jobs it waits for on a docs-only
+    // pull request (ADR-0084).
+    expect(parityNeeds).toContain("changes");
+    expect(parityNeeds.filter((job) => job !== "changes").toSorted()).toEqual(
+      [...new Set(runs.map((run) => run.job))].toSorted(),
+    );
   });
 
   it("leaves out the Baselines job: an update run, which no summary judges (ADR-0062)", () => {

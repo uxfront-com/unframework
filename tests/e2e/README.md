@@ -30,7 +30,7 @@ Step 2 also writes `.tarballs/packed.json`, which names each package's tarball. 
 - `prepare-apps --pack` stops after step 2.
 - `prepare-apps --reuse-tarballs` starts at step 3, with the tarballs that `packed.json` names. It fails if the record or a tarball is missing, and it never checks that they match your checkout, so pack again after you change a package.
 
-CI's `Pack` job runs the first and uploads `.tarballs`. Each `E2E (<app>)` job downloads it, runs the second, then runs every project of its app in the Playwright image.
+CI's `Pack` job runs the first and uploads `.tarballs`. The `E2E` job downloads it, runs the second, then runs every project of every app in the Playwright image.
 
 `<work>` must be outside the repository: a copy inside it would resolve upward into the workspace's `node_modules`, so a dependency a tarball forgot would still pass. `prepare-apps` refuses such a directory. It also refuses to replace a directory it didn't make, which it recognises by the `.unframework-e2e-copy` file in each copy.
 

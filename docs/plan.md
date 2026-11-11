@@ -933,12 +933,12 @@ The counts below are targets for each milestone's exit. Every case runs on all s
 - **Jobs:**
   - unit tests for each package
   - `integration:compile`
-  - `integration:toolchains`, a ×7 matrix
+  - `integration:toolchains`, one job that runs the seven targets' projects (ADR-0084)
   - `integration:ssr`
   - `integration:browser`, a ×7 matrix, sharded (M0 runs one job per target; the parity summary
     accepts a complete set of shards per project, ADR-0029)
   - visual baselines in the Linux Playwright image
-  - e2e and bench, both from M6
+  - e2e, one job for the seven apps (ADR-0084), and bench, both from M6
 - **Pinning:** actions are pinned by SHA, and Node is 24, as in today's workflows. Turbo caches by
   inputs.
 - **Wall-clock budget:** under 15 minutes for about 250 cases. Sharding, and one checker run per target
