@@ -136,6 +136,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0082](./0082-vue-without-typescript-sys.md)                       | Vue builds on TypeScript 7 without `script.fs`                                | Accepted                                                               | §8.2, §8.4, §9 M6       |
 | [0083](./0083-browser-layers-stay-on-vitest.md)                    | The browser layers stay on Vitest                                             | Accepted                                                               | §7.2, §7.3              |
 | [0084](./0084-docs-only-pull-requests-skip-the-tests.md)           | Docs-only pull requests skip the tests, and pushes run no canary              | Accepted                                                               | §7.7, §7.9              |
+| [0085](./0085-the-public-api-of-unframework-testing.md)            | The public API of `@unframework/testing` is its root entry and the case       | Accepted                                                               | §7.3, §8.5, §9 M7       |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 

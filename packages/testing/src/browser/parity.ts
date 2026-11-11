@@ -7,7 +7,6 @@
 // Each layer is recorded separately in `task.meta.uf`, and so is the scenario. It resolves even
 // when a layer fails (ADR-0043): the spec's own assertions after it still run and are recorded as
 // L8, and the setup file's afterEach then fails the test with every failed layer.
-import axe from "axe-core";
 import { inject, TestRunner } from "vitest";
 import type { RunnerTestCase } from "vitest";
 import { commands } from "vitest/browser";
@@ -20,6 +19,7 @@ import { KEBAB_CASE } from "../node/names.ts";
 import { renameGeneratedIds } from "../normalize/rules/generated-ids.ts";
 import { LIVE_REFERENCE_SKIP } from "../visual-types.ts";
 import type { PixelTolerance } from "../visual-types.ts";
+import { compareAxe } from "./axe.ts";
 import { traceFile } from "./trace.ts";
 import type { TraceStep } from "./trace.ts";
 import { captureVisual } from "./visual.ts";
@@ -46,18 +46,6 @@ export interface ParityView {
 
 /** The scenarios each spec file has checked, by file: a name names one scenario of a case. */
 const checked = new Map<string, Set<string>>();
-
-/**
- * axe runs on the mount container, so its page-level rules (one `<main>`, a level-one heading,
- * a bypass block) do not apply: they need the whole page as their context. `region` (all
- * content inside landmarks) is the page's structure too: the page that renders a component
- * places it in its landmarks, which the component cannot do for itself, so it is off. Every
- * rule about the component's own markup, its own landmarks included, stays on.
- */
-const AXE_OPTIONS = {
-  resultTypes: ["violations"],
-  rules: { region: { enabled: false } },
-} satisfies axe.RunOptions;
 
 /**
  * Runs L7, L9, L10 and L11 for one scenario of the current test's case and records them. Only
@@ -141,18 +129,9 @@ export async function expectParity(
       return result.outcome === "published-reference" ? { skip: LIVE_REFERENCE_SKIP } : undefined;
     },
     async L11() {
-      const results = await axe.run(view.container, AXE_OPTIONS);
-      const actual = [...new Set(results.violations.map((violation) => violation.id))].sort();
-      const expected = [...new Set(declaredAxe)].sort();
-      if (actual.join("\n") === expected.join("\n")) return;
-      const unexpected = results.violations.filter((violation) => !expected.includes(violation.id));
-      const missing = expected.filter((id) => !actual.includes(id));
-      const lines = unexpected.map(
-        (violation) =>
-          `  ${violation.id} (${violation.impact ?? "no impact"}): ${violation.help} at ${violation.nodes
-            .map((node) => node.target.join(" "))
-            .join(", ")}`,
-      );
+      const { pass, unexpected, missing } = await compareAxe(view.container, declaredAxe);
+      if (pass) return;
+      const lines = [...unexpected];
       if (missing.length) {
         lines.push(`  declared in case.json but not reported: ${missing.join(", ")}`);
       }

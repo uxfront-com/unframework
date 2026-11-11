@@ -470,8 +470,12 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   output for, or cannot compile yet.
 - `harness/canaries.ts`, `canary-verdict.ts`, `load-failures.ts`: the canaries, how
   `pnpm test:canaries` judges each run, and the specs a canary run could not load.
-- `@unframework/testing`: `describeTargets`, `mount`, `expectParity`, the normaliser, the write
-  policy, the visual capture and the parity reporter.
+- `@unframework/testing`: the public API every spec imports from its root (`describeTargets`,
+  `it`, `mount`, `mountScenario`, the `View` with `expectParity`, and the matchers), and the
+  internal subpaths the harness uses (`/harness`, `/setup`, `/<target>`, `/node` for the write
+  policy, the visual capture and the parity reporter, and `/normalize`). A spec imports nothing
+  else from the repository: the lint rule in `oxlint.config.ts` refuses any subpath of the
+  package, any other `@unframework` package and the harness's own files (ADR-0085).
 - `@unframework/target-<name>/toolchain`: each framework's Vite plugins, mount adapter (with its
   rerender), server renderer, compiler check (L3), type check (L4), lint (L5) and production
   compile (L15).

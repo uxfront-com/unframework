@@ -1,7 +1,9 @@
 # @unframework/testing
 
 The cross-target test API (plan §7.3, §8.5): one spec, written once, runs in every
-`browser:<target>` project and verifies the shared expectations layer by layer. Private until M7.
+`browser:<target>` project and verifies the shared expectations layer by layer. It stays
+`private` until its first release (ADR-0085). unframework.dev documents it for users
+(`apps/web/content/docs/4.tooling/5.testing.md`).
 
 ```ts
 // cases/state/counter/counter.test.ts
@@ -27,6 +29,31 @@ describeTargets("state/counter", () => {
 });
 ```
 
+## Public API
+
+The root entry is the public API, exactly (ADR-0085). `tests/repo/test/testing-api.test.ts` pins
+these names, and the corpus's lint rule (`oxlint.config.ts`) refuses any other import from a spec:
+
+- **Runtime:** `describeTargets`, `it`, `test`, `mount`, `mountScenario`, `allowConsole`,
+  `capturedConsole` and `currentTarget`.
+- **Types:** `View`, `ViewOptions`, `ComponentMountOptions`, `Props`, `NotAFunction`, `ViewUser`,
+  `ClickOptions`, `ViewClock`, `TraceStep`, `SpecOptions`, `SpecTest`, `ParityOptions`,
+  `PixelTolerance`, `ConsoleEntry`, `CaseConfig`, `SsrScenario` and `NoAxeViolationsOptions`.
+- **Matchers,** which `./setup` registers: `toHaveNoAxeViolations(options?)` and
+  `toHaveAriaTree(expected)` (below).
+- **The case:** its directory, its spec, its main `.uf.tsx`, the generated `__expected__/`, and
+  `case.json`'s `ssr`, `axe`, `colorScheme`, `reference` and `main`.
+
+The subpaths are internal, for the harness and the test configuration, never for a spec:
+
+| Subpath       | Holds                                                                                                                                                     |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `./harness`   | The browser machinery: `registerTarget`, `cleanup`, `checkLayers`, `LAYERS`, `LayerFailure`, `recordLayer`, the layer and adapter types, `HarnessContext` |
+| `./setup`     | The setup file every browser project loads first (below)                                                                                                  |
+| `./<target>`  | The setup file that registers a target's mount adapter                                                                                                    |
+| `./node`      | The Node side: the browser commands, the write policy, the mode, the reporter and the summary                                                             |
+| `./normalize` | The normaliser                                                                                                                                            |
+
 ## Browser (`@unframework/testing`)
 
 - **`mount(component, { props, clock? })`** mounts with the project's registered adapter into a
@@ -44,6 +71,15 @@ describeTargets("state/counter", () => {
   and waits until it has settled, as `mount` does. The props are replaced whole: a prop the new
   props lack takes its default again (each adapter's `rerender`, ADR-0043). It records a step
   of the view's trace, `rerender {…props as JSON}`, as an action does.
+- **`toHaveNoAxeViolations(options?)`** runs axe-core on an element with L11's options
+  (`src/browser/axe.ts`), and passes on no violation, or on exactly the rules
+  `options.expected` lists. **`toHaveAriaTree(expected)`** compares an element's ARIA snapshot,
+  taken and normalised as L7 takes a view's (Angular's hosts inline, generated ids renamed), with
+  one tree that holds on every target; it ignores the indentation and the blank lines around
+  `expected`. Both take `expect.element(locator)` or an element, fail with the target's name (and
+  `toHaveAriaTree` with a line diff), and are typed on Vitest's `Matchers`. Vitest's own
+  `toMatchAriaSnapshot()` and `toMatchAriaInlineSnapshot()` read the raw tree of one target, and
+  stay as they are.
 - **`it(name, { requires }, fn)`** and **`test`** (ADR-0050): Vitest's, plus `requires`, the
   capabilities a test needs (`["interactivity"]`, typed by `CapabilityName`). On a target whose
   cell for one of them is unsupported (Astro's `interactivity`), the setup file skips the test
@@ -257,7 +293,7 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
   after every framework's, and fails L8 at the next settle, rather than taking the spec file's
   frame away. After each test it fails L9 with the steps no `expectParity` compared, and resets
   the input for the next test (`ufResetInput`: the mouse to the frame's corner, the keys
-  released, the focus blurred and the frame focused again).
+  released, the focus blurred and the frame focused again). It registers the matchers above.
 - **`@unframework/testing/<target>`** (`react`, `vue`, `svelte`, `solid`, `angular`, `qwik`,
   `astro`): registers `@unframework/target-<target>/toolchain/client`'s mount adapter.
 
@@ -398,6 +434,6 @@ task, as Angular's: a stub's `settle` waits for its scheduled work), `emitted`/`
 payload copies, focus, the navigation guard, L9's
 pass and skip and a step left at the end of a test; `stub/trace-mismatch` an L9 diff and a stale
 trace; `stub/requires` a capability skip (the stub lacks a list box), which
-`test/interactions.test.ts` reads in the matrix. The DOM tests also run Astro's mount
+`test/interactions.test.ts` reads in the matrix. `stub/matchers` proves each matcher's pass and its failure message, and that Vitest's own `toMatchAriaInlineSnapshot` still behaves as Vitest's once the setup has run. The DOM tests also run Astro's mount
 adapter, whose rerender needs the toolchain's render command (`vitest.config.ts`).
 `UF_UPDATE=1 pnpm exec vitest run --config test/parity/vitest.config.ts` rewrites the artefacts.

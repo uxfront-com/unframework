@@ -6,8 +6,8 @@
 // component with `setup` has behaviour: listeners on its elements that change the DOM and emit
 // the events it declares (`emits`), as a compiled component's handlers and `defineEmits` would;
 // with `settle`, the adapter waits for the work they scheduled, as for a framework's render.
-import type { MountEvent } from "../../src/index.ts";
-import { registerTarget } from "../../src/index.ts";
+import type { MountEvent } from "../../src/internal.ts";
+import { registerTarget } from "../../src/internal.ts";
 
 type Props = Readonly<Record<string, unknown>>;
 type Messages = { level: "warn" | "error"; message: string }[];
