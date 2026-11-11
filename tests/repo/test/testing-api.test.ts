@@ -48,8 +48,8 @@ const adrs = join(root, "docs/adrs");
 /** The names in `actual` that the list lacks, and those the list has that `actual` lacks. */
 function compare(actual: readonly string[], list: readonly string[]) {
   return {
-    notPublic: actual.filter((name) => !list.includes(name)).sort(),
-    missing: list.filter((name) => !actual.includes(name)).sort(),
+    notPublic: actual.filter((name) => !list.includes(name)).toSorted(),
+    missing: list.filter((name) => !actual.includes(name)).toSorted(),
   };
 }
 

@@ -36,8 +36,8 @@ export async function compareAxe(
   expected: readonly string[],
 ): Promise<AxeComparison> {
   const results = await axe.run(element, AXE_OPTIONS);
-  const actual = [...new Set(results.violations.map((violation) => violation.id))].sort();
-  const wanted = [...new Set(expected)].sort();
+  const actual = [...new Set(results.violations.map((violation) => violation.id))].toSorted();
+  const wanted = [...new Set(expected)].toSorted();
   if (actual.join("\n") === wanted.join("\n")) return { pass: true, unexpected: [], missing: [] };
   const unexpected = results.violations
     .filter((violation) => !wanted.includes(violation.id))
