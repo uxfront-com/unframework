@@ -32,16 +32,38 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
+        id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # Every workspace package's node_modules, keyed on what an install reads, and apart for the
+      # Playwright image, whose paths and libraries differ from the runner's. No restore-keys: a
+      # tree from another lockfile never restores. On a miss, the install reads the pnpm store.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tests/*/node_modules
+            tests/toolchains/*/node_modules
+            tests/e2e/design-system/node_modules
+          key: node-modules-${{ runner.os }}-${{ job.container.id && 'playwright' || 'runner' }}-node-${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json') }}
+
       # Also runs `nuxt prepare`, which generates the .nuxt tsconfigs that
-      # type-aware linting and `check-types` resolve types through.
+      # type-aware linting and `check-types` resolve types through. On a restored node_modules,
+      # pnpm finds nothing to install and skips the workspace's postinstalls, so a hit runs them.
       - name: Install dependencies
         id: install
-        run: pnpm install --frozen-lockfile
+        env:
+          CACHE_HIT: ${{ steps.node-modules.outputs.cache-hit }}
+        run: |
+          pnpm install --frozen-lockfile
+          if [ "$CACHE_HIT" = "true" ]; then pnpm --recursive --if-present run postinstall; fi
 
       - name: Format
         run: pnpm format:check
@@ -98,13 +120,36 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
+        id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # Every workspace package's node_modules, keyed on what an install reads, and apart for the
+      # Playwright image, whose paths and libraries differ from the runner's. No restore-keys: a
+      # tree from another lockfile never restores. On a miss, the install reads the pnpm store.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tests/*/node_modules
+            tests/toolchains/*/node_modules
+            tests/e2e/design-system/node_modules
+          key: node-modules-${{ runner.os }}-${{ job.container.id && 'playwright' || 'runner' }}-node-${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json') }}
+
+      # On a restored node_modules, pnpm finds nothing to install and skips the workspace's
+      # postinstalls, so a hit runs them here: `nuxt prepare` writes apps/web's .nuxt tsconfigs.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        env:
+          CACHE_HIT: ${{ steps.node-modules.outputs.cache-hit }}
+        run: |
+          pnpm install --frozen-lockfile
+          if [ "$CACHE_HIT" = "true" ]; then pnpm --recursive --if-present run postinstall; fi
 
       - name: Test
         run: pnpm exec turbo run test ${{ matrix.filter }} --continue --concurrency=2
@@ -127,13 +172,36 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
+        id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # Every workspace package's node_modules, keyed on what an install reads, and apart for the
+      # Playwright image, whose paths and libraries differ from the runner's. No restore-keys: a
+      # tree from another lockfile never restores. On a miss, the install reads the pnpm store.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tests/*/node_modules
+            tests/toolchains/*/node_modules
+            tests/e2e/design-system/node_modules
+          key: node-modules-${{ runner.os }}-${{ job.container.id && 'playwright' || 'runner' }}-node-${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json') }}
+
+      # On a restored node_modules, pnpm finds nothing to install and skips the workspace's
+      # postinstalls, so a hit runs them here: `nuxt prepare` writes apps/web's .nuxt tsconfigs.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        env:
+          CACHE_HIT: ${{ steps.node-modules.outputs.cache-hit }}
+        run: |
+          pnpm install --frozen-lockfile
+          if [ "$CACHE_HIT" = "true" ]; then pnpm --recursive --if-present run postinstall; fi
 
       - name: Compile and harness projects
         run: pnpm --filter @unframework/integration exec vitest run --project compile --project harness
@@ -168,13 +236,36 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
+        id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # Every workspace package's node_modules, keyed on what an install reads, and apart for the
+      # Playwright image, whose paths and libraries differ from the runner's. No restore-keys: a
+      # tree from another lockfile never restores. On a miss, the install reads the pnpm store.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tests/*/node_modules
+            tests/toolchains/*/node_modules
+            tests/e2e/design-system/node_modules
+          key: node-modules-${{ runner.os }}-${{ job.container.id && 'playwright' || 'runner' }}-node-${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json') }}
+
+      # On a restored node_modules, pnpm finds nothing to install and skips the workspace's
+      # postinstalls, so a hit runs them here: `nuxt prepare` writes apps/web's .nuxt tsconfigs.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        env:
+          CACHE_HIT: ${{ steps.node-modules.outputs.cache-hit }}
+        run: |
+          pnpm install --frozen-lockfile
+          if [ "$CACHE_HIT" = "true" ]; then pnpm --recursive --if-present run postinstall; fi
 
       - name: Toolchain projects
         run: pnpm --filter @unframework/integration exec vitest run --project "toolchain:*"
@@ -207,13 +298,36 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
+        id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # Every workspace package's node_modules, keyed on what an install reads, and apart for the
+      # Playwright image, whose paths and libraries differ from the runner's. No restore-keys: a
+      # tree from another lockfile never restores. On a miss, the install reads the pnpm store.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tests/*/node_modules
+            tests/toolchains/*/node_modules
+            tests/e2e/design-system/node_modules
+          key: node-modules-${{ runner.os }}-${{ job.container.id && 'playwright' || 'runner' }}-node-${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json') }}
+
+      # On a restored node_modules, pnpm finds nothing to install and skips the workspace's
+      # postinstalls, so a hit runs them here: `nuxt prepare` writes apps/web's .nuxt tsconfigs.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        env:
+          CACHE_HIT: ${{ steps.node-modules.outputs.cache-hit }}
+        run: |
+          pnpm install --frozen-lockfile
+          if [ "$CACHE_HIT" = "true" ]; then pnpm --recursive --if-present run postinstall; fi
 
       - name: SSR projects
         run: pnpm --filter @unframework/integration exec vitest run --project "ssr:*"
@@ -257,13 +371,36 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
+        id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # Every workspace package's node_modules, keyed on what an install reads, and apart for the
+      # Playwright image, whose paths and libraries differ from the runner's. No restore-keys: a
+      # tree from another lockfile never restores. On a miss, the install reads the pnpm store.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tests/*/node_modules
+            tests/toolchains/*/node_modules
+            tests/e2e/design-system/node_modules
+          key: node-modules-${{ runner.os }}-${{ job.container.id && 'playwright' || 'runner' }}-node-${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json') }}
+
+      # On a restored node_modules, pnpm finds nothing to install and skips the workspace's
+      # postinstalls, so a hit runs them here: `nuxt prepare` writes apps/web's .nuxt tsconfigs.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        env:
+          CACHE_HIT: ${{ steps.node-modules.outputs.cache-hit }}
+        run: |
+          pnpm install --frozen-lockfile
+          if [ "$CACHE_HIT" = "true" ]; then pnpm --recursive --if-present run postinstall; fi
 
       - name: Browser project
         run: pnpm --filter @unframework/integration exec vitest run --project "browser:${{ matrix.target }}"
@@ -472,13 +609,36 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
+        id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # Every workspace package's node_modules, keyed on what an install reads, and apart for the
+      # Playwright image, whose paths and libraries differ from the runner's. No restore-keys: a
+      # tree from another lockfile never restores. On a miss, the install reads the pnpm store.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tests/*/node_modules
+            tests/toolchains/*/node_modules
+            tests/e2e/design-system/node_modules
+          key: node-modules-${{ runner.os }}-${{ job.container.id && 'playwright' || 'runner' }}-node-${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json') }}
+
+      # On a restored node_modules, pnpm finds nothing to install and skips the workspace's
+      # postinstalls, so a hit runs them here: `nuxt prepare` writes apps/web's .nuxt tsconfigs.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        env:
+          CACHE_HIT: ${{ steps.node-modules.outputs.cache-hit }}
+        run: |
+          pnpm install --frozen-lockfile
+          if [ "$CACHE_HIT" = "true" ]; then pnpm --recursive --if-present run postinstall; fi
 
       - name: Canaries
         run: pnpm test:canaries ${{ matrix.canaries }}${{ matrix.shard && format(' --shard {0}', matrix.shard) || '' }}
@@ -514,13 +674,36 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
+        id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # Every workspace package's node_modules, keyed on what an install reads, and apart for the
+      # Playwright image, whose paths and libraries differ from the runner's. No restore-keys: a
+      # tree from another lockfile never restores. On a miss, the install reads the pnpm store.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tests/*/node_modules
+            tests/toolchains/*/node_modules
+            tests/e2e/design-system/node_modules
+          key: node-modules-${{ runner.os }}-${{ job.container.id && 'playwright' || 'runner' }}-node-${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json') }}
+
+      # On a restored node_modules, pnpm finds nothing to install and skips the workspace's
+      # postinstalls, so a hit runs them here: `nuxt prepare` writes apps/web's .nuxt tsconfigs.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        env:
+          CACHE_HIT: ${{ steps.node-modules.outputs.cache-hit }}
+        run: |
+          pnpm install --frozen-lockfile
+          if [ "$CACHE_HIT" = "true" ]; then pnpm --recursive --if-present run postinstall; fi
 
       - name: Bench project
         run: pnpm --filter @unframework/integration exec vitest run --project bench
@@ -563,13 +746,36 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
+        id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # Every workspace package's node_modules, keyed on what an install reads, and apart for the
+      # Playwright image, whose paths and libraries differ from the runner's. No restore-keys: a
+      # tree from another lockfile never restores. On a miss, the install reads the pnpm store.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tests/*/node_modules
+            tests/toolchains/*/node_modules
+            tests/e2e/design-system/node_modules
+          key: node-modules-${{ runner.os }}-${{ job.container.id && 'playwright' || 'runner' }}-node-${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json') }}
+
+      # On a restored node_modules, pnpm finds nothing to install and skips the workspace's
+      # postinstalls, so a hit runs them here: `nuxt prepare` writes apps/web's .nuxt tsconfigs.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        env:
+          CACHE_HIT: ${{ steps.node-modules.outputs.cache-hit }}
+        run: |
+          pnpm install --frozen-lockfile
+          if [ "$CACHE_HIT" = "true" ]; then pnpm --recursive --if-present run postinstall; fi
 
       - name: Download the parity results
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -613,13 +819,36 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
+        id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # Every workspace package's node_modules, keyed on what an install reads, and apart for the
+      # Playwright image, whose paths and libraries differ from the runner's. No restore-keys: a
+      # tree from another lockfile never restores. On a miss, the install reads the pnpm store.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tests/*/node_modules
+            tests/toolchains/*/node_modules
+            tests/e2e/design-system/node_modules
+          key: node-modules-${{ runner.os }}-${{ job.container.id && 'playwright' || 'runner' }}-node-${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json') }}
+
+      # On a restored node_modules, pnpm finds nothing to install and skips the workspace's
+      # postinstalls, so a hit runs them here: `nuxt prepare` writes apps/web's .nuxt tsconfigs.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        env:
+          CACHE_HIT: ${{ steps.node-modules.outputs.cache-hit }}
+        run: |
+          pnpm install --frozen-lockfile
+          if [ "$CACHE_HIT" = "true" ]; then pnpm --recursive --if-present run postinstall; fi
 
       - name: Build and pack
         run: pnpm --filter @unframework/e2e prepare-apps --pack
@@ -658,13 +887,36 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
+        id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # Every workspace package's node_modules, keyed on what an install reads, and apart for the
+      # Playwright image, whose paths and libraries differ from the runner's. No restore-keys: a
+      # tree from another lockfile never restores. On a miss, the install reads the pnpm store.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tests/*/node_modules
+            tests/toolchains/*/node_modules
+            tests/e2e/design-system/node_modules
+          key: node-modules-${{ runner.os }}-${{ job.container.id && 'playwright' || 'runner' }}-node-${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json') }}
+
+      # On a restored node_modules, pnpm finds nothing to install and skips the workspace's
+      # postinstalls, so a hit runs them here: `nuxt prepare` writes apps/web's .nuxt tsconfigs.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        env:
+          CACHE_HIT: ${{ steps.node-modules.outputs.cache-hit }}
+        run: |
+          pnpm install --frozen-lockfile
+          if [ "$CACHE_HIT" = "true" ]; then pnpm --recursive --if-present run postinstall; fi
 
       - name: Download the tarballs
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -703,13 +955,36 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
+        id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # Every workspace package's node_modules, keyed on what an install reads, and apart for the
+      # Playwright image, whose paths and libraries differ from the runner's. No restore-keys: a
+      # tree from another lockfile never restores. On a miss, the install reads the pnpm store.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tests/*/node_modules
+            tests/toolchains/*/node_modules
+            tests/e2e/design-system/node_modules
+          key: node-modules-${{ runner.os }}-${{ job.container.id && 'playwright' || 'runner' }}-node-${{ steps.node.outputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json') }}
+
+      # On a restored node_modules, pnpm finds nothing to install and skips the workspace's
+      # postinstalls, so a hit runs them here: `nuxt prepare` writes apps/web's .nuxt tsconfigs.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        env:
+          CACHE_HIT: ${{ steps.node-modules.outputs.cache-hit }}
+        run: |
+          pnpm install --frozen-lockfile
+          if [ "$CACHE_HIT" = "true" ]; then pnpm --recursive --if-present run postinstall; fi
 
       - name: Build
         run: pnpm build
