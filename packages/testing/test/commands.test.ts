@@ -395,6 +395,37 @@ describe("ufComponentEvents", () => {
     );
   });
 
+  it("answers with the events of a main source outside the case's directory (ADR-0086)", () => {
+    const directory = join(harness.casesDir, "test", "counter");
+    const source = join(harness.casesDir, "src", "Counter.uf.tsx");
+    mkdirSync(directory, { recursive: true });
+    mkdirSync(join(harness.casesDir, "src"), { recursive: true });
+    writeFileSync(source, "");
+    recordCompiledModule({
+      file: source,
+      target: "vue",
+      ir: module("src/Counter.uf.tsx", [{ name: "change", optional: [false] }]),
+    });
+    const cases = (main: string) => ({
+      cases: { ...harness.cases, "test/counter": { main } },
+    });
+    expect(
+      ufComponentEvents(project("vue", cases("../../src/Counter.uf.tsx")), {
+        case: "test/counter",
+      }),
+    ).toEqual({ events: [{ name: "change", optional: [false] }] });
+    expect(() =>
+      ufComponentEvents(project("vue", cases("../../src/Missing.uf.tsx")), {
+        case: "test/counter",
+      }),
+    ).toThrow("names ../../src/Missing.uf.tsx as its main input, which it does not hold.");
+    // Only a component mounts: a composable or a module of another kind is refused.
+    writeFileSync(join(harness.casesDir, "src", "types.ts"), "");
+    expect(() =>
+      ufComponentEvents(project("vue", cases("../../src/types.ts")), { case: "test/counter" }),
+    ).toThrow("names ../../src/types.ts as its main input, which it does not hold.");
+  });
+
   it("refuses a module whose components declare different events", () => {
     expect(eventsOfModule(module("a.uf.tsx", [], []))).toEqual([]);
     expect(() =>
