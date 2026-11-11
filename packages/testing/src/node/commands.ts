@@ -19,6 +19,7 @@ import { caseDirectory, projectHarness } from "./context.ts";
 import type { CommandProject } from "./context.ts";
 import { sharedArtefactContext } from "./context.ts";
 import { compiledEvents } from "./events.ts";
+import { ufSpecFinished } from "./finished.ts";
 import { KEBAB_CASE } from "./names.ts";
 import { settleArtefact } from "./policy.ts";
 import { VIEWPORT } from "./viewport.ts";
@@ -251,6 +252,7 @@ export const browserCommands: {
   ufResetInput: typeof ufResetInput;
   ufColorScheme: typeof ufColorScheme;
   ufComponentEvents: typeof ufComponentEvents;
+  ufSpecFinished: typeof ufSpecFinished;
 } = {
   ufArtefact,
   ufAriaSnapshot,
@@ -260,4 +262,5 @@ export const browserCommands: {
   ufResetInput,
   ufColorScheme,
   ufComponentEvents,
+  ufSpecFinished,
 };

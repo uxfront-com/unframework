@@ -12,6 +12,7 @@ import {
   settleOutcome,
 } from "../src/layers.ts";
 import type { LayerTask, QuarantineEntry } from "../src/layers.ts";
+import { referenceNotRunSkip } from "../src/visual-types.ts";
 
 const subject = { case: "basics/hello", target: "react" };
 const entry: QuarantineEntry = {
@@ -38,6 +39,19 @@ describe("mergeOutcomes", () => {
     expect(mergeOutcomes({ status: "skip", reason: "r" }, { status: "pass" })).toEqual({
       status: "pass",
     });
+  });
+
+  it("ranks a skip for a reference that did not finish the case over a pass and other skips (ADR-0091)", () => {
+    const blocked = { status: "skip", reason: referenceNotRunSkip("browser:vue") } as const;
+    const requires = { status: "skip", reason: "requires interactivity: static" } as const;
+    expect(mergeOutcomes({ status: "pass" }, blocked)).toBe(blocked);
+    expect(mergeOutcomes(blocked, { status: "pass" })).toBe(blocked);
+    expect(mergeOutcomes(requires, blocked)).toBe(blocked);
+    expect(mergeOutcomes(blocked, requires)).toBe(blocked);
+    const quarantined = { status: "quarantined", issue: "x" } as const;
+    expect(mergeOutcomes(blocked, quarantined)).toBe(quarantined);
+    const fail = { status: "fail", message: "boom" } as const;
+    expect(mergeOutcomes(blocked, fail)).toBe(fail);
   });
 
   it("keeps every distinct failure message, once, in order", () => {

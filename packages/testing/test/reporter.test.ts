@@ -172,6 +172,29 @@ describe("ParityReporter", () => {
     expect(process.exitCode).toBe(exitCode);
   });
 
+  it("keeps the run's errors outside every test, each with its causes on one line (ADR-0091)", () => {
+    const reporter = new ParityReporter({ reportsDir });
+    reporter.onInit(vitest(["compile"], { harness: harness() }));
+    const closed = new Error("[vitest] Browser connection was closed while running tests.");
+    const failed = (file: string) => new Error(`Failed to run the test ${file}`, { cause: closed });
+    reporter.onTestRunEnd(
+      [testModule("compile", [test("compile", hello("vue", { L1: { status: "pass" } }))])],
+      [failed("a.test.ts"), failed("a.test.ts"), "a thrown string"],
+      "failed",
+    );
+    expect(reporter.matrix?.errors).toEqual([
+      "Failed to run the test a.test.ts; caused by: [vitest] Browser connection was closed while running tests.",
+      "a thrown string",
+    ]);
+  });
+
+  it("writes no errors when the run had none", () => {
+    const reporter = new ParityReporter({ reportsDir });
+    reporter.onInit(vitest(["compile"], { harness: harness() }));
+    reporter.onTestRunEnd([testModule("compile", [test("compile")])], [], "passed");
+    expect(reporter.matrix).not.toHaveProperty("errors");
+  });
+
   it("fails the run loudly when a selected project collected zero tests", () => {
     const reporter = new ParityReporter({ reportsDir });
     reporter.onInit(vitest(["compile", "ssr:vue"]));

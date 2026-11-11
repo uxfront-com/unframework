@@ -62,6 +62,11 @@ export type InputRequest =
   /** A key Playwright names (`Enter`, `Shift`), or one character (`text`). */
   | { kind: "keydown" | "keyup"; key: string; text: boolean };
 
+/** Which case's spec file the calling browser project finished (`ufSpecFinished`, ADR-0091). */
+export interface SpecFinishedRequest {
+  case: string;
+}
+
 /** The stack of the error a case's scripted step threw, as the browser read it (ADR-0078). */
 export interface MapStackRequest {
   case: string;
@@ -97,6 +102,8 @@ declare module "vitest/browser" {
     ufColorScheme: (scheme: ColorScheme) => Promise<void>;
     /** The events a case's component declares, as the project's compile of it says (ADR-0050). */
     ufComponentEvents: (request: ComponentEventsRequest) => Promise<ComponentEventsResult>;
+    /** Records that this project finished a case's spec file, which L10's followers read. */
+    ufSpecFinished: (request: SpecFinishedRequest) => Promise<void>;
     /** Maps a thrown error's stack through the project's module graph and checks its top frame. */
     ufMapStack: (request: MapStackRequest) => Promise<MapStackResult>;
   }

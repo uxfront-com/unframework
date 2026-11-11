@@ -5,6 +5,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, relative, sep } from "node:path";
 
+import { errorMessages } from "@unframework.dev/testing/node";
+
 /** The file a canary run writes its load failures to, in `.canary/<id>/`. */
 export const LOAD_FAILURES = "load-failures.json";
 
@@ -59,15 +61,8 @@ export class LoadFailureReporter {
 
 /** An error's message and its causes' messages, one per line. */
 function describe(error: ReportedError): string {
-  const lines = [error.message ?? "an error without a message"];
-  for (let cause = error.cause; isError(cause); cause = cause.cause) {
-    lines.push(`caused by: ${cause.message ?? "an error without a message"}`);
-  }
-  return lines.join("\n");
-}
-
-function isError(value: unknown): value is ReportedError {
-  return typeof value === "object" && value !== null && "message" in value;
+  const [message, ...causes] = errorMessages(error);
+  return [message, ...causes.map((cause) => `caused by: ${cause}`)].join("\n");
 }
 
 /** The load failures a run wrote, or `undefined` when it wrote none (it did not finish). */

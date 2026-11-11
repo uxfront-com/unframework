@@ -211,6 +211,12 @@ errors>` on every layer, and the summary excuses it on that target alone. A case
   nothing was compared. Pixels differ between hosts, and so does geometry once a case has form
   controls (a text input is 160px wide on macOS and 200px on Linux). The font audit walks the
   user-agent shadow roots and generated content, so a `<textarea>`'s text is checked too.
+- **L10 names a reference that didn't finish.** A follower with no capture to compare with fails
+  `missing-reference-capture`, unless the case's reference has a browser project in the run that
+  didn't finish the case's spec file (the setup file reports each finished file through
+  `ufSpecFinished`). Then its L10 is `skip(reference not run: <project> …)`, and the summary
+  reports one problem for that project, with the errors Vitest reported outside every test, in
+  place of one per cell (ADR-0091).
 - **`describeTargets`**, **`currentTarget`**, **`allowConsole(pattern, reason)`** (for the
   current test, every matching message, whatever the pattern's flags), and
   **`registerTarget(target, mount, { events? })`** for the per-target setup files (`events`

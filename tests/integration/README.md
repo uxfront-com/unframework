@@ -334,7 +334,13 @@ reference, because Vitest keeps every project's browser alive until its run ends
 (ADR-0081). A difference there is an issue, never a quarantine entry. A cell is `pass`, `fail`,
 `skip(reason)` or `quarantined(issue)`; a skip on a live layer names a capability the target
 lacks (`requires interactivity: …`) or a mechanical cause (no output, no spec, the live
-reference, a component that did not render, no scripted interaction). The summary itself fills an
+reference, a component that did not render, no scripted interaction). A follower's L10 is
+`skip(reference not run: …)` when the case's reference has a browser project in the run that
+didn't finish the case's spec file, as when its browser connection closes and Vitest drops the
+rest of its queue. The summary never accepts that skip: it folds the blocked cells, the
+reference's missing cells of those cases and their scenario differences into one problem that
+names the reference's project and quotes Vitest's error, so the run fails once, with its cause
+(ADR-0091). The summary itself fills an
 L15 cell with `skip(not in this run)` in a run without the `bench` project. A diagnostics case has no
 spec: where its target has output (its only diagnostic is a capability's note, as UF4004), the
 compile project records its browser layers `skip(no spec: …)`, and its server render checks the

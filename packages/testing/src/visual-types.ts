@@ -7,6 +7,19 @@
 export const LIVE_REFERENCE_SKIP = "live pixels: the reference's capture is this run's expectation";
 
 /**
+ * L10's skip on a follower whose reference project is in the run but never finished the case's
+ * spec file (ADR-0091): there was nothing to compare with. The summary never accepts it, and
+ * folds every such cell into one problem that names the reference project (`REFERENCE_NOT_RUN_SKIP`).
+ */
+export function referenceNotRunSkip(project: string): string {
+  return `reference not run: ${project} did not finish this case's spec file in this run`;
+}
+
+/** Matches {@link referenceNotRunSkip}'s reason; group 1 is the reference project. */
+export const REFERENCE_NOT_RUN_SKIP: RegExp =
+  /^reference not run: (.+) did not finish this case's spec file in this run$/s;
+
+/**
  * Why L10 skips the font audit outside Chromium (ADR-0066). The audit asks CDP which font drew
  * each glyph; Firefox and WebKit have no such protocol, and `document.fonts` only says a font
  * loaded, not that the text used it.
@@ -63,6 +76,11 @@ export type CaptureOutcome =
   | "refused-write"
   | "missing-artefact"
   | "missing-reference-capture"
+  /**
+   * A follower whose reference project is in the run but did not finish the case's spec file:
+   * its browser connection closed, say, and Vitest dropped the rest of its queue (ADR-0091).
+   */
+  | "reference-not-run"
   | "geometry-mismatch"
   | "pixel-mismatch"
   | "size-mismatch"
@@ -87,4 +105,6 @@ export interface CaptureResult {
   message: string;
   diffPixels?: number;
   attachments: CaptureAttachment[];
+  /** `reference-not-run`: the reference's browser project, which did not finish the case. */
+  referenceProject?: string;
 }

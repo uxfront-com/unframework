@@ -3,12 +3,15 @@
 // Chromium (`parity-matrix.firefox.json`, ADR-0066), and reports what is wrong: every
 // failed cell, every stale quarantine entry and, when every project ran all its tests (or must
 // have), every missing or partly run project, every missing (case, target, live layer) cell and
-// every target whose parity scenarios of a case differ from the reference's.
+// every target whose parity scenarios of a case differ from the reference's. A reference's
+// browser project that stopped before it finished some cases is one problem, first, rather than
+// one per cell it left without a comparison (ADR-0091).
 import { appendFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { BrowserEngine } from "../harness.ts";
 import {
+  BROWSER_LAYERS,
   LAYERS,
   NO_INTERACTION_SKIP,
   NO_OUTPUT_SKIP,
@@ -19,7 +22,7 @@ import {
   REQUIRES_SKIP,
 } from "../layers.ts";
 import type { LayerName } from "../layers.ts";
-import { FONT_AUDIT_SKIP, LIVE_REFERENCE_SKIP } from "../visual-types.ts";
+import { FONT_AUDIT_SKIP, LIVE_REFERENCE_SKIP, REFERENCE_NOT_RUN_SKIP } from "../visual-types.ts";
 import {
   cellHeadline,
   mergeMatrices,
@@ -28,7 +31,7 @@ import {
   settleQuarantine,
   stringifyMatrix,
 } from "./matrix.ts";
-import type { MergedMatrix, PartialMatrix, RunInfo } from "./matrix.ts";
+import type { MatrixCells, MergedMatrix, PartialMatrix, RunInfo } from "./matrix.ts";
 import { isCI } from "./mode.ts";
 import { readPartialMatrices } from "./reporter.ts";
 
@@ -202,6 +205,15 @@ export function summarise(
       );
     }
   }
+  // Read before the quarantine settles them: a quarantined cell that is blocked reads as stale.
+  const drops = referenceDrops(merged.cases);
+  const blockedCases = new Set([...drops.values()].flatMap((drop) => [...drop.cases]));
+  // A browser layer of a case's reference that never finished the case's spec file: part of
+  // its drop's one problem.
+  const dropped = (caseId: string, target: string, layer: LayerName) =>
+    blockedCases.has(caseId) &&
+    target === (references[caseId] ?? reference) &&
+    BROWSER_LAYERS.includes(layer);
   // The failures are judged by the newest run's quarantine; staleness only when every record of
   // every cell is here (the failed cells it makes are listed below, with the others).
   settleQuarantine(merged.cases, quarantine, { stale: complete });
@@ -221,10 +233,11 @@ export function summarise(
           if (!live.has(layer)) cells[layer] = `skip(${expected.notLiveReason})`;
           else if (!judgement.requireComplete && recordedBy && !ranInFull(merged, recordedBy))
             cells[layer] = `skip(${NOT_IN_THIS_RUN_SKIP})`;
-          else if (checkMissing || recordedBy)
+          else if ((checkMissing || recordedBy) && !dropped(caseId, target, layer))
             problems.push(`${caseId} › ${target} › ${layer}: missing (no test recorded it).`);
           continue;
         }
+        if (layer === "L10" && drops.blocks(caseId, target)) continue;
         // A skip on a live layer names a capability the target lacks or a mechanical cause
         // (plan §7.7); a quarantined cell is not a skip. They are listed under each table.
         const outcome = outcomeOfCell(cell);
@@ -239,12 +252,13 @@ export function summarise(
         LAYERS.filter((layer) => cells[layer] !== undefined).map((layer) => [layer, cells[layer]!]),
       );
     }
-    if (checkMissing && reference !== null) {
+    if (checkMissing && reference !== null && !blockedCases.has(caseId)) {
       // A case that names its own reference (ADR-0057) is judged against that target's scenarios.
       const judge = references[caseId] ?? reference;
       problems.push(...scenarioProblems(merged, caseId, judge, expected.targets));
     }
   }
+  problems.unshift(...dropProblems(drops, partials));
   const matrix: MergedMatrix = {
     ...merged,
     cases: Object.fromEntries(Object.entries(merged.cases).sort(([a], [b]) => a.localeCompare(b))),
@@ -261,6 +275,84 @@ export function summarise(
     problems,
     complete,
   };
+}
+
+/** A reference's browser project that stopped before it finished some cases (ADR-0091). */
+interface ReferenceDrop {
+  /** The cases whose spec file it did not finish, which some follower compares with at L10. */
+  cases: Set<string>;
+  /** The follower cells it left without a comparison: `case`, then `target`. */
+  cells: Set<string>;
+}
+
+/** Each reference project's drop, by project, and whether it blocked a follower's L10 cell. */
+type ReferenceDrops = Map<string, ReferenceDrop> & {
+  blocks(caseId: string, target: string): boolean;
+};
+
+const cellKey = (caseId: string, target: string) => `${caseId}\u0000${target}`;
+
+/** The project a blocked L10 cell names, or none for any other cell. */
+function blockedBy(cell: string | undefined): string | undefined {
+  if (cell === undefined || !cell.startsWith("skip(")) return undefined;
+  const outcome = outcomeOfCell(cell);
+  return outcome.status === "skip" ? REFERENCE_NOT_RUN_SKIP.exec(outcome.reason)?.[1] : undefined;
+}
+
+/** Every L10 cell a reference's drop left without a comparison, grouped by that project. */
+function referenceDrops(cells: MatrixCells): ReferenceDrops {
+  const drops = new Map<string, ReferenceDrop>();
+  const blocked = new Set<string>();
+  for (const [caseId, targets] of Object.entries(cells)) {
+    for (const [target, layers] of Object.entries(targets)) {
+      const project = blockedBy(layers.L10);
+      if (project === undefined) continue;
+      const drop = drops.get(project) ?? { cases: new Set<string>(), cells: new Set<string>() };
+      drop.cases.add(caseId);
+      drop.cells.add(cellKey(caseId, target));
+      drops.set(project, drop);
+      blocked.add(cellKey(caseId, target));
+    }
+  }
+  return Object.assign(drops, {
+    blocks: (caseId: string, target: string) => blocked.has(cellKey(caseId, target)),
+  });
+}
+
+/** How many of a list to name in a problem before counting the rest. */
+const NAMED = 3;
+
+/**
+ * One problem per reference project that stopped early, with the errors Vitest reported in the
+ * runs that recorded its blocked cells: the closed connection is reported there, outside every
+ * test. A drop is never green, whatever else ran, and with no error the problem says so.
+ */
+function dropProblems(drops: ReferenceDrops, partials: readonly PartialMatrix[]): string[] {
+  return [...drops]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([project, drop]) => {
+      const errors = [
+        ...new Set(
+          partials
+            .filter((partial) =>
+              Object.values(partial.byProject).some((cells) =>
+                Object.values(cells).some((targets) =>
+                  Object.values(targets).some((layers) => blockedBy(layers.L10) === project),
+                ),
+              ),
+            )
+            .flatMap((partial) => partial.errors ?? []),
+        ),
+      ];
+      const cases = [...drop.cases].sort();
+      return `${project} did not finish ${cases.length} of its spec files in this run (${named(cases)}); ${drop.cells.size} follower cell(s) could not be compared at L10. Vitest reported: ${errors.length ? named(errors) : "no error"}.`;
+    });
+}
+
+/** The first few items of a list, and how many more there are. */
+function named(items: readonly string[]): string {
+  const more = items.length - NAMED;
+  return `${items.slice(0, NAMED).join(", ")}${more > 0 ? `, and ${more} more` : ""}`;
 }
 
 /** Whether the merged runs cover every test of a project. */
