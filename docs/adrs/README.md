@@ -133,6 +133,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0078](./0078-the-source-map-and-budget-layers.md)                 | L14 checks source maps and L15 checks budgets                                 | Accepted                                                               | §7.2, §9 M6             |
 | [0079](./0079-the-e2e-apps-and-packed-tarballs.md)                 | The e2e apps install packed tarballs outside the workspace                    | Accepted                                                               | §9 M6                   |
 | [0080](./0080-jsx-import-source-in-host-apps.md)                   | `jsxImportSource` in host apps is a scoped `tsconfig.uf.json`                 | Accepted                                                               | §8.2, §9 M6             |
+| [0083](./0083-browser-layers-stay-on-vitest.md)                    | The browser layers stay on Vitest                                             | Accepted                                                               | §7.2, §7.3              |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 
