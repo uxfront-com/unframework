@@ -160,6 +160,7 @@ describe("diagnostics", () => {
     ["@uxfront/unframework-x", false],
     ["@uxfront/unframeworks/config", false],
     ["@uxfront/ui", false],
+    ["", false],
   ])("knows whether %s is the authoring API: %s", (specifier, expected) => {
     expect(isAuthoringModule(specifier)).toBe(expected);
   });
