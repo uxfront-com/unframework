@@ -75,7 +75,7 @@ Each skip carries its reason in the parity matrix.
 **Positive:**
 
 - The browser layers keep the faster runner for Vue alone, and no check changes.
-- No Storybook, Playwright test runner or second runtime for specs enters the catalog.
+- No Storybook, Playwright test runner or second runtime for specs enters the `catalog:`.
 - A later proposal starts from the two tools and the figures above, not from reading the code.
 
 **Negative:**
