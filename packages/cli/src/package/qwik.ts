@@ -1,9 +1,16 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join } from "node:path";
+import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import type { Packager } from "./packager.ts";
-import { dropDeclarationSideEffects, runScript, tscOf, writeFiles } from "./packager.ts";
+import {
+  dropDeclarationSideEffects,
+  KEEP_ENV,
+  KEEP_IMPORTS,
+  runScript,
+  tscOf,
+  writeFiles,
+} from "./packager.ts";
 
 const VITE = "vite";
 /** The manifests: `@qwik.dev/core/optimizer` has only an `import` condition, which `resolve` can't read. */
@@ -12,31 +19,6 @@ const TYPESCRIPT = "typescript/package.json";
 const BUNDLE = "index.qwik.mjs";
 /** Writes an app's manifest and bundle graph, and warns on the console that a library has neither. */
 const APP_PLUGIN = "vite-plugin-qwik-post";
-
-/** An output's framework and its passed-through modules stay imports (P7). */
-const KEEP_IMPORTS = {
-  name: "unframework:keep-imports",
-  enforce: "pre",
-  resolveId(id: string, importer: string | undefined) {
-    if (importer === undefined) return null;
-    const local = id.startsWith(".") || isAbsolute(id) || id.startsWith("\0");
-    return local ? null : { id, external: true };
-  },
-};
-
-/**
- * `import.meta.env` stays for the app's build to read. Vite would write this build's own values into
- * the package, `VITE_` variables included (P8), and it has no option to leave them. So the name is
- * held out of its way until the chunk is done.
- */
-const ENV = "import.meta.env";
-const HELD_ENV = "__unframework_import_meta_env__";
-const KEEP_ENV = {
-  name: "unframework:keep-env",
-  enforce: "pre",
-  transform: (code: string) => (code.includes(ENV) ? code.replaceAll(ENV, HELD_ENV) : null),
-  renderChunk: (code: string) => code.replaceAll(HELD_ENV, ENV),
-};
 
 /** The part of Qwik's optimizer this calls. */
 interface Optimizer {

@@ -1,5 +1,5 @@
 // The rules that decide whether a pull request runs the canaries (ADR-0073) and the test jobs
-// (ADR-0082).
+// (ADR-0084).
 import { spawnSync } from "node:child_process";
 import { globSync, readFileSync } from "node:fs";
 import { join } from "node:path";

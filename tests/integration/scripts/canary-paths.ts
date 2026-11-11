@@ -1,4 +1,4 @@
-// Whether a pull request runs the canaries (ADR-0073) and the test jobs (ADR-0082): CI's `changes`
+// Whether a pull request runs the canaries (ADR-0073) and the test jobs (ADR-0084): CI's `changes`
 // job pipes the PR's changed files here, one per line, and this prints `canaries=<bool>` and
 // `tests=<bool>` for $GITHUB_OUTPUT. It imports Node's builtins alone, because that job installs
 // nothing.
@@ -46,14 +46,14 @@ export function globToRegExp(glob: string): RegExp {
 }
 
 /**
- * The documentation: what a pull request that changes nothing else need not test (ADR-0082). The
+ * The documentation: what a pull request that changes nothing else need not test (ADR-0084). The
  * docs site is built from these files, so `Build` and `Lighthouse`, which are never gated, still
  * check them.
  */
 export const DOCS_PATHS: readonly string[] = ["**/*.md", "docs/**", "apps/web/content/**"];
 
 /**
- * The documentation that a test reads, so a change to it still runs the tests (ADR-0082). The
+ * The documentation that a test reads, so a change to it still runs the tests (ADR-0084). The
  * guard in canary-paths.unit.test.ts fails a test file that names another page under
  * `apps/web/content` or the corpus.
  */
@@ -76,7 +76,7 @@ function unquote(file: string): string {
 }
 
 /**
- * Whether any of the files can change a canary's answer. Markdown never can (ADR-0082), a README
+ * Whether any of the files can change a canary's answer. Markdown never can (ADR-0084), a README
  * under a listed package included. `git diff` quotes a name with an unusual character
  * (`"a/caf\303\251.ts"`). Its escapes hold no `/`, so `*` still matches them once the quotes are
  * off, and such a name never skips the canaries (P2).
@@ -89,7 +89,7 @@ export function runsCanaries(files: readonly string[]): boolean {
 }
 
 /**
- * Whether the test jobs run: unless every file is documentation that no test reads (ADR-0082). An
+ * Whether the test jobs run: unless every file is documentation that no test reads (ADR-0084). An
  * empty list runs them, since nothing then shows that the change is documentation alone (P2).
  * Every path on `CANARY_PATHS` is outside `DOCS_PATHS`, so the canaries never run without the tests.
  */

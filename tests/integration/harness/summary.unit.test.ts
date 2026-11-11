@@ -151,7 +151,7 @@ describe("CI's parity job", () => {
     expect(runs.flatMap((run) => run.projects).toSorted()).toEqual(PARITY.toSorted());
     expect(runs.filter((run) => !run.uploads)).toEqual([]);
     // It also waits for `changes`, which skips it with the jobs it waits for on a docs-only
-    // pull request (ADR-0082).
+    // pull request (ADR-0084).
     expect(parityNeeds).toContain("changes");
     expect(parityNeeds.filter((job) => job !== "changes").toSorted()).toEqual(
       [...new Set(runs.map((run) => run.job))].toSorted(),

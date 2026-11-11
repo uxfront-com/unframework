@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 import type { OutputFile } from "@unframework/compiler";
 
 import type { PackagerInput } from "./packager.ts";
-import { dropSideEffectImports, runScript, writeFiles } from "./packager.ts";
+import { dropSideEffectImports, runScript, sanitizeBelow, writeFiles } from "./packager.ts";
 
 /** What a target's tsconfig says about its JSX. */
 export interface JsxOptions {
@@ -22,9 +22,6 @@ export interface TsdownRun {
 }
 
 const SCRIPT = /\.[cm]?[jt]sx?$/;
-/** What Rollup, and Rolldown after it, replace in a chunk's name. */
-// oxlint-disable-next-line no-control-regex -- a helper's name starts with a null byte.
-const UNSAFE_IN_A_NAME = /[\u0000-\u001F"#$%&*+,:;<=>?[\]^`{|}\u007F]/g;
 
 /**
  * An output imports only its framework, a passed-through module and its own sheet (P7). None of
@@ -101,14 +98,7 @@ export async function buildWithTsdown(
     logLevel: "silent",
     // Off: `TSDOWN_` variables would reach the published JS, against P8.
     envPrefix: [],
-    // Rolldown cleans a module's absolute path, then strips `root`, which then no longer matches
-    // under a directory like `R&D`. So only what follows the scratch copy is cleaned here.
-    outputOptions: {
-      sanitizeFileName: (name: string) =>
-        name.startsWith(scratch)
-          ? scratch + name.slice(scratch.length).replace(UNSAFE_IN_A_NAME, "_")
-          : name.replace(UNSAFE_IN_A_NAME, "_"),
-    },
+    outputOptions: { sanitizeFileName: sanitizeBelow(scratch) },
   };
   for (const { extension, plugins = [] } of runs) {
     await tsdown.build({

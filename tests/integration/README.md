@@ -408,7 +408,7 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   cases alone. A pull request runs the matrix only when it changes a path that can change a
   canary's answer: `CANARY_PATHS` in `scripts/canary-paths.ts` lists them, Markdown left out, and a
   skipped job counts as passed. A push to `main` runs none of it, `workflow_dispatch` runs all of
-  it, and `nightly.yml` runs it whole every night, in Chromium (ADR-0073, ADR-0082). A pull request
+  it, and `nightly.yml` runs it whole every night, in Chromium (ADR-0073, ADR-0084). A pull request
   that changes only documentation skips the test jobs too, unless it changes a page a test reads
   (`TESTED_DOCS` in the same script).
 - **Qwik's listeners run as they do once each has run, and none is ordered by the harness.** A

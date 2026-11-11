@@ -1,4 +1,4 @@
-# ADR-0082: Docs-only pull requests skip the tests, and pushes run no canary
+# ADR-0084: Docs-only pull requests skip the tests, and pushes run no canary
 
 - **Status:** Accepted
 - **Date:** 2026-11-11
@@ -68,8 +68,8 @@ path, Markdown included. The rest of ADR-0073 stands.
   such changes on pull requests (ADR-0073).
 - Each test job waits for `Changes`, a few seconds on a quiet queue.
 - The merged toolchain job runs seven projects on one runner's four vCPUs, and the merged E2E job
-  runs the seven apps one after another. On the pull request that made this change, they took 84
-  and 126 seconds. A failure names its project, but no longer its job.
+  runs the seven apps one after another. On the pull request that made this change, they took 88
+  and 125 seconds. A failure names its project, but no longer its job.
 
 ## Alternatives considered
 

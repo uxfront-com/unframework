@@ -8,11 +8,13 @@
     "check": "vue-tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
+    "@vitejs/plugin-vue": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-vue": "catalog:",
     "oxlint": "catalog:",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "typescript-eslint": "catalog:",
+    "vite": "catalog:",
     "vue-eslint-parser": "catalog:",
     "vue-tsc": "catalog:"
   }
