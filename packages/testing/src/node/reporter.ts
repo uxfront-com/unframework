@@ -5,9 +5,11 @@
 // - a test was skipped without recording why;
 // - two tests of a case share a name, so the summary could not tell them apart;
 // - a quarantine entry is stale, once the run has every record of its cell.
+// It also keeps the run's errors outside every test, which the summary quotes (ADR-0091).
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
+import { errorMessages } from "../errors.ts";
 import { BROWSER_ENGINES, caseOfFile } from "../harness.ts";
 import type { HarnessContext } from "../harness.ts";
 import type { UfLayerMeta } from "../layers.ts";
@@ -92,7 +94,7 @@ export class ParityReporter {
 
   onTestRunEnd(
     testModules: readonly ReportedModule[],
-    _errors: readonly unknown[],
+    errors: readonly unknown[],
     reason: string,
   ): void {
     const vitest = this.#vitest;
@@ -181,6 +183,9 @@ export class ParityReporter {
           config.reference ? [[id, config.reference]] : [],
         ),
       ),
+      // What the summary quotes when a reference's project stopped before it finished a case
+      // its followers compare with (ADR-0091): Vitest reports the closed connection only here.
+      errors: [...new Set(errors.map((error) => errorMessages(error).join("; caused by: ")))],
     });
     if (complete) {
       // Every record of every cell is here: a quarantined cell that no longer fails is stale.

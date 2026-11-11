@@ -3,6 +3,7 @@
 // Isomorphic: the browser API, the setup file and the Node drivers all record through here.
 import { formatError } from "./errors.ts";
 import type { PixelMode } from "./harness.ts";
+import { REFERENCE_NOT_RUN_SKIP } from "./visual-types.ts";
 
 /** The verification layers of plan §7.2. */
 export type LayerName =
@@ -198,7 +199,7 @@ export function mergeOutcomes(...outcomes: readonly LayerOutcome[]): LayerOutcom
   const [first, ...rest] = outcomes;
   if (!first) throw new Error("mergeOutcomes needs at least one outcome.");
   const winner = rest.reduce(
-    (best, outcome) => (PRECEDENCE[outcome.status] > PRECEDENCE[best.status] ? outcome : best),
+    (best, outcome) => (rank(outcome) > rank(best) ? outcome : best),
     first,
   );
   if (winner.status !== "fail") return winner;
@@ -206,6 +207,18 @@ export function mergeOutcomes(...outcomes: readonly LayerOutcome[]): LayerOutcom
     outcomes.flatMap((outcome) => (outcome.status === "fail" ? [outcome.message] : [])),
   );
   return messages.size === 1 ? winner : { status: "fail", message: [...messages].join("\n") };
+}
+
+/**
+ * An outcome's precedence. A skip that stands for a check that could not run, which the summary
+ * never accepts (ADR-0091), ranks above a pass and every other skip: a cell where one scenario
+ * had nothing to compare with never reads as passed, and a skip by capability of another test of
+ * the case never hides it.
+ */
+function rank(outcome: LayerOutcome): number {
+  return outcome.status === "skip" && REFERENCE_NOT_RUN_SKIP.test(outcome.reason)
+    ? PRECEDENCE.pass + 0.5
+    : PRECEDENCE[outcome.status];
 }
 
 /** The quarantine entry for a case, target and layer, if any. */

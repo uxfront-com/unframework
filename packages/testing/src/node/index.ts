@@ -18,8 +18,9 @@ export type {
   FocusCommandContext,
   InputCommandContext,
 } from "./commands.ts";
-export type { MapStackRequest, MapStackResult } from "../commands.ts";
+export type { MapStackRequest, MapStackResult, SpecFinishedRequest } from "../commands.ts";
 export { compiledEvents, eventsOfModule, recordCompiledModule } from "./events.ts";
+export { specFinished, ufSpecFinished } from "./finished.ts";
 export type { CompiledModule } from "./events.ts";
 export { caseDirectory, displayRoot, projectHarness, sharedArtefactContext } from "./context.ts";
 export type { CommandProject } from "./context.ts";
@@ -82,7 +83,7 @@ export type { GeometryDelta, VisualCommandContext } from "./visual.ts";
 export { formatConsoleArgs } from "../browser/console.ts";
 export { diffLines } from "../diff.ts";
 export type { DiffOptions } from "../diff.ts";
-export { formatError } from "../errors.ts";
+export { errorMessages, formatError } from "../errors.ts";
 export {
   BROWSER_ENGINES,
   caseOfFile,
@@ -131,7 +132,12 @@ export type {
   QuarantineEntry,
   UfLayerMeta,
 } from "../layers.ts";
-export { FONT_AUDIT_SKIP, LIVE_REFERENCE_SKIP } from "../visual-types.ts";
+export {
+  FONT_AUDIT_SKIP,
+  LIVE_REFERENCE_SKIP,
+  REFERENCE_NOT_RUN_SKIP,
+  referenceNotRunSkip,
+} from "../visual-types.ts";
 export type {
   CaptureAttachment,
   CaptureOutcome,

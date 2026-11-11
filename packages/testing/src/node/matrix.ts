@@ -128,6 +128,12 @@ export interface PartialMatrix extends ParityMatrix, RunInfo {
    * against that target's. A merge takes the newest run's.
    */
   references?: Record<string, string>;
+  /**
+   * The errors Vitest reported outside every test in this run, each as its message and its
+   * causes' on one line, such as the closed browser connection that stopped the reference's
+   * project (ADR-0091). Absent when there were none.
+   */
+  errors?: string[];
   /** Project → its own cells, so a later run of a project replaces exactly its cells. */
   byProject: Record<string, MatrixCells>;
   /** Project → its own scenarios, kept and replaced with its cells. */
@@ -336,6 +342,8 @@ export function buildPartialMatrix(input: {
   reference?: string | null;
   /** The cases that name their own reference, with it. */
   references?: Record<string, string>;
+  /** The errors Vitest reported outside every test, one line each. */
+  errors?: readonly string[];
 }): PartialMatrix {
   const projects = [...new Set(input.projects)].sort();
   const byProject: Record<string, MatrixCells> = {};
@@ -363,6 +371,7 @@ export function buildPartialMatrix(input: {
     ...(input.references && Object.keys(input.references).length
       ? { references: { ...input.references } }
       : {}),
+    ...(input.errors?.length ? { errors: [...input.errors] } : {}),
     cases: mergeCells(Object.values(byProject)),
     scenarios: mergeScenarios(Object.values(scenariosByProject)),
     tests: mergeTests(Object.values(testsByProject)),

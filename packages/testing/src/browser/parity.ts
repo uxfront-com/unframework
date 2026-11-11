@@ -17,7 +17,7 @@ import { caseOfFile } from "../harness.ts";
 import { NO_INTERACTION_SKIP, recordLayerChecks, recordScenario } from "../layers.ts";
 import { KEBAB_CASE } from "../node/names.ts";
 import { renameGeneratedIds } from "../normalize/rules/generated-ids.ts";
-import { LIVE_REFERENCE_SKIP } from "../visual-types.ts";
+import { LIVE_REFERENCE_SKIP, referenceNotRunSkip } from "../visual-types.ts";
 import type { PixelTolerance } from "../visual-types.ts";
 import { compareAxe } from "./axe.ts";
 import { traceFile } from "./trace.ts";
@@ -123,6 +123,11 @@ export async function expectParity(
         locator: view.locator,
         ...(options.tolerance ? { tolerance: options.tolerance } : {}),
       });
+      // Nothing to compare with: the summary fails the run once, naming the reference's
+      // project and Vitest's error, rather than every follower here (ADR-0091).
+      if (result.outcome === "reference-not-run" && result.referenceProject !== undefined) {
+        return { skip: referenceNotRunSkip(result.referenceProject) };
+      }
       if (!result.pass) {
         throw new Error(`${result.outcome} (${result.mode}, ${result.role}): ${result.message}`);
       }

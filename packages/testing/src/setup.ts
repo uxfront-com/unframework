@@ -19,8 +19,11 @@
 //   failed unmount) recorded as L8, then one error with every failed layer (ADR-0043);
 // - bounds: `expect.element` waits the project's poll timeout, not the whole test's;
 // - matchers: `toHaveNoAxeViolations` and `toHaveAriaTree`, for the specs' own assertions
-//   (ADR-0085).
-import { afterAll, afterEach, aroundEach, beforeAll, beforeEach, inject } from "vitest";
+//   (ADR-0085);
+// - finished files: once a spec file's tests and afterAll hooks have run, the project says so,
+//   so a follower can tell a reference that never finished the case from one that captured no
+//   such scenario (ADR-0091).
+import { afterAll, afterEach, aroundAll, aroundEach, beforeAll, beforeEach, inject } from "vitest";
 import type { RunnerTestCase } from "vitest";
 import { commands, userEvent } from "vitest/browser";
 
@@ -52,6 +55,16 @@ installConsoleCapture();
 boundElementTimeout();
 installMatchers();
 installNavigationGuard();
+
+// Around the whole file, so it reports the file after every afterAll hook, even one that threw:
+// Vitest records an afterAll error on the file and resolves `runSuite`. The command resolves
+// before the file ends, so before a later `sequence.groupOrder` group starts. A file whose page
+// died never gets here. The second parameter is the file's fixtures, a destructuring pattern.
+// oxlint-disable-next-line no-empty-pattern
+aroundAll(async (runSuite, {}, suite) => {
+  await runSuite();
+  await commands.ufSpecFinished({ case: caseOfFile(suite.file.filepath, inject("ufHarness")) });
+});
 
 // The first parameter is the file's fixtures, a destructuring pattern (see the afterAll below).
 // oxlint-disable-next-line no-empty-pattern
