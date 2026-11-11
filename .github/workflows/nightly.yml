@@ -25,14 +25,21 @@ jobs:
     name: "Nightly: browser (${{ matrix.browser }})"
     runs-on: ubuntu-latest
     # One job runs all seven browser projects, because live L10 needs the reference's capture in
-    # the same run. ci.yml gives Chromium ten minutes per target; these engines are slower.
-    timeout-minutes: 45
+    # the same run. ci.yml gives Chromium ten minutes per target; these engines are slower, and
+    # run one browser project and one spec file at a time (ADR-0081), so the job gets two hours.
+    # WebKit runs them in three Vitest runs, each with the reference: Vitest keeps every
+    # project's browser alive until its run ends, and five WebKit browsers ran the runner out of
+    # memory (exit 137). harness/nightly.unit.test.ts checks the batches.
+    timeout-minutes: 120
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
     strategy:
       fail-fast: false
       matrix:
         browser: [firefox, webkit]
+        include:
+          - browser: webkit
+            batches: "vue,react,svelte vue,solid,angular vue,qwik,astro"
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -56,10 +63,30 @@ jobs:
       # the job summary whatever the result. Firefox refuses a $HOME that belongs to another
       # user, which the container's is.
       - name: Browser projects
+        if: ${{ !matrix.batches }}
         env:
           UF_BROWSER: ${{ matrix.browser }}
           HOME: /root
         run: pnpm --filter @unframework.dev/integration test -- --project 'browser:*'
+
+      # Each batch is one run of scripts/run.ts, whose own summary judges that batch alone, so it
+      # writes nothing to the job summary. Every batch runs, then the summary merges them,
+      # browser projects only, and in CI requires all seven (ADR-0081).
+      - name: Browser projects, in batches
+        if: ${{ matrix.batches }}
+        env:
+          UF_BROWSER: ${{ matrix.browser }}
+          HOME: /root
+          BATCHES: ${{ matrix.batches }}
+        run: |
+          status=0
+          for targets in $BATCHES; do
+            echo "::group::Batch $targets"
+            GITHUB_STEP_SUMMARY='' UF_TARGETS="$targets" pnpm --filter @unframework.dev/integration test -- --project 'browser:*' || status=1
+            echo "::endgroup::"
+          done
+          pnpm --filter @unframework.dev/integration summary -- --browser-only || status=1
+          exit "$status"
 
       - name: Upload the parity matrix
         if: ${{ !cancelled() }}

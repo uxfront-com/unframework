@@ -10,7 +10,7 @@ import { buildPartialMatrix, runName, stringifyMatrix } from "@unframework.dev/t
 import type { LayerName, ProjectRecord, Shard } from "@unframework.dev/testing/node";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { parityJob, runSummary } from "../scripts/summary.ts";
+import { BROWSER_ONLY_LAYERS, parityJob, runSummary } from "../scripts/summary.ts";
 import { listCases } from "./cases.ts";
 import { REPO_ROOT, REPORTS_DIR, reportsDirOf } from "./paths.ts";
 import { isSelected, parityProjects, projectNames } from "./projects.ts";
@@ -21,6 +21,10 @@ const ALL = projectNames(TARGETS);
 /** Every project a job of CI's runs: the default run's, and the `Bench` job's. */
 const PARITY = parityProjects(TARGETS);
 const CASES = listCases().map((info) => info.id);
+/** The cases a browser project loads: every case but the diagnostics ones, which have no spec. */
+const SPEC_CASES = listCases()
+  .filter((info) => info.spec)
+  .map((info) => info.id);
 
 /** The live layers each kind of project records (plan §7.3). */
 const LAYERS_OF: Record<string, LayerName[]> = {
@@ -338,5 +342,132 @@ describe("a run of scripts/run.ts", () => {
     );
     expect(runSummary({}, { since: new Date(), requireComplete: false, reportsDir })).toBe(1);
     expect(problems).toContain("the run did not get as far as reporting");
+  });
+});
+
+describe("the nightly's WebKit job, merged browser-only (ADR-0081)", () => {
+  const ci = { CI: "true" };
+  const job = { ...parityJob(ci, ["--", "--browser-only"]) };
+  /** The batches `nightly.yml` runs, each a Vitest run with the reference. */
+  const BATCHES = [
+    ["vue", "react", "svelte"],
+    ["vue", "solid", "angular"],
+    ["vue", "qwik", "astro"],
+  ];
+  /** `semantics/listbox` names React as its reference, so a batch without React adds it there. */
+  const LISTBOX = "semantics/listbox";
+
+  /** A green batch's partial matrix: its browser projects on every case with a spec. */
+  function batch(targets: readonly string[], finishedAt: string): string {
+    const projects = targets.map((target) => `browser:${target}`);
+    const extra = targets.includes("react") ? [] : ["browser:react"];
+    const layers = Object.fromEntries(
+      LAYERS_OF.browser!.map((layer) => [layer, { status: "pass" }]),
+    );
+    const records: ProjectRecord[] = [
+      ...projects.flatMap((project) =>
+        SPEC_CASES.map((caseId) => ({
+          project,
+          record: { case: caseId, target: project.slice("browser:".length), layers },
+        })),
+      ),
+      ...extra.map((project) => ({
+        project,
+        record: { case: LISTBOX, target: "react", layers },
+      })),
+    ];
+    const all = [...projects, ...extra];
+    return stringifyMatrix(
+      buildPartialMatrix({
+        run: runName(all, ALL),
+        projects: all,
+        records,
+        finishedAt,
+        mode: { update: false, pixels: "live", canary: null },
+        filtered: null,
+        shard: null,
+        empty: [],
+        quarantine: [],
+      }),
+    );
+  }
+  const file = (targets: readonly string[]) =>
+    join(
+      reportsDir,
+      `parity-matrix.${runName(
+        targets.map((target) => `browser:${target}`),
+        ALL,
+      )}.json`,
+    );
+  function writeBatches(batches: readonly (readonly string[])[]): void {
+    batches.forEach((targets, index) =>
+      writeFileSync(file(targets), batch(targets, new Date(Date.now() + index).toISOString())),
+    );
+  }
+
+  it("reads the mode from the script's arguments, and refuses any other argument", () => {
+    expect(job).toEqual({ requireComplete: true, browserOnly: true });
+    expect(parityJob(ci)).toEqual({ requireComplete: true, browserOnly: false });
+    expect(() => parityJob(ci, ["--browser"])).toThrow("Unknown argument: --browser.");
+  });
+
+  it("expects the layers every browser test records: L7 to L11 and L13", () => {
+    expect(BROWSER_ONLY_LAYERS).toEqual(["L7", "L8", "L9", "L10", "L11", "L13"]);
+  });
+
+  it("is green with the three batches, though no browser project records a diagnostics case", () => {
+    expect(SPEC_CASES.length).toBeLessThan(CASES.length);
+    writeBatches(BATCHES);
+    expect(runSummary(ci, { ...job, reportsDir })).toBe(0);
+    expect(problems).toBe("");
+  });
+
+  it.each(BATCHES.map((targets) => [targets.join(","), targets] as const))(
+    "fails without the batch %s: its followers' cells are missing",
+    (_name, missing) => {
+      writeBatches(BATCHES.filter((targets) => targets !== missing));
+      expect(runSummary(ci, { ...job, reportsDir })).toBe(1);
+      for (const target of missing.filter((name) => name !== "vue")) {
+        // React still ran the listbox case in the other batches, so only its cells are missing.
+        if (target !== "react") {
+          expect(problems).toContain(
+            `browser:${target}: did not run (no parity matrix has its records).`,
+          );
+        }
+        expect(problems).toContain(
+          `${SPEC_CASES[0]!} › ${target} › L7: missing (no test recorded it).`,
+        );
+      }
+      expect(problems).not.toMatch(/^ {2}(compile|harness|toolchain:|ssr:|bench)/m);
+      expect(problems).not.toContain("diagnostics/");
+    },
+  );
+
+  it("still fails a failed cell, L14 included where a browser test recorded it", () => {
+    writeBatches(BATCHES);
+    const path = file(BATCHES[1]!);
+    const matrix = JSON.parse(readFileSync(path, "utf8"));
+    matrix.byProject["browser:solid"][SPEC_CASES[0]!].solid.L8 = "fail: clicked nothing";
+    matrix.byProject["browser:angular"][SPEC_CASES[0]!].angular.L14 = "fail: the map is off";
+    writeFileSync(path, JSON.stringify(matrix));
+    expect(runSummary(ci, { ...job, reportsDir })).toBe(1);
+    expect(problems).toContain(`${SPEC_CASES[0]!} › solid › L8: fail: clicked nothing`);
+    expect(problems).toContain(`${SPEC_CASES[0]!} › angular › L14: fail: the map is off`);
+  });
+
+  it("fails a missing browser cell of a case with a spec", () => {
+    writeBatches(BATCHES);
+    const path = file(BATCHES[2]!);
+    const matrix = JSON.parse(readFileSync(path, "utf8"));
+    delete matrix.byProject["browser:qwik"][SPEC_CASES[0]!].qwik.L10;
+    writeFileSync(path, JSON.stringify(matrix));
+    expect(runSummary(ci, { ...job, reportsDir })).toBe(1);
+    expect(problems).toContain(`${SPEC_CASES[0]!} › qwik › L10: missing (no test recorded it).`);
+  });
+
+  it("without the mode, still expects every project of CI's parity job", () => {
+    writeBatches(BATCHES);
+    expect(runSummary(ci, { ...parityJob(ci), reportsDir })).toBe(1);
+    expect(problems).toContain("compile: did not run (no parity matrix has its records).");
   });
 });

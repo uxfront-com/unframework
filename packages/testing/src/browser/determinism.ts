@@ -7,7 +7,8 @@ import regular from "@fontsource/inter/files/inter-latin-400-normal.woff2?url";
 // - Motion: animations, transitions and the caret are off here; the browser context also sets
 //   prefers-reduced-motion (the project's `contextOptions`), which the startup check asserts.
 // - Colour scheme: light, unless the case opts into dark (`case.json`'s `colorScheme`,
-//   ADR-0061); the setup file emulates it, and the startup check asserts the case's scheme.
+//   ADR-0061); the setup file emulates it, and the startup check asserts the case's scheme once
+//   it applies, waiting at most five seconds (ADR-0081).
 // - Viewport and DPR: fixed by the project (800×600, deviceScaleFactor 1), asserted here.
 // The font files are imported with Vite's `?url`, typed by vite/client (see tsconfig.json).
 import bold from "@fontsource/inter/files/inter-latin-700-normal.woff2?url";
@@ -61,12 +62,27 @@ export function installDeterminism(colorScheme: ColorScheme = "light"): Promise<
   return ready;
 }
 
-async function install(colorScheme: ColorScheme): Promise<void> {
+/** How long the startup check waits for the case's colour scheme to reach the page (ADR-0081). */
+export const COLOR_SCHEME_WAIT_MS = 5000;
+
+/** How often the startup check reads the colour scheme again while it waits. */
+const COLOR_SCHEME_POLL_MS = 50;
+
+/**
+ * Checks that the browser context is the deterministic one, in the case's colour scheme, and
+ * throws, naming every entry it does not satisfy. The colour scheme alone is read again for at
+ * most `COLOR_SCHEME_WAIT_MS` (ADR-0081, amending ADR-0061): in Firefox, the setup file's
+ * emulation can reach the tester frame after the command that set it returns. The other entries
+ * come from the context's options, which apply before the page loads, so they are read once.
+ */
+export async function checkEnvironment(colorScheme: ColorScheme): Promise<void> {
   const environment: Record<string, boolean> = {
     "devicePixelRatio: 1": window.devicePixelRatio === 1,
     "prefers-reduced-motion: reduce": matchMedia("(prefers-reduced-motion: reduce)").matches,
-    [`prefers-color-scheme: ${colorScheme}`]: matchMedia(`(prefers-color-scheme: ${colorScheme})`)
-      .matches,
+    [`prefers-color-scheme: ${colorScheme}`]: await matchesWithin(
+      `(prefers-color-scheme: ${colorScheme})`,
+      COLOR_SCHEME_WAIT_MS,
+    ),
     "forced-colors: none": matchMedia("(forced-colors: none)").matches,
   };
   const wrong = Object.keys(environment).filter((name) => !environment[name]);
@@ -75,6 +91,20 @@ async function install(colorScheme: ColorScheme): Promise<void> {
       `Visual determinism: the browser context does not satisfy ${wrong.join(", ")}. The project must set the provider's contextOptions (see the screenshot ADR), and the setup file emulate the case's colour scheme (ADR-0061).`,
     );
   }
+}
+
+/** Whether the page matches `query`, read until it does or `timeout` milliseconds pass. */
+async function matchesWithin(query: string, timeout: number): Promise<boolean> {
+  const deadline = Date.now() + timeout;
+  while (!matchMedia(query).matches) {
+    if (Date.now() >= deadline) return false;
+    await new Promise((resolve) => setTimeout(resolve, COLOR_SCHEME_POLL_MS));
+  }
+  return true;
+}
+
+async function install(colorScheme: ColorScheme): Promise<void> {
+  await checkEnvironment(colorScheme);
   const style = document.createElement("style");
   style.setAttribute("data-uf-determinism", "");
   style.textContent = RESET;

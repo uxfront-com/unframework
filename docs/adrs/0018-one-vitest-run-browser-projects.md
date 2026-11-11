@@ -1,6 +1,6 @@
 # ADR-0018: One Vitest 5 run with one browser project per target
 
-- **Status:** Accepted (M0 spike)
+- **Status:** Accepted (M0 spike), amended by ADR-0081
 - **Date:** 2026-10-01
 - **Plan:** §9 (M0 spike 1); §7.2 (L7–L11, L13), §7.3, §7.5, §7.9, §8.5, R5, R6, R9, Appendix C
 

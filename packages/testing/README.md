@@ -236,7 +236,8 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
 - **`@unframework.dev/testing/setup`**, loaded first by every browser project: the bundled Inter font
   as "UF Test Sans", the motion and caret reset, the startup assertions (DPR 1, reduced motion,
   and the case's colour scheme: `case.json`'s `colorScheme`, `light` by default, which the file
-  emulates through `ufColorScheme` before anything mounts, ADR-0061), console capture recorded
+  emulates through `ufColorScheme` before anything mounts, ADR-0061, and which the check reads
+  again for at most 5 s, since Firefox can apply it late, ADR-0081), console capture recorded
   as **L13** for every test of a case (plus the adapter's server-side console, at mount and at
   each rerender), and cleanup (the unmount, then the real intervals back if a view had a clock).
   The capture starts
@@ -279,7 +280,9 @@ case)`); its projects run after the run's reference and before every other targe
   Chromium's, ADR-0066), `createHarnessRun` (the context provided to every project as
   `ufHarness`; each run's scratch output is its own directory, so concurrent runs never clear
   each other's; an L10 quarantine entry that names `pixels` applies only in runs of that pixel
-  mode) and `groupOrder`.
+  mode) and `groupOrder`, which in Firefox and WebKit, with live pixels, gives each browser project
+  a group of its own: the reference at 1, then `caseReferences`, then each other target in the
+  order of the target list it takes (ADR-0081).
 - **Browser commands:** `browserCommands` (`ufArtefact`, which settles `dom.`, `aria.` and
   `trace.<name>.*`, a trace with no contents being one that must not exist; `ufAriaSnapshot`,
   `ufVisualCapture`, `ufFocus`, `ufInput` (one input of a `view.user` action: a hover, a mouse
@@ -341,7 +344,11 @@ renders (`@unframework.dev/ir`'s `cssPropertiesOverlap`: the same property, a sh
 longhand, a flow-relative longhand and a physical one), as frameworks disagree on these
 even with themselves (ADR-0044). Class tokens keep their duplicates: a doubled class means a
 broken merge. A boolean attribute's `="true"` is written empty on Qwik only, whose client writes
-an attribute that is on that way.
+an attribute that is on that way. With `engine: "firefox"`, a `-moz-box-orient` declaration takes
+the name Chromium serialises, `-webkit-box-orient` (rule 3b): Firefox writes the property it
+parsed under its own alias, and its value still compares. No other engine, `-moz-*` property or
+value is touched (ADR-0081). The browser API passes the run's engine. Without one, nothing is
+renamed.
 Only the named target's framework noise is removed (Angular's hosts only from Angular's
 output, Qwik's `preventdefault:`, `stoppropagation:` and `capture:` dispatch attributes and its
 `q:template` elements, where its server render keeps a slot's unclaimed fallback, and its

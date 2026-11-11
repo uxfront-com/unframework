@@ -9,6 +9,7 @@ import {
   removeReactDefaultStates,
   removeSettledValues,
 } from "../src/normalize/rules/control-values.ts";
+import { renameEngineAliases } from "../src/normalize/rules/engine-aliases.ts";
 import {
   isFrameworkAttribute,
   removeFrameworkAttributes,
@@ -527,6 +528,55 @@ describe("cssPropertiesOverlap: whether two declarations' order decides what ren
   ])("not %s and %s", (a, b) => {
     expect(cssPropertiesOverlap(a, b)).toBe(false);
     expect(cssPropertiesOverlap(b, a)).toBe(false);
+  });
+});
+
+/** Rule 3b as Firefox's DOM gets it. */
+function firefox(root: TreeFragment): void {
+  renameEngineAliases(root, "firefox");
+}
+
+describe("rule 3b: renameEngineAliases", () => {
+  const clamp = "display: -webkit-box; -moz-box-orient: vertical; -webkit-line-clamp: 2;";
+
+  it("gives Firefox's -moz-box-orient the name Chromium serialises", () => {
+    expect(apply(`<p style="${clamp}"></p>`, firefox)).toBe(
+      '<p style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;"></p>\n',
+    );
+  });
+
+  it("matches Chromium's expectation once the declarations are sorted", () => {
+    const chromium = normalizeHtml(
+      '<p style="-webkit-box-orient: vertical; -webkit-line-clamp: 2; display: -webkit-box;"></p>',
+    );
+    expect(normalizeHtml(`<p style="${clamp}"></p>`, { engine: "firefox" })).toBe(chromium);
+  });
+
+  it("keeps a value that differs, and every other -moz-* property", () => {
+    expect(
+      normalizeHtml('<p style="-moz-box-orient: horizontal;"></p>', { engine: "firefox" }),
+    ).not.toBe(normalizeHtml('<p style="-webkit-box-orient: vertical;"></p>'));
+    expect(apply('<p style="-moz-user-select: none; -moz-box-align: center;"></p>', firefox)).toBe(
+      '<p style="-moz-user-select: none; -moz-box-align: center;"></p>\n',
+    );
+  });
+
+  it("renames nothing in Chromium, in WebKit, or without an engine", () => {
+    const html = `<p style="${clamp}"></p>`;
+    const kept = apply(html);
+    expect(apply(html, (root) => renameEngineAliases(root, "chromium"))).toBe(kept);
+    expect(apply(html, (root) => renameEngineAliases(root, "webkit"))).toBe(kept);
+    expect(apply(html, (root) => renameEngineAliases(root))).toBe(kept);
+    expect(normalizeHtml(html, { engine: "chromium" })).toBe(normalizeHtml(html));
+  });
+
+  it("refuses an engine it does not know", () => {
+    expect(() =>
+      normalizeHtml("<p></p>", {
+        // @ts-expect-error -- a caller without types can pass any string.
+        engine: "gecko",
+      }),
+    ).toThrow('normalizeHtml: unknown engine "gecko"');
   });
 });
 
