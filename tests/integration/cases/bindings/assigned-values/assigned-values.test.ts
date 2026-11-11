@@ -1,7 +1,7 @@
 // bindings/assigned-values: a bound `value` renders its attribute even when it equals what the
 // element already holds (a list item's 0, a meter's minimum, a `<data>`'s empty string), on the
 // first render as on the server.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import ReviewSummary from "./ReviewSummary.uf.tsx";

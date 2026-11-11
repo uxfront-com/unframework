@@ -1,7 +1,7 @@
 // control-flow/union-props: props of a union type, narrowed by `Array.isArray`, `typeof` and a
 // discriminant (`ok: true | false`), render each side through the reads only that side has
 // (`join`, `toFixed`, `toLowerCase`, `match`, `error`).
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import FilterSummary from "./FilterSummary.uf.tsx";

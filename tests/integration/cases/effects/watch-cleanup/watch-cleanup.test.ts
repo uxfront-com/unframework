@@ -1,7 +1,7 @@
 // effects/watch-cleanup: a watcher's `onCleanup` callback runs right before its next callback and
 // when the component is unmounted. A write of the getter's dependency that leaves the getter's
 // value unchanged runs neither the callback nor the cleanup (semantics contract, watch semantics).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ChannelPicker from "./ChannelPicker.uf.tsx";

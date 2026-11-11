@@ -5,8 +5,8 @@
     {
       "name": "Theme",
       "span": {
-        "start": 242,
-        "end": 300
+        "start": 251,
+        "end": 309
       },
       "props": [],
       "types": [],
@@ -21,14 +21,14 @@
             "kind": "Text",
             "value": "Theme",
             "span": {
-              "start": 288,
-              "end": 293
+              "start": 297,
+              "end": 302
             }
           }
         ],
         "span": {
-          "start": 285,
-          "end": 297
+          "start": 294,
+          "end": 306
         }
       }
     }
@@ -39,8 +39,8 @@
       "name": "default",
       "local": "Theme",
       "span": {
-        "start": 242,
-        "end": 300
+        "start": 251,
+        "end": 309
       }
     }
   ],
@@ -52,13 +52,13 @@
       "type": {
         "code": "string",
         "span": {
-          "start": 214,
-          "end": 220
+          "start": 223,
+          "end": 229
         }
       },
       "span": {
-        "start": 178,
-        "end": 240
+        "start": 187,
+        "end": 249
       }
     }
   ]

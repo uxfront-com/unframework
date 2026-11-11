@@ -5,37 +5,37 @@
     {
       "name": "ColourList",
       "span": {
-        "start": 36,
-        "end": 526
+        "start": 45,
+        "end": 535
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "colour@83",
+          "id": "colour@92",
           "name": "colour",
           "kind": "state",
           "span": {
-            "start": 83,
-            "end": 89
+            "start": 92,
+            "end": 98
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "colour@83",
+          "binding": "colour@92",
           "initial": {
             "code": "\"none\"",
             "span": {
-              "start": 96,
-              "end": 102
+              "start": 105,
+              "end": 111
             },
             "refs": []
           },
           "span": {
-            "start": 77,
-            "end": 104
+            "start": 86,
+            "end": 113
           }
         }
       ],
@@ -48,8 +48,8 @@
             "name": "aria-label",
             "value": "Colours",
             "span": {
-              "start": 129,
-              "end": 149
+              "start": 138,
+              "end": 158
             }
           }
         ],
@@ -63,8 +63,8 @@
                 "name": "size",
                 "value": "3",
                 "span": {
-                  "start": 173,
-                  "end": 181
+                  "start": 182,
+                  "end": 190
                 }
               },
               {
@@ -72,8 +72,8 @@
                 "name": "aria-label",
                 "value": "Colour",
                 "span": {
-                  "start": 190,
-                  "end": 209
+                  "start": 199,
+                  "end": 218
                 }
               },
               {
@@ -87,33 +87,33 @@
                         "name": "event",
                         "event": "Event",
                         "span": {
-                          "start": 229,
-                          "end": 234
+                          "start": 238,
+                          "end": 243
                         }
                       }
                     ],
                     "body": {
                       "code": "(colour.value = (event.currentTarget as HTMLSelectElement).value)",
                       "span": {
-                        "start": 239,
-                        "end": 304
+                        "start": 248,
+                        "end": 313
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "colour@83",
+                          "binding": "colour@92",
                           "operator": "=",
                           "span": {
-                            "start": 239,
-                            "end": 304
+                            "start": 248,
+                            "end": 313
                           },
                           "target": {
-                            "start": 240,
-                            "end": 252
+                            "start": 249,
+                            "end": 261
                           },
                           "value": {
-                            "start": 255,
-                            "end": 303
+                            "start": 264,
+                            "end": 312
                           },
                           "arrowBody": true
                         },
@@ -121,26 +121,26 @@
                           "kind": "Event",
                           "member": "currentTarget",
                           "span": {
-                            "start": 256,
-                            "end": 275
+                            "start": 265,
+                            "end": 284
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 228,
-                      "end": 304
+                      "start": 237,
+                      "end": 313
                     }
                   },
                   "span": {
-                    "start": 228,
-                    "end": 304
+                    "start": 237,
+                    "end": 313
                   }
                 },
                 "span": {
-                  "start": 218,
-                  "end": 305
+                  "start": 227,
+                  "end": 314
                 }
               }
             ],
@@ -154,8 +154,8 @@
                     "name": "value",
                     "value": "red",
                     "span": {
-                      "start": 330,
-                      "end": 341
+                      "start": 339,
+                      "end": 350
                     }
                   }
                 ],
@@ -164,14 +164,14 @@
                     "kind": "Text",
                     "value": "Red",
                     "span": {
-                      "start": 342,
-                      "end": 345
+                      "start": 351,
+                      "end": 354
                     }
                   }
                 ],
                 "span": {
-                  "start": 322,
-                  "end": 354
+                  "start": 331,
+                  "end": 363
                 }
               },
               {
@@ -183,8 +183,8 @@
                     "name": "value",
                     "value": "green",
                     "span": {
-                      "start": 371,
-                      "end": 384
+                      "start": 380,
+                      "end": 393
                     }
                   }
                 ],
@@ -193,14 +193,14 @@
                     "kind": "Text",
                     "value": "Green",
                     "span": {
-                      "start": 385,
-                      "end": 390
+                      "start": 394,
+                      "end": 399
                     }
                   }
                 ],
                 "span": {
-                  "start": 363,
-                  "end": 399
+                  "start": 372,
+                  "end": 408
                 }
               },
               {
@@ -212,8 +212,8 @@
                     "name": "value",
                     "value": "blue",
                     "span": {
-                      "start": 416,
-                      "end": 428
+                      "start": 425,
+                      "end": 437
                     }
                   }
                 ],
@@ -222,20 +222,20 @@
                     "kind": "Text",
                     "value": "Blue",
                     "span": {
-                      "start": 429,
-                      "end": 433
+                      "start": 438,
+                      "end": 442
                     }
                   }
                 ],
                 "span": {
-                  "start": 408,
-                  "end": 442
+                  "start": 417,
+                  "end": 451
                 }
               }
             ],
             "span": {
-              "start": 157,
-              "end": 458
+              "start": 166,
+              "end": 467
             }
           },
           {
@@ -247,8 +247,8 @@
                 "kind": "Text",
                 "value": "Picked: ",
                 "span": {
-                  "start": 473,
-                  "end": 481
+                  "start": 482,
+                  "end": 490
                 }
               },
               {
@@ -256,35 +256,35 @@
                 "value": {
                   "code": "colour.value",
                   "span": {
-                    "start": 482,
-                    "end": 494
+                    "start": 491,
+                    "end": 503
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "colour@83",
+                      "binding": "colour@92",
                       "span": {
-                        "start": 482,
-                        "end": 494
+                        "start": 491,
+                        "end": 503
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 481,
-                  "end": 495
+                  "start": 490,
+                  "end": 504
                 }
               }
             ],
             "span": {
-              "start": 465,
-              "end": 504
+              "start": 474,
+              "end": 513
             }
           }
         ],
         "span": {
-          "start": 120,
-          "end": 519
+          "start": 129,
+          "end": 528
         }
       }
     }
@@ -295,8 +295,8 @@
       "name": "default",
       "local": "ColourList",
       "span": {
-        "start": 36,
-        "end": 526
+        "start": 45,
+        "end": 535
       }
     }
   ],

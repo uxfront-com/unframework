@@ -7,7 +7,7 @@ import { globSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { ToolchainContext } from "@unframework/codegen";
+import type { ToolchainContext } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";

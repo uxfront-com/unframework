@@ -5,8 +5,8 @@
     {
       "name": "PriceTag",
       "span": {
-        "start": 141,
-        "end": 1158
+        "start": 150,
+        "end": 1167
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "number",
             "span": {
-              "start": 130,
-              "end": 136
+              "start": 139,
+              "end": 145
             }
           },
-          "binding": "price@176",
+          "binding": "price@185",
           "span": {
-            "start": 123,
-            "end": 137
+            "start": 132,
+            "end": 146
           }
         }
       ],
@@ -31,13 +31,13 @@
         "type": {
           "code": "PriceTagProps",
           "span": {
-            "start": 185,
-            "end": 198
+            "start": 194,
+            "end": 207
           }
         },
         "span": {
-          "start": 174,
-          "end": 198
+          "start": 183,
+          "end": 207
         }
       },
       "types": [
@@ -45,228 +45,228 @@
       ],
       "bindings": [
         {
-          "id": "price@176",
+          "id": "price@185",
           "name": "price",
           "kind": "prop",
           "span": {
-            "start": 176,
-            "end": 181
+            "start": 185,
+            "end": 190
           }
         },
         {
-          "id": "quantity@210",
+          "id": "quantity@219",
           "name": "quantity",
           "kind": "state",
           "span": {
-            "start": 210,
-            "end": 218
+            "start": 219,
+            "end": 227
           }
         },
         {
-          "id": "unit@237",
+          "id": "unit@246",
           "name": "unit",
           "kind": "state",
           "span": {
-            "start": 237,
-            "end": 241
+            "start": 246,
+            "end": 250
           }
         },
         {
-          "id": "summary@277",
+          "id": "summary@286",
           "name": "summary",
           "kind": "state",
           "span": {
-            "start": 277,
-            "end": 284
+            "start": 286,
+            "end": 293
           }
         },
         {
-          "id": "total@312",
+          "id": "total@321",
           "name": "total",
           "kind": "derived",
           "span": {
-            "start": 312,
-            "end": 317
+            "start": 321,
+            "end": 326
           }
         },
         {
-          "id": "last@381",
+          "id": "last@390",
           "name": "last",
           "kind": "state",
           "span": {
-            "start": 381,
-            "end": 385
+            "start": 390,
+            "end": 394
           }
         },
         {
-          "id": "add@475",
+          "id": "add@484",
           "name": "add",
           "kind": "localFn",
           "span": {
-            "start": 475,
-            "end": 478
+            "start": 484,
+            "end": 487
           }
         },
         {
-          "id": "formatCents@553",
+          "id": "formatCents@562",
           "name": "formatCents",
           "kind": "localFn",
           "span": {
-            "start": 553,
-            "end": 564
+            "start": 562,
+            "end": 573
           }
         },
         {
-          "id": "describe@652",
+          "id": "describe@661",
           "name": "describe",
           "kind": "localFn",
           "span": {
-            "start": 652,
-            "end": 660
+            "start": 661,
+            "end": 669
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "quantity@210",
+          "binding": "quantity@219",
           "initial": {
             "code": "1",
             "span": {
-              "start": 225,
-              "end": 226
+              "start": 234,
+              "end": 235
             },
             "refs": []
           },
           "span": {
-            "start": 204,
-            "end": 228
+            "start": 213,
+            "end": 237
           }
         },
         {
           "kind": "State",
-          "binding": "unit@237",
+          "binding": "unit@246",
           "initial": {
             "code": "formatCents(price)",
             "span": {
-              "start": 248,
-              "end": 266
+              "start": 257,
+              "end": 275
             },
             "refs": [
               {
                 "kind": "Binding",
-                "binding": "formatCents@553",
+                "binding": "formatCents@562",
                 "span": {
-                  "start": 248,
-                  "end": 259
+                  "start": 257,
+                  "end": 268
                 },
                 "call": true
               },
               {
                 "kind": "Binding",
-                "binding": "price@176",
+                "binding": "price@185",
                 "span": {
-                  "start": 260,
-                  "end": 265
+                  "start": 269,
+                  "end": 274
                 }
               }
             ]
           },
           "span": {
-            "start": 231,
-            "end": 268
+            "start": 240,
+            "end": 277
           }
         },
         {
           "kind": "State",
-          "binding": "summary@277",
+          "binding": "summary@286",
           "initial": {
             "code": "describe()",
             "span": {
-              "start": 291,
-              "end": 301
+              "start": 300,
+              "end": 310
             },
             "refs": [
               {
                 "kind": "Binding",
-                "binding": "describe@652",
+                "binding": "describe@661",
                 "span": {
-                  "start": 291,
-                  "end": 299
+                  "start": 300,
+                  "end": 308
                 },
                 "call": true
               }
             ]
           },
           "span": {
-            "start": 271,
-            "end": 303
+            "start": 280,
+            "end": 312
           }
         },
         {
           "kind": "Derived",
-          "binding": "total@312",
+          "binding": "total@321",
           "getter": {
             "parameters": [],
             "body": {
               "code": "formatCents(price * quantity.value)",
               "span": {
-                "start": 335,
-                "end": 370
+                "start": 344,
+                "end": 379
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "formatCents@553",
+                  "binding": "formatCents@562",
                   "span": {
-                    "start": 335,
-                    "end": 346
+                    "start": 344,
+                    "end": 355
                   },
                   "call": true
                 },
                 {
                   "kind": "Binding",
-                  "binding": "price@176",
+                  "binding": "price@185",
                   "span": {
-                    "start": 347,
-                    "end": 352
+                    "start": 356,
+                    "end": 361
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "quantity@210",
+                  "binding": "quantity@219",
                   "span": {
-                    "start": 355,
-                    "end": 369
+                    "start": 364,
+                    "end": 378
                   }
                 }
               ]
             },
             "expression": true,
             "span": {
-              "start": 329,
-              "end": 370
+              "start": 338,
+              "end": 379
             }
           },
           "span": {
-            "start": 306,
-            "end": 372
+            "start": 315,
+            "end": 381
           }
         },
         {
           "kind": "State",
-          "binding": "last@381",
+          "binding": "last@390",
           "initial": {
             "code": "\"none\"",
             "span": {
-              "start": 392,
-              "end": 398
+              "start": 401,
+              "end": 407
             },
             "refs": []
           },
           "span": {
-            "start": 375,
-            "end": 400
+            "start": 384,
+            "end": 409
           }
         },
         {
@@ -274,10 +274,10 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "quantity@210",
+              "binding": "quantity@219",
               "span": {
-                "start": 410,
-                "end": 418
+                "start": 419,
+                "end": 427
               }
             }
           ],
@@ -286,115 +286,115 @@
             "body": {
               "code": "{\n    last.value = describe();\n  }",
               "span": {
-                "start": 426,
-                "end": 460
+                "start": 435,
+                "end": 469
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "last@381",
+                  "binding": "last@390",
                   "operator": "=",
                   "span": {
-                    "start": 432,
-                    "end": 455
+                    "start": 441,
+                    "end": 464
                   },
                   "target": {
-                    "start": 432,
-                    "end": 442
+                    "start": 441,
+                    "end": 451
                   },
                   "value": {
-                    "start": 445,
-                    "end": 455
+                    "start": 454,
+                    "end": 464
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "describe@652",
+                  "binding": "describe@661",
                   "span": {
-                    "start": 445,
-                    "end": 453
+                    "start": 454,
+                    "end": 462
                   },
                   "call": true
                 }
               ]
             },
             "span": {
-              "start": 420,
-              "end": 460
+              "start": 429,
+              "end": 469
             }
           },
           "span": {
-            "start": 404,
-            "end": 462
+            "start": 413,
+            "end": 471
           }
         },
         {
           "kind": "Function",
-          "binding": "add@475",
+          "binding": "add@484",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    quantity.value++;\n    summary.value = describe();\n  }",
               "span": {
-                "start": 481,
-                "end": 540
+                "start": 490,
+                "end": 549
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "quantity@210",
+                  "binding": "quantity@219",
                   "operator": "++",
                   "span": {
-                    "start": 487,
-                    "end": 503
+                    "start": 496,
+                    "end": 512
                   },
                   "target": {
-                    "start": 487,
-                    "end": 501
+                    "start": 496,
+                    "end": 510
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "summary@277",
+                  "binding": "summary@286",
                   "operator": "=",
                   "span": {
-                    "start": 509,
-                    "end": 535
+                    "start": 518,
+                    "end": 544
                   },
                   "target": {
-                    "start": 509,
-                    "end": 522
+                    "start": 518,
+                    "end": 531
                   },
                   "value": {
-                    "start": 525,
-                    "end": 535
+                    "start": 534,
+                    "end": 544
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "describe@652",
+                  "binding": "describe@661",
                   "span": {
-                    "start": 525,
-                    "end": 533
+                    "start": 534,
+                    "end": 542
                   },
                   "call": true
                 }
               ]
             },
             "span": {
-              "start": 478,
-              "end": 540
+              "start": 487,
+              "end": 549
             }
           },
           "span": {
-            "start": 466,
-            "end": 540
+            "start": 475,
+            "end": 549
           }
         },
         {
           "kind": "Function",
-          "binding": "formatCents@553",
+          "binding": "formatCents@562",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -403,96 +403,96 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 572,
-                    "end": 578
+                    "start": 581,
+                    "end": 587
                   }
                 },
                 "span": {
-                  "start": 565,
-                  "end": 578
+                  "start": 574,
+                  "end": 587
                 }
               }
             ],
             "returnType": {
               "code": "string",
               "span": {
-                "start": 581,
-                "end": 587
+                "start": 590,
+                "end": 596
               }
             },
             "body": {
               "code": "{\n    return `EUR ${(cents / 100).toFixed(2)}`;\n  }",
               "span": {
-                "start": 588,
-                "end": 639
+                "start": 597,
+                "end": 648
               },
               "refs": []
             },
             "span": {
-              "start": 564,
-              "end": 639
+              "start": 573,
+              "end": 648
             }
           },
           "span": {
-            "start": 544,
-            "end": 639
+            "start": 553,
+            "end": 648
           }
         },
         {
           "kind": "Function",
-          "binding": "describe@652",
+          "binding": "describe@661",
           "form": "declaration",
           "function": {
             "parameters": [],
             "returnType": {
               "code": "string",
               "span": {
-                "start": 664,
-                "end": 670
+                "start": 673,
+                "end": 679
               }
             },
             "body": {
               "code": "{\n    return `${quantity.value} at ${formatCents(price)}`;\n  }",
               "span": {
-                "start": 671,
-                "end": 733
+                "start": 680,
+                "end": 742
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "quantity@210",
+                  "binding": "quantity@219",
                   "span": {
-                    "start": 687,
-                    "end": 701
+                    "start": 696,
+                    "end": 710
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "formatCents@553",
+                  "binding": "formatCents@562",
                   "span": {
-                    "start": 708,
-                    "end": 719
+                    "start": 717,
+                    "end": 728
                   },
                   "call": true
                 },
                 {
                   "kind": "Binding",
-                  "binding": "price@176",
+                  "binding": "price@185",
                   "span": {
-                    "start": 720,
-                    "end": 725
+                    "start": 729,
+                    "end": 734
                   }
                 }
               ]
             },
             "span": {
-              "start": 660,
-              "end": 733
+              "start": 669,
+              "end": 742
             }
           },
           "span": {
-            "start": 643,
-            "end": 733
+            "start": 652,
+            "end": 742
           }
         }
       ],
@@ -505,8 +505,8 @@
             "name": "class",
             "value": "price-tag",
             "span": {
-              "start": 759,
-              "end": 776
+              "start": 768,
+              "end": 785
             }
           },
           {
@@ -514,8 +514,8 @@
             "name": "aria-label",
             "value": "Price",
             "span": {
-              "start": 777,
-              "end": 795
+              "start": 786,
+              "end": 804
             }
           }
         ],
@@ -529,8 +529,8 @@
                 "kind": "Text",
                 "value": "Unit: ",
                 "span": {
-                  "start": 806,
-                  "end": 812
+                  "start": 815,
+                  "end": 821
                 }
               },
               {
@@ -538,29 +538,29 @@
                 "value": {
                   "code": "unit.value",
                   "span": {
-                    "start": 813,
-                    "end": 823
+                    "start": 822,
+                    "end": 832
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "unit@237",
+                      "binding": "unit@246",
                       "span": {
-                        "start": 813,
-                        "end": 823
+                        "start": 822,
+                        "end": 832
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 812,
-                  "end": 824
+                  "start": 821,
+                  "end": 833
                 }
               }
             ],
             "span": {
-              "start": 803,
-              "end": 828
+              "start": 812,
+              "end": 837
             }
           },
           {
@@ -572,8 +572,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 838,
-                  "end": 851
+                  "start": 847,
+                  "end": 860
                 }
               }
             ],
@@ -583,29 +583,29 @@
                 "value": {
                   "code": "summary.value",
                   "span": {
-                    "start": 853,
-                    "end": 866
+                    "start": 862,
+                    "end": 875
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "summary@277",
+                      "binding": "summary@286",
                       "span": {
-                        "start": 853,
-                        "end": 866
+                        "start": 862,
+                        "end": 875
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 852,
-                  "end": 867
+                  "start": 861,
+                  "end": 876
                 }
               }
             ],
             "span": {
-              "start": 835,
-              "end": 871
+              "start": 844,
+              "end": 880
             }
           },
           {
@@ -617,8 +617,8 @@
                 "kind": "Text",
                 "value": "Total: ",
                 "span": {
-                  "start": 881,
-                  "end": 888
+                  "start": 890,
+                  "end": 897
                 }
               },
               {
@@ -626,29 +626,29 @@
                 "value": {
                   "code": "total.value",
                   "span": {
-                    "start": 889,
-                    "end": 900
+                    "start": 898,
+                    "end": 909
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "total@312",
+                      "binding": "total@321",
                       "span": {
-                        "start": 889,
-                        "end": 900
+                        "start": 898,
+                        "end": 909
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 888,
-                  "end": 901
+                  "start": 897,
+                  "end": 910
                 }
               }
             ],
             "span": {
-              "start": 878,
-              "end": 905
+              "start": 887,
+              "end": 914
             }
           },
           {
@@ -660,8 +660,8 @@
                 "kind": "Text",
                 "value": "Last change: ",
                 "span": {
-                  "start": 915,
-                  "end": 928
+                  "start": 924,
+                  "end": 937
                 }
               },
               {
@@ -669,29 +669,29 @@
                 "value": {
                   "code": "last.value",
                   "span": {
-                    "start": 929,
-                    "end": 939
+                    "start": 938,
+                    "end": 948
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "last@381",
+                      "binding": "last@390",
                       "span": {
-                        "start": 929,
-                        "end": 939
+                        "start": 938,
+                        "end": 948
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 928,
-                  "end": 940
+                  "start": 937,
+                  "end": 949
                 }
               }
             ],
             "span": {
-              "start": 912,
-              "end": 944
+              "start": 921,
+              "end": 953
             }
           },
           {
@@ -703,8 +703,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 959,
-                  "end": 972
+                  "start": 968,
+                  "end": 981
                 }
               },
               {
@@ -712,15 +712,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "add@475",
+                  "binding": "add@484",
                   "span": {
-                    "start": 982,
-                    "end": 985
+                    "start": 991,
+                    "end": 994
                   }
                 },
                 "span": {
-                  "start": 973,
-                  "end": 986
+                  "start": 982,
+                  "end": 995
                 }
               }
             ],
@@ -729,14 +729,14 @@
                 "kind": "Text",
                 "value": "Add one",
                 "span": {
-                  "start": 987,
-                  "end": 1010
+                  "start": 996,
+                  "end": 1019
                 }
               }
             ],
             "span": {
-              "start": 951,
-              "end": 1019
+              "start": 960,
+              "end": 1028
             }
           },
           {
@@ -748,8 +748,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 1034,
-                  "end": 1047
+                  "start": 1043,
+                  "end": 1056
                 }
               },
               {
@@ -762,61 +762,61 @@
                     "body": {
                       "code": "(unit.value = formatCents(price * 2))",
                       "span": {
-                        "start": 1063,
-                        "end": 1100
+                        "start": 1072,
+                        "end": 1109
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "unit@237",
+                          "binding": "unit@246",
                           "operator": "=",
                           "span": {
-                            "start": 1063,
-                            "end": 1100
+                            "start": 1072,
+                            "end": 1109
                           },
                           "target": {
-                            "start": 1064,
-                            "end": 1074
+                            "start": 1073,
+                            "end": 1083
                           },
                           "value": {
-                            "start": 1077,
-                            "end": 1099
+                            "start": 1086,
+                            "end": 1108
                           },
                           "arrowBody": true
                         },
                         {
                           "kind": "Binding",
-                          "binding": "formatCents@553",
+                          "binding": "formatCents@562",
                           "span": {
-                            "start": 1077,
-                            "end": 1088
+                            "start": 1086,
+                            "end": 1097
                           },
                           "call": true
                         },
                         {
                           "kind": "Binding",
-                          "binding": "price@176",
+                          "binding": "price@185",
                           "span": {
-                            "start": 1089,
-                            "end": 1094
+                            "start": 1098,
+                            "end": 1103
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 1057,
-                      "end": 1100
+                      "start": 1066,
+                      "end": 1109
                     }
                   },
                   "span": {
-                    "start": 1057,
-                    "end": 1100
+                    "start": 1066,
+                    "end": 1109
                   }
                 },
                 "span": {
-                  "start": 1048,
-                  "end": 1101
+                  "start": 1057,
+                  "end": 1110
                 }
               }
             ],
@@ -825,20 +825,20 @@
                 "kind": "Text",
                 "value": "Price two",
                 "span": {
-                  "start": 1102,
-                  "end": 1127
+                  "start": 1111,
+                  "end": 1136
                 }
               }
             ],
             "span": {
-              "start": 1026,
-              "end": 1136
+              "start": 1035,
+              "end": 1145
             }
           }
         ],
         "span": {
-          "start": 750,
-          "end": 1151
+          "start": 759,
+          "end": 1160
         }
       }
     }
@@ -849,8 +849,8 @@
       "name": "default",
       "local": "PriceTag",
       "span": {
-        "start": 141,
-        "end": 1158
+        "start": 150,
+        "end": 1167
       }
     }
   ],
@@ -860,8 +860,8 @@
       "exported": true,
       "code": "interface PriceTagProps {\n  /** The unit price, in cents. */\n  price: number;\n}",
       "span": {
-        "start": 60,
-        "end": 139
+        "start": 69,
+        "end": 148
       }
     }
   ]

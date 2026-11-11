@@ -47,7 +47,7 @@ async function vue(files: Record<string, string>, filename: string) {
 }
 
 const SELECTION = [
-  'import { computed, ref, watchEffect } from "unframework";',
+  'import { computed, ref, watchEffect } from "@uxfront/unframework";',
   "",
   "export function useSelection<T>(items: () => T[], onPick: (item: T) => void) {",
   "  const index = ref(0);",
@@ -92,7 +92,7 @@ describe("vue composables", () => {
       {
         "useSelection.uf.ts": SELECTION,
         "Picker.uf.tsx": [
-          'import { defineEmits } from "unframework";',
+          'import { defineEmits } from "@uxfront/unframework";',
           'import { useSelection } from "./useSelection.uf.ts";',
           "",
           "export default function Picker({ names }: { names: string[] }) {",
@@ -181,7 +181,7 @@ describe("vue module bindings' types and names", () => {
       const files = {
         "tokens.ts": 'export type Size = "sm" | "md";\n',
         "useSize.uf.ts": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           'import type { Size } from "./tokens";',
           "",
           'const FALLBACK: Size = "sm";',
@@ -219,7 +219,7 @@ describe("vue module bindings' types and names", () => {
   it("renames a module constant a setup binding shadows, never the setup's", checker, async () => {
     const files = {
       "Limit.uf.tsx": [
-        'import { ref } from "unframework";',
+        'import { ref } from "@uxfront/unframework";',
         "",
         "const LIMITS = { max: 20 };",
         "const caption = (value: number): string => `${value} of ${LIMITS.max}`;",
@@ -242,7 +242,7 @@ describe("vue module bindings' types and names", () => {
   it("imports a Vue API under another name than a constant it reaches", checker, async () => {
     const files = {
       "List.uf.tsx": [
-        'import { ref } from "unframework";',
+        'import { ref } from "@uxfront/unframework";',
         "",
         'const shallowRef = "items";',
         "const caption = (count: number): string => `${count} ${shallowRef}`;",
@@ -298,7 +298,7 @@ describe("vue module bindings' types and names", () => {
     const outputs = await vue(
       {
         "Pair.uf.tsx": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           'const shallowRef = "items";',
           "",
@@ -351,7 +351,7 @@ describe("vue module bindings' types and names", () => {
     const files = {
       "limits.ts": "export const LIMITS = { a: 3 };\nexport const SIZES = { sm: 1, md: 2 };\n",
       "useCopy.uf.ts": [
-        'import { ref } from "unframework";',
+        'import { ref } from "@uxfront/unframework";',
         'import { LIMITS } from "./limits";',
         "",
         "const COPY: typeof LIMITS = { a: 1 };",
@@ -432,7 +432,7 @@ describe("vue module bindings' types and names", () => {
     async () => {
       const files = {
         "Form.uf.tsx": [
-          'import { defineEmits, defineSlots, useTemplateRef } from "unframework";',
+          'import { defineEmits, defineSlots, useTemplateRef } from "@uxfront/unframework";',
           "",
           'const emit = "sent";',
           'const slots = "slots";',
@@ -537,7 +537,7 @@ describe("vue module bindings' types and names", () => {
           "",
         ].join("\n"),
         "useX.uf.ts": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           'import { step } from "./t";',
           "",
           "type Step = typeof step;",
@@ -656,7 +656,7 @@ describe("vue module bindings' types and names", () => {
       const files = {
         "t.ts": T,
         "useX.uf.ts": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           'import { step } from "./t";',
           "",
           "export function useX(s: typeof step) {",
@@ -666,7 +666,7 @@ describe("vue module bindings' types and names", () => {
           "",
         ].join("\n"),
         "useY.uf.ts": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           'import { step } from "./t";',
           "",
           "const BASE = step.a;",

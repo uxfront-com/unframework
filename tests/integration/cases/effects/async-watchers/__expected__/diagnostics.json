@@ -5,14 +5,14 @@
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "effects/async-watchers/SyncDesk.uf.tsx",
     "start": {
-      "line": 58,
+      "line": 65,
       "column": 3,
-      "offset": 1587
+      "offset": 1609
     },
     "end": {
-      "line": 63,
+      "line": 70,
       "column": 6,
-      "offset": 1739
+      "offset": 1761
     },
     "target": "astro"
   }

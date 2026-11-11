@@ -1,6 +1,6 @@
 // types/re-export-only: a component whose module re-exports a type from a `.ts` module it
 // otherwise never imports, so each output tree holds that module's copy (ADR-0070, ADR-0071).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Badge from "./Badge.uf.tsx";

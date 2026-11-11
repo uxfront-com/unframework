@@ -6,9 +6,9 @@
 // the macros that declare events, models and slots, and stock JSX types accept any of them (§5.6's
 // layer 1), so the compiler is what catches these without the content mapper (ADR-0072).
 
-import type { Fix } from "@unframework/diagnostics";
-import type { ApiMember } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+import type { Fix } from "@unframework.dev/diagnostics";
+import type { ApiMember } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 
 import type { Located, Reporter } from "./context.ts";
 import { span } from "./expressions.ts";

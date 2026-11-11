@@ -2,7 +2,7 @@
 // or a list's index only where something it prints reads it (an unused one fails L5), and one a
 // handler alone reads must still be declared (or the output throws a ReferenceError). Both walks
 // read the IR's own visitors (`expressionsOf`, `codeOf`), so a kind added to the IR is seen here.
-import { codeOf, expressionsOf, walk } from "@unframework/ir";
+import { codeOf, expressionsOf, walk } from "@unframework.dev/ir";
 import type {
   Attribute,
   BindingId,
@@ -20,7 +20,7 @@ import type {
   TypeText,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { typeNames } from "./names.ts";
 import { parseStatementsSource } from "./parse.ts";

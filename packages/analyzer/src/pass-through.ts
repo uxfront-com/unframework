@@ -10,10 +10,10 @@ import {
   createPassThroughName,
   isIdentifier,
   reservedSetupName,
-} from "@unframework/ir";
-import type { PassThroughImport, PassThroughName } from "@unframework/ir";
-import { exportName } from "@unframework/parser";
-import type { AST } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { PassThroughImport, PassThroughName } from "@unframework.dev/ir";
+import { exportName } from "@unframework.dev/parser";
+import type { AST } from "@unframework.dev/parser";
 
 import type { Reporter } from "./context.ts";
 

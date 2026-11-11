@@ -1,6 +1,6 @@
 // UF3043 component-listener-option: a component's event is no DOM event, and takes no listener
 // option: `onSaveOnce` listens to `save` with `Once`.
-import { defineEmits, ref } from "unframework";
+import { defineEmits, ref } from "@uxfront/unframework";
 
 function SaveButton() {
   const emit = defineEmits<{ save: [] }>();

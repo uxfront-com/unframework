@@ -5,7 +5,7 @@
   // frameworks' project defaults; harness/toolchain-strictness.unit.test.ts). Types resolve from
   // tests/integration, which holds @qwik.dev/core: the outputs' by their own location, the
   // consumer fixtures' through `paths`.
-  // `@unframework/target-qwik/toolchain` extends this file with a temporary config that lists
+  // `@unframework.dev/target-qwik/toolchain` extends this file with a temporary config that lists
   // the files to check.
   "compilerOptions": {
     "target": "es2024",

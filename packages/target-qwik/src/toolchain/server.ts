@@ -1,5 +1,5 @@
 import { renderToString as renderQwik } from "@qwik.dev/core/server";
-import type { SsrRenderer } from "@unframework/codegen";
+import type { SsrRenderer } from "@unframework.dev/codegen";
 
 import { asComponent } from "./component.ts";
 import { CONTAINER_TAG, componentHtml } from "./container.ts";

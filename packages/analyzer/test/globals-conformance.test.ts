@@ -1,4 +1,4 @@
-// The browser's globals `@unframework/ir` holds as data (ADR-0045), against what they stand for:
+// The browser's globals `@unframework.dev/ir` holds as data (ADR-0045), against what they stand for:
 // every name lib.dom declares, in TypeScript 7's lib (the React, Solid and Qwik outputs' checker)
 // and in TypeScript 6's (the Vue, Svelte, Astro and Angular toolchains'). Client code may read
 // each of them, or reads it through `window`, and every target prints it as written, so a name
@@ -19,7 +19,7 @@ import {
   PURE_GLOBALS,
   SCHEDULING_GLOBALS,
   WINDOW_MEMBER_GLOBALS,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 const ROOT = new URL("../../../", import.meta.url);

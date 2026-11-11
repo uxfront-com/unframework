@@ -6,7 +6,7 @@
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 
-import { HTML_ELEMENTS, isVoidElement } from "@unframework/ir";
+import { HTML_ELEMENTS, isVoidElement } from "@unframework.dev/ir";
 import { compile } from "svelte/compiler";
 import { describe, expect, it } from "vitest";
 

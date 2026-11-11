@@ -1,4 +1,4 @@
-# @unframework/target-vue
+# @unframework.dev/target-vue
 
 The Vue 3.5 target of the Unframework compiler, and the reference target (D10): what Vue renders,
 and what it does when a test interacts with it, becomes every target's shared expectation. It
@@ -71,7 +71,7 @@ Item">` (ADR-0068). An attribute cannot hold its own quote, so each string liter
    | `const { on, toggle } = useToggle(false)` | the same: getters and callbacks as written (ADR-0069)          |
 
    State is replaced whole (ADR-0008, UF2004), so a state not known to hold a primitive
-   (`isPrimitiveState` from `@unframework/codegen`: its type argument or its initial value) is a
+   (`isPrimitiveState` from `@unframework.dev/codegen`: its type argument or its initial value) is a
    `shallowRef`, whose value is the source's own object, never a deep proxy: identity with a
    prop's item, `structuredClone` and an emitted payload read it as the source does (ADR-0046,
    as Svelte's `$state.raw`). Vue calls a watcher back on every run once one of its sources is
@@ -85,7 +85,7 @@ The target writes `</script` in copied code as `<\/script`.
 
 ## The template
 
-Printed by the Vue markup dialect (`@unframework/codegen`'s `vueDialect`, owned with this
+Printed by the Vue markup dialect (`@unframework.dev/codegen`'s `vueDialect`, owned with this
 target):
 
 - `{{ }}` interpolations and `:attr` bindings, with a setup ref's value read as the ref, which Vue
@@ -180,7 +180,7 @@ Models, context and `<component is>` (ADR-0054) are Vue's own as well:
 
 For tests and tooling (the target's main entry never loads it):
 
-- **`@unframework/target-vue/toolchain`**: `@vitejs/plugin-vue` for Vite, given the disk as
+- **`@unframework.dev/target-vue/toolchain`**: `@vitejs/plugin-vue` for Vite, given the disk as
   `script.fs`, without which compileScript resolves no imported props type (ADR-0067). Static
   asset URLs stay plain strings, as on every other target. The checks:
   - L3 runs `@vue/compiler-sfc` the way plugin-vue does, for the DOM and for SSR, and reports

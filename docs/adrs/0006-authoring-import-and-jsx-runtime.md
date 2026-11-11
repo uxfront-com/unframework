@@ -1,6 +1,6 @@
 # ADR-0006: The authoring API and JSX runtime come from `unframework`
 
-- **Status:** Proposed — the plan proceeds on the recommendation
+- **Status:** Proposed — the plan proceeds on the recommendation, amended by ADR-0090
 - **Date:** 2026-10-01
 - **Plan:** §11 D2; §2, §4.1, §4.6, §5.2, §5.4, §5.6, §8.2, M6
 
@@ -55,7 +55,7 @@ import { computed, defineEmits, ref } from "unframework";
 - The stubs are inert. A `.uf.tsx` file type-checks without the compiler, but it does nothing
   useful if run directly.
 - A host app has to set `jsxImportSource: "unframework"` for `.uf.tsx` files only, through a
-  scoped tsconfig or the per-file pragma. M6 settles which (§8.2).
+  scoped tsconfig or the per-file pragma. ADR-0080 chose the scoped `tsconfig.uf.json` (§8.2).
 - `unframework`'s JSX types must accept every legitimate consumer use of macro-declared events,
   models and slots without false errors (ADR-0003, layer 1), which constrains their design.
 

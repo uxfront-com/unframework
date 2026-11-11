@@ -7,12 +7,12 @@
     "start": {
       "line": 8,
       "column": 23,
-      "offset": 351
+      "offset": 360
     },
     "end": {
       "line": 8,
       "column": 43,
-      "offset": 371
+      "offset": 380
     },
     "help": "Give the function a block body, so that the write is a statement of its own.",
     "fixes": [
@@ -22,15 +22,15 @@
         "edits": [
           {
             "span": {
-              "start": 350,
-              "end": 350
+              "start": 359,
+              "end": 359
             },
             "text": "{ "
           },
           {
             "span": {
-              "start": 372,
-              "end": 372
+              "start": 381,
+              "end": 381
             },
             "text": "; }"
           }

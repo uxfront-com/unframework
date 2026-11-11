@@ -3,9 +3,9 @@
 import { existsSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync } from "node:fs";
 import { basename, dirname, join, sep } from "node:path";
 
-import { TARGET_NAMES } from "@unframework/compiler";
-import { COLOR_SCHEMES, KEBAB_CASE, ssrScenarios } from "@unframework/testing/node";
-import type { CaseConfig } from "@unframework/testing/node";
+import { TARGET_NAMES } from "@unframework.dev/compiler";
+import { COLOR_SCHEMES, KEBAB_CASE, ssrScenarios } from "@unframework.dev/testing/node";
+import type { CaseConfig } from "@unframework.dev/testing/node";
 
 import { CASES_DIR } from "./paths.ts";
 import { REFERENCE } from "./targets.ts";
@@ -60,6 +60,7 @@ const CASE_KEYS = new Set([
   "description",
   "main",
   "ssr",
+  "ssrThrows",
   "axe",
   "requires",
   "reference",
@@ -195,6 +196,22 @@ function readConfig(id: string, file: string): CaseConfig {
   ) {
     problems.push(`"axe" must be a list of axe rule ids`);
   }
+  // Props the server render throws with, which L14 checks (`CaseConfig.ssrThrows`, ADR-0078).
+  if (config.ssrThrows !== undefined) {
+    const props = (config.ssrThrows as { props?: unknown } | null)?.props;
+    if (
+      typeof config.ssrThrows !== "object" ||
+      config.ssrThrows === null ||
+      Array.isArray(config.ssrThrows) ||
+      typeof props !== "object" ||
+      props === null ||
+      Array.isArray(props)
+    ) {
+      problems.push(
+        `"ssrThrows" must be { "props": {…} }, the props the server render throws with`,
+      );
+    }
+  }
   if (config.ssr !== undefined) {
     if (typeof config.ssr !== "object" || config.ssr === null || Array.isArray(config.ssr)) {
       problems.push(`"ssr" must map scenario names to { "props": {…} }`);
@@ -313,6 +330,8 @@ export interface SpecTest {
   checksFirst: boolean;
   /** Whether it acts through `view.user`. */
   acts: boolean;
+  /** Whether it wraps a step in `view.expectThrown`, which records L14 (ADR-0078). */
+  throws: boolean;
   /** Whether it rerenders (`view.rerender(…)`). */
   rerenders: boolean;
   /**
@@ -345,6 +364,31 @@ const TEST_CALL = /\b(?:it|test)\s*\(\s*(["'`])((?:(?!\1)[^\\\n])*)\1\s*,/g;
 const DIRECT_ACTION =
   /\.(?:click|dblClick|tripleClick|fill|type|clear|hover|unhover|selectOptions|wheel|focus|keyboard|tab)\s*\(/g;
 
+/** The wrapper around a step that throws (`view.expectThrown(() => view.user.click(…))`). */
+const THROWN_STEP = /\.expectThrown\s*\(/g;
+
+/** {@link THROWN_STEP}, for one test: without `g`, whose `lastIndex` would carry over. */
+const THROWN_STEP_CALL = /\.expectThrown\s*\(/;
+
+/**
+ * The code with each `expectThrown` call's arguments blanked to spaces: the step it wraps throws
+ * on purpose and leaves no trace to compare (L14, ADR-0078), so it is no step here.
+ */
+function withoutThrownSteps(code: string): string {
+  let result = code;
+  for (const match of code.matchAll(THROWN_STEP)) {
+    let depth = 1;
+    let end = match.index + match[0].length;
+    for (; end < code.length && depth > 0; end += 1) {
+      if (code[end] === "(") depth += 1;
+      else if (code[end] === ")") depth -= 1;
+    }
+    const start = match.index + match[0].length;
+    result = `${result.slice(0, start)}${code.slice(start, end - 1).replace(/[^\n]/g, " ")}${result.slice(end - 1)}`;
+  }
+  return result;
+}
+
 /** An action through `view.user`. */
 const ACTION = /\.user\.[A-Za-z]+\s*\(/;
 
@@ -371,7 +415,7 @@ const EVENTS =
  * it.
  */
 export function specTests(source: string): SpecTest[] {
-  const code = withoutComments(source);
+  const code = withoutThrownSteps(withoutComments(source));
   const calls = [...code.matchAll(TEST_CALL)];
   return calls.map((call, index) => {
     const start = call.index + call[0].length;
@@ -387,6 +431,7 @@ export function specTests(source: string): SpecTest[] {
       requires: declaredRequires(call[2]!, header),
       checksFirst: parity !== -1 && (action === -1 || parity < action),
       acts: action !== -1,
+      throws: THROWN_STEP_CALL.test(body),
       rerenders: RERENDER.test(body),
       firstAssertion: assertion,
       uncompared: uncomparedSteps(code, start, body),

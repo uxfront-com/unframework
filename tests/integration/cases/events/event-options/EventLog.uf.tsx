@@ -1,4 +1,4 @@
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export default function EventLog() {
   const log = ref<string[]>([]);

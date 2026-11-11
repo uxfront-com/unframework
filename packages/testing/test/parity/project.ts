@@ -10,8 +10,8 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { CAPABILITY_NAMES } from "@unframework/codegen";
-import type { Capabilities, CapabilityCell } from "@unframework/codegen";
+import { CAPABILITY_NAMES } from "@unframework.dev/codegen";
+import type { Capabilities, CapabilityCell } from "@unframework.dev/codegen";
 import type { TestProjectInlineConfiguration } from "vitest/config";
 
 import type { CaseConfig, HarnessContext } from "../../src/harness.ts";

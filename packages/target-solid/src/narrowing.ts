@@ -25,9 +25,9 @@ import {
   parseExpression,
   parseStatementsSource,
   rewriteExpression,
-} from "@unframework/codegen";
-import type { ImportSet, JsxContext } from "@unframework/codegen";
-import { reservedPropName } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { ImportSet, JsxContext } from "@unframework.dev/codegen";
+import { reservedPropName } from "@unframework.dev/ir";
 import type {
   BindingId,
   BindingKind,
@@ -39,7 +39,7 @@ import type {
   Span,
   TypeDeclaration,
   UfComponent,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { assertedPathEnds } from "./asserted.ts";
 

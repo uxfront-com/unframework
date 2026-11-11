@@ -4,7 +4,7 @@
 // defaults; a nested arrow's parameter default reads the current limit when it is called; a save
 // awaits a reply in a `try` block that throws on an error and reads `??`, `?:` and an emit, and its
 // `finally` clause ends the save whichever way it went.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import DisplaySettings from "./DisplaySettings.uf.tsx";

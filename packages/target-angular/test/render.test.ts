@@ -11,8 +11,8 @@ import {
   createExport,
   createModule,
   createText,
-} from "@unframework/ir";
-import type { RenderNode } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { RenderNode } from "@unframework.dev/ir";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
 import { renderToString } from "../src/toolchain/server.ts";

@@ -5,8 +5,8 @@
     {
       "name": "QuantityStepper",
       "span": {
-        "start": 115,
-        "end": 489
+        "start": 124,
+        "end": 498
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "number",
             "span": {
-              "start": 87,
-              "end": 93
+              "start": 96,
+              "end": 102
             }
           },
-          "binding": "initial@157",
+          "binding": "initial@166",
           "span": {
-            "start": 78,
-            "end": 94
+            "start": 87,
+            "end": 103
           }
         },
         {
@@ -31,14 +31,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 104,
-              "end": 110
+              "start": 113,
+              "end": 119
             }
           },
-          "binding": "label@166",
+          "binding": "label@175",
           "span": {
-            "start": 97,
-            "end": 111
+            "start": 106,
+            "end": 120
           }
         }
       ],
@@ -47,13 +47,13 @@
         "type": {
           "code": "QuantityStepperProps",
           "span": {
-            "start": 175,
-            "end": 195
+            "start": 184,
+            "end": 204
           }
         },
         "span": {
-          "start": 155,
-          "end": 195
+          "start": 164,
+          "end": 204
         }
       },
       "types": [
@@ -61,57 +61,57 @@
       ],
       "bindings": [
         {
-          "id": "initial@157",
+          "id": "initial@166",
           "name": "initial",
           "kind": "prop",
           "span": {
-            "start": 157,
-            "end": 164
+            "start": 166,
+            "end": 173
           }
         },
         {
-          "id": "label@166",
+          "id": "label@175",
           "name": "label",
           "kind": "prop",
           "span": {
-            "start": 166,
-            "end": 171
+            "start": 175,
+            "end": 180
           }
         },
         {
-          "id": "quantity@207",
+          "id": "quantity@216",
           "name": "quantity",
           "kind": "state",
           "span": {
-            "start": 207,
-            "end": 215
+            "start": 216,
+            "end": 224
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "quantity@207",
+          "binding": "quantity@216",
           "initial": {
             "code": "initial",
             "span": {
-              "start": 222,
-              "end": 229
+              "start": 231,
+              "end": 238
             },
             "refs": [
               {
                 "kind": "Binding",
-                "binding": "initial@157",
+                "binding": "initial@166",
                 "span": {
-                  "start": 222,
-                  "end": 229
+                  "start": 231,
+                  "end": 238
                 }
               }
             ]
           },
           "span": {
-            "start": 201,
-            "end": 231
+            "start": 210,
+            "end": 240
           }
         }
       ],
@@ -124,8 +124,8 @@
             "name": "class",
             "value": "quantity-stepper",
             "span": {
-              "start": 253,
-              "end": 277
+              "start": 262,
+              "end": 286
             }
           },
           {
@@ -133,8 +133,8 @@
             "name": "role",
             "value": "group",
             "span": {
-              "start": 278,
-              "end": 290
+              "start": 287,
+              "end": 299
             }
           },
           {
@@ -143,23 +143,23 @@
             "value": {
               "code": "label",
               "span": {
-                "start": 303,
-                "end": 308
+                "start": 312,
+                "end": 317
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "label@166",
+                  "binding": "label@175",
                   "span": {
-                    "start": 303,
-                    "end": 308
+                    "start": 312,
+                    "end": 317
                   }
                 }
               ]
             },
             "span": {
-              "start": 291,
-              "end": 309
+              "start": 300,
+              "end": 318
             }
           }
         ],
@@ -174,29 +174,29 @@
                 "value": {
                   "code": "quantity.value",
                   "span": {
-                    "start": 326,
-                    "end": 340
+                    "start": 335,
+                    "end": 349
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "quantity@207",
+                      "binding": "quantity@216",
                       "span": {
-                        "start": 326,
-                        "end": 340
+                        "start": 335,
+                        "end": 349
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 325,
-                  "end": 341
+                  "start": 334,
+                  "end": 350
                 }
               }
             ],
             "span": {
-              "start": 317,
-              "end": 350
+              "start": 326,
+              "end": 359
             }
           },
           {
@@ -208,8 +208,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 365,
-                  "end": 378
+                  "start": 374,
+                  "end": 387
                 }
               },
               {
@@ -218,23 +218,23 @@
                 "value": {
                   "code": "`Increase ${label}`",
                   "span": {
-                    "start": 391,
-                    "end": 410
+                    "start": 400,
+                    "end": 419
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "label@166",
+                      "binding": "label@175",
                       "span": {
-                        "start": 403,
-                        "end": 408
+                        "start": 412,
+                        "end": 417
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 379,
-                  "end": 411
+                  "start": 388,
+                  "end": 420
                 }
               },
               {
@@ -247,21 +247,21 @@
                     "body": {
                       "code": "quantity.value++",
                       "span": {
-                        "start": 427,
-                        "end": 443
+                        "start": 436,
+                        "end": 452
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "quantity@207",
+                          "binding": "quantity@216",
                           "operator": "++",
                           "span": {
-                            "start": 427,
-                            "end": 443
+                            "start": 436,
+                            "end": 452
                           },
                           "target": {
-                            "start": 427,
-                            "end": 441
+                            "start": 436,
+                            "end": 450
                           },
                           "arrowBody": true
                         }
@@ -269,18 +269,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 421,
-                      "end": 443
+                      "start": 430,
+                      "end": 452
                     }
                   },
                   "span": {
-                    "start": 421,
-                    "end": 443
+                    "start": 430,
+                    "end": 452
                   }
                 },
                 "span": {
-                  "start": 412,
-                  "end": 444
+                  "start": 421,
+                  "end": 453
                 }
               }
             ],
@@ -289,20 +289,20 @@
                 "kind": "Text",
                 "value": "+",
                 "span": {
-                  "start": 445,
-                  "end": 462
+                  "start": 454,
+                  "end": 471
                 }
               }
             ],
             "span": {
-              "start": 357,
-              "end": 471
+              "start": 366,
+              "end": 480
             }
           }
         ],
         "span": {
-          "start": 248,
-          "end": 482
+          "start": 257,
+          "end": 491
         }
       }
     }
@@ -313,8 +313,8 @@
       "name": "default",
       "local": "QuantityStepper",
       "span": {
-        "start": 115,
-        "end": 489
+        "start": 124,
+        "end": 498
       }
     }
   ],
@@ -324,8 +324,8 @@
       "exported": true,
       "code": "interface QuantityStepperProps {\n  initial: number;\n  label: string;\n}",
       "span": {
-        "start": 43,
-        "end": 113
+        "start": 52,
+        "end": 122
       }
     }
   ]

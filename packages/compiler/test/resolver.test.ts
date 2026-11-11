@@ -101,8 +101,8 @@ export interface ChipProps extends Base { label: string; icon?: Icon }
 export interface Icon { name: string }
 `;
 
-const CHIP = `import { defineEmits, defineSlots } from "unframework";
-import type { Element } from "unframework";
+const CHIP = `import { defineEmits, defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 import type { ChipProps, Icon } from "./types.ts";
 
 export default function Chip({ label, tone }: ChipProps) {
@@ -186,7 +186,7 @@ describe("createFileResolver with a type oracle (ADR-0067)", () => {
 
   it("gives an injection key's references (ADR-0054)", async () => {
     const { resolve } = memoryProject({
-      "/project/keys.uf.tsx": `import type { InjectionKey } from "unframework";
+      "/project/keys.uf.tsx": `import type { InjectionKey } from "@uxfront/unframework";
 export interface Theme { tone: string }
 export const ThemeKey: InjectionKey<Theme> = Symbol("uf.theme");
 export default function Provider() { return <p />; }
@@ -270,7 +270,7 @@ export default function Form() {
 // UF3046 reads a template ref's type from the syntax, as before the type oracle: compiling with
 // the oracle changes nothing it reports.
 describe("a template ref's type, compiled with the type oracle (UF3046)", () => {
-  const FIELD = `import { defineExpose, useTemplateRef } from "unframework";
+  const FIELD = `import { defineExpose, useTemplateRef } from "@uxfront/unframework";
 
 export default function Field({ label }: { label: string }) {
   const input = useTemplateRef<HTMLInputElement>();
@@ -288,7 +288,7 @@ export default function Field({ label }: { label: string }) {
 
   /** The codes of a parent whose ref on `Field` is typed `type`, after `declarations`. */
   async function codesOf(declarations: string, type: string): Promise<string[]> {
-    const source = `import { useTemplateRef } from "unframework";
+    const source = `import { useTemplateRef } from "@uxfront/unframework";
 import Field from "./Field.uf.tsx";
 import type { Options } from "./types.ts";
 import type { Missing } from "./missing.ts";

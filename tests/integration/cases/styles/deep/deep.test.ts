@@ -1,7 +1,7 @@
 // styles/deep: `:deep()` (ADR-0063). The article's `.article :deep(.note)` rule keeps the scope
 // attribute on `.article` and reaches the note inside its unstyled child; its scoped `.note`
 // rule does not.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Article from "./Article.uf.tsx";

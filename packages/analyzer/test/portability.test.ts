@@ -22,9 +22,9 @@ import {
   isExportName,
   UNPORTABLE_ELEMENTS,
   UNRENDERABLE_ELEMENTS,
-} from "@unframework/ir";
-import type { ElementNode, RenderNode } from "@unframework/ir";
-import { isComponentName as isParsedComponentName } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { ElementNode, RenderNode } from "@unframework.dev/ir";
+import { isComponentName as isParsedComponentName } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { codes, component, run } from "./helpers.ts";
@@ -56,7 +56,7 @@ function invariantsOf(render: ElementNode) {
 }
 
 // The analyser rejects these because the targets render them differently, and checkInvariants
-// rejects the IR they would lower to, from the same facts in @unframework/ir, so a plugin
+// rejects the IR they would lower to, from the same facts in @unframework.dev/ir, so a plugin
 // cannot hand the targets what an author cannot write (r3-analyzer-4, r3-analyzer-6).
 describe("what the targets render differently", () => {
   it.each<[string, ElementNode]>([
@@ -143,7 +143,7 @@ function expression(code: string) {
 }
 
 // M1's facts (ADR-0037, ADR-0038, ADR-0040): the analyser reports each source, and the invariants
-// reject the IR it would lower to, from the same tables in @unframework/ir.
+// reject the IR it would lower to, from the same tables in @unframework.dev/ir.
 describe("what the targets render differently, in M1", () => {
   it.each<[string, ElementNode, string?]>([
     ["<p hidden={on}>a</p>", el("p", {}, "a"), "hidden"],

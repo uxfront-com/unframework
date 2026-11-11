@@ -3,7 +3,7 @@
 // clears a colour and closes the panel it sits in, a nullable colour cleared from the branch its
 // truthiness opens, and a note field that writes, then clears with Escape, the nullable ref its
 // branch is narrowed by.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import FilterPanel from "./FilterPanel.uf.tsx";

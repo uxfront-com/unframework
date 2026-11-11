@@ -3,7 +3,7 @@
 // them is unsupported, and records why on every layer the test would have recorded, so the skip
 // shows in the parity matrix. The options that would skip, repeat or reorder a test some other
 // way are refused: a known failure is a quarantine entry, and a flaky test is a bug (AGENTS.md).
-import type { CapabilityName } from "@unframework/codegen";
+import type { CapabilityName } from "@unframework.dev/codegen";
 import { it as vitestIt } from "vitest";
 import type { TestFunction, TestOptions } from "vitest";
 

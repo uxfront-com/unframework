@@ -3,7 +3,7 @@
 // cover; props and written setup types read theirs from shapes (`from-shape.ts`). Only the types
 // the checks accept need a faithful reading; anything else reads as `unknown`.
 
-import type { AST, TypeDeclarationStatement } from "@unframework/parser";
+import type { AST, TypeDeclarationStatement } from "@unframework.dev/parser";
 
 import {
   arrayOf,

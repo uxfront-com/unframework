@@ -25,7 +25,7 @@ function frameworkImport(): Diagnostic {
     file,
     span: reactSpan,
     message: '"react" is a React module, and components are framework-free.',
-    help: 'Write the component with the authoring API from "unframework".',
+    help: 'Write the component with the authoring API from "@uxfront/unframework".',
   });
 }
 
@@ -44,6 +44,28 @@ describe("catalogue", () => {
   it("gives every code a unique name", () => {
     const names = [...catalogue.values()].map((entry) => entry.name);
     expect(new Set(names).size).toBe(names.length);
+  });
+});
+
+describe("the config and tooling codes", () => {
+  it("catalogues the names and severities the raising packages rely on", () => {
+    const found = [...catalogue.values()]
+      .filter(({ code }) => /^UF7|^UF900[23]$/.test(code))
+      .map(({ code, name, severity }) => [code, name, severity]);
+    expect(found).toEqual([
+      ["UF7001", "config-not-loaded", "error"],
+      ["UF7002", "config-invalid", "error"],
+      ["UF7003", "unknown-target", "error"],
+      ["UF7004", "target-options-invalid", "error"],
+      ["UF7005", "target-not-detected", "error"],
+      ["UF7006", "target-ambiguous", "error"],
+      ["UF7007", "no-sources", "error"],
+      ["UF7008", "packager-missing", "error"],
+      ["UF7009", "packager-failed", "error"],
+      ["UF7010", "host-option-incompatible", "warning"],
+      ["UF9002", "sourcemap-not-remapped", "error"],
+      ["UF9003", "sourcemap-skipped", "warning"],
+    ]);
   });
 });
 
@@ -108,7 +130,7 @@ describe("formatDiagnostic", () => {
       1 | import { useState } from "react";
         |                          ^^^^^^^
         |
-        = help: Write the component with the authoring API from "unframework".
+        = help: Write the component with the authoring API from "@uxfront/unframework".
         = see: https://unframework.dev/diagnostics/UF1201"
     `);
   });
@@ -133,7 +155,7 @@ describe("formatDiagnostic", () => {
       1 | import { useState } from "react";
         |                          ^^^^^^^ imported here
         |
-        = help: Write the component with the authoring API from "unframework".
+        = help: Write the component with the authoring API from "@uxfront/unframework".
         = fix (safe): Remove the import"
     `);
   });
@@ -143,7 +165,7 @@ describe("formatDiagnostic", () => {
       [
         'error[UF1201]: "react" is a React module, and components are framework-free.',
         " --> Widget.uf.tsx",
-        '  = help: Write the component with the authoring API from "unframework".',
+        '  = help: Write the component with the authoring API from "@uxfront/unframework".',
       ].join("\n"),
     );
   });

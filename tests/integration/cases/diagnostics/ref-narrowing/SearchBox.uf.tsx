@@ -1,7 +1,7 @@
 // UF3031 ref-narrowing: `if (typeof query.value === "string") emit("search", query.value.trim())`
 // relies on TypeScript narrowing the ref's union of kinds between two reads, which Solid's and
 // Angular's reads (calls) do not keep; the likely fix reads it into a local first.
-import { defineEmits, ref } from "unframework";
+import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function SearchBox() {
   const query = ref<string | string[]>("");

@@ -14,14 +14,16 @@
 // change only elements every render shows, with attributes each element takes (an `<svg>` has
 // no `hidden`), and replace what an element already sets rather than set it twice;
 // `canaries.unit.test.ts` runs each canary on every case of the corpus.
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { basename, join, relative, sep } from "node:path";
 
-import { parseStatementsSource } from "@unframework/codegen";
-import type { OutputFile, ParsedStatements } from "@unframework/codegen";
-import { builtinTargets } from "@unframework/compiler";
-import type { CompilerPlugin, OutputHookContext, TargetName } from "@unframework/compiler";
-import type { Diagnostic } from "@unframework/diagnostics";
+import { decodedMappings, encodedMappings, TraceMap } from "@jridgewell/trace-mapping";
+import { parseStatementsSource } from "@unframework.dev/codegen";
+import type { OutputFile, ParsedStatements, SourceMapV3 } from "@unframework.dev/codegen";
+import { builtinTargets } from "@unframework.dev/compiler";
+import type { CompilerPlugin, OutputHookContext, TargetName } from "@unframework.dev/compiler";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
 import {
   childrenOf,
   createElement,
@@ -35,7 +37,7 @@ import {
   PERMITTED_CHILDREN,
   SVG_TEXT_ELEMENTS,
   UNINTERPOLATED_ELEMENTS,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Attribute,
   DynamicNode,
@@ -46,12 +48,14 @@ import type {
   StaticAttribute,
   StaticStyle,
   UfModule,
-} from "@unframework/ir";
-import { REQUIRES_SKIP } from "@unframework/testing/node";
-import type { LayerName, ProjectKind } from "@unframework/testing/node";
+} from "@unframework.dev/ir";
+import { REQUIRES_SKIP } from "@unframework.dev/testing/node";
+import type { LayerName, ProjectKind } from "@unframework.dev/testing/node";
+import type { Plugin } from "vite";
 
 import { errorState, expectedDiagnostics, specTests } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
+import { sourceTokenAt } from "./compile-checks.ts";
 import { consumerFixtures } from "./consumers.ts";
 import { standInCases } from "./no-output.ts";
 import { ROOT } from "./paths.ts";
@@ -80,6 +84,13 @@ export interface CanaryCase {
   interacts(target: string): boolean;
   /** Whether a test that runs on a target rerenders: its traces record rerenders. */
   rerenders(target: string): boolean;
+  /**
+   * Whether a test that runs on a target wraps a step in `view.expectThrown`: its browser test
+   * records L14 (ADR-0078).
+   */
+  throws(target: string): boolean;
+  /** Whether `case.json` declares `ssrThrows`: its server render records L14 (ADR-0078). */
+  ssrThrows: boolean;
   /** Whether a source's committed IR has an element listener (an `Event` attribute) to unwire. */
   listens: boolean;
   /**
@@ -158,6 +169,20 @@ export interface Canary {
    */
   fixes?(diagnostics: readonly Diagnostic[], source: string, target: string): Diagnostic[];
   /**
+   * Corrupts a target's output files after the compiler built their source maps (L14). The
+   * `output` hook runs before a map exists, so the harness corrupts the result. Only the compile
+   * project.
+   */
+  map?(files: readonly OutputFile[]): OutputFile[];
+  /**
+   * The map a module the `ssr` and `browser` projects serve is given on top of its own (L14): a
+   * Vite plugin that runs after every other gives back the module's code with one more line break
+   * at its end, which moves no line, and this map, which Vite chains onto the map the module had. The compiler's `output` hook runs before a
+   * map exists, and the compile project serves no module, so only those projects.
+   */
+  // A function property, not a method: the serve plugin holds it on its own, apart from the canary.
+  servedMap?: (code: string, file: string) => SourceMapV3;
+  /**
    * The cases the canary corrupts on a target, when not every case it can reach: the compile
    * project corrupts, and the verdict judges, only those.
    */
@@ -201,6 +226,18 @@ const FRAMEWORK_RULES: Readonly<Record<TargetName, FrameworkRule>> = {
   qwik: { attribute: 'className="uf-canary"', rule: "qwik/no-react-props" },
   astro: { attribute: 'set:html="uf-canary"', rule: "astro/no-set-html-directive" },
 };
+
+/** The case L15-slow-compile slows down. */
+const SLOW_CASE = "basics/nested-and-void";
+
+/** `length` characters that gzip can't shrink to nothing, the same on every run (P8). */
+function padding(length: number): string {
+  let text = "";
+  for (let block = 0; text.length < length; block += 1) {
+    text += createHash("sha256").update(String(block)).digest("hex");
+  }
+  return text.slice(0, length);
+}
 
 /** How many compiles the L2-nondeterministic canary has numbered in this process. */
 let compiles = 0;
@@ -686,7 +723,144 @@ export const CANARIES: readonly Canary[] = [
             })),
     }),
   },
+  {
+    id: "L14-map-shifted",
+    layer: "L14",
+    description:
+      "Moves one segment of a compiled map a column along, to where the output reads other text than its source. An output with no segment that compares text, as a template of only static markup has none, gets one that reads the wrong text.",
+    evidence: {
+      compile: {
+        "round trip": (target) => new RegExp(`${target}/\\S+'s map has \\d+ wrong segment`),
+      },
+    },
+    map: shiftSegment,
+  },
+  {
+    id: "L14-ssr-map-shifted",
+    layer: "L14",
+    description:
+      "Moves every line of the map of each module the ssr projects serve for the cases whose server render throws down one, so the error's top frame in the case lands a line below the `throw`. The code gains one line break at its end, and no line moves.",
+    evidence: { ssr: { "mapped stack": /The top frame in the case is \S+:\d+, not / } },
+    appliesTo: (info) => info.ssrThrows,
+    servedMap: linesShifted,
+  },
+  {
+    id: "L14-browser-map-shifted",
+    layer: "L14",
+    description:
+      "Moves every line of the map of each module the browser projects serve for the cases whose specs wrap a throwing step in `expectThrown`, Qwik's segments included, down one, so the error's top frame in the case maps a line below the `throw`. The code gains one line break at its end, and no line moves. Astro runs no such step.",
+    evidence: { browser: { "mapped stack": /The top frame in the case maps to \S+, not to / } },
+    targets: ["react", "vue", "svelte", "solid", "angular", "qwik"],
+    appliesTo: (info, target) => info.throws(target),
+    servedMap: linesShifted,
+  },
+  {
+    id: "L15-output-bloat",
+    layer: "L15",
+    description:
+      "Adds a statement that keeps a long, hard-to-compress string to every emitted file, as long as the file itself: every bundle grows by more than the 5% a budget allows, raw and gzipped.",
+    evidence: {
+      bench: { "raw size": /raw size \d+ B is above/, "gzip size": /gzip size \d+ B is above/ },
+    },
+    plugin: () => ({
+      name: "uf-canary-L15-bloat",
+      output: (files, { target }) =>
+        files.map((file) => ({
+          ...file,
+          contents: injectScript(
+            file,
+            target,
+            // Assigned to a global, so the minifier cannot drop it as unused.
+            `const ufCanaryL15 = ((globalThis as any).ufCanaryL15 = "${padding(file.contents.length)}");`,
+            "module",
+          ),
+        })),
+    }),
+  },
+  {
+    id: "L15-slow-compile",
+    layer: "L15",
+    description:
+      "Waits half a second in the ir hook of one case's compile, far longer than twice its budget. One case, since every iteration waits, and never `basics/hello`, which every time is a ratio of.",
+    evidence: { bench: { "compile time": /compile time \d+\.\d+ × \S+ is above/ } },
+    appliesTo: (info) => info.id === SLOW_CASE,
+    plugin: () => ({
+      name: "uf-canary-L15-slow",
+      ir(module) {
+        if (!module.file.startsWith(`${SLOW_CASE}/`)) return;
+        const end = performance.now() + 500;
+        while (performance.now() < end);
+      },
+    }),
+  },
 ];
+
+/** A code file's decoded mappings, the same shape {@link TraceMap} takes back. */
+type DecodedLines = ReturnType<typeof decodedMappings>;
+
+/** One map changed, so that L14 finds a segment whose text differs (`L14-map-shifted`). */
+function shiftSegment(files: readonly OutputFile[]): OutputFile[] {
+  const code = files.filter(({ path, map }) => map && !path.endsWith(".css"));
+  for (const file of code) {
+    const mappings = shiftedMappings(file);
+    if (mappings) return replaceMappings(files, file, mappings);
+  }
+  const first = code[0];
+  if (!first) throw new Error(`${MARKER} L14: no output has a map to corrupt.`);
+  return replaceMappings(files, first, withWrongSegment(first));
+}
+
+/**
+ * The mappings with the first segment that compares text moved a column along, or `undefined`
+ * when no segment's text would change: `=` beside `=` reads the same a column along.
+ */
+function shiftedMappings(file: OutputFile): DecodedLines | undefined {
+  const map = file.map!;
+  const lines = decodedMappings(new TraceMap(map)).map((line) => [...line]);
+  const output = file.contents.split("\n");
+  const source = map.sourcesContent[0]!.split("\n");
+  for (const [line, segments] of lines.entries()) {
+    for (const [index, segment] of segments.entries()) {
+      if (segment.length !== 4) continue;
+      const [column, sourceIndex, fromLine, fromColumn] = segment;
+      const token = sourceTokenAt(source[fromLine]!, fromColumn);
+      if (output[line]!.slice(column + 1, column + 1 + token.length) === token) continue;
+      segments[index] = [column + 1, sourceIndex, fromLine, fromColumn];
+      return lines;
+    }
+  }
+  return undefined;
+}
+
+/** The mappings with a segment from the output's first token to a source token that differs. */
+function withWrongSegment(file: OutputFile): DecodedLines {
+  const map = file.map!;
+  const lines = decodedMappings(new TraceMap(map)).map((line) => [...line]);
+  const output = file.contents.split("\n");
+  const line = output.findIndex((text) => text.trim());
+  const column = output[line]!.search(/\S/);
+  for (const [fromLine, text] of map.sourcesContent[0]!.split("\n").entries()) {
+    for (const { index: fromColumn } of text.matchAll(/\S/g)) {
+      const token = sourceTokenAt(text, fromColumn);
+      if (output[line]!.slice(column, column + token.length) === token) continue;
+      lines[line]!.push([column, 0, fromLine, fromColumn]);
+      lines[line]!.sort((a, b) => a[0] - b[0]);
+      return lines;
+    }
+  }
+  throw new Error(`${MARKER} L14: ${file.path}'s source holds no token that differs.`);
+}
+
+function replaceMappings(
+  files: readonly OutputFile[],
+  file: OutputFile,
+  mappings: DecodedLines,
+): OutputFile[] {
+  const encoded = encodedMappings(new TraceMap({ ...file.map!, mappings }));
+  return files.map((each) =>
+    each === file ? { ...each, map: { ...each.map!, mappings: encoded } } : each,
+  );
+}
 
 /**
  * A Qwik file whose component renders `leaf` after what it returns, in a fragment
@@ -729,6 +903,81 @@ const ${leaf} = component$(() => {
 `;
   }
   return fail();
+}
+
+/**
+ * A map of `code` onto itself with every line moved down one: each column of a line maps to the
+ * same column of the next, and the last line maps nowhere. Chained onto a module's own map, a
+ * frame on a line then reads the line after it (`L14-ssr-map-shifted`,
+ * `L14-browser-map-shifted`).
+ */
+export function linesShifted(code: string, file: string): SourceMapV3 {
+  const lines = code.split("\n");
+  const mappings = lines.map((text, line) =>
+    line + 1 < lines.length
+      ? Array.from({ length: text.length + 1 }, (_, column): [number, number, number, number] => [
+          column,
+          0,
+          line + 1,
+          column,
+        ])
+      : [],
+  );
+  const map: SourceMapV3 = {
+    version: 3,
+    file,
+    names: [],
+    sources: [file],
+    sourcesContent: [code],
+    mappings: "",
+  };
+  return { ...map, mappings: encodedMappings(new TraceMap({ ...map, mappings })) };
+}
+
+/** A CSS module or a framework's style part (`?vue&type=style…`): no frame lands there. */
+const STYLE_REQUEST = /\.css(?:\?|$)|[?&]type=style\b/;
+
+/**
+ * The Vite plugin that gives a served module the canary's map (`Canary.servedMap`), on the cases
+ * it applies to on the project's target, or none. After every other plugin, so the map moves
+ * whatever the module's own map says, Qwik's segments included, which load as modules of their
+ * own (`<module id>_<symbol>.js`).
+ */
+export function canaryServePlugin(
+  id: string | null,
+  target: string,
+  casesDir: string,
+  cases: readonly CaseInfo[],
+): Plugin | undefined {
+  const canary = id ? findCanary(id) : undefined;
+  const servedMap = canary?.servedMap;
+  if (!canary || !servedMap || !corrupts(canary, target)) return undefined;
+  const byId = new Map(cases.map((info) => [info.id, info]));
+  const corrupted = new Map<string, boolean>();
+  const applies = (caseId: string): boolean => {
+    let known = corrupted.get(caseId);
+    if (known === undefined) {
+      const info = byId.get(caseId);
+      known =
+        info !== undefined && (!canary.appliesTo || canary.appliesTo(canaryCase(info), target));
+      corrupted.set(caseId, known);
+    }
+    return known;
+  };
+  return {
+    name: `uf-canary-${canary.id}`,
+    enforce: "post",
+    transform(code, moduleId) {
+      if (STYLE_REQUEST.test(moduleId)) return undefined;
+      const file = moduleId.replace(/[?#].*$/, "");
+      const [area, name, ...rest] = relative(casesDir, file).split(sep);
+      if (area === ".." || !rest.length || !applies(`${area}/${name}`)) return undefined;
+      // One more line break at the end: Vite keeps the load's map when the transforms give back
+      // the code they were given, and nothing else changes a Qwik segment that imports nothing.
+      const served = `${code}\n`;
+      return { code: served, map: servedMap(served, basename(file)) };
+    },
+  };
 }
 
 /** The canary with an id; throws for an unknown one, so a typo never runs a clean suite. */
@@ -844,6 +1093,12 @@ export function canaryFixes(
   return canary.fixes(diagnostics, source, target);
 }
 
+/** A target's output files as the compile project's map check reads them: under a map canary. */
+export function canaryMaps(id: string | null, files: readonly OutputFile[]): readonly OutputFile[] {
+  const canary = id ? findCanary(id) : undefined;
+  return canary?.map ? canary.map(files) : files;
+}
+
 /** Whether the compile project formats its output: always, except under a format canary. */
 export function canaryFormats(id: string | null): boolean {
   return !id || findCanary(id).format !== false;
@@ -875,6 +1130,8 @@ export function canaryCase(info: CaseInfo): CanaryCase {
     runs: (target) => running(target).length > 0,
     interacts: (target) => running(target).some((test) => test.acts),
     rerenders: (target) => running(target).some((test) => test.rerenders),
+    throws: (target) => running(target).some((test) => test.throws),
+    ssrThrows: info.config.ssrThrows !== undefined,
     listens: irs.some(
       (ir) => existsSync(ir) && listens(JSON.parse(readFileSync(ir, "utf8")) as UfModule),
     ),
@@ -892,7 +1149,7 @@ export function canaryCase(info: CaseInfo): CanaryCase {
 
 /**
  * Whether a target supports a capability a test requires: the browser setup skips the test
- * where the cell is unsupported (`requiredSkip` in `@unframework/testing`). Throws for a name
+ * where the cell is unsupported (`requiredSkip` in `@unframework.dev/testing`). Throws for a name
  * that is no capability, as the setup does.
  */
 function supports(target: string, capability: string): boolean {

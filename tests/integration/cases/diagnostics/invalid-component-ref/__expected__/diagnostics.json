@@ -7,12 +7,12 @@
     "start": {
       "line": 13,
       "column": 13,
-      "offset": 386
+      "offset": 395
     },
     "end": {
       "line": 13,
       "column": 23,
-      "offset": 396
+      "offset": 405
     },
     "help": "Expose the functions a parent calls from Hint with `defineExpose({ … })`, or remove the ref."
   }

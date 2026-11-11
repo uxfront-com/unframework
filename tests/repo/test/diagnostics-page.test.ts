@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { BANDS, catalogue } from "@unframework/diagnostics";
+import { BANDS, catalogue } from "@unframework.dev/diagnostics";
 import { describe, expect, it } from "vitest";
 
 import { root } from "./workspace.ts";

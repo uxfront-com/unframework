@@ -4,7 +4,7 @@ import {
   listBoxSize,
   summarizeCode,
   walk,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Attribute,
   BindingId,
@@ -22,7 +22,7 @@ import type {
   UfComponent,
   UfModule,
   VisitedNode,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { handedControls, handlerControls } from "./controls.ts";
 import { childStyles } from "./scope.ts";

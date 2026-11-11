@@ -18,7 +18,7 @@ import {
   createTypeText,
   span,
   walk,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   BoundAttribute,
   ElementNode,
@@ -27,7 +27,7 @@ import type {
   Span,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { COUNTER, everyKind, find as findInCounter } from "../../ir/test/fixtures.ts";

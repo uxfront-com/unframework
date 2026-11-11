@@ -1,6 +1,6 @@
-// The browser commands the parity layers call (`@unframework/testing/node` implements them).
+// The browser commands the parity layers call (`@unframework.dev/testing/node` implements them).
 // Types only: the browser side imports them through the `vitest/browser` augmentation.
-import type { MountEvent } from "@unframework/codegen";
+import type { MountEvent } from "@unframework.dev/codegen";
 
 import type { ColorScheme } from "./harness.ts";
 import type { CaptureRequest, CaptureResult } from "./visual-types.ts";
@@ -62,6 +62,18 @@ export type InputRequest =
   /** A key Playwright names (`Enter`, `Shift`), or one character (`text`). */
   | { kind: "keydown" | "keyup"; key: string; text: boolean };
 
+/** The stack of the error a case's scripted step threw, as the browser read it (ADR-0078). */
+export interface MapStackRequest {
+  case: string;
+  stack: string;
+}
+
+/** What the mapped stack says. */
+export interface MapStackResult {
+  /** Why the top frame in the case is not on the authored `throw`; absent when it is. */
+  message?: string;
+}
+
 /** What an input did: a character the keyboard layout lacks is inserted as text, with no key. */
 export interface InputResult {
   inserted: boolean;
@@ -85,5 +97,7 @@ declare module "vitest/browser" {
     ufColorScheme: (scheme: ColorScheme) => Promise<void>;
     /** The events a case's component declares, as the project's compile of it says (ADR-0050). */
     ufComponentEvents: (request: ComponentEventsRequest) => Promise<ComponentEventsResult>;
+    /** Maps a thrown error's stack through the project's module graph and checks its top frame. */
+    ufMapStack: (request: MapStackRequest) => Promise<MapStackResult>;
   }
 }

@@ -1,4 +1,4 @@
-import { unkeptCharacter } from "@unframework/ir";
+import { unkeptCharacter } from "@unframework.dev/ir";
 
 import type { Piece } from "./jsx/text.ts";
 

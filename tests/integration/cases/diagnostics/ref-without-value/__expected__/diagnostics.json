@@ -7,12 +7,12 @@
     "start": {
       "line": 10,
       "column": 16,
-      "offset": 257
+      "offset": 266
     },
     "end": {
       "line": 10,
       "column": 21,
-      "offset": 262
+      "offset": 271
     },
     "help": "Read `count.value`: Vue's templates unwrap a ref, and the other targets do not.",
     "fixes": [
@@ -22,8 +22,8 @@
         "edits": [
           {
             "span": {
-              "start": 257,
-              "end": 262
+              "start": 266,
+              "end": 271
             },
             "text": "count.value"
           }

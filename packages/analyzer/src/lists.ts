@@ -2,10 +2,10 @@
 // a child lowers to a For, which each target writes as its own loop (`v-for`, `{#each}`,
 // `@for`). M1 guarantees a list's content and order; DOM identity on reorder lands later.
 
-import type { Fix } from "@unframework/diagnostics";
-import { createBinding, createFor } from "@unframework/ir";
-import type { ForNode } from "@unframework/ir";
-import type { AST } from "@unframework/parser";
+import type { Fix } from "@unframework.dev/diagnostics";
+import { createBinding, createFor } from "@unframework.dev/ir";
+import type { ForNode } from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
 
 import { checkExpression, findToken, shadowing, span } from "./expressions.ts";
 import { containsJsx, lowerElement } from "./lower.ts";

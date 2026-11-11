@@ -1,6 +1,6 @@
 // props/props-parameter: the object form, `(props: P)`, read as `props.x` in text and in an
 // attribute, with an optional prop and no defaults.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import AuthorByline from "./AuthorByline.uf.tsx";

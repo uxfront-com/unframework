@@ -16,8 +16,8 @@ import {
   createTypeDeclaration,
   createTypeText,
   span,
-} from "@unframework/ir";
-import type { ComponentApi, ElementNode, ModuleApi } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { ComponentApi, ElementNode, ModuleApi } from "@unframework.dev/ir";
 import { transformWithOxc } from "vite";
 import { describe, expect, it } from "vitest";
 

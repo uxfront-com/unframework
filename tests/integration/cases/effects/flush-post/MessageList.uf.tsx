@@ -1,4 +1,4 @@
-import { defineEmits, ref, useTemplateRef, watch } from "unframework";
+import { defineEmits, ref, useTemplateRef, watch } from "@uxfront/unframework";
 
 export default function MessageList() {
   const emit = defineEmits<{ rendered: [count: number] }>();

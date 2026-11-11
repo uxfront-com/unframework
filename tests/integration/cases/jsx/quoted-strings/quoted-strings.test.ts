@@ -1,6 +1,6 @@
 // jsx/quoted-strings: strings in expressions that hold an apostrophe, a double quote or both,
 // in bound attributes (`title`, `alt`) and in interpolated text, render exactly as written.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import DraftNotice from "./DraftNotice.uf.tsx";

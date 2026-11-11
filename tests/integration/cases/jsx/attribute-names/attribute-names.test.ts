@@ -1,6 +1,6 @@
 // jsx/attribute-names: HTML attribute names whose DOM or framework spellings differ (`tabindex`,
 // `for`, `readonly`, `colspan`, `maxlength`, `accept-charset`, `crossorigin`), static and bound.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import AccountSettings from "./AccountSettings.uf.tsx";

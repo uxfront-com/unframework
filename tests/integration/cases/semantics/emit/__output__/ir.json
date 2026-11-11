@@ -5,18 +5,18 @@
     {
       "name": "StarRating",
       "span": {
-        "start": 49,
-        "end": 1167
+        "start": 58,
+        "end": 1176
       },
       "props": [],
       "types": [],
       "emits": {
-        "binding": "emit@96",
+        "binding": "emit@105",
         "type": {
           "code": "{\n    preview: [stars: number];\n    rate: [stars: number, previous: number];\n    cleared: [];\n  }",
           "span": {
-            "start": 115,
-            "end": 212
+            "start": 124,
+            "end": 221
           }
         },
         "events": [
@@ -28,19 +28,19 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 138,
-                    "end": 144
+                    "start": 147,
+                    "end": 153
                   }
                 },
                 "span": {
-                  "start": 131,
-                  "end": 144
+                  "start": 140,
+                  "end": 153
                 }
               }
             ],
             "span": {
-              "start": 121,
-              "end": 145
+              "start": 130,
+              "end": 154
             }
           },
           {
@@ -51,13 +51,13 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 165,
-                    "end": 171
+                    "start": 174,
+                    "end": 180
                   }
                 },
                 "span": {
-                  "start": 158,
-                  "end": 171
+                  "start": 167,
+                  "end": 180
                 }
               },
               {
@@ -65,127 +65,127 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 183,
-                    "end": 189
+                    "start": 192,
+                    "end": 198
                   }
                 },
                 "span": {
-                  "start": 173,
-                  "end": 189
+                  "start": 182,
+                  "end": 198
                 }
               }
             ],
             "span": {
-              "start": 151,
-              "end": 190
+              "start": 160,
+              "end": 199
             }
           },
           {
             "name": "cleared",
             "parameters": [],
             "span": {
-              "start": 196,
-              "end": 207
+              "start": 205,
+              "end": 216
             }
           }
         ],
         "span": {
-          "start": 90,
-          "end": 216
+          "start": 99,
+          "end": 225
         }
       },
       "bindings": [
         {
-          "id": "emit@96",
+          "id": "emit@105",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 96,
-            "end": 100
+            "start": 105,
+            "end": 109
           }
         },
         {
-          "id": "choices@226",
+          "id": "choices@235",
           "name": "choices",
           "kind": "localConst",
           "span": {
-            "start": 226,
-            "end": 233
+            "start": 235,
+            "end": 242
           }
         },
         {
-          "id": "stars@261",
+          "id": "stars@270",
           "name": "stars",
           "kind": "state",
           "span": {
-            "start": 261,
-            "end": 266
+            "start": 270,
+            "end": 275
           }
         },
         {
-          "id": "choose@289",
+          "id": "choose@298",
           "name": "choose",
           "kind": "localFn",
           "span": {
-            "start": 289,
-            "end": 295
+            "start": 298,
+            "end": 304
           }
         },
         {
-          "id": "clear@454",
+          "id": "clear@463",
           "name": "clear",
           "kind": "localFn",
           "span": {
-            "start": 454,
-            "end": 459
+            "start": 463,
+            "end": 468
           }
         },
         {
-          "id": "choice@711",
+          "id": "choice@720",
           "name": "choice",
           "kind": "loopVar",
           "span": {
-            "start": 711,
-            "end": 717
+            "start": 720,
+            "end": 726
           }
         }
       ],
       "setup": [
         {
           "kind": "Const",
-          "binding": "choices@226",
+          "binding": "choices@235",
           "value": {
             "code": "[1, 2, 3, 4, 5]",
             "span": {
-              "start": 236,
-              "end": 251
+              "start": 245,
+              "end": 260
             },
             "refs": []
           },
           "span": {
-            "start": 220,
-            "end": 252
+            "start": 229,
+            "end": 261
           }
         },
         {
           "kind": "State",
-          "binding": "stars@261",
+          "binding": "stars@270",
           "initial": {
             "code": "0",
             "span": {
-              "start": 273,
-              "end": 274
+              "start": 282,
+              "end": 283
             },
             "refs": []
           },
           "span": {
-            "start": 255,
-            "end": 276
+            "start": 264,
+            "end": 285
           }
         },
         {
           "kind": "Function",
-          "binding": "choose@289",
+          "binding": "choose@298",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -194,175 +194,175 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 302,
-                    "end": 308
+                    "start": 311,
+                    "end": 317
                   }
                 },
                 "span": {
-                  "start": 296,
-                  "end": 308
+                  "start": 305,
+                  "end": 317
                 }
               }
             ],
             "body": {
               "code": "{\n    const previous = stars.value;\n    emit(\"preview\", next);\n    stars.value = next;\n    emit(\"rate\", stars.value, previous);\n  }",
               "span": {
-                "start": 310,
-                "end": 441
+                "start": 319,
+                "end": 450
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "stars@261",
+                  "binding": "stars@270",
                   "span": {
-                    "start": 333,
-                    "end": 344
+                    "start": 342,
+                    "end": 353
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@96",
+                  "binding": "emit@105",
                   "event": "preview",
                   "span": {
-                    "start": 350,
-                    "end": 371
+                    "start": 359,
+                    "end": 380
                   },
                   "arguments": [
                     {
-                      "start": 366,
-                      "end": 370
+                      "start": 375,
+                      "end": 379
                     }
                   ]
                 },
                 {
                   "kind": "Write",
-                  "binding": "stars@261",
+                  "binding": "stars@270",
                   "operator": "=",
                   "span": {
-                    "start": 377,
-                    "end": 395
+                    "start": 386,
+                    "end": 404
                   },
                   "target": {
-                    "start": 377,
-                    "end": 388
+                    "start": 386,
+                    "end": 397
                   },
                   "value": {
-                    "start": 391,
-                    "end": 395
+                    "start": 400,
+                    "end": 404
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@96",
+                  "binding": "emit@105",
                   "event": "rate",
                   "span": {
-                    "start": 401,
-                    "end": 436
+                    "start": 410,
+                    "end": 445
                   },
                   "arguments": [
                     {
-                      "start": 414,
-                      "end": 425
+                      "start": 423,
+                      "end": 434
                     },
                     {
-                      "start": 427,
-                      "end": 435
+                      "start": 436,
+                      "end": 444
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "stars@261",
+                  "binding": "stars@270",
                   "span": {
-                    "start": 414,
-                    "end": 425
+                    "start": 423,
+                    "end": 434
                   }
                 }
               ]
             },
             "span": {
-              "start": 295,
-              "end": 441
+              "start": 304,
+              "end": 450
             }
           },
           "span": {
-            "start": 280,
-            "end": 441
+            "start": 289,
+            "end": 450
           }
         },
         {
           "kind": "Function",
-          "binding": "clear@454",
+          "binding": "clear@463",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    for (let star = stars.value - 1; star >= 0; star--) {\n      emit(\"preview\", star);\n    }\n    stars.value = 0;\n    emit(\"cleared\");\n  }",
               "span": {
-                "start": 462,
-                "end": 602
+                "start": 471,
+                "end": 611
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "stars@261",
+                  "binding": "stars@270",
                   "span": {
-                    "start": 484,
-                    "end": 495
+                    "start": 493,
+                    "end": 504
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@96",
+                  "binding": "emit@105",
                   "event": "preview",
                   "span": {
-                    "start": 528,
-                    "end": 549
+                    "start": 537,
+                    "end": 558
                   },
                   "arguments": [
                     {
-                      "start": 544,
-                      "end": 548
+                      "start": 553,
+                      "end": 557
                     }
                   ]
                 },
                 {
                   "kind": "Write",
-                  "binding": "stars@261",
+                  "binding": "stars@270",
                   "operator": "=",
                   "span": {
-                    "start": 561,
-                    "end": 576
+                    "start": 570,
+                    "end": 585
                   },
                   "target": {
-                    "start": 561,
-                    "end": 572
+                    "start": 570,
+                    "end": 581
                   },
                   "value": {
-                    "start": 575,
-                    "end": 576
+                    "start": 584,
+                    "end": 585
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@96",
+                  "binding": "emit@105",
                   "event": "cleared",
                   "span": {
-                    "start": 582,
-                    "end": 597
+                    "start": 591,
+                    "end": 606
                   },
                   "arguments": []
                 }
               ]
             },
             "span": {
-              "start": 459,
-              "end": 602
+              "start": 468,
+              "end": 611
             }
           },
           "span": {
-            "start": 445,
-            "end": 602
+            "start": 454,
+            "end": 611
           }
         }
       ],
@@ -375,8 +375,8 @@
             "name": "class",
             "value": "star-rating",
             "span": {
-              "start": 624,
-              "end": 643
+              "start": 633,
+              "end": 652
             }
           },
           {
@@ -384,8 +384,8 @@
             "name": "role",
             "value": "group",
             "span": {
-              "start": 644,
-              "end": 656
+              "start": 653,
+              "end": 665
             }
           },
           {
@@ -393,8 +393,8 @@
             "name": "aria-label",
             "value": "Rating",
             "span": {
-              "start": 657,
-              "end": 676
+              "start": 666,
+              "end": 685
             }
           }
         ],
@@ -409,34 +409,34 @@
                 "source": {
                   "code": "choices",
                   "span": {
-                    "start": 698,
-                    "end": 705
+                    "start": 707,
+                    "end": 714
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "choices@226",
+                      "binding": "choices@235",
                       "span": {
-                        "start": 698,
-                        "end": 705
+                        "start": 707,
+                        "end": 714
                       }
                     }
                   ]
                 },
-                "item": "choice@711",
+                "item": "choice@720",
                 "key": {
                   "code": "choice",
                   "span": {
-                    "start": 743,
-                    "end": 749
+                    "start": 752,
+                    "end": 758
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "choice@711",
+                      "binding": "choice@720",
                       "span": {
-                        "start": 743,
-                        "end": 749
+                        "start": 752,
+                        "end": 758
                       }
                     }
                   ]
@@ -455,8 +455,8 @@
                           "name": "type",
                           "value": "button",
                           "span": {
-                            "start": 786,
-                            "end": 799
+                            "start": 795,
+                            "end": 808
                           }
                         },
                         {
@@ -465,31 +465,31 @@
                           "value": {
                             "code": "stars.value >= choice",
                             "span": {
-                              "start": 828,
-                              "end": 849
+                              "start": 837,
+                              "end": 858
                             },
                             "refs": [
                               {
                                 "kind": "Binding",
-                                "binding": "stars@261",
+                                "binding": "stars@270",
                                 "span": {
-                                  "start": 828,
-                                  "end": 839
+                                  "start": 837,
+                                  "end": 848
                                 }
                               },
                               {
                                 "kind": "Binding",
-                                "binding": "choice@711",
+                                "binding": "choice@720",
                                 "span": {
-                                  "start": 843,
-                                  "end": 849
+                                  "start": 852,
+                                  "end": 858
                                 }
                               }
                             ]
                           },
                           "span": {
-                            "start": 814,
-                            "end": 850
+                            "start": 823,
+                            "end": 859
                           }
                         },
                         {
@@ -502,43 +502,43 @@
                               "body": {
                                 "code": "choose(choice)",
                                 "span": {
-                                  "start": 880,
-                                  "end": 894
+                                  "start": 889,
+                                  "end": 903
                                 },
                                 "refs": [
                                   {
                                     "kind": "Binding",
-                                    "binding": "choose@289",
+                                    "binding": "choose@298",
                                     "span": {
-                                      "start": 880,
-                                      "end": 886
+                                      "start": 889,
+                                      "end": 895
                                     },
                                     "call": true
                                   },
                                   {
                                     "kind": "Binding",
-                                    "binding": "choice@711",
+                                    "binding": "choice@720",
                                     "span": {
-                                      "start": 887,
-                                      "end": 893
+                                      "start": 896,
+                                      "end": 902
                                     }
                                   }
                                 ]
                               },
                               "expression": true,
                               "span": {
-                                "start": 874,
-                                "end": 894
+                                "start": 883,
+                                "end": 903
                               }
                             },
                             "span": {
-                              "start": 874,
-                              "end": 894
+                              "start": 883,
+                              "end": 903
                             }
                           },
                           "span": {
-                            "start": 865,
-                            "end": 895
+                            "start": 874,
+                            "end": 904
                           }
                         }
                       ],
@@ -548,45 +548,13 @@
                           "value": {
                             "code": "choice",
                             "span": {
-                              "start": 925,
-                              "end": 931
-                            },
-                            "refs": [
-                              {
-                                "kind": "Binding",
-                                "binding": "choice@711",
-                                "span": {
-                                  "start": 925,
-                                  "end": 931
-                                }
-                              }
-                            ]
-                          },
-                          "span": {
-                            "start": 924,
-                            "end": 932
-                          }
-                        },
-                        {
-                          "kind": "Text",
-                          "value": " ",
-                          "span": {
-                            "start": 932,
-                            "end": 933
-                          }
-                        },
-                        {
-                          "kind": "Interpolation",
-                          "value": {
-                            "code": "choice === 1 ? \"star\" : \"stars\"",
-                            "span": {
                               "start": 934,
-                              "end": 965
+                              "end": 940
                             },
                             "refs": [
                               {
                                 "kind": "Binding",
-                                "binding": "choice@711",
+                                "binding": "choice@720",
                                 "span": {
                                   "start": 934,
                                   "end": 940
@@ -596,30 +564,62 @@
                           },
                           "span": {
                             "start": 933,
-                            "end": 966
+                            "end": 941
+                          }
+                        },
+                        {
+                          "kind": "Text",
+                          "value": " ",
+                          "span": {
+                            "start": 941,
+                            "end": 942
+                          }
+                        },
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "choice === 1 ? \"star\" : \"stars\"",
+                            "span": {
+                              "start": 943,
+                              "end": 974
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "choice@720",
+                                "span": {
+                                  "start": 943,
+                                  "end": 949
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 942,
+                            "end": 975
                           }
                         }
                       ],
                       "span": {
-                        "start": 764,
-                        "end": 988
+                        "start": 773,
+                        "end": 997
                       }
                     }
                   ],
                   "span": {
-                    "start": 734,
-                    "end": 1004
+                    "start": 743,
+                    "end": 1013
                   }
                 },
                 "span": {
-                  "start": 698,
-                  "end": 1015
+                  "start": 707,
+                  "end": 1024
                 }
               }
             ],
             "span": {
-              "start": 684,
-              "end": 1028
+              "start": 693,
+              "end": 1037
             }
           },
           {
@@ -631,8 +631,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 1038,
-                  "end": 1051
+                  "start": 1047,
+                  "end": 1060
                 }
               }
             ],
@@ -642,37 +642,37 @@
                 "value": {
                   "code": "stars.value",
                   "span": {
-                    "start": 1053,
-                    "end": 1064
+                    "start": 1062,
+                    "end": 1073
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "stars@261",
+                      "binding": "stars@270",
                       "span": {
-                        "start": 1053,
-                        "end": 1064
+                        "start": 1062,
+                        "end": 1073
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 1052,
-                  "end": 1065
+                  "start": 1061,
+                  "end": 1074
                 }
               },
               {
                 "kind": "Text",
                 "value": " of 5",
                 "span": {
-                  "start": 1065,
-                  "end": 1070
+                  "start": 1074,
+                  "end": 1079
                 }
               }
             ],
             "span": {
-              "start": 1035,
-              "end": 1074
+              "start": 1044,
+              "end": 1083
             }
           },
           {
@@ -684,8 +684,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 1089,
-                  "end": 1102
+                  "start": 1098,
+                  "end": 1111
                 }
               },
               {
@@ -693,15 +693,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "clear@454",
+                  "binding": "clear@463",
                   "span": {
-                    "start": 1112,
-                    "end": 1117
+                    "start": 1121,
+                    "end": 1126
                   }
                 },
                 "span": {
-                  "start": 1103,
-                  "end": 1118
+                  "start": 1112,
+                  "end": 1127
                 }
               }
             ],
@@ -710,20 +710,20 @@
                 "kind": "Text",
                 "value": "Clear",
                 "span": {
-                  "start": 1119,
-                  "end": 1140
+                  "start": 1128,
+                  "end": 1149
                 }
               }
             ],
             "span": {
-              "start": 1081,
-              "end": 1149
+              "start": 1090,
+              "end": 1158
             }
           }
         ],
         "span": {
-          "start": 619,
-          "end": 1160
+          "start": 628,
+          "end": 1169
         }
       }
     }
@@ -734,8 +734,8 @@
       "name": "default",
       "local": "StarRating",
       "span": {
-        "start": 49,
-        "end": 1167
+        "start": 58,
+        "end": 1176
       }
     }
   ],

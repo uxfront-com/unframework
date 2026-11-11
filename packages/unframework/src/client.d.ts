@@ -1,6 +1,6 @@
 /**
  * Ambient declarations for what a `.uf.tsx` file imports besides modules. Loaded through the
- * reference at the top of `unframework/jsx-runtime`, so no configuration is needed.
+ * reference at the top of `@uxfront/unframework/jsx-runtime`, so no configuration is needed.
  */
 
 /**

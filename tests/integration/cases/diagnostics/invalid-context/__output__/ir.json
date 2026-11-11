@@ -11,13 +11,13 @@
       "type": {
         "code": "number",
         "span": {
-          "start": 333,
-          "end": 339
+          "start": 351,
+          "end": 357
         }
       },
       "span": {
-        "start": 297,
-        "end": 362
+        "start": 315,
+        "end": 380
       }
     }
   ]

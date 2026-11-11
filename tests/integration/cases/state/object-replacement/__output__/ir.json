@@ -5,8 +5,8 @@
     {
       "name": "ProfileCard",
       "span": {
-        "start": 180,
-        "end": 958
+        "start": 189,
+        "end": 967
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "Profile",
             "span": {
-              "start": 168,
-              "end": 175
+              "start": 177,
+              "end": 184
             }
           },
-          "binding": "initial@218",
+          "binding": "initial@227",
           "span": {
-            "start": 159,
-            "end": 176
+            "start": 168,
+            "end": 185
           }
         }
       ],
@@ -31,13 +31,13 @@
         "type": {
           "code": "ProfileCardProps",
           "span": {
-            "start": 229,
-            "end": 245
+            "start": 238,
+            "end": 254
           }
         },
         "span": {
-          "start": 216,
-          "end": 245
+          "start": 225,
+          "end": 254
         }
       },
       "types": [
@@ -46,71 +46,71 @@
       ],
       "bindings": [
         {
-          "id": "initial@218",
+          "id": "initial@227",
           "name": "initial",
           "kind": "prop",
           "span": {
-            "start": 218,
-            "end": 225
+            "start": 227,
+            "end": 234
           }
         },
         {
-          "id": "profile@257",
+          "id": "profile@266",
           "name": "profile",
           "kind": "state",
           "span": {
-            "start": 257,
-            "end": 264
+            "start": 266,
+            "end": 273
           }
         },
         {
-          "id": "rename@293",
+          "id": "rename@302",
           "name": "rename",
           "kind": "localFn",
           "span": {
-            "start": 293,
-            "end": 299
+            "start": 302,
+            "end": 308
           }
         },
         {
-          "id": "toggleAvailability@380",
+          "id": "toggleAvailability@389",
           "name": "toggleAvailability",
           "kind": "localFn",
           "span": {
-            "start": 380,
-            "end": 398
+            "start": 389,
+            "end": 407
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "profile@257",
+          "binding": "profile@266",
           "initial": {
             "code": "initial",
             "span": {
-              "start": 271,
-              "end": 278
+              "start": 280,
+              "end": 287
             },
             "refs": [
               {
                 "kind": "Binding",
-                "binding": "initial@218",
+                "binding": "initial@227",
                 "span": {
-                  "start": 271,
-                  "end": 278
+                  "start": 280,
+                  "end": 287
                 }
               }
             ]
           },
           "span": {
-            "start": 251,
-            "end": 280
+            "start": 260,
+            "end": 289
           }
         },
         {
           "kind": "Function",
-          "binding": "rename@293",
+          "binding": "rename@302",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -119,116 +119,116 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 306,
-                    "end": 312
+                    "start": 315,
+                    "end": 321
                   }
                 },
                 "span": {
-                  "start": 300,
-                  "end": 312
+                  "start": 309,
+                  "end": 321
                 }
               }
             ],
             "body": {
               "code": "{\n    profile.value = { ...profile.value, name };\n  }",
               "span": {
-                "start": 314,
-                "end": 367
+                "start": 323,
+                "end": 376
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "profile@257",
+                  "binding": "profile@266",
                   "operator": "=",
                   "span": {
-                    "start": 320,
-                    "end": 362
+                    "start": 329,
+                    "end": 371
                   },
                   "target": {
-                    "start": 320,
-                    "end": 333
+                    "start": 329,
+                    "end": 342
                   },
                   "value": {
-                    "start": 336,
-                    "end": 362
+                    "start": 345,
+                    "end": 371
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "profile@257",
+                  "binding": "profile@266",
                   "span": {
-                    "start": 341,
-                    "end": 354
+                    "start": 350,
+                    "end": 363
                   }
                 }
               ]
             },
             "span": {
-              "start": 299,
-              "end": 367
+              "start": 308,
+              "end": 376
             }
           },
           "span": {
-            "start": 284,
-            "end": 367
+            "start": 293,
+            "end": 376
           }
         },
         {
           "kind": "Function",
-          "binding": "toggleAvailability@380",
+          "binding": "toggleAvailability@389",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    profile.value = { ...profile.value, available: !profile.value.available };\n  }",
               "span": {
-                "start": 401,
-                "end": 485
+                "start": 410,
+                "end": 494
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "profile@257",
+                  "binding": "profile@266",
                   "operator": "=",
                   "span": {
-                    "start": 407,
-                    "end": 480
+                    "start": 416,
+                    "end": 489
                   },
                   "target": {
-                    "start": 407,
-                    "end": 420
+                    "start": 416,
+                    "end": 429
                   },
                   "value": {
-                    "start": 423,
-                    "end": 480
+                    "start": 432,
+                    "end": 489
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "profile@257",
+                  "binding": "profile@266",
                   "span": {
-                    "start": 428,
-                    "end": 441
+                    "start": 437,
+                    "end": 450
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "profile@257",
+                  "binding": "profile@266",
                   "span": {
-                    "start": 455,
-                    "end": 468
+                    "start": 464,
+                    "end": 477
                   }
                 }
               ]
             },
             "span": {
-              "start": 398,
-              "end": 485
+              "start": 407,
+              "end": 494
             }
           },
           "span": {
-            "start": 371,
-            "end": 485
+            "start": 380,
+            "end": 494
           }
         }
       ],
@@ -241,8 +241,8 @@
             "name": "class",
             "value": "profile-card",
             "span": {
-              "start": 511,
-              "end": 531
+              "start": 520,
+              "end": 540
             }
           },
           {
@@ -250,8 +250,8 @@
             "name": "aria-label",
             "value": "Profile",
             "span": {
-              "start": 532,
-              "end": 552
+              "start": 541,
+              "end": 561
             }
           }
         ],
@@ -266,29 +266,29 @@
                 "value": {
                   "code": "profile.value.name",
                   "span": {
-                    "start": 565,
-                    "end": 583
+                    "start": 574,
+                    "end": 592
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "profile@257",
+                      "binding": "profile@266",
                       "span": {
-                        "start": 565,
-                        "end": 578
+                        "start": 574,
+                        "end": 587
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 564,
-                  "end": 584
+                  "start": 573,
+                  "end": 593
                 }
               }
             ],
             "span": {
-              "start": 560,
-              "end": 589
+              "start": 569,
+              "end": 598
             }
           },
           {
@@ -301,29 +301,29 @@
                 "value": {
                   "code": "profile.value.title",
                   "span": {
-                    "start": 600,
-                    "end": 619
+                    "start": 609,
+                    "end": 628
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "profile@257",
+                      "binding": "profile@266",
                       "span": {
-                        "start": 600,
-                        "end": 613
+                        "start": 609,
+                        "end": 622
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 599,
-                  "end": 620
+                  "start": 608,
+                  "end": 629
                 }
               }
             ],
             "span": {
-              "start": 596,
-              "end": 624
+              "start": 605,
+              "end": 633
             }
           },
           {
@@ -335,8 +335,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 634,
-                  "end": 647
+                  "start": 643,
+                  "end": 656
                 }
               }
             ],
@@ -346,29 +346,29 @@
                 "value": {
                   "code": "profile.value.available ? \"Available\" : \"Away\"",
                   "span": {
-                    "start": 649,
-                    "end": 695
+                    "start": 658,
+                    "end": 704
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "profile@257",
+                      "binding": "profile@266",
                       "span": {
-                        "start": 649,
-                        "end": 662
+                        "start": 658,
+                        "end": 671
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 648,
-                  "end": 696
+                  "start": 657,
+                  "end": 705
                 }
               }
             ],
             "span": {
-              "start": 631,
-              "end": 700
+              "start": 640,
+              "end": 709
             }
           },
           {
@@ -380,8 +380,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 715,
-                  "end": 728
+                  "start": 724,
+                  "end": 737
                 }
               },
               {
@@ -394,16 +394,16 @@
                     "body": {
                       "code": "rename(\"Ada King\")",
                       "span": {
-                        "start": 744,
-                        "end": 762
+                        "start": 753,
+                        "end": 771
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "rename@293",
+                          "binding": "rename@302",
                           "span": {
-                            "start": 744,
-                            "end": 750
+                            "start": 753,
+                            "end": 759
                           },
                           "call": true
                         }
@@ -411,18 +411,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 738,
-                      "end": 762
+                      "start": 747,
+                      "end": 771
                     }
                   },
                   "span": {
-                    "start": 738,
-                    "end": 762
+                    "start": 747,
+                    "end": 771
                   }
                 },
                 "span": {
-                  "start": 729,
-                  "end": 763
+                  "start": 738,
+                  "end": 772
                 }
               }
             ],
@@ -431,14 +431,14 @@
                 "kind": "Text",
                 "value": "Use married name",
                 "span": {
-                  "start": 764,
-                  "end": 796
+                  "start": 773,
+                  "end": 805
                 }
               }
             ],
             "span": {
-              "start": 707,
-              "end": 805
+              "start": 716,
+              "end": 814
             }
           },
           {
@@ -450,8 +450,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 820,
-                  "end": 833
+                  "start": 829,
+                  "end": 842
                 }
               },
               {
@@ -460,23 +460,23 @@
                 "value": {
                   "code": "profile.value.available",
                   "span": {
-                    "start": 848,
-                    "end": 871
+                    "start": 857,
+                    "end": 880
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "profile@257",
+                      "binding": "profile@266",
                       "span": {
-                        "start": 848,
-                        "end": 861
+                        "start": 857,
+                        "end": 870
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 834,
-                  "end": 872
+                  "start": 843,
+                  "end": 881
                 }
               },
               {
@@ -484,15 +484,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "toggleAvailability@380",
+                  "binding": "toggleAvailability@389",
                   "span": {
-                    "start": 882,
-                    "end": 900
+                    "start": 891,
+                    "end": 909
                   }
                 },
                 "span": {
-                  "start": 873,
-                  "end": 901
+                  "start": 882,
+                  "end": 910
                 }
               }
             ],
@@ -501,20 +501,20 @@
                 "kind": "Text",
                 "value": "Available",
                 "span": {
-                  "start": 902,
-                  "end": 927
+                  "start": 911,
+                  "end": 936
                 }
               }
             ],
             "span": {
-              "start": 812,
-              "end": 936
+              "start": 821,
+              "end": 945
             }
           }
         ],
         "span": {
-          "start": 502,
-          "end": 951
+          "start": 511,
+          "end": 960
         }
       }
     }
@@ -525,8 +525,8 @@
       "name": "default",
       "local": "ProfileCard",
       "span": {
-        "start": 180,
-        "end": 958
+        "start": 189,
+        "end": 967
       }
     }
   ],
@@ -536,8 +536,8 @@
       "exported": true,
       "code": "interface Profile {\n  name: string;\n  title: string;\n  available: boolean;\n}",
       "span": {
-        "start": 43,
-        "end": 119
+        "start": 52,
+        "end": 128
       }
     },
     {
@@ -545,8 +545,8 @@
       "exported": true,
       "code": "interface ProfileCardProps {\n  initial: Profile;\n}",
       "span": {
-        "start": 128,
-        "end": 178
+        "start": 137,
+        "end": 187
       }
     }
   ]

@@ -10,7 +10,7 @@ import {
   createFunctionCode,
   createFunctionItem,
   span,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Binding,
   BindingReference,
@@ -18,7 +18,7 @@ import type {
   SetupItem,
   UfComponent,
   WriteReference,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import {

@@ -1,4 +1,4 @@
-import { defineEmits, ref, useTemplateRef } from "unframework";
+import { defineEmits, ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function NoteEditor() {
   const emit = defineEmits<{ saved: [count: number]; tagged: [tag: string, via: string] }>();

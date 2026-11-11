@@ -1,8 +1,8 @@
 {
-  "name": "@unframework/toolchain-angular",
+  "name": "@unframework.dev/toolchain-angular",
   "version": "0.0.0",
   "private": true,
-  "description": "The Angular test toolchain: Angular's compiler stack on TypeScript 6 (ngtsc for L3 and L4, Analog and the Angular linker for the Vite projects), loaded by @unframework/target-angular/toolchain, the tsconfig that type-checks every case's Angular golden output in one run, and the oxlint and ESLint (angular-eslint) configs that lint it (L5).",
+  "description": "The Angular test toolchain: Angular's compiler stack on TypeScript 6 (ngtsc for L3 and L4, Analog and the Angular linker for the Vite projects), loaded by @unframework.dev/target-angular/toolchain, the tsconfig that type-checks every case's Angular golden output in one run, and the oxlint and ESLint (angular-eslint) configs that lint it (L5).",
   "type": "module",
   "scripts": {
     "check": "ngc -p tsconfig.json --pretty false"
@@ -19,6 +19,7 @@
     "@angular/core": "catalog:",
     "@angular/platform-browser": "catalog:",
     "eslint": "catalog:",
+    "ng-packagr": "catalog:",
     "oxlint": "catalog:",
     "rxjs": "catalog:",
     "tslib": "catalog:",

@@ -1,7 +1,7 @@
 // models/component: a child declares a model with `defineModel`, and its parent binds it with
 // `v-model:value` (ADR-0054). The child shows the parent's value, a write in the child reaches
 // the parent, and the parent's own write reaches the child.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Order from "./Order.uf.tsx";

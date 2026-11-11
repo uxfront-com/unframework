@@ -2,7 +2,7 @@
 // clears it, so no refresh comes once the component is gone. Every test that starts the interval
 // runs it on the view's clock (ADR-0050): it fires only when the spec ticks, and each tick's
 // refreshes land in that tick's step on every target, however loaded the machine.
-import { describeTargets, it, mount, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mount, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import AutoRefresh from "./AutoRefresh.uf.tsx";

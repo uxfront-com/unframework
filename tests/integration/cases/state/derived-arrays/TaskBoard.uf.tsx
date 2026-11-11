@@ -1,4 +1,4 @@
-import { computed, ref, useTemplateRef } from "unframework";
+import { computed, ref, useTemplateRef } from "@uxfront/unframework";
 
 export interface Task {
   id: number;

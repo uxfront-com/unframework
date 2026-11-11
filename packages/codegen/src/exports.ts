@@ -1,5 +1,5 @@
 import type * as AST from "@oxc-project/types";
-import type { Span, TypeDeclaration, UfComponent, UfExport, UfModule } from "@unframework/ir";
+import type { Span, TypeDeclaration, UfComponent, UfExport, UfModule } from "@unframework.dev/ir";
 
 import { keyOwner } from "./imports.ts";
 import type { ImportSet } from "./imports.ts";

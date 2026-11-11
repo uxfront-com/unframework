@@ -6,8 +6,8 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { scopeStylesheet } from "@unframework/codegen";
-import type { ModuleApi } from "@unframework/ir";
+import { scopeStylesheet } from "@unframework.dev/codegen";
+import type { ModuleApi } from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { renderToString } from "../../src/toolchain/server.ts";

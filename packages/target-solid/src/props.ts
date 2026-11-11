@@ -4,10 +4,10 @@
 // A destructured source reads every prop as `props.label`, and its defaults go through
 // `mergeProps`, which keeps the merged object reactive and applies a default when a prop is
 // absent or `undefined`, as JavaScript's destructuring does (`null` stays a value).
-import { js, parseExpression, referencedBindings } from "@unframework/codegen";
-import type { ImportSet, Placeholders } from "@unframework/codegen";
-import { codeOf, walk } from "@unframework/ir";
-import type { Binding, BindingId, Prop, TypeDeclaration, UfComponent } from "@unframework/ir";
+import { js, parseExpression, referencedBindings } from "@unframework.dev/codegen";
+import type { ImportSet, Placeholders } from "@unframework.dev/codegen";
+import { codeOf, walk } from "@unframework.dev/ir";
+import type { Binding, BindingId, Prop, TypeDeclaration, UfComponent } from "@unframework.dev/ir";
 
 import { generatedInterface } from "./generics.ts";
 import type { GeneratedInterface } from "./generics.ts";

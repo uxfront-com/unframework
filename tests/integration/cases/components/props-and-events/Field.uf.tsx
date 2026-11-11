@@ -1,4 +1,4 @@
-import { defineEmits } from "unframework";
+import { defineEmits } from "@uxfront/unframework";
 
 export interface FieldProps {
   label: string;

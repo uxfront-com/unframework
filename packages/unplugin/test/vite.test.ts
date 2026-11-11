@@ -2,20 +2,20 @@ import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { defineTarget } from "@unframework/codegen";
-import type { Capabilities, CapabilityCell } from "@unframework/codegen";
+import { defineTarget } from "@unframework.dev/codegen";
+import type { Capabilities, CapabilityCell, OutputFile } from "@unframework.dev/codegen";
 import {
   compile,
   createFileResolver,
   createSyntacticOracle,
   TARGET_NAMES,
-} from "@unframework/compiler";
-import type { CompilerPlugin } from "@unframework/compiler";
+} from "@unframework.dev/compiler";
+import type { CompilerPlugin } from "@unframework.dev/compiler";
 import { isRunnableDevEnvironment, optimizeDeps, resolveConfig } from "vite";
 import type { Plugin } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { ID_SUFFIXES, SCAN_ID_PREFIX, unframeworkUnplugin } from "../src/index.ts";
+import { ID_SUFFIXES, SCAN_ID_PREFIX } from "../src/index.ts";
 import type { CompileEvent } from "../src/index.ts";
 import unframework from "../src/vite.ts";
 import { apiOf, codeOf, createProject, fakeVue, HELLO, startServer } from "./fixtures.ts";
@@ -155,12 +155,6 @@ describe("unframework()", () => {
     ]);
     // By default only `virtual:` passes through.
     expect((await compiles()).diagnostics.map(({ code }) => code)).toContain("UF1002");
-  });
-
-  it("refuses bundlers other than Vite until M6", () => {
-    expect(() => unframeworkUnplugin.rollup({ target: "vue" })).toThrow(
-      "@unframework/unplugin supports Vite only for now; rollup support is planned for M6.",
-    );
   });
 });
 
@@ -388,12 +382,10 @@ describe("an import that never names the file", () => {
   it("fails loudly when the authored file reaches a target whose ids have a suffix", async () => {
     for (const target of TARGET_NAMES.filter((name) => ID_SUFFIXES[name] !== "")) {
       await withServer(unframework({ target }), async ({ client }) => {
-        const resolved = await client.pluginContainer.resolveId("@ds/core/hello", importer());
-        // Vite resolved the package's `exports` entry itself: the plugin never saw the import.
+        // What a plugin that resolves before this one can hand over: the file, unsuffixed.
         const authored = file("node_modules/@ds/core/src/Hello.uf.tsx");
-        expect(resolved?.id, target).toBe(authored);
         await expect(client.pluginContainer.load(authored), target).rejects.toThrow(
-          `node_modules/@ds/core/src/Hello.uf.tsx reached Vite as itself, which would load it as plain TSX rather than as its ${target} component: the import that resolved to it does not name the file (a package's \`exports\` entry or a tsconfig path, say), so this plugin never saw it. Import it with a specifier that ends in .uf.tsx, such as "./Hello.uf.tsx"; a package that ships .uf.tsx sources must export them under subpaths that do.`,
+          `node_modules/@ds/core/src/Hello.uf.tsx reached Vite as itself, which would load it as plain TSX rather than as its ${target} component: the import that resolved to it does not name the file (a package's \`exports\` entry or a tsconfig path, say), so this plugin never saw it. Import it with a specifier that ends in .uf.tsx, such as "./Hello.uf.tsx".`,
         );
         // Vite's file queries still mean the authored file.
         expect(await client.pluginContainer.load(`${authored}?raw`), target).not.toBeNull();
@@ -507,7 +499,7 @@ describe("load", () => {
           '1 | import { useState } from "react";',
           "  |                          ^^^^^^^",
           "  |",
-          '  = help: Write the component with the authoring API from "unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.',
+          '  = help: Write the component with the authoring API from "@uxfront/unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.',
           "  = see: https://unframework.dev/diagnostics/UF1201",
         ].join("\n"),
       );
@@ -718,7 +710,7 @@ describe("children (ADR-0053)", () => {
 
 describe("composables (ADR-0069)", () => {
   const TOGGLE = [
-    'import { ref } from "unframework";',
+    'import { ref } from "@uxfront/unframework";',
     "export function useToggle(initial: boolean) {",
     "  const on = ref(initial);",
     "  function toggle() {",
@@ -963,7 +955,11 @@ describe("the golden guard (onCompile)", () => {
     ];
     await withServer(plugins, async ({ client }) => {
       const result = await client.transformRequest(vueId());
-      const expected = await compile(HELLO, { filename: "Hello.uf.tsx", targets: ["vue"] });
+      const expected = await compile(HELLO, {
+        filename: "Hello.uf.tsx",
+        targets: ["vue"],
+        sourceMap: true,
+      });
       expect(result?.code).toBe(
         `export default ${JSON.stringify(expected.outputs.vue![0]!.contents)};\n`,
       );
@@ -1185,7 +1181,7 @@ describe("the project graph (ADR-0071)", () => {
     "B.uf.tsx":
       'import type { CardProps } from "./a.ts";\nimport type { Tone } from "./tokens.ts";\n\nexport default function B({ label, tone }: CardProps & { tone?: Tone }) {\n  return <p class={tone}>{label}</p>;\n}\n',
     "useC.uf.ts":
-      'import { computed } from "unframework";\nimport type { CardProps } from "./a.ts";\n\nexport function useC(card: CardProps) {\n  const text = computed(() => card.label);\n  return { text };\n}\n',
+      'import { computed } from "@uxfront/unframework";\nimport type { CardProps } from "./a.ts";\n\nexport function useC(card: CardProps) {\n  const text = computed(() => card.label);\n  return { text };\n}\n',
     "C.uf.tsx":
       'import { useC } from "./useC.uf.ts";\n\nexport default function C({ label }: { label: string }) {\n  const { text } = useC({ label });\n  return <p>{text.value}</p>;\n}\n',
     "D.uf.tsx": "export default function D() {\n  return <p>D</p>;\n}\n",
@@ -1430,9 +1426,14 @@ describe("the project graph (ADR-0071)", () => {
         targets: [target],
         resolve: createFileResolver({ root: graph.root, readFile, typeOracle }),
         typeOracle,
+        sourceMap: true,
       });
       await typeOracle.dispose();
-      expect(filesOf()).toEqual(direct.outputs.html);
+      // The guard judges their text. Only the module's own file loads, so only that keeps its map.
+      const texts = (files: readonly OutputFile[]) =>
+        files.map(({ path, contents }) => ({ path, contents }));
+      expect(texts(filesOf())).toEqual(texts(direct.outputs.html!));
+      expect(filesOf()[0]!.map).toEqual(direct.outputs.html![0]!.map);
       expect(filesOf().map(({ path }) => path)).toEqual(["B.vue", "a.ts", "tokens.ts"]);
       // An edit that leaves the types alone compiles nothing, and the copy holds the new text.
       compiled.length = 0;

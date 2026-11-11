@@ -10,8 +10,8 @@
 // life (`useState`), so React never adds the listeners again as it renders: a listener added
 // again while an event is dispatched would miss it. Only one whose listener reads a list's row,
 // or a value its branch narrows, is written in place.
-import { handlerText, js, parameterText, parseStatementsSource } from "@unframework/codegen";
-import type { JsxContext } from "@unframework/codegen";
+import { handlerText, js, parameterText, parseStatementsSource } from "@unframework.dev/codegen";
+import type { JsxContext } from "@unframework.dev/codegen";
 import type {
   Attribute,
   ElementNode,
@@ -19,7 +19,7 @@ import type {
   FunctionCode,
   ModelAttribute,
   RefAttribute,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import type { ReactComposer } from "./compose.ts";
 import { reactProp, targetGuarded } from "./events.ts";

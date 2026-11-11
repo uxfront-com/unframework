@@ -8,7 +8,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { ToolchainContext } from "@unframework/codegen";
+import type { ToolchainContext } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
@@ -188,7 +188,7 @@ describe("qwik lint (L5)", { timeout: 60_000 }, () => {
     // The type-aware layer refuses on its own: a toolchain directory without its ESLint host,
     // and a file no configuration of the host matches.
     await expect(lintTypes([probe!], { toolchainDir: scratch, root: packageDir })).rejects.toThrow(
-      /@unframework\/toolchain-qwik-eslint is not installed in/,
+      /@unframework\.dev\/toolchain-qwik-eslint is not installed in/,
     );
     await expect(lintTypes([probe!, notes!], context)).rejects.toThrow(
       /it skipped \S*notes\.txt: File ignored/,

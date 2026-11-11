@@ -1,6 +1,6 @@
 // slots/named: a slot object fills the header, the default and the footer slots of a card
 // (ADR-0054), each with JSX that reads the parent's props.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Post from "./Post.uf.tsx";

@@ -16,9 +16,9 @@ import {
   parseStatementsSource,
   rewriteCode,
   vueAttributeCode,
-} from "@unframework/codegen";
-import type { RewriteRules } from "@unframework/codegen";
-import { DOM_EVENTS, walk } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { RewriteRules } from "@unframework.dev/codegen";
+import { DOM_EVENTS, walk } from "@unframework.dev/ir";
 import type {
   BindingKind,
   Code,
@@ -29,7 +29,7 @@ import type {
   FunctionCode,
   ModelAttribute,
   UfComponent,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { unreachable, VUE_TEMPLATE_GLOBALS } from "./names.ts";
 import type { VueNames } from "./names.ts";

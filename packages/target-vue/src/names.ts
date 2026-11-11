@@ -10,9 +10,9 @@ import {
   parseExpressionSource,
   sourceNames,
   typeNames as typesOf,
-} from "@unframework/codegen";
-import type { CodeKind, RewriteRules, RewriteSite } from "@unframework/codegen";
-import { codeOf } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { CodeKind, RewriteRules, RewriteSite } from "@unframework.dev/codegen";
+import { codeOf } from "@unframework.dev/ir";
 import type {
   Binding,
   BindingId,
@@ -22,7 +22,7 @@ import type {
   TypeText,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 /**
  * The globals Vue's template compiler never prefixes (compiler-core's `canPrefix`: shared's

@@ -32,7 +32,7 @@ PLATFORM="${UF_BASELINE_PLATFORM:-linux/amd64}"
 # the browsers. CI's browser jobs run in the same image.
 IMAGE="mcr.microsoft.com/playwright:v1.63.0-noble"
 STORE_VOLUME="uf-pnpm-store-${PLATFORM//\//-}"
-# A case's area and name and a scenario are kebab-case: KEBAB_CASE in @unframework/testing/node,
+# A case's area and name and a scenario are kebab-case: KEBAB_CASE in @unframework.dev/testing/node,
 # which harness/cases.ts, expectParity and the visual command check. This must accept exactly
 # the names it accepts (harness/baselines.unit.test.ts), or one name would hold back every baseline.
 KEBAB='[a-z0-9]+(-[a-z0-9]+)*'

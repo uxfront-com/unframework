@@ -60,7 +60,7 @@ jobs:
         env:
           UF_BROWSER: ${{ matrix.browser }}
           HOME: /root
-        run: pnpm --filter @unframework/integration test -- --project 'browser:*'
+        run: pnpm --filter @unframework.dev/integration test -- --project 'browser:*'
 
       - name: Upload the parity matrix
         if: ${{ !cancelled() }}
@@ -148,6 +148,13 @@ jobs:
             shard: 1/2
           - canaries: L13-qwik-handler-throws
             shard: 2/2
+          - canaries: L14-map-shifted
+          - canaries: L14-ssr-map-shifted
+          - canaries: L14-browser-map-shifted
+            shard: 1/2
+          - canaries: L14-browser-map-shifted
+            shard: 2/2
+          - canaries: L15
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

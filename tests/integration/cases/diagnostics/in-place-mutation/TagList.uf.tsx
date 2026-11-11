@@ -1,6 +1,6 @@
 // UF2004 in-place-mutation: `push` changes the array inside the ref in place, which React's and
 // Solid's outputs never see; the likely fix replaces it whole, `tags.value = [...tags.value, …]`.
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export default function TagList() {
   const tags = ref(["design"]);

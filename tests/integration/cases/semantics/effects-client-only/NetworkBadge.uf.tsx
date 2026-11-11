@@ -1,4 +1,4 @@
-import { onMounted, ref, watch } from "unframework";
+import { onMounted, ref, watch } from "@uxfront/unframework";
 
 export default function NetworkBadge() {
   const online = ref<boolean>();

@@ -24,12 +24,12 @@
     "start": {
       "line": 10,
       "column": 31,
-      "offset": 326
+      "offset": 344
     },
     "end": {
       "line": 10,
       "column": 65,
-      "offset": 360
+      "offset": 378
     },
     "target": "angular"
   }

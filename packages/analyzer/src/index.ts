@@ -9,6 +9,7 @@ export {
 } from "./shared.ts";
 export type { SharedModule } from "./shared.ts";
 export type { Shapes } from "./shapes.ts";
+export { closest } from "./cross-component.ts";
 export { DEFAULT_PASS_THROUGH } from "./pass-through.ts";
 export { scopeIdOf, stylesheetImports } from "./styles.ts";
 export type { StylesheetSource } from "./styles.ts";

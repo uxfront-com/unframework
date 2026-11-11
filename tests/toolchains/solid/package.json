@@ -1,5 +1,5 @@
 {
-  "name": "@unframework/toolchain-solid",
+  "name": "@unframework.dev/toolchain-solid",
   "version": "0.0.0",
   "private": true,
   "description": "The solid test toolchain: the checker and tsconfig that type-check every case's solid golden output in one run (L4), and the oxlint config, with eslint-plugin-solid as a JS plugin, that lints it (L5).",

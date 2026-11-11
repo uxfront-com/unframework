@@ -1,7 +1,7 @@
 // styles/custom-properties: the sheet's `var(--gap)` and `var(--accent)` read the custom
 // properties the component sets from its props, `style={{ "--gap": gap }}`: the compiler passes
 // custom properties through unchanged (ADR-0063).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Stack from "./Stack.uf.tsx";

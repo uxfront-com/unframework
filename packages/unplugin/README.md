@@ -1,12 +1,12 @@
-# @unframework/unplugin
+# @unframework.dev/unplugin
 
 The Unframework bundler plugin (plan §8.2). An import of a `.uf.tsx` file compiles it to one
-framework's source with `compile()` from `@unframework/compiler`, under a module id that the
+framework's source with `compile()` from `@unframework.dev/compiler`, under a module id that the
 framework's own Vite plugin claims, and that plugin finishes the job.
 
 ```ts
 // vite.config.ts
-import unframework from "@unframework/unplugin/vite";
+import unframework from "@unframework.dev/unplugin/vite";
 import vue from "@vitejs/plugin-vue";
 
 export default {
@@ -19,8 +19,48 @@ import Hello from "./Hello.uf.tsx"; // a Vue component
 ```
 
 `unframework(options)` returns two plugins, `[pre, post]`. Put them before the framework's
-plugins. Only Vite is supported until M6; `unframeworkUnplugin` (the `.` entry) refuses any other
-bundler when the plugin is created.
+plugins.
+
+On Vite you can leave `target` out, and the framework's plugin in your configuration decides it:
+
+```ts
+export default {
+  plugins: [unframework(), vue()],
+};
+```
+
+See [Target detection](#target-detection) for what it looks for.
+
+## Bundlers
+
+There's one entry per bundler unplugin offers, each with the same options: `./bun`, `./esbuild`,
+`./farm`, `./rolldown`, `./rollup`, `./rsbuild`, `./rspack`, `./unloader`, `./vite` and `./webpack`.
+`unframeworkUnplugin`, from the `.` entry, holds them all. We test only Vite end to end, and trust
+the rest to work through unplugin's generic hooks (ADR-0075), so a test only creates a plugin from
+each entry. Keep in mind that a module id still needs a plugin of that bundler's to claim it, like
+a Vue plugin for `.vue`, and that we recommend Vite until the other bundlers have been tried.
+
+Only Vite detects a target, from its configuration's plugins, so every other entry throws without a
+`target`.
+
+`resolveId`, `load`, the watch edges and the guard are generic hooks, and `watchChange` hands an
+edit to the project's `update` as soon as the bundler reports it. unplugin maps no such hook onto
+esbuild or Bun, so there the next load's comparison finds the edit. Only what Vite alone has sits
+under `vite:`:
+
+- **Its config**, for the root, target detection and UF7010 (`configResolved`).
+- **Its dependency scan**, which sets `scan`, so `vite:` has a `resolveId` that replaces the generic one and calls the same function.
+- **Its environments**, which keep the guard's verdicts apart, so `vite:` has a `load` and a `transform` of its own in the same way. Any other bundler has one set of verdicts.
+- **The `api`**, which reads the compiled sources.
+
+The project's root is Vite's `root`, webpack's or Rspack's `compiler.context`, esbuild's
+`absWorkingDir`, or else `process.cwd()`, which Rsbuild, Rolldown, Rollup and the others get.
+
+A bundler whose hook context has `this.resolve`, like Rollup, Rolldown and Vite, resolves a specifier
+itself, so aliases and [a package's sources](#packages-that-ship-sources) work. Without it, as on esbuild and webpack, a specifier must be a path: `./Hello.uf`,
+`./Hello.uf.js` and `./Hello.uf.jsx` find `Hello.uf.tsx` or `Hello.uf.ts` beside the importer. A
+package's specifier and an alias are left to the bundler, and a `.uf.tsx` file they resolve to
+fails in `load` on a target whose ids have a suffix.
 
 Any styling engine works through the virtual modules its own Vite plugin registers (plan §4.4,
 ADR-0064). An import whose specifier starts with a `passThrough` prefix (`virtual:` by default)
@@ -50,12 +90,56 @@ integration harness does (`sourceUtilities` in `tests/integration/harness/stylef
 
 | Option        | Meaning                                                                                                                                                                                                                                                                                                      |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `target`      | A built-in target's name (`"react"`, `"vue"`, `"svelte"`, `"solid"`, `"angular"`, `"qwik"`, `"astro"`) or a third-party `Target`.                                                                                                                                                                            |
+| `target`      | A built-in target's name (`"react"`, `"vue"`, `"svelte"`, `"solid"`, `"angular"`, `"qwik"`, `"astro"`) or a third-party `Target`. Optional on Vite, which detects a built-in target. Required on every other bundler.                                                                                        |
 | `extension`   | What module ids append to the `.uf.tsx` path. Built-in targets have one; a third-party target must set it.                                                                                                                                                                                                   |
 | `onCompile`   | Called each time a module loads, with `{ id, file, target, files, diagnostics }`. Returning a string (or a promise of one) fails that module with it: the integration harness's golden guard.                                                                                                                |
 | `plugins`     | Compiler plugins, passed to `compile()` (the harness's canaries).                                                                                                                                                                                                                                            |
 | `format`      | Formats the output with oxfmt. Defaults to `true`, so a module's code equals the golden file byte for byte.                                                                                                                                                                                                  |
 | `passThrough` | The specifier prefixes whose imports pass through to every output as written, passed to `compile()`. Defaults to `["virtual:"]`; a list replaces it, as `["virtual:", "styled-system/"]` adds an engine that generates files. A prefix that is empty, relative or absolute fails when the plugin is created. |
+
+## The dev server's allow list
+
+On a Vite dev server, a `.uf.tsx` file outside `server.fs.allow` gets the same 403 as any other
+file there, whichever id a request names it by: the file itself, its module id, a component id or
+its scoped sheet's id, with any query. The plugin reads and compiles the file in `load`, where
+Vite's own check never runs, so `load` asks Vite's `isFileLoadingAllowed` first. That honours
+`server.fs.strict` and `server.fs.deny` as Vite does, and with `strict` off nothing is refused.
+
+A file that a served module imports still loads, even from outside the allow list, because Vite
+records the id it was imported by as safe, and `load` accepts that id as well as the file. So a
+child component next to your project, or a package's shipped sources from a linked directory,
+load as soon as something you serve imports them. Only the client environment is checked, since a
+server environment's loads come from your own server code, which Vite lets read any file, and a
+build is never checked. A `.uf.ts` module of composables isn't covered yet.
+
+## Target detection
+
+With `target` left out, Vite's `configResolved` reads the plugin names in your configuration. A
+name matches as this table writes it, so `vite:vue-jsx` and `vite-plugin-qwik-post` name no framework:
+
+| Target  | Plugin name                     | Plugin                          |
+| ------- | ------------------------------- | ------------------------------- |
+| Vue     | `vite:vue`                      | `@vitejs/plugin-vue`            |
+| Svelte  | `vite-plugin-svelte`            | `@sveltejs/vite-plugin-svelte`  |
+| React   | `vite:react-*`                  | `@vitejs/plugin-react`          |
+| Solid   | `solid`                         | `vite-plugin-solid`             |
+| Qwik    | `vite-plugin-qwik`              | `qwikVite` from Qwik            |
+| Astro   | `astro:*`                       | Astro's own plugins             |
+| Angular | `@analogjs/vite-plugin-angular` | `@analogjs/vite-plugin-angular` |
+
+No match fails the start of a dev server or a build with UF7005, and plugins of two frameworks with
+UF7006, which names them. Keep in mind that an Astro app that also adds a framework's plugin holds both, so pass
+`target` there. Until the target is known the hooks' filters match every target's suffix, or only
+`extension` when you set it, and once it's known the hooks leave the other targets' module ids alone. A third-party target is never detected.
+
+On Vue, whichever way the target was chosen, plugin-vue's `template.compilerOptions.whitespace` of
+`"preserve"` reports the warning UF7010 at the start, because outputs assume `"condense"`
+(ADR-0026).
+
+On Vue, the plugin also fills plugin-vue's `script.fs` with Node's file system when the app left it
+unset, through plugin-vue's `api.options` (ADR-0082). Vue's `compileScript` reads a props type
+imported from another module through it, or through TypeScript's `sys`, which TypeScript 7 doesn't
+export. An app's own `script.fs` stays, and the fill reaches the app's own `.vue` files too.
 
 ## Module ids
 
@@ -72,11 +156,20 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
 - The code comes from `load`, never `transform`: nothing exists on disk at a module id, and every
   framework plugin compiles the code it is given. Ids never start with `\0`, which the framework
   plugins skip.
+- `load` returns `{ code, map }` from `compile({ sourceMap: true })` (ADR-0074), and that map traces
+  to the `.uf.tsx` line on every target. What it becomes after the framework's plugin differs. React
+  and Solid still reach the `.uf.tsx` in dev and in a build, and Vue does in dev, while a Vue build
+  traces to the `.vue` id. On Vite, in dev, three targets take a step from `src/chain.ts` so that a
+  thrown error reaches its line: Svelte's compile doesn't merge the load map itself, a Qwik segment's
+  map goes on through its module's, and Astro's load map has a segment at column 0 of each line,
+  which is where its compiler traces from (ADR-0074, ADR-0078). L14 covers these in dev only.
+  An output with no map loads as `{ code }`. A scoped sheet's load is `{ code }` too, since its map has no segments.
 - An id loads the target's output file with the id's extension (`Hello.vue`, `hello.ts`, and
   `Hello.tsx` for a `.uf.tsx` id). A file with several components emits one such file each:
   `.tsx` and `.ts` files are joined into one module (an import of a file of the join is left out,
   an import an earlier file already made is written once, and any other name two files declare
-  or export is an error). A shared `.ts` module's copy (ADR-0070) is no component's file, so no
+  or export is an error). The joined module's map goes through each file's own to its source, and
+  a file with no map stays unmapped in it. A shared `.ts` module's copy (ADR-0070) is no component's file, so no
   join holds it: the output imports the module itself. On a markup target the module id loads the file's main component (its
   default export, or its only exported component), and each other component loads under a
   component id, `<abs>/X.uf.tsx.<output file>` (`/src/Card.uf.tsx.CardIcon.vue`, ADR-0053),
@@ -95,7 +188,7 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
 - `moduleId`, `parseModuleId`, `componentId`, `parseComponentId` and `idSuffix` build and take
   these ids apart.
 - **The project** (ADR-0071). Every file compiles through one project graph (`createProject`, from
-  `@unframework/compiler`) rooted at Vite's root, shared by every module the plugin loads. Before
+  `@unframework.dev/compiler`) at the project's root, shared by every module the plugin loads. Before
   a load, the plugin compares each file the module reaches through the project's edges, and
   each file of a package it read types from, with what the project holds of it, and hands the
   changed ones to the project's `update` under every name it knows them by: relative to the
@@ -104,8 +197,9 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   project compiles again only the modules whose inputs changed, those loaded for other ids
   included, and stops where a shape is unchanged. A first compile may reach a file the project
   still holds as it was for another module, so the plugin checks again after it. So a compile is
-  reused while its file and every file it reached hold what they held, with or without Vite's
-  watcher. The outputs a load sees hold the copies of the shared `.ts` modules the file reaches
+  reused while its file and every file it reached hold what they held, with or without the
+  bundler's watcher. Where the bundler has `watchChange`, it hands a changed file over before the
+  next load. The outputs a load sees hold the copies of the shared `.ts` modules the file reaches
   (ADR-0070), as `compile()`'s do, so the golden guard judges them.
 - **Children** (ADR-0053). The project resolves a file's imports, so a parent lowers its children
   by their APIs. An output imports a child's output by its file
@@ -114,7 +208,7 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   importer's compile and resolves to the child's module id, or its component id on a markup
   target where it is not its file's main component.
 - **Types** (ADR-0067). The project reads types through one syntactic type oracle created at
-  Vite's root (`createSyntacticOracle`, from `@unframework/compiler`): a props type may come from
+  the project's root (`createSyntacticOracle`, from `@unframework.dev/compiler`): a props type may come from
   another file or a package, and a child's API from its types' shapes. The oracle follows the
   source's imports, so it may read a TypeScript file outside the root.
 
@@ -137,7 +231,8 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
 
 How `resolveId` answers:
 
-- **An import of a `.uf.tsx` file** resolves through Vite (so aliases work), then gets the suffix.
+- **An import of a `.uf.tsx` file** resolves through the bundler (so aliases work on Vite and
+  Rollup's family, see [Bundlers](#bundlers)), then gets the suffix.
   What decides is the file the specifier resolves to, so the forms TypeScript accepts for it,
   `./Hello.uf` (`moduleResolution: "bundler"`) and `./Hello.uf.js` or `./Hello.uf.jsx`
   (`"nodenext"`), compile like `./Hello.uf.tsx`. An import of a `.uf.ts` file, or a `./X.uf` that
@@ -173,15 +268,27 @@ How `resolveId` answers:
   may add one the output does not read, such as a grandchild's: an edit to it transforms the
   module again, and the project compiles nothing. A package's files in `node_modules` get none,
   since Vite's watcher ignores them, and neither does a file that does not exist yet, since Vite's
-  import analysis fails an import it cannot resolve: the next load still compares both. Hot
-  updates are M6's.
+  import analysis fails an import it cannot resolve: the next load still compares both.
+- **Hot updates** (ADR-0075). On Vite, `hotUpdate` routes a changed, created or deleted file through
+  the project, in each environment, and answers with every module of each file the project
+  compiled again: its main module, its other components, its module of composables, its Qwik
+  segments and its scoped sheet, plugin-vue's style queries included. An edit of a stylesheet
+  updates the sheet and the markup together, because the scope id hashes the sheet's text
+  (ADR-0063). When the project compiled nothing, the plugin's modules and the nodes only its
+  watch edges put in the graph leave Vite's list, so nothing is sent. A module the plugin doesn't
+  own keeps Vite's handling, and a framework's own HMR does the rest: React, Vue, Svelte and Solid
+  send an update, and Astro does a full reload with the new content. Qwik's own plugin reloads the
+  page, or sends its `qwik:hmr` update, from the `ssr` environment only, so it does that for a
+  server-rendered app. For a client-rendered one, whose `ssr` environment holds none of the
+  change's modules, the plugin invalidates its modules and sends the full reload itself from the
+  client environment, whatever Qwik's hot-update setting. That way a stylesheet edit never meets
+  the sheet Qwik's `useStyles$` added first.
 
 `load` answers a scoped sheet's id with the sheet this target's compile emitted, whatever its
 query: plugin-vue's request for `<style src>` (`?vue&type=style&index=0&src=true&lang.css`), which
 the plugin serves before plugin-vue reads the disk, and Qwik's `?inline` give the same text. The
 author's `Hello.css` is never loaded: no output imports it. A file that imports no stylesheet has
-no sheet, and its sheet id fails. No edit of the author's sheet invalidates the sheet module
-until M6.
+no sheet, and its sheet id fails.
 
 How `load` answers any other query is decided by the query alone, never by what the process resolved
 before: a parameter named after the id's extension (`?vue&type=style&index=0&lang.css`,
@@ -189,20 +296,64 @@ before: a parameter named after the id's extension (`?vue&type=style&index=0&lan
 of the module, which `load` leaves to that plugin; Vite's file queries are left to Vite; any other
 query (`?container`) loads the component, even on a cold server.
 
-An import whose specifier does not name the file never reaches `resolveId`: a package's `exports`
-entry or a tsconfig path that maps to a `.uf.tsx`. On React, Solid and Qwik the resolved id is the
-module id, so it compiles anyway. On the other targets the authored file would load as plain TSX,
-so `load` fails it with the fix: import it with a specifier that ends in `.uf.tsx`. A `.uf.ts`
-file mapped that way loads as its composables where its id is the file itself, and fails the same
-way on Svelte and Angular, whose ids have a suffix. Packages that
-ship `.uf.tsx` sources (consumed through `exports` maps and Vite's dependency optimizer, which
-bundles `node_modules` before any plugin runs) are M6's to support.
+A bare specifier that maps to a `.uf.tsx` never reaches `resolveId` on a bundler whose context can't
+resolve one. On Vite this plugin also leaves a specifier that hides the extension to the plugin that
+resolves it, and never sees a file a plugin answers for before this one.
+
+On React, Solid and Qwik the resolved id is the module id, so it compiles anyway. On the other targets the authored
+file would load as plain TSX, so `load` fails it with the fix: import it with a specifier that ends
+in `.uf.tsx`. A `.uf.ts` file mapped that way loads as its composables where its id is the file
+itself, and fails the same way on Svelte and Angular, whose ids have a suffix.
+
+## Packages that ship sources
+
+A package can ship its `.uf.tsx` and `.uf.ts` files for its consumers to compile, through
+`exports`:
+
+```json
+{
+  "name": "@acme/ui",
+  "exports": { "./source/*": "./src/*", "./button": "./src/Button.uf.tsx" }
+}
+```
+
+```ts
+import Button from "@acme/ui/source/Button.uf.tsx";
+import Same from "@acme/ui/button";
+```
+
+Both imports load one module, on Vite and Rollup's family. What decides is the file a bare specifier
+resolves to, so an entry that hides the extension works, and so does a `#` subpath import. A bare
+specifier that resolves to anything else stays the bundler's. A shipped source differs from a local
+one in these ways:
+
+- **The dependency optimiser never sees the file.** `this.resolve` would register a `.uf.ts` file of
+  `node_modules` with Vite's optimiser, which bundles it as plain TypeScript, and a `.uf.tsx` file
+  too in a project that adds `.tsx` to `optimizeDeps.extensions`, so on Vite a bare specifier
+  asks a resolver of its own first, which only finds the file (ADR-0075). A specifier that names a
+  source and that resolver doesn't place in `node_modules` goes on through `this.resolve`, so
+  another plugin's answer works. A plugin isn't asked about a specifier that hides the extension. The dependency scan gets
+  the `\0uf-scan:` id, as it does for a local file. You don't need `optimizeDeps.exclude`.
+- **SSR keeps the file in its module graph.** The plugin answers before Vite decides what to
+  externalise, and Vite never externalises a `.tsx` or `.ts` file, so you don't need `ssr.noExternal`.
+- **The package has its own project graph,** with the package's root as its root (ADR-0071). So a diagnostic names a file the same way wherever the package is installed. A
+  file in `node_modules` finds its root by its path, and a linked workspace package outside the
+  project's root by its nearest named `package.json`. A compile error names the file relative to
+  the package, and then says where the package is.
+- **Watching stops at `node_modules`,** as for a package's types. The next load still compares the
+  files. A linked package's files get the usual watch edges.
+
+Keep in mind that the host file does the importing. A `.uf.tsx` file imports another component by a
+relative path, so importing a package's component from one reports UF1202.
 
 ## Diagnostics and the guard
 
-- Warnings and info diagnostics go to `this.warn`, with their code frame.
+- Warnings and info diagnostics go to `this.warn`, with their code frame, and fail no module.
 - Errors fail the module through `this.error`, with `formatDiagnostics` (uncoloured): every error's
-  `UF` code, message and code frame.
+  `UF` code, message and code frame. `this.error` only records the message on esbuild, which drops it, so
+  `load` throws the same message there.
+- UF7005 and UF7006 fail the start of a dev server or a build, and UF7010 is a warning (see
+  [Target detection](#target-detection)).
 - When `onCompile` returns a message, `load` still returns the compiled code, so the framework's
   plugin compiles it, and the post plugin replaces the module's final code with
   `throw new Error(message); export default undefined;` (plus the module's named exports). Its
@@ -211,11 +362,11 @@ bundles `node_modules` before any plugin runs) are M6's to support.
   module". A check that throws, or returns an empty message, fails the module too.
 - Verdicts are kept per Vite environment. One plugin instance serves a server's client and ssr
   environments, which load the same id concurrently, and each environment's post plugin reads the
-  verdict on its own load.
+  verdict on its own load. A bundler with no environments has one set of verdicts.
 
 ## The `api`
 
-The pre plugin, named `unframework`, exposes `api.getCompiled(id)`: the code of the last load of
+On Vite, the pre plugin, named `unframework`, exposes `api.getCompiled(id)`: the code of the last load of
 a module id that finished, in any environment, or `undefined` when the id has not loaded or that
 load failed. A load in progress never clears it. Angular's `ngtscVirtual` reads the virtual
 sources of child components with it:
@@ -232,3 +383,39 @@ reads its `styleUrl` itself, so `ngtscVirtual` hands it the sheet from here.
 
 The project caches each file's compile, so every id of a file shares one compile until the file,
 or a file it reached, changes.
+
+## Astro
+
+An Astro project adds the integration rather than the Vite plugin, so a page can import a `.uf.tsx`
+component like any `.astro` one. It's the `./astro` entry, and it takes the plugin's options except
+`target`, which it sets to `"astro"`:
+
+```ts
+// astro.config.mjs
+import unframework from "@unframework.dev/unplugin/astro";
+import { defineConfig } from "astro/config";
+
+export default defineConfig({
+  integrations: [unframework()],
+});
+```
+
+```astro
+---
+import Hello from "../components/Hello.uf.tsx";
+---
+
+<Hello />
+```
+
+`astro dev` and `astro build` both render the component, with its children and its stylesheet. The
+output is static, as `@unframework.dev/target-astro` describes. The integration uses two of Astro's hooks:
+
+- **`astro:config:setup`** adds the plugin. It also takes `.uf.tsx` files out of the dependency
+  scan's entries: Astro's entries match every `.tsx` file under `src`, and the scan would read one
+  as plain JSX. Without React's JSX runtime installed, the scan would fail with an error, and Vite
+  would lose the dependencies it would have found, pre-bundling those only as requests reach them.
+- **`astro:config:done`** reads the final `compressHTML`, after every integration's setup. Anything
+  but `"jsx"`, Astro's default, logs the warning UF7010, because a component can then render
+  different whitespace from the other targets, and no file can pin the option (ADR-0026). The build
+  carries on.

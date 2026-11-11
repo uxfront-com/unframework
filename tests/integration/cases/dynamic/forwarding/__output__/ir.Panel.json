@@ -5,18 +5,18 @@
     {
       "name": "Panel",
       "span": {
-        "start": 88,
-        "end": 275
+        "start": 106,
+        "end": 293
       },
       "props": [],
       "types": [],
       "slots": {
-        "binding": "slots@130",
+        "binding": "slots@148",
         "type": {
           "code": "{ title?(): Element }",
           "span": {
-            "start": 150,
-            "end": 171
+            "start": 168,
+            "end": 189
           }
         },
         "slots": [
@@ -24,24 +24,24 @@
             "name": "title",
             "optional": true,
             "span": {
-              "start": 152,
-              "end": 169
+              "start": 170,
+              "end": 187
             }
           }
         ],
         "span": {
-          "start": 124,
-          "end": 175
+          "start": 142,
+          "end": 193
         }
       },
       "bindings": [
         {
-          "id": "slots@130",
+          "id": "slots@148",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 130,
-            "end": 135
+            "start": 148,
+            "end": 153
           }
         }
       ],
@@ -55,8 +55,8 @@
             "name": "class",
             "value": "panel",
             "span": {
-              "start": 196,
-              "end": 209
+              "start": 214,
+              "end": 227
             }
           }
         ],
@@ -74,26 +74,26 @@
                     "kind": "Text",
                     "value": "Untitled",
                     "span": {
-                      "start": 241,
-                      "end": 251
+                      "start": 259,
+                      "end": 269
                     }
                   }
                 ],
                 "span": {
-                  "start": 221,
-                  "end": 252
+                  "start": 239,
+                  "end": 270
                 }
               }
             ],
             "span": {
-              "start": 217,
-              "end": 257
+              "start": 235,
+              "end": 275
             }
           }
         ],
         "span": {
-          "start": 191,
-          "end": 268
+          "start": 209,
+          "end": 286
         }
       }
     }
@@ -104,8 +104,8 @@
       "name": "default",
       "local": "Panel",
       "span": {
-        "start": 88,
-        "end": 275
+        "start": 106,
+        "end": 293
       }
     }
   ],

@@ -7,12 +7,12 @@
     "start": {
       "line": 13,
       "column": 48,
-      "offset": 337
+      "offset": 346
     },
     "end": {
       "line": 13,
       "column": 81,
-      "offset": 370
+      "offset": 379
     },
     "target": "astro"
   }

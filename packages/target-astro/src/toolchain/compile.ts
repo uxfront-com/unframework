@@ -1,7 +1,7 @@
 // Layer L3 for Astro: Astro's own compiler, `@astrojs/compiler-rs`, over each output file.
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, isAbsolute, posix, relative, sep } from "node:path";
+import { basename, dirname, isAbsolute, posix, relative, sep } from "node:path";
 
 import type { DiagnosticMessage, TransformOptions } from "@astrojs/compiler-rs";
 import type {
@@ -9,12 +9,12 @@ import type {
   ToolchainContext,
   ToolchainFile,
   ToolchainMessage,
-} from "@unframework/codegen";
+} from "@unframework.dev/codegen";
 import {
   assertFilesToCompile,
   compileScriptModules,
   resolveInstalled,
-} from "@unframework/codegen/toolchain-node";
+} from "@unframework.dev/codegen/toolchain-node";
 
 const COMPILER = "@astrojs/compiler-rs";
 
@@ -58,6 +58,33 @@ export async function astroFrameworkCompile(
     results.set(file.path, result);
   }
   return results;
+}
+
+/**
+ * L15: each file's module, with no source map and named by its base name, which the module keeps,
+ * so its size doesn't depend on where the file lives. A `.ts` module beside them stays as it is,
+ * for the bundler's TypeScript transform.
+ */
+export async function astroFrameworkEmit(
+  files: readonly ToolchainFile[],
+  context: ToolchainContext,
+): Promise<Map<string, ToolchainFile[]>> {
+  assertFilesToCompile(files);
+  const { transform } = await import("@astrojs/compiler-rs");
+  return new Map(
+    files.map((file) => {
+      const contents = file.path.endsWith(".ts")
+        ? file.contents
+        : transform(file.contents, emitOptions(file.path, context.root)).code;
+      return [file.path, [{ path: file.path, contents }]] as const;
+    }),
+  );
+}
+
+function emitOptions(filename: string, root: string): TransformOptions {
+  const { sourcemap: _sourcemap, ...options } = transformOptions(filename, root);
+  const name = `/${basename(filename)}`;
+  return { ...options, filename: name, normalizedFilename: name };
 }
 
 function transformOptions(filename: string, root: string): TransformOptions {

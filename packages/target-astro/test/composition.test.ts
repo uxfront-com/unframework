@@ -1,7 +1,7 @@
 // Composition in Astro's shape (ADR-0053, ADR-0054, `src/composition.ts`): the files a source's
 // components emit, formatted as the compiler writes them. The corpus checks the same shapes
 // through every layer; these pin each one on a source of its own.
-import { formatOutput } from "@unframework/codegen";
+import { formatOutput } from "@unframework.dev/codegen";
 import { describe, expect, it } from "vitest";
 
 import { emitSource, SCOPE_HELPER } from "./source.ts";
@@ -21,8 +21,8 @@ async function outputs(source: string, file: string): Promise<Record<string, str
 describe("composition (ADR-0054)", () => {
   it("writes slots as `<slot>`, scoped slots as render props, and forwarding as one branch per set of slots present (ADR-0054)", async () => {
     const source = [
-      'import { defineSlots } from "unframework";',
-      'import type { Element } from "unframework";',
+      'import { defineSlots } from "@uxfront/unframework";',
+      'import type { Element } from "@uxfront/unframework";',
       "",
       "function List({ items }: { items: string[] }) {",
       "  const slots = defineSlots<{ title?(): Element; item?(props: { item: string }): Element }>();",
@@ -151,7 +151,7 @@ describe("composition (ADR-0054)", () => {
 
   it("renders a model as a prop with its default, and each control's model as its initial state (ADR-0054)", async () => {
     const source = [
-      'import { defineModel, ref } from "unframework";',
+      'import { defineModel, ref } from "@uxfront/unframework";',
       "",
       "export default function Form() {",
       '  const size = ref("m");',
@@ -205,8 +205,8 @@ describe("composition (ADR-0054)", () => {
 
   it("injects the fallback, hoists `<component is>` as a constant, renders itself as `Astro.self`, and takes no fallthrough without `inheritAttrs` (ADR-0053, ADR-0054)", async () => {
     const source = [
-      'import { defineOptions, inject, ref } from "unframework";',
-      'import type { InjectionKey } from "unframework";',
+      'import { defineOptions, inject, ref } from "@uxfront/unframework";',
+      'import type { InjectionKey } from "@uxfront/unframework";',
       "",
       'export const LocaleKey: InjectionKey<string> = Symbol("uf.locale");',
       "",

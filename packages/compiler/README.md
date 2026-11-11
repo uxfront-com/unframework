@@ -1,9 +1,9 @@
-# @unframework/compiler
+# @unframework.dev/compiler
 
 The Unframework compiler (plan §5.1):
 
 ```ts
-import { compile } from "@unframework/compiler";
+import { compile } from "@unframework.dev/compiler";
 
 const result = await compile(source, {
   filename: "src/Hello.uf.tsx",
@@ -31,7 +31,7 @@ the scope id its API carries, and caches by their text too: a sheet it cannot re
 The resolver's `module` reads each shared `.ts` module the source imports or re-exports from, a
 type re-export alone included (ADR-0070), a specifier without an extension naming its `.ts`, and
 `createFileResolver` follows its relative imports through every `.ts` module they reach, each
-once, noting the first framework or `unframework` import (UF1204) and the first relative import it
+once, noting the first framework or `@uxfront/unframework` import (UF1204) and the first relative import it
 cannot read (UF1202). A value import of a module it
 cannot read, or without a resolver, is UF1202. Each output tree beside a component's files holds a
 copy of every module the source reaches, unchanged, at its path relative to the source: neither
@@ -59,6 +59,24 @@ disposes of its oracle. The oracle reads the source's own file too, so it must h
 relative to its root, and packages as `pkg:<name>`, a package that is not installed included,
 sorted (ADR-0071). It also lists each shared `.ts` module the resolver read, and each `.uf.ts`
 module whose composables the source imports, one that is missing included, named as `filename` is.
+
+**Source maps** (ADR-0074). With `sourceMap: true`, each output file has a `map`: version 3, whose
+`sources` name the source relative to the file and whose `sourcesContent` holds it. `compile()`
+anchors each file after the `output` hooks, from its own component's code, and carries the map
+through formatting. The hooks never see a map, and a `map` a hook or a target returns is dropped.
+
+A copy of a shared `.ts` module gets an identity map, whose source is the copy itself. A scoped
+sheet's map has no segments, since its text isn't this source's. Most of what the targets copy from
+the source is mapped token by token, and each mapped token reads the same in both files. A run of
+punctuation alone, a short run the output holds in several places and a target's own code stay
+unmapped, so a frame there resolves to the nearest segment on its line, if there is one.
+
+A map that can't follow formatting is UF9002, and the file comes without one: the formatter broke,
+or a target or a plugin printed what oxfmt rewrites, like `title="don&apos;t"`. A diff
+whose trace passes 256 MB, as a large table of numbers oxfmt rewrites makes it, is the warning
+UF9003, and the file comes without one too. A file that doesn't
+parse stays as printed, with the map of what was printed, and `format: false` keeps the anchored
+map as it is. Maps don't change the files' text, and they never enter the golden files.
 
 **The project graph** (ADR-0071). `createProject({ root, readFile, targets, typeOracle })` takes
 the files `createFileResolver` does and the options each compile takes, but `filename` and
@@ -112,3 +130,60 @@ and each piece of code in a place of its context and kind (statements or an expr
 analyser judges client code by looser rules than a getter or an initial value (ADR-0045), so a
 local function moved into a `computed` is refused. A module that breaks any of this is UF8001,
 and the hook's result is dropped.
+
+## Configuration
+
+`loadConfig` and `resolveConfig` read a project's `unframework.config.ts` (plan §8.1, ADR-0076). The
+bundler plugin doesn't call them: it takes explicit options.
+
+```ts
+import { loadConfig, resolveConfig } from "@unframework.dev/compiler";
+
+async function readConfig(root: string) {
+  const loaded = await loadConfig(root);
+  // A file that failed to load leaves nothing to check.
+  if (loaded.diagnostics.length > 0) return { config: undefined, diagnostics: loaded.diagnostics };
+  return resolveConfig(loaded.raw, loaded);
+}
+```
+
+`loadConfig(root, file?)` imports `file`, relative to `root`, or the first of
+`unframework.config.ts`, `.mts`, `.js` and `.mjs` it finds in `root`. Node's type stripping loads a
+TypeScript config, so a loader isn't needed. A project with no config file gets `raw: {}` and no
+diagnostic, so it takes the defaults.
+
+A file it can't import, or one with no default export, is UF7001. `loadConfig` reports it in its own
+`diagnostics` and leaves `raw` as `undefined`, so read those first: `resolveConfig` would only say
+that `undefined` isn't an object.
+
+A `.ts` or `.js` file with no ES module syntax left once its types are stripped loads as CommonJS
+unless its package sets `"type": "module"`. Node gives such a file an empty `default` only when it
+exports nothing, and that counts as no default export. So does an explicit `module.exports = {}`,
+which reads the same. A CommonJS file that does export something keeps what it exports.
+
+`resolveConfig(raw, origin?)` checks the config and applies the defaults. It's asynchronous, because
+a Standard Schema may be. `origin` is what `loadConfig` returned: `directory`, which relative paths
+resolve against, and `file`, which diagnostics name. Each one has a default: the working directory,
+and `unframework.config.ts`.
+
+| Field                 | Default     | Checked                                                          |
+| --------------------- | ----------- | ---------------------------------------------------------------- |
+| `targets`             | all seven   | a list of at least one built-in name, none repeated              |
+| `srcDir`              | `src`       | a path that isn't empty, made absolute                           |
+| `outDir`              | `dist`      | a path that isn't empty, made absolute                           |
+| `targetOptions`       | `{}`        | each key a built-in name, each value through its target's schema |
+| `typeOracle`          | `syntactic` | `syntactic` or `tsgo`                                            |
+| `strict`              | `false`     | a boolean                                                        |
+| `package.targets`     | left out    | as `targets`, and each name also in `targets`                    |
+| `package.resolveFrom` | left out    | a path, or a path per built-in name, each made absolute          |
+
+A field of the wrong shape, or one the config doesn't have, is UF7002. A name that isn't a built-in
+target is UF7003, with a did-you-mean where one is close. Options a target's schema rejects are
+UF7004, and options a schema returns replace the ones written.
+
+A target without a schema takes no options, so any key under it is UF7004 too. No built-in target
+declares a schema yet, so `react: { compiler: true }` reports "`react` declares no options" until
+React declares that option.
+
+Each message gives the field's JSON pointer, and `config` is `undefined` when there is any
+diagnostic. A known field set to `undefined` counts as left out.

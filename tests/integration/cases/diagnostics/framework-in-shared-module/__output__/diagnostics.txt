@@ -1,4 +1,4 @@
-error[UF1204]: "./tokens.ts" reaches "palette.ts", which imports "react": a shared module is copied unchanged into every framework's output, so it imports no framework, and no `unframework`.
+error[UF1204]: "./tokens.ts" reaches "palette.ts", which imports "react": a shared module is copied unchanged into every framework's output, so it imports no framework, and no `@uxfront/unframework`.
  --> diagnostics/framework-in-shared-module/Badge.uf.tsx:3:23
   |
 3 | import { tones } from "./tokens.ts";

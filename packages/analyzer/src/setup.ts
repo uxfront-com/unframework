@@ -6,7 +6,7 @@
 // declared after it); the second walks each item's code, in source order, so that what a getter
 // or an initial value reads is known when it reads it.
 
-import type { Fix } from "@unframework/diagnostics";
+import type { Fix } from "@unframework.dev/diagnostics";
 import {
   createBinding,
   createBindingReference,
@@ -45,7 +45,7 @@ import {
   reservedEventName,
   reservedParameterName,
   reservedSetupName,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Binding,
   Code,
@@ -62,9 +62,9 @@ import type {
   TypeText,
   UseArgument,
   WatchSource,
-} from "@unframework/ir";
-import type { AST } from "@unframework/parser";
-import { parseModule, visitorKeys } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
+import { parseModule, visitorKeys } from "@unframework.dev/parser";
 
 import { inheritAttrsOption, withReferences } from "./api.ts";
 import type { AuthoringApi } from "./authoring.ts";

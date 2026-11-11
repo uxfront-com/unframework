@@ -1,6 +1,6 @@
 // modules/module-constants: a component reads its own module's top-level constants (ADR-0070): a
 // list it renders, a frozen table, a function it calls and a constant that reads another.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Stepper from "./Stepper.uf.tsx";

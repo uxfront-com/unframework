@@ -1,18 +1,18 @@
 // The Qwik target's toolchain (plan §5.7): how tests and tooling build, check and run Qwik
 // output. Node only; the main entry never imports it.
-import type { Toolchain } from "@unframework/codegen";
-import { typecheckWithTsgo } from "@unframework/codegen/toolchain-node";
+import type { Toolchain } from "@unframework.dev/codegen";
+import { typecheckWithTsgo } from "@unframework.dev/codegen/toolchain-node";
 import type { Plugin, UserConfig } from "vite";
 
-import { compileWithOptimizer } from "./compile.ts";
+import { compileWithOptimizer, emitWithOptimizer } from "./compile.ts";
 import { lint } from "./lint.ts";
 import { segmentLoads } from "./loads.ts";
 
 /** The Qwik 2 toolchain. */
 export const toolchain: Toolchain = {
   name: "qwik",
-  client: "@unframework/target-qwik/toolchain/client",
-  server: "@unframework/target-qwik/toolchain/server",
+  client: "@unframework.dev/target-qwik/toolchain/client",
+  server: "@unframework.dev/target-qwik/toolchain/server",
 
   async vite(mode, { root }): Promise<UserConfig> {
     // Loaded here, not at the top: the harness imports every toolchain to build its config.
@@ -52,6 +52,8 @@ export const toolchain: Toolchain = {
   },
 
   frameworkCompile: (files) => compileWithOptimizer(files),
+
+  frameworkEmit: (files) => emitWithOptimizer(files),
 
   typecheck: (files, context) => typecheckWithTsgo(files, context),
 

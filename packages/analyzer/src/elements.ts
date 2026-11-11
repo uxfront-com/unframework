@@ -1,4 +1,4 @@
-import type { DiagnosticCode, Fix, RelatedInformation } from "@unframework/diagnostics";
+import type { DiagnosticCode, Fix, RelatedInformation } from "@unframework.dev/diagnostics";
 import {
   HTML_ELEMENTS,
   isSvgElement,
@@ -12,9 +12,9 @@ import {
   TEXT_ONLY_ELEMENTS,
   UNPORTABLE_ELEMENTS,
   UNRENDERABLE_ELEMENTS,
-} from "@unframework/ir";
-import type { Namespace } from "@unframework/ir";
-import type { AST } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { Namespace } from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
 
 import { list } from "./attributes.ts";
 import type { Reporter } from "./context.ts";

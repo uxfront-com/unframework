@@ -5,18 +5,18 @@
     {
       "name": "TagForm",
       "span": {
-        "start": 65,
-        "end": 1516
+        "start": 74,
+        "end": 1525
       },
       "props": [],
       "types": [],
       "emits": {
-        "binding": "emit@109",
+        "binding": "emit@118",
         "type": {
           "code": "{ tagsChange: [tags: string[]] }",
           "span": {
-            "start": 128,
-            "end": 160
+            "start": 137,
+            "end": 169
           }
         },
         "events": [
@@ -28,193 +28,193 @@
                 "type": {
                   "code": "string[]",
                   "span": {
-                    "start": 149,
-                    "end": 157
+                    "start": 158,
+                    "end": 166
                   }
                 },
                 "span": {
-                  "start": 143,
-                  "end": 157
+                  "start": 152,
+                  "end": 166
                 }
               }
             ],
             "span": {
-              "start": 130,
-              "end": 158
+              "start": 139,
+              "end": 167
             }
           }
         ],
         "span": {
-          "start": 103,
-          "end": 164
+          "start": 112,
+          "end": 173
         }
       },
       "bindings": [
         {
-          "id": "emit@109",
+          "id": "emit@118",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 109,
-            "end": 113
+            "start": 118,
+            "end": 122
           }
         },
         {
-          "id": "tags@174",
+          "id": "tags@183",
           "name": "tags",
           "kind": "state",
           "span": {
-            "start": 174,
-            "end": 178
+            "start": 183,
+            "end": 187
           }
         },
         {
-          "id": "draft@208",
+          "id": "draft@217",
           "name": "draft",
           "kind": "state",
           "span": {
-            "start": 208,
-            "end": 213
+            "start": 217,
+            "end": 222
           }
         },
         {
-          "id": "helpOpen@233",
+          "id": "helpOpen@242",
           "name": "helpOpen",
           "kind": "state",
           "span": {
-            "start": 233,
-            "end": 241
+            "start": 242,
+            "end": 250
           }
         },
         {
-          "id": "field@264",
+          "id": "field@273",
           "name": "field",
           "kind": "templateRef",
           "span": {
-            "start": 264,
-            "end": 269
+            "start": 273,
+            "end": 278
           }
         },
         {
-          "id": "blockComma@320",
+          "id": "blockComma@329",
           "name": "blockComma",
           "kind": "localFn",
           "span": {
-            "start": 320,
-            "end": 330
+            "start": 329,
+            "end": 339
           }
         },
         {
-          "id": "updateDraft@422",
+          "id": "updateDraft@431",
           "name": "updateDraft",
           "kind": "localFn",
           "span": {
-            "start": 422,
-            "end": 433
+            "start": 431,
+            "end": 442
           }
         },
         {
-          "id": "addTag@538",
+          "id": "addTag@547",
           "name": "addTag",
           "kind": "localFn",
           "span": {
-            "start": 538,
-            "end": 544
+            "start": 547,
+            "end": 553
           }
         },
         {
-          "id": "toggleHelp@857",
+          "id": "toggleHelp@866",
           "name": "toggleHelp",
           "kind": "localFn",
           "span": {
-            "start": 857,
-            "end": 867
+            "start": 866,
+            "end": 876
           }
         },
         {
-          "id": "tag@1429",
+          "id": "tag@1438",
           "name": "tag",
           "kind": "loopVar",
           "span": {
-            "start": 1429,
-            "end": 1432
+            "start": 1438,
+            "end": 1441
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "tags@174",
+          "binding": "tags@183",
           "type": {
             "code": "string[]",
             "span": {
-              "start": 185,
-              "end": 193
+              "start": 194,
+              "end": 202
             }
           },
           "initial": {
             "code": "[]",
             "span": {
-              "start": 195,
-              "end": 197
+              "start": 204,
+              "end": 206
             },
             "refs": []
           },
           "span": {
-            "start": 168,
-            "end": 199
+            "start": 177,
+            "end": 208
           }
         },
         {
           "kind": "State",
-          "binding": "draft@208",
+          "binding": "draft@217",
           "initial": {
             "code": "\"\"",
             "span": {
-              "start": 220,
-              "end": 222
+              "start": 229,
+              "end": 231
             },
             "refs": []
           },
           "span": {
-            "start": 202,
-            "end": 224
+            "start": 211,
+            "end": 233
           }
         },
         {
           "kind": "State",
-          "binding": "helpOpen@233",
+          "binding": "helpOpen@242",
           "initial": {
             "code": "false",
             "span": {
-              "start": 248,
-              "end": 253
+              "start": 257,
+              "end": 262
             },
             "refs": []
           },
           "span": {
-            "start": 227,
-            "end": 255
+            "start": 236,
+            "end": 264
           }
         },
         {
           "kind": "TemplateRef",
-          "binding": "field@264",
+          "binding": "field@273",
           "type": {
             "code": "HTMLInputElement",
             "span": {
-              "start": 287,
-              "end": 303
+              "start": 296,
+              "end": 312
             }
           },
           "span": {
-            "start": 258,
-            "end": 307
+            "start": 267,
+            "end": 316
           }
         },
         {
           "kind": "Function",
-          "binding": "blockComma@320",
+          "binding": "blockComma@329",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -223,38 +223,38 @@
                 "type": {
                   "code": "KeyboardEvent",
                   "span": {
-                    "start": 338,
-                    "end": 351
+                    "start": 347,
+                    "end": 360
                   }
                 },
                 "event": "KeyboardEvent",
                 "span": {
-                  "start": 331,
-                  "end": 351
+                  "start": 340,
+                  "end": 360
                 }
               }
             ],
             "body": {
               "code": "{\n    if (event.key === \",\") event.preventDefault();\n  }",
               "span": {
-                "start": 353,
-                "end": 409
+                "start": 362,
+                "end": 418
               },
               "refs": [
                 {
                   "kind": "Event",
                   "member": "key",
                   "span": {
-                    "start": 363,
-                    "end": 372
+                    "start": 372,
+                    "end": 381
                   }
                 },
                 {
                   "kind": "Event",
                   "member": "preventDefault",
                   "span": {
-                    "start": 382,
-                    "end": 402
+                    "start": 391,
+                    "end": 411
                   },
                   "call": true
                 }
@@ -266,39 +266,39 @@
                 "condition": {
                   "code": "event.key === \",\"",
                   "span": {
-                    "start": 363,
-                    "end": 380
+                    "start": 372,
+                    "end": 389
                   },
                   "refs": [
                     {
                       "kind": "Event",
                       "member": "key",
                       "span": {
-                        "start": 363,
-                        "end": 372
+                        "start": 372,
+                        "end": 381
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 359,
-                  "end": 405
+                  "start": 368,
+                  "end": 414
                 }
               }
             ],
             "span": {
-              "start": 330,
-              "end": 409
+              "start": 339,
+              "end": 418
             }
           },
           "span": {
-            "start": 311,
-            "end": 409
+            "start": 320,
+            "end": 418
           }
         },
         {
           "kind": "Function",
-          "binding": "updateDraft@422",
+          "binding": "updateDraft@431",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -307,64 +307,64 @@
                 "type": {
                   "code": "InputEvent",
                   "span": {
-                    "start": 441,
-                    "end": 451
+                    "start": 450,
+                    "end": 460
                   }
                 },
                 "event": "InputEvent",
                 "span": {
-                  "start": 434,
-                  "end": 451
+                  "start": 443,
+                  "end": 460
                 }
               }
             ],
             "body": {
               "code": "{\n    draft.value = (event.currentTarget as HTMLInputElement).value;\n  }",
               "span": {
-                "start": 453,
-                "end": 525
+                "start": 462,
+                "end": 534
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "draft@208",
+                  "binding": "draft@217",
                   "operator": "=",
                   "span": {
-                    "start": 459,
-                    "end": 520
+                    "start": 468,
+                    "end": 529
                   },
                   "target": {
-                    "start": 459,
-                    "end": 470
+                    "start": 468,
+                    "end": 479
                   },
                   "value": {
-                    "start": 473,
-                    "end": 520
+                    "start": 482,
+                    "end": 529
                   }
                 },
                 {
                   "kind": "Event",
                   "member": "currentTarget",
                   "span": {
-                    "start": 474,
-                    "end": 493
+                    "start": 483,
+                    "end": 502
                   }
                 }
               ]
             },
             "span": {
-              "start": 433,
-              "end": 525
+              "start": 442,
+              "end": 534
             }
           },
           "span": {
-            "start": 413,
-            "end": 525
+            "start": 422,
+            "end": 534
           }
         },
         {
           "kind": "Function",
-          "binding": "addTag@538",
+          "binding": "addTag@547",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -373,136 +373,136 @@
                 "type": {
                   "code": "SubmitEvent",
                   "span": {
-                    "start": 552,
-                    "end": 563
+                    "start": 561,
+                    "end": 572
                   }
                 },
                 "event": "SubmitEvent",
                 "span": {
-                  "start": 545,
-                  "end": 563
+                  "start": 554,
+                  "end": 572
                 }
               }
             ],
             "body": {
               "code": "{\n    event.preventDefault();\n    if (draft.value !== \"\" && !tags.value.includes(draft.value)) {\n      tags.value = [...tags.value, draft.value];\n      emit(\"tagsChange\", tags.value);\n    }\n    draft.value = \"\";\n    const input = field.value;\n    if (input) input.value = \"\";\n  }",
               "span": {
-                "start": 565,
-                "end": 844
+                "start": 574,
+                "end": 853
               },
               "refs": [
                 {
                   "kind": "Event",
                   "member": "preventDefault",
                   "span": {
-                    "start": 571,
-                    "end": 591
+                    "start": 580,
+                    "end": 600
                   },
                   "call": true
                 },
                 {
                   "kind": "Binding",
-                  "binding": "draft@208",
+                  "binding": "draft@217",
                   "span": {
-                    "start": 603,
-                    "end": 614
+                    "start": 612,
+                    "end": 623
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "tags@174",
+                  "binding": "tags@183",
                   "span": {
-                    "start": 626,
-                    "end": 636
+                    "start": 635,
+                    "end": 645
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "draft@208",
+                  "binding": "draft@217",
                   "span": {
-                    "start": 646,
-                    "end": 657
+                    "start": 655,
+                    "end": 666
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "tags@174",
+                  "binding": "tags@183",
                   "operator": "=",
                   "span": {
-                    "start": 668,
-                    "end": 709
+                    "start": 677,
+                    "end": 718
                   },
                   "target": {
-                    "start": 668,
-                    "end": 678
+                    "start": 677,
+                    "end": 687
                   },
                   "value": {
-                    "start": 681,
-                    "end": 709
+                    "start": 690,
+                    "end": 718
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "tags@174",
+                  "binding": "tags@183",
                   "span": {
-                    "start": 685,
-                    "end": 695
+                    "start": 694,
+                    "end": 704
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "draft@208",
+                  "binding": "draft@217",
                   "span": {
-                    "start": 697,
-                    "end": 708
+                    "start": 706,
+                    "end": 717
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@109",
+                  "binding": "emit@118",
                   "event": "tagsChange",
                   "span": {
-                    "start": 717,
-                    "end": 747
+                    "start": 726,
+                    "end": 756
                   },
                   "arguments": [
                     {
-                      "start": 736,
-                      "end": 746
+                      "start": 745,
+                      "end": 755
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "tags@174",
+                  "binding": "tags@183",
                   "span": {
-                    "start": 736,
-                    "end": 746
+                    "start": 745,
+                    "end": 755
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "draft@208",
+                  "binding": "draft@217",
                   "operator": "=",
                   "span": {
-                    "start": 759,
-                    "end": 775
+                    "start": 768,
+                    "end": 784
                   },
                   "target": {
-                    "start": 759,
-                    "end": 770
+                    "start": 768,
+                    "end": 779
                   },
                   "value": {
-                    "start": 773,
-                    "end": 775
+                    "start": 782,
+                    "end": 784
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "field@264",
+                  "binding": "field@273",
                   "span": {
-                    "start": 795,
-                    "end": 806
+                    "start": 804,
+                    "end": 815
                   }
                 }
               ]
@@ -511,24 +511,24 @@
               {
                 "method": "preventDefault",
                 "span": {
-                  "start": 571,
-                  "end": 594
+                  "start": 580,
+                  "end": 603
                 }
               }
             ],
             "span": {
-              "start": 544,
-              "end": 844
+              "start": 553,
+              "end": 853
             }
           },
           "span": {
-            "start": 529,
-            "end": 844
+            "start": 538,
+            "end": 853
           }
         },
         {
           "kind": "Function",
-          "binding": "toggleHelp@857",
+          "binding": "toggleHelp@866",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -537,56 +537,56 @@
                 "type": {
                   "code": "MouseEvent",
                   "span": {
-                    "start": 875,
-                    "end": 885
+                    "start": 884,
+                    "end": 894
                   }
                 },
                 "event": "MouseEvent",
                 "span": {
-                  "start": 868,
-                  "end": 885
+                  "start": 877,
+                  "end": 894
                 }
               }
             ],
             "body": {
               "code": "{\n    event.preventDefault();\n    helpOpen.value = !helpOpen.value;\n  }",
               "span": {
-                "start": 887,
-                "end": 958
+                "start": 896,
+                "end": 967
               },
               "refs": [
                 {
                   "kind": "Event",
                   "member": "preventDefault",
                   "span": {
-                    "start": 893,
-                    "end": 913
+                    "start": 902,
+                    "end": 922
                   },
                   "call": true
                 },
                 {
                   "kind": "Write",
-                  "binding": "helpOpen@233",
+                  "binding": "helpOpen@242",
                   "operator": "=",
                   "span": {
-                    "start": 921,
-                    "end": 953
+                    "start": 930,
+                    "end": 962
                   },
                   "target": {
-                    "start": 921,
-                    "end": 935
+                    "start": 930,
+                    "end": 944
                   },
                   "value": {
-                    "start": 938,
-                    "end": 953
+                    "start": 947,
+                    "end": 962
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "helpOpen@233",
+                  "binding": "helpOpen@242",
                   "span": {
-                    "start": 939,
-                    "end": 953
+                    "start": 948,
+                    "end": 962
                   }
                 }
               ]
@@ -595,19 +595,19 @@
               {
                 "method": "preventDefault",
                 "span": {
-                  "start": 893,
-                  "end": 916
+                  "start": 902,
+                  "end": 925
                 }
               }
             ],
             "span": {
-              "start": 867,
-              "end": 958
+              "start": 876,
+              "end": 967
             }
           },
           "span": {
-            "start": 848,
-            "end": 958
+            "start": 857,
+            "end": 967
           }
         }
       ],
@@ -620,8 +620,8 @@
             "name": "class",
             "value": "tag-form",
             "span": {
-              "start": 981,
-              "end": 997
+              "start": 990,
+              "end": 1006
             }
           },
           {
@@ -629,8 +629,8 @@
             "name": "aria-label",
             "value": "Tags",
             "span": {
-              "start": 998,
-              "end": 1015
+              "start": 1007,
+              "end": 1024
             }
           },
           {
@@ -638,15 +638,15 @@
             "event": "submit",
             "handler": {
               "kind": "Function",
-              "binding": "addTag@538",
+              "binding": "addTag@547",
               "span": {
-                "start": 1026,
-                "end": 1032
+                "start": 1035,
+                "end": 1041
               }
             },
             "span": {
-              "start": 1016,
-              "end": 1033
+              "start": 1025,
+              "end": 1042
             }
           }
         ],
@@ -660,8 +660,8 @@
                 "kind": "Text",
                 "value": "New tag",
                 "span": {
-                  "start": 1048,
-                  "end": 1073
+                  "start": 1057,
+                  "end": 1082
                 }
               },
               {
@@ -673,16 +673,16 @@
                     "name": "name",
                     "value": "tag",
                     "span": {
-                      "start": 1080,
-                      "end": 1090
+                      "start": 1089,
+                      "end": 1099
                     }
                   },
                   {
                     "kind": "Ref",
-                    "binding": "field@264",
+                    "binding": "field@273",
                     "span": {
-                      "start": 1091,
-                      "end": 1102
+                      "start": 1100,
+                      "end": 1111
                     }
                   },
                   {
@@ -690,15 +690,15 @@
                     "event": "keydown",
                     "handler": {
                       "kind": "Function",
-                      "binding": "blockComma@320",
+                      "binding": "blockComma@329",
                       "span": {
-                        "start": 1114,
-                        "end": 1124
+                        "start": 1123,
+                        "end": 1133
                       }
                     },
                     "span": {
-                      "start": 1103,
-                      "end": 1125
+                      "start": 1112,
+                      "end": 1134
                     }
                   },
                   {
@@ -706,28 +706,28 @@
                     "event": "input",
                     "handler": {
                       "kind": "Function",
-                      "binding": "updateDraft@422",
+                      "binding": "updateDraft@431",
                       "span": {
-                        "start": 1135,
-                        "end": 1146
+                        "start": 1144,
+                        "end": 1155
                       }
                     },
                     "span": {
-                      "start": 1126,
-                      "end": 1147
+                      "start": 1135,
+                      "end": 1156
                     }
                   }
                 ],
                 "children": [],
                 "span": {
-                  "start": 1073,
-                  "end": 1150
+                  "start": 1082,
+                  "end": 1159
                 }
               }
             ],
             "span": {
-              "start": 1041,
-              "end": 1165
+              "start": 1050,
+              "end": 1174
             }
           },
           {
@@ -739,8 +739,8 @@
                 "name": "type",
                 "value": "submit",
                 "span": {
-                  "start": 1180,
-                  "end": 1193
+                  "start": 1189,
+                  "end": 1202
                 }
               }
             ],
@@ -749,14 +749,14 @@
                 "kind": "Text",
                 "value": "Add tag",
                 "span": {
-                  "start": 1194,
-                  "end": 1201
+                  "start": 1203,
+                  "end": 1210
                 }
               }
             ],
             "span": {
-              "start": 1172,
-              "end": 1210
+              "start": 1181,
+              "end": 1219
             }
           },
           {
@@ -768,8 +768,8 @@
                 "name": "href",
                 "value": "/help/tags",
                 "span": {
-                  "start": 1220,
-                  "end": 1237
+                  "start": 1229,
+                  "end": 1246
                 }
               },
               {
@@ -777,15 +777,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "toggleHelp@857",
+                  "binding": "toggleHelp@866",
                   "span": {
-                    "start": 1247,
-                    "end": 1257
+                    "start": 1256,
+                    "end": 1266
                   }
                 },
                 "span": {
-                  "start": 1238,
-                  "end": 1258
+                  "start": 1247,
+                  "end": 1267
                 }
               }
             ],
@@ -794,14 +794,14 @@
                 "kind": "Text",
                 "value": "How tags work",
                 "span": {
-                  "start": 1259,
-                  "end": 1288
+                  "start": 1268,
+                  "end": 1297
                 }
               }
             ],
             "span": {
-              "start": 1217,
-              "end": 1292
+              "start": 1226,
+              "end": 1301
             }
           },
           {
@@ -811,16 +811,16 @@
                 "condition": {
                   "code": "helpOpen.value",
                   "span": {
-                    "start": 1300,
-                    "end": 1314
+                    "start": 1309,
+                    "end": 1323
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "helpOpen@233",
+                      "binding": "helpOpen@242",
                       "span": {
-                        "start": 1300,
-                        "end": 1314
+                        "start": 1309,
+                        "end": 1323
                       }
                     }
                   ]
@@ -835,26 +835,26 @@
                         "kind": "Text",
                         "value": "A tag is one word: commas are not allowed.",
                         "span": {
-                          "start": 1321,
-                          "end": 1363
+                          "start": 1330,
+                          "end": 1372
                         }
                       }
                     ],
                     "span": {
-                      "start": 1318,
-                      "end": 1367
+                      "start": 1327,
+                      "end": 1376
                     }
                   }
                 ],
                 "span": {
-                  "start": 1300,
-                  "end": 1367
+                  "start": 1309,
+                  "end": 1376
                 }
               }
             ],
             "span": {
-              "start": 1300,
-              "end": 1367
+              "start": 1309,
+              "end": 1376
             }
           },
           {
@@ -866,8 +866,8 @@
                 "name": "aria-label",
                 "value": "Added tags",
                 "span": {
-                  "start": 1379,
-                  "end": 1402
+                  "start": 1388,
+                  "end": 1411
                 }
               }
             ],
@@ -877,34 +877,34 @@
                 "source": {
                   "code": "tags.value",
                   "span": {
-                    "start": 1413,
-                    "end": 1423
+                    "start": 1422,
+                    "end": 1432
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "tags@174",
+                      "binding": "tags@183",
                       "span": {
-                        "start": 1413,
-                        "end": 1423
+                        "start": 1422,
+                        "end": 1432
                       }
                     }
                   ]
                 },
-                "item": "tag@1429",
+                "item": "tag@1438",
                 "key": {
                   "code": "tag",
                   "span": {
-                    "start": 1458,
-                    "end": 1461
+                    "start": 1467,
+                    "end": 1470
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "tag@1429",
+                      "binding": "tag@1438",
                       "span": {
-                        "start": 1458,
-                        "end": 1461
+                        "start": 1467,
+                        "end": 1470
                       }
                     }
                   ]
@@ -919,46 +919,46 @@
                       "value": {
                         "code": "tag",
                         "span": {
-                          "start": 1464,
-                          "end": 1467
+                          "start": 1473,
+                          "end": 1476
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "tag@1429",
+                            "binding": "tag@1438",
                             "span": {
-                              "start": 1464,
-                              "end": 1467
+                              "start": 1473,
+                              "end": 1476
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 1463,
-                        "end": 1468
+                        "start": 1472,
+                        "end": 1477
                       }
                     }
                   ],
                   "span": {
-                    "start": 1449,
-                    "end": 1473
+                    "start": 1458,
+                    "end": 1482
                   }
                 },
                 "span": {
-                  "start": 1413,
-                  "end": 1484
+                  "start": 1422,
+                  "end": 1493
                 }
               }
             ],
             "span": {
-              "start": 1375,
-              "end": 1497
+              "start": 1384,
+              "end": 1506
             }
           }
         ],
         "span": {
-          "start": 975,
-          "end": 1509
+          "start": 984,
+          "end": 1518
         }
       }
     }
@@ -969,8 +969,8 @@
       "name": "default",
       "local": "TagForm",
       "span": {
-        "start": 65,
-        "end": 1516
+        "start": 74,
+        "end": 1525
       }
     }
   ],

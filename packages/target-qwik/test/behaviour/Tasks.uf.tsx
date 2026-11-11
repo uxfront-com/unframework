@@ -6,7 +6,7 @@ import {
   ref,
   watch,
   watchEffect,
-} from "unframework";
+} from "@uxfront/unframework";
 
 // Tasks (ADR-0048): hooks and watchers in source order, one reading a computed declared later
 // through a helper; an async watcher a new change overtakes, which drops the earlier run at once;

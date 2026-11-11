@@ -7,12 +7,12 @@
     "start": {
       "line": 9,
       "column": 35,
-      "offset": 403
+      "offset": 412
     },
     "end": {
       "line": 9,
       "column": 52,
-      "offset": 420
+      "offset": 429
     },
     "help": "Read the members every target's event has (`key`, `code`, the modifier keys, `button`, `clientX`, `currentTarget`, `target`, `preventDefault()`, …), or listen natively from `onMounted` through a template ref (`addEventListener`)."
   }

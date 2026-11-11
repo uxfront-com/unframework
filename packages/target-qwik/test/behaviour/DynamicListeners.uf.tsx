@@ -1,4 +1,4 @@
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 // A `<component is>` with listeners of its own and a child with one: src/index.ts prints one
 // tag per candidate, each with every listener (src/plan.ts groups the tag's as an element's).

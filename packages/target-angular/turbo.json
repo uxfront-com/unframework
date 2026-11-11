@@ -12,8 +12,8 @@
       // carries it into this hash.
       "dependsOn": [
         "$TURBO_EXTENDS$",
-        "@unframework/toolchain-angular#transit",
-        "@unframework/compiler#transit"
+        "@unframework.dev/toolchain-angular#transit",
+        "@unframework.dev/compiler#transit"
       ],
       "inputs": [
         "$TURBO_DEFAULT$",

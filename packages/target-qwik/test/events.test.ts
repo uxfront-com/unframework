@@ -6,7 +6,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { DOM_EVENTS } from "@unframework/ir";
+import { DOM_EVENTS } from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { QWIK_EVENT_PROPS, qwikEventProp, qwikListenerProp } from "../src/events.ts";

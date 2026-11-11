@@ -7,12 +7,12 @@
     "start": {
       "line": 17,
       "column": 21,
-      "offset": 483
+      "offset": 501
     },
     "end": {
       "line": 17,
       "column": 26,
-      "offset": 488
+      "offset": 506
     },
     "help": "Fill a slot Layout declares with `defineSlots`.",
     "fixes": [
@@ -22,8 +22,8 @@
         "edits": [
           {
             "span": {
-              "start": 483,
-              "end": 488
+              "start": 501,
+              "end": 506
             },
             "text": "title"
           }

@@ -7,12 +7,12 @@
     "start": {
       "line": 31,
       "column": 36,
-      "offset": 617
+      "offset": 626
     },
     "end": {
       "line": 31,
       "column": 43,
-      "offset": 624
+      "offset": 633
     },
     "target": "qwik"
   },
@@ -24,12 +24,12 @@
     "start": {
       "line": 83,
       "column": 3,
-      "offset": 2013
+      "offset": 2022
     },
     "end": {
       "line": 85,
       "column": 6,
-      "offset": 2070
+      "offset": 2079
     },
     "target": "astro"
   }

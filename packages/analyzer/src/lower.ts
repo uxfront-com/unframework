@@ -4,7 +4,7 @@
 // has it. Constructs outside the subset, and markup the targets would render differently, are
 // reported and left out, so one problem never hides the next.
 
-import type { Fix } from "@unframework/diagnostics";
+import type { Fix } from "@unframework.dev/diagnostics";
 import {
   createElement,
   createIf,
@@ -21,7 +21,7 @@ import {
   TEXTLESS_ELEMENTS,
   UNINTERPOLATED_ELEMENTS,
   WHITESPACE_DROPPING_ELEMENTS,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   ComponentNode,
   DynamicNode,
@@ -32,9 +32,9 @@ import type {
   RenderNode,
   Span,
   TextNode,
-} from "@unframework/ir";
-import type { AST } from "@unframework/parser";
-import { visitorKeys } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
+import { visitorKeys } from "@unframework.dev/parser";
 
 import { lowerAttributes } from "./attributes.ts";
 import { unportableCharacters } from "./characters.ts";

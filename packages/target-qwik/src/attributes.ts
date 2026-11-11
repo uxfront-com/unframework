@@ -1,5 +1,5 @@
-import { isNumberTypedAttribute } from "@unframework/codegen";
-import type { ElementNode, FragmentNode, RenderNode } from "@unframework/ir";
+import { isNumberTypedAttribute } from "@unframework.dev/codegen";
+import type { ElementNode, FragmentNode, RenderNode } from "@unframework.dev/ir";
 
 /**
  * HTML attribute names that Qwik 2's JSX types only accept in camel case (`tabIndex`,

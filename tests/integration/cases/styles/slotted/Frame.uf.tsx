@@ -1,6 +1,6 @@
 import "./Frame.css";
-import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export default function Frame() {
   const slots = defineSlots<{ default?(): Element; label?(props: { text: string }): Element }>();

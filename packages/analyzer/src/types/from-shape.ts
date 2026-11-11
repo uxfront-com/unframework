@@ -3,8 +3,13 @@
 // and whether it is built by `extends`, an intersection or a utility type. The same model as
 // `from-type.ts`, read from the shape's nodes instead of the module's syntax.
 
-import type { Span } from "@unframework/ir";
-import type { DeclarationRef, ShapeMember, TypeNode, TypeShape } from "@unframework/type-oracle";
+import type { Span } from "@unframework.dev/ir";
+import type {
+  DeclarationRef,
+  ShapeMember,
+  TypeNode,
+  TypeShape,
+} from "@unframework.dev/type-oracle";
 
 import {
   arrayOf,

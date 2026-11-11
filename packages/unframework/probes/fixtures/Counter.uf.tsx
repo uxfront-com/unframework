@@ -1,5 +1,5 @@
 // Counter.uf.tsx
-import { computed, defineEmits, ref } from "unframework";
+import { computed, defineEmits, ref } from "@uxfront/unframework";
 
 import "./Counter.css";
 

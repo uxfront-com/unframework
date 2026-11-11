@@ -5,72 +5,72 @@
     {
       "name": "Display",
       "span": {
-        "start": 90,
-        "end": 238
+        "start": 99,
+        "end": 247
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "none@134",
+          "id": "none@143",
           "name": "none",
           "kind": "state",
           "span": {
-            "start": 134,
-            "end": 138
+            "start": 143,
+            "end": 147
           }
         },
         {
-          "id": "count@157",
+          "id": "count@166",
           "name": "count",
           "kind": "context",
           "span": {
-            "start": 157,
-            "end": 162
+            "start": 166,
+            "end": 171
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "none@134",
+          "binding": "none@143",
           "initial": {
             "code": "0",
             "span": {
-              "start": 145,
-              "end": 146
+              "start": 154,
+              "end": 155
             },
             "refs": []
           },
           "span": {
-            "start": 128,
-            "end": 148
+            "start": 137,
+            "end": 157
           }
         },
         {
           "kind": "Inject",
-          "binding": "count@157",
+          "binding": "count@166",
           "key": "CountKey",
           "fallback": {
             "code": "none",
             "span": {
-              "start": 182,
-              "end": 186
+              "start": 191,
+              "end": 195
             },
             "refs": [
               {
                 "kind": "Binding",
-                "binding": "none@134",
+                "binding": "none@143",
                 "span": {
-                  "start": 182,
-                  "end": 186
+                  "start": 191,
+                  "end": 195
                 }
               }
             ]
           },
           "span": {
-            "start": 151,
-            "end": 188
+            "start": 160,
+            "end": 197
           }
         }
       ],
@@ -83,8 +83,8 @@
             "kind": "Text",
             "value": "Count: ",
             "span": {
-              "start": 206,
-              "end": 213
+              "start": 215,
+              "end": 222
             }
           },
           {
@@ -92,29 +92,29 @@
             "value": {
               "code": "count.value",
               "span": {
-                "start": 214,
-                "end": 225
+                "start": 223,
+                "end": 234
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "count@157",
+                  "binding": "count@166",
                   "span": {
-                    "start": 214,
-                    "end": 225
+                    "start": 223,
+                    "end": 234
                   }
                 }
               ]
             },
             "span": {
-              "start": 213,
-              "end": 226
+              "start": 222,
+              "end": 235
             }
           }
         ],
         "span": {
-          "start": 198,
-          "end": 235
+          "start": 207,
+          "end": 244
         }
       }
     }
@@ -125,8 +125,8 @@
       "name": "default",
       "local": "Display",
       "span": {
-        "start": 90,
-        "end": 238
+        "start": 99,
+        "end": 247
       }
     }
   ],
@@ -169,14 +169,14 @@
           "imported": "CountKey",
           "local": "CountKey",
           "span": {
-            "start": 53,
-            "end": 61
+            "start": 62,
+            "end": 70
           }
         }
       ],
       "span": {
-        "start": 44,
-        "end": 88
+        "start": 53,
+        "end": 97
       }
     }
   ]

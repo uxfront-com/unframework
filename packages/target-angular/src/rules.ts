@@ -1,9 +1,9 @@
 // How the Angular output spells each reference (plan §6, ADR-0045): in the class (`this.count()`,
 // `this.count.set(…)`, `this.change.emit(…)`), in the template (`count`, read through its `@let`),
 // in a list's `track` (`this.count()`: NG8009) and in a listener's template statement.
-import { mapCode, parseCodeSource, parseExpression, writtenValue } from "@unframework/codegen";
-import type { CodeKind, RewriteRules, RewriteSite } from "@unframework/codegen";
-import type { Binding, EmitReference, EventDeclaration, Expression } from "@unframework/ir";
+import { mapCode, parseCodeSource, parseExpression, writtenValue } from "@unframework.dev/codegen";
+import type { CodeKind, RewriteRules, RewriteSite } from "@unframework.dev/codegen";
+import type { Binding, EmitReference, EventDeclaration, Expression } from "@unframework.dev/ir";
 
 import { narrowedWhole } from "./narrowing.ts";
 import { outputName } from "./outputs.ts";

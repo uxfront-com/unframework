@@ -5,8 +5,8 @@
 // getter, `() => T`, is the `ReadonlySignal<T>` its caller makes with `useComputed$`, read through
 // `.value`, and a callback is the `QRL` its caller makes with `$()`, called as a QRL is. A value is
 // taken as it is.
-import { parseCodeSource } from "@unframework/codegen";
-import type { CodeKind } from "@unframework/codegen";
+import { parseCodeSource } from "@unframework.dev/codegen";
+import type { CodeKind } from "@unframework.dev/codegen";
 import type {
   Code,
   ComposableParameter,
@@ -15,7 +15,7 @@ import type {
   UfComponent,
   UfComposable,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { unreachable } from "./plan.ts";
 import type { OutputNames, SetupPlan } from "./plan.ts";

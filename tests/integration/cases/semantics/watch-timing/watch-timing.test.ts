@@ -4,7 +4,7 @@
 // runs right before its next callback, never on a run that skips the callback. The relative order
 // of two watchers is not part of the contract, so the spec checks each watcher apart (semantics
 // contract, watch semantics).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import SearchPager from "./SearchPager.uf.tsx";

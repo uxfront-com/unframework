@@ -5,8 +5,8 @@
     {
       "name": "ImportQueue",
       "span": {
-        "start": 124,
-        "end": 927
+        "start": 133,
+        "end": 936
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string[]",
             "span": {
-              "start": 111,
-              "end": 119
+              "start": 120,
+              "end": 128
             }
           },
-          "binding": "files@162",
+          "binding": "files@171",
           "span": {
-            "start": 104,
-            "end": 120
+            "start": 113,
+            "end": 129
           }
         }
       ],
@@ -31,25 +31,25 @@
         "type": {
           "code": "ImportQueueProps",
           "span": {
-            "start": 171,
-            "end": 187
+            "start": 180,
+            "end": 196
           }
         },
         "span": {
-          "start": 160,
-          "end": 187
+          "start": 169,
+          "end": 196
         }
       },
       "types": [
         "ImportQueueProps"
       ],
       "emits": {
-        "binding": "emit@199",
+        "binding": "emit@208",
         "type": {
           "code": "{ progress: [status: string, attempts: number] }",
           "span": {
-            "start": 218,
-            "end": 266
+            "start": 227,
+            "end": 275
           }
         },
         "events": [
@@ -61,13 +61,13 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 239,
-                    "end": 245
+                    "start": 248,
+                    "end": 254
                   }
                 },
                 "span": {
-                  "start": 231,
-                  "end": 245
+                  "start": 240,
+                  "end": 254
                 }
               },
               {
@@ -75,105 +75,105 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 257,
-                    "end": 263
+                    "start": 266,
+                    "end": 272
                   }
                 },
                 "span": {
-                  "start": 247,
-                  "end": 263
+                  "start": 256,
+                  "end": 272
                 }
               }
             ],
             "span": {
-              "start": 220,
-              "end": 264
+              "start": 229,
+              "end": 273
             }
           }
         ],
         "span": {
-          "start": 193,
-          "end": 270
+          "start": 202,
+          "end": 279
         }
       },
       "bindings": [
         {
-          "id": "files@162",
+          "id": "files@171",
           "name": "files",
           "kind": "prop",
           "span": {
-            "start": 162,
-            "end": 167
+            "start": 171,
+            "end": 176
           }
         },
         {
-          "id": "emit@199",
+          "id": "emit@208",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 199,
-            "end": 203
+            "start": 208,
+            "end": 212
           }
         },
         {
-          "id": "status@280",
+          "id": "status@289",
           "name": "status",
           "kind": "state",
           "span": {
-            "start": 280,
-            "end": 286
+            "start": 289,
+            "end": 295
           }
         },
         {
-          "id": "attempts@310",
+          "id": "attempts@319",
           "name": "attempts",
           "kind": "state",
           "span": {
-            "start": 310,
-            "end": 318
+            "start": 319,
+            "end": 327
           }
         },
         {
-          "id": "importAll@464",
+          "id": "importAll@473",
           "name": "importAll",
           "kind": "localFn",
           "span": {
-            "start": 464,
-            "end": 473
+            "start": 473,
+            "end": 482
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "status@280",
+          "binding": "status@289",
           "initial": {
             "code": "\"idle\"",
             "span": {
-              "start": 293,
-              "end": 299
+              "start": 302,
+              "end": 308
             },
             "refs": []
           },
           "span": {
-            "start": 274,
-            "end": 301
+            "start": 283,
+            "end": 310
           }
         },
         {
           "kind": "State",
-          "binding": "attempts@310",
+          "binding": "attempts@319",
           "initial": {
             "code": "0",
             "span": {
-              "start": 325,
-              "end": 326
+              "start": 334,
+              "end": 335
             },
             "refs": []
           },
           "span": {
-            "start": 304,
-            "end": 328
+            "start": 313,
+            "end": 337
           }
         },
         {
@@ -181,18 +181,18 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "status@280",
+              "binding": "status@289",
               "span": {
-                "start": 339,
-                "end": 345
+                "start": 348,
+                "end": 354
               }
             },
             {
               "kind": "Ref",
-              "binding": "attempts@310",
+              "binding": "attempts@319",
               "span": {
-                "start": 347,
-                "end": 355
+                "start": 356,
+                "end": 364
               }
             }
           ],
@@ -207,57 +207,57 @@
                     "nextAttempts"
                   ],
                   "span": {
-                    "start": 359,
-                    "end": 385
+                    "start": 368,
+                    "end": 394
                   }
                 },
                 "span": {
-                  "start": 359,
-                  "end": 385
+                  "start": 368,
+                  "end": 394
                 }
               }
             ],
             "body": {
               "code": "{\n    emit(\"progress\", nextStatus, nextAttempts);\n  }",
               "span": {
-                "start": 390,
-                "end": 443
+                "start": 399,
+                "end": 452
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@199",
+                  "binding": "emit@208",
                   "event": "progress",
                   "span": {
-                    "start": 396,
-                    "end": 438
+                    "start": 405,
+                    "end": 447
                   },
                   "arguments": [
                     {
-                      "start": 413,
-                      "end": 423
+                      "start": 422,
+                      "end": 432
                     },
                     {
-                      "start": 425,
-                      "end": 437
+                      "start": 434,
+                      "end": 446
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 358,
-              "end": 443
+              "start": 367,
+              "end": 452
             }
           },
           "span": {
-            "start": 332,
-            "end": 445
+            "start": 341,
+            "end": 454
           }
         },
         {
           "kind": "Function",
-          "binding": "importAll@464",
+          "binding": "importAll@473",
           "form": "declaration",
           "function": {
             "async": true,
@@ -265,104 +265,104 @@
             "body": {
               "code": "{\n    status.value = \"starting\";\n    for (const file of files) {\n      attempts.value += 1;\n      await nextTick();\n      status.value = `imported ${file}`;\n    }\n    status.value = \"done\";\n  }",
               "span": {
-                "start": 476,
-                "end": 669
+                "start": 485,
+                "end": 678
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "status@280",
+                  "binding": "status@289",
                   "operator": "=",
                   "span": {
-                    "start": 482,
-                    "end": 507
+                    "start": 491,
+                    "end": 516
                   },
                   "target": {
-                    "start": 482,
-                    "end": 494
+                    "start": 491,
+                    "end": 503
                   },
                   "value": {
-                    "start": 497,
-                    "end": 507
+                    "start": 506,
+                    "end": 516
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "files@162",
+                  "binding": "files@171",
                   "span": {
-                    "start": 532,
-                    "end": 537
+                    "start": 541,
+                    "end": 546
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "attempts@310",
+                  "binding": "attempts@319",
                   "operator": "+=",
                   "span": {
-                    "start": 547,
-                    "end": 566
+                    "start": 556,
+                    "end": 575
                   },
                   "target": {
-                    "start": 547,
-                    "end": 561
+                    "start": 556,
+                    "end": 570
                   },
                   "value": {
-                    "start": 565,
-                    "end": 566
+                    "start": 574,
+                    "end": 575
                   }
                 },
                 {
                   "kind": "Api",
                   "api": "nextTick",
                   "span": {
-                    "start": 580,
-                    "end": 588
+                    "start": 589,
+                    "end": 597
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "status@280",
+                  "binding": "status@289",
                   "operator": "=",
                   "span": {
-                    "start": 598,
-                    "end": 631
+                    "start": 607,
+                    "end": 640
                   },
                   "target": {
-                    "start": 598,
-                    "end": 610
+                    "start": 607,
+                    "end": 619
                   },
                   "value": {
-                    "start": 613,
-                    "end": 631
+                    "start": 622,
+                    "end": 640
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "status@280",
+                  "binding": "status@289",
                   "operator": "=",
                   "span": {
-                    "start": 643,
-                    "end": 664
+                    "start": 652,
+                    "end": 673
                   },
                   "target": {
-                    "start": 643,
-                    "end": 655
+                    "start": 652,
+                    "end": 664
                   },
                   "value": {
-                    "start": 658,
-                    "end": 664
+                    "start": 667,
+                    "end": 673
                   }
                 }
               ]
             },
             "span": {
-              "start": 473,
-              "end": 669
+              "start": 482,
+              "end": 678
             }
           },
           "span": {
-            "start": 449,
-            "end": 669
+            "start": 458,
+            "end": 678
           }
         }
       ],
@@ -375,8 +375,8 @@
             "name": "class",
             "value": "import-queue",
             "span": {
-              "start": 695,
-              "end": 715
+              "start": 704,
+              "end": 724
             }
           },
           {
@@ -384,8 +384,8 @@
             "name": "aria-label",
             "value": "Import",
             "span": {
-              "start": 716,
-              "end": 735
+              "start": 725,
+              "end": 744
             }
           }
         ],
@@ -399,8 +399,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 751,
-                  "end": 764
+                  "start": 760,
+                  "end": 773
                 }
               },
               {
@@ -408,15 +408,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "importAll@464",
+                  "binding": "importAll@473",
                   "span": {
-                    "start": 774,
-                    "end": 783
+                    "start": 783,
+                    "end": 792
                   }
                 },
                 "span": {
-                  "start": 765,
-                  "end": 784
+                  "start": 774,
+                  "end": 793
                 }
               }
             ],
@@ -425,14 +425,14 @@
                 "kind": "Text",
                 "value": "Import all",
                 "span": {
-                  "start": 785,
-                  "end": 811
+                  "start": 794,
+                  "end": 820
                 }
               }
             ],
             "span": {
-              "start": 743,
-              "end": 820
+              "start": 752,
+              "end": 829
             }
           },
           {
@@ -444,8 +444,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 830,
-                  "end": 843
+                  "start": 839,
+                  "end": 852
                 }
               }
             ],
@@ -455,31 +455,31 @@
                 "value": {
                   "code": "status.value",
                   "span": {
-                    "start": 854,
-                    "end": 866
+                    "start": 863,
+                    "end": 875
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "status@280",
+                      "binding": "status@289",
                       "span": {
-                        "start": 854,
-                        "end": 866
+                        "start": 863,
+                        "end": 875
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 853,
-                  "end": 867
+                  "start": 862,
+                  "end": 876
                 }
               },
               {
                 "kind": "Text",
                 "value": ", ",
                 "span": {
-                  "start": 867,
-                  "end": 869
+                  "start": 876,
+                  "end": 878
                 }
               },
               {
@@ -487,43 +487,43 @@
                 "value": {
                   "code": "attempts.value",
                   "span": {
-                    "start": 870,
-                    "end": 884
+                    "start": 879,
+                    "end": 893
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "attempts@310",
+                      "binding": "attempts@319",
                       "span": {
-                        "start": 870,
-                        "end": 884
+                        "start": 879,
+                        "end": 893
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 869,
-                  "end": 885
+                  "start": 878,
+                  "end": 894
                 }
               },
               {
                 "kind": "Text",
                 "value": " attempts",
                 "span": {
-                  "start": 885,
-                  "end": 901
+                  "start": 894,
+                  "end": 910
                 }
               }
             ],
             "span": {
-              "start": 827,
-              "end": 905
+              "start": 836,
+              "end": 914
             }
           }
         ],
         "span": {
-          "start": 686,
-          "end": 920
+          "start": 695,
+          "end": 929
         }
       }
     }
@@ -534,8 +534,8 @@
       "name": "default",
       "local": "ImportQueue",
       "span": {
-        "start": 124,
-        "end": 927
+        "start": 133,
+        "end": 936
       }
     }
   ],
@@ -545,8 +545,8 @@
       "exported": true,
       "code": "interface ImportQueueProps {\n  files: string[];\n}",
       "span": {
-        "start": 73,
-        "end": 122
+        "start": 82,
+        "end": 131
       }
     }
   ]

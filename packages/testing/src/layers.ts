@@ -84,7 +84,7 @@ export interface UfLayerMeta {
 }
 
 /** The layers a browser test records, which a test skipped by capability records as skipped. */
-export const BROWSER_LAYERS: readonly LayerName[] = ["L7", "L8", "L9", "L10", "L11", "L13"];
+export const BROWSER_LAYERS: readonly LayerName[] = ["L7", "L8", "L9", "L10", "L11", "L13", "L14"];
 
 /** The skip of the layers that need output, on a target a case has compile errors for. */
 export const NO_OUTPUT_SKIP = "compile errors: no output";
@@ -98,6 +98,9 @@ export const NO_SPEC_SKIP = "no spec: a diagnostics case renders in no browser";
 
 /** L13's skip in the server render of a component that did not render: L6 failed instead. */
 export const NOT_RENDERED_SKIP = "the component did not render (L6)";
+
+/** A layer only a project outside this run records (L15, `bench`): the summary fills its cells. */
+export const NOT_IN_THIS_RUN_SKIP = "not in this run";
 
 /** L9's skip in a scenario that no interaction or rerender led to: there is no trace. */
 export const NO_INTERACTION_SKIP = "no scripted interaction";

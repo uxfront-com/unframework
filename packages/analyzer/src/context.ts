@@ -1,5 +1,5 @@
-import { createDiagnostic } from "@unframework/diagnostics";
-import type { Diagnostic, DiagnosticCode, DiagnosticInit, Fix } from "@unframework/diagnostics";
+import { createDiagnostic } from "@unframework.dev/diagnostics";
+import type { Diagnostic, DiagnosticCode, DiagnosticInit, Fix } from "@unframework.dev/diagnostics";
 
 import type { UnportableCharacter } from "./characters.ts";
 import type { Divergence, HtmlOnlyReference } from "./jsx/text.ts";

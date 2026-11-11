@@ -1,6 +1,6 @@
 // modules/shared-constants: a component reads constants a `.ts` module exports, in its template
 // and in its setup (ADR-0070): a lookup table, a default and a frozen list.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import SizePicker from "./SizePicker.uf.tsx";

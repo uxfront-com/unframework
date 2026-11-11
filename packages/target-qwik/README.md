@@ -1,4 +1,4 @@
-# @unframework/target-qwik
+# @unframework.dev/target-qwik
 
 The Qwik 2 target of the Unframework compiler (experimental while Qwik 2 is in beta): one
 `component$` in TSX per source component, written as a Qwik developer would write it (ADR-0034
@@ -297,13 +297,13 @@ its function, so the files join into one module (ADR-0053).
 ## Toolchain
 
 Tests and tooling use three Node and browser entries (plan §5.7, `Toolchain` in
-`@unframework/codegen`):
+`@unframework.dev/codegen`):
 
-| Entry                                       | What it is                                                                                                                                                                                                            |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@unframework/target-qwik/toolchain`        | `toolchain`: the Vite configuration of `browser` and `ssr` projects (`qwikVite` with `srcDir` at the project root, `csr` in the browser, no app entry, HMR, the image dev tool and the inspector off), L3, L4 and L5. |
-| `@unframework/target-qwik/toolchain/client` | `mount`: a client-only render with the qwikloader, settled with Qwik's render promise. Every mount needs a fresh container.                                                                                           |
-| `@unframework/target-qwik/toolchain/server` | `renderToString`: `renderToString` from `@qwik.dev/core/server` into a fragment container, returning only the component's HTML.                                                                                       |
+| Entry                                           | What it is                                                                                                                                                                                                            |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@unframework.dev/target-qwik/toolchain`        | `toolchain`: the Vite configuration of `browser` and `ssr` projects (`qwikVite` with `srcDir` at the project root, `csr` in the browser, no app entry, HMR, the image dev tool and the inspector off), L3, L4 and L5. |
+| `@unframework.dev/target-qwik/toolchain/client` | `mount`: a client-only render with the qwikloader, settled with Qwik's render promise. Every mount needs a fresh container.                                                                                           |
+| `@unframework.dev/target-qwik/toolchain/server` | `renderToString`: `renderToString` from `@qwik.dev/core/server` into a fragment container, returning only the component's HTML.                                                                                       |
 
 - **L3** runs the Rust optimizer from `@qwik.dev/optimizer` (the exact version
   `@qwik.dev/core` depends on, checked at start) over each file, for the client and the
@@ -321,7 +321,7 @@ All three reject when they cannot start. L5 turns `qwik/no-use-visible-task` off
 the hooks that run after the DOM has rendered, in the browser only, are visible tasks. The
 type-aware rules read types, which oxlint gives no JS plugin, and typescript-eslint cannot load
 TypeScript 7, the toolchain's own for tsgo. So ESLint runs from a lint host on TypeScript 6 that
-the toolchain directory installs, `@unframework/toolchain-qwik-eslint`
+the toolchain directory installs, `@unframework.dev/toolchain-qwik-eslint`
 (`tests/toolchains/qwik-eslint/eslint.config.js`, the two rules alone), and types the files
 through a temporary tsconfig that extends `<toolchainDir>/tsconfig.json`, so the rules judge
 the types L4 checked. `valid-lexical-scope` is why a function client code calls is a `$()` QRL

@@ -1,4 +1,5 @@
-import type { Diagnostic, Fix } from "@unframework/diagnostics";
+import { AUTHORING_PACKAGE } from "@unframework.dev/diagnostics";
+import type { Diagnostic, Fix } from "@unframework.dev/diagnostics";
 import {
   createComponent,
   createDeclaredTypeExport,
@@ -20,7 +21,7 @@ import {
   functionsOf,
   isExportName,
   walk,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   ComponentApi,
   ComposableApi,
@@ -40,7 +41,7 @@ import type {
   UfComposable,
   UfExport,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import {
   exportName,
   findComponents,
@@ -49,13 +50,13 @@ import {
   parseModule,
   typeDeclarationOf,
   visitorKeys,
-} from "@unframework/parser";
+} from "@unframework.dev/parser";
 import type {
   AST,
   ComponentExport,
   ParsedModule,
   TypeDeclarationStatement,
-} from "@unframework/parser";
+} from "@unframework.dev/parser";
 
 import { componentApi, withReferences } from "./api.ts";
 import type { ApiContext } from "./api.ts";
@@ -1668,7 +1669,7 @@ function checkImport(statement: AST.ImportDeclaration, context: ModuleContext): 
       statement.source,
       `"${specifier}" is a ${framework} module, and components are framework-free.`,
       {
-        help: 'Write the component with the authoring API from "unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.',
+        help: `Write the component with the authoring API from "${AUTHORING_PACKAGE}" (ref, computed, watch and the define* macros); the compiler writes the framework code.`,
       },
     );
     return;
@@ -1729,7 +1730,7 @@ function sharedImport(statement: AST.ImportDeclaration, context: ModuleContext):
     const { file, specifier: framework } = module.framework;
     fail(
       "UF1204",
-      `"${specifier}" ${file === module.file ? "" : `reaches "${file}", which `}imports "${framework}": a shared module is copied unchanged into every framework's output, so it imports no framework, and no \`unframework\`.`,
+      `"${specifier}" ${file === module.file ? "" : `reaches "${file}", which `}imports "${framework}": a shared module is copied unchanged into every framework's output, so it imports no framework, and no \`${AUTHORING_PACKAGE}\`.`,
       "Keep the shared module to plain values, types and functions, and move what needs reactivity into a composable in a `.uf.ts` module.",
     );
     return;

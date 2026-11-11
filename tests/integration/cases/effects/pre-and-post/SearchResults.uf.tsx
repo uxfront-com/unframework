@@ -1,4 +1,4 @@
-import { defineEmits, nextTick, onMounted, ref, useTemplateRef, watch } from "unframework";
+import { defineEmits, nextTick, onMounted, ref, useTemplateRef, watch } from "@uxfront/unframework";
 
 export default function SearchResults() {
   const emit = defineEmits<{

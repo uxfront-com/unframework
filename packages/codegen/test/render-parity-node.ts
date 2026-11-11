@@ -6,7 +6,7 @@
 import { sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { analyze, enumeratedValues, staticTokens } from "@unframework/analyzer";
+import { analyze, enumeratedValues, staticTokens } from "@unframework.dev/analyzer";
 import {
   ARIA_ATTRIBUTES,
   checkInvariants,
@@ -31,9 +31,9 @@ import {
   SVG_TEXT_ELEMENTS,
   TRUE_VALUED_ATTRIBUTES,
   URL_ATTRIBUTES,
-} from "@unframework/ir";
-import type { Namespace, UfComponent, UfModule } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { Namespace, UfComponent, UfModule } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import type { Plugin } from "vite";
 import type { TestProjectInlineConfiguration, ViteUserConfig } from "vitest/config";
 import type { BrowserProviderOption } from "vitest/node";
@@ -984,6 +984,10 @@ export function browserProject(options: BrowserProjectOptions): TestProjectInlin
       ...vite.test,
       name: "browser",
       include: ["test/**/*.browser.test.ts"],
+      // One file at a time. The target's Vite plugins compile the parity components in the Vitest
+      // process, which also runs every `userEvent` command: beside a file that clicks, a compile
+      // blocks that process, and its clicks, for seconds under CPU load.
+      maxWorkers: 1,
       browser: {
         enabled: true,
         provider,

@@ -4,7 +4,7 @@
 // an async `once` listener, and in a branch that narrows an optional prop. A `once` listener that
 // declares a local named `event` keeps its own value, and a key handler whose block returns
 // `false` prevents nothing (a handler's value is discarded).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import MeetingList from "./MeetingList.uf.tsx";

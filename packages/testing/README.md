@@ -1,11 +1,11 @@
-# @unframework/testing
+# @unframework.dev/testing
 
 The cross-target test API (plan §7.3, §8.5): one spec, written once, runs in every
 `browser:<target>` project and verifies the shared expectations layer by layer. Private until M7.
 
 ```ts
 // cases/state/counter/counter.test.ts
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Counter from "./Counter.uf.tsx";
@@ -27,7 +27,7 @@ describeTargets("state/counter", () => {
 });
 ```
 
-## Browser (`@unframework/testing`)
+## Browser (`@unframework.dev/testing`)
 
 - **`mount(component, { props, clock? })`** mounts with the project's registered adapter into a
   `<div data-uf-root>` in the page's `<body>`, and returns a **`View`**: `container`, a `locator`
@@ -48,7 +48,7 @@ describeTargets("state/counter", () => {
   capabilities a test needs (`["interactivity"]`, typed by `CapabilityName`). On a target whose
   cell for one of them is unsupported (Astro's `interactivity`), the setup file skips the test
   before it runs and records `skip(requires <capability>: <the target's reason>)` on L7, L8, L9,
-  L10, L11 and L13, and `skipped` on the test's record, so the matrix shows it and the summary
+  L10, L11, L13 and L14, and `skipped` on the test's record, so the matrix shows it and the summary
   excuses that test's scenarios on that target alone. The cells come from Node
   (`test.provide.ufCapabilities`), never from importing a target. It refuses `skip`, `only`,
   `todo`, `fails`, `retry`, `repeats`, `concurrent` and `tags`, `requires: []` and an unknown
@@ -57,7 +57,7 @@ describeTargets("state/counter", () => {
   the component) is skipped there the same way, whatever it requires, with `no output: <the
 errors>` on every layer, and the summary excuses it on that target alone. A case the target
   cannot compile yet gets a stand-in too (`test.provide.ufStandIn`, by case id, with the cause,
-  ADR-0068). Its tests are not skipped: the setup first records L7, L8, L9, L10, L11 and L13 as
+  ADR-0068). Its tests are not skipped: the setup first records L7, L8, L9, L10, L11, L13 and L14 as
   failed with the cause (`recordStandIn`), and `standIn` on the test's record. The summary
   excuses its scenarios on that target alone, and its cells still fail.
 - **`view.user`** acts as a person does, through Playwright's real input (ADR-0050). An action
@@ -131,6 +131,9 @@ errors>` on every layer, and the summary excuses it on that target alone. A case
   test ends. The file is pretty JSON, `{ "version": 1, "steps": [...] }`, each step's `dom` and
   `aria` a list of lines and its `events` grouped by name (names sorted, each name's emits in
   order: the order of different effects one run triggers is not part of the contract).
+- **`view.expectThrown(step)`** runs a `view.user` step that makes the component throw, and records
+  L14: the first `Error`'s top frame in the case must map to the line of the case's source that
+  holds `throw` (ADR-0078). What the step logs is excused from L13, and it leaves no step for L9.
 - **`view.expectParity(name, { tolerance? })`** settles, then verifies the scenario against the
   case's shared expectations: L7 (`__expected__/dom.<name>.html` and Playwright's
   `aria.<name>.yaml`), L9 (`trace.<name>.json`, below), L10 (geometry and computed styles, then pixels, through
@@ -175,7 +178,7 @@ errors>` on every layer, and the summary excuses it on that target alone. A case
   current test, every matching message, whatever the pattern's flags), and
   **`registerTarget(target, mount, { events? })`** for the per-target setup files (`events`
   reads a stub component's declared events, which no compile reports).
-- **The mount contract** (`@unframework/codegen`'s toolchain types): `MountOptions.on` holds a
+- **The mount contract** (`@unframework.dev/codegen`'s toolchain types): `MountOptions.on` holds a
   listener per declared event, by the source's name, and `MountOptions.events` the events'
   payload shapes; each adapter passes the listeners as its framework's consumer would (React's
   and Solid's `onChange`, Vue's `onChange` beside the props, Svelte's `onchange`, Angular's
@@ -230,7 +233,7 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
 
 ## Setup files
 
-- **`@unframework/testing/setup`**, loaded first by every browser project: the bundled Inter font
+- **`@unframework.dev/testing/setup`**, loaded first by every browser project: the bundled Inter font
   as "UF Test Sans", the motion and caret reset, the startup assertions (DPR 1, reduced motion,
   and the case's colour scheme: `case.json`'s `colorScheme`, `light` by default, which the file
   emulates through `ufColorScheme` before anything mounts, ADR-0061, and which the check reads
@@ -256,10 +259,10 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
   frame away. After each test it fails L9 with the steps no `expectParity` compared, and resets
   the input for the next test (`ufResetInput`: the mouse to the frame's corner, the keys
   released, the focus blurred and the frame focused again).
-- **`@unframework/testing/<target>`** (`react`, `vue`, `svelte`, `solid`, `angular`, `qwik`,
-  `astro`): registers `@unframework/target-<target>/toolchain/client`'s mount adapter.
+- **`@unframework.dev/testing/<target>`** (`react`, `vue`, `svelte`, `solid`, `angular`, `qwik`,
+  `astro`): registers `@unframework.dev/target-<target>/toolchain/client`'s mount adapter.
 
-## Node (`@unframework/testing/node`)
+## Node (`@unframework.dev/testing/node`)
 
 - **The write policy** (DESIGN §4.4), as plain functions every driver shares:
   `settleArtefact(path, actual, context)` and `settleArtefactDirectory(dir, files, context)`.
@@ -326,16 +329,18 @@ case)`); its projects run after the run's reference and before every other targe
   a mechanical cause: no output (`compile errors: no output` for the layers of a compile with
   errors, and `no output: <the expected errors>` for a browser test of such a case), no spec (the
   browser layers of a diagnostics case its target has output for), the live reference, a
-  component that did not render (L6), no scripted interaction. The Markdown lists each test a
+  component that did not render (L6), no scripted interaction. A live layer only one project
+  records (`SummaryExpectations.recordedOnlyBy`) reads `skip(not in this run)` in a run without
+  that project in full, unless every project must have reported. The Markdown lists each test a
   target skipped, by capability or for want of output, or ran against a stand-in, under its
   case's table.
 
-## Normalisation (`@unframework/testing/normalize`)
+## Normalisation (`@unframework.dev/testing/normalize`)
 
 `normalizeHtml(html, { target })` turns any target's HTML into one canonical text (plan §7.5).
 A `class` with no token and a `style` with no declaration go, and so does a declaration with an
 empty value; declarations are sorted by property unless the order of two of them decides what
-renders (`@unframework/ir`'s `cssPropertiesOverlap`: the same property, a shorthand and its
+renders (`@unframework.dev/ir`'s `cssPropertiesOverlap`: the same property, a shorthand and its
 longhand, a flow-relative longhand and a physical one), as frameworks disagree on these
 even with themselves (ADR-0044). Class tokens keep their duplicates: a doubled class means a
 broken merge. A boolean attribute's `="true"` is written empty on Qwik only, whose client writes

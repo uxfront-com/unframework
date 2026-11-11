@@ -1,4 +1,4 @@
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 import Card from "./Card.uf.tsx";
 import Chip from "./Chip.uf.tsx";

@@ -1,5 +1,6 @@
 import type * as AST from "@oxc-project/types";
-import { parseModule } from "@unframework/parser";
+import type { Span } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { format } from "oxfmt";
 import type { FormatConfig } from "oxfmt";
 
@@ -97,16 +98,33 @@ const FENCE = /^---$/m;
 
 /** Formats the TypeScript blocks of a markup file, leaving everything else as it is. */
 async function formatBlocks(path: string, contents: string): Promise<string> {
+  // A script block's code starts on a line of its own, and a frontmatter's already does.
+  const astro = path.endsWith(".astro");
+  const indent = path.endsWith(".svelte") ? "  " : "";
+  let result = "";
+  let last = 0;
+  for (const { start, end } of codeBlocks(path, contents)) {
+    const code = await formatCode(contents.slice(start, end), indent);
+    result += `${contents.slice(last, start)}${astro ? "" : "\n"}${code}`;
+    last = end;
+  }
+  return result + contents.slice(last);
+}
+
+/**
+ * Where a markup file's TypeScript is: a `.vue` or `.svelte` file's `<script lang="ts">` blocks and
+ * an `.astro` file's frontmatter, each without its tags or fences. None in any other file. Throws
+ * on a block with no end.
+ */
+export function codeBlocks(path: string, contents: string): Span[] {
   if (path.endsWith(".astro")) {
-    if (!contents.startsWith("---\n")) return contents;
+    if (!contents.startsWith("---\n")) return [];
     const close = FENCE.exec(contents.slice(4));
     if (!close) throw new Error("The frontmatter has no closing `---`.");
-    const end = 4 + close.index;
-    return `---\n${await formatCode(contents.slice(4, end), "")}${contents.slice(end)}`;
+    return [{ start: 4, end: 4 + close.index }];
   }
-  const indent = path.endsWith(".svelte") ? "  " : path.endsWith(".vue") ? "" : undefined;
-  if (indent === undefined) return contents;
-  let result = "";
+  if (!path.endsWith(".svelte") && !path.endsWith(".vue")) return [];
+  const blocks: Span[] = [];
   let last = 0;
   for (const open of contents.matchAll(SCRIPT_BLOCK)) {
     // A line of a block's own code that looks like an opening tag is code.
@@ -114,11 +132,10 @@ async function formatBlocks(path: string, contents: string): Promise<string> {
     const start = open.index + open[0].length;
     const close = SCRIPT_END.exec(contents.slice(start));
     if (!close) throw new Error("A <script> block has no closing tag.");
-    const end = start + close.index;
-    result += `${contents.slice(last, start)}\n${await formatCode(contents.slice(start, end), indent)}`;
-    last = end;
+    last = start + close.index;
+    blocks.push({ start, end: last });
   }
-  return result + contents.slice(last);
+  return blocks;
 }
 
 /**

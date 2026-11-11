@@ -5,7 +5,7 @@
 // and stays approximate: what it cannot type, an inferred type among them, is `unknown`, which
 // every check accepts.
 
-import type { Span } from "@unframework/ir";
+import type { Span } from "@unframework.dev/ir";
 
 /** A kind of JavaScript value, with arrays and functions apart from other objects. */
 export type Primitive =

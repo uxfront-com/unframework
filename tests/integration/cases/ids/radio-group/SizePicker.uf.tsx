@@ -1,4 +1,4 @@
-import { ref, useId } from "unframework";
+import { ref, useId } from "@uxfront/unframework";
 
 export interface SizePickerProps {
   legend: string;

@@ -12,7 +12,7 @@ import {
   OBSOLETE_ELEMENTS,
   P_CLOSING_ELEMENTS,
   VOID_ELEMENTS,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { defaultTreeAdapter, html as spec, parseFragment, serialize } from "parse5";
 import type { DefaultTreeAdapterTypes } from "parse5";
 import { compile as compileSvelte } from "svelte/compiler";

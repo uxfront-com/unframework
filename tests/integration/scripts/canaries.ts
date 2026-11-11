@@ -14,8 +14,8 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 
-import { LAYERS } from "@unframework/testing/node";
-import type { LayerName, PartialMatrix, ProjectKind } from "@unframework/testing/node";
+import { LAYERS } from "@unframework.dev/testing/node";
+import type { LayerName, PartialMatrix, ProjectKind } from "@unframework.dev/testing/node";
 
 import { canaryCase, canaryProjects, CANARIES, findCanary } from "../harness/canaries.ts";
 import type { Canary, CanaryCase } from "../harness/canaries.ts";
@@ -33,6 +33,7 @@ const PROJECTS: Record<ProjectKind, string> = {
   toolchain: "toolchain:*",
   ssr: "ssr:*",
   browser: "browser:*",
+  bench: "bench",
 };
 
 /**
@@ -130,7 +131,7 @@ export function canaryRuns(
   // A canary of some targets runs their projects only: the others have nothing corrupted.
   const corrupted = (canary.targets ?? targets).filter((target) => targets.includes(target));
   const projectsOf = (kind: ProjectKind) =>
-    canary.targets && kind !== "compile" && kind !== "harness"
+    canary.targets && kind !== "compile" && kind !== "harness" && kind !== "bench"
       ? corrupted.map((target) => `${kind}:${target}`)
       : [PROJECTS[kind]];
   const loads = canaryProjects(canary).filter((kind) => kind in (canary.loadEvidence ?? {}));

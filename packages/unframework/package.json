@@ -1,5 +1,5 @@
 {
-  "name": "unframework",
+  "name": "@uxfront/unframework",
   "version": "0.0.0",
   "private": true,
   "description": "Write a component once, get native React, Vue, Svelte, Solid, Angular, Qwik and Astro: the authoring API and JSX types for .uf.tsx components.",
@@ -24,13 +24,18 @@
     "url": "git+https://github.com/uxfront-com/unframework.git",
     "directory": "packages/unframework"
   },
+  "bin": {
+    "unframework": "bin/unframework.js"
+  },
   "files": [
+    "bin",
     "dist"
   ],
   "type": "module",
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
+    "./config": "./src/config.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./package.json": "./package.json"
@@ -40,6 +45,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
+      },
+      "./config": {
+        "types": "./dist/config.d.ts",
+        "default": "./dist/config.js"
       },
       "./jsx-runtime": {
         "types": "./dist/jsx-runtime.d.ts",
@@ -61,11 +70,12 @@
     "vendor:jsx": "node scripts/vendor-jsx.ts"
   },
   "dependencies": {
+    "@unframework.dev/cli": "workspace:*",
+    "@unframework.dev/compiler": "workspace:*",
     "csstype": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
-    "@unframework/compiler": "workspace:*",
     "@uxfront/typescript-config": "catalog:",
     "@vue/runtime-dom": "3.5.43",
     "tsdown": "catalog:",

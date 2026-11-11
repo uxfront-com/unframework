@@ -3,8 +3,12 @@
 import { createRequire } from "node:module";
 
 import type * as Babel from "@babel/core";
-import type { FrameworkCompileResult, ToolchainFile, ToolchainMessage } from "@unframework/codegen";
-import { assertFilesToCompile } from "@unframework/codegen/toolchain-node";
+import type {
+  FrameworkCompileResult,
+  ToolchainFile,
+  ToolchainMessage,
+} from "@unframework.dev/codegen";
+import { assertFilesToCompile } from "@unframework.dev/codegen/toolchain-node";
 
 /** dom-expressions' template validation starts every warning with this line. */
 const MALFORMED = "The HTML provided is malformed";
@@ -38,6 +42,36 @@ export async function compileWithSolid(
   }
   return new Map(
     files.map((file) => [file.path, compileFile(babel, solid, typescript, file)] as const),
+  );
+}
+
+/** L15: Solid's client output for each file, as a client build compiles it. */
+export async function emitWithSolid(
+  files: readonly ToolchainFile[],
+): Promise<Map<string, ToolchainFile[]>> {
+  assertFilesToCompile(files);
+  const babel: typeof Babel = await import("@babel/core");
+  const require = createRequire(import.meta.url);
+  const solid = require.resolve("babel-preset-solid");
+  const typescript = require.resolve("@babel/preset-typescript");
+  return new Map(
+    files.map((file) => {
+      const output = babel.transformSync(file.contents, {
+        filename: file.path,
+        babelrc: false,
+        configFile: false,
+        sourceMaps: false,
+        ast: false,
+        presets: [
+          [solid, { generate: "dom", hydratable: false }],
+          [
+            typescript,
+            { isTSX: !file.path.endsWith(".ts"), allExtensions: true, onlyRemoveTypeImports: true },
+          ],
+        ],
+      });
+      return [file.path, [{ path: file.path, contents: output!.code! }]] as const;
+    }),
   );
 }
 

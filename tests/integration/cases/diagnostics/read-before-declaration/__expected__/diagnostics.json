@@ -7,12 +7,12 @@
     "start": {
       "line": 7,
       "column": 44,
-      "offset": 344
+      "offset": 353
     },
     "end": {
       "line": 7,
       "column": 53,
-      "offset": 353
+      "offset": 362
     },
     "help": "Declare `tax` before what reads it."
   }

@@ -1,4 +1,4 @@
-import { defineEmits, onMounted, onUnmounted, ref } from "unframework";
+import { defineEmits, onMounted, onUnmounted, ref } from "@uxfront/unframework";
 
 export default function DraftEditor() {
   const emit = defineEmits<{ saved: [count: number] }>();

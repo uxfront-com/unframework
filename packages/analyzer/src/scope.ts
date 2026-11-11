@@ -5,7 +5,7 @@
 // `CLIENT_GLOBALS`); `jsxPragma: null` keeps JSX from reading an implicit `React`.
 
 import { analyze } from "@typescript-eslint/scope-manager";
-import type { AST } from "@unframework/parser";
+import type { AST } from "@unframework.dev/parser";
 
 /** What an identifier in an expression refers to, by the declaration that binds it. */
 export type Resolution =

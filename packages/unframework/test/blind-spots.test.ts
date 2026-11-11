@@ -5,7 +5,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { compile, createFileResolver, createSyntacticOracle } from "@unframework/compiler";
+import { compile, createFileResolver, createSyntacticOracle } from "@unframework.dev/compiler";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { PROBES_DIRECTORY } from "../scripts/run-probes.ts";

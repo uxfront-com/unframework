@@ -15,7 +15,7 @@ import {
   impurity,
   reservedSetupName,
   summarize,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Binding,
   ComposableApi,
@@ -25,9 +25,9 @@ import type {
   ReturnedMember,
   TypeParameter,
   UfComposable,
-} from "@unframework/ir";
-import { exportName, visitorKeys } from "@unframework/parser";
-import type { AST, ParsedModule } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import { exportName, visitorKeys } from "@unframework.dev/parser";
+import type { AST, ParsedModule } from "@unframework.dev/parser";
 
 import type { AuthoringApi } from "./authoring.ts";
 import type { Reporter } from "./context.ts";

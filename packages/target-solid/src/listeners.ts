@@ -21,8 +21,8 @@
 // - A template ref is a `let` the element's `ref` callback sets, and clears when the element is
 //   removed (`onCleanup` in the callback runs when its branch is disposed): empty again, as the
 //   other targets' refs are (ADR-0049).
-import { js } from "@unframework/codegen";
-import type { ImportSet, JsxContext, Placeholders } from "@unframework/codegen";
+import { js } from "@unframework.dev/codegen";
+import type { ImportSet, JsxContext, Placeholders } from "@unframework.dev/codegen";
 import type {
   ElementNode,
   EventAttribute,
@@ -32,8 +32,8 @@ import type {
   ListenerAttribute,
   RefAttribute,
   UfComponent,
-} from "@unframework/ir";
-import { walk } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import { walk } from "@unframework.dev/ir";
 
 import type { Narrowings } from "./narrowing.ts";
 import { eventProp } from "./props.ts";

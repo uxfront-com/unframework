@@ -1,6 +1,6 @@
 // jsx/svg: an icon with case-exact SVG attributes (`viewBox`, `stroke-width` as a string), a
 // labelling `title`, a gradient with `stop`s, and bound size and colour.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import StatusIcon from "./StatusIcon.uf.tsx";

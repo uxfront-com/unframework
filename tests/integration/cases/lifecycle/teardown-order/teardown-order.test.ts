@@ -5,7 +5,7 @@
 // watcher's and `watchEffect`'s cleanup runs before `onUnmounted`, though the hook is declared
 // first. The order of the cleanups among themselves is not part of the contract (it is the order
 // of different watchers), so each has an event of its own and the spec checks them as a set.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import SearchSession from "./SearchSession.uf.tsx";

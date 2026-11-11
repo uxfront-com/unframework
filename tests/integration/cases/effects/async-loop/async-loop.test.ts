@@ -2,7 +2,7 @@
 // before a loop and in its first iteration, the end of one iteration and the start of the next,
 // and the last iteration and the code after the loop each trigger a watcher once, as on Vue.
 // `await nextTick()` separates the runs on every target.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ImportQueue from "./ImportQueue.uf.tsx";

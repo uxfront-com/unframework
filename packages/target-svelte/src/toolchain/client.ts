@@ -1,4 +1,4 @@
-import type { MountAdapter, MountListener } from "@unframework/codegen";
+import type { MountAdapter, MountListener } from "@unframework.dev/codegen";
 import { flushSync, mount as mountComponent, settled, unmount } from "svelte";
 import type { Component } from "svelte";
 

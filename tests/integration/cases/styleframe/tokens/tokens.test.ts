@@ -1,7 +1,7 @@
 // styleframe/tokens: Styleframe's token variables in a scoped sheet (ADR-0063, ADR-0064). The
 // component imports Styleframe's stylesheet, which declares the variables on `:root`, and its own
 // sheet reads them.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Panel from "./Panel.uf.tsx";

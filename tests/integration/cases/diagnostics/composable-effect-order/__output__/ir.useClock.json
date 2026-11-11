@@ -8,37 +8,37 @@
     {
       "name": "useClock",
       "span": {
-        "start": 129,
-        "end": 265
+        "start": 138,
+        "end": 274
       },
       "parameters": [],
       "types": [],
       "bindings": [
         {
-          "id": "started@166",
+          "id": "started@175",
           "name": "started",
           "kind": "state",
           "span": {
-            "start": 166,
-            "end": 173
+            "start": 175,
+            "end": 182
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "started@166",
+          "binding": "started@175",
           "initial": {
             "code": "false",
             "span": {
-              "start": 180,
-              "end": 185
+              "start": 189,
+              "end": 194
             },
             "refs": []
           },
           "span": {
-            "start": 160,
-            "end": 187
+            "start": 169,
+            "end": 196
           }
         },
         {
@@ -49,47 +49,47 @@
             "body": {
               "code": "{\n    started.value = true;\n  }",
               "span": {
-                "start": 207,
-                "end": 238
+                "start": 216,
+                "end": 247
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "started@166",
+                  "binding": "started@175",
                   "operator": "=",
                   "span": {
-                    "start": 213,
-                    "end": 233
+                    "start": 222,
+                    "end": 242
                   },
                   "target": {
-                    "start": 213,
-                    "end": 226
+                    "start": 222,
+                    "end": 235
                   },
                   "value": {
-                    "start": 229,
-                    "end": 233
+                    "start": 238,
+                    "end": 242
                   }
                 }
               ]
             },
             "span": {
-              "start": 201,
-              "end": 238
+              "start": 210,
+              "end": 247
             }
           },
           "span": {
-            "start": 191,
-            "end": 240
+            "start": 200,
+            "end": 249
           }
         }
       ],
       "returns": [
         {
           "name": "started",
-          "binding": "started@166",
+          "binding": "started@175",
           "span": {
-            "start": 253,
-            "end": 260
+            "start": 262,
+            "end": 269
           }
         }
       ]

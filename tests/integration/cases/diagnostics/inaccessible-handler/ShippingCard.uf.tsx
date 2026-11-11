@@ -1,6 +1,6 @@
 // UF3030 inaccessible-handler: a click handler on a `<div>`, which a keyboard user cannot reach
 // or activate (Svelte's a11y rules); put the handler on a `<button>`.
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export default function ShippingCard() {
   const expanded = ref(false);

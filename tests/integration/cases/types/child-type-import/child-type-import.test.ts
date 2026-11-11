@@ -1,6 +1,6 @@
 // types/child-type-import: a parent types a prop with a type its child's module exports, imported
 // from the child's output (ADR-0067).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Form from "./Form.uf.tsx";

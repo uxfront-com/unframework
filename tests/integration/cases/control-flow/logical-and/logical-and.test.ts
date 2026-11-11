@@ -1,6 +1,6 @@
 // control-flow/logical-and: `cond && <el/>` renders by truthiness, so a falsy number (0) or
 // string ("") renders nothing, never the value itself; chained conditions too.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import InboxSummary from "./InboxSummary.uf.tsx";

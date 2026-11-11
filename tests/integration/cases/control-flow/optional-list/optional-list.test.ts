@@ -2,7 +2,7 @@
 // (an optional array, and one that may be null), render their items when there are some and
 // nothing when the source is absent. In the `<pre>`, the line feed after a conditional that can
 // render nothing comes after the text that starts the `<pre>`, so every server keeps it.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import BuildLog from "./BuildLog.uf.tsx";

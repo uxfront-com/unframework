@@ -1,5 +1,5 @@
 {
-  "name": "@unframework/toolchain-react",
+  "name": "@unframework.dev/toolchain-react",
   "version": "0.0.0",
   "private": true,
   "description": "The react test toolchain: the checker and tsconfig that type-check every case's react golden output in one run (L4), and the oxlint config, with its React rules, that lints it (L5).",

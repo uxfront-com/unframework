@@ -12,9 +12,9 @@ import {
   parseExpressionSource,
   typeNames,
   typeSpecifier,
-} from "@unframework/codegen";
-import type { CodeKind, ImportSet } from "@unframework/codegen";
-import { codeOf } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { CodeKind, ImportSet } from "@unframework.dev/codegen";
+import { codeOf } from "@unframework.dev/ir";
 import type {
   BindingId,
   TypeDeclaration,
@@ -22,7 +22,7 @@ import type {
   UfComponent,
   UfComposable,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { setupOwner } from "./composable.ts";
 

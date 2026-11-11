@@ -1,4 +1,4 @@
-import { cssPropertiesOverlap, ID_REFERENCE_ATTRIBUTES } from "@unframework/ir";
+import { cssPropertiesOverlap, ID_REFERENCE_ATTRIBUTES } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { normalizeHtml } from "../src/normalize/index.ts";
@@ -490,7 +490,7 @@ describe("rule 4c: canonicalizeClasses", () => {
   });
 });
 
-// The ordering guard of rule 4a is `@unframework/ir`'s: these are the pairs the normaliser relies on.
+// The ordering guard of rule 4a is `@unframework.dev/ir`'s: these are the pairs the normaliser relies on.
 describe("cssPropertiesOverlap: whether two declarations' order decides what renders", () => {
   it.each([
     ["color", "color"],
@@ -819,7 +819,7 @@ describe("rule 7: canonicalizeGeneratedIds", () => {
   });
 
   it("reads references from the list in which the analyzer reserves the prefix", () => {
-    // One list (`@unframework/ir`): an attribute the analyzer lets through with an authored
+    // One list (`@unframework.dev/ir`): an attribute the analyzer lets through with an authored
     // `uf-id-…` value would be renamed here, erasing a real difference.
     for (const name of ID_REFERENCE_ATTRIBUTES) {
       const html = `<p ${name}="uf-id-q"></p>`;

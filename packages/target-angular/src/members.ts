@@ -16,9 +16,9 @@ import {
   parameterText,
   pascalCase,
   rewriteCode,
-} from "@unframework/codegen";
-import type { Placeholders, RewriteRules } from "@unframework/codegen";
-import type { Code, Prop, TypeDeclaration, UfComponent, UseItem } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { Placeholders, RewriteRules } from "@unframework.dev/codegen";
+import type { Code, Prop, TypeDeclaration, UfComponent, UseItem } from "@unframework.dev/ir";
 
 import { keyOf } from "./composition.ts";
 import type { SlotDirective } from "./composition.ts";

@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { Diagnostic, EmitContext, OutputFile, ToolchainFile } from "@unframework/codegen";
+import type { Diagnostic, EmitContext, OutputFile, ToolchainFile } from "@unframework.dev/codegen";
 import {
   createComponent,
   createElement,
@@ -10,8 +10,8 @@ import {
   createModule,
   createStaticAttribute,
   createText,
-} from "@unframework/ir";
-import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { ElementNode, RenderNode, UfModule } from "@unframework.dev/ir";
 
 // The analyser lowers the M1 fixtures from source, so each shape under test is one it produces
 // (and keeps the IR's invariants). A test-only import: the target itself never sees the analyser.

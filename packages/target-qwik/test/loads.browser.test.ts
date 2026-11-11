@@ -6,7 +6,7 @@
 // with no static import first); and a control a `$` handler's body calls while the event is
 // dispatched, which on a first run would come too late, is reported on the console, where a
 // `sync$` handler's or a `preventdefault:` attribute's is not.
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 

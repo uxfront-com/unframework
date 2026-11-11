@@ -1,4 +1,4 @@
-import { analyze } from "@unframework/analyzer";
+import { analyze } from "@unframework.dev/analyzer";
 // Where a handler's event controls run (src/controls.ts, ADR-0047), on hand-built IR: a control a
 // handler reaches through a call runs as the event is dispatched only when the call is at the top
 // of the handler, and `requiredCapabilities` derives `conditional-event-control` where it is not.
@@ -17,7 +17,7 @@ import {
   createParameter,
   createStateItem,
   span,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Binding,
   Code,
@@ -26,8 +26,8 @@ import type {
   FunctionCode,
   Span,
   UfComponent,
-} from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -391,7 +391,7 @@ describe("on an analysed source", () => {
   // clause on the event before a control or a call is its negated test, any other statement that
   // may leave the body stops it running as the event is dispatched (UF3033 for an own control).
   const source = [
-    'import { ref } from "unframework";',
+    'import { ref } from "@uxfront/unframework";',
     "export default function Keys() {",
     "  const open = ref(true);",
     '  function close(event: KeyboardEvent) { if (event.key !== "Escape") return; event.preventDefault(); open.value = false; }',
@@ -492,7 +492,7 @@ function analysed(name: string, lines: string[]) {
 
 describe("the top of a handler (ADR-0047)", () => {
   const keys = analysed("Keys", [
-    'import { defineEmits, ref } from "unframework";',
+    'import { defineEmits, ref } from "@uxfront/unframework";',
     "export default function Keys() {",
     "  const emit = defineEmits<{ navigate: []; saved: [] }>();",
     "  const count = ref(0);",
@@ -554,7 +554,7 @@ describe("the top of a handler (ADR-0047)", () => {
   // in a callback): a control beside other statements in an `if` block, in an `else` branch or a
   // `switch` case is no control at the top.
   const blocks = analysed("Blocks", [
-    'import { ref } from "unframework";',
+    'import { ref } from "@uxfront/unframework";',
     "export default function Blocks() {",
     "  const count = ref(0);",
     "  return (",
@@ -585,7 +585,7 @@ describe("handedControls (ADR-0047)", () => {
   // value or called from anywhere but a template listener's top, runs its controls as local
   // functions run: later on Qwik. One that captures nothing runs at once everywhere.
   const hotkeys = analysed("Hotkeys", [
-    'import { onMounted, onUnmounted, ref, useTemplateRef } from "unframework";',
+    'import { onMounted, onUnmounted, ref, useTemplateRef } from "@uxfront/unframework";',
     "export default function Hotkeys() {",
     "  const blocked = ref(0);",
     "  const stopped = ref(0);",

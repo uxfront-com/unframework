@@ -1,0 +1,54 @@
+{
+  "name": "@unframework.dev/cli",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The `unframework` command line: `build`, `check`, `explain` and `init`.",
+  "keywords": [
+    "unframework"
+  ],
+  "homepage": "https://github.com/uxfront-com/unframework/tree/main/packages/cli#readme",
+  "bugs": "https://github.com/uxfront-com/unframework/issues",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uxfront-com/unframework.git",
+    "directory": "packages/cli"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@unframework.dev/compiler": "workspace:*",
+    "@unframework.dev/diagnostics": "workspace:*",
+    "@unframework.dev/parser": "workspace:*",
+    "@unframework.dev/type-oracle-tsgo": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@uxfront/typescript-config": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

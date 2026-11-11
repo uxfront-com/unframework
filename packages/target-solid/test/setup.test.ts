@@ -10,7 +10,7 @@ import { SOURCES } from "./sources.ts";
 
 /** A component `Probe` with `setup` before its return of `jsx`, importing `apis`. */
 function probe(apis: string, setup: string, jsx: string, parameter = ""): string {
-  return `import { ${apis} } from "unframework";\n\nexport default function Probe(${parameter}) {\n${setup}\n  return ${jsx};\n}\n`;
+  return `import { ${apis} } from "@uxfront/unframework";\n\nexport default function Probe(${parameter}) {\n${setup}\n  return ${jsx};\n}\n`;
 }
 
 /** The output's component function, from its signature to its closing brace. */

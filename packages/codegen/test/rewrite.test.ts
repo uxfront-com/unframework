@@ -13,8 +13,8 @@ import {
   createPropsParameter,
   createTypeText,
   span,
-} from "@unframework/ir";
-import type { Binding, Expression, UfComponent } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { Binding, Expression, UfComponent } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import {

@@ -5,14 +5,14 @@
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "events/listener-pairs/DraftPanel.uf.tsx",
     "start": {
-      "line": 58,
+      "line": 65,
       "column": 3,
-      "offset": 1395
+      "offset": 1417
     },
     "end": {
-      "line": 60,
+      "line": 67,
       "column": 6,
-      "offset": 1454
+      "offset": 1476
     },
     "target": "astro"
   }

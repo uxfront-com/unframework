@@ -9,12 +9,12 @@ import type {
   ToolchainContext,
   ToolchainFile,
   ToolchainMessage,
-} from "@unframework/codegen";
+} from "@unframework.dev/codegen";
 import {
   assertFilesToCheck,
   assertFilesToCompile,
   diagnosticsByFile,
-} from "@unframework/codegen/toolchain-node";
+} from "@unframework.dev/codegen/toolchain-node";
 
 import { collectDiagnostics, createHost, groupByFile, strictOptions, toMessage } from "./ngtsc.ts";
 import { loadCompiler } from "./tools.ts";
@@ -43,6 +43,52 @@ export async function frameworkCompile(
     files.map((file) => file.path),
     diagnostics,
   );
+}
+
+/**
+ * L15: each file's JavaScript from one ngtsc program, AOT only, as the Vite plugin emits it
+ * (`ngtsc-worker.ts`), since no TestBed or JIT metadata reaches a production build.
+ */
+export async function frameworkEmit(
+  files: readonly ToolchainFile[],
+  context: ToolchainContext,
+): Promise<Map<string, ToolchainFile[]>> {
+  assertFilesToCompile(files);
+  const compiler = await loadCompiler(context.toolchainDir);
+  const options = {
+    ...strictOptions(compiler),
+    noEmit: false,
+    declaration: false,
+    supportTestBed: false,
+    supportJitMode: false,
+  };
+  const contents = new Map(files.map((file) => [resolve(file.path), file.contents]));
+  const host = createHost(compiler, options, (fileName) => contents.get(resolve(fileName)));
+  const declarations = (context.declarations ?? []).map((file) => resolve(file));
+  const program = new compiler.cli.NgtscProgram(
+    [...contents.keys(), ...declarations],
+    options,
+    host,
+  );
+  await program.compiler.analyzeAsync();
+  const { transformers } = program.compiler.prepareEmit();
+  const tsProgram = program.getTsProgram();
+  const emitted = new Map<string, ToolchainFile[]>();
+  for (const file of files) {
+    let code: string | undefined;
+    tsProgram.emit(
+      tsProgram.getSourceFile(resolve(file.path)),
+      (fileName, text) => {
+        if (/\.[cm]?js$/.test(fileName)) code = text;
+      },
+      undefined,
+      false,
+      transformers,
+    );
+    if (code === undefined) throw new Error(`ngtsc emitted nothing for ${file.path}.`);
+    emitted.set(file.path, [{ path: file.path, contents: code }]);
+  }
+  return emitted;
 }
 
 let configs = 0;

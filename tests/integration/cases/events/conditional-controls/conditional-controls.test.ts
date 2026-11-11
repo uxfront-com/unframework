@@ -6,7 +6,7 @@
 // handler, as the event is dispatched, cannot tell, and declares `conditional-event-control`
 // unsupported: it has no output for the component, so its browser project skips every test
 // (no output), and the tests that act require the capability.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ReplyBox from "./ReplyBox.uf.tsx";

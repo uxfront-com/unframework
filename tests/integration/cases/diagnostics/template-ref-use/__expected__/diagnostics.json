@@ -7,12 +7,12 @@
     "start": {
       "line": 10,
       "column": 13,
-      "offset": 379
+      "offset": 388
     },
     "end": {
       "line": 10,
       "column": 77,
-      "offset": 443
+      "offset": 452
     },
     "help": "Render it from state: keep what the element shows in a ref, and let the template render it."
   }

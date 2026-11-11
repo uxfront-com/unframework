@@ -39,7 +39,7 @@ function upstream(overrides: Partial<UpstreamSnapshot> = {}): UpstreamSnapshot {
 }
 
 describe("the vendored JSX types", () => {
-  it("are up to date with the pinned @vue/runtime-dom (run `pnpm --filter unframework vendor:jsx`)", () => {
+  it("are up to date with the pinned @vue/runtime-dom (run `pnpm --filter @uxfront/unframework vendor:jsx`)", () => {
     expect(readFileSync(VENDORED_FILE, "utf8")).toBe(renderVendoredJsx(readUpstream()));
   });
 

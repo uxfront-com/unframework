@@ -6,7 +6,7 @@
 // event.currentTarget`) hides it and goes no further, while a click inside reaches the page. Two
 // listeners of one click run in their order: one that returns early beside a `once` one, and an
 // async one beside a `once` one, which runs before the async one resumes.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import CommentComposer from "./CommentComposer.uf.tsx";

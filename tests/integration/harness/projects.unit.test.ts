@@ -1,14 +1,16 @@
-import type { HarnessContext } from "@unframework/testing/node";
+import type { HarnessContext } from "@unframework.dev/testing/node";
 import { describe, expect, inject, it } from "vitest";
 import type { UserWorkspaceConfig } from "vitest/config";
 
 import { caseConfigs, listCases } from "./cases.ts";
 import { noOutputCases } from "./no-output.ts";
 import {
+  BENCH_PROJECT,
   fileParallelism,
   harnessProjects,
   isSelected,
   noErrorBroadcast,
+  parityProjects,
   projectNames,
   projectPatterns,
   projectTest,
@@ -91,6 +93,29 @@ describe("projects", () => {
   });
 });
 
+describe("the bench project", () => {
+  const names = (projectFilter?: string[]) =>
+    harnessProjects({ harness, mode, targets: ["vue"], projectFilter })
+      .filter((project) => typeof project === "object")
+      .map((project) => (project as UserWorkspaceConfig).test?.name);
+
+  it("stays out of the default run, and of a wildcard that selects everything", () => {
+    expect(names()).toEqual(["compile", "harness", "toolchain:vue"]);
+    expect(names(["*"])).toEqual(["compile", "harness", "toolchain:vue"]);
+    expect(names(["compile"])).toEqual(["compile", "harness", "toolchain:vue"]);
+    expect(projectNames(["vue"])).not.toContain(BENCH_PROJECT);
+  });
+
+  it("runs when a run names it", () => {
+    expect(names(["bench"])).toEqual(["compile", "harness", "bench", "toolchain:vue"]);
+    expect(names(projectPatterns(["vitest", "run", "--project=bench"]))).toContain("bench");
+  });
+
+  it("is what CI's parity job adds to the default run", () => {
+    expect(parityProjects(["vue"])).toEqual([...projectNames(["vue"]), "bench"]);
+  });
+});
+
 describe("projectTest", () => {
   const owned = {
     name: "browser:vue",
@@ -127,7 +152,7 @@ describe("project factories", () => {
     const [, , , ssr, browser] = harnessProjects({ harness, mode, targets: ["missing"] });
     for (const [factory, layers] of [
       [ssr, ["L6", "L13"]],
-      [browser, ["L7", "L8", "L9", "L10", "L11", "L13"]],
+      [browser, ["L7", "L8", "L9", "L10", "L11", "L13", "L14"]],
     ] as const) {
       const project = await (factory as () => Promise<UserWorkspaceConfig>)();
       expect(project.test?.include).toEqual(["harness/unavailable.test.ts"]);
@@ -138,7 +163,7 @@ describe("project factories", () => {
       if (!unavailable) throw new Error("The project provides no ufUnavailable.");
       expect(unavailable.layers).toEqual(layers);
       expect(unavailable.message).toMatch(
-        /^The missing toolchain \(@unframework\/target-missing\/toolchain\) could not be loaded\.\ncaused by: /,
+        /^The missing toolchain \(@unframework\.dev\/target-missing\/toolchain\) could not be loaded\.\ncaused by: /,
       );
     }
   });

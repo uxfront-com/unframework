@@ -1,6 +1,6 @@
-import { defineTarget, printMarkup, vueDialect } from "@unframework/codegen";
-import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
-import type { UfComponent } from "@unframework/ir";
+import { defineTarget, printMarkup, vueDialect } from "@unframework.dev/codegen";
+import type { EmitContext, OutputFile, Target } from "@unframework.dev/codegen";
+import type { UfComponent } from "@unframework.dev/ir";
 
 import { emitComposable } from "./composable.ts";
 import { scriptSetup } from "./script.ts";

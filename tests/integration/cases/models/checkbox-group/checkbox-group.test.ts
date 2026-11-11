@@ -1,6 +1,6 @@
 // models/checkbox-group: checkboxes whose `v-model` binds one array add their `value` to it when
 // checked and remove it when unchecked (ADR-0054); each is checked while the array holds its value.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Drinks from "./Drinks.uf.tsx";

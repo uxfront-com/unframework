@@ -1,6 +1,6 @@
 // The type oracle's seam (plan §5.5, ADR-0067): coarse-grained, asynchronous, and serialisable,
 // which is what an IPC-backed checker needs. Every adapter answers the same queries with the same
-// shapes, which the contract suite (`@unframework/type-oracle/contract`) holds them to.
+// shapes, which the contract suite (`@unframework.dev/type-oracle/contract`) holds them to.
 
 /** A half-open range `[start, end)` of UTF-16 offsets into a file's source. */
 export interface Span {

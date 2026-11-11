@@ -2,7 +2,7 @@
 // (ADR-0065), read as Vue's `normalizeClass` reads them: a prop array and a prop object beside a
 // static name and a toggle, a lone prop array, and an absent array beside a conditional array
 // literal that a click fills.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import TagList from "./TagList.uf.tsx";

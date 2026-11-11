@@ -2,8 +2,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { formatOutput } from "@unframework/codegen";
-import type { Diagnostic, EmitContext, OutputFile, ToolchainFile } from "@unframework/codegen";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { Diagnostic, EmitContext, OutputFile, ToolchainFile } from "@unframework.dev/codegen";
 import {
   createComponent,
   createElement,
@@ -11,8 +11,8 @@ import {
   createModule,
   createStaticAttribute,
   createText,
-} from "@unframework/ir";
-import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { ElementNode, RenderNode, UfModule } from "@unframework.dev/ir";
 
 // The analyser, by path: the target's tests lower real sources as the compiler would, while the
 // package itself depends only on ir and codegen (layering).

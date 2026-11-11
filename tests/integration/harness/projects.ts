@@ -1,12 +1,13 @@
 // The Vitest projects of the harness (plan §7.3):
 //
-//   compile             node     L1 L2     every case to every target, against __output__
+//   compile             node     L1 L2 L14 every case to every target, against __output__
 //   harness             node               the harness's own unit tests
 //   toolchain:<target>  node     L3 L4 L5  the framework compiler, checker and linters, one run
 //                                          of each per target
 //   ssr:<target>        node     L6 L13    the target's server renderer, through the unplugin
 //   browser:<target>    chromium L7 L8 L9 L10 L11 L13  the shared specs, through the unplugin
 //                       (or UF_BROWSER's engine)
+//   bench               node     L15       the budgets, only when `--project bench` names it
 //
 // Every project sets `extends: false`: inheriting the root config merges its plugins into each
 // project (the browser-projects ADR), and a project must hold its own toolchain only. Toolchains
@@ -15,28 +16,28 @@
 import { relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { Toolchain, ToolchainContext } from "@unframework/codegen";
-import { builtinTargets } from "@unframework/compiler";
-import type { TargetName } from "@unframework/compiler";
+import type { Toolchain, ToolchainContext } from "@unframework.dev/codegen";
+import { builtinTargets } from "@unframework.dev/compiler";
+import type { TargetName } from "@unframework.dev/compiler";
 import {
   caseReferences,
   formatError,
   groupOrder,
   parityBrowser,
   recordCompiledModule,
-} from "@unframework/testing/node";
+} from "@unframework.dev/testing/node";
 import type {
   HarnessContext,
   HarnessMode,
   LayerName,
   ProjectKind,
-} from "@unframework/testing/node";
-import type { UnframeworkOptions } from "@unframework/unplugin/vite";
+} from "@unframework.dev/testing/node";
+import type { UnframeworkOptions } from "@unframework.dev/unplugin/vite";
 import type { Plugin } from "vite";
 import { mergeConfig } from "vitest/config";
 import type { TestProjectConfiguration, UserWorkspaceConfig, ViteUserConfig } from "vitest/config";
 
-import { canaryPlugins, guardsGoldens } from "./canaries.ts";
+import { canaryPlugins, canaryServePlugin, guardsGoldens } from "./canaries.ts";
 import "./context.ts";
 import { listCases } from "./cases.ts";
 import { ENGINE_DECLARATIONS, enginePlugins } from "./engines.ts";
@@ -44,6 +45,7 @@ import { goldenGuard } from "./guard.ts";
 import { noOutputCases, noOutputPlugin, standInCases, standInReasons } from "./no-output.ts";
 import { FAILURE_SCREENSHOTS_DIR, ROOT, toolchainDir } from "./paths.ts";
 import { loadToolchain, REFERENCE } from "./targets.ts";
+import { ufMapStack } from "./thrown.ts";
 
 /** What every project factory needs. */
 export interface HarnessSetup {
@@ -85,10 +87,13 @@ const NODE_TEST = { environment: "node", pool: "forks", testTimeout: 60_000 } as
 /** The layers each kind of project records, which an unavailable project fails. */
 const LAYERS_OF: Record<"ssr" | "browser", LayerName[]> = {
   ssr: ["L6", "L13"],
-  browser: ["L7", "L8", "L9", "L10", "L11", "L13"],
+  browser: ["L7", "L8", "L9", "L10", "L11", "L13", "L14"],
 };
 
-/** The name of every project, in order: what a run of all of them covers. */
+/** The budgets' project: left out of a run that does not name it, so `pnpm test` stays short. */
+export const BENCH_PROJECT = "bench";
+
+/** The name of every project of the default run, in order: what a run of all of them covers. */
 export function projectNames(targets: readonly string[]): string[] {
   return [
     "compile",
@@ -99,11 +104,25 @@ export function projectNames(targets: readonly string[]): string[] {
   ];
 }
 
+/** What CI's parity job requires: the default run's projects, and the `Bench` job's. */
+export function parityProjects(targets: readonly string[]): string[] {
+  return [...projectNames(targets), BENCH_PROJECT];
+}
+
 /** Every project of the harness. */
 export function harnessProjects(setup: HarnessSetup): TestProjectConfiguration[] {
   return [
     nodeProject(setup, "compile", "compile", undefined, ["harness/compile.test.ts"]),
     nodeProject(setup, "harness", "harness", undefined, ["harness/*.unit.test.ts"]),
+    // By its exact name: a wildcard that selects everything still means the default run.
+    ...(setup.projectFilter?.includes(BENCH_PROJECT)
+      ? [
+          nodeProject(setup, BENCH_PROJECT, "bench", undefined, ["harness/bench.test.ts"], {
+            // Every timed iteration, then each target's compile and bundle of the corpus.
+            hookTimeout: 1_800_000,
+          }),
+        ]
+      : []),
     ...setup.targets.map((target) =>
       nodeProject(
         setup,
@@ -201,7 +220,7 @@ function lazyProject(
     try {
       const [toolchain, unplugin] = await Promise.all([
         loadToolchain(target),
-        import("@unframework/unplugin/vite"),
+        import("@unframework.dev/unplugin/vite"),
       ]);
       return await factory(setup, target, toolchain, unplugin.default);
     } catch (error) {
@@ -244,6 +263,20 @@ function unpluginOptions(setup: HarnessSetup, target: string): UnframeworkOption
 }
 
 /**
+ * The plugin of a canary that corrupts the maps of served modules (`Canary.servedMap`), as a list
+ * to spread into a project's plugins: empty for every other run.
+ */
+function servedMapCanary(setup: HarnessSetup, target: string): Plugin[] {
+  const plugin = canaryServePlugin(
+    setup.mode.canary,
+    target,
+    setup.harness.casesDir,
+    listCases(setup.harness.casesDir),
+  );
+  return plugin ? [plugin] : [];
+}
+
+/**
  * Where a target's toolchain runs the ssr and browser projects: its checkers read the styling
  * engines' virtual modules beside the outputs (ADR-0064), Angular's ngtsc compiles with them,
  * and a server of the toolchain's own (Astro's render server) loads the engines' plugins too.
@@ -264,7 +297,11 @@ const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework)
     {
       root: ROOT,
       // The engines' plugins resolve the imports every output keeps as written (ADR-0064).
-      plugins: [...(await enginePlugins()), ...unframework(unpluginOptions(setup, target))],
+      plugins: [
+        ...(await enginePlugins()),
+        ...unframework(unpluginOptions(setup, target)),
+        ...servedMapCanary(setup, target),
+      ],
     },
     fragment,
   );
@@ -307,14 +344,15 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
         // The engines' plugins resolve the imports every output keeps as written (ADR-0064).
         ...(await enginePlugins()),
         ...unframework(unpluginOptions(setup, target)),
+        ...servedMapCanary(setup, target),
       ],
       // The testing API's own browser dependencies (CommonJS axe-core, parse5), and the runtime
       // Styleframe's recipes import (ADR-0064): listed up front, because one discovered mid-run
       // reloads the page (the browser-projects ADR).
       optimizeDeps: {
         include: [
-          "@unframework/testing > axe-core",
-          "@unframework/testing > parse5",
+          "@unframework.dev/testing > axe-core",
+          "@unframework.dev/testing > parse5",
           "@styleframe/runtime",
         ],
       },
@@ -347,8 +385,8 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
               .map((info) => relative(ROOT, info.spec!).split(sep).join("/"))
           : ["cases/**/*.test.ts"],
         setupFiles: [
-          resolveModule("@unframework/testing/setup"),
-          resolveModule(`@unframework/testing/${target}`),
+          resolveModule("@unframework.dev/testing/setup"),
+          resolveModule(`@unframework.dev/testing/${target}`),
         ],
         // The target's capability matrix as plain data: the browser skips a test that requires
         // a capability the target lacks, and imports no target (ADR-0050). A test of a case the
@@ -366,7 +404,7 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
         browser: {
           ...parityBrowser({
             name,
-            commands: toolchain.browserCommands?.(context) ?? {},
+            commands: { ...toolchain.browserCommands?.(context), ufMapStack },
             browser: setup.mode.browser ?? "chromium",
           }),
           // Vitest's failure screenshots go next to the spec by default, among the committed

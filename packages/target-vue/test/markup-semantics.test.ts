@@ -6,8 +6,8 @@
 // target must. The emitter's own output is tested by emit.test.ts and the corpus.
 import { join } from "node:path";
 
-import { printMarkup, vueDialect } from "@unframework/codegen";
-import type { MarkupOptions } from "@unframework/codegen";
+import { printMarkup, vueDialect } from "@unframework.dev/codegen";
+import type { MarkupOptions } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 import { createSSRApp } from "vue";
 import type { Component } from "vue";

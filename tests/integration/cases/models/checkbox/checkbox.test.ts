@@ -1,6 +1,6 @@
 // models/checkbox: `v-model` on a checkbox bound to a boolean binds its checked state
 // (ADR-0054), both ways.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Terms from "./Terms.uf.tsx";

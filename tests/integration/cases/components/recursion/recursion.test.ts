@@ -1,6 +1,6 @@
 // components/recursion: a countdown renders itself with one less, until zero, where a branch
 // ends the recursion (ADR-0053).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Countdown from "./Countdown.uf.tsx";

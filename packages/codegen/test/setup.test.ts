@@ -24,7 +24,7 @@ import {
   functionsOf,
   span,
   walk,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   ApiReference,
   ElementNode,
@@ -33,8 +33,8 @@ import type {
   LifecycleItem,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { COUNTER, everyKind, find } from "../../ir/test/fixtures.ts";

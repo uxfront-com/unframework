@@ -1,10 +1,10 @@
 // The Solid target's toolchain (plan §5.7): how tests and tooling build, check and run Solid
 // output. Node only; the main entry never imports it.
-import type { Toolchain } from "@unframework/codegen";
-import { lintWithOxlint, typecheckWithTsgo } from "@unframework/codegen/toolchain-node";
+import type { Toolchain } from "@unframework.dev/codegen";
+import { lintWithOxlint, typecheckWithTsgo } from "@unframework.dev/codegen/toolchain-node";
 import type { UserConfig } from "vite";
 
-import { compileWithSolid } from "./compile.ts";
+import { compileWithSolid, emitWithSolid } from "./compile.ts";
 
 /** The runtime modules compiled output and the mount adapter import in the browser. */
 const BROWSER_RUNTIME = ["solid-js", "solid-js/web"];
@@ -12,8 +12,8 @@ const BROWSER_RUNTIME = ["solid-js", "solid-js/web"];
 /** The Solid 1.9 toolchain. */
 export const toolchain: Toolchain = {
   name: "solid",
-  client: "@unframework/target-solid/toolchain/client",
-  server: "@unframework/target-solid/toolchain/server",
+  client: "@unframework.dev/target-solid/toolchain/client",
+  server: "@unframework.dev/target-solid/toolchain/server",
 
   async vite(mode): Promise<UserConfig> {
     // Loaded here, not at the top: the harness imports every toolchain to build its config.
@@ -37,6 +37,8 @@ export const toolchain: Toolchain = {
   },
 
   frameworkCompile: (files) => compileWithSolid(files),
+
+  frameworkEmit: (files) => emitWithSolid(files),
 
   typecheck: (files, context) => typecheckWithTsgo(files, context),
 

@@ -10,12 +10,12 @@ import {
   shapeQueries,
   stylesheetImports,
   unfollowedImports,
-} from "@unframework/analyzer";
-import type { StylesheetSource } from "@unframework/analyzer";
-import type { OutputFile } from "@unframework/codegen";
-import type { ModuleApi } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
-import type { ShapeQuery, TypeOracle, TypeShape } from "@unframework/type-oracle";
+} from "@unframework.dev/analyzer";
+import type { StylesheetSource } from "@unframework.dev/analyzer";
+import type { OutputFile } from "@unframework.dev/codegen";
+import type { ModuleApi } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
+import type { ShapeQuery, TypeOracle, TypeShape } from "@unframework.dev/type-oracle";
 
 import { compile } from "./compile.ts";
 import type { CompileOptions, CompileResult } from "./compile.ts";

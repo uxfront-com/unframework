@@ -4,7 +4,7 @@
 // the runtime lower-cases it, but types the event as a plain `Event` (`onKeydown$` has no `key`,
 // TS2339). A component's events are QRL props named the same way (`onChange$`), which a parent's
 // `onChange$={…}` sets (ADR-0012).
-import { DOM_EVENTS } from "@unframework/ir";
+import { DOM_EVENTS } from "@unframework.dev/ir";
 
 /**
  * The multi-word event names Qwik's JSX types capitalise (`PascalCaseNames` in

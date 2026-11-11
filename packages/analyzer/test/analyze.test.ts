@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { frameworkOf } from "../src/index.ts";
+import { frameworkOf, isAuthoringModule } from "../src/index.ts";
 import { applyAndRecheck, codes, problems, root, run, slices } from "./helpers.ts";
 
 describe("lowering", () => {
@@ -130,18 +130,63 @@ describe("diagnostics", () => {
     expect(frameworkOf(specifier)).toBe(framework);
   });
 
-  it.each(["unframework", "./tokens.ts", "reactive-thing", "vue-ish", "solid"])(
-    "does not mistake %s for a framework",
-    (specifier) => {
-      expect(frameworkOf(specifier)).toBeUndefined();
-    },
-  );
+  it.each([
+    "@uxfront/unframework",
+    "unframework",
+    "./tokens.ts",
+    "reactive-thing",
+    "vue-ish",
+    "solid",
+  ])("does not mistake %s for a framework", (specifier) => {
+    expect(frameworkOf(specifier)).toBeUndefined();
+  });
 
   it("erases the authoring API, and its types", () => {
     const { diagnostics } = run(
-      'import { ref } from "unframework";\nimport type { Ref } from "unframework";\nexport function A() { return <p />; }',
+      'import { ref } from "@uxfront/unframework";\nimport type { Ref } from "@uxfront/unframework";\nexport function A() { return <p />; }',
     );
     expect(diagnostics).toEqual([]);
+  });
+
+  // ADR-0090: the package and its subpaths, and nothing else that starts with the name.
+  it.each([
+    ["@uxfront/unframework", true],
+    ["@uxfront/unframework/config", true],
+    ["@uxfront/unframework/jsx-runtime", true],
+    ["@uxfront/unframework/jsx-dev-runtime", true],
+    ["unframework", false],
+    ["unframework/config", false],
+    ["unframework/jsx-runtime", false],
+    ["@uxfront/unframework-x", false],
+    ["@uxfront/unframeworks/config", false],
+    ["@uxfront/ui", false],
+    ["", false],
+  ])("knows whether %s is the authoring API: %s", (specifier, expected) => {
+    expect(isAuthoringModule(specifier)).toBe(expected);
+  });
+
+  // The unscoped name on npm is another project's package (ADR-0090): a value import of it is a
+  // package import like any other, not the authoring API.
+  it("reports a value import from the unscoped name, which isn't the authoring API", () => {
+    const source = 'import { ref } from "unframework";\nexport function A() { return <p />; }';
+    const { module, diagnostics } = run(source);
+    expect(module).toBeUndefined();
+    expect(codes(diagnostics)).toEqual(["UF1002"]);
+    expect(slices(source, diagnostics)).toEqual(['import { ref } from "unframework";']);
+  });
+
+  // A type import from it reaches the outputs as any package's does (ADR-0067). A migration hint
+  // for the old name would change this test.
+  it("keeps a type import from the unscoped name as a package's type import", () => {
+    const source = 'import type { Ref } from "unframework";\nexport function A() { return <p />; }';
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    expect(module!.typeImports).toEqual([
+      expect.objectContaining({
+        specifier: "unframework",
+        names: [expect.objectContaining({ imported: "Ref", local: "Ref" })],
+      }),
+    ]);
   });
 
   // Every output re-imports them by name (ADR-0067).

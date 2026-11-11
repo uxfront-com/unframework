@@ -3,7 +3,7 @@
 // it started, so it calls nothing back. An immediate watcher of a boolean calls back at once and
 // on each change; an array source holding a boolean calls back once for one handler's two
 // writes; and an array source's values are an array a function taking one accepts.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import BookShelf from "./BookShelf.uf.tsx";

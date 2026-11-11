@@ -5,8 +5,8 @@
     {
       "name": "UnreadBadge",
       "span": {
-        "start": 120,
-        "end": 835
+        "start": 129,
+        "end": 844
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 109,
-              "end": 115
+              "start": 118,
+              "end": 124
             }
           },
-          "binding": "appName@158",
+          "binding": "appName@167",
           "span": {
-            "start": 100,
-            "end": 116
+            "start": 109,
+            "end": 125
           }
         }
       ],
@@ -31,25 +31,25 @@
         "type": {
           "code": "UnreadBadgeProps",
           "span": {
-            "start": 169,
-            "end": 185
+            "start": 178,
+            "end": 194
           }
         },
         "span": {
-          "start": 156,
-          "end": 185
+          "start": 165,
+          "end": 194
         }
       },
       "types": [
         "UnreadBadgeProps"
       ],
       "emits": {
-        "binding": "emit@197",
+        "binding": "emit@206",
         "type": {
           "code": "{ titleChange: [title: string]; titleRelease: [title: string] }",
           "span": {
-            "start": 216,
-            "end": 279
+            "start": 225,
+            "end": 288
           }
         },
         "events": [
@@ -61,19 +61,19 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 239,
-                    "end": 245
+                    "start": 248,
+                    "end": 254
                   }
                 },
                 "span": {
-                  "start": 232,
-                  "end": 245
+                  "start": 241,
+                  "end": 254
                 }
               }
             ],
             "span": {
-              "start": 218,
-              "end": 246
+              "start": 227,
+              "end": 255
             }
           },
           {
@@ -84,71 +84,71 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 270,
-                    "end": 276
+                    "start": 279,
+                    "end": 285
                   }
                 },
                 "span": {
-                  "start": 263,
-                  "end": 276
+                  "start": 272,
+                  "end": 285
                 }
               }
             ],
             "span": {
-              "start": 248,
-              "end": 277
+              "start": 257,
+              "end": 286
             }
           }
         ],
         "span": {
-          "start": 191,
-          "end": 283
+          "start": 200,
+          "end": 292
         }
       },
       "bindings": [
         {
-          "id": "appName@158",
+          "id": "appName@167",
           "name": "appName",
           "kind": "prop",
           "span": {
-            "start": 158,
-            "end": 165
+            "start": 167,
+            "end": 174
           }
         },
         {
-          "id": "emit@197",
+          "id": "emit@206",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 197,
-            "end": 201
+            "start": 206,
+            "end": 210
           }
         },
         {
-          "id": "unread@293",
+          "id": "unread@302",
           "name": "unread",
           "kind": "state",
           "span": {
-            "start": 293,
-            "end": 299
+            "start": 302,
+            "end": 308
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "unread@293",
+          "binding": "unread@302",
           "initial": {
             "code": "0",
             "span": {
-              "start": 306,
-              "end": 307
+              "start": 315,
+              "end": 316
             },
             "refs": []
           },
           "span": {
-            "start": 287,
-            "end": 309
+            "start": 296,
+            "end": 318
           }
         },
         {
@@ -158,74 +158,74 @@
               {
                 "name": "onCleanup",
                 "span": {
-                  "start": 326,
-                  "end": 335
+                  "start": 335,
+                  "end": 344
                 }
               }
             ],
             "body": {
               "code": "{\n    const title = `(${unread.value}) ${appName}`;\n    emit(\"titleChange\", title);\n    onCleanup(() => {\n      emit(\"titleRelease\", title);\n    });\n  }",
               "span": {
-                "start": 340,
-                "end": 492
+                "start": 349,
+                "end": 501
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "unread@293",
+                  "binding": "unread@302",
                   "span": {
-                    "start": 364,
-                    "end": 376
+                    "start": 373,
+                    "end": 385
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "appName@158",
+                  "binding": "appName@167",
                   "span": {
-                    "start": 381,
-                    "end": 388
+                    "start": 390,
+                    "end": 397
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@197",
+                  "binding": "emit@206",
                   "event": "titleChange",
                   "span": {
-                    "start": 396,
-                    "end": 422
+                    "start": 405,
+                    "end": 431
                   },
                   "arguments": [
                     {
-                      "start": 416,
-                      "end": 421
+                      "start": 425,
+                      "end": 430
                     }
                   ]
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@197",
+                  "binding": "emit@206",
                   "event": "titleRelease",
                   "span": {
-                    "start": 452,
-                    "end": 479
+                    "start": 461,
+                    "end": 488
                   },
                   "arguments": [
                     {
-                      "start": 473,
-                      "end": 478
+                      "start": 482,
+                      "end": 487
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 325,
-              "end": 492
+              "start": 334,
+              "end": 501
             }
           },
           "span": {
-            "start": 313,
-            "end": 494
+            "start": 322,
+            "end": 503
           }
         }
       ],
@@ -238,8 +238,8 @@
             "name": "class",
             "value": "unread-badge",
             "span": {
-              "start": 520,
-              "end": 540
+              "start": 529,
+              "end": 549
             }
           },
           {
@@ -247,8 +247,8 @@
             "name": "aria-label",
             "value": "Inbox",
             "span": {
-              "start": 541,
-              "end": 559
+              "start": 550,
+              "end": 568
             }
           }
         ],
@@ -262,8 +262,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 570,
-                  "end": 583
+                  "start": 579,
+                  "end": 592
                 }
               }
             ],
@@ -273,37 +273,37 @@
                 "value": {
                   "code": "unread.value",
                   "span": {
-                    "start": 585,
-                    "end": 597
+                    "start": 594,
+                    "end": 606
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "unread@293",
+                      "binding": "unread@302",
                       "span": {
-                        "start": 585,
-                        "end": 597
+                        "start": 594,
+                        "end": 606
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 584,
-                  "end": 598
+                  "start": 593,
+                  "end": 607
                 }
               },
               {
                 "kind": "Text",
                 "value": " unread",
                 "span": {
-                  "start": 598,
-                  "end": 605
+                  "start": 607,
+                  "end": 614
                 }
               }
             ],
             "span": {
-              "start": 567,
-              "end": 609
+              "start": 576,
+              "end": 618
             }
           },
           {
@@ -315,8 +315,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 624,
-                  "end": 637
+                  "start": 633,
+                  "end": 646
                 }
               },
               {
@@ -329,21 +329,21 @@
                     "body": {
                       "code": "unread.value++",
                       "span": {
-                        "start": 653,
-                        "end": 667
+                        "start": 662,
+                        "end": 676
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "unread@293",
+                          "binding": "unread@302",
                           "operator": "++",
                           "span": {
-                            "start": 653,
-                            "end": 667
+                            "start": 662,
+                            "end": 676
                           },
                           "target": {
-                            "start": 653,
-                            "end": 665
+                            "start": 662,
+                            "end": 674
                           },
                           "arrowBody": true
                         }
@@ -351,18 +351,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 647,
-                      "end": 667
+                      "start": 656,
+                      "end": 676
                     }
                   },
                   "span": {
-                    "start": 647,
-                    "end": 667
+                    "start": 656,
+                    "end": 676
                   }
                 },
                 "span": {
-                  "start": 638,
-                  "end": 668
+                  "start": 647,
+                  "end": 677
                 }
               }
             ],
@@ -371,14 +371,14 @@
                 "kind": "Text",
                 "value": "Receive a message",
                 "span": {
-                  "start": 669,
-                  "end": 702
+                  "start": 678,
+                  "end": 711
                 }
               }
             ],
             "span": {
-              "start": 616,
-              "end": 711
+              "start": 625,
+              "end": 720
             }
           },
           {
@@ -390,8 +390,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 726,
-                  "end": 739
+                  "start": 735,
+                  "end": 748
                 }
               },
               {
@@ -404,25 +404,25 @@
                     "body": {
                       "code": "(unread.value = 0)",
                       "span": {
-                        "start": 755,
-                        "end": 773
+                        "start": 764,
+                        "end": 782
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "unread@293",
+                          "binding": "unread@302",
                           "operator": "=",
                           "span": {
-                            "start": 755,
-                            "end": 773
+                            "start": 764,
+                            "end": 782
                           },
                           "target": {
-                            "start": 756,
-                            "end": 768
+                            "start": 765,
+                            "end": 777
                           },
                           "value": {
-                            "start": 771,
-                            "end": 772
+                            "start": 780,
+                            "end": 781
                           },
                           "arrowBody": true
                         }
@@ -430,18 +430,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 749,
-                      "end": 773
+                      "start": 758,
+                      "end": 782
                     }
                   },
                   "span": {
-                    "start": 749,
-                    "end": 773
+                    "start": 758,
+                    "end": 782
                   }
                 },
                 "span": {
-                  "start": 740,
-                  "end": 774
+                  "start": 749,
+                  "end": 783
                 }
               }
             ],
@@ -450,20 +450,20 @@
                 "kind": "Text",
                 "value": "Mark all read",
                 "span": {
-                  "start": 775,
-                  "end": 804
+                  "start": 784,
+                  "end": 813
                 }
               }
             ],
             "span": {
-              "start": 718,
-              "end": 813
+              "start": 727,
+              "end": 822
             }
           }
         ],
         "span": {
-          "start": 511,
-          "end": 828
+          "start": 520,
+          "end": 837
         }
       }
     }
@@ -474,8 +474,8 @@
       "name": "default",
       "local": "UnreadBadge",
       "span": {
-        "start": 120,
-        "end": 835
+        "start": 129,
+        "end": 844
       }
     }
   ],
@@ -485,8 +485,8 @@
       "exported": true,
       "code": "interface UnreadBadgeProps {\n  appName: string;\n}",
       "span": {
-        "start": 69,
-        "end": 118
+        "start": 78,
+        "end": 127
       }
     }
   ]

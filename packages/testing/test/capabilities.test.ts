@@ -2,7 +2,7 @@
 // of the first unsupported capability a test requires, the refusal of an interaction on a
 // target that runs no client code, and the skip of a test of a case the target has no output
 // for.
-import type { CapabilityCell } from "@unframework/codegen";
+import type { CapabilityCell } from "@unframework.dev/codegen";
 import { describe, expect, it } from "vitest";
 
 import {

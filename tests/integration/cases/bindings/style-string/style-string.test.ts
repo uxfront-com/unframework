@@ -1,5 +1,5 @@
 // bindings/style-string: static style strings, with a custom property, shorthands and `var()`.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import Callout from "./Callout.uf.tsx";

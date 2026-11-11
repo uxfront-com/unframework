@@ -1,5 +1,5 @@
 {
-  "name": "@unframework/ir",
+  "name": "@unframework.dev/ir",
   "version": "0.0.0",
   "private": true,
   "description": "The Unframework intermediate representation: plain-data types, builders, visitors and the JSON Schema that every IR snapshot is validated against.",

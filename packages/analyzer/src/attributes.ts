@@ -2,7 +2,7 @@
 // its value: a string, a literal in braces, a binding, a class, a style or a spread), then checked
 // against its element and the others. An attribute with a problem is reported and left out.
 
-import type { Fix } from "@unframework/diagnostics";
+import type { Fix } from "@unframework.dev/diagnostics";
 import {
   BINDABLE_BOOLEAN_ATTRIBUTES,
   canonicalNumber,
@@ -23,9 +23,9 @@ import {
   TRUE_VALUED_ATTRIBUTES,
   unanalysableUrl,
   unbindableAttribute,
-} from "@unframework/ir";
-import type { Attribute, Namespace, NumberKind, Span, SpreadKey } from "@unframework/ir";
-import type { AST } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { Attribute, Namespace, NumberKind, Span, SpreadKey } from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
 
 import { handlerProblems } from "./a11y.ts";
 import type { A11yValue } from "./a11y.ts";

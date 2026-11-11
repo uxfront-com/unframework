@@ -1,8 +1,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { BEHAVIOURAL_CAPABILITIES, CAPABILITY_NAMES, formatOutput } from "@unframework/codegen";
-import type { EmitContext } from "@unframework/codegen";
+import { BEHAVIOURAL_CAPABILITIES, CAPABILITY_NAMES, formatOutput } from "@unframework.dev/codegen";
+import type { EmitContext } from "@unframework.dev/codegen";
 import {
   BINDABLE_BOOLEAN_ATTRIBUTES,
   createBinding,
@@ -17,8 +17,8 @@ import {
   createText,
   createTypeText,
   span,
-} from "@unframework/ir";
-import type { ElementNode, RenderNode } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { ElementNode, RenderNode } from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { expressionAt } from "../../codegen/test/expressions.ts";
@@ -235,7 +235,7 @@ const inline = `export default function Tag({ label, tone = "info" }: { label: s
 
 // Without fallthrough: with it, the source's `Props` is renamed for the `Props` that adds `class`
 // and `style`.
-const namedProps = `import { defineOptions } from "unframework";
+const namedProps = `import { defineOptions } from "@uxfront/unframework";
 interface Props { label: string }
 export default function Tag({ label }: Props) {
   defineOptions({ inheritAttrs: false });
@@ -259,7 +259,7 @@ export default function Tag(${name}: TagProps) {
 // The three below turn fallthrough off: a root that takes `class` and `style` reads `Astro.props`.
 
 /** A component that reads nothing, its parameter written `parameter`. */
-const readsNothing = (parameter: string) => `import { defineOptions } from "unframework";
+const readsNothing = (parameter: string) => `import { defineOptions } from "@uxfront/unframework";
 export interface ListProps { title?: string }
 export default function List(${parameter}: ListProps) {
   defineOptions({ inheritAttrs: false });
@@ -268,7 +268,7 @@ export default function List(${parameter}: ListProps) {
 `;
 
 /** A component that reads none of the props of an inline type. */
-const readsNothingInline = `import { defineOptions } from "unframework";
+const readsNothingInline = `import { defineOptions } from "@uxfront/unframework";
 export default function List(_props: { title?: string }) {
   defineOptions({ inheritAttrs: false });
   return <p>x</p>;
@@ -276,7 +276,7 @@ export default function List(_props: { title?: string }) {
 `;
 
 /** A component that reads none of the props of a type the source names `Props`. */
-const readsNothingNamed = `import { defineOptions } from "unframework";
+const readsNothingNamed = `import { defineOptions } from "@uxfront/unframework";
 interface Item { id: string }
 interface Props { items: Item[] }
 export default function List({ items }: Props) {
@@ -672,8 +672,8 @@ describe("types and generics (ADR-0067, ADR-0068)", () => {
       'interface Props<T extends string = "a"> { items: T[]\n  class?: string;\n  style?: Record<string, string | number | undefined>;\n}',
     );
     const picker = [
-      'import { defineOptions, defineSlots } from "unframework";',
-      'import type { Element } from "unframework";',
+      'import { defineOptions, defineSlots } from "@uxfront/unframework";',
+      'import type { Element } from "@uxfront/unframework";',
       "",
       "export interface PickerProps<T> {",
       "  items: T[];",
@@ -693,7 +693,7 @@ describe("types and generics (ADR-0067, ADR-0068)", () => {
     expect(
       emitted(
         [
-          'import { defineOptions } from "unframework";',
+          'import { defineOptions } from "@uxfront/unframework";',
           "",
           "export interface ListProps<T> {",
           "  items: T[];",
@@ -712,7 +712,7 @@ describe("types and generics (ADR-0067, ADR-0068)", () => {
   it("writes an exported type no component reaches in source order among the copied types", () => {
     const output = emitted(
       [
-        'import { defineOptions } from "unframework";',
+        'import { defineOptions } from "@uxfront/unframework";',
         "",
         'export type ButtonTone = "primary" | "secondary";',
         "",
@@ -775,7 +775,7 @@ const typed: Record<string, { source: string[]; types: string }> = {
   importedGenericProps: {
     types: "export interface Props<T> { items: T[] }\n",
     source: [
-      'import { defineOptions } from "unframework";',
+      'import { defineOptions } from "@uxfront/unframework";',
       'import type { Props } from "./types";',
       "",
       "export default function Card<T>({ items }: Props<T>) {",
@@ -789,7 +789,7 @@ const typed: Record<string, { source: string[]; types: string }> = {
   localGenericProps: {
     types: "",
     source: [
-      'import { defineOptions } from "unframework";',
+      'import { defineOptions } from "@uxfront/unframework";',
       "",
       "interface Props<T> { items: T[] }",
       "",
@@ -813,7 +813,7 @@ const typed: Record<string, { source: string[]; types: string }> = {
   importedPropsUnread: {
     types: "export interface Props { title?: string }\n",
     source: [
-      'import { defineOptions } from "unframework";',
+      'import { defineOptions } from "@uxfront/unframework";',
       'import type { Props } from "./types";',
       "",
       "export default function Card(_props: Props) {",
@@ -839,7 +839,7 @@ const typed: Record<string, { source: string[]; types: string }> = {
   clientTypes: {
     types: 'export type Tone = "light" | "dark";\n\nexport type Next = Tone;\n',
     source: [
-      'import { defineModel } from "unframework";',
+      'import { defineModel } from "@uxfront/unframework";',
       'import type { Next, Tone } from "./types";',
       "",
       "export default function Card() {",
@@ -867,7 +867,7 @@ const typed: Record<string, { source: string[]; types: string }> = {
   setupProps: {
     types: "export interface Props { label: string }\n",
     source: [
-      'import { computed } from "unframework";',
+      'import { computed } from "@uxfront/unframework";',
       'import type { Props } from "./types";',
       "",
       "export default function Card({ item }: { item?: Props }) {",
@@ -881,7 +881,7 @@ const typed: Record<string, { source: string[]; types: string }> = {
   setupLocalProps: {
     types: "export {};\n",
     source: [
-      'import { defineModel } from "unframework";',
+      'import { defineModel } from "@uxfront/unframework";',
       "",
       "interface Props { label: string }",
       "",
@@ -896,8 +896,8 @@ const typed: Record<string, { source: string[]; types: string }> = {
   keyProps: {
     types: "export interface Props { label: string }\n",
     source: [
-      'import { provide } from "unframework";',
-      'import type { InjectionKey } from "unframework";',
+      'import { provide } from "@uxfront/unframework";',
+      'import type { InjectionKey } from "@uxfront/unframework";',
       'import type { Props } from "./types";',
       "",
       'export const ItemKey: InjectionKey<Props> = Symbol("uf.item");',
@@ -913,8 +913,8 @@ const typed: Record<string, { source: string[]; types: string }> = {
     types:
       'export interface Theme { tone: "light" | "dark" }\n\nexport interface Props { label: string }\n',
     source: [
-      'import { provide } from "unframework";',
-      'import type { InjectionKey } from "unframework";',
+      'import { provide } from "@uxfront/unframework";',
+      'import type { InjectionKey } from "@uxfront/unframework";',
       'import type { Props, Theme } from "./types";',
       "",
       'export const ThemeKey: InjectionKey<Theme> = Symbol("uf.theme");',
@@ -931,7 +931,7 @@ const typed: Record<string, { source: string[]; types: string }> = {
   genericWithoutProps: {
     types: "export {};\n",
     source: [
-      'import { defineModel } from "unframework";',
+      'import { defineModel } from "@uxfront/unframework";',
       "",
       "export default function Card<T>() {",
       '  const value = defineModel<T>("value");',
@@ -943,7 +943,7 @@ const typed: Record<string, { source: string[]; types: string }> = {
   genericUnnamedWithoutProps: {
     types: "export {};\n",
     source: [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export default function Card<T>() {",
       "  const value = ref<T | undefined>(undefined);",
@@ -981,7 +981,7 @@ const typed: Record<string, { source: string[]; types: string }> = {
   inferProps: {
     types: "export interface Props { label: string }\n",
     source: [
-      'import { computed } from "unframework";',
+      'import { computed } from "@uxfront/unframework";',
       'import type { Props } from "./types";',
       "",
       "type Unbox<B> = B extends { value: infer Props } ? Props : never;",
@@ -1010,7 +1010,7 @@ const typed: Record<string, { source: string[]; types: string }> = {
   constraintProps: {
     types: "export interface Props { label: string }\n",
     source: [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       'import type { Props } from "./types";',
       "",
       "export default function List<T extends Props>({ items }: { items: T[] }) {",
@@ -1034,7 +1034,7 @@ const typed: Record<string, { source: string[]; types: string }> = {
   nestedGeneric: {
     types: "export {};\n",
     source: [
-      'import { computed } from "unframework";',
+      'import { computed } from "@uxfront/unframework";',
       "",
       "export interface ListProps<T> {",
       "  items: T[];",
@@ -1063,7 +1063,7 @@ const typed: Record<string, { source: string[]; types: string }> = {
   constraintChain: {
     types: "export {};\n",
     source: [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export interface ListProps<T, U, V> {",
       "  items: T[];",
@@ -1092,7 +1092,7 @@ const typed: Record<string, { source: string[]; types: string }> = {
   genericSetup: {
     types: "export interface Item { id: string }\n",
     source: [
-      'import { computed, ref } from "unframework";',
+      'import { computed, ref } from "@uxfront/unframework";',
       'import type { Item } from "./types";',
       "",
       "export interface ListProps<T extends Item, U> {",

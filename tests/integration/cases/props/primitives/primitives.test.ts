@@ -1,6 +1,6 @@
 // props/primitives: string, number and boolean props rendered as text and as attributes, and a
 // boolean prop that takes its default when it is left out.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import ProductTile from "./ProductTile.uf.tsx";

@@ -18,8 +18,8 @@
 // Each `$` scope captures what it reads when it is created, so a statement comes after the
 // statements of what it captures: the source's order, but where client code reads a binding
 // declared after it (ADR-0045 allows it), that declaration moves up, so tasks keep their order.
-import { functionSource, rewriteCode, rewriteExpression } from "@unframework/codegen";
-import type { CodeKind, RewriteSite } from "@unframework/codegen";
+import { functionSource, rewriteCode, rewriteExpression } from "@unframework.dev/codegen";
+import type { CodeKind, RewriteSite } from "@unframework.dev/codegen";
 import type {
   BindingId,
   Code,
@@ -33,8 +33,8 @@ import type {
   UseItem,
   WatchEffectItem,
   WatchItem,
-} from "@unframework/ir";
-import { codeOf, expressionsOf, summarizeTracked } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import { codeOf, expressionsOf, summarizeTracked } from "@unframework.dev/ir";
 
 import { awaitQrlCalls, passElement } from "./calls.ts";
 import { readGetters } from "./composable.ts";

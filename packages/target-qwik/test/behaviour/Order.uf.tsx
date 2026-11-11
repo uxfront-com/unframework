@@ -1,4 +1,4 @@
-import { defineEmits, ref } from "unframework";
+import { defineEmits, ref } from "@uxfront/unframework";
 
 // Listeners keep DOM order (ADR-0047): the listeners of one element and event in attribute
 // order, before an ancestor's; a capture and a bubble listener on one element, whose bubble

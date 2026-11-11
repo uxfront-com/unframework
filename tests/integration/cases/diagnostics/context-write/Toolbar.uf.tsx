@@ -1,7 +1,7 @@
 // UF2034 context-write: an injected value belongs to the component that provides it, so code
 // does not write through it.
-import { defineSlots, inject, provide, ref } from "unframework";
-import type { Element, InjectionKey, Ref } from "unframework";
+import { defineSlots, inject, provide, ref } from "@uxfront/unframework";
+import type { Element, InjectionKey, Ref } from "@uxfront/unframework";
 
 export const ModeKey: InjectionKey<Ref<string>> = Symbol("uf.mode");
 

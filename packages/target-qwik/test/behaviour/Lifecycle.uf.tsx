@@ -6,7 +6,7 @@ import {
   ref,
   useTemplateRef,
   watchEffect,
-} from "unframework";
+} from "@uxfront/unframework";
 
 // Lifecycle (ADR-0048): `onMounted` once the DOM is in the document, `onUnmounted` on removal,
 // `watchEffect` after the first render and on each change; `nextTick` and a ref in a branch.

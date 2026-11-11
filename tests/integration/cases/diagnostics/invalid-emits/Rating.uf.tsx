@@ -1,6 +1,6 @@
 // UF2009 invalid-emits: Vue's call-signature form of `defineEmits`; unframework declares each
 // event as a named tuple, `defineEmits<{ rate: [stars: number] }>()`.
-import { defineEmits } from "unframework";
+import { defineEmits } from "@uxfront/unframework";
 
 export default function Rating() {
   const emit = defineEmits<{ (event: "rate", stars: number): void }>();

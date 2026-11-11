@@ -3,8 +3,8 @@
 // the escape or character that wrote it (UF3010), and rewrites the escapes Angular's lexer cannot
 // read (`\u{…}`, UF1002) one by one (ADR-0035).
 
-import { unkeptCharacter } from "@unframework/ir";
-import type { AST } from "@unframework/parser";
+import { unkeptCharacter } from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
 
 import type { Reporter } from "./context.ts";
 import type { Piece } from "./jsx/text.ts";

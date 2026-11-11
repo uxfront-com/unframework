@@ -1,10 +1,10 @@
 // The React target's toolchain (plan §5.7): how tests and tooling build, check and run React
 // output. Node only; the main entry never imports it.
-import type { Toolchain } from "@unframework/codegen";
-import { lintWithOxlint, typecheckWithTsgo } from "@unframework/codegen/toolchain-node";
+import type { Toolchain } from "@unframework.dev/codegen";
+import { lintWithOxlint, typecheckWithTsgo } from "@unframework.dev/codegen/toolchain-node";
 import type { UserConfig } from "vite";
 
-import { compileWithReactCompiler } from "./compile.ts";
+import { compileWithReactCompiler, emitWithReactCompiler } from "./compile.ts";
 
 /** The runtime modules compiled output and the mount adapter import in the browser. */
 const BROWSER_RUNTIME = ["react", "react/jsx-dev-runtime", "react-dom/client"];
@@ -12,8 +12,8 @@ const BROWSER_RUNTIME = ["react", "react/jsx-dev-runtime", "react-dom/client"];
 /** The React 19 toolchain. */
 export const toolchain: Toolchain = {
   name: "react",
-  client: "@unframework/target-react/toolchain/client",
-  server: "@unframework/target-react/toolchain/server",
+  client: "@unframework.dev/target-react/toolchain/client",
+  server: "@unframework.dev/target-react/toolchain/server",
 
   async vite(mode): Promise<UserConfig> {
     // Loaded here, not at the top: the harness imports every toolchain to build its config.
@@ -29,6 +29,8 @@ export const toolchain: Toolchain = {
   },
 
   frameworkCompile: (files) => compileWithReactCompiler(files),
+
+  frameworkEmit: (files) => emitWithReactCompiler(files),
 
   typecheck: (files, context) => typecheckWithTsgo(files, context),
 

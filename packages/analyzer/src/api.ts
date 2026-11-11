@@ -5,11 +5,11 @@
 // child or resolving the child's own children. The declarations' rules are the setup's and the
 // props' to check (`./setup.ts`, `./props.ts`): a child whose API is wrong fails its own compile.
 
-import type { ApiEvent, ApiMember, ApiSlot, ComponentApi } from "@unframework/ir";
-import type { AST } from "@unframework/parser";
-import { isComponentName, parseModule } from "@unframework/parser";
-import { printShape } from "@unframework/type-oracle";
-import type { ShapeMember, TypeShape } from "@unframework/type-oracle";
+import type { ApiEvent, ApiMember, ApiSlot, ComponentApi } from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
+import { isComponentName, parseModule } from "@unframework.dev/parser";
+import { printShape } from "@unframework.dev/type-oracle";
+import type { ShapeMember, TypeShape } from "@unframework.dev/type-oracle";
 
 import type { AuthoringApi } from "./authoring.ts";
 import { spellsLiterals } from "./cross-component.ts";

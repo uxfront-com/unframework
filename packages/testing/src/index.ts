@@ -1,4 +1,4 @@
-// @unframework/testing: the cross-target test API (plan §7.3). One spec, written
+// @unframework.dev/testing: the cross-target test API (plan §7.3). One spec, written
 // once, runs in every `browser:<target>` project; the project's setup files install the
 // determinism, the console capture and the target's mount adapter.
 import { describe } from "vitest";
@@ -42,7 +42,7 @@ export type {
   MountListener,
   MountOptions,
   RenderReport,
-} from "@unframework/codegen";
+} from "@unframework.dev/codegen";
 
 /** `describe()` with the project's target in the title, so reports tell the targets apart. */
 export function describeTargets(name: string, fn: () => void): void {

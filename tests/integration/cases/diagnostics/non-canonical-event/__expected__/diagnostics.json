@@ -7,12 +7,12 @@
     "start": {
       "line": 16,
       "column": 52,
-      "offset": 534
+      "offset": 543
     },
     "end": {
       "line": 16,
       "column": 61,
-      "offset": 543
+      "offset": 552
     },
     "fixes": [
       {
@@ -21,8 +21,8 @@
         "edits": [
           {
             "span": {
-              "start": 534,
-              "end": 543
+              "start": 543,
+              "end": 552
             },
             "text": "onKeydown"
           }
@@ -38,12 +38,12 @@
     "start": {
       "line": 17,
       "column": 29,
-      "offset": 587
+      "offset": 596
     },
     "end": {
       "line": 17,
       "column": 42,
-      "offset": 600
+      "offset": 609
     },
     "fixes": [
       {
@@ -52,8 +52,8 @@
         "edits": [
           {
             "span": {
-              "start": 587,
-              "end": 600
+              "start": 596,
+              "end": 609
             },
             "text": "onDblclick"
           }

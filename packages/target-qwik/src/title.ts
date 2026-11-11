@@ -12,8 +12,8 @@ import {
   Placeholders,
   printExpression,
   textTemplate,
-} from "@unframework/codegen";
-import type { JsxContext, TextPart } from "@unframework/codegen";
+} from "@unframework.dev/codegen";
+import type { JsxContext, TextPart } from "@unframework.dev/codegen";
 import type {
   ComponentNode,
   ElementNode,
@@ -23,7 +23,7 @@ import type {
   RenderNode,
   TextNode,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { isTextValue, propReadKinds } from "./values.ts";
 

@@ -7,7 +7,7 @@
 export const BEHAVIOUR_SOURCES: Readonly<Record<string, string>> = {
   // Reads after writes in one handler, a computed read right after a write, and a read after
   // `await nextTick()`, which sees the DOM updated.
-  Tally: `import { computed, defineEmits, nextTick, ref, useTemplateRef } from "unframework";
+  Tally: `import { computed, defineEmits, nextTick, ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function Tally() {
   const emit = defineEmits<{ report: [label: string, value: number] }>();
@@ -48,7 +48,7 @@ export default function Tally() {
   // the cleanup before the next callback and at unmount, an array source, an immediate getter
   // that runs during setup, a post watcher that reads the updated DOM, and \`watchEffect\` after
   // the first render.
-  Watchers: `import { defineEmits, ref, useTemplateRef, watch, watchEffect } from "unframework";
+  Watchers: `import { defineEmits, ref, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";
 
 export default function Watchers() {
   const emit = defineEmits<{
@@ -123,7 +123,7 @@ export default function Watchers() {
 `,
   // Lifecycle: \`onMounted\` once the component's DOM is in the document, \`onUnmounted\` when it
   // is removed; a timer a setup \`let\` holds stops at unmount.
-  Lifecycle: `import { defineEmits, onMounted, onUnmounted, useTemplateRef } from "unframework";
+  Lifecycle: `import { defineEmits, onMounted, onUnmounted, useTemplateRef } from "@uxfront/unframework";
 
 export interface LifecycleProps {
   interval: number;
@@ -157,7 +157,7 @@ export default function Lifecycle({ interval }: LifecycleProps) {
   // Listeners with options and modifiers: a capture listener before the target's and a bubble
   // one after, \`stopPropagation()\` at the start of a handler (Vue's \`.stop\`), a once listener, a
   // passive wheel listener, a handler the template cannot hold, and an arrow reading its event.
-  Listeners: `import { defineEmits, ref } from "unframework";
+  Listeners: `import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function Listeners() {
   const emit = defineEmits<{ logged: [entries: string[]] }>();
@@ -224,7 +224,7 @@ export default function Listeners() {
   // renders between the capture listener and \`v-model\`'s own, which must not put the old value
   // back. Every field \`v-model\` writes on \`input\`: text, a trimmed textarea, \`type="number"\`,
   // a range and \`v-model.number\`, whose values the second paragraph shows with their types.
-  CaptureModel: `import { ref } from "unframework";
+  CaptureModel: `import { ref } from "@uxfront/unframework";
 
 export default function CaptureModel() {
   const text = ref("");
@@ -279,7 +279,7 @@ export default function CaptureModel() {
 `,
   // Template refs keyed by their binding's name, empty while their element is not rendered, and
   // ids unique to each instance, with the \`uf-id-\` prefix.
-  Refs: `import { defineEmits, nextTick, ref, useId, useTemplateRef } from "unframework";
+  Refs: `import { defineEmits, nextTick, ref, useId, useTemplateRef } from "@uxfront/unframework";
 
 export default function Refs() {
   const emit = defineEmits<{ present: [present: boolean]; focused: [id: string] }>();
@@ -321,7 +321,7 @@ export default function Refs() {
   // State that holds an object is the source's own value, never a proxy of it: identity with a
   // prop's item and \`structuredClone\` hold, and an array watcher over it calls back only when a
   // value changed (ADR-0046, ADR-0048).
-  Identity: `import { defineEmits, ref, watch } from "unframework";
+  Identity: `import { defineEmits, ref, watch } from "@uxfront/unframework";
 
 export interface Fruit {
   id: string;
@@ -376,7 +376,7 @@ export default function Identity({ fruits }: { fruits: Fruit[] }) {
   );
 }
 `,
-  Reselect: `import { defineEmits, ref, watch } from "unframework";
+  Reselect: `import { defineEmits, ref, watch } from "@uxfront/unframework";
 
 export interface Fruit {
   id: string;

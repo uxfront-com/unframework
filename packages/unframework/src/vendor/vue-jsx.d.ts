@@ -1,7 +1,7 @@
 /* eslint-disable */
 // oxlint-disable -- vendored verbatim, see below.
 /**
- * VENDORED - DO NOT EDIT BY HAND. Regenerate with `pnpm --filter unframework vendor:jsx`.
+ * VENDORED - DO NOT EDIT BY HAND. Regenerate with `pnpm --filter @uxfront/unframework vendor:jsx`.
  *
  * Upstream: @vue/runtime-dom@3.5.43, dist/runtime-dom.d.ts lines 96-1311
  *           (the rolled-up form of vuejs/core packages/runtime-dom/src/jsx.ts)

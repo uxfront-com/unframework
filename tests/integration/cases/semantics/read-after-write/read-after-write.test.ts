@@ -2,7 +2,7 @@
 // the same function after `++` and `+=`, inside a loop after each write, after a write made by a
 // function it called, and in another listener of the same event (semantics contract, read after
 // write). React's output keeps this with mirror refs, never with the render's snapshot.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Tally from "./Tally.uf.tsx";

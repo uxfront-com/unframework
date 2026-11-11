@@ -1,4 +1,4 @@
-import { GENERATED_ID_PREFIX } from "@unframework/ir";
+import { GENERATED_ID_PREFIX } from "@unframework.dev/ir";
 
 import { attributeName, childrenOf, isElement, isText } from "../tree.ts";
 import type { TreeParent } from "../tree.ts";

@@ -1,4 +1,11 @@
-import { defineEmits, nextTick, ref, useTemplateRef, watch, watchEffect } from "unframework";
+import {
+  defineEmits,
+  nextTick,
+  ref,
+  useTemplateRef,
+  watch,
+  watchEffect,
+} from "@uxfront/unframework";
 
 interface Waiting {
   resolve: (text: string) => void;

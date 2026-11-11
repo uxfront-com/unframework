@@ -7,12 +7,12 @@
     "start": {
       "line": 12,
       "column": 13,
-      "offset": 413
+      "offset": 422
     },
     "end": {
       "line": 12,
       "column": 23,
-      "offset": 423
+      "offset": 432
     },
     "help": "Write the callback in place: `onMounted(() => { … })`.",
     "fixes": [
@@ -22,8 +22,8 @@
         "edits": [
           {
             "span": {
-              "start": 413,
-              "end": 423
+              "start": 422,
+              "end": 432
             },
             "text": "() => focusField()"
           }

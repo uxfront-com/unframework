@@ -1,4 +1,4 @@
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 // The module's own constants (ADR-0070): a list, a frozen table, a plain function and a constant
 // that reads another, all read-only, read by the component's template and its listeners.

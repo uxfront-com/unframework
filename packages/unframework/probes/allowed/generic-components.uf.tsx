@@ -1,6 +1,6 @@
 // Consumers of a generic component (ADR-0068) that must type-check under stock tsgo: `T` is inferred
 // from the props, and the open layer-1 surface of `LibraryManagedAttributes` adds no false error.
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 import Select from "../fixtures/Select.uf.tsx";
 import type { Option } from "../fixtures/types.ts";

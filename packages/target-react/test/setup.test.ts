@@ -2,7 +2,7 @@
 // ADR-0049): each test lowers a source with the analyser and pins the formatted output, so a change
 // in a shape shows here as well as in the corpus' goldens. Every output here also passes L3, L4
 // and L5 (test/lint.test.ts and test/toolchain.test.ts pin the shapes in lint-probes.ts).
-import { formatOutput } from "@unframework/codegen";
+import { formatOutput } from "@unframework.dev/codegen";
 import { describe, expect, it } from "vitest";
 
 import { analyze } from "../../analyzer/src/index.ts";
@@ -49,7 +49,7 @@ async function output(source: string): Promise<string> {
 describe("react setup, events and listeners", () => {
   it("writes state through a mirror and its setter, and reads it there in client code", async () => {
     const source = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export default function Stepper() {",
       "  const count = ref(0);",
@@ -134,7 +134,7 @@ describe("react setup, events and listeners", () => {
 
   it("memoizes a computed with every dependency, and reads it in client code through a live getter", async () => {
     const source = [
-      'import { computed, defineEmits, ref } from "unframework";',
+      'import { computed, defineEmits, ref } from "@uxfront/unframework";',
       "",
       "export interface CartProps {",
       "  price: number;",
@@ -232,7 +232,7 @@ describe("react setup, events and listeners", () => {
 
   it("declares template refs and setup lets as refs, ids with the uf-id- prefix, and lifecycle hooks as effects", async () => {
     const source = [
-      'import { onMounted, onUnmounted, useId, useTemplateRef } from "unframework";',
+      'import { onMounted, onUnmounted, useId, useTemplateRef } from "@uxfront/unframework";',
       "",
       "export default function Field() {",
       "  const input = useTemplateRef<HTMLInputElement>();",
@@ -387,7 +387,7 @@ describe("react setup, events and listeners", () => {
 
   it("declares the events interface and renames an event prop a local function takes", async () => {
     const source = [
-      'import { defineEmits } from "unframework";',
+      'import { defineEmits } from "@uxfront/unframework";',
       "",
       "export interface ToggleProps {",
       "  label: string;",
@@ -456,7 +456,7 @@ describe("react setup, events and listeners", () => {
 
   it("emits through the props object, and types a component without props by its events", async () => {
     const source = [
-      'import { defineEmits } from "unframework";',
+      'import { defineEmits } from "@uxfront/unframework";',
       "",
       "export interface PanelProps {",
       "  title: string;",
@@ -544,7 +544,7 @@ describe("react setup, events and listeners", () => {
 
   it("reads props and event props through mirrors in deferred code", async () => {
     const source = [
-      'import { defineEmits, onMounted, ref, watch } from "unframework";',
+      'import { defineEmits, onMounted, ref, watch } from "@uxfront/unframework";',
       "",
       "export interface PollerProps {",
       "  interval: number;",
@@ -684,7 +684,7 @@ describe("react setup, events and listeners", () => {
 
   it("lowers watchers to effects over their sources, with previous values and cleanups", async () => {
     const source = [
-      'import { defineEmits, ref, watch } from "unframework";',
+      'import { defineEmits, ref, watch } from "@uxfront/unframework";',
       "",
       "export interface RangeProps {",
       "  unit: string;",
@@ -853,7 +853,7 @@ describe("react setup, events and listeners", () => {
 
   it("runs watchEffect as an effect over what it reads", async () => {
     const source = [
-      'import { defineEmits, ref, watchEffect } from "unframework";',
+      'import { defineEmits, ref, watchEffect } from "@uxfront/unframework";',
       "",
       "export interface TitleProps {",
       "  app: string;",
@@ -942,7 +942,7 @@ describe("react setup, events and listeners", () => {
 
   it("writes the logical assignments and captured updates React Compiler cannot lower", async () => {
     const source = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export default function Loops() {",
       "  const total = ref(0);",
@@ -1012,7 +1012,7 @@ describe("react setup, events and listeners", () => {
 
   it("prints listeners as React props or native listeners, with guards, merges and refs", async () => {
     const source = [
-      'import { ref, useTemplateRef } from "unframework";',
+      'import { ref, useTemplateRef } from "@uxfront/unframework";',
       "",
       "export default function Listeners() {",
       "  const log = ref<string[]>([]);",
@@ -1239,7 +1239,7 @@ describe("react setup, events and listeners", () => {
 
   it("awaits nextTick through the useNextTick helper, called before the setup's hooks", async () => {
     const source = [
-      'import { defineEmits, nextTick, ref, useTemplateRef } from "unframework";',
+      'import { defineEmits, nextTick, ref, useTemplateRef } from "@uxfront/unframework";',
       "",
       "export default function Expander() {",
       "  const emit = defineEmits<{ shown: [rows: number] }>();",
@@ -1380,7 +1380,7 @@ describe("react setup, events and listeners", () => {
 
   it("gives a function the template calls a client variant where client code reads otherwise", async () => {
     const source = [
-      'import { defineEmits, ref } from "unframework";',
+      'import { defineEmits, ref } from "@uxfront/unframework";',
       "",
       "export default function Labels() {",
       "  const emit = defineEmits<{ said: [text: string] }>();",
@@ -1458,7 +1458,7 @@ describe("react setup, events and listeners", () => {
 
   it("keys the branches of a conditional that hold state, a single root by its key and several in a keyed fragment, and keyed siblings by their position", async () => {
     const source = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export default function Branches() {",
       "  const editing = ref(false);",
@@ -1547,7 +1547,7 @@ describe("react setup, events and listeners", () => {
 
   it("declares nextTick before the effect events that await it", async () => {
     const source = [
-      'import { defineEmits, nextTick, onMounted, ref, useTemplateRef, watch } from "unframework";',
+      'import { defineEmits, nextTick, onMounted, ref, useTemplateRef, watch } from "@uxfront/unframework";',
       "",
       "export default function Ready() {",
       "  const emit = defineEmits<{ shown: [text: string]; measured: [text: string] }>();",
@@ -1728,7 +1728,7 @@ describe("react setup, events and listeners", () => {
 
   it("writes an expression-bodied write as statements in a handler the target writes (a guard, a once guard, a merge)", async () => {
     const source = [
-      'import { defineEmits, ref } from "unframework";',
+      'import { defineEmits, ref } from "@uxfront/unframework";',
       "",
       "export default function Focus() {",
       "  const emit = defineEmits<{ started: [count: number] }>();",
@@ -1867,7 +1867,7 @@ describe("react setup, events and listeners", () => {
 
   it("adds an element's native listeners of one event and phase in one call, from a ref callback declared once", async () => {
     const source = [
-      'import { defineEmits, ref, useTemplateRef } from "unframework";',
+      'import { defineEmits, ref, useTemplateRef } from "@uxfront/unframework";',
       "",
       "export interface FieldsProps {",
       "  label: string;",
@@ -2030,7 +2030,7 @@ describe("react setup, events and listeners", () => {
 
   it("listens natively to focus beside a native focusin, and to a checkbox's change", async () => {
     const source = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export default function Choices() {",
       "  const log = ref<string[]>([]);",
@@ -2168,7 +2168,7 @@ describe("react setup, events and listeners", () => {
 
   it("keys a nested conditional's branches under the enclosing branch's key where it is the branch's only root, and on their own inside a keyed fragment", async () => {
     const source = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export default function Modes() {",
       '  const mode = ref("a");',
@@ -2301,7 +2301,7 @@ describe("react setup, events and listeners", () => {
 
   it("passes watchEffect's effect event the values only a called function reads, under names that say its body leaves them", async () => {
     const source = [
-      'import { defineEmits, ref, watchEffect } from "unframework";',
+      'import { defineEmits, ref, watchEffect } from "@uxfront/unframework";',
       "",
       "export interface LevelProps {",
       "  unit: string;",
@@ -2403,7 +2403,7 @@ describe("react setup, events and listeners", () => {
 
   it("declares a function passed as a value once for the instance's life", async () => {
     const source = [
-      'import { defineEmits, onMounted, onUnmounted, ref, watch } from "unframework";',
+      'import { defineEmits, onMounted, onUnmounted, ref, watch } from "@uxfront/unframework";',
       "",
       "export default function Shortcuts() {",
       "  const emit = defineEmits<{ shortcut: [key: string, count: number] }>();",
@@ -2546,7 +2546,7 @@ describe("react setup, events and listeners", () => {
 
   it("declares a function before the effects that read it, wherever the source declares it", async () => {
     const source = [
-      'import { defineEmits, onMounted, onUnmounted, ref } from "unframework";',
+      'import { defineEmits, onMounted, onUnmounted, ref } from "@uxfront/unframework";',
       "",
       "export default function Late() {",
       "  const emit = defineEmits<{ shortcut: [key: string, count: number] }>();",
@@ -2634,7 +2634,7 @@ describe("react setup, events and listeners", () => {
 
   it("writes an update of a captured variable inside an expression as an assignment of the same value", async () => {
     const source = [
-      'import { defineEmits, ref } from "unframework";',
+      'import { defineEmits, ref } from "@uxfront/unframework";',
       "",
       "export default function Tally() {",
       "  const emit = defineEmits<{ counted: [done: number, total: number, last: number] }>();",
@@ -2714,7 +2714,7 @@ describe("react setup, events and listeners", () => {
 
   it("keeps an update's value and precedence wherever it stands", async () => {
     const source = [
-      'import { defineEmits } from "unframework";',
+      'import { defineEmits } from "@uxfront/unframework";',
       "",
       "export default function Counts() {",
       "  const emit = defineEmits<{ counted: [values: number[]] }>();",
@@ -2791,7 +2791,7 @@ describe("react setup, events and listeners", () => {
 
   it("runs a post watcher after the pre watchers, once what they wrote has rendered", async () => {
     const source = [
-      'import { defineEmits, ref, useTemplateRef, watch } from "unframework";',
+      'import { defineEmits, ref, useTemplateRef, watch } from "@uxfront/unframework";',
       "",
       "export default function Measured() {",
       "  const emit = defineEmits<{ rendered: [count: number] }>();",
@@ -2908,7 +2908,7 @@ describe("react setup, events and listeners", () => {
 
   it("moves only what reads a later declaration, never past what is at module scope", async () => {
     const source = [
-      'import { computed, ref, watch } from "unframework";',
+      'import { computed, ref, watch } from "@uxfront/unframework";',
       "",
       "export interface PriceTagProps {",
       "  /** The unit price, in cents. */",
@@ -3066,7 +3066,7 @@ describe("react setup, events and listeners", () => {
 
   it("sets a template ref typed otherwise than its element through a ref callback, and types an untyped one with its element's interface", async () => {
     const source = [
-      'import { onMounted, useTemplateRef } from "unframework";',
+      'import { onMounted, useTemplateRef } from "@uxfront/unframework";',
       "",
       "export default function RefTypes() {",
       "  const panel = useTemplateRef<HTMLElement>();",
@@ -3184,7 +3184,7 @@ describe("react setup, events and listeners", () => {
 
   it("prints a computed's memo only where render code reads it, and its live getter only where client code calls it", async () => {
     const source = [
-      'import { computed, defineEmits, ref, watch, watchEffect } from "unframework";',
+      'import { computed, defineEmits, ref, watch, watchEffect } from "@uxfront/unframework";',
       "",
       "export default function Memos() {",
       "  const emit = defineEmits<{ seen: [text: string]; total: [value: number] }>();",
@@ -3317,7 +3317,7 @@ describe("react setup, events and listeners", () => {
 
   it("runs listeners merged into one handler as written: early returns as conditions, async and other early-returning listeners as local functions it calls", async () => {
     const source = [
-      'import { defineEmits, ref } from "unframework";',
+      'import { defineEmits, ref } from "@uxfront/unframework";',
       "",
       "export default function Merged() {",
       "  const emit = defineEmits<{ log: [entry: string] }>();",
@@ -3580,7 +3580,7 @@ describe("react setup, events and listeners", () => {
 
   it("reads a value its branch narrows as the rendered value in a listener written there, so TypeScript narrows it as in the source", async () => {
     const source = [
-      'import { defineEmits } from "unframework";',
+      'import { defineEmits } from "@uxfront/unframework";',
       "",
       "export interface User {",
       "  name: string;",
@@ -3705,7 +3705,7 @@ describe("react setup, events and listeners", () => {
 
   it("keys every branch of a nested conditional that is a keyed branch's only root, and leaves one inside a keyed fragment to its own conflicts", async () => {
     const source = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "",
       "export default function NestKeys() {",
       '  const mode = ref("a");',
@@ -3831,7 +3831,7 @@ describe("react setup, events and listeners", () => {
 
   it("runs post watchers and watchEffect once what pre watchers wrote has rendered, with their cleanups kept for their next call or the unmount, before onUnmounted", async () => {
     const source = [
-      'import { defineEmits, onUnmounted, ref, useTemplateRef, watch, watchEffect } from "unframework";',
+      'import { defineEmits, onUnmounted, ref, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";',
       "",
       "export default function Settle() {",
       "  const emit = defineEmits<{ log: [entry: string] }>();",
@@ -4031,7 +4031,7 @@ describe("react setup, events and listeners", () => {
 
   it("calls a waiting watchEffect only with values its last call did not have, and keeps onMounted among the post effects in source order", async () => {
     const source = [
-      'import { defineEmits, onMounted, onUnmounted, ref, watch, watchEffect } from "unframework";',
+      'import { defineEmits, onMounted, onUnmounted, ref, watch, watchEffect } from "@uxfront/unframework";',
       "",
       "export default function Gated() {",
       "  const emit = defineEmits<{ log: [entry: string] }>();",
@@ -4249,7 +4249,7 @@ describe("react setup, events and listeners", () => {
 
   it("keeps a listener that declares the handler's event name out of the handler's top level", async () => {
     const source = [
-      'import { defineEmits, ref } from "unframework";',
+      'import { defineEmits, ref } from "@uxfront/unframework";',
       "",
       "export default function Shadow() {",
       "  const emit = defineEmits<{ log: [entry: string] }>();",
@@ -4356,7 +4356,7 @@ describe("react setup, events and listeners", () => {
   });
   it("expands a state write inside a function another write's value passes, wherever it stands", async () => {
     const source = [
-      'import { onUnmounted, ref } from "unframework";',
+      'import { onUnmounted, ref } from "@uxfront/unframework";',
       "",
       "export default function Ticker() {",
       "  const seconds = ref(0);",
@@ -4455,7 +4455,7 @@ describe("react setup, events and listeners", () => {
 
   it("declares a listener that removes itself and the helper it calls in one initializer, as neither may read the other before its declaration", async () => {
     const source = [
-      'import { defineEmits, ref } from "unframework";',
+      'import { defineEmits, ref } from "@uxfront/unframework";',
       "",
       "export default function Escapable() {",
       "  const emit = defineEmits<{ closed: [reason: string] }>();",
@@ -4553,7 +4553,7 @@ describe("react setup, events and listeners", () => {
 
   it("opts a component out of React Compiler where its code holds what React Compiler cannot compile yet, saying why", async () => {
     const source = [
-      'import { defineEmits, ref } from "unframework";',
+      'import { defineEmits, ref } from "@uxfront/unframework";',
       "",
       "interface Settings {",
       "  theme: string;",
@@ -4661,7 +4661,7 @@ describe("react setup, events and listeners", () => {
 
   it("asserts the narrowed reads its spelling does not narrow, and reads state a template's condition does not narrow through its mirror", async () => {
     const source = [
-      'import { computed, defineEmits, ref } from "unframework";',
+      'import { computed, defineEmits, ref } from "@uxfront/unframework";',
       "",
       "interface Member {",
       "  id: number;",

@@ -6,8 +6,8 @@ import type {
   ComposableApi,
   ComposableMemberApi,
   Slots,
-} from "@unframework/ir";
-import type { AST } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
 
 import type { AuthoringApi } from "./authoring.ts";
 import type { Reporter } from "./context.ts";

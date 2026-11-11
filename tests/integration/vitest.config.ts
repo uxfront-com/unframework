@@ -1,4 +1,4 @@
-// The integration harness (plan §7.3): one Vitest run, five kinds of project, every
+// The integration harness (plan §7.3): one Vitest run, six kinds of project, every
 // layer recorded in the parity matrix. The mode comes from the environment (ADR-0019, ADR-0029):
 //
 //   UF_UPDATE=1          write artefacts (owners and the reference target only); refused in CI
@@ -9,7 +9,11 @@
 //                        outside Chromium, pixels are live and nothing is written (ADR-0066)
 import { join } from "node:path";
 
-import { createHarnessRun, ParityReporter, resolveHarnessMode } from "@unframework/testing/node";
+import {
+  createHarnessRun,
+  ParityReporter,
+  resolveHarnessMode,
+} from "@unframework.dev/testing/node";
 import { defineConfig } from "vitest/config";
 import type { ViteUserConfig } from "vitest/config";
 

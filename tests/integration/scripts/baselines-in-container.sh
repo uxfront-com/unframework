@@ -20,7 +20,7 @@ if [ -z "${UF_BASELINE_IMAGE:-}" ]; then
   exit 1
 fi
 # What the visual write policy checks before it writes a committed PNG or geometry file
-# (@unframework/testing/node): the image and the platform this container really runs on.
+# (@unframework.dev/testing/node): the image and the platform this container really runs on.
 UF_BASELINE_ENVIRONMENT="$UF_BASELINE_IMAGE linux/$(dpkg --print-architecture)"
 export UF_BASELINE_ENVIRONMENT
 
@@ -38,7 +38,7 @@ pnpm --version
 # The harness, its workspace dependencies and the target toolchains (Analog and TypeScript 6
 # for Angular's browser project); not the docs site.
 pnpm install --frozen-lockfile --store-dir "$STORE" --reporter=append-only \
-  --filter "@unframework/integration..." --filter "./tests/toolchains/*" >/tmp/install.log 2>&1 \
+  --filter "@unframework.dev/integration..." --filter "./tests/toolchains/*" >/tmp/install.log 2>&1 \
   || { cat /tmp/install.log; exit 1; }
 
 cd "$WORK/tests/integration"

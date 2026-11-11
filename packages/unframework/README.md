@@ -1,4 +1,4 @@
-# unframework
+# @uxfront/unframework
 
 Write a component once, get native React, Vue, Svelte, Solid, Angular, Qwik and Astro. This package
 is what a `.uf.tsx` file imports: the authoring API and the JSX types (plan §4, ADR-0006, ADR-0017).
@@ -7,7 +7,7 @@ The component below is plan §4.1's Counter, which the probes type-check as
 
 ```tsx
 // Counter.uf.tsx
-import { computed, defineEmits, ref } from "unframework";
+import { computed, defineEmits, ref } from "@uxfront/unframework";
 
 import "./Counter.css";
 
@@ -41,23 +41,29 @@ export default function Counter({ initial = 0, step = 1 }: CounterProps) {
 
 ## Entry points
 
-| Import                        | What it is                                                                                                                                                                                                                                                                                                     |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `unframework`                 | The authoring API of plan §4.2: `ref`, `computed`, `watch`, `watchEffect`, `onMounted`, `onUnmounted`, `nextTick`, `defineEmits`, `defineModel`, `defineSlots`, `defineExpose`, `defineOptions`, `useTemplateRef`, `useId`, `provide`, `inject`, and their types (`Ref`, `InjectionKey`, `JSX`, `Element`, …). |
-| `unframework/jsx-runtime`     | The `JSX` namespace TypeScript reads for `"jsxImportSource": "unframework"`. Types only.                                                                                                                                                                                                                       |
-| `unframework/jsx-dev-runtime` | The same types, for tools that pick the `react-jsxdev` transform.                                                                                                                                                                                                                                              |
+| Import                                 | What it is                                                                                                                                                                                                                                                                                                     |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@uxfront/unframework`                 | The authoring API of plan §4.2: `ref`, `computed`, `watch`, `watchEffect`, `onMounted`, `onUnmounted`, `nextTick`, `defineEmits`, `defineModel`, `defineSlots`, `defineExpose`, `defineOptions`, `useTemplateRef`, `useId`, `provide`, `inject`, and their types (`Ref`, `InjectionKey`, `JSX`, `Element`, …). |
+| `@uxfront/unframework/config`          | `defineConfig` and the `UnframeworkConfig` type, for a project's `unframework.config.ts` (plan §8.1). Its one import is type-only, so importing it loads no compiler.                                                                                                                                          |
+| `@uxfront/unframework/jsx-runtime`     | The `JSX` namespace TypeScript reads for `"jsxImportSource": "@uxfront/unframework"`. Types only.                                                                                                                                                                                                              |
+| `@uxfront/unframework/jsx-dev-runtime` | The same types, for tools that pick the `react-jsxdev` transform.                                                                                                                                                                                                                                              |
 
-The functions are inert stubs. The compiler recognises them by binding and erases them, so no
-`unframework` import survives into any output. Calling one at runtime means the file was not compiled,
-so each throws ``unframework: `ref` is compile-time only…`` rather than pretending to work.
+The package's bin is `unframework` (`build`, `check`, `explain` and `init`): `@unframework.dev/cli`'s README
+documents it.
 
-The signatures are Vue 3.5's, narrowed to one canonical form each (ADR-0007): `defineModel` needs a
+The root entry's functions are inert stubs. The compiler recognises them by binding and erases them,
+so no `@uxfront/unframework` import survives into any output. Calling one at runtime means the file was not
+compiled, so each throws ``unframework: `ref` is compile-time only…`` rather than pretending to work.
+`defineConfig` isn't one of them: it's an ordinary function that returns its argument, because Node
+runs it when a config loads.
+
+The root entry's signatures are Vue 3.5's, narrowed to one canonical form each (ADR-0007): `defineModel` needs a
 name, `defineEmits` takes a map of named tuples, `computed` takes a getter, `useTemplateRef` takes no
 key, `provide` and `inject` take an `InjectionKey<T>`. A macro's type parameter defaults to `never`, so
 an un-parameterised macro is unusable.
 
 `JSX` is not a global, so it cannot collide with a host app's: write `import { type JSX } from
-"unframework"`, or use the `Element` shorthand (`defineSlots<{ default?(): Element }>()`).
+"@uxfront/unframework"`, or use the `Element` shorthand (`defineSlots<{ default?(): Element }>()`).
 
 ## Type-checking `.uf.tsx`
 
@@ -65,7 +71,7 @@ an un-parameterised macro is unusable.
 {
   "compilerOptions": {
     "jsx": "preserve",
-    "jsxImportSource": "unframework",
+    "jsxImportSource": "@uxfront/unframework",
     // tsc never emits a .uf.tsx (the compiler emits per target), and isolatedDeclarations would
     // demand an explicit return type on every exported component (TS9013).
     "declaration": false,
@@ -74,7 +80,7 @@ an un-parameterised macro is unusable.
 }
 ```
 
-A stylesheet import (`import "./Counter.css"`) needs nothing more: `unframework/jsx-runtime` loads an
+A stylesheet import (`import "./Counter.css"`) needs nothing more: `@uxfront/unframework/jsx-runtime` loads an
 ambient `*.css` module, which TypeScript 7's `noUncheckedSideEffectImports` requires.
 
 ## What the types catch
@@ -95,6 +101,7 @@ before the mapper is built (ADR-0072). Each row below is pinned by a probe in
 | Components         | Wrong, misspelt or missing signature props, including literal unions; undeclared attributes other than `class` and `style` (`id`); a non-function or lowercase `on*` handler; a slot object mixed with other children; a slot function returning something that is not a child; a string `ref`; a component returning anything but JSX or `null`. An explicit `onX` prop keeps its declared payload type. A generic component's props, checked against the `T` they infer, its constraint, or an explicit type argument (ADR-0068). Props types imported from another module: a missing member of an `extends` chain, a literal union, a member `Omit` removed (ADR-0067).      |
 | Authoring API      | Unknown emit names, wrong or extra payloads, a payload that is not a tuple, using `emit`'s result; un-parameterised or call-signature `defineEmits`; `defineModel()` without a name, a wrong model value or default, a model without `default` or `required` read as always set; writing a computed, a writable computed; wrong slot props, undeclared slots; unknown or mistyped `defineOptions`; a non-object `defineExpose`; wrong `provide` values, string keys, an unchecked `inject`; a watched value of the wrong type, `previous` with `immediate`, watching a plain value; a keyed `useTemplateRef`, a template ref read without a null check; `JSX` used as a global. |
 | Composables        | A wrong argument, a value for a getter parameter, an unknown returned member, an extra argument to a returned function, writing a returned computed (ADR-0069).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Configuration      | A target name `defineConfig` does not know.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Outside the subset | `reactive`, `toRefs`, a setup that returns a render function, `<component is>` over an open set of strings (plan §4.6).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ## What they deliberately do not catch
@@ -148,9 +155,9 @@ layer-1 component surface.
 To move to a new upstream:
 
 1. Bump the exact `@vue/runtime-dom` version and install.
-2. `pnpm --filter unframework vendor:jsx`, and read the diff. The script refuses a version that is not
+2. `pnpm --filter @uxfront/unframework vendor:jsx`, and read the diff. The script refuses a version that is not
    pinned exactly, and an upstream whose JSX region changed shape.
-3. `pnpm --filter unframework test`. The tests fail while the copy is stale, and the probes show
+3. `pnpm --filter @uxfront/unframework test`. The tests fail while the copy is stale, and the probes show
    exactly what the new types catch differently.
 
 The repo's formatter and linter skip the vendored file (the root `oxfmt.config.ts` and
@@ -161,7 +168,7 @@ The repo's formatter and linter skip the vendored file (the root `oxfmt.config.t
 [`probes/`](probes) is a type-checked tree with the authoring settings: `fixtures/` (components the
 probes use, and the types and composables they import), `caught/` (one `@ts-expect-error TSxxxx
 why` per mistake) and `allowed/` (legitimate code and the blind spots, which must check clean).
-`pnpm --filter unframework test` runs [`scripts/run-probes.ts`](scripts/run-probes.ts) over it in
+`pnpm --filter @uxfront/unframework test` runs [`scripts/run-probes.ts`](scripts/run-probes.ts) over it in
 three steps:
 
 1. **Layout:** every directive in `caught/` names its code, each file there pins at least one, and
@@ -178,7 +185,7 @@ unknown event, UF3038 for the unexpected children and the undeclared slot key, a
 unknown model.
 
 The tests also run the suite against the built package, so the published types pin exactly what the
-sources do. To check another TypeScript (a nightly, say): `pnpm --filter unframework probes
+sources do. To check another TypeScript (a nightly, say): `pnpm --filter @uxfront/unframework probes
 --tsc=<path to its tsc>`.
 
 To add a probe, write the mistake in `caught/` under a directive with a guessed code, run the suite,

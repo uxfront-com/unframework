@@ -35,7 +35,7 @@ function clean(outputs: Record<string, string>): Record<string, string[]> {
 const checker = { timeout: 60_000 };
 
 const TOGGLE = [
-  'import { ref } from "unframework";',
+  'import { ref } from "@uxfront/unframework";',
   "",
   'const LABEL = "Toggle";',
   "",
@@ -52,8 +52,8 @@ const TOGGLE = [
 
 /** A child with two slots, which a parent fills with snippets named after them. */
 const FRAME = [
-  'import { defineSlots } from "unframework";',
-  'import type { Element } from "unframework";',
+  'import { defineSlots } from "@uxfront/unframework";',
+  'import type { Element } from "@uxfront/unframework";',
   "",
   "export default function Frame() {",
   "  const slots = defineSlots<{ toggle?(): Element; label?(props: { n: number }): Element }>();",
@@ -99,7 +99,7 @@ describe("svelte composables", () => {
     const outputs = await compileSources({
       "useToggle.uf.ts": TOGGLE,
       "Switch.uf.tsx": [
-        'import { computed } from "unframework";',
+        'import { computed } from "@uxfront/unframework";',
         "",
         'import { useToggle } from "./useToggle.uf.ts";',
         "",
@@ -133,7 +133,7 @@ describe("svelte composables", () => {
       const outputs = await compileSources({
         "useToggle.uf.ts": TOGGLE,
         "Switch.uf.tsx": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           'import { useToggle } from "./useToggle.uf.ts";',
           "",
@@ -170,7 +170,7 @@ describe("svelte shared modules", () => {
       const outputs = await compileSources({
         "tokens.ts": "export const BASE = 4;\n",
         "Meter.uf.tsx": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           'import { BASE } from "./tokens";',
           "",
@@ -240,7 +240,7 @@ describe("svelte shared modules", () => {
         "Frame.uf.tsx": FRAME,
         "text.ts": "export function label(n: number): string {\n  return `#${n}`;\n}\n",
         "Tag.uf.tsx": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           'import Frame from "./Frame.uf.tsx";',
           'import { label } from "./text";',
@@ -286,7 +286,7 @@ describe("svelte shared modules", () => {
       const outputs = await compileSources({
         "strings.ts": 'export function label(): string {\n  return "x";\n}\n',
         "Box.uf.tsx": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           'import { label as text } from "./strings";',
           "",
@@ -318,7 +318,7 @@ describe("svelte shared modules", () => {
     async () => {
       const outputs = await compileSources({
         "Picker.uf.tsx": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           'import { BASE } from "./tokens";',
           "",
@@ -337,7 +337,7 @@ describe("svelte shared modules", () => {
         ].join("\n"),
         "tokens.ts": "export const BASE = 4;\n",
         "Use.uf.tsx": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           'import Picker from "./Picker.uf.tsx";',
           'import type { Size, Tone } from "./Picker.uf.tsx";',
@@ -391,7 +391,7 @@ describe("svelte shared modules, types other components' constants name", () => 
           "",
         ].join("\n"),
         "Use.uf.tsx": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           "",
           'import Card from "./Card.uf.tsx";',
           'import type { Tone } from "./Card.uf.tsx";',
@@ -589,7 +589,7 @@ describe("svelte composables, names and types", () => {
           "",
         ].join("\n"),
         "useList.uf.ts": [
-          'import { ref } from "unframework";',
+          'import { ref } from "@uxfront/unframework";',
           'import type { Item, Options } from "./types";',
           "",
           "type Step = 1 | 2;",
@@ -691,7 +691,7 @@ describe("svelte composables, names and types", () => {
     const outputs = await compileSources({
       "useToggle.uf.ts": TOGGLE,
       "useDouble.uf.ts": [
-        'import { computed } from "unframework";',
+        'import { computed } from "@uxfront/unframework";',
         "",
         "export function useDouble() {",
         "  const doubled = computed(() => 2);",
@@ -700,7 +700,7 @@ describe("svelte composables, names and types", () => {
         "",
       ].join("\n"),
       "Seed.uf.tsx": [
-        'import { ref } from "unframework";',
+        'import { ref } from "@uxfront/unframework";',
         "",
         'import { useDouble } from "./useDouble.uf.ts";',
         'import { useToggle } from "./useToggle.uf.ts";',

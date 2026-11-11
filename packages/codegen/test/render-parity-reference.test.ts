@@ -3,7 +3,7 @@
 // by the analyser as an author's is, with props, against the HTML it must render. Then the markup
 // cases another agent wrote by hand (./markup-cases.ts) are evaluated too, as a second, independent
 // reading of the same rules.
-import type { ElementNode, InterpolationNode } from "@unframework/ir";
+import type { ElementNode, InterpolationNode } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { MARKUP_CASES, passedProps, ROOT_CASES, suite as markupSuite } from "./markup-cases.ts";

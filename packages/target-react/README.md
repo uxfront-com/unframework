@@ -1,4 +1,4 @@
-# @unframework/target-react
+# @unframework.dev/target-react
 
 The React 19 target of the Unframework compiler: one function component in TSX per source
 component, written as a React developer would write it (plan §6):
@@ -171,7 +171,7 @@ local state holds its value in an object, new on every write, so a write always 
 that holds its value resets the model's mirror. A required model is its prop. ADR-0060 settles
 ADR-0058's open item. react-dom writes a controlled checkbox's or radio's first `checked` state,
 and an option's `selected`, as its attribute and never updates it; the live state still compares,
-so the parity tests leave that attribute out on React only (rule 4e, in `@unframework/testing`).
+so the parity tests leave that attribute out on React only (rule 4e, in `@unframework.dev/testing`).
 react-dom also fills a `<textarea>` as its default value, which leaves the caret at the start, so
 a bound `<textarea>`'s ref callback, declared once with `useState`, empties the field and sets its
 text again, as Vue's `vModelText` does: the caret ends after the text, and no `select` fires. A
@@ -257,7 +257,7 @@ module's, and a setup value named like one of them is never hoisted beside it.
 
 The tests and tooling build, check and run React output through three entries:
 
-- `@unframework/target-react/toolchain` (Node): the Vite configuration of browser and SSR
+- `@unframework.dev/target-react/toolchain` (Node): the Vite configuration of browser and SSR
   projects (`@vitejs/plugin-react`), the framework compile check (L3: React Compiler 1.0 on
   Babel 7, where a bailout is a warning; a function that opts out with `"use no memo"` passes
   only where React Compiler still finds what it cannot compile there, a `Todo` or an
@@ -268,11 +268,11 @@ The tests and tooling build, check and run React output through three entries:
   the type check (L4: one TypeScript 7 run over all
   files, against `tests/toolchains/react/tsconfig.json`) and the lint (L5: oxlint with the
   shared baseline and its React rules, `tests/toolchains/react/output.oxlintrc.json`).
-- `@unframework/target-react/toolchain/client` (browser): mounts with `createRoot` inside
+- `@unframework.dev/target-react/toolchain/client` (browser): mounts with `createRoot` inside
   `act`, rerenders with new props through `root.render`, passes the test's listeners as event
   props (`onChange` for `change`), and runs a user's action inside `act`, with
   `IS_REACT_ACT_ENVIRONMENT` set only during its own `act` calls.
-- `@unframework/target-react/toolchain/server` (Node): renders with `prerender` and returns
+- `@unframework.dev/target-react/toolchain/server` (Node): renders with `prerender` and returns
   the component's HTML only.
 
 `test/toolchain.test.ts` pins each shape the opt-out covers: React Compiler bails out on it

@@ -2,7 +2,7 @@
 // (`++`, a parenthesised assignment), a block body with several writes that also clears the
 // uncontrolled note field through a template ref, and an event parameter read through
 // `event.currentTarget`.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ShirtOrder from "./ShirtOrder.uf.tsx";

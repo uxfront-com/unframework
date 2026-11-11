@@ -1,7 +1,7 @@
 // styles/scoped-basics: a component imports its sheet, which the compiler scopes once
 // (ADR-0063): every rule matches the component's elements through `data-uf-<id>`, and every
 // target attaches the same scoped sheet.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Badge from "./Badge.uf.tsx";

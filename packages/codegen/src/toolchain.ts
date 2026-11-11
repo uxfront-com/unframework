@@ -1,5 +1,5 @@
 // The toolchain contract (plan §5.7): what tests and tooling need to build, check and run a
-// target's output. A target ships it as `@unframework/<target>/toolchain` (Node),
+// target's output. A target ships it as `@unframework.dev/<target>/toolchain` (Node),
 // `…/toolchain/client` (the browser mount adapter) and `…/toolchain/server` (the SSR
 // renderer). Types only: nothing here runs, and the target's main entry never imports it.
 import type { Plugin, UserConfig } from "vite";
@@ -82,6 +82,16 @@ export interface Toolchain {
     files: readonly ToolchainFile[],
     context: ToolchainContext,
   ): Promise<Map<string, FrameworkCompileResult>>;
+  /**
+   * L15: what the framework's compiler makes of output files for a production client build, for
+   * the harness to bundle and measure (ADR-0078). Each file's path maps to its module, then any
+   * module the compiler splits off it, at paths beside it. A file it cannot compile rejects: L3
+   * says why.
+   */
+  frameworkEmit(
+    files: readonly ToolchainFile[],
+    context: ToolchainContext,
+  ): Promise<Map<string, ToolchainFile[]>>;
   /**
    * L4: type-checks output files (absolute paths) in one checker run, and returns every
    * diagnostic by file path. A checker that cannot start rejects: a gate that cannot start

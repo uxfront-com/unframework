@@ -5,8 +5,8 @@
     {
       "name": "List",
       "span": {
-        "start": 88,
-        "end": 425
+        "start": 106,
+        "end": 443
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string[]",
             "span": {
-              "start": 144,
-              "end": 152
+              "start": 162,
+              "end": 170
             }
           },
-          "binding": "items@119",
+          "binding": "items@137",
           "span": {
-            "start": 137,
-            "end": 153
+            "start": 155,
+            "end": 171
           }
         },
         {
@@ -31,14 +31,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 161,
-              "end": 167
+              "start": 179,
+              "end": 185
             }
           },
-          "binding": "label@126",
+          "binding": "label@144",
           "span": {
-            "start": 154,
-            "end": 167
+            "start": 172,
+            "end": 185
           }
         }
       ],
@@ -47,23 +47,23 @@
         "type": {
           "code": "{ items: string[]; label: string }",
           "span": {
-            "start": 135,
-            "end": 169
+            "start": 153,
+            "end": 187
           }
         },
         "span": {
-          "start": 117,
-          "end": 169
+          "start": 135,
+          "end": 187
         }
       },
       "types": [],
       "slots": {
-        "binding": "slots@181",
+        "binding": "slots@199",
         "type": {
           "code": "{ item?(props: { item: string; index: number }): Element }",
           "span": {
-            "start": 201,
-            "end": 259
+            "start": 219,
+            "end": 277
           }
         },
         "slots": [
@@ -73,65 +73,65 @@
             "props": {
               "code": "{ item: string; index: number }",
               "span": {
-                "start": 216,
-                "end": 247
+                "start": 234,
+                "end": 265
               }
             },
             "span": {
-              "start": 203,
-              "end": 257
+              "start": 221,
+              "end": 275
             }
           }
         ],
         "span": {
-          "start": 175,
-          "end": 263
+          "start": 193,
+          "end": 281
         }
       },
       "bindings": [
         {
-          "id": "items@119",
+          "id": "items@137",
           "name": "items",
           "kind": "prop",
           "span": {
-            "start": 119,
-            "end": 124
+            "start": 137,
+            "end": 142
           }
         },
         {
-          "id": "label@126",
+          "id": "label@144",
           "name": "label",
           "kind": "prop",
           "span": {
-            "start": 126,
-            "end": 131
+            "start": 144,
+            "end": 149
           }
         },
         {
-          "id": "slots@181",
+          "id": "slots@199",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 181,
-            "end": 186
+            "start": 199,
+            "end": 204
           }
         },
         {
-          "id": "item@321",
+          "id": "item@339",
           "name": "item",
           "kind": "loopVar",
           "span": {
-            "start": 321,
-            "end": 325
+            "start": 339,
+            "end": 343
           }
         },
         {
-          "id": "index@327",
+          "id": "index@345",
           "name": "index",
           "kind": "loopVar",
           "span": {
-            "start": 327,
-            "end": 332
+            "start": 345,
+            "end": 350
           }
         }
       ],
@@ -146,23 +146,23 @@
             "value": {
               "code": "label",
               "span": {
-                "start": 295,
-                "end": 300
+                "start": 313,
+                "end": 318
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "label@126",
+                  "binding": "label@144",
                   "span": {
-                    "start": 295,
-                    "end": 300
+                    "start": 313,
+                    "end": 318
                   }
                 }
               ]
             },
             "span": {
-              "start": 283,
-              "end": 301
+              "start": 301,
+              "end": 319
             }
           }
         ],
@@ -172,35 +172,35 @@
             "source": {
               "code": "items",
               "span": {
-                "start": 310,
-                "end": 315
+                "start": 328,
+                "end": 333
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "items@119",
+                  "binding": "items@137",
                   "span": {
-                    "start": 310,
-                    "end": 315
+                    "start": 328,
+                    "end": 333
                   }
                 }
               ]
             },
-            "item": "item@321",
-            "index": "index@327",
+            "item": "item@339",
+            "index": "index@345",
             "key": {
               "code": "item",
               "span": {
-                "start": 356,
-                "end": 360
+                "start": 374,
+                "end": 378
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "item@321",
+                  "binding": "item@339",
                   "span": {
-                    "start": 356,
-                    "end": 360
+                    "start": 374,
+                    "end": 378
                   }
                 }
               ]
@@ -216,25 +216,25 @@
                   "props": {
                     "code": "{ item, index }",
                     "span": {
-                      "start": 376,
-                      "end": 391
+                      "start": 394,
+                      "end": 409
                     },
                     "refs": [
                       {
                         "kind": "Binding",
-                        "binding": "item@321",
+                        "binding": "item@339",
                         "span": {
-                          "start": 378,
-                          "end": 382
+                          "start": 396,
+                          "end": 400
                         },
                         "shorthand": true
                       },
                       {
                         "kind": "Binding",
-                        "binding": "index@327",
+                        "binding": "index@345",
                         "span": {
-                          "start": 384,
-                          "end": 389
+                          "start": 402,
+                          "end": 407
                         },
                         "shorthand": true
                       }
@@ -242,25 +242,25 @@
                   },
                   "fallback": [],
                   "span": {
-                    "start": 362,
-                    "end": 393
+                    "start": 380,
+                    "end": 411
                   }
                 }
               ],
               "span": {
-                "start": 347,
-                "end": 398
+                "start": 365,
+                "end": 416
               }
             },
             "span": {
-              "start": 310,
-              "end": 407
+              "start": 328,
+              "end": 425
             }
           }
         ],
         "span": {
-          "start": 279,
-          "end": 418
+          "start": 297,
+          "end": 436
         }
       }
     }
@@ -271,8 +271,8 @@
       "name": "default",
       "local": "List",
       "span": {
-        "start": 88,
-        "end": 425
+        "start": 106,
+        "end": 443
       }
     }
   ],

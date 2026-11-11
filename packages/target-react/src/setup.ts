@@ -6,9 +6,9 @@
 // component. Watchers, `watchEffect` and lifecycle hooks are effects that call an effect event
 // (`useEffectEvent`), which runs the author's code with the latest values; each runs only in the
 // browser, after React has rendered (ADR-0048).
-import { parseCodeSource, pascalCase } from "@unframework/codegen";
-import type { RewriteSite } from "@unframework/codegen";
-import { codeOf, summarizeCode, summarizeTracked } from "@unframework/ir";
+import { parseCodeSource, pascalCase } from "@unframework.dev/codegen";
+import type { RewriteSite } from "@unframework.dev/codegen";
+import { codeOf, summarizeCode, summarizeTracked } from "@unframework.dev/ir";
 import type {
   BindingId,
   Code,
@@ -26,7 +26,7 @@ import type {
   WatchEffectItem,
   WatchItem,
   WatchSource,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { keyRef, wholeReference } from "./composition.ts";
 import { reactEventType } from "./events.ts";

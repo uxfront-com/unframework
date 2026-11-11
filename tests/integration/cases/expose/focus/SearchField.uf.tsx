@@ -1,4 +1,4 @@
-import { defineExpose, useTemplateRef } from "unframework";
+import { defineExpose, useTemplateRef } from "@uxfront/unframework";
 
 export default function SearchField({ label }: { label: string }) {
   const input = useTemplateRef<HTMLInputElement>();

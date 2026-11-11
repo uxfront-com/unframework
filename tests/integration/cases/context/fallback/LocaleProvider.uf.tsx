@@ -1,5 +1,5 @@
-import { defineSlots, provide } from "unframework";
-import type { Element, InjectionKey } from "unframework";
+import { defineSlots, provide } from "@uxfront/unframework";
+import type { Element, InjectionKey } from "@uxfront/unframework";
 
 export const LocaleKey: InjectionKey<string> = Symbol("uf.locale");
 

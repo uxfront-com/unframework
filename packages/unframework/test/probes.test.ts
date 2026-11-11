@@ -11,13 +11,13 @@ import { PROBES_DIRECTORY, runProbes } from "../scripts/run-probes.ts";
  * Every pinned probe. A change here is a change to what the types catch: update the README's tables
  * with it.
  */
-const PINNED_PROBES = 89;
+const PINNED_PROBES = 90;
 
 const PACKAGE = fileURLToPath(new URL("..", import.meta.url));
 const copies: string[] = [];
 
 /**
- * A copy of the probe tree beside the original, so `unframework` and the base tsconfig resolve
+ * A copy of the probe tree beside the original, so `@uxfront/unframework` and the base tsconfig resolve
  * exactly as they do for it. `edit` changes one file of the copy.
  */
 function probeCopy(file: string, edit: (source: string) => string): string {

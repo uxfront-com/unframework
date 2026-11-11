@@ -24,8 +24,8 @@ import {
   NameScope,
   pascalCase,
   rewriteCode,
-} from "@unframework/codegen";
-import type { RewriteRules } from "@unframework/codegen";
+} from "@unframework.dev/codegen";
+import type { RewriteRules } from "@unframework.dev/codegen";
 import type {
   Binding,
   FunctionCode,
@@ -34,7 +34,7 @@ import type {
   WatchEffectItem,
   WatchItem,
   WatchSource,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { bindingById, formOf, unreachable } from "./plan.ts";
 import type { Plan } from "./plan.ts";

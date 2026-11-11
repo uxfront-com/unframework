@@ -1,0 +1,25 @@
+---
+import { Button, Card, Counter, TextField } from "@unframework.dev/e2e-design-system/astro";
+import Hello from "../Hello.astro";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Astro, package mode</title>
+  </head>
+  <body>
+    <Hello />
+    <main>
+      <Button>Press me</Button>
+      <Counter initial={2} step={3} />
+      <TextField label="Name" />
+      <Card>
+        <h2 slot="header">Card header</h2>
+        <button type="button">Toggle card</button>
+        <p slot="footer">Closed</p>
+      </Card>
+    </main>
+  </body>
+</html>

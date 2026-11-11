@@ -7,12 +7,12 @@
     "start": {
       "line": 9,
       "column": 10,
-      "offset": 277
+      "offset": 286
     },
     "end": {
       "line": 9,
       "column": 18,
-      "offset": 285
+      "offset": 294
     },
     "help": "Declare the event in `defineEmits`, or emit one it declares."
   }

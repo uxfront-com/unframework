@@ -6,27 +6,30 @@ import { mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { buildPartialMatrix, runName, stringifyMatrix } from "@unframework/testing/node";
-import type { LayerName, ProjectRecord, Shard } from "@unframework/testing/node";
+import { buildPartialMatrix, runName, stringifyMatrix } from "@unframework.dev/testing/node";
+import type { LayerName, ProjectRecord, Shard } from "@unframework.dev/testing/node";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { parityJob, runSummary } from "../scripts/summary.ts";
 import { listCases } from "./cases.ts";
 import { REPO_ROOT, REPORTS_DIR, reportsDirOf } from "./paths.ts";
-import { isSelected, projectNames } from "./projects.ts";
+import { isSelected, parityProjects, projectNames } from "./projects.ts";
 import { selectTargets } from "./targets.ts";
 
 const TARGETS = selectTargets(undefined);
 const ALL = projectNames(TARGETS);
+/** Every project a job of CI's runs: the default run's, and the `Bench` job's. */
+const PARITY = parityProjects(TARGETS);
 const CASES = listCases().map((info) => info.id);
 
 /** The live layers each kind of project records (plan §7.3). */
 const LAYERS_OF: Record<string, LayerName[]> = {
-  compile: ["L1", "L2"],
+  compile: ["L1", "L2", "L14"],
   harness: [],
   toolchain: ["L3", "L4", "L5"],
   ssr: ["L6", "L13"],
   browser: ["L7", "L8", "L9", "L10", "L11", "L13"],
+  bench: ["L15"],
 };
 
 /**
@@ -89,7 +92,11 @@ function ciJobs(): { runs: JobRun[]; parityNeeds: string[] } {
   for (const block of jobBlocks()) {
     const job = block.slice(0, block.indexOf(":"));
     if (job === "parity") {
-      parityNeeds = /^ {4}needs: \[([^\]]*)\]/m.exec(block)![1]!.split(/,\s*/);
+      parityNeeds = /^ {4}needs:\s*\[([^\]]*)\]/m
+        .exec(block)![1]!
+        .split(",")
+        .map((job) => job.trim())
+        .filter(Boolean);
       continue;
     }
     const command = /vitest run((?: --project (?:"[^"]*"|\S+))+)/.exec(block);
@@ -105,7 +112,7 @@ function ciJobs(): { runs: JobRun[]; parityNeeds: string[] } {
       runs.push({
         job,
         name: target ? `${job} (${target})` : job,
-        projects: ALL.filter((project) => isSelected(project, selected)),
+        projects: PARITY.filter((project) => isSelected(project, selected)),
         uploads: /^ {10}name: parity-/m.test(block),
       });
     }
@@ -136,13 +143,19 @@ describe("CI's parity job", () => {
   it("waits for every job that runs harness projects, which together run each project once", () => {
     expect(runs.map((run) => run.name)).toEqual([
       "integration-compile",
-      ...TARGETS.map((target) => `integration-toolchains (${target})`),
+      "integration-toolchains",
       "integration-ssr",
       ...TARGETS.map((target) => `integration-browser (${target})`),
+      "bench",
     ]);
-    expect(runs.flatMap((run) => run.projects).toSorted()).toEqual(ALL.toSorted());
+    expect(runs.flatMap((run) => run.projects).toSorted()).toEqual(PARITY.toSorted());
     expect(runs.filter((run) => !run.uploads)).toEqual([]);
-    expect(parityNeeds.toSorted()).toEqual([...new Set(runs.map((run) => run.job))].toSorted());
+    // It also waits for `changes`, which skips it with the jobs it waits for on a docs-only
+    // pull request (ADR-0084).
+    expect(parityNeeds).toContain("changes");
+    expect(parityNeeds.filter((job) => job !== "changes").toSorted()).toEqual(
+      [...new Set(runs.map((run) => run.job))].toSorted(),
+    );
   });
 
   it("leaves out the Baselines job: an update run, which no summary judges (ADR-0062)", () => {
@@ -224,6 +237,52 @@ describe("CI's parity job", () => {
 });
 
 describe("a run of scripts/run.ts", () => {
+  /** The cell of a merged matrix on disk. */
+  const cell = (id: string, target: string, layer: string) =>
+    JSON.parse(readFileSync(join(reportsDir, "parity-matrix.json"), "utf8")).cases[id][target][
+      layer
+    ] as string;
+  const run = (started: Date) => ({ since: started, requireComplete: false, reportsDir });
+
+  it("fills L15 as not in this run when the default run left `bench` out, with every other cell judged", () => {
+    const started = new Date();
+    writeFileSync(
+      join(reportsDir, "parity-matrix.all.json"),
+      partial(ALL, new Date(started.getTime() + 1).toISOString()),
+    );
+    expect(runSummary({}, run(started))).toBe(0);
+    expect(problems).toBe("");
+    expect(cell(CASES[0]!, TARGETS[0]!, "L15")).toBe("skip(not in this run)");
+    expect(cell(CASES[0]!, TARGETS[0]!, "L1")).toBe("pass");
+    expect(readFileSync(join(reportsDir, "parity-matrix.md"), "utf8")).toContain(
+      "Every project ran: every cell is checked.\nLayers that are not live (L12) are recorded as skip(not live yet).\nOnly `bench` records L15, and it did not run in full, so those cells are skip(not in this run).",
+    );
+  });
+
+  it("records L15 from a run of `bench` alone, and fails a cell it left missing", () => {
+    const started = new Date();
+    const matrix = JSON.parse(partial(["bench"], new Date(started.getTime() + 1).toISOString()));
+    writeFileSync(join(reportsDir, "parity-matrix.bench.json"), JSON.stringify(matrix));
+    expect(runSummary({}, run(started))).toBe(0);
+    expect(cell(CASES[0]!, TARGETS[0]!, "L15")).toBe("pass");
+
+    delete matrix.byProject.bench[CASES[0]!];
+    writeFileSync(join(reportsDir, "parity-matrix.bench.json"), JSON.stringify(matrix));
+    expect(runSummary({}, run(started))).toBe(1);
+    expect(problems).toContain(
+      `${CASES[0]!} › ${TARGETS[0]!} › L15: missing (no test recorded it).`,
+    );
+  });
+
+  it("fails an L15 cell that a run of `bench` found over budget", () => {
+    const started = new Date();
+    const matrix = JSON.parse(partial(["bench"], new Date(started.getTime() + 1).toISOString()));
+    matrix.byProject.bench[CASES[0]!][TARGETS[0]!].L15 = "fail: raw size is above its budget";
+    writeFileSync(join(reportsDir, "parity-matrix.bench.json"), JSON.stringify(matrix));
+    expect(runSummary({}, run(started))).toBe(1);
+    expect(problems).toContain("raw size is above its budget");
+  });
+
   it("judges only the projects it selected, in CI's mode too (pnpm test:baselines:check)", () => {
     const started = new Date();
     const browser = ALL.filter((project) => project.startsWith("browser:"));

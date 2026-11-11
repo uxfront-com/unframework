@@ -1,0 +1,81 @@
+{
+  "irVersion": 1,
+  "file": "sourcemaps/mounted-throws/Chart.uf.tsx",
+  "components": [
+    {
+      "name": "Chart",
+      "span": {
+        "start": 51,
+        "end": 186
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    throw new Error(\"The chart could not start\");\n  }",
+              "span": {
+                "start": 103,
+                "end": 158
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "Error",
+                  "span": {
+                    "start": 119,
+                    "end": 124
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 97,
+              "end": 158
+            }
+          },
+          "span": {
+            "start": 87,
+            "end": 160
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Chart",
+            "span": {
+              "start": 174,
+              "end": 179
+            }
+          }
+        ],
+        "span": {
+          "start": 171,
+          "end": 183
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Chart",
+      "span": {
+        "start": 51,
+        "end": 186
+      }
+    }
+  ],
+  "types": []
+}

@@ -1,6 +1,6 @@
 // types/imported-interface: a props interface imported from a `.ts` module (ADR-0067). Each output
 // imports it by name, and its optional member takes the source's default.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Badge from "./Badge.uf.tsx";

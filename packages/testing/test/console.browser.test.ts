@@ -7,10 +7,13 @@ import {
   beginTestConsole,
   captureExternalConsole,
   capturedConsole,
+  consoleMark,
   describeConsole,
   endTestConsole,
+  excuseConsoleSince,
   installConsoleCapture,
   unexpectedConsole,
+  watchConsoleErrors,
 } from "../src/browser/console.ts";
 
 const BEFORE = "before the test: module evaluation, a beforeAll hook or an earlier teardown";
@@ -21,6 +24,36 @@ beforeAll(() => {
 });
 
 describe("the console capture", () => {
+  it("excuses only what was logged since the mark", () => {
+    beginTestConsole();
+    console.warn("[unit] before the step");
+    const mark = consoleMark();
+    console.error("[unit] the step");
+    excuseConsoleSince(mark, "the step throws on purpose");
+    console.warn("[unit] after the step");
+    expect(unexpectedConsole().map((entry) => entry.message)).toEqual([
+      "[unit] before the step",
+      "[unit] after the step",
+    ]);
+    endTestConsole();
+  });
+
+  it("needs a reason to excuse anything", () => {
+    expect(() => excuseConsoleSince(0, " ")).toThrow(/reason/);
+  });
+
+  it("hands each logged argument to the watcher until it is removed", () => {
+    beginTestConsole();
+    const seen: unknown[] = [];
+    const unwatch = watchConsoleErrors((value) => seen.push(value));
+    const error = new Error("[unit] logged");
+    console.error("[unit] prefix", error);
+    unwatch();
+    console.error("[unit] after", error);
+    expect(seen).toEqual(["[unit] prefix", error]);
+    endTestConsole();
+  });
+
   it("keeps what was logged outside a test for the next one, marked as logged before it", () => {
     console.warn("[unit] between tests");
     beginTestConsole();

@@ -3,7 +3,7 @@
 // (UF2013): Vue runs it during the server's setup too, and the server render is unchanged.
 // `onMounted` emits once the component is in the document. The two events come from different
 // effects, so the spec checks each apart (semantics contract, watch semantics).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import SectionHeading from "./SectionHeading.uf.tsx";

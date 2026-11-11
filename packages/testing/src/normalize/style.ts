@@ -1,4 +1,4 @@
-import { cssPropertiesOverlap } from "@unframework/ir";
+import { cssPropertiesOverlap } from "@unframework.dev/ir";
 
 /**
  * The `style` attribute as a list of declarations. The parser is deliberately small: it splits
@@ -146,7 +146,7 @@ export function styleValue(
 
 /**
  * Sorts declarations by property name, unless the order of two of them decides what renders
- * (`cssPropertiesOverlap` of `@unframework/ir`: the same property, a shorthand and one of its
+ * (`cssPropertiesOverlap` of `@unframework.dev/ir`: the same property, a shorthand and one of its
  * longhands, two shorthands that share one, `all`, or a flow-relative longhand and a physical
  * one that can be the same): then it keeps them as they are. A declaration list without such a
  * pair renders the same in any order, and the targets write it in theirs (an object's key order,

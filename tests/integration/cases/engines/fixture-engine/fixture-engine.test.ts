@@ -1,7 +1,7 @@
 // engines/fixture-engine: a styling engine of a few lines (harness/fixture-engine.ts, ADR-0064).
 // Its class function and its stylesheet are `virtual:` modules, which every output imports as
 // written and the engine's own Vite plugin resolves, with no Styleframe.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Chip from "./Chip.uf.tsx";

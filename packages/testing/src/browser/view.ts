@@ -6,7 +6,7 @@ import type {
   MountEvent,
   MountOptions,
   RenderReport,
-} from "@unframework/codegen";
+} from "@unframework.dev/codegen";
 import { inject, TestRunner } from "vitest";
 import type { RunnerTestCase } from "vitest";
 import { commands, page } from "vitest/browser";
@@ -32,6 +32,7 @@ import { expectParity } from "./parity.ts";
 import type { ParityOptions } from "./parity.ts";
 import { registeredAdapter } from "./target.ts";
 import type { TargetOptions } from "./target.ts";
+import { expectThrown } from "./thrown.ts";
 import { Trace } from "./trace.ts";
 import { createUser } from "./user.ts";
 import type { Input, ViewUser } from "./user.ts";
@@ -96,6 +97,13 @@ export interface View<P = Props> {
    * steps since the mount or the previous `expectParity`.
    */
   expectParity(name: string, options?: ParityOptions): Promise<void>;
+  /**
+   * Runs a `view.user` step that makes the component throw, and verifies L14: the first `Error`'s
+   * top frame in the case maps to the one line of the case's source that holds `throw` (ADR-0078).
+   * What the step logs is excused from L13, and it records no step of the trace, since what a
+   * framework leaves behind after a throw is no contract.
+   */
+  expectThrown(step: () => Promise<void>): Promise<void>;
   unmount(): Promise<void>;
 }
 
@@ -407,6 +415,15 @@ async function mountWith(
     events: () => emittedArgs("view.events").map((event) => [event.name, ...event.args]),
     expectParity: (name, parityOptions) =>
       expectParity({ ...view, trace, dom, aria }, name, parityOptions),
+    expectThrown: (action) =>
+      expectThrown(
+        {
+          settle: () => settleFrame(() => instance.settle()),
+          stepMark: () => trace.length,
+          forgetSteps: (mark) => trace.forget(mark),
+        },
+        action,
+      ),
     async unmount() {
       if (unmounted) return;
       unmounted = true;

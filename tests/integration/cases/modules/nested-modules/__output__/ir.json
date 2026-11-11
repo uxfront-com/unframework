@@ -5,8 +5,8 @@
     {
       "name": "Distance",
       "span": {
-        "start": 117,
-        "end": 494
+        "start": 126,
+        "end": 503
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "number",
             "span": {
-              "start": 170,
-              "end": 176
+              "start": 179,
+              "end": 185
             }
           },
-          "binding": "value@152",
+          "binding": "value@161",
           "span": {
-            "start": 163,
-            "end": 176
+            "start": 172,
+            "end": 185
           }
         }
       ],
@@ -31,67 +31,67 @@
         "type": {
           "code": "{ value: number }",
           "span": {
-            "start": 161,
-            "end": 178
+            "start": 170,
+            "end": 187
           }
         },
         "span": {
-          "start": 150,
-          "end": 178
+          "start": 159,
+          "end": 187
         }
       },
       "types": [],
       "bindings": [
         {
-          "id": "formatDistance@45",
+          "id": "formatDistance@54",
           "name": "formatDistance",
           "kind": "import",
           "span": {
-            "start": 45,
-            "end": 59
+            "start": 54,
+            "end": 68
           }
         },
         {
-          "id": "value@152",
+          "id": "value@161",
           "name": "value",
           "kind": "prop",
           "span": {
-            "start": 152,
-            "end": 157
+            "start": 161,
+            "end": 166
           }
         },
         {
-          "id": "unit@190",
+          "id": "unit@199",
           "name": "unit",
           "kind": "state",
           "span": {
-            "start": 190,
-            "end": 194
+            "start": 199,
+            "end": 203
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "unit@190",
+          "binding": "unit@199",
           "type": {
             "code": "Unit",
             "span": {
-              "start": 201,
-              "end": 205
+              "start": 210,
+              "end": 214
             }
           },
           "initial": {
             "code": "\"km\"",
             "span": {
-              "start": 207,
-              "end": 211
+              "start": 216,
+              "end": 220
             },
             "refs": []
           },
           "span": {
-            "start": 184,
-            "end": 213
+            "start": 193,
+            "end": 222
           }
         }
       ],
@@ -104,8 +104,8 @@
             "name": "class",
             "value": "distance",
             "span": {
-              "start": 239,
-              "end": 255
+              "start": 248,
+              "end": 264
             }
           },
           {
@@ -113,8 +113,8 @@
             "name": "aria-label",
             "value": "Distance",
             "span": {
-              "start": 256,
-              "end": 277
+              "start": 265,
+              "end": 286
             }
           }
         ],
@@ -128,8 +128,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 288,
-                  "end": 301
+                  "start": 297,
+                  "end": 310
                 }
               }
             ],
@@ -139,46 +139,46 @@
                 "value": {
                   "code": "formatDistance(value, unit.value)",
                   "span": {
-                    "start": 303,
-                    "end": 336
+                    "start": 312,
+                    "end": 345
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "formatDistance@45",
+                      "binding": "formatDistance@54",
                       "span": {
-                        "start": 303,
-                        "end": 317
+                        "start": 312,
+                        "end": 326
                       },
                       "call": true
                     },
                     {
                       "kind": "Binding",
-                      "binding": "value@152",
+                      "binding": "value@161",
                       "span": {
-                        "start": 318,
-                        "end": 323
+                        "start": 327,
+                        "end": 332
                       }
                     },
                     {
                       "kind": "Binding",
-                      "binding": "unit@190",
+                      "binding": "unit@199",
                       "span": {
-                        "start": 325,
-                        "end": 335
+                        "start": 334,
+                        "end": 344
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 302,
-                  "end": 337
+                  "start": 311,
+                  "end": 346
                 }
               }
             ],
             "span": {
-              "start": 285,
-              "end": 341
+              "start": 294,
+              "end": 350
             }
           },
           {
@@ -190,8 +190,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 356,
-                  "end": 369
+                  "start": 365,
+                  "end": 378
                 }
               },
               {
@@ -204,52 +204,52 @@
                     "body": {
                       "code": "(unit.value = unit.value === \"km\" ? \"mi\" : \"km\")",
                       "span": {
-                        "start": 385,
-                        "end": 433
+                        "start": 394,
+                        "end": 442
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "unit@190",
+                          "binding": "unit@199",
                           "operator": "=",
                           "span": {
-                            "start": 385,
-                            "end": 433
+                            "start": 394,
+                            "end": 442
                           },
                           "target": {
-                            "start": 386,
-                            "end": 396
+                            "start": 395,
+                            "end": 405
                           },
                           "value": {
-                            "start": 399,
-                            "end": 432
+                            "start": 408,
+                            "end": 441
                           },
                           "arrowBody": true
                         },
                         {
                           "kind": "Binding",
-                          "binding": "unit@190",
+                          "binding": "unit@199",
                           "span": {
-                            "start": 399,
-                            "end": 409
+                            "start": 408,
+                            "end": 418
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 379,
-                      "end": 433
+                      "start": 388,
+                      "end": 442
                     }
                   },
                   "span": {
-                    "start": 379,
-                    "end": 433
+                    "start": 388,
+                    "end": 442
                   }
                 },
                 "span": {
-                  "start": 370,
-                  "end": 434
+                  "start": 379,
+                  "end": 443
                 }
               }
             ],
@@ -258,20 +258,20 @@
                 "kind": "Text",
                 "value": "Switch units",
                 "span": {
-                  "start": 435,
-                  "end": 463
+                  "start": 444,
+                  "end": 472
                 }
               }
             ],
             "span": {
-              "start": 348,
-              "end": 472
+              "start": 357,
+              "end": 481
             }
           }
         ],
         "span": {
-          "start": 230,
-          "end": 487
+          "start": 239,
+          "end": 496
         }
       }
     }
@@ -282,8 +282,8 @@
       "name": "default",
       "local": "Distance",
       "span": {
-        "start": 117,
-        "end": 494
+        "start": 126,
+        "end": 503
       }
     }
   ],
@@ -296,14 +296,14 @@
           "imported": "Unit",
           "local": "Unit",
           "span": {
-            "start": 93,
-            "end": 97
+            "start": 102,
+            "end": 106
           }
         }
       ],
       "span": {
-        "start": 79,
-        "end": 115
+        "start": 88,
+        "end": 124
       }
     }
   ],
@@ -316,14 +316,14 @@
           "imported": "formatDistance",
           "local": "formatDistance",
           "span": {
-            "start": 45,
-            "end": 59
+            "start": 54,
+            "end": 68
           }
         }
       ],
       "span": {
-        "start": 36,
-        "end": 78
+        "start": 45,
+        "end": 87
       }
     }
   ]

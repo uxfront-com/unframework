@@ -1,8 +1,8 @@
-import { CAPABILITY_PREREQUISITES, requiredCapabilities } from "@unframework/codegen";
-import type { CapabilityName, Target } from "@unframework/codegen";
-import { createDiagnostic } from "@unframework/diagnostics";
-import type { Diagnostic } from "@unframework/diagnostics";
-import type { UfModule } from "@unframework/ir";
+import { CAPABILITY_PREREQUISITES, requiredCapabilities } from "@unframework.dev/codegen";
+import type { CapabilityName, Target } from "@unframework.dev/codegen";
+import { createDiagnostic } from "@unframework.dev/diagnostics";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
+import type { UfModule } from "@unframework.dev/ir";
 
 /**
  * Pass P4: checks the capabilities a module uses against a target's matrix and reports a

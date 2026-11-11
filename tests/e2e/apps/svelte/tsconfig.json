@@ -1,0 +1,12 @@
+{
+  // The app's own config. Its `.uf.tsx` and `.uf.ts` files check through `tsconfig.uf.json`
+  // instead, against Unframework's JSX types (ADR-0080).
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true
+  },
+  "exclude": ["**/*.uf.tsx", "**/*.uf.ts"]
+}

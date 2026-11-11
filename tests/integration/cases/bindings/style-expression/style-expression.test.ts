@@ -4,7 +4,7 @@
 // root merges the object passed to it over its own declaration list, on every target's merge,
 // and a `<component is>` passes a declaration list to whichever child it renders, whose root
 // merges it over a list or declarations of its own.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Notice from "./Notice.uf.tsx";

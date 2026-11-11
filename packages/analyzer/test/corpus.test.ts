@@ -8,12 +8,12 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
 
-import { catalogue } from "@unframework/diagnostics";
-import type { ModuleApi } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
-import type { ParsedModule } from "@unframework/parser";
-import { createSyntacticOracle } from "@unframework/type-oracle";
-import type { TypeOracle, TypeShape } from "@unframework/type-oracle";
+import { catalogue } from "@unframework.dev/diagnostics";
+import type { ModuleApi } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
+import type { ParsedModule } from "@unframework.dev/parser";
+import { createSyntacticOracle } from "@unframework.dev/type-oracle";
+import type { TypeOracle, TypeShape } from "@unframework.dev/type-oracle";
 import { describe, expect, it } from "vitest";
 
 import {

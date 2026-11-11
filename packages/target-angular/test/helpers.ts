@@ -11,10 +11,10 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { formatOutput, scopeStylesheet } from "@unframework/codegen";
-import type { EmitContext, OutputFile, ToolchainContext } from "@unframework/codegen";
-import { checkInvariants } from "@unframework/ir";
-import type { UfModule } from "@unframework/ir";
+import { formatOutput, scopeStylesheet } from "@unframework.dev/codegen";
+import type { EmitContext, OutputFile, ToolchainContext } from "@unframework.dev/codegen";
+import { checkInvariants } from "@unframework.dev/ir";
+import type { UfModule } from "@unframework.dev/ir";
 import type { Plugin, ResolvedConfig } from "vite";
 
 // The analyser is no dependency of a target (plan §5.2): tests reach it from its source, as the
@@ -74,6 +74,7 @@ export function corpusSources(): { name: string; file: string; source: string }[
         !COMPOSITION.test(name) &&
         !STYLED_COMPOSITION.test(name) &&
         !BINDING_COMPOSITION.test(name) &&
+        !THROWN_COMPOSITION.test(name) &&
         !TYPE_MODULES.test(name) &&
         !COMPOSABLE_MODULES.test(name),
     );
@@ -93,6 +94,13 @@ const STYLED_COMPOSITION =
  * toolchain project checks their Angular outputs.
  */
 const BINDING_COMPOSITION = /^bindings\/(?:style-expression|style-spread)$/;
+
+/**
+ * The thrown-error case whose main source renders a child that throws once mounted (ADR-0078):
+ * it resolves the child as `compile()` does, which `lower` has not. The corpus's toolchain project
+ * checks its Angular outputs.
+ */
+const THROWN_COMPOSITION = /^sourcemaps\/mounted-throws$/;
 
 /**
  * The types and generics cases whose sources import types from a module beside them, or render

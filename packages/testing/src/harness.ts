@@ -1,8 +1,8 @@
 // What the integration harness provides to every project (`test.provide`), so the browser API,
 // the browser commands and the Node drivers agree on the cases, the mode and the write policy.
 // Types only, plus pure helpers: the values are computed once per run in Node
-// (`createHarnessRun` in `@unframework/testing/node`).
-import type { Capabilities } from "@unframework/codegen";
+// (`createHarnessRun` in `@unframework.dev/testing/node`).
+import type { Capabilities } from "@unframework.dev/codegen";
 
 import type { QuarantineEntry } from "./layers.ts";
 
@@ -38,6 +38,11 @@ export interface CaseConfig {
   main?: string;
   /** L6 scenarios by name; a case without any renders `default` with no props. */
   ssr?: Record<string, SsrScenario>;
+  /**
+   * Props the server render throws with (L14, ADR-0078): the `ssr` project renders them once, and
+   * checks the error's stack. Not a scenario of `ssr`, which each must render cleanly (L6).
+   */
+  ssrThrows?: SsrScenario;
   /** The axe rule ids L11 expects to fail on this case, exactly; none by default. */
   axe?: string[];
   /**

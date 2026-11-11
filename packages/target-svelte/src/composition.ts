@@ -3,7 +3,7 @@
 // and `style` are props it merges into its root; a forwarded slot is the parent's snippet
 // passed on as a prop (`{title}`); and `<component is>` over components renders a variable the
 // script declares with `$derived`. The target prints the tree this module returns.
-import { parseExpression, spreadStyleExpression } from "@unframework/codegen";
+import { parseExpression, spreadStyleExpression } from "@unframework.dev/codegen";
 import type {
   Attribute,
   ComponentAttribute,
@@ -19,7 +19,7 @@ import type {
   StyleAttribute,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 /** The local names of a component's fallthrough props, `class` and `style`. */
 export interface Fallthrough {

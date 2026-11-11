@@ -1,4 +1,4 @@
-// The compile project (L1, L2): every source of every case compiled to every target, against its
+// The compile project (L1, L2, L14): every source of every case compiled to every target, against its
 // committed artefacts, plus the corpus gates: coverage, and no stale shared expectations. A case
 // of several sources (ADR-0057) has one IR snapshot per source, and its diagnostics and golden
 // files join every source's. In update mode
@@ -7,11 +7,11 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative, sep } from "node:path";
 
-import { compile, TARGET_NAMES } from "@unframework/compiler";
-import type { CompileResult, CompilerPlugin } from "@unframework/compiler";
-import { formatDiagnostics, toJsonDiagnostics } from "@unframework/diagnostics";
-import type { Diagnostic, JsonDiagnostic } from "@unframework/diagnostics";
-import { irSchema } from "@unframework/ir";
+import { compile, TARGET_NAMES } from "@unframework.dev/compiler";
+import type { CompileResult, CompilerPlugin } from "@unframework.dev/compiler";
+import { formatDiagnostics, toJsonDiagnostics } from "@unframework.dev/diagnostics";
+import type { Diagnostic, JsonDiagnostic } from "@unframework.dev/diagnostics";
+import { irSchema } from "@unframework.dev/ir";
 import {
   BROWSER_LAYERS,
   checkLayers,
@@ -20,22 +20,31 @@ import {
   NO_SPEC_SKIP,
   settleArtefact,
   settleArtefactDirectory,
-} from "@unframework/testing/node";
-import type { ArtefactContext, LayerCheck, LayerName } from "@unframework/testing/node";
+} from "@unframework.dev/testing/node";
+import type { ArtefactContext, LayerCheck, LayerName } from "@unframework.dev/testing/node";
 import { Ajv } from "ajv";
 import { describe, expect, inject, it } from "vitest";
 
-import { canaryCase, canaryFixes, canaryFormats, canaryPlugins, canarySource } from "./canaries.ts";
+import {
+  canaryCase,
+  canaryFixes,
+  canaryFormats,
+  canaryMaps,
+  canaryPlugins,
+  canarySource,
+} from "./canaries.ts";
 import { listCases, removeStaleArtefacts, specProblems, staleArtefacts } from "./cases.ts";
 import type { CaseInfo, CaseSource } from "./cases.ts";
 import {
   checkFixes,
+  comparedSegments,
   expectationProblems,
   formattingProblems,
   forTarget,
   moduleCopyProblems,
   nondeterminism,
   referenceProblems,
+  sourceMapProblems,
   stylesheetProblems,
 } from "./compile-checks.ts";
 import { coverageProblems } from "./coverage.ts";
@@ -61,14 +70,17 @@ const NO_OUTPUT_LAYERS: readonly LayerName[] = [
   "L10",
   "L11",
   "L13",
+  "L14",
 ];
 
 /**
  * The layers only a browser project records, which none records for a diagnostics case, which has
  * no spec: one its target has output for (a capability's note, UF4004) skips them. L13 is the
- * server render's too.
+ * server render's too, and L14 this project's.
  */
-const NO_SPEC_LAYERS: readonly LayerName[] = BROWSER_LAYERS.filter((layer) => layer !== "L13");
+const NO_SPEC_LAYERS: readonly LayerName[] = BROWSER_LAYERS.filter(
+  (layer) => layer !== "L13" && layer !== "L14",
+);
 
 const validateIr = new Ajv({ allErrors: true, strict: true }).compile(irSchema);
 
@@ -81,7 +93,7 @@ async function compileSource(
   source: CaseSource,
   text: string,
   plugins: readonly CompilerPlugin[],
-  format = true,
+  { format = true, sourceMap = false }: { format?: boolean; sourceMap?: boolean } = {},
 ): Promise<CompileResult> {
   const typeOracle = caseOracle(info, harness.casesDir, { filename: source.filename, text });
   try {
@@ -90,12 +102,26 @@ async function compileSource(
       targets: TARGET_NAMES,
       plugins,
       format,
+      sourceMap,
       resolve: caseResolver(info, harness.casesDir, typeOracle),
       typeOracle,
     });
   } finally {
     await typeOracle.dispose();
   }
+}
+
+let clean: Promise<CompileResult[]> | undefined;
+/** Every source's compile without the canary, so the corpus gates measure the corpus. */
+function corpus(): Promise<CompileResult[]> {
+  clean ??= Promise.all(
+    cases.flatMap((info) =>
+      info.sources.map((source) =>
+        compileSource(info, source, readFileSync(source.source, "utf8"), [], { sourceMap: true }),
+      ),
+    ),
+  );
+  return clean;
 }
 
 /** A source of a case and its two compiles. */
@@ -116,13 +142,10 @@ function compiled(info: CaseInfo): Promise<CompiledSource[]> {
       info.sources.map(async (source) => {
         const text = canarySource(harness.canary, readFileSync(source.source, "utf8"));
         const once = () =>
-          compileSource(
-            info,
-            source,
-            text,
-            canaryPlugins(harness.canary),
-            canaryFormats(harness.canary),
-          );
+          compileSource(info, source, text, canaryPlugins(harness.canary), {
+            format: canaryFormats(harness.canary),
+            sourceMap: true,
+          });
         const [first, second] = await Promise.all([once(), once()]);
         return { source, text, first, second };
       }),
@@ -153,6 +176,7 @@ describe("compile", () => {
           const checks: Partial<Record<LayerName, LayerCheck>> = {
             L1: () => checkDiagnostics(info, compiles, target),
             L2: () => checkOutputs(info, compiles, target),
+            L14: () => checkSourceMaps(info, compiles, target),
           };
           if (hasErrors(caseDiagnostics(firsts(compiles)), target)) {
             for (const layer of NO_OUTPUT_LAYERS) checks[layer] = () => ({ skip: NO_OUTPUT_SKIP });
@@ -171,16 +195,20 @@ describe("compile", () => {
   }
 
   it("covers every IR kind, capability cell and diagnostic code with a case", async () => {
-    // Without the canary, so the gate measures the corpus.
-    const results = await Promise.all(
-      cases.flatMap((info) =>
-        info.sources.map((source) =>
-          compileSource(info, source, readFileSync(source.source, "utf8"), []),
-        ),
-      ),
-    );
-    const problems = coverageProblems(results);
+    const problems = coverageProblems(await corpus());
     expect(problems, problems.join("\n")).toEqual([]);
+  });
+
+  // L14 passes a map with no segments, as a template of only static markup rightly has, so a
+  // compiler that stopped mapping one target's text would pass it everywhere.
+  it("maps text to its source on every target", async () => {
+    const results = await corpus();
+    const unmapped = targets.filter(
+      (target) => !results.some((result) => (result.outputs[target] ?? []).some(comparedSegments)),
+    );
+    expect(unmapped, `No map of these targets compares any text: ${unmapped.join(", ")}`).toEqual(
+      [],
+    );
   });
 
   it("holds specs that follow the spec rules the harness can read", () => {
@@ -333,4 +361,25 @@ async function checkOutputs(
   }
 
   if (problems.length) throw new Error(problems.join("\n\n"));
+}
+
+/**
+ * L14 (ADR-0078): every output's map round-trips to the source it was compiled from. The
+ * L14-map-shifted canary corrupts the maps here, since the `output` hook runs before they exist.
+ */
+function checkSourceMaps(
+  info: CaseInfo,
+  compiles: readonly CompiledSource[],
+  target: string,
+): void {
+  const modules = new Set(info.modules.map((module) => basename(module.source)));
+  const problems = compiles.flatMap(({ source, text, first }) =>
+    sourceMapProblems(
+      target,
+      canaryMaps(harness.canary, first.outputs[target] ?? []),
+      { filename: source.filename, text },
+      modules,
+    ),
+  );
+  if (problems.length) throw new Error(problems.join("\n"));
 }

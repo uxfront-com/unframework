@@ -4,7 +4,7 @@
 // test's `change` listener; a click run through `interact` has loaded and run the handler, and
 // the render it scheduled settles with `settle()`; a rerender, which replaces the props, keeps
 // the listener.
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 

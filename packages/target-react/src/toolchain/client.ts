@@ -1,6 +1,6 @@
 // The React mount adapter (browser). `act` flushes React's work, so a mounted or settled
 // component has rendered and run its effects.
-import type { MountAdapter, MountListener } from "@unframework/codegen";
+import type { MountAdapter, MountListener } from "@unframework.dev/codegen";
 import { act as reactAct, createElement } from "react";
 import { createRoot } from "react-dom/client";
 

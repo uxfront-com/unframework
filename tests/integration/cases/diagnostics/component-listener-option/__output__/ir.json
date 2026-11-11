@@ -5,18 +5,18 @@
     {
       "name": "SaveButton",
       "span": {
-        "start": 200,
-        "end": 366
+        "start": 209,
+        "end": 375
       },
       "props": [],
       "types": [],
       "emits": {
-        "binding": "emit@232",
+        "binding": "emit@241",
         "type": {
           "code": "{ save: [] }",
           "span": {
-            "start": 251,
-            "end": 263
+            "start": 260,
+            "end": 272
           }
         },
         "events": [
@@ -24,24 +24,24 @@
             "name": "save",
             "parameters": [],
             "span": {
-              "start": 253,
-              "end": 261
+              "start": 262,
+              "end": 270
             }
           }
         ],
         "span": {
-          "start": 226,
-          "end": 267
+          "start": 235,
+          "end": 276
         }
       },
       "bindings": [
         {
-          "id": "emit@232",
+          "id": "emit@241",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 232,
-            "end": 236
+            "start": 241,
+            "end": 245
           }
         }
       ],
@@ -55,8 +55,8 @@
             "name": "type",
             "value": "button",
             "span": {
-              "start": 291,
-              "end": 304
+              "start": 300,
+              "end": 313
             }
           },
           {
@@ -69,17 +69,17 @@
                 "body": {
                   "code": "emit(\"save\")",
                   "span": {
-                    "start": 320,
-                    "end": 332
+                    "start": 329,
+                    "end": 341
                   },
                   "refs": [
                     {
                       "kind": "Emit",
-                      "binding": "emit@232",
+                      "binding": "emit@241",
                       "event": "save",
                       "span": {
-                        "start": 320,
-                        "end": 332
+                        "start": 329,
+                        "end": 341
                       },
                       "arguments": []
                     }
@@ -87,18 +87,18 @@
                 },
                 "expression": true,
                 "span": {
-                  "start": 314,
-                  "end": 332
+                  "start": 323,
+                  "end": 341
                 }
               },
               "span": {
-                "start": 314,
-                "end": 332
+                "start": 323,
+                "end": 341
               }
             },
             "span": {
-              "start": 305,
-              "end": 333
+              "start": 314,
+              "end": 342
             }
           }
         ],
@@ -107,14 +107,14 @@
             "kind": "Text",
             "value": "Save",
             "span": {
-              "start": 334,
-              "end": 350
+              "start": 343,
+              "end": 359
             }
           }
         ],
         "span": {
-          "start": 283,
-          "end": 359
+          "start": 292,
+          "end": 368
         }
       }
     }

@@ -1,5 +1,5 @@
 // Components that call composables (ADR-0069): no false errors under stock tsgo.
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 import Disclosure from "../fixtures/Disclosure.uf.tsx";
 import { useControllableState, useToggle } from "../fixtures/useToggle.uf.ts";

@@ -5,8 +5,8 @@
     {
       "name": "Field",
       "span": {
-        "start": 120,
-        "end": 441
+        "start": 129,
+        "end": 450
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 83,
-              "end": 89
+              "start": 92,
+              "end": 98
             }
           },
-          "binding": "label@152",
+          "binding": "label@161",
           "span": {
-            "start": 76,
-            "end": 90
+            "start": 85,
+            "end": 99
           }
         },
         {
@@ -31,22 +31,22 @@
           "type": {
             "code": "\"info\" | \"warn\"",
             "span": {
-              "start": 100,
-              "end": 115
+              "start": 109,
+              "end": 124
             }
           },
           "default": {
             "code": "\"info\"",
             "span": {
-              "start": 166,
-              "end": 172
+              "start": 175,
+              "end": 181
             },
             "refs": []
           },
-          "binding": "tone@159",
+          "binding": "tone@168",
           "span": {
-            "start": 93,
-            "end": 116
+            "start": 102,
+            "end": 125
           }
         }
       ],
@@ -55,25 +55,25 @@
         "type": {
           "code": "FieldProps",
           "span": {
-            "start": 176,
-            "end": 186
+            "start": 185,
+            "end": 195
           }
         },
         "span": {
-          "start": 150,
-          "end": 186
+          "start": 159,
+          "end": 195
         }
       },
       "types": [
         "FieldProps"
       ],
       "emits": {
-        "binding": "emit@198",
+        "binding": "emit@207",
         "type": {
           "code": "{ clear: [label: string] }",
           "span": {
-            "start": 217,
-            "end": 243
+            "start": 226,
+            "end": 252
           }
         },
         "events": [
@@ -85,53 +85,53 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 234,
-                    "end": 240
+                    "start": 243,
+                    "end": 249
                   }
                 },
                 "span": {
-                  "start": 227,
-                  "end": 240
+                  "start": 236,
+                  "end": 249
                 }
               }
             ],
             "span": {
-              "start": 219,
-              "end": 241
+              "start": 228,
+              "end": 250
             }
           }
         ],
         "span": {
-          "start": 192,
-          "end": 247
+          "start": 201,
+          "end": 256
         }
       },
       "bindings": [
         {
-          "id": "label@152",
+          "id": "label@161",
           "name": "label",
           "kind": "prop",
           "span": {
-            "start": 152,
-            "end": 157
+            "start": 161,
+            "end": 166
           }
         },
         {
-          "id": "tone@159",
+          "id": "tone@168",
           "name": "tone",
           "kind": "prop",
           "span": {
-            "start": 159,
-            "end": 163
+            "start": 168,
+            "end": 172
           }
         },
         {
-          "id": "emit@198",
+          "id": "emit@207",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 198,
-            "end": 202
+            "start": 207,
+            "end": 211
           }
         }
       ],
@@ -147,8 +147,8 @@
                 "kind": "Static",
                 "value": "field",
                 "span": {
-                  "start": 276,
-                  "end": 283
+                  "start": 285,
+                  "end": 292
                 }
               },
               {
@@ -156,29 +156,29 @@
                 "value": {
                   "code": "tone",
                   "span": {
-                    "start": 285,
-                    "end": 289
+                    "start": 294,
+                    "end": 298
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "tone@159",
+                      "binding": "tone@168",
                       "span": {
-                        "start": 285,
-                        "end": 289
+                        "start": 294,
+                        "end": 298
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 285,
-                  "end": 289
+                  "start": 294,
+                  "end": 298
                 }
               }
             ],
             "span": {
-              "start": 268,
-              "end": 291
+              "start": 277,
+              "end": 300
             }
           }
         ],
@@ -193,29 +193,29 @@
                 "value": {
                   "code": "label",
                   "span": {
-                    "start": 306,
-                    "end": 311
+                    "start": 315,
+                    "end": 320
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "label@152",
+                      "binding": "label@161",
                       "span": {
-                        "start": 306,
-                        "end": 311
+                        "start": 315,
+                        "end": 320
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 305,
-                  "end": 312
+                  "start": 314,
+                  "end": 321
                 }
               }
             ],
             "span": {
-              "start": 299,
-              "end": 319
+              "start": 308,
+              "end": 328
             }
           },
           {
@@ -227,8 +227,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 334,
-                  "end": 347
+                  "start": 343,
+                  "end": 356
                 }
               },
               {
@@ -241,49 +241,49 @@
                     "body": {
                       "code": "emit(\"clear\", label)",
                       "span": {
-                        "start": 363,
-                        "end": 383
+                        "start": 372,
+                        "end": 392
                       },
                       "refs": [
                         {
                           "kind": "Emit",
-                          "binding": "emit@198",
+                          "binding": "emit@207",
                           "event": "clear",
                           "span": {
-                            "start": 363,
-                            "end": 383
+                            "start": 372,
+                            "end": 392
                           },
                           "arguments": [
                             {
-                              "start": 377,
-                              "end": 382
+                              "start": 386,
+                              "end": 391
                             }
                           ]
                         },
                         {
                           "kind": "Binding",
-                          "binding": "label@152",
+                          "binding": "label@161",
                           "span": {
-                            "start": 377,
-                            "end": 382
+                            "start": 386,
+                            "end": 391
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 357,
-                      "end": 383
+                      "start": 366,
+                      "end": 392
                     }
                   },
                   "span": {
-                    "start": 357,
-                    "end": 383
+                    "start": 366,
+                    "end": 392
                   }
                 },
                 "span": {
-                  "start": 348,
-                  "end": 384
+                  "start": 357,
+                  "end": 393
                 }
               }
             ],
@@ -292,8 +292,8 @@
                 "kind": "Text",
                 "value": "Clear ",
                 "span": {
-                  "start": 385,
-                  "end": 400
+                  "start": 394,
+                  "end": 409
                 }
               },
               {
@@ -301,35 +301,35 @@
                 "value": {
                   "code": "label",
                   "span": {
-                    "start": 401,
-                    "end": 406
+                    "start": 410,
+                    "end": 415
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "label@152",
+                      "binding": "label@161",
                       "span": {
-                        "start": 401,
-                        "end": 406
+                        "start": 410,
+                        "end": 415
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 400,
-                  "end": 407
+                  "start": 409,
+                  "end": 416
                 }
               }
             ],
             "span": {
-              "start": 326,
-              "end": 423
+              "start": 335,
+              "end": 432
             }
           }
         ],
         "span": {
-          "start": 263,
-          "end": 434
+          "start": 272,
+          "end": 443
         }
       }
     }
@@ -340,8 +340,8 @@
       "name": "default",
       "local": "Field",
       "span": {
-        "start": 120,
-        "end": 441
+        "start": 129,
+        "end": 450
       }
     }
   ],
@@ -351,8 +351,8 @@
       "exported": true,
       "code": "interface FieldProps {\n  label: string;\n  tone?: \"info\" | \"warn\";\n}",
       "span": {
-        "start": 51,
-        "end": 118
+        "start": 60,
+        "end": 127
       }
     }
   ]

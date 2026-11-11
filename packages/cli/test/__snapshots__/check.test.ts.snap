@@ -1,0 +1,127 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`check > prints --format json 1`] = `
+[
+  {
+    "code": "UF1201",
+    "end": {
+      "column": 33,
+      "line": 1,
+      "offset": 32,
+    },
+    "file": "src/Widget.uf.tsx",
+    "help": "Write the component with the authoring API from "@uxfront/unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.",
+    "message": ""react" is a React module, and components are framework-free.",
+    "severity": "error",
+    "start": {
+      "column": 26,
+      "line": 1,
+      "offset": 25,
+    },
+    "url": "https://unframework.dev/diagnostics/UF1201",
+  },
+]
+`;
+
+exports[`check > prints --format sarif 1`] = `
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
+    {
+      "columnKind": "utf16CodeUnits",
+      "results": [
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/Widget.uf.tsx",
+                  "uriBaseId": "%SRCROOT%",
+                },
+                "region": {
+                  "charLength": 7,
+                  "charOffset": 25,
+                  "endColumn": 33,
+                  "endLine": 1,
+                  "startColumn": 26,
+                  "startLine": 1,
+                },
+              },
+            },
+          ],
+          "message": {
+            "text": ""react" is a React module, and components are framework-free.",
+          },
+          "properties": {
+            "help": "Write the component with the authoring API from "@uxfront/unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.",
+          },
+          "ruleId": "UF1201",
+        },
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https://unframework.dev",
+          "name": "unframework",
+          "rules": [
+            {
+              "defaultConfiguration": {
+                "level": "error",
+              },
+              "fullDescription": {
+                "markdown": "A \`.uf.tsx\` component is compiled to every framework, so it cannot import one. The
+compiler writes each framework's code for you: hooks in React, refs in Vue, runes in
+Svelte, signals in Solid.
+
+Write the component with the authoring API from \`@uxfront/unframework\` instead:
+
+\`\`\`tsx
+import { ref } from "@uxfront/unframework";
+
+export default function Counter() {
+  const count = ref(0);
+  // …
+}
+\`\`\`",
+                "text": "A \`.uf.tsx\` component is compiled to every framework, so it cannot import one. The
+compiler writes each framework's code for you: hooks in React, refs in Vue, runes in
+Svelte, signals in Solid.
+
+Write the component with the authoring API from \`@uxfront/unframework\` instead:
+
+\`\`\`tsx
+import { ref } from "@uxfront/unframework";
+
+export default function Counter() {
+  const count = ref(0);
+  // …
+}
+\`\`\`",
+              },
+              "helpUri": "https://unframework.dev/diagnostics/UF1201",
+              "id": "UF1201",
+              "name": "framework-import",
+              "shortDescription": {
+                "text": "Components are framework-free",
+              },
+            },
+          ],
+        },
+      },
+    },
+  ],
+  "version": "2.1.0",
+}
+`;
+
+exports[`check > prints a code frame by default, and writes no file 1`] = `
+"error[UF1201]: "react" is a React module, and components are framework-free.
+ --> src/Widget.uf.tsx:1:26
+  |
+1 | import { useState } from "react";
+  |                          ^^^^^^^
+  |
+  = help: Write the component with the authoring API from "@uxfront/unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.
+  = see: https://unframework.dev/diagnostics/UF1201
+"
+`;

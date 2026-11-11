@@ -1,5 +1,5 @@
-import { provide } from "unframework";
-import type { InjectionKey } from "unframework";
+import { provide } from "@uxfront/unframework";
+import type { InjectionKey } from "@uxfront/unframework";
 
 import Badge from "./Badge.uf.tsx";
 

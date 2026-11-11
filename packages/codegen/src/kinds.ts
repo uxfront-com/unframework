@@ -16,7 +16,7 @@ import type {
   StateItem,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { parseExpression, parseStatementsSource } from "./parse.ts";
 

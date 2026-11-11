@@ -4,8 +4,12 @@
 import { createRequire } from "node:module";
 
 import type * as Babel from "@babel/core";
-import type { FrameworkCompileResult, ToolchainFile, ToolchainMessage } from "@unframework/codegen";
-import { assertFilesToCompile } from "@unframework/codegen/toolchain-node";
+import type {
+  FrameworkCompileResult,
+  ToolchainFile,
+  ToolchainMessage,
+} from "@unframework.dev/codegen";
+import { assertFilesToCompile } from "@unframework.dev/codegen/toolchain-node";
 import type { LoggerEvent, PluginOptions } from "babel-plugin-react-compiler";
 
 /**
@@ -42,6 +46,40 @@ export async function compileWithReactCompiler(
   const typescript = require.resolve("@babel/preset-typescript");
   return new Map(
     files.map((file) => [file.path, compileFile(babel, compiler, typescript, file)] as const),
+  );
+}
+
+/**
+ * L15: React Compiler's output for each file, its types stripped and its JSX left for the
+ * bundler, as a React build runs it before the JSX transform.
+ */
+export async function emitWithReactCompiler(
+  files: readonly ToolchainFile[],
+): Promise<Map<string, ToolchainFile[]>> {
+  assertFilesToCompile(files);
+  const babel: typeof Babel = await import("@babel/core");
+  const require = createRequire(import.meta.url);
+  const compiler = require.resolve("babel-plugin-react-compiler");
+  const typescript = require.resolve("@babel/preset-typescript");
+  const options: PluginOptions = { target: "19", panicThreshold: "none", compilationMode: "infer" };
+  return new Map(
+    files.map((file) => {
+      const output = babel.transformSync(file.contents, {
+        filename: file.path,
+        babelrc: false,
+        configFile: false,
+        sourceMaps: false,
+        ast: false,
+        plugins: [[compiler, options]],
+        presets: [
+          [
+            typescript,
+            { isTSX: !file.path.endsWith(".ts"), allExtensions: true, onlyRemoveTypeImports: true },
+          ],
+        ],
+      });
+      return [file.path, [{ path: file.path, contents: output!.code! }]] as const;
+    }),
   );
 }
 

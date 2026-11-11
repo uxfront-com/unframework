@@ -1,6 +1,6 @@
 // props/optional: optional props without defaults. Absent, a bound attribute is left out and an
 // interpolation renders nothing; `??` gives a fallback for null and undefined, never for "".
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import ContactCard from "./ContactCard.uf.tsx";

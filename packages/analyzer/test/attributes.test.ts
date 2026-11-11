@@ -6,7 +6,7 @@ import {
   REQUIRED_PARENTS,
   UNRENDERABLE_ELEMENTS,
   VOID_ELEMENTS,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { nameProblem } from "../src/attribute-names.ts";

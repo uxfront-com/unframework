@@ -1,4 +1,4 @@
-import type { WriteReference } from "@unframework/ir";
+import type { WriteReference } from "@unframework.dev/ir";
 // What this target emits for M2's constructs (ADR-0045 to ADR-0049), pinned as text: the
 // browser tests (*.browser.test.ts) show that each shape behaves as the semantics contract says,
 // output.test.ts and lint.test.ts that it passes L3, L4 and L5, and these that it stays the shape
@@ -698,7 +698,7 @@ describe("reads a condition narrows (ADR-0046)", () => {
   it("set a current value they narrow, which `update`'s parameter would not be", () => {
     const module = lower(
       [
-        'import { ref } from "unframework";',
+        'import { ref } from "@uxfront/unframework";',
         "export default function Bump() {",
         "  const count = ref<number | null>(null);",
         "  function bump() {",

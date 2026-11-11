@@ -5,7 +5,7 @@
 // captures the listener.
 import { $, noSerialize } from "@qwik.dev/core";
 import type { QRL } from "@qwik.dev/core";
-import type { MountListener } from "@unframework/codegen";
+import type { MountListener } from "@unframework.dev/codegen";
 
 /** A QRL that calls the test's listener with the arguments the component emits. */
 export function listenerQrl(listener: MountListener): QRL<MountListener> {

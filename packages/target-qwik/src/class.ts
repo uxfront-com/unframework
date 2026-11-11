@@ -2,9 +2,9 @@
 // (`ClassList`: strings, arrays and objects of conditions, nested), so the parts are written
 // as the source wrote them, with no helper: a lone dynamic part as itself (`class={tone}`),
 // toggles alone as one object (`class={{ active, muted }}`), and anything else as an array.
-import { expressionCode, js, jsxExpression, spreadClassReads } from "@unframework/codegen";
-import type { JsxContext } from "@unframework/codegen";
-import type { ClassAttribute, ElementNode, Expression, ToggleClass } from "@unframework/ir";
+import { expressionCode, js, jsxExpression, spreadClassReads } from "@unframework.dev/codegen";
+import type { JsxContext } from "@unframework.dev/codegen";
+import type { ClassAttribute, ElementNode, Expression, ToggleClass } from "@unframework.dev/ir";
 
 type JsxAttribute = ReturnType<typeof js.jsxAttribute>;
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.

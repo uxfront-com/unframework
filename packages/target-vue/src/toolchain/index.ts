@@ -1,14 +1,14 @@
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 
-import type { Toolchain } from "@unframework/codegen";
+import type { Toolchain } from "@unframework.dev/codegen";
 import {
   lintWithEslint,
   lintWithOxlint,
   mergeLintResults,
-} from "@unframework/codegen/toolchain-node";
+} from "@unframework.dev/codegen/toolchain-node";
 import type { UserConfig } from "vite";
 
-import { frameworkCompile } from "./framework-compile.ts";
+import { frameworkCompile, frameworkEmit } from "./framework-compile.ts";
 import { typecheck } from "./typecheck.ts";
 
 /**
@@ -31,9 +31,10 @@ export const toolchain: Toolchain = {
       ...(mode === "browser" ? { optimizeDeps: { include: ["vue"] } } : {}),
     };
   },
-  client: "@unframework/target-vue/toolchain/client",
-  server: "@unframework/target-vue/toolchain/server",
+  client: "@unframework.dev/target-vue/toolchain/client",
+  server: "@unframework.dev/target-vue/toolchain/server",
   frameworkCompile,
+  frameworkEmit,
   typecheck,
   // L5 (ADR-0042): oxlint's shared baseline over the script block, ESLint over the whole file.
   // ESLint reads only the `.vue` files: a `.ts` module beside them, a shared module (ADR-0070)

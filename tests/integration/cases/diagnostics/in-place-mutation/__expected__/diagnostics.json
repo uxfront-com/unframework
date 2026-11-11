@@ -7,12 +7,12 @@
     "start": {
       "line": 9,
       "column": 5,
-      "offset": 327
+      "offset": 336
     },
     "end": {
       "line": 9,
       "column": 31,
-      "offset": 353
+      "offset": 362
     },
     "help": "Build a new value and write it: `items.value = [...items.value, item]`, `user.value = { ...user.value, name }`, `toSorted`, `toSpliced`. Code may change in place an array or an object it builds itself (a literal, `new Map()`, a copy), but not what a shallow copy holds (`structuredClone(…)` copies deeply); an element, the event and a global; and a local or a setup `let` that only ever holds one of these.",
     "fixes": [
@@ -22,15 +22,15 @@
         "edits": [
           {
             "span": {
-              "start": 337,
-              "end": 343
+              "start": 346,
+              "end": 352
             },
             "text": " = [...tags.value, "
           },
           {
             "span": {
-              "start": 352,
-              "end": 353
+              "start": 361,
+              "end": 362
             },
             "text": "]"
           }

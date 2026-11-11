@@ -1,7 +1,7 @@
 // generics/props-named-props: `function Options<T>(props: Props<T>)`, a generic props interface
 // named `Props` (ADR-0068). Each test mounts it with its own type argument, which the scenario's
 // props hold.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Options from "./Options.uf.tsx";

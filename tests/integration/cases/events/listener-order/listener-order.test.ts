@@ -5,7 +5,7 @@
 // its bubble listener stops nothing else on the page. A container's `once` listener is not used up
 // by a click a descendant stopped. A passive wheel listener runs before its container's
 // non-passive one, as the event bubbles.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ListenerOrder from "./ListenerOrder.uf.tsx";

@@ -1,6 +1,6 @@
 // UF2005 misplaced-reactive-call: `watch` is called inside `onMounted`'s callback, where it would
 // run per mount rather than once with the setup, and React's output could not make it a hook.
-import { defineEmits, onMounted, ref, watch } from "unframework";
+import { defineEmits, onMounted, ref, watch } from "@uxfront/unframework";
 
 export default function Disclosure() {
   const emit = defineEmits<{ toggled: [open: boolean] }>();

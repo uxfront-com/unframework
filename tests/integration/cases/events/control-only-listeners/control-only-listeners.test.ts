@@ -3,7 +3,7 @@
 // button's click saves and the page stays, and Enter in the title field submits the form the same
 // way (its implicit click on Save saves too). The Bold button's `mousedown` listener does nothing
 // else, so a click toggles bold while the text keeps the focus.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import NoteEditor from "./NoteEditor.uf.tsx";

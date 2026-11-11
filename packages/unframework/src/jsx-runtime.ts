@@ -1,7 +1,7 @@
 // oxlint-disable-next-line typescript/triple-slash-reference -- a script (ambient `*.css`) cannot be imported.
 /// <reference path="./client.d.ts" />
 /**
- * The JSX types for `"jsx": "preserve"` and `"jsxImportSource": "unframework"` (ADR-0017).
+ * The JSX types for `"jsx": "preserve"` and `"jsxImportSource": "@uxfront/unframework"` (ADR-0017).
  *
  * TypeScript reads the `JSX` namespace from this module, even under `preserve`. There is no runtime:
  * the compiler lowers every JSX expression per target, and nothing imports this module's values.

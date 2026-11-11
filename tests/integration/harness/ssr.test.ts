@@ -5,9 +5,9 @@
 import { readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 
-import type { SsrRenderer } from "@unframework/codegen";
-import { builtinTargets } from "@unframework/compiler";
-import type { TargetName } from "@unframework/compiler";
+import type { SsrRenderer } from "@unframework.dev/codegen";
+import { builtinTargets } from "@unframework.dev/compiler";
+import type { TargetName } from "@unframework.dev/compiler";
 import {
   checkLayers,
   diffLines,
@@ -16,13 +16,14 @@ import {
   settleArtefact,
   sharedArtefactContext,
   ssrScenarios,
-} from "@unframework/testing/node";
-import { isNormalizeTarget, normalizeHtml } from "@unframework/testing/normalize";
+} from "@unframework.dev/testing/node";
+import { isNormalizeTarget, normalizeHtml } from "@unframework.dev/testing/normalize";
 import { beforeAll, describe, inject, it } from "vitest";
 
 import { errorState, listCases, specTests } from "./cases.ts";
 import { onlyCases } from "./references.ts";
 import { ssrSkip } from "./ssr-skip.ts";
+import { checkMappedStack } from "./thrown.ts";
 import "./context.ts";
 
 const target = inject("target");
@@ -101,6 +102,41 @@ describe(`ssr:${target}`, () => {
           builtinTargets[target as TargetName].capabilities,
         )
       : undefined;
+    // L14 (ADR-0078): a render that throws on purpose, apart from the scenarios L6 compares.
+    if (info.config.ssrThrows) {
+      const props = info.config.ssrThrows.props ?? {};
+      it(`${info.id} › throws`, async ({ task }) => {
+        if (errors instanceof Error) throw errors;
+        await checkLayers(
+          task,
+          { case: info.id, target, quarantine: harness.quarantine },
+          {
+            async L14() {
+              const load = components[key];
+              if (!load) throw new Error(`import.meta.glob did not find ${key}.`);
+              const component = (await load()).default;
+              // The first Error, whichever way it comes: Angular's renderer logs it and resolves.
+              let thrown: Error | undefined;
+              const take = (value: unknown) => {
+                if (value instanceof Error) thrown ??= value;
+              };
+              const original = console.error;
+              console.error = (...args: unknown[]) => {
+                args.forEach(take);
+                original.apply(console, args);
+              };
+              try {
+                await render(component, props, []).catch(take);
+              } finally {
+                console.error = original;
+              }
+              if (!thrown) throw new Error("The server render threw no Error.");
+              checkMappedStack(info.dir, info.id, thrown.stack ?? "");
+            },
+          },
+        );
+      });
+    }
     for (const [scenario, { props = {} }] of Object.entries(ssrScenarios(info.config))) {
       it(`${info.id} › ${scenario}`, async ({ task }) => {
         if (errors instanceof Error) throw errors;

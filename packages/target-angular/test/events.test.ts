@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { ɵDominoAdapter as DominoAdapter } from "@angular/platform-server";
-import type { MountedComponent, MountEvent } from "@unframework/codegen";
+import type { MountedComponent, MountEvent } from "@unframework.dev/codegen";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 import { mount } from "../src/toolchain/client.ts";
