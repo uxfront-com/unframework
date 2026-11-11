@@ -24,6 +24,50 @@ const resolve = (
 const container = { UF_BASELINE_ENVIRONMENT: BASELINE_ENVIRONMENT };
 
 describe("resolveHarnessMode", () => {
+  describe("in a project's tests (ADR-0086)", () => {
+    const project = (
+      env: Record<string, string>,
+      pixels: "live" | "baseline" = "live",
+      platform: NodeJS.Platform = "darwin",
+      argv: string[] = [],
+    ) => resolveHarnessMode({ env, platform, argv, arch: "x64", project: { pixels } });
+
+    it("compares live by default, in CI too, on any platform", () => {
+      expect(project({}).pixels).toBe("live");
+      expect(project({ CI: "true" })).toMatchObject({ ci: true, pixels: "live" });
+      expect(project({ CI: "true" }, "live", "win32").pixels).toBe("live");
+    });
+
+    it("compares with baselines when the project chooses them, on Linux in CI", () => {
+      expect(project({}, "baseline").pixels).toBe("baseline");
+      expect(project({ CI: "true" }, "baseline", "linux").pixels).toBe("baseline");
+      expect(() => project({ CI: "true" }, "baseline", "darwin")).toThrow(/runs on Linux/);
+    });
+
+    it("lets UF_PIXELS override the project's choice", () => {
+      expect(project({ UF_PIXELS: "baseline" }).pixels).toBe("baseline");
+      expect(project({ UF_PIXELS: "live" }, "baseline").pixels).toBe("live");
+    });
+
+    it("updates live, and writes baselines only in the baseline environment", () => {
+      expect(project({ UF_UPDATE: "1" })).toMatchObject({ update: true, pixels: "live" });
+      expect(() => project({ UF_UPDATE: "1" }, "baseline")).toThrow(
+        /only mcr.microsoft.com\/playwright/,
+      );
+      expect(() => project({ UF_UPDATE: "1", CI: "1" })).toThrow(/CI never writes/);
+    });
+
+    it("refuses Vitest's -u, naming the project's command", () => {
+      expect(() => project({}, "live", "darwin", ["vitest", "-u"])).toThrow(
+        "Run `unframework test --update` instead.",
+      );
+    });
+
+    it("keeps the corpus's rule that CI never compares live", () => {
+      expect(() => resolve({ CI: "true", UF_PIXELS: "live" }, "linux")).toThrow(/never live/);
+    });
+  });
+
   it("checks with live pixels by default, on macOS and on a Linux host alike", () => {
     expect(resolve({})).toEqual({
       update: false,

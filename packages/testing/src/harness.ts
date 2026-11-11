@@ -31,9 +31,11 @@ export type BrowserEngine = (typeof BROWSER_ENGINES)[number];
 export interface CaseConfig {
   description?: string;
   /**
-   * The input the spec and the SSR scenarios render, by file name (`"Form.uf.tsx"`), when the
-   * case holds several: the others are its children or its harness parents (ADR-0057). A case
-   * with one input needs none.
+   * The input the spec and the SSR scenarios render, relative to the case's directory, when the
+   * case holds several or none: the others are its children or its harness parents (ADR-0057). A
+   * case with one input needs none. In the corpus it is one of the case's own file names
+   * (`"Form.uf.tsx"`); in a project's tests it may lie outside the case
+   * (`"../../src/Counter.uf.tsx"`, ADR-0086).
    */
   main?: string;
   /** L6 scenarios by name; a case without any renders `default` with no props. */
@@ -135,7 +137,35 @@ declare module "vitest" {
      * of those cases, which it renders alone. Absent everywhere else.
      */
     ufOnly?: string[];
+    /** SSR projects: the module specifier of the target's renderer (`toolchain.server`). */
+    ufServer?: string;
+    /**
+     * SSR projects: the cases the server render spec renders (`@unframework.dev/testing/ssr`,
+     * ADR-0086), in order, each with its main source by absolute path. The spec imports each
+     * from there, so it runs the same from the workspace and from `node_modules`.
+     */
+    ufSsrCases?: SsrCase[];
   }
+}
+
+/** A case the server render spec renders (`ufSsrCases`). */
+export interface SsrCase {
+  /** The case id, a key of `HarnessContext.cases`. */
+  id: string;
+  /** The case's directory (absolute): its `__expected__/` is here. */
+  dir: string;
+  /** The main `.uf.tsx` source (absolute): what the scenarios render. */
+  source: string;
+  /**
+   * Why every scenario of the case is skipped on this target, recorded on L6 and L13: the corpus
+   * skips a case whose every test requires a capability the target lacks (ADR-0050).
+   */
+  skip?: string;
+  /**
+   * Why the case cannot be judged, which fails each of its scenarios: the corpus fails a case
+   * whose expected diagnostics are missing.
+   */
+  failure?: string;
 }
 
 /** The SSR scenarios of a case: its declared ones, or `default` with no props. */
@@ -145,7 +175,7 @@ export function ssrScenarios(config: CaseConfig): Record<string, SsrScenario> {
 
 /**
  * The case a file belongs to: the path of its directory relative to the cases directory, with
- * forward slashes. Throws for a file outside every case, because its results would have
+ * forward slashes, nested as deep as the project lays its cases out (ADR-0086). Throws for a file outside every case, because its results would have
  * nowhere to go in the parity matrix.
  */
 export function caseOfFile(

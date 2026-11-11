@@ -1,7 +1,6 @@
 // The browser commands the parity layers call. They run in Vitest's main process and read the
 // calling project's target and harness context per call (`test.provide`), so one set serves
 // every project of a run. Register them with `test.browser.commands: browserCommands`.
-import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import type {
@@ -15,7 +14,7 @@ import type {
 } from "../commands.ts";
 import { COLOR_SCHEMES } from "../harness.ts";
 import type { ColorScheme } from "../harness.ts";
-import { caseDirectory, projectHarness } from "./context.ts";
+import { caseDirectory, caseMainSource, projectHarness } from "./context.ts";
 import type { CommandProject } from "./context.ts";
 import { sharedArtefactContext } from "./context.ts";
 import { compiledEvents } from "./events.ts";
@@ -228,17 +227,7 @@ export function ufComponentEvents(
   request: ComponentEventsRequest,
 ): ComponentEventsResult {
   const { target, harness } = projectHarness(context);
-  const directory = caseDirectory(harness, request.case);
-  const main = harness.cases[request.case]?.main;
-  const sources = readdirSync(directory).filter((file) => file.endsWith(".uf.tsx"));
-  if (main === undefined ? sources.length !== 1 : !sources.includes(main)) {
-    throw new Error(
-      main === undefined
-        ? `[uf] Case ${request.case} must hold one .uf.tsx input, or name its main one in case.json, to mount; found ${sources.length}.`
-        : `[uf] Case ${request.case} names ${main} as its main input, which it does not hold.`,
-    );
-  }
-  return { events: compiledEvents(join(directory, main ?? sources[0]!), target) };
+  return { events: compiledEvents(caseMainSource(harness, request.case), target) };
 }
 
 /** Every command the testing API needs, keyed by the name the browser calls. */

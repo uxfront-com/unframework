@@ -52,6 +52,13 @@ export interface ModeInput {
    * It runs in Chromium alone, so another `UF_BROWSER` is refused too.
    */
   liveOnly?: boolean;
+  /**
+   * A project's own tests (`defineTestConfig`, ADR-0086), not the corpus. Pixels compare as the
+   * project chose, live by default, in CI too: a project has no committed baselines unless it
+   * opts into them with `baseline`, and then only {@link BASELINE_ENVIRONMENT} writes them.
+   * `UF_PIXELS` still overrides.
+   */
+  project?: { pixels: PixelMode };
 }
 
 /** Resolves the run's mode, refusing combinations that would write the wrong thing. */
@@ -60,7 +67,7 @@ export function resolveHarnessMode(input: ModeInput): HarnessMode {
   const ci = isCI(env);
   if (input.argv.some((arg) => arg === "-u" || arg === "--update" || arg.startsWith("--update="))) {
     throw new Error(
-      "[uf] Vitest's -u does not update the harness's artefacts, and would let every project write the shared ones. Run `pnpm test:update` (UF_UPDATE=1) instead.",
+      `[uf] Vitest's -u does not update the harness's artefacts, and would let every project write the shared ones. Run ${input.project ? "`unframework test --update`" : "`pnpm test:update` (UF_UPDATE=1)"} instead.`,
     );
   }
   const update = flag(env, "UF_UPDATE");
@@ -116,11 +123,15 @@ export function resolveHarnessMode(input: ModeInput): HarnessMode {
     return { update, pixels: "live", canary, ci, baselineEnvironment, browser };
   }
   const pixels: PixelMode =
-    (forced as PixelMode | undefined) ?? (ci || baselineEnvironment ? "baseline" : "live");
-  if (ci && pixels === "live") {
+    (forced as PixelMode | undefined) ??
+    input.project?.pixels ??
+    (ci || baselineEnvironment ? "baseline" : "live");
+  // The corpus has committed Linux baselines for every case, so its CI compares with them. A
+  // project compares live in CI unless it chose baselines (ADR-0086).
+  if (ci && pixels === "live" && !input.project) {
     throw new Error("[uf] CI compares pixels against the committed Linux baselines, never live.");
   }
-  if (ci && input.platform !== "linux") {
+  if (ci && pixels === "baseline" && input.platform !== "linux") {
     throw new Error(
       `[uf] CI compares pixels against the committed Linux baselines, so it runs on Linux, not ${input.platform}.`,
     );

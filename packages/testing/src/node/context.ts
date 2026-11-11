@@ -1,6 +1,7 @@
 // What a browser command knows about its caller: the project's provided target and harness
 // context. Commands read them per call, so one set of commands serves every project of a run.
-import { dirname, join } from "node:path";
+import { existsSync, readdirSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 
 import { caseReference, isReference } from "../harness.ts";
 import type { HarnessContext } from "../harness.ts";
@@ -34,6 +35,30 @@ export function caseDirectory(harness: HarnessContext, id: string): string {
     throw new Error(`[uf] Unknown case "${id}".`);
   }
   return join(harness.casesDir, id);
+}
+
+/**
+ * The main `.uf.tsx` source of a case (absolute): the one its `case.json`'s `main` names,
+ * relative to the case's directory and maybe outside it (ADR-0086), or else the directory's only
+ * `.uf.tsx`. A spec mounts it, and the server render renders it.
+ */
+export function caseMainSource(harness: HarnessContext, id: string): string {
+  const directory = caseDirectory(harness, id);
+  const main = harness.cases[id]?.main;
+  if (main !== undefined) {
+    const source = resolve(directory, main);
+    if (!main.endsWith(".uf.tsx") || !existsSync(source)) {
+      throw new Error(`[uf] Case ${id} names ${main} as its main input, which it does not hold.`);
+    }
+    return source;
+  }
+  const sources = readdirSync(directory).filter((file) => file.endsWith(".uf.tsx"));
+  if (sources.length !== 1) {
+    throw new Error(
+      `[uf] Case ${id} must hold one .uf.tsx input, or name its main one in case.json, to mount; found ${sources.length}.`,
+    );
+  }
+  return join(directory, sources[0]!);
 }
 
 /** The directory artefact paths are shown relative to: the cases directory's parent. */

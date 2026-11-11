@@ -23,12 +23,18 @@
   "sideEffects": [
     "./src/setup.ts",
     "./src/targets/*.ts",
+    "./src/ssr/spec.ts",
     "./dist/setup.js",
-    "./dist/targets/*.js"
+    "./dist/targets/*.js",
+    "./dist/ssr/spec.js"
   ],
   "exports": {
     ".": "./src/index.ts",
     "./harness": "./src/internal.ts",
+    "./config": "./src/config/index.ts",
+    "./cli": "./src/cli.ts",
+    "./ssr": "./src/ssr/index.ts",
+    "./ssr/spec": "./src/ssr/spec.ts",
     "./setup": "./src/setup.ts",
     "./normalize": "./src/normalize/index.ts",
     "./node": "./src/node/index.ts",
@@ -50,6 +56,22 @@
       "./harness": {
         "types": "./dist/internal.d.ts",
         "default": "./dist/internal.js"
+      },
+      "./config": {
+        "types": "./dist/config/index.d.ts",
+        "default": "./dist/config/index.js"
+      },
+      "./cli": {
+        "types": "./dist/cli.d.ts",
+        "default": "./dist/cli.js"
+      },
+      "./ssr": {
+        "types": "./dist/ssr/index.d.ts",
+        "default": "./dist/ssr/index.js"
+      },
+      "./ssr/spec": {
+        "types": "./dist/ssr/spec.d.ts",
+        "default": "./dist/ssr/spec.js"
       },
       "./setup": {
         "types": "./dist/setup.d.ts",
@@ -102,7 +124,9 @@
   },
   "dependencies": {
     "@fontsource/inter": "catalog:",
+    "@jridgewell/trace-mapping": "catalog:",
     "@unframework.dev/codegen": "workspace:*",
+    "@unframework.dev/compiler": "workspace:*",
     "@unframework.dev/ir": "workspace:*",
     "@unframework.dev/target-angular": "workspace:*",
     "@unframework.dev/target-astro": "workspace:*",
@@ -111,6 +135,7 @@
     "@unframework.dev/target-solid": "workspace:*",
     "@unframework.dev/target-svelte": "workspace:*",
     "@unframework.dev/target-vue": "workspace:*",
+    "@unframework.dev/unplugin": "workspace:*",
     "axe-core": "catalog:",
     "parse5": "catalog:",
     "pixelmatch": "catalog:",
