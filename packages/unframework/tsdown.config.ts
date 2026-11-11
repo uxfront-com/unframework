@@ -2,7 +2,13 @@ import { defineConfig } from "tsdown";
 import type { UserConfig } from "tsdown";
 
 const config: UserConfig = defineConfig({
-  entry: ["src/index.ts", "src/config.ts", "src/jsx-runtime.ts", "src/jsx-dev-runtime.ts"],
+  entry: [
+    "src/index.ts",
+    "src/config.ts",
+    "src/cli.ts",
+    "src/jsx-runtime.ts",
+    "src/jsx-dev-runtime.ts",
+  ],
   unbundle: true,
   platform: "neutral",
   dts: true,

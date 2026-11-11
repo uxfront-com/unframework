@@ -32,4 +32,10 @@ describe("the bin", () => {
     expect(status).toBe(2);
     expect(stderr).toContain("UF0000");
   });
+
+  it("runs test from the testing package, and exits 2 on an unknown target", () => {
+    const { status, stderr } = unframework("test", "--target", "nope");
+    expect(status).toBe(2);
+    expect(stderr).toContain("unframework test: unknown target nope.");
+  });
 });
