@@ -74,14 +74,17 @@ export function sampleOf<T>(items: readonly T[], run: PropertyRun): T[] {
 }
 
 /**
- * A lower bound of `bound` for the full size, scaled to the run. At full size it is `bound`. A
- * sample's count varies by chance, so a smaller run allows four standard deviations of a
- * binomial count below the scaled bound (at most `2√size`), so a correct analyser falls under
- * it at most about once in 30,000 runs.
+ * The count a run must exceed, from `bound`, the one the full size must exceed. At full size it
+ * is `bound`. A sample's count varies by chance, so a smaller run scales the bound to its size
+ * and allows four standard deviations of a binomial count below it (at most `2√size`): the count
+ * must reach that, rounded up. A run too small for any floor gets -1, which every count exceeds.
+ * With the rates the tests see today, a correct analyser falls under it less than once in 250,000
+ * runs at any size.
  */
 export function scaledBound(bound: number, run: PropertyRun): number {
   if (run.size >= run.full) return bound;
-  return Math.max(0, Math.floor((bound * run.size) / run.full - 2 * Math.sqrt(run.size)));
+  const least = (bound * run.size) / run.full - 2 * Math.sqrt(run.size);
+  return Math.max(-1, Math.ceil(least) - 1);
 }
 
 /** Runs a property test's body, and names the run that replays it when the body fails. */

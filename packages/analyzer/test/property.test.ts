@@ -103,9 +103,22 @@ describe("a bound scaled to the run", () => {
   });
 
   it("is the scaled bound less four standard deviations for a sample", () => {
-    // 1500 × 500 / 2000 = 375, less 2√500 ≈ 44.7.
+    // 1500 × 500 / 2000 = 375, less 2√500 ≈ 44.7, is 330.3: the count must reach 331.
     expect(scaledBound(1500, { seed: 0, size: 500, full: 2000 })).toBe(330);
-    expect(scaledBound(5000, { seed: 0, size: 1, full: 10_000 })).toBe(0);
+    // 5000 × 20 / 10000 = 10, less 2√20 ≈ 8.9, is 1.06: the count must reach 2.
+    expect(scaledBound(5000, { seed: 0, size: 20, full: 10_000 })).toBe(1);
+    // 1500 × 16 / 2000 = 12, less 2√16 = 8, is 4 exactly: a count of 4 passes.
+    expect(scaledBound(1500, { seed: 0, size: 16, full: 2000 })).toBe(3);
+  });
+
+  it("asks for nothing from a run too small for a floor", () => {
+    for (const size of [1, 2, 10, 16]) {
+      const bound = scaledBound(5000, { seed: 0, size, full: 10_000 });
+      expect(bound, `size ${size}`).toBe(-1);
+      expect(0, `size ${size}`).toBeGreaterThan(bound);
+    }
+    expect(scaledBound(5_000, { seed: 0, size: 1, full: 32_034 })).toBe(-1);
+    expect(scaledBound(1500, { seed: 0, size: 1, full: 2000 })).toBe(-1);
   });
 });
 
