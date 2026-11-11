@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add 3' })",
+      "dom": [
+        "<div class=\"counter\">",
+        "  <output>",
+        "    \"5\"",
+        "  </output>",
+        "  <span>",
+        "    \"Doubled: 10\"",
+        "  </span>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add 3\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- status: \"5\"",
+        "- text: \"Doubled: 10\"",
+        "- button \"Add 3\""
+      ],
+      "events": {}
+    }
+  ]
+}

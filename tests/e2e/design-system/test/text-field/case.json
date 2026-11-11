@@ -1,0 +1,11 @@
+{
+  "description": "The text field, its label around the input, empty until someone types.",
+  "main": "../../src/TextField.uf.tsx",
+  "ssr": {
+    "empty": {
+      "props": {
+        "label": "Name"
+      }
+    }
+  }
+}

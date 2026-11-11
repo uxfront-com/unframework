@@ -1,0 +1,4 @@
+- article:
+  - heading "Release notes" [level=2]
+  - paragraph: Tests run on every target.
+  - text: By Ada
