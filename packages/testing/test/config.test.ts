@@ -31,12 +31,14 @@ function project(files: Record<string, string>): string {
 const COMPONENT = "export default function Badge() {\n  return <b>New</b>;\n}\n";
 const SPEC = 'import { it } from "@unframework.dev/testing";\n';
 
-const env = { targets: process.env.UF_TARGETS, update: process.env.UF_UPDATE };
+/** The variables these tests set, restored after each. */
+const SAVED = ["UF_TARGETS", "UF_UPDATE", "CI"] as const;
+const env = Object.fromEntries(SAVED.map((name) => [name, process.env[name]]));
 afterEach(() => {
-  if (env.targets === undefined) delete process.env.UF_TARGETS;
-  else process.env.UF_TARGETS = env.targets;
-  if (env.update === undefined) delete process.env.UF_UPDATE;
-  else process.env.UF_UPDATE = env.update;
+  for (const name of SAVED) {
+    if (env[name] === undefined) delete process.env[name];
+    else process.env[name] = env[name];
+  }
 });
 
 /** A configuration's projects, in order. */
@@ -205,6 +207,8 @@ describe("defineTestConfig", () => {
       ["browser:react", 1],
       ["ssr:react", 0],
     ]);
+    // An update run, which CI refuses: this test runs in CI too.
+    delete process.env.CI;
     process.env.UF_UPDATE = "1";
     expect(await groups()).toEqual([
       ["browser:vue", 1],
