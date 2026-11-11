@@ -1015,7 +1015,7 @@ framework's official packager:
 | Target       | Packaged as                             |
 | ------------ | --------------------------------------- |
 | React, Solid | JS + `.d.ts`, through tsdown            |
-| Vue          | SFC + `.d.ts`                           |
+| Vue          | JS + `.d.ts` (ADR-0082)                 |
 | Svelte       | svelte-package                          |
 | Angular      | ng-packagr (the Angular Package Format) |
 | Qwik         | a Qwik library build                    |

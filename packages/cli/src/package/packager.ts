@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { glob, mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join } from "node:path";
 import { promisify } from "node:util";
 
 import type { OutputFile } from "@unframework/compiler";
@@ -58,6 +58,47 @@ export async function dropDeclarationSideEffects(directory: string): Promise<voi
     await writeFile(path, dropSideEffectImports(await readFile(path, "utf8")));
   }
 }
+
+/** In a Vite build, an output's framework and its passed-through modules stay imports (P7). */
+export const KEEP_IMPORTS: object = {
+  name: "unframework:keep-imports",
+  enforce: "pre",
+  resolveId(id: string, importer: string | undefined) {
+    if (importer === undefined) return null;
+    const local = id.startsWith(".") || isAbsolute(id) || id.startsWith("\0");
+    return local ? null : { id, external: true };
+  },
+};
+
+/**
+ * `import.meta.env` stays for the app's build to read. Vite would write this build's own values into
+ * the package, `VITE_` variables included (P8), and it has no option to leave them. So the name is
+ * held out of its way until the chunk is done.
+ */
+const ENV = "import.meta.env";
+const HELD_ENV = "__unframework_import_meta_env__";
+export const KEEP_ENV: object = {
+  name: "unframework:keep-env",
+  enforce: "pre",
+  transform: (code: string) => (code.includes(ENV) ? code.replaceAll(ENV, HELD_ENV) : null),
+  renderChunk: (code: string) => code.replaceAll(HELD_ENV, ENV),
+};
+
+/** What Rollup, and Rolldown after it, replace in a chunk's name. */
+// oxlint-disable-next-line no-control-regex -- a helper's name starts with a null byte.
+const UNSAFE_IN_A_NAME = /[\u0000-\u001F"#$%&*+,:;<=>?[\]^`{|}\u007F]/g;
+
+/**
+ * Rolldown's `sanitizeFileName` for a build of the scratch copy at `scratch`, one module to a file.
+ * Rolldown cleans a module's absolute path, then strips the root, which then no longer matches
+ * under a directory like `R&D`. So only what follows the scratch copy is cleaned.
+ */
+export const sanitizeBelow =
+  (scratch: string): ((name: string) => string) =>
+  (name) =>
+    name.startsWith(scratch)
+      ? scratch + name.slice(scratch.length).replace(UNSAFE_IN_A_NAME, "_")
+      : name.replace(UNSAFE_IN_A_NAME, "_");
 
 /** The script a package's manifest names for the first of these binaries it has. */
 export async function binOf(manifest: string, ...names: readonly string[]): Promise<string> {
