@@ -54,6 +54,40 @@ The subpaths are internal, for the harness and the test configuration, never for
 | `./<target>`  | The setup file that registers a target's mount adapter                                                                                                    |
 | `./node`      | The Node side: the browser commands, the write policy, the mode, the reporter and the summary                                                             |
 | `./normalize` | The normaliser                                                                                                                                            |
+| `./ssr`       | `describeServerRender(cases)`, the one server render comparison (L6, L13), which the corpus's ssr spec calls with its own skips                           |
+| `./ssr/spec`  | The ssr spec `defineTestConfig`'s `ssr:<target>` projects run, by its resolved path                                                                       |
+| `./cli`       | `run(args, io)`, the `unframework test` command, which the umbrella registers                                                                             |
+
+`./config` is public, for a project's `vitest.config.ts`: `defineTestConfig` (below).
+
+## A project's tests (`@unframework.dev/testing/config`)
+
+`defineTestConfig(options?)` resolves to the Vitest configuration of a project's tests (ADR-0086):
+one `browser:<target>` project in Chromium and one `ssr:<target>` project for each target of its
+`unframework.config.ts`, built from the pieces the corpus's harness uses. `unframework test`
+(`./cli`) runs it, or the project's own `vitest.config.ts` when it has one.
+
+| Option          | Default                                               | What it does                                                                           |
+| --------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `targets`       | `unframework.config.ts`'s `targets`                   | The targets to test                                                                    |
+| `include`       | `["**/*.test.ts"]`, never in `node_modules` or `dist` | The test files, relative to the root                                                   |
+| `reference`     | `vue` when tested, else the first target              | The target that writes `__expected__/`. It always joins the run                        |
+| `pixels`        | `live`                                                | `live` compares with the reference's capture, in CI too, and `baseline` with baselines |
+| `toolchainDirs` | `package.resolveFrom`, then the root                  | Where each target's compiler stack resolves from (Angular's)                           |
+| `root`          | the working directory                                 | Where `unframework.config.ts` is: case ids are relative to it                          |
+
+- **A case** is a directory with one test file. Its id is its path from the root, and its main
+  source is `case.json`'s `main`, relative to the case and maybe outside it, or else its only
+  `.uf.tsx` (`discoverCases`, `src/config/cases.ts`). Two test files in one directory, no main
+  source, a test file at the root and an unknown `case.json` key throw at startup, naming the fix.
+- **The run** narrows to `UF_TARGETS` (`--target`), always with the reference and any target a
+  case names as its own (`runTargets`), and writes with `UF_UPDATE=1` (`--update`). Its scratch
+  goes in the root's `.reports/` and `.live/`. The mode is a project's
+  (`resolveHarnessMode({ project })`): pixels compare live unless the project chose `baseline`,
+  and CI may compare live. It runs in Chromium alone.
+- **`unframework test [--target <t>]… [--update] [-- <vitest args>]`** passes what follows `--`
+  to Vitest, refuses Vitest's `--update`, and exits 0, 1 on a failed test, or 2 on a usage or
+  configuration error.
 
 ## Browser (`@unframework.dev/testing`)
 
