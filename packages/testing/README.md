@@ -75,7 +75,7 @@ The subpaths are internal, for the harness and the test configuration, never for
   (`src/browser/axe.ts`), and passes on no violation, or on exactly the rules
   `options.expected` lists. **`toHaveAriaTree(expected)`** compares an element's ARIA snapshot,
   taken and normalised as L7 takes a view's (Angular's hosts inline, generated ids renamed), with
-  one tree that holds on every target; it ignores the indentation and the blank lines around
+  one tree that holds on every target. It ignores the indentation and the blank lines around
   `expected`. Both take `expect.element(locator)` or an element, fail with the target's name (and
   `toHaveAriaTree` with a line diff), and are typed on Vitest's `Matchers`. Vitest's own
   `toMatchAriaSnapshot()` and `toMatchAriaInlineSnapshot()` read the raw tree of one target, and
@@ -434,6 +434,8 @@ task, as Angular's: a stub's `settle` waits for its scheduled work), `emitted`/`
 payload copies, focus, the navigation guard, L9's
 pass and skip and a step left at the end of a test; `stub/trace-mismatch` an L9 diff and a stale
 trace; `stub/requires` a capability skip (the stub lacks a list box), which
-`test/interactions.test.ts` reads in the matrix. `stub/matchers` proves each matcher's pass and its failure message, and that Vitest's own `toMatchAriaInlineSnapshot` still behaves as Vitest's once the setup has run. The DOM tests also run Astro's mount
+`test/interactions.test.ts` reads in the matrix. The DOM tests also run Astro's mount
 adapter, whose rerender needs the toolchain's render command (`vitest.config.ts`).
 `UF_UPDATE=1 pnpm exec vitest run --config test/parity/vitest.config.ts` rewrites the artefacts.
+
+The `stub/matchers` case proves each matcher passes and fails with its message, and that Vitest's own `toMatchAriaInlineSnapshot` still behaves as Vitest's once the setup has run.

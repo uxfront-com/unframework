@@ -37,9 +37,10 @@ per project, one per target, so it compares no target with another.
   - `toHaveNoAxeViolations(options?)` runs axe-core on the element with L11's options. It passes
     on no violation, or on exactly the rules `options.expected` lists, as `case.json`'s `axe`
     does for L11.
-  - `toHaveAriaTree(expected)` compares Playwright's ARIA snapshot of the element, normalised as
-    L7 normalises `aria.<name>.yaml` (Angular's hosts inline, ADR-0060, and the generated ids
-    renamed, ADR-0049), with one tree that holds on every target. Vitest's two ARIA matchers stay
+  - `toHaveAriaTree(expected)` compares Playwright's ARIA snapshot of the element with one tree
+    that holds on every target. It normalises the snapshot as L7 normalises `aria.<name>.yaml`:
+    Angular's hosts are inline while it's taken (ADR-0060), and generated ids are renamed
+    (ADR-0049). Vitest's two ARIA matchers stay
     as they are, under their own names.
 - **The case is the public test unit.** A case is a directory with one spec, its main `.uf.tsx`,
   any sources it composes (ADR-0057), an optional `case.json` and the generated `__expected__/`.
