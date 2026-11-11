@@ -3,9 +3,9 @@ import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { printShape } from "@unframework/type-oracle";
-import type { ShapeQuery, TypeOracle, TypeShape } from "@unframework/type-oracle";
-import { typeOracleContract } from "@unframework/type-oracle/contract";
+import { printShape } from "@unframework.dev/type-oracle";
+import type { ShapeQuery, TypeOracle, TypeShape } from "@unframework.dev/type-oracle";
+import { typeOracleContract } from "@unframework.dev/type-oracle/contract";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createTsgoOracle } from "../src/index.ts";

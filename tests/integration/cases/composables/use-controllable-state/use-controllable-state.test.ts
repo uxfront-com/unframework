@@ -2,7 +2,7 @@
 // reactively and whose callback parameter emits (ADR-0068, ADR-0069). Without the prop the
 // component holds the value; with it, the parent's value wins, follows the parent's next value,
 // and a change is only reported.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Rating from "./Rating.uf.tsx";

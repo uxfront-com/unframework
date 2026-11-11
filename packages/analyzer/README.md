@@ -1,4 +1,4 @@
-# @unframework/analyzer
+# @unframework.dev/analyzer
 
 Passes P2 (analyse) and P3 (lower) of the Unframework compiler (plan §5.1):
 
@@ -17,13 +17,13 @@ Passes P2 (analyse) and P3 (lower) of the Unframework compiler (plan §5.1):
   and esbuild themselves. JSX decodes only XHTML's named references: a name only HTML decodes
   (`&check;`) renders as written on every target, which is a warning (UF3011).
 - Markup is HTML, or SVG inside an `<svg>` (ADR-0040), checked against the vocabulary in
-  `@unframework/ir`'s `html.ts` and `svg.ts`: element names (UF3001, UF3002, tested against Vue's
+  `@unframework.dev/ir`'s `html.ts` and `svg.ts`: element names (UF3001, UF3002, tested against Vue's
   and Angular's lists, and SVG's against parse5's case adjustments), the nesting the browser's
   parser repairs (UF3003, tested against parse5, Svelte and Vue, and seen through conditionals,
   lists and fragments), attribute names and values (UF3004 to UF3008, ARIA's value types and roles
   included), and characters HTML would not keep (UF3010). Whatever the targets would render
   differently is a diagnostic; a non-canonical form has a fix. The IR it lowers keeps
-  `checkInvariants` of `@unframework/ir`, which its tests check on every module.
+  `checkInvariants` of `@unframework.dev/ir`, which its tests check on every module.
 
 ## The subset
 
@@ -318,7 +318,7 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   (`if (count.value !== null) count.value += 1`, `WriteReference.narrowed`); the setup's kinds
   follow TypeScript's inference (a `ref` widens a fresh literal, a `computed` keeps a union).
 - **The rules over summaries** (`rules.ts`): judged once the setup and the render tree are
-  lowered, with every local function's summary (`summarize` of `@unframework/ir`, which the
+  lowered, with every local function's summary (`summarize` of `@unframework.dev/ir`, which the
   invariants and the targets read too) and what the walks noted (`CodeFacts`): the calls a
   template, a getter or an initial value makes of an impure function (UF2014) or one that reads
   the clock, chance or the locale (UF3019); a `watchEffect` reading a setup `let` or a template
@@ -365,7 +365,7 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   `aria.ts`): name checks first, whatever the value; then static values, literals in braces (written
   statically, UF3004), bindings whose kinds must fit the attribute and whose values every typed
   target's element types accept (UF3018: an enumerated attribute's tokens, a string where a target
-  types one), `class` parts, `style` declarations (parsed by `@unframework/parser`, UF3022 for what
+  types one), `class` parts, `style` declarations (parsed by `@unframework.dev/parser`, UF3022 for what
   the targets cannot keep apart) and spreads of objects whose keys a type declares: a prop's, a
   list's item's, or a setup value's whose type is written as an annotation or as `ref`'s type
   argument, read from its shape. A spread that reads any setup value whose type is not written so,
@@ -381,7 +381,7 @@ which the tests check for each fix, for each pair that can meet, and over random
 
 ## Tests
 
-`pnpm --filter @unframework/analyzer test`. Besides the rules' own tests, the conformance tests run
+`pnpm --filter @unframework.dev/analyzer test`. Besides the rules' own tests, the conformance tests run
 the tools the rules stand for: parse5 (the HTML parser's repairs and SVG adjustments), Svelte, Vue
 and Angular (element and attribute tables, ARIA warnings, Angular's security schema), Babel, oxc
 and esbuild (JSX text), and Angular's template parser over a seeded fuzz of every accepted

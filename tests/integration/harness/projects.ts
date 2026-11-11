@@ -16,23 +16,23 @@
 import { relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { Toolchain, ToolchainContext } from "@unframework/codegen";
-import { builtinTargets } from "@unframework/compiler";
-import type { TargetName } from "@unframework/compiler";
+import type { Toolchain, ToolchainContext } from "@unframework.dev/codegen";
+import { builtinTargets } from "@unframework.dev/compiler";
+import type { TargetName } from "@unframework.dev/compiler";
 import {
   caseReferences,
   formatError,
   groupOrder,
   parityBrowser,
   recordCompiledModule,
-} from "@unframework/testing/node";
+} from "@unframework.dev/testing/node";
 import type {
   HarnessContext,
   HarnessMode,
   LayerName,
   ProjectKind,
-} from "@unframework/testing/node";
-import type { UnframeworkOptions } from "@unframework/unplugin/vite";
+} from "@unframework.dev/testing/node";
+import type { UnframeworkOptions } from "@unframework.dev/unplugin/vite";
 import type { Plugin } from "vite";
 import { mergeConfig } from "vitest/config";
 import type { TestProjectConfiguration, UserWorkspaceConfig, ViteUserConfig } from "vitest/config";
@@ -198,7 +198,7 @@ function lazyProject(
     try {
       const [toolchain, unplugin] = await Promise.all([
         loadToolchain(target),
-        import("@unframework/unplugin/vite"),
+        import("@unframework.dev/unplugin/vite"),
       ]);
       return await factory(setup, target, toolchain, unplugin.default);
     } catch (error) {
@@ -329,8 +329,8 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
       // reloads the page (the browser-projects ADR).
       optimizeDeps: {
         include: [
-          "@unframework/testing > axe-core",
-          "@unframework/testing > parse5",
+          "@unframework.dev/testing > axe-core",
+          "@unframework.dev/testing > parse5",
           "@styleframe/runtime",
         ],
       },
@@ -363,8 +363,8 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
               .map((info) => relative(ROOT, info.spec!).split(sep).join("/"))
           : ["cases/**/*.test.ts"],
         setupFiles: [
-          resolveModule("@unframework/testing/setup"),
-          resolveModule(`@unframework/testing/${target}`),
+          resolveModule("@unframework.dev/testing/setup"),
+          resolveModule(`@unframework.dev/testing/${target}`),
         ],
         // The target's capability matrix as plain data: the browser skips a test that requires
         // a capability the target lacks, and imports no target (ADR-0050). A test of a case the

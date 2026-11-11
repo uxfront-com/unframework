@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { settleArtefactDirectory } from "@unframework/testing/node";
+import { settleArtefactDirectory } from "@unframework.dev/testing/node";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {

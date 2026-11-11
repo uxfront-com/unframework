@@ -5,8 +5,8 @@
 // with all it holds; the DOM (an element, the event, a global). A name holds what every value
 // written to it anywhere holds, so a setup `let` given a state's value once is a state's value.
 
-import type { AST } from "@unframework/parser";
-import { visitorKeys } from "@unframework/parser";
+import type { AST } from "@unframework.dev/parser";
+import { visitorKeys } from "@unframework.dev/parser";
 
 import type { ComponentFunction } from "./render.ts";
 import type { Scopes } from "./scope.ts";

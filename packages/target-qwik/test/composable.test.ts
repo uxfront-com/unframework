@@ -10,10 +10,10 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createOptimizer } from "@qwik.dev/optimizer";
-import { ImportSet, parseCodeSource } from "@unframework/codegen";
-import type { OutputFile } from "@unframework/codegen";
-import { createComposableParameter, createTypeText } from "@unframework/ir";
-import type { ComposableParameter, ComposableParameterKind } from "@unframework/ir";
+import { ImportSet, parseCodeSource } from "@unframework.dev/codegen";
+import type { OutputFile } from "@unframework.dev/codegen";
+import { createComposableParameter, createTypeText } from "@unframework.dev/ir";
+import type { ComposableParameter, ComposableParameterKind } from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { compileComposableCases } from "../../codegen/test/composable-cases.ts";

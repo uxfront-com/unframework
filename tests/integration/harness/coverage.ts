@@ -5,11 +5,11 @@
 // covers is a problem, so the exemption lists only shrink. Plain functions, so
 // `coverage.unit.test.ts` can prove the gate fails on a missing kind; the compile project runs
 // them on the corpus.
-import { CAPABILITY_NAMES } from "@unframework/codegen";
-import { builtinTargets, requiredCapabilities, TARGET_NAMES } from "@unframework/compiler";
-import type { CompileResult } from "@unframework/compiler";
-import { catalogue } from "@unframework/diagnostics";
-import type { Diagnostic } from "@unframework/diagnostics";
+import { CAPABILITY_NAMES } from "@unframework.dev/codegen";
+import { builtinTargets, requiredCapabilities, TARGET_NAMES } from "@unframework.dev/compiler";
+import type { CompileResult } from "@unframework.dev/compiler";
+import { catalogue } from "@unframework.dev/diagnostics";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
 import {
   ATTRIBUTE_KINDS,
   BINDING_KINDS,
@@ -19,8 +19,8 @@ import {
   RENDER_NODE_KINDS,
   SETUP_ITEM_KINDS,
   WATCH_SOURCE_KINDS,
-} from "@unframework/ir";
-import type { ModuleFeatures } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { ModuleFeatures } from "@unframework.dev/ir";
 
 import { forTarget } from "./compile-checks.ts";
 import { EXEMPT_CAPABILITIES, EXEMPT_CODES, EXEMPT_KINDS } from "./coverage-exemptions.ts";
@@ -34,7 +34,7 @@ interface KindRecord {
 }
 
 /**
- * The IR's coverage-gate records (`@unframework/ir`'s `visit.ts`), each read from the features
+ * The IR's coverage-gate records (`@unframework.dev/ir`'s `visit.ts`), each read from the features
  * `collectFeatures` collects. A root fragment is no render node: the `fragment` capability
  * covers it.
  */

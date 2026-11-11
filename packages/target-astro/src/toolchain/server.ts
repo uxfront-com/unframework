@@ -1,7 +1,7 @@
 // The Astro SSR renderer, run inside the `ssr` test project, whose Vite config is Astro's own
 // pipeline: there `import X from "./X.uf.tsx"` yields the compiled Astro component, and this
 // module's `astro/container` import shares the component's copy of the Astro runtime.
-import type { SsrRenderer } from "@unframework/codegen";
+import type { SsrRenderer } from "@unframework.dev/codegen";
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 
 import { isAstroComponentFactory } from "./protocol.ts";

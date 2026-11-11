@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
 import { transformSync } from "@babel/core";
-import type { ToolchainContext, ToolchainFile } from "@unframework/codegen";
+import type { ToolchainContext, ToolchainFile } from "@unframework.dev/codegen";
 import type * as SolidWeb from "solid-js/web";
 import type { Plugin } from "vite";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -64,8 +64,8 @@ async function transformed(mode: "browser" | "ssr", consumer: "client" | "server
 describe("solid toolchain", () => {
   it("names its runtime entries", () => {
     expect(toolchain.name).toBe("solid");
-    expect(toolchain.client).toBe("@unframework/target-solid/toolchain/client");
-    expect(toolchain.server).toBe("@unframework/target-solid/toolchain/server");
+    expect(toolchain.client).toBe("@unframework.dev/target-solid/toolchain/client");
+    expect(toolchain.server).toBe("@unframework.dev/target-solid/toolchain/server");
   });
 
   it("configures Vite with Solid's plugin and the runtime the output imports", async () => {

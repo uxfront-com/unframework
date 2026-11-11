@@ -1,7 +1,7 @@
 // styles/data-attribute-variants: Open Components–style variants. The props set `data-variant`
 // and `data-state`, and the sheet's attribute selectors, scoped like any other (ADR-0063),
 // style each combination.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Chip from "./Chip.uf.tsx";

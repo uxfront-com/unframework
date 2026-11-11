@@ -2,7 +2,7 @@
 // checks them on the server: the mount adapter hands the props over as a parent's written
 // attributes, on the first render and on a rerender, while a spread or a `jsx()` call loses a
 // `null` (Qwik's `_jsxSplit`).
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { mount } from "../src/toolchain/client.ts";

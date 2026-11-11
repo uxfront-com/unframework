@@ -1,8 +1,8 @@
-import { checkInvariants } from "@unframework/ir";
-import type { UfModule } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
-import { createSyntacticOracle } from "@unframework/type-oracle";
-import type { TypeShape } from "@unframework/type-oracle";
+import { checkInvariants } from "@unframework.dev/ir";
+import type { UfModule } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
+import { createSyntacticOracle } from "@unframework.dev/type-oracle";
+import type { TypeShape } from "@unframework.dev/type-oracle";
 import { describe, expect, it } from "vitest";
 
 import { analyze, shapeQueries } from "../src/index.ts";

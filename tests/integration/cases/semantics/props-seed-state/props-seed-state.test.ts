@@ -2,7 +2,7 @@
 // component was created: Angular's output must read it after its inputs are set, not in a field
 // initialiser. A rerender with a new seed keeps the state, while the template's reads of the
 // props follow them, and increments continue from the state (semantics contract, reactive props).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import QuantityStepper from "./QuantityStepper.uf.tsx";

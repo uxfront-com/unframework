@@ -5,16 +5,16 @@
 // TypeScript 6 that the toolchain directory installs (R8).
 import { dirname, join } from "node:path";
 
-import type { ToolchainContext, ToolchainMessage } from "@unframework/codegen";
+import type { ToolchainContext, ToolchainMessage } from "@unframework.dev/codegen";
 import {
   lintWithEslint,
   lintWithOxlint,
   mergeLintResults,
   resolveInstalled,
-} from "@unframework/codegen/toolchain-node";
+} from "@unframework.dev/codegen/toolchain-node";
 
 /** The lint host's package, which the toolchain directory installs (tests/toolchains/qwik-eslint). */
-const ESLINT_HOST = "@unframework/toolchain-qwik-eslint";
+const ESLINT_HOST = "@unframework.dev/toolchain-qwik-eslint";
 
 /**
  * Lints Qwik output files with oxlint and with the type-aware rules ({@link lintTypes}) at once,

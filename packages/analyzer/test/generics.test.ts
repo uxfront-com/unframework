@@ -1,7 +1,7 @@
 // Generic components (ADR-0068): their type parameters, their props, slots and events that name
 // them, and the instantiations no target writes (UF6006).
-import type { ModuleApi } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+import type { ModuleApi } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { analyze, componentImports } from "../src/index.ts";

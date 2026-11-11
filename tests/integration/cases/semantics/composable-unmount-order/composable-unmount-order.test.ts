@@ -2,7 +2,7 @@
 // called it unmounts, and only then: each panel's teardown follows its own unmount, in the order
 // the panels go (semantics contract, unmount order, ADR-0069). The harness parent records what
 // each panel reports as it closes.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Board from "./Board.uf.tsx";

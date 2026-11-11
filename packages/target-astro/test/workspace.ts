@@ -2,7 +2,7 @@
 import { globSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { ToolchainFile } from "@unframework/codegen";
+import type { ToolchainFile } from "@unframework.dev/codegen";
 
 const repo = join(import.meta.dirname, "..", "..", "..");
 

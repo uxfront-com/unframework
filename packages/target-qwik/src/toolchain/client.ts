@@ -7,7 +7,7 @@ import { createSignal, jsx, render } from "@qwik.dev/core";
 import type { QRL } from "@qwik.dev/core";
 // Qwik 2 has no public way to wait for a container's pending render yet.
 import { _getDomContainer, _waitUntilRendered } from "@qwik.dev/core/internal";
-import type { MountAdapter, MountListener } from "@unframework/codegen";
+import type { MountAdapter, MountListener } from "@unframework.dev/codegen";
 
 import { asComponent } from "./component.ts";
 import { Host } from "./host.ts";

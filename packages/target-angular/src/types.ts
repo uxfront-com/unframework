@@ -2,8 +2,8 @@
 // declarations (ADR-0034), and the type of each signal input (ADR-0034). Type text is copied as
 // the author wrote it; it is parsed only to find the names it refers to and the `undefined` an
 // input with a default leaves out of its value type.
-import { parseExpressionSource, parseStatementsSource } from "@unframework/codegen";
-import type { Prop, TypeDeclaration, TypeParameter, UfComponent } from "@unframework/ir";
+import { parseExpressionSource, parseStatementsSource } from "@unframework.dev/codegen";
+import type { Prop, TypeDeclaration, TypeParameter, UfComponent } from "@unframework.dev/ir";
 
 interface TypeNode {
   type: string;

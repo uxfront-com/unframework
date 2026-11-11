@@ -202,7 +202,7 @@ export function copyManifest(
   packageManager: string,
 ): Manifest {
   const consumed = [designSystem];
-  if (app.modes.includes("plugin")) consumed.push("unframework", "@unframework/unplugin");
+  if (app.modes.includes("plugin")) consumed.push("unframework", "@unframework.dev/unplugin");
   const dependencies = { ...manifest.dependencies };
   for (const name of consumed) dependencies[name] = `file:${tarballs[name]}`;
   // The pin keeps the install on the pnpm the repository uses, not on whichever version is

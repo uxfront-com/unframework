@@ -20,7 +20,7 @@ import {
   NUMERIC_ATTRIBUTES,
   UNITLESS_PROPERTIES,
   URL_ATTRIBUTES,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Attribute,
   ElementNode,
@@ -30,7 +30,7 @@ import type {
   RenderNode,
   StaticAttribute,
   UfComponent,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 const at = { start: 0, end: 0 };
 

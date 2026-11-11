@@ -2,15 +2,15 @@ import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { defineTarget } from "@unframework/codegen";
-import type { Capabilities, CapabilityCell, OutputFile } from "@unframework/codegen";
+import { defineTarget } from "@unframework.dev/codegen";
+import type { Capabilities, CapabilityCell, OutputFile } from "@unframework.dev/codegen";
 import {
   compile,
   createFileResolver,
   createSyntacticOracle,
   TARGET_NAMES,
-} from "@unframework/compiler";
-import type { CompilerPlugin } from "@unframework/compiler";
+} from "@unframework.dev/compiler";
+import type { CompilerPlugin } from "@unframework.dev/compiler";
 import { isRunnableDevEnvironment, optimizeDeps, resolveConfig } from "vite";
 import type { Plugin } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

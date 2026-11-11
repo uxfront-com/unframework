@@ -1,4 +1,4 @@
-import { reservedParameterName } from "@unframework/ir";
+import { reservedParameterName } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { applyAndRecheck, codes, component, only, problems, root } from "./helpers.ts";

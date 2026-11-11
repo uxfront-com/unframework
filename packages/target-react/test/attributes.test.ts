@@ -7,7 +7,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { formatOutput } from "@unframework/codegen";
+import { formatOutput } from "@unframework.dev/codegen";
 import {
   ARIA_ATTRIBUTES,
   createComponent,
@@ -30,7 +30,7 @@ import {
   undeclaredBy,
   UNPORTABLE_ELEMENTS,
   UNRENDERED_ATTRIBUTES,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import target from "../src/index.ts";

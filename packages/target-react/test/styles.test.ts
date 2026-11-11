@@ -6,8 +6,8 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { formatOutput } from "@unframework/codegen";
-import type { ModuleApi, UfModule } from "@unframework/ir";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { ModuleApi, UfModule } from "@unframework.dev/ir";
 import { createElement } from "react";
 import type { ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";

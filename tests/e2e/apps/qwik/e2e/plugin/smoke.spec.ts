@@ -6,7 +6,7 @@ import {
 import { expect, test } from "../../../../harness/fixtures.ts";
 
 test("smoke", async ({ page, devServer }) => {
-  for (const name of ["@unframework/e2e-design-system", "unframework", "@unframework/unplugin"]) {
+  for (const name of ["@unframework.dev/e2e-design-system", "unframework", "@unframework.dev/unplugin"]) {
     assertInstalledFromTarball(devServer.copy, name);
   }
 

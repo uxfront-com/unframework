@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { CAPABILITY_NAMES } from "@unframework/codegen";
-import type { EmitContext } from "@unframework/codegen";
+import { CAPABILITY_NAMES } from "@unframework.dev/codegen";
+import type { EmitContext } from "@unframework.dev/codegen";
 import {
   createComponent,
   createElement,
@@ -11,7 +11,7 @@ import {
   createStaticAttribute,
   createStyleSheet,
   createText,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import target from "../src/index.ts";

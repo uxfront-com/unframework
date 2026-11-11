@@ -4,11 +4,11 @@
 // (and jsx/escaping's), and the L1-fix-no-op canary proves it catches a fix that fixes nothing.
 import { encodedMappings, TraceMap } from "@jridgewell/trace-mapping";
 import type { SourceMapSegment } from "@jridgewell/trace-mapping";
-import type { OutputFile, SourceMapV3 } from "@unframework/codegen";
-import { builtinTargets, compile, createFileResolver, TARGET_NAMES } from "@unframework/compiler";
-import type { CompileResult, CompilerPlugin, TargetName } from "@unframework/compiler";
-import { applyFixes } from "@unframework/diagnostics";
-import type { Diagnostic } from "@unframework/diagnostics";
+import type { OutputFile, SourceMapV3 } from "@unframework.dev/codegen";
+import { builtinTargets, compile, createFileResolver, TARGET_NAMES } from "@unframework.dev/compiler";
+import type { CompileResult, CompilerPlugin, TargetName } from "@unframework.dev/compiler";
+import { applyFixes } from "@unframework.dev/diagnostics";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
 import { describe, expect, it } from "vitest";
 
 import { canaryMaps } from "./canaries.ts";

@@ -6,8 +6,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 
-import { kebabCase } from "@unframework/codegen";
-import type { OutputFile, ToolchainContext } from "@unframework/codegen";
+import { kebabCase } from "@unframework.dev/codegen";
+import type { OutputFile, ToolchainContext } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { compileComposableCases } from "../../codegen/test/composable-cases.ts";

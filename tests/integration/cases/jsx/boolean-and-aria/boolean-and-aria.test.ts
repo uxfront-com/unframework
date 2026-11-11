@@ -1,6 +1,6 @@
 // jsx/boolean-and-aria: bound HTML boolean attributes (present or absent), `aria-*` bound to
 // booleans ("true" or "false") and to strings, `data-*` bound to strings, and static roles.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import FilterPanel from "./FilterPanel.uf.tsx";

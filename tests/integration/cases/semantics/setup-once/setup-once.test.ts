@@ -2,7 +2,7 @@
 // reads a prop, which the compiler warns about (UF2007, in diagnostics.json): it keeps the value
 // it had when the component was created, while the template's own read of the prop follows it.
 // A static const (`tips`) renders as written.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import WelcomeBanner from "./WelcomeBanner.uf.tsx";

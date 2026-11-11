@@ -7,9 +7,9 @@ import { addSegment, GenMapping, setSourceContent, toEncodedMap } from "@jridgew
 import remapping from "@jridgewell/remapping";
 import { decodedMappings, encodedMappings, TraceMap } from "@jridgewell/trace-mapping";
 import type { SourceMapSegment } from "@jridgewell/trace-mapping";
-import { createDiagnostic } from "@unframework/diagnostics";
-import type { Diagnostic } from "@unframework/diagnostics";
-import type { CodeReference, Span, UfModule } from "@unframework/ir";
+import { createDiagnostic } from "@unframework.dev/diagnostics";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
+import type { CodeReference, Span, UfModule } from "@unframework.dev/ir";
 
 import { codeBlocks, isFormatted } from "./format.ts";
 import type { OutputFile, SourceMapV3 } from "./target.ts";

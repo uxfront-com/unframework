@@ -1,9 +1,9 @@
 // How a canary run is judged, on runs and corpora of their own: the verdict must not pass a
 // canary that one case, one target, one kind of project or one sub-check did not catch, and
 // must not demand evidence from tests a target skipped by capability.
-import { TARGET_NAMES } from "@unframework/compiler";
-import { cellOf } from "@unframework/testing/node";
-import type { LayerOutcome, PartialMatrix, ProjectKind } from "@unframework/testing/node";
+import { TARGET_NAMES } from "@unframework.dev/compiler";
+import { cellOf } from "@unframework.dev/testing/node";
+import type { LayerOutcome, PartialMatrix, ProjectKind } from "@unframework.dev/testing/node";
 import { describe, expect, it } from "vitest";
 
 import { findCanary } from "./canaries.ts";

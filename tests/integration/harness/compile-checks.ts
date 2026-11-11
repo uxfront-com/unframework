@@ -5,14 +5,14 @@
 import { posix } from "node:path";
 
 import { decodedMappings, TraceMap } from "@jridgewell/trace-mapping";
-import { formatOutput } from "@unframework/codegen";
-import type { Capabilities, OutputFile } from "@unframework/codegen";
-import { builtinTargets } from "@unframework/compiler";
-import type { CompileResult } from "@unframework/compiler";
-import { applyFixes } from "@unframework/diagnostics";
-import type { Diagnostic } from "@unframework/diagnostics";
-import { parseStylesheet } from "@unframework/parser";
-import { diffLines } from "@unframework/testing/node";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { Capabilities, OutputFile } from "@unframework.dev/codegen";
+import { builtinTargets } from "@unframework.dev/compiler";
+import type { CompileResult } from "@unframework.dev/compiler";
+import { applyFixes } from "@unframework.dev/diagnostics";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
+import { parseStylesheet } from "@unframework.dev/parser";
+import { diffLines } from "@unframework.dev/testing/node";
 
 /** The diagnostics that concern a target: its own, and those of every target. */
 export const forTarget = <T extends { target?: string | undefined }>(

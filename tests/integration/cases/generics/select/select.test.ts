@@ -1,6 +1,6 @@
 // generics/select: a generic component's model, typed by its type parameter (ADR-0068), bound by
 // a parent both ways.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import SizeForm from "./SizeForm.uf.tsx";

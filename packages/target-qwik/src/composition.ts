@@ -23,9 +23,9 @@ import {
   jsxBranch,
   jsxChildren,
   jsxSlotProps,
-} from "@unframework/codegen";
-import type { JsxContext } from "@unframework/codegen";
-import { codeOf, expressionsOf, walk } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { JsxContext } from "@unframework.dev/codegen";
+import { codeOf, expressionsOf, walk } from "@unframework.dev/ir";
 import type {
   Binding,
   BindingId,
@@ -41,7 +41,7 @@ import type {
   SlotOutletNode,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { qwikEventProp } from "./events.ts";
 import { genericModelType } from "./generics.ts";

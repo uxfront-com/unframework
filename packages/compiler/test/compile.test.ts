@@ -1,6 +1,6 @@
-import { CAPABILITY_NAMES, defineTarget } from "@unframework/codegen";
-import type { Capabilities, Target } from "@unframework/codegen";
-import type { ElementNode, UfModule } from "@unframework/ir";
+import { CAPABILITY_NAMES, defineTarget } from "@unframework.dev/codegen";
+import type { Capabilities, Target } from "@unframework.dev/codegen";
+import type { ElementNode, UfModule } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { compile, requiredCapabilities, TARGET_NAMES } from "../src/index.ts";

@@ -3,9 +3,9 @@
 // the module by extension and compiles the code the unframework plugin returns from `load`.
 import { posix } from "node:path";
 
-import type { Target } from "@unframework/codegen";
-import { builtinTargets, TARGET_NAMES } from "@unframework/compiler";
-import type { TargetName } from "@unframework/compiler";
+import type { Target } from "@unframework.dev/codegen";
+import { builtinTargets, TARGET_NAMES } from "@unframework.dev/compiler";
+import type { TargetName } from "@unframework.dev/compiler";
 
 /** The extension of an authored component file. */
 export const SOURCE_EXTENSION = ".uf.tsx";

@@ -3,8 +3,8 @@
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type * as Compiler from "@unframework/compiler";
-import type { CompilerPlugin } from "@unframework/compiler";
+import type * as Compiler from "@unframework.dev/compiler";
+import type { CompilerPlugin } from "@unframework.dev/compiler";
 import type { UnpluginContextMeta, UnpluginOptions } from "unplugin";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -17,7 +17,7 @@ import type { Project } from "./fixtures.ts";
 const update = vi.hoisted(() => ({ fails: false, calls: 0 }));
 
 // `project.update` fails only for the test that asks it to.
-vi.mock("@unframework/compiler", async (importActual) => {
+vi.mock("@unframework.dev/compiler", async (importActual) => {
   const actual = await importActual<typeof Compiler>();
   return {
     ...actual,

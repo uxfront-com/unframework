@@ -1,8 +1,8 @@
 // The binding forms ADR-0065 lowers, as the targets ask about them: which a template uses, a
 // spread's `style` key read on its own, and whether a style bound to a value is merged.
-import { analyze } from "@unframework/analyzer";
-import type { UfComponent } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+import { analyze } from "@unframework.dev/analyzer";
+import type { UfComponent } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { bindingForms, mergesWholeStyle, spreadStyleExpression } from "../src/index.ts";

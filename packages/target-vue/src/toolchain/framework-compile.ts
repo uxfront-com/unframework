@@ -5,8 +5,8 @@ import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { format, stripVTControlCharacters } from "node:util";
 
-import type { FrameworkCompileResult, ToolchainFile, ToolchainMessage } from "@unframework/codegen";
-import { assertFilesToCompile, compileScriptModules } from "@unframework/codegen/toolchain-node";
+import type { FrameworkCompileResult, ToolchainFile, ToolchainMessage } from "@unframework.dev/codegen";
+import { assertFilesToCompile, compileScriptModules } from "@unframework.dev/codegen/toolchain-node";
 import type {
   BindingMetadata,
   CompilerError,

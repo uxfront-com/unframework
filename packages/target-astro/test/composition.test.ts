@@ -1,7 +1,7 @@
 // Composition in Astro's shape (ADR-0053, ADR-0054, `src/composition.ts`): the files a source's
 // components emit, formatted as the compiler writes them. The corpus checks the same shapes
 // through every layer; these pin each one on a source of its own.
-import { formatOutput } from "@unframework/codegen";
+import { formatOutput } from "@unframework.dev/codegen";
 import { describe, expect, it } from "vitest";
 
 import { emitSource, SCOPE_HELPER } from "./source.ts";

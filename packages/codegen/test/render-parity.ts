@@ -23,7 +23,7 @@ import {
   FIXED_VALUE_INPUT_TYPES,
   isBooleanAttribute,
   isVoidElement,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   ElementNode,
   FragmentNode,
@@ -32,7 +32,7 @@ import type {
   Span,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { instantiate } from "./render-parity-reference.ts";
 

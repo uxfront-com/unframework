@@ -3,8 +3,8 @@
 // that what follows it sees what it did (read after write). An awaited call makes its function
 // async. The code is the target's own rewritten text; this finds the calls in its syntax tree
 // and splices `await` in, as the rewrite engine splices references.
-import { parseCodeSource } from "@unframework/codegen";
-import type { CodeKind } from "@unframework/codegen";
+import { parseCodeSource } from "@unframework.dev/codegen";
+import type { CodeKind } from "@unframework.dev/codegen";
 
 /** A node of oxc's syntax tree, as far as this walk reads it. */
 interface Node {

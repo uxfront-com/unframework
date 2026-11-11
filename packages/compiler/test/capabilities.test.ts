@@ -1,10 +1,10 @@
 // Portability (P4): what a selected target cannot render exactly is declared in its capability
 // matrix, and the compiler reports it as a diagnostic for that target, located where the source
 // first uses it; the other targets compile the same source clean.
-import { CAPABILITY_NAMES, defineTarget } from "@unframework/codegen";
-import type { CapabilityCell, CapabilityName, Target } from "@unframework/codegen";
-import type { Diagnostic } from "@unframework/diagnostics";
-import { createModule } from "@unframework/ir";
+import { CAPABILITY_NAMES, defineTarget } from "@unframework.dev/codegen";
+import type { CapabilityCell, CapabilityName, Target } from "@unframework.dev/codegen";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
+import { createModule } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { everyKind } from "../../ir/test/fixtures.ts";

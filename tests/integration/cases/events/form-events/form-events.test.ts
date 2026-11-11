@@ -3,7 +3,7 @@
 // React's `onChange` would, `change` on a select and a checkbox fires on each pick, `focus` and
 // `blur` follow the field, and `submit` is prevented, so the form never navigates. The select is
 // found by its role and name: Playwright's label query finds no `<select>` inside its `<label>`.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import SignupForm from "./SignupForm.uf.tsx";

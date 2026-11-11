@@ -1,6 +1,6 @@
 // modules/nested-modules: a component calls a `.ts` module that reads another `.ts` module: each
 // output tree holds both, unchanged (ADR-0070).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Distance from "./Distance.uf.tsx";

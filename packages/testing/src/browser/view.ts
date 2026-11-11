@@ -6,7 +6,7 @@ import type {
   MountEvent,
   MountOptions,
   RenderReport,
-} from "@unframework/codegen";
+} from "@unframework.dev/codegen";
 import { inject, TestRunner } from "vitest";
 import type { RunnerTestCase } from "vitest";
 import { commands, page } from "vitest/browser";

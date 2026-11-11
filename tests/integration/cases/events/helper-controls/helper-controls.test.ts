@@ -4,7 +4,7 @@
 // or in a list, prevents nothing (a handler's value is discarded); a state read only in a list
 // handler's arguments reaches the emit; a form with a `once` and a plain submit listener, both
 // preventing, is never submitted.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import QuickActions from "./QuickActions.uf.tsx";

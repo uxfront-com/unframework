@@ -8,7 +8,7 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { OutputFile } from "@unframework/codegen";
+import type { OutputFile } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { compileComposableCases } from "../../codegen/test/composable-cases.ts";

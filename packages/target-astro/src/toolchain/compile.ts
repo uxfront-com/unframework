@@ -9,12 +9,12 @@ import type {
   ToolchainContext,
   ToolchainFile,
   ToolchainMessage,
-} from "@unframework/codegen";
+} from "@unframework.dev/codegen";
 import {
   assertFilesToCompile,
   compileScriptModules,
   resolveInstalled,
-} from "@unframework/codegen/toolchain-node";
+} from "@unframework.dev/codegen/toolchain-node";
 
 const COMPILER = "@astrojs/compiler-rs";
 

@@ -1,7 +1,7 @@
 // bindings/class-object: an object of toggles (a shorthand key, quoted keys, a key with two
 // names); when every toggle is off the element has no class name, and a class without names is
 // the same as no class attribute (ADR-0044).
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import NavItem from "./NavItem.uf.tsx";

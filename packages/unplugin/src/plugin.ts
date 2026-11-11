@@ -2,22 +2,22 @@ import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { basename, extname, isAbsolute, posix, relative, sep } from "node:path";
 
-import type { OutputFile, SourceMapV3, Target } from "@unframework/codegen";
+import type { OutputFile, SourceMapV3, Target } from "@unframework.dev/codegen";
 import {
   checkPassThrough,
   createProject,
   createSyntacticOracle,
   resolveTarget,
-} from "@unframework/compiler";
+} from "@unframework.dev/compiler";
 import type {
   CompileResult,
   CompilerPlugin,
   Project,
   TargetName,
   UfModule,
-} from "@unframework/compiler";
-import { formatDiagnostic, formatDiagnostics } from "@unframework/diagnostics";
-import type { Diagnostic } from "@unframework/diagnostics";
+} from "@unframework.dev/compiler";
+import { formatDiagnostic, formatDiagnostics } from "@unframework.dev/diagnostics";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
 import { createUnplugin } from "unplugin";
 import type { TransformResult, UnpluginFactory, UnpluginInstance, UnpluginOptions } from "unplugin";
 import type {

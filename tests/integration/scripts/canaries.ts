@@ -14,8 +14,8 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 
-import { LAYERS } from "@unframework/testing/node";
-import type { LayerName, PartialMatrix, ProjectKind } from "@unframework/testing/node";
+import { LAYERS } from "@unframework.dev/testing/node";
+import type { LayerName, PartialMatrix, ProjectKind } from "@unframework.dev/testing/node";
 
 import { canaryCase, canaryProjects, CANARIES, findCanary } from "../harness/canaries.ts";
 import type { Canary, CanaryCase } from "../harness/canaries.ts";

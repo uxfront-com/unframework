@@ -1,6 +1,6 @@
 // bindings/class-array: a class array with a static name, a template literal, a nested array,
 // toggles (`cond && "names"`, one or two names, a number condition) and a conditional string.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import ActionButton from "./ActionButton.uf.tsx";

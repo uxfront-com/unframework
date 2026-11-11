@@ -1,11 +1,11 @@
 // L3 for Svelte: svelte/compiler's compile() for the client and for the server, collecting the
 // first error (Svelte stops at it) and every warning, a11y included (spike: framework-compile ADR).
-import type { FrameworkCompileResult, ToolchainFile, ToolchainMessage } from "@unframework/codegen";
+import type { FrameworkCompileResult, ToolchainFile, ToolchainMessage } from "@unframework.dev/codegen";
 import {
   assertFilesToCompile,
   compileScriptModules,
   transformScriptModule,
-} from "@unframework/codegen/toolchain-node";
+} from "@unframework.dev/codegen/toolchain-node";
 import type { Warning } from "svelte/compiler";
 import type * as SvelteCompilerModule from "svelte/compiler";
 

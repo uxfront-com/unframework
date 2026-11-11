@@ -1,6 +1,6 @@
 // control-flow/nested: a list in a list, a conditional in a list item, and a list as the else
 // branch of a conditional.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import MenuBoard from "./MenuBoard.uf.tsx";

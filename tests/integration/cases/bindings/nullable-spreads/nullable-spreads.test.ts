@@ -3,7 +3,7 @@
 // and list items typed `T | undefined`) render each key of a present source and nothing for an
 // absent one, without throwing; a source a condition narrows (`attrs && …`, `!box.inner ? … : …`)
 // renders its keys in the branch where it is present.
-import { describeTargets, mount, mountScenario } from "@unframework/testing";
+import { describeTargets, mount, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import ShipmentCard from "./ShipmentCard.uf.tsx";

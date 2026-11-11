@@ -1,9 +1,9 @@
-import { isSharedModuleSpecifier } from "@unframework/analyzer";
-import type { StylesheetSource } from "@unframework/analyzer";
-import { scopeStylesheet } from "@unframework/codegen";
-import type { ModuleApi, Span } from "@unframework/ir";
-import type { ParsedModule } from "@unframework/parser";
-import type { TypeOracle } from "@unframework/type-oracle";
+import { isSharedModuleSpecifier } from "@unframework.dev/analyzer";
+import type { StylesheetSource } from "@unframework.dev/analyzer";
+import { scopeStylesheet } from "@unframework.dev/codegen";
+import type { ModuleApi, Span } from "@unframework.dev/ir";
+import type { ParsedModule } from "@unframework.dev/parser";
+import type { TypeOracle } from "@unframework.dev/type-oracle";
 
 /** What {@link compile}'s `resolve` option receives: an import's specifier, and its importer. */
 export interface ResolveRequest {

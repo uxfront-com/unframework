@@ -6,10 +6,10 @@ import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
 
-import { createFileResolver, createSyntacticOracle } from "@unframework/compiler";
-import type { CompileResult, Resolver, TypeOracle } from "@unframework/compiler";
-import { sortDiagnostics } from "@unframework/diagnostics";
-import type { Diagnostic } from "@unframework/diagnostics";
+import { createFileResolver, createSyntacticOracle } from "@unframework.dev/compiler";
+import type { CompileResult, Resolver, TypeOracle } from "@unframework.dev/compiler";
+import { sortDiagnostics } from "@unframework.dev/diagnostics";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
 
 import type { CaseInfo, CaseSource } from "./cases.ts";
 

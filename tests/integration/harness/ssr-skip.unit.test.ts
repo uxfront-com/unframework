@@ -1,4 +1,4 @@
-import type { CapabilityCell } from "@unframework/codegen";
+import type { CapabilityCell } from "@unframework.dev/codegen";
 import { describe, expect, it } from "vitest";
 
 import { ssrSkip } from "./ssr-skip.ts";

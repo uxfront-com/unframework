@@ -1,6 +1,6 @@
 // types/utility-types: props built with `Pick`, `Omit`, `Partial`, `Required` and `Readonly` from an
 // imported interface (ADR-0067): the picked members are required, the rest optional.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import TextField from "./TextField.uf.tsx";

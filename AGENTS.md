@@ -48,7 +48,7 @@ in a real browser.
   unframework.dev (`2.components/17.styles.md`, `18.styling-engines.md`).
 - **M5, cross-file types, consumer typing and composables, is done:** a props type may come from a
   `.ts` module, a child's module or a package, read through the type oracle
-  (`@unframework/type-oracle`, syntactic by default, or `@unframework/type-oracle-tsgo` on
+  (`@unframework.dev/type-oracle`, syntactic by default, or `@unframework.dev/type-oracle-tsgo` on
   TypeScript's checker), with `extends` chains, intersections and the five utility types. A
   component may be generic (`function List<T>`), and Angular types its generic scoped slots by the
   constraint (UF4004, info). Each output exports every type its module exports. Components read
@@ -59,14 +59,14 @@ in a real browser.
   pin layer 1 of the consumer checks, stock tsgo. Layer 3, the content mapper, is left out:
   TypeScript 7.1 refuses `.uf.tsx` as its extension (ADR-0072). Documented on unframework.dev
   (`2.components/19.types-and-generics.md`, `20.composables.md`, `21.shared-modules.md`).
-- **M6, build integration and distribution, is done:** `@unframework/unplugin` runs on unplugin's
+- **M6, build integration and distribution, is done:** `@unframework.dev/unplugin` runs on unplugin's
   generic hooks, with an entry for every bundler unplugin offers, and only Vite is tested
   (ADR-0075). On Vite it detects the target from the framework's plugin (UF7005, UF7006), serves
   each module's source map, routes edits through the framework's own hot updates, compiles the
   `.uf.tsx` sources a package ships (`./source/*`) and refuses a file outside `server.fs.allow`.
-  `@unframework/unplugin/astro` is the Astro integration. `unframework.config.ts`, written with
+  `@unframework.dev/unplugin/astro` is the Astro integration. `unframework.config.ts`, written with
   `defineConfig` from `unframework/config`, loads under type stripping (UF7001 to UF7004). The CLI,
-  `@unframework/cli` behind the umbrella's `unframework` bin, runs `build` (with `--package`, one
+  `@unframework.dev/cli` behind the umbrella's `unframework` bin, runs `build` (with `--package`, one
   package with each target in its framework's format, ADR-0077), `check` (pretty, JSON or SARIF),
   `explain` and `init`, and `create-unframework` starts a project (ADR-0076). A host app checks
   its `.uf.tsx` files through `tsconfig.uf.json` (ADR-0080). A host file that imports one still
@@ -141,16 +141,16 @@ pnpm format:check && pnpm lint && pnpm check-types && pnpm test   # the full ver
 pnpm format                           # oxfmt; pnpm lint:fix for oxlint's fixes
 
 # Narrower loops while you work
-pnpm --filter @unframework/analyzer test                          # one package's own tests
-pnpm --filter @unframework/integration test -- --project compile  # L1 and L2 only: the fastest corpus check
-pnpm --filter @unframework/integration test -- --project "toolchain:angular"   # L3, L4 and L5, one target
-pnpm --filter @unframework/integration test -- --project "ssr:svelte"          # L6, one target
-pnpm --filter @unframework/integration test -- --project "browser:vue"         # L7 to L11, and L13
-UF_TARGETS=vue,react pnpm --filter @unframework/integration test  # some targets only
-UF_BROWSER=firefox pnpm --filter @unframework/integration test -- --project 'browser:*'   # the nightly's run, in firefox or webkit
-pnpm --filter @unframework/integration budgets                   # L15: compile time and output size against budgets.json
-pnpm --filter @unframework/e2e prepare-apps                       # pack the packages, install the seven e2e apps outside the repo
-pnpm --filter @unframework/e2e e2e                                # their Playwright smoke and HMR specs; -- --project 'vue:*' for one app
+pnpm --filter @unframework.dev/analyzer test                          # one package's own tests
+pnpm --filter @unframework.dev/integration test -- --project compile  # L1 and L2 only: the fastest corpus check
+pnpm --filter @unframework.dev/integration test -- --project "toolchain:angular"   # L3, L4 and L5, one target
+pnpm --filter @unframework.dev/integration test -- --project "ssr:svelte"          # L6, one target
+pnpm --filter @unframework.dev/integration test -- --project "browser:vue"         # L7 to L11, and L13
+UF_TARGETS=vue,react pnpm --filter @unframework.dev/integration test  # some targets only
+UF_BROWSER=firefox pnpm --filter @unframework.dev/integration test -- --project 'browser:*'   # the nightly's run, in firefox or webkit
+pnpm --filter @unframework.dev/integration budgets                   # L15: compile time and output size against budgets.json
+pnpm --filter @unframework.dev/e2e prepare-apps                       # pack the packages, install the seven e2e apps outside the repo
+pnpm --filter @unframework.dev/e2e e2e                                # their Playwright smoke and HMR specs; -- --project 'vue:*' for one app
 pnpm --filter web build                                           # the docs: prerenders every page, fails on a broken link
 
 # Commands that write artefacts (never in CI)
@@ -162,7 +162,7 @@ pnpm test:canaries                    # after a harness change: every live layer
 pnpm test:budgets:update              # remeasure and rewrite tests/integration/budgets.json
 
 # Generated files
-pnpm --filter @unframework/ir generate         # the IR's JSON Schema, after a change to the IR types
+pnpm --filter @unframework.dev/ir generate         # the IR's JSON Schema, after a change to the IR types
 pnpm --filter unframework vendor:jsx           # re-vendor the JSX types after a bump of @vue/runtime-dom
 pnpm --filter unframework probes               # the JSX type probes (they also run in its tests)
 
@@ -200,7 +200,7 @@ Generate each of these with its command. The formatter and the linter skip them 
 | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `cases/**/__output__/`, `__expected__/`                     | `pnpm test:update`                                                                            |
 | `cases/**/__screenshots__/`, `__expected__/geometry.*.json` | `pnpm test:baselines:download` (CI's artefact) or `pnpm test:baselines` (Docker, linux/amd64) |
-| `packages/ir/schema/`                                       | `pnpm --filter @unframework/ir generate`                                                      |
+| `packages/ir/schema/`                                       | `pnpm --filter @unframework.dev/ir generate`                                                      |
 | `packages/unframework/src/vendor/`                          | `pnpm --filter unframework vendor:jsx`                                                        |
 | `tests/integration/budgets.json`                            | `pnpm test:budgets:update`                                                                    |
 
@@ -251,9 +251,9 @@ Generate each of these with its command. The formatter and the linter skip them 
 
   Planned packages (type-oracle, cli, visual, …) already have their slots.
 
-- A target's main entry imports only `@unframework/ir` and `@unframework/codegen`. Its `toolchain/`
+- A target's main entry imports only `@unframework.dev/ir` and `@unframework.dev/codegen`. Its `toolchain/`
   entries are for tests and tooling. Targets never import each other. Toolchain code that two
-  targets share goes in `@unframework/codegen/toolchain-node`.
+  targets share goes in `@unframework.dev/codegen/toolchain-node`.
 - The repo runs TypeScript 7 (tsgo). Only `type-oracle-tsgo` (from M5) and the test toolchains may
   load TypeScript's API. TypeScript 6 (`@typescript/typescript6`) lives only in
   `tests/toolchains/{vue,svelte,astro,angular}` and in `tests/toolchains/qwik-eslint`, the lint
@@ -339,7 +339,7 @@ Generate each of these with its command. The formatter and the linter skip them 
 **Add an IR node or attribute kind.**
 
 1. Change `types.ts`, the builders, `walk` and the invariants in `packages/ir`.
-2. Run `pnpm --filter @unframework/ir generate`.
+2. Run `pnpm --filter @unframework.dev/ir generate`.
 3. Map the kind to a capability in `packages/codegen/src/capabilities.ts`. The records there fail
    type-checking until you do.
 

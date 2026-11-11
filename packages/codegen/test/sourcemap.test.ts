@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 
 import { decodedMappings, originalPositionFor, TraceMap } from "@jridgewell/trace-mapping";
-import type { Code, CodeReference, UfModule } from "@unframework/ir";
+import type { Code, CodeReference, UfModule } from "@unframework.dev/ir";
 import { format } from "oxfmt";
 import { describe, expect, it } from "vitest";
 

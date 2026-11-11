@@ -1,5 +1,5 @@
-import { formatOutput } from "@unframework/codegen";
-import type { ElementNode } from "@unframework/ir";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { ElementNode } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import target from "../src/index.ts";

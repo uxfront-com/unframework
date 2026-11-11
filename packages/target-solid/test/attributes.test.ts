@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { transformSync } from "@babel/core";
-import { typecheckWithTsgo } from "@unframework/codegen/toolchain-node";
+import { typecheckWithTsgo } from "@unframework.dev/codegen/toolchain-node";
 import {
   ARIA_ATTRIBUTES,
   BINDABLE_BOOLEAN_ATTRIBUTES,
@@ -25,7 +25,7 @@ import {
   SVG_UNRENDERABLE_ELEMENTS,
   UNPORTABLE_ELEMENTS,
   UNRENDERABLE_ELEMENTS,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 // The analyser's own rules, by path (the package depends only on ir and codegen).

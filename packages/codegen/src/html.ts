@@ -1,4 +1,4 @@
-// The HTML, SVG and CSS vocabulary lives in @unframework/ir, which every layer shares; the
+// The HTML, SVG and CSS vocabulary lives in @unframework.dev/ir, which every layer shares; the
 // target kit re-exports what targets print by, so one import gives a target the whole kit.
 export {
   ALLOWED_GLOBALS,
@@ -28,5 +28,5 @@ export {
   URL_ATTRIBUTES,
   VOID_ELEMENTS,
   WHITESPACE_PRESERVING_ELEMENTS,
-} from "@unframework/ir";
-export type { Namespace } from "@unframework/ir";
+} from "@unframework.dev/ir";
+export type { Namespace } from "@unframework.dev/ir";

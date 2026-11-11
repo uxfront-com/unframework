@@ -11,10 +11,10 @@ import {
   createModuleConstant,
   createTypeText,
   PURE_GLOBALS,
-} from "@unframework/ir";
-import type { BindingId, CodeReference, ModuleConstant, Span } from "@unframework/ir";
-import { visitorKeys } from "@unframework/parser";
-import type { AST, ParsedModule } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { BindingId, CodeReference, ModuleConstant, Span } from "@unframework.dev/ir";
+import { visitorKeys } from "@unframework.dev/parser";
+import type { AST, ParsedModule } from "@unframework.dev/parser";
 
 import type { Reporter } from "./context.ts";
 import {

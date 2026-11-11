@@ -1,7 +1,7 @@
 // semantics/late-optional-prop: an optional prop the parent did not pass at mount, then passes in
 // a rerender, reaches a computed and a watcher that read it, as it reaches the template; removed
 // again, it takes its default (reactive props).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import PageCount from "./PageCount.uf.tsx";

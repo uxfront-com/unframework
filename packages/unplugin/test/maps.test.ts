@@ -3,9 +3,9 @@
 import { SourceMap } from "node:module";
 import type { SourceMapPayload } from "node:module";
 
-import type * as Compiler from "@unframework/compiler";
-import { TARGET_NAMES } from "@unframework/compiler";
-import { createDiagnostic } from "@unframework/diagnostics";
+import type * as Compiler from "@unframework.dev/compiler";
+import { TARGET_NAMES } from "@unframework.dev/compiler";
+import { createDiagnostic } from "@unframework.dev/diagnostics";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { ID_SUFFIXES } from "../src/index.ts";
@@ -16,7 +16,7 @@ import type { Project } from "./fixtures.ts";
 const stub = vi.hoisted(() => ({ dropMaps: false }));
 
 // A stub: a compile that gives its outputs no map, with a warning that isn't an error.
-vi.mock("@unframework/compiler", async (importActual) => {
+vi.mock("@unframework.dev/compiler", async (importActual) => {
   const actual = await importActual<typeof Compiler>();
   return {
     ...actual,

@@ -1,10 +1,10 @@
 // The rules judged once a component's setup and render tree are lowered (ADR-0045 to ADR-0049):
-// those that need every local function's summary (`summarize` from `@unframework/ir`, which the
+// those that need every local function's summary (`summarize` from `@unframework.dev/ir`, which the
 // invariants and the targets read too), with what the walks noted that needs the source's syntax
 // (`CodeFacts`).
 // Each reports at the exact place: the call of a function, the read, the write.
 
-import type { Fix } from "@unframework/diagnostics";
+import type { Fix } from "@unframework.dev/diagnostics";
 import {
   BROWSER_GLOBALS,
   codeOf,
@@ -16,7 +16,7 @@ import {
   summarize,
   summarizeCode,
   summarizeTracked,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Binding,
   BindingId,
@@ -27,9 +27,9 @@ import type {
   FunctionSummary,
   Span,
   UfComponent,
-} from "@unframework/ir";
-import type { AST } from "@unframework/parser";
-import { visitorKeys } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
+import { visitorKeys } from "@unframework.dev/parser";
 
 import type { AuthoringApi } from "./authoring.ts";
 import { AUTHORING_TYPES } from "./authoring.ts";

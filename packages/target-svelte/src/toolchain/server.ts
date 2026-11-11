@@ -1,4 +1,4 @@
-import type { SsrRenderer } from "@unframework/codegen";
+import type { SsrRenderer } from "@unframework.dev/codegen";
 import type { Component } from "svelte";
 import { render } from "svelte/server";
 

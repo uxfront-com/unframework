@@ -1,4 +1,4 @@
-// `pnpm --filter @unframework/integration summary` (plan §7.4): merges every partial parity
+// `pnpm --filter @unframework.dev/integration summary` (plan §7.4): merges every partial parity
 // matrix into `.reports/parity-matrix.json` and `.md`, appends the Markdown to
 // $GITHUB_STEP_SUMMARY in CI, and fails on any failed cell and, when every project ran (or, in
 // CI's parity job, must have), on any missing project and (case, target, live layer) cell. With
@@ -6,8 +6,8 @@
 // `parity-matrix.<engine>.json` and `.md` there (ADR-0066).
 import { join } from "node:path";
 
-import { CAPABILITY_NAMES } from "@unframework/codegen";
-import { resolveBrowser, summaryName, writeSummary } from "@unframework/testing/node";
+import { CAPABILITY_NAMES } from "@unframework.dev/codegen";
+import { resolveBrowser, summaryName, writeSummary } from "@unframework.dev/testing/node";
 
 import { listCases } from "../harness/cases.ts";
 import { reportsDirOf } from "../harness/paths.ts";

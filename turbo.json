@@ -29,7 +29,7 @@
     // tests, the harness and the package template. Hashing that would be hashing the
     // repository, and they run in about a second, so they always run: a cached pass must never
     // hide a layering violation.
-    "@unframework/repo-tests#test": {
+    "@unframework.dev/repo-tests#test": {
       "dependsOn": ["transit"],
       "cache": false
     },
@@ -46,7 +46,7 @@
     // tests also read CI's workflow (the baseline image, the jobs the parity job merges) and the
     // nightly's (the canary matrix), so a change there alone must not replay a cached pass. The
     // parity matrices are outputs, so a cached run still leaves them for the summary.
-    "@unframework/integration#test": {
+    "@unframework.dev/integration#test": {
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/.github/workflows/ci.yml",
@@ -54,13 +54,13 @@
       ],
       "dependsOn": [
         "transit",
-        "@unframework/toolchain-angular#transit",
-        "@unframework/toolchain-astro#transit",
-        "@unframework/toolchain-qwik#transit",
-        "@unframework/toolchain-react#transit",
-        "@unframework/toolchain-solid#transit",
-        "@unframework/toolchain-svelte#transit",
-        "@unframework/toolchain-vue#transit"
+        "@unframework.dev/toolchain-angular#transit",
+        "@unframework.dev/toolchain-astro#transit",
+        "@unframework.dev/toolchain-qwik#transit",
+        "@unframework.dev/toolchain-react#transit",
+        "@unframework.dev/toolchain-solid#transit",
+        "@unframework.dev/toolchain-svelte#transit",
+        "@unframework.dev/toolchain-vue#transit"
       ],
       "env": ["CI", "UF_*"],
       "outputs": [".reports/parity-matrix*"]

@@ -5,10 +5,10 @@
 // The references client code makes in the functions it hands on are marked `later` in the IR,
 // whose `summarizeTracked` leaves them out of a `watchEffect`'s dependencies on every target.
 
-import { functionsOf } from "@unframework/ir";
-import type { Span, UfComponent } from "@unframework/ir";
-import type { AST } from "@unframework/parser";
-import { visitorKeys } from "@unframework/parser";
+import { functionsOf } from "@unframework.dev/ir";
+import type { Span, UfComponent } from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
+import { visitorKeys } from "@unframework.dev/parser";
 
 import type { RenderContext } from "./render.ts";
 

@@ -1,4 +1,4 @@
-import { analyze } from "@unframework/analyzer";
+import { analyze } from "@unframework.dev/analyzer";
 // Where a handler's event controls run (src/controls.ts, ADR-0047), on hand-built IR: a control a
 // handler reaches through a call runs as the event is dispatched only when the call is at the top
 // of the handler, and `requiredCapabilities` derives `conditional-event-control` where it is not.
@@ -17,7 +17,7 @@ import {
   createParameter,
   createStateItem,
   span,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Binding,
   Code,
@@ -26,8 +26,8 @@ import type {
   FunctionCode,
   Span,
   UfComponent,
-} from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import {

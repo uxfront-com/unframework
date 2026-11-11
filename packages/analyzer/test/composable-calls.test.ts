@@ -1,6 +1,6 @@
-import { applyFixes } from "@unframework/diagnostics";
-import type { ModuleApi } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+import { applyFixes } from "@unframework.dev/diagnostics";
+import type { ModuleApi } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 // A component's call of a composable (ADR-0069): `const { on, toggle } = useToggle(false)` at the

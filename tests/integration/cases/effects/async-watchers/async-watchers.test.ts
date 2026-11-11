@@ -8,7 +8,7 @@
 // clause may return; a watcher calls a function that reassigns its parameter. Every reply comes
 // from a button (Reply, Decline, Fail answer the oldest question), so each run after an await is
 // a step of its own on every target.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import SyncDesk from "./SyncDesk.uf.tsx";

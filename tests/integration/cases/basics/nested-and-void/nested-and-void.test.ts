@@ -1,6 +1,6 @@
 // basics/nested-and-void: nesting, void elements (img, br, hr, input), entities and a labelled
 // input, on every target.
-import { describeTargets, mount } from "@unframework/testing";
+import { describeTargets, mount } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import ProfileCard from "./ProfileCard.uf.tsx";

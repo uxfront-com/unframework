@@ -1,6 +1,6 @@
 // expose/focus: a search field exposes `focus` (ADR-0054's `defineExpose`), and its parent calls
 // it through a component ref when a button is clicked.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Header from "./Header.uf.tsx";

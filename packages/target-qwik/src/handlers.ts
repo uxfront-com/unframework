@@ -12,7 +12,7 @@
 // A function whose body was only controls (`const cancel = (event: Event) =>
 // event.preventDefault();`) is empty: a statement that only calls it goes from its callers too,
 // and it is not declared where nothing else names it.
-import { ownControls, parseCodeSource } from "@unframework/codegen";
+import { ownControls, parseCodeSource } from "@unframework.dev/codegen";
 import type {
   BindingId,
   Code,
@@ -22,8 +22,8 @@ import type {
   Parameter,
   Span,
   UfComponent,
-} from "@unframework/ir";
-import { walk } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import { walk } from "@unframework.dev/ir";
 
 import { unreachable } from "./plan.ts";
 

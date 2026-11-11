@@ -83,7 +83,7 @@ export default defineNuxtConfig({
     // redirects the same way, since agents may guess it.
     "/docs": { redirect: "/docs/getting-started/introduction" },
     "/raw/docs.md": { redirect: "/raw/docs/getting-started/introduction.md" },
-    // Every diagnostic links its code (`docsUrl()` in @unframework/diagnostics), which opens
+    // Every diagnostic links its code (`docsUrl()` in @unframework.dev/diagnostics), which opens
     // the code's section of the reference. The page's path is lower case, as Nuxt Content
     // writes every path, and each section carries an anchor in the code's own case
     // (`[UF1001]{#UF1001}`). The Cloudflare preset writes this rule to _redirects, which

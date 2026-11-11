@@ -3,7 +3,7 @@
 // optimizer, mounted by the toolchain's adapter, acted on as the testing API acts (each action
 // through `interact`, then settled), with the emitted events recorded through the adapter's
 // listeners. No retrying assertion: each action has settled when the test reads the page.
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 

@@ -1,4 +1,4 @@
-import type { HarnessContext } from "@unframework/testing/node";
+import type { HarnessContext } from "@unframework.dev/testing/node";
 import { describe, expect, inject, it } from "vitest";
 import type { UserWorkspaceConfig } from "vitest/config";
 
@@ -155,7 +155,7 @@ describe("project factories", () => {
       if (!unavailable) throw new Error("The project provides no ufUnavailable.");
       expect(unavailable.layers).toEqual(layers);
       expect(unavailable.message).toMatch(
-        /^The missing toolchain \(@unframework\/target-missing\/toolchain\) could not be loaded\.\ncaused by: /,
+        /^The missing toolchain \(@unframework\.dev\/target-missing\/toolchain\) could not be loaded\.\ncaused by: /,
       );
     }
   });

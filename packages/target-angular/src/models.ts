@@ -9,8 +9,8 @@ import {
   mergesWholeStyle,
   rewriteExpression,
   typeNames,
-} from "@unframework/codegen";
-import type { PrintedAttribute } from "@unframework/codegen";
+} from "@unframework.dev/codegen";
+import type { PrintedAttribute } from "@unframework.dev/codegen";
 import type {
   Attribute,
   BindingId,
@@ -18,7 +18,7 @@ import type {
   EventAttribute,
   ModelAttribute,
   UfComponent,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { bindingById } from "./plan.ts";
 import type { Plan } from "./plan.ts";

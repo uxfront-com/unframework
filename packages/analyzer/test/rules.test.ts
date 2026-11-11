@@ -1,7 +1,7 @@
 // The analyser's rules for setup code, handlers and templates (ADR-0045 to ADR-0049): each code's
 // triggers at their exact spans, the shapes that stay accepted, and every fix applied and compiled
 // again (`applyAndRecheck`). Every run checks the IR's invariants (`run`).
-import type { NarrowedPath } from "@unframework/ir";
+import type { NarrowedPath } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import {

@@ -3,7 +3,7 @@
 // removes the same function, so once the component is removed the shortcut no longer saves it,
 // though it rendered again in between. A control in a function handed to `addEventListener` is
 // Qwik's `conditional-event-control` (its handler runs after the dispatch): Qwik has no output.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import DraftEditor from "./DraftEditor.uf.tsx";

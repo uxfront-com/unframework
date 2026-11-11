@@ -7,8 +7,8 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 
 import { transformSync } from "@babel/core";
-import { formatOutput } from "@unframework/codegen";
-import type { ModuleApi, UfModule } from "@unframework/ir";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { ModuleApi, UfModule } from "@unframework.dev/ir";
 import type { Component } from "solid-js";
 import { createComponent, renderToStringAsync } from "solid-js/web";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

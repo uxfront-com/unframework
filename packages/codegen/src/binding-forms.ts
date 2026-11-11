@@ -1,14 +1,14 @@
 // The binding forms ADR-0065 lowers that a target may need an inline helper for: a `style`
 // bound to one value, an object or a declaration list known only at run time (or a spread's
 // `style` key, which is the same), and a class part that may hold an array or an object.
-import { walk } from "@unframework/ir";
+import { walk } from "@unframework.dev/ir";
 import type {
   Attribute,
   ComponentAttribute,
   Expression,
   SpreadAttribute,
   UfComponent,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 /** Which of the forms a component's template uses. */
 export interface BindingForms {

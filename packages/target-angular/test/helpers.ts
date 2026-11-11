@@ -11,10 +11,10 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { formatOutput, scopeStylesheet } from "@unframework/codegen";
-import type { EmitContext, OutputFile, ToolchainContext } from "@unframework/codegen";
-import { checkInvariants } from "@unframework/ir";
-import type { UfModule } from "@unframework/ir";
+import { formatOutput, scopeStylesheet } from "@unframework.dev/codegen";
+import type { EmitContext, OutputFile, ToolchainContext } from "@unframework.dev/codegen";
+import { checkInvariants } from "@unframework.dev/ir";
+import type { UfModule } from "@unframework.dev/ir";
 import type { Plugin, ResolvedConfig } from "vite";
 
 // The analyser is no dependency of a target (plan §5.2): tests reach it from its source, as the

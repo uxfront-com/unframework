@@ -2,7 +2,7 @@
 // Angular's AOT compiler, `NgtscProgram`, driven the way ngc drives it.
 import { dirname, join, relative, resolve } from "node:path";
 
-import type { FrameworkCompileResult, ToolchainMessage } from "@unframework/codegen";
+import type { FrameworkCompileResult, ToolchainMessage } from "@unframework.dev/codegen";
 
 import type {
   AngularCompiler,

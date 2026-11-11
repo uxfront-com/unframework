@@ -1,7 +1,7 @@
 // styleframe/recipe: a Styleframe recipe called in a `class` (ADR-0064). Every output imports it
 // from `virtual:styleframe` as written, and Styleframe's runtime gives its utility classes, which
 // Styleframe's stylesheet styles.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Badge from "./Badge.uf.tsx";

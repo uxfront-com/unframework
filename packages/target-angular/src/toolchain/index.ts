@@ -1,12 +1,12 @@
 // The Angular toolchain (plan §5.7): how tests build, check and run the Angular output.
 // Angular's compiler stack is loaded from `context.toolchainDir` (see ./tools.ts), so this
 // package depends only on the Angular runtime its adapters import.
-import type { Toolchain } from "@unframework/codegen";
+import type { Toolchain } from "@unframework.dev/codegen";
 import {
   lintWithEslint,
   lintWithOxlint,
   mergeLintResults,
-} from "@unframework/codegen/toolchain-node";
+} from "@unframework.dev/codegen/toolchain-node";
 
 import { frameworkCompile, frameworkEmit, typecheck } from "./check.ts";
 import { viteConfig } from "./vite.ts";
@@ -15,8 +15,8 @@ import { viteConfig } from "./vite.ts";
 export const toolchain: Toolchain = {
   name: "angular",
   vite: viteConfig,
-  client: "@unframework/target-angular/toolchain/client",
-  server: "@unframework/target-angular/toolchain/server",
+  client: "@unframework.dev/target-angular/toolchain/client",
+  server: "@unframework.dev/target-angular/toolchain/server",
   frameworkCompile,
   frameworkEmit,
   typecheck,

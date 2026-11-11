@@ -1,7 +1,7 @@
 // Imports that pass through (ADR-0064): the `passThrough` option, checked before anything is
 // compiled and handed to the analyser, and a plugin's `ir` hook, which may drop a pass-through
 // import, never add, duplicate, reorder or change one.
-import type { PassThroughImport, UfModule } from "@unframework/ir";
+import type { PassThroughImport, UfModule } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { checkPassThrough, compile } from "../src/index.ts";

@@ -1,7 +1,7 @@
 // styles/layers: `@layer` (ADR-0063). The compiler scopes the rules inside each layer and keeps
 // the layers, so the `theme` layer's colours win over the `base` layer's, which come later in
 // the sheet.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Card from "./Card.uf.tsx";

@@ -1,4 +1,4 @@
-import type { Diagnostic, Fix } from "@unframework/diagnostics";
+import type { Diagnostic, Fix } from "@unframework.dev/diagnostics";
 import {
   createComponent,
   createDeclaredTypeExport,
@@ -20,7 +20,7 @@ import {
   functionsOf,
   isExportName,
   walk,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   ComponentApi,
   ComposableApi,
@@ -40,7 +40,7 @@ import type {
   UfComposable,
   UfExport,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import {
   exportName,
   findComponents,
@@ -49,13 +49,13 @@ import {
   parseModule,
   typeDeclarationOf,
   visitorKeys,
-} from "@unframework/parser";
+} from "@unframework.dev/parser";
 import type {
   AST,
   ComponentExport,
   ParsedModule,
   TypeDeclarationStatement,
-} from "@unframework/parser";
+} from "@unframework.dev/parser";
 
 import { componentApi, withReferences } from "./api.ts";
 import type { ApiContext } from "./api.ts";

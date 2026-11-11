@@ -352,16 +352,16 @@ importers:
       '@typescript-eslint/scope-manager':
         specifier: 'catalog:'
         version: 8.71.0
-      '@unframework/diagnostics':
+      '@unframework.dev/diagnostics':
         specifier: workspace:*
         version: link:../diagnostics
-      '@unframework/ir':
+      '@unframework.dev/ir':
         specifier: workspace:*
         version: link:../ir
-      '@unframework/parser':
+      '@unframework.dev/parser':
         specifier: workspace:*
         version: link:../parser
-      '@unframework/type-oracle':
+      '@unframework.dev/type-oracle':
         specifier: workspace:*
         version: link:../type-oracle
     devDependencies:
@@ -401,16 +401,16 @@ importers:
 
   packages/cli:
     dependencies:
-      '@unframework/compiler':
+      '@unframework.dev/compiler':
         specifier: workspace:*
         version: link:../compiler
-      '@unframework/diagnostics':
+      '@unframework.dev/diagnostics':
         specifier: workspace:*
         version: link:../diagnostics
-      '@unframework/parser':
+      '@unframework.dev/parser':
         specifier: workspace:*
         version: link:../parser
-      '@unframework/type-oracle-tsgo':
+      '@unframework.dev/type-oracle-tsgo':
         specifier: workspace:*
         version: link:../type-oracle-tsgo
     devDependencies:
@@ -447,13 +447,13 @@ importers:
       '@standard-schema/spec':
         specifier: 'catalog:'
         version: 1.1.0
-      '@unframework/diagnostics':
+      '@unframework.dev/diagnostics':
         specifier: workspace:*
         version: link:../diagnostics
-      '@unframework/ir':
+      '@unframework.dev/ir':
         specifier: workspace:*
         version: link:../ir
-      '@unframework/parser':
+      '@unframework.dev/parser':
         specifier: workspace:*
         version: link:../parser
       magic-string:
@@ -475,7 +475,7 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.0
-      '@unframework/analyzer':
+      '@unframework.dev/analyzer':
         specifier: workspace:*
         version: link:../analyzer
       '@uxfront/typescript-config':
@@ -502,43 +502,43 @@ importers:
 
   packages/compiler:
     dependencies:
-      '@unframework/analyzer':
+      '@unframework.dev/analyzer':
         specifier: workspace:*
         version: link:../analyzer
-      '@unframework/codegen':
+      '@unframework.dev/codegen':
         specifier: workspace:*
         version: link:../codegen
-      '@unframework/diagnostics':
+      '@unframework.dev/diagnostics':
         specifier: workspace:*
         version: link:../diagnostics
-      '@unframework/ir':
+      '@unframework.dev/ir':
         specifier: workspace:*
         version: link:../ir
-      '@unframework/parser':
+      '@unframework.dev/parser':
         specifier: workspace:*
         version: link:../parser
-      '@unframework/target-angular':
+      '@unframework.dev/target-angular':
         specifier: workspace:*
         version: link:../target-angular
-      '@unframework/target-astro':
+      '@unframework.dev/target-astro':
         specifier: workspace:*
         version: link:../target-astro
-      '@unframework/target-qwik':
+      '@unframework.dev/target-qwik':
         specifier: workspace:*
         version: link:../target-qwik
-      '@unframework/target-react':
+      '@unframework.dev/target-react':
         specifier: workspace:*
         version: link:../target-react
-      '@unframework/target-solid':
+      '@unframework.dev/target-solid':
         specifier: workspace:*
         version: link:../target-solid
-      '@unframework/target-svelte':
+      '@unframework.dev/target-svelte':
         specifier: workspace:*
         version: link:../target-svelte
-      '@unframework/target-vue':
+      '@unframework.dev/target-vue':
         specifier: workspace:*
         version: link:../target-vue
-      '@unframework/type-oracle':
+      '@unframework.dev/type-oracle':
         specifier: workspace:*
         version: link:../type-oracle
     devDependencies:
@@ -630,10 +630,10 @@ importers:
 
   packages/target-angular:
     dependencies:
-      '@unframework/codegen':
+      '@unframework.dev/codegen':
         specifier: workspace:*
         version: link:../codegen
-      '@unframework/ir':
+      '@unframework.dev/ir':
         specifier: workspace:*
         version: link:../ir
     devDependencies:
@@ -682,10 +682,10 @@ importers:
 
   packages/target-astro:
     dependencies:
-      '@unframework/codegen':
+      '@unframework.dev/codegen':
         specifier: workspace:*
         version: link:../codegen
-      '@unframework/ir':
+      '@unframework.dev/ir':
         specifier: workspace:*
         version: link:../ir
     devDependencies:
@@ -713,10 +713,10 @@ importers:
 
   packages/target-qwik:
     dependencies:
-      '@unframework/codegen':
+      '@unframework.dev/codegen':
         specifier: workspace:*
         version: link:../codegen
-      '@unframework/ir':
+      '@unframework.dev/ir':
         specifier: workspace:*
         version: link:../ir
     devDependencies:
@@ -753,10 +753,10 @@ importers:
 
   packages/target-react:
     dependencies:
-      '@unframework/codegen':
+      '@unframework.dev/codegen':
         specifier: workspace:*
         version: link:../codegen
-      '@unframework/ir':
+      '@unframework.dev/ir':
         specifier: workspace:*
         version: link:../ir
     devDependencies:
@@ -811,10 +811,10 @@ importers:
 
   packages/target-solid:
     dependencies:
-      '@unframework/codegen':
+      '@unframework.dev/codegen':
         specifier: workspace:*
         version: link:../codegen
-      '@unframework/ir':
+      '@unframework.dev/ir':
         specifier: workspace:*
         version: link:../ir
     devDependencies:
@@ -860,10 +860,10 @@ importers:
 
   packages/target-svelte:
     dependencies:
-      '@unframework/codegen':
+      '@unframework.dev/codegen':
         specifier: workspace:*
         version: link:../codegen
-      '@unframework/ir':
+      '@unframework.dev/ir':
         specifier: workspace:*
         version: link:../ir
     devDependencies:
@@ -897,10 +897,10 @@ importers:
 
   packages/target-vue:
     dependencies:
-      '@unframework/codegen':
+      '@unframework.dev/codegen':
         specifier: workspace:*
         version: link:../codegen
-      '@unframework/ir':
+      '@unframework.dev/ir':
         specifier: workspace:*
         version: link:../ir
     devDependencies:
@@ -937,31 +937,31 @@ importers:
       '@fontsource/inter':
         specifier: 'catalog:'
         version: 5.3.0
-      '@unframework/codegen':
+      '@unframework.dev/codegen':
         specifier: workspace:*
         version: link:../codegen
-      '@unframework/ir':
+      '@unframework.dev/ir':
         specifier: workspace:*
         version: link:../ir
-      '@unframework/target-angular':
+      '@unframework.dev/target-angular':
         specifier: workspace:*
         version: link:../target-angular
-      '@unframework/target-astro':
+      '@unframework.dev/target-astro':
         specifier: workspace:*
         version: link:../target-astro
-      '@unframework/target-qwik':
+      '@unframework.dev/target-qwik':
         specifier: workspace:*
         version: link:../target-qwik
-      '@unframework/target-react':
+      '@unframework.dev/target-react':
         specifier: workspace:*
         version: link:../target-react
-      '@unframework/target-solid':
+      '@unframework.dev/target-solid':
         specifier: workspace:*
         version: link:../target-solid
-      '@unframework/target-svelte':
+      '@unframework.dev/target-svelte':
         specifier: workspace:*
         version: link:../target-svelte
-      '@unframework/target-vue':
+      '@unframework.dev/target-vue':
         specifier: workspace:*
         version: link:../target-vue
       axe-core:
@@ -1026,7 +1026,7 @@ importers:
 
   packages/type-oracle-tsgo:
     dependencies:
-      '@unframework/type-oracle':
+      '@unframework.dev/type-oracle':
         specifier: workspace:*
         version: link:../type-oracle
       typescript:
@@ -1048,10 +1048,10 @@ importers:
 
   packages/unframework:
     dependencies:
-      '@unframework/cli':
+      '@unframework.dev/cli':
         specifier: workspace:*
         version: link:../cli
-      '@unframework/compiler':
+      '@unframework.dev/compiler':
         specifier: workspace:*
         version: link:../compiler
       csstype:
@@ -1082,16 +1082,16 @@ importers:
 
   packages/unplugin:
     dependencies:
-      '@unframework/codegen':
+      '@unframework.dev/codegen':
         specifier: workspace:*
         version: link:../codegen
-      '@unframework/compiler':
+      '@unframework.dev/compiler':
         specifier: workspace:*
         version: link:../compiler
-      '@unframework/diagnostics':
+      '@unframework.dev/diagnostics':
         specifier: workspace:*
         version: link:../diagnostics
-      '@unframework/parser':
+      '@unframework.dev/parser':
         specifier: workspace:*
         version: link:../parser
       magic-string:
@@ -1107,22 +1107,22 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.0
-      '@unframework/target-angular':
+      '@unframework.dev/target-angular':
         specifier: workspace:*
         version: link:../target-angular
-      '@unframework/target-qwik':
+      '@unframework.dev/target-qwik':
         specifier: workspace:*
         version: link:../target-qwik
-      '@unframework/target-react':
+      '@unframework.dev/target-react':
         specifier: workspace:*
         version: link:../target-react
-      '@unframework/target-solid':
+      '@unframework.dev/target-solid':
         specifier: workspace:*
         version: link:../target-solid
-      '@unframework/target-svelte':
+      '@unframework.dev/target-svelte':
         specifier: workspace:*
         version: link:../target-svelte
-      '@unframework/target-vue':
+      '@unframework.dev/target-vue':
         specifier: workspace:*
         version: link:../target-vue
       '@uxfront/typescript-config':
@@ -1266,46 +1266,46 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
-      '@unframework/codegen':
+      '@unframework.dev/codegen':
         specifier: workspace:*
         version: link:../../packages/codegen
-      '@unframework/compiler':
+      '@unframework.dev/compiler':
         specifier: workspace:*
         version: link:../../packages/compiler
-      '@unframework/diagnostics':
+      '@unframework.dev/diagnostics':
         specifier: workspace:*
         version: link:../../packages/diagnostics
-      '@unframework/ir':
+      '@unframework.dev/ir':
         specifier: workspace:*
         version: link:../../packages/ir
-      '@unframework/parser':
+      '@unframework.dev/parser':
         specifier: workspace:*
         version: link:../../packages/parser
-      '@unframework/target-angular':
+      '@unframework.dev/target-angular':
         specifier: workspace:*
         version: link:../../packages/target-angular
-      '@unframework/target-astro':
+      '@unframework.dev/target-astro':
         specifier: workspace:*
         version: link:../../packages/target-astro
-      '@unframework/target-qwik':
+      '@unframework.dev/target-qwik':
         specifier: workspace:*
         version: link:../../packages/target-qwik
-      '@unframework/target-react':
+      '@unframework.dev/target-react':
         specifier: workspace:*
         version: link:../../packages/target-react
-      '@unframework/target-solid':
+      '@unframework.dev/target-solid':
         specifier: workspace:*
         version: link:../../packages/target-solid
-      '@unframework/target-svelte':
+      '@unframework.dev/target-svelte':
         specifier: workspace:*
         version: link:../../packages/target-svelte
-      '@unframework/target-vue':
+      '@unframework.dev/target-vue':
         specifier: workspace:*
         version: link:../../packages/target-vue
-      '@unframework/testing':
+      '@unframework.dev/testing':
         specifier: workspace:*
         version: link:../../packages/testing
-      '@unframework/unplugin':
+      '@unframework.dev/unplugin':
         specifier: workspace:*
         version: link:../../packages/unplugin
       '@uxfront/typescript-config':
@@ -1371,13 +1371,13 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.0
-      '@unframework/codegen':
+      '@unframework.dev/codegen':
         specifier: workspace:*
         version: link:../../packages/codegen
-      '@unframework/compiler':
+      '@unframework.dev/compiler':
         specifier: workspace:*
         version: link:../../packages/compiler
-      '@unframework/diagnostics':
+      '@unframework.dev/diagnostics':
         specifier: workspace:*
         version: link:../../packages/diagnostics
       '@uxfront/typescript-config':
@@ -1476,7 +1476,7 @@ importers:
 
   tests/toolchains/qwik:
     devDependencies:
-      '@unframework/toolchain-qwik-eslint':
+      '@unframework.dev/toolchain-qwik-eslint':
         specifier: workspace:*
         version: link:../qwik-eslint
       eslint:

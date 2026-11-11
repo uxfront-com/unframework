@@ -2,8 +2,8 @@
 // this package, so each stands in by the name it registers.
 import { writeFileSync } from "node:fs";
 
-import { compile } from "@unframework/compiler";
-import type { TargetName } from "@unframework/compiler";
+import { compile } from "@unframework.dev/compiler";
+import type { TargetName } from "@unframework.dev/compiler";
 import { resolveConfig } from "vite";
 import type { Plugin } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

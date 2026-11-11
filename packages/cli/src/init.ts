@@ -1,5 +1,5 @@
 // `unframework init` (plan §8.3, ADR-0076, ADR-0080). The files are strings here, so they ship in
-// `dist` with no copy step. No test file until `@unframework/testing` is public (M7).
+// `dist` with no copy step. No test file until `@unframework.dev/testing` is public (M7).
 import { lstatSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import type { Stats } from "node:fs";
 import { dirname, join } from "node:path";

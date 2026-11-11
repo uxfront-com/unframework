@@ -4,8 +4,8 @@ import {
   shapeQueries,
   sharedModuleImports,
   stylesheetImports,
-} from "@unframework/analyzer";
-import type { SharedModule, StylesheetSource } from "@unframework/analyzer";
+} from "@unframework.dev/analyzer";
+import type { SharedModule, StylesheetSource } from "@unframework.dev/analyzer";
 import {
   anchorOutput,
   formatOutput,
@@ -13,16 +13,16 @@ import {
   kebabCase,
   remapFormatted,
   scopeStylesheet,
-} from "@unframework/codegen";
-import type { FormatOutcome, OutputFile, Target } from "@unframework/codegen";
-import { createDiagnostic, sortDiagnostics } from "@unframework/diagnostics";
-import type { Diagnostic } from "@unframework/diagnostics";
-import { checkInvariants, validateModule } from "@unframework/ir";
-import type { IrValidationError, ModuleApi, Span, UfComponent, UfModule } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
-import type { ParsedModule } from "@unframework/parser";
-import { createSyntacticOracle } from "@unframework/type-oracle";
-import type { TypeOracle, TypeShape } from "@unframework/type-oracle";
+} from "@unframework.dev/codegen";
+import type { FormatOutcome, OutputFile, Target } from "@unframework.dev/codegen";
+import { createDiagnostic, sortDiagnostics } from "@unframework.dev/diagnostics";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
+import { checkInvariants, validateModule } from "@unframework.dev/ir";
+import type { IrValidationError, ModuleApi, Span, UfComponent, UfModule } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
+import type { ParsedModule } from "@unframework.dev/parser";
+import { createSyntacticOracle } from "@unframework.dev/type-oracle";
+import type { TypeOracle, TypeShape } from "@unframework.dev/type-oracle";
 
 import { checkCapabilities } from "./capabilities.ts";
 import { isSpanIn, pluginIrProblems } from "./plugin-ir.ts";

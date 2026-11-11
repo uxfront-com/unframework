@@ -9,12 +9,12 @@ import type {
   ToolchainContext,
   ToolchainFile,
   ToolchainMessage,
-} from "@unframework/codegen";
+} from "@unframework.dev/codegen";
 import {
   assertFilesToCheck,
   assertFilesToCompile,
   diagnosticsByFile,
-} from "@unframework/codegen/toolchain-node";
+} from "@unframework.dev/codegen/toolchain-node";
 
 import { collectDiagnostics, createHost, groupByFile, strictOptions, toMessage } from "./ngtsc.ts";
 import { loadCompiler } from "./tools.ts";

@@ -3,9 +3,9 @@
 // widens (ADR-0046), and the `preventDefault()` and `stopPropagation()` calls a handler makes
 // while its event is dispatched (ADR-0047).
 
-import type { Span } from "@unframework/ir";
-import type { AST } from "@unframework/parser";
-import { visitorKeys } from "@unframework/parser";
+import type { Span } from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
+import { visitorKeys } from "@unframework.dev/parser";
 
 import {
   arrayOf,

@@ -6,8 +6,8 @@
 // function's body, of another import or of a global names the same value in every output, and
 // stays.
 
-import type { AST } from "@unframework/parser";
-import { visitorKeys } from "@unframework/parser";
+import type { AST } from "@unframework.dev/parser";
+import { visitorKeys } from "@unframework.dev/parser";
 
 import type { RenderContext } from "./render.ts";
 

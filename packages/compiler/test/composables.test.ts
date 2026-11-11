@@ -1,8 +1,8 @@
 // A composable's call and what a module or a composable gives (ADR-0069, ADR-0070): every target
 // emits a component that uses them, and a module of composables as one module per composable.
-import type { OutputFile } from "@unframework/codegen";
-import type { Diagnostic } from "@unframework/diagnostics";
-import type { UfComposable, UfModule } from "@unframework/ir";
+import type { OutputFile } from "@unframework.dev/codegen";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
+import type { UfComposable, UfModule } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { modules } from "../../ir/test/modules-fixture.ts";

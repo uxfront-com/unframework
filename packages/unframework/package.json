@@ -70,8 +70,8 @@
     "vendor:jsx": "node scripts/vendor-jsx.ts"
   },
   "dependencies": {
-    "@unframework/cli": "workspace:*",
-    "@unframework/compiler": "workspace:*",
+    "@unframework.dev/cli": "workspace:*",
+    "@unframework.dev/compiler": "workspace:*",
     "csstype": "catalog:"
   },
   "devDependencies": {

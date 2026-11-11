@@ -3,9 +3,9 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { format } from "node:util";
 
-import { formatOutput } from "@unframework/codegen";
-import { checkInvariants, createComponent, createExport, createModule } from "@unframework/ir";
-import type { ElementNode, UfModule } from "@unframework/ir";
+import { formatOutput } from "@unframework.dev/codegen";
+import { checkInvariants, createComponent, createExport, createModule } from "@unframework.dev/ir";
+import type { ElementNode, UfModule } from "@unframework.dev/ir";
 import { createElement } from "react";
 import type { ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";

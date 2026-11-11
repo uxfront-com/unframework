@@ -1,6 +1,6 @@
 // state/object-replacement: an object ref is replaced whole with a spread copy (ADR-0008), so a
 // write of one field keeps the others; several fields render from it.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ProfileCard from "./ProfileCard.uf.tsx";

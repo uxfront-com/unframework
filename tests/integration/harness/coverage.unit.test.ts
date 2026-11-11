@@ -1,7 +1,7 @@
 // The coverage gate fails on what the corpus lacks: a kind of every family the IR's records
 // list, on features of its own and through a real compile, and an exemption that is stale or
 // names nothing.
-import { compile, TARGET_NAMES } from "@unframework/compiler";
+import { compile, TARGET_NAMES } from "@unframework.dev/compiler";
 import {
   ATTRIBUTE_KINDS,
   BINDING_KINDS,
@@ -10,8 +10,8 @@ import {
   RENDER_NODE_KINDS,
   SETUP_ITEM_KINDS,
   WATCH_SOURCE_KINDS,
-} from "@unframework/ir";
-import type { ModuleFeatures } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { ModuleFeatures } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { coverageProblems, kindProblems } from "./coverage.ts";

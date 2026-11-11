@@ -3,9 +3,9 @@
 // before any test acts, skips a case whose every test requires one. A behavioural capability
 // never skips it: it changes what code does in the browser, not what the server renders, so a
 // case whose every test requires `interactivity` still checks Astro's server render.
-import { BEHAVIOURAL_CAPABILITIES } from "@unframework/codegen";
-import type { CapabilityCell, CapabilityName } from "@unframework/codegen";
-import { requiresSkip } from "@unframework/testing/node";
+import { BEHAVIOURAL_CAPABILITIES } from "@unframework.dev/codegen";
+import type { CapabilityCell, CapabilityName } from "@unframework.dev/codegen";
+import { requiresSkip } from "@unframework.dev/testing/node";
 
 /**
  * Why a case's server render is skipped on a target: the first capability that every test of

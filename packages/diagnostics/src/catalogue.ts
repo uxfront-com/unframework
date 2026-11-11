@@ -2472,7 +2472,7 @@ const entries: CatalogueEntry[] = [
       "reports them at their span rather than guess.",
       "",
       "Write the type with the constructs above, or compile with the tsgo type oracle,",
-      "`@unframework/type-oracle-tsgo`, which resolves every construct through TypeScript.",
+      "`@unframework.dev/type-oracle-tsgo`, which resolves every construct through TypeScript.",
     ].join("\n"),
   },
   {

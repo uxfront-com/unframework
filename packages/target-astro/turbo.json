@@ -14,9 +14,9 @@
       // carries it into this hash.
       "dependsOn": [
         "$TURBO_EXTENDS$",
-        "@unframework/toolchain-astro#transit",
-        "@unframework/analyzer#transit",
-        "@unframework/compiler#transit"
+        "@unframework.dev/toolchain-astro#transit",
+        "@unframework.dev/analyzer#transit",
+        "@unframework.dev/compiler#transit"
       ],
       "inputs": [
         "$TURBO_DEFAULT$",

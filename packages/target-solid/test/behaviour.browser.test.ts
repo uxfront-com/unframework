@@ -5,7 +5,7 @@
 // watchers' scheduler (one callback per synchronous run of client code, whatever its shape), the
 // watcher helper's previous value and cleanups, `createWatchEffect`, `onMount` and its cleanup,
 // template refs emptied with their element, options as native listeners.
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 

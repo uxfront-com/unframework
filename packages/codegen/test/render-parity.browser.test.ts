@@ -1,7 +1,7 @@
 // The live-DOM half of the render-parity kit, in Chromium: every target's client parity test
 // trusts it, so a reader that missed a difference would pass a renderer that makes one.
-import { createFragment, createText } from "@unframework/ir";
-import type { ElementNode, FragmentNode } from "@unframework/ir";
+import { createFragment, createText } from "@unframework.dev/ir";
+import type { ElementNode, FragmentNode } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { buildDom, expectedDom, readDom } from "./render-parity-client.ts";

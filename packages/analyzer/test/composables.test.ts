@@ -1,4 +1,4 @@
-import { applyFixes } from "@unframework/diagnostics";
+import { applyFixes } from "@unframework.dev/diagnostics";
 import { describe, expect, it } from "vitest";
 
 // Composables (ADR-0069): the named `use*` exports of a `.uf.ts` module, each a setup under a

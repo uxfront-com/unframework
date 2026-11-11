@@ -11,7 +11,7 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { typecheckWithTsgo } from "@unframework/codegen/toolchain-node";
+import { typecheckWithTsgo } from "@unframework.dev/codegen/toolchain-node";
 import {
   ARIA_ATTRIBUTES,
   createComponent,
@@ -28,7 +28,7 @@ import {
   SVG_ELEMENTS,
   SVG_GLOBAL_ATTRIBUTES,
   SVG_PRESENTATION_ATTRIBUTES,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { analyze } from "../../analyzer/src/index.ts";

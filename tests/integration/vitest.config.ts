@@ -9,7 +9,7 @@
 //                        outside Chromium, pixels are live and nothing is written (ADR-0066)
 import { join } from "node:path";
 
-import { createHarnessRun, ParityReporter, resolveHarnessMode } from "@unframework/testing/node";
+import { createHarnessRun, ParityReporter, resolveHarnessMode } from "@unframework.dev/testing/node";
 import { defineConfig } from "vitest/config";
 import type { ViteUserConfig } from "vitest/config";
 

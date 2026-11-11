@@ -2,7 +2,7 @@
 // HTML selects none of its options until the user picks one. Vue's client selects the first, so
 // its `listbox` cell is unsupported and React, whose cell is native, writes the expectations
 // (ADR-0033, ADR-0057).
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ColourList from "./ColourList.uf.tsx";

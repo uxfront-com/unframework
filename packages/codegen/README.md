@@ -1,4 +1,4 @@
-# @unframework/codegen
+# @unframework.dev/codegen
 
 The target kit (plan §5.8): everything a target needs to emit idiomatic code, and nothing
 framework-specific.
@@ -100,7 +100,7 @@ setInterval(() => count.value++, 1000)`), and its replacement is parenthesised w
   `event` rules spell `nextTick` and an event parameter's members. Everything else stays as the
   author wrote it: literals, spacing and comments. Code is never re-printed from an AST, since
   oxc-codegen writes `1000` as `1e3` and drops comments. `parseExpression` and
-  `parseStatementsSource` (through `@unframework/parser`) only check that code is one expression
+  `parseStatementsSource` (through `@unframework.dev/parser`) only check that code is one expression
   or a list of statements and give its AST with offsets relative to the code; `codeKind` says
   which a component's piece of setup code is (a function's block body is statements);
   `needsParentheses` says whether code needs parentheses in a slot (an operand, a conditional's
@@ -273,7 +273,7 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   shadows the author's code (ADR-0035). `kebabCase`, `pascalCase`.
 - **The HTML, SVG and CSS vocabulary** (`VOID_ELEMENTS`, `BINDABLE_BOOLEAN_ATTRIBUTES`,
   `NUMBER_TYPED_ATTRIBUTES`, `SVG_ELEMENTS`, `UNITLESS_PROPERTIES`, …) is re-exported from
-  `@unframework/ir`, so targets share one copy through the kit.
+  `@unframework.dev/ir`, so targets share one copy through the kit.
 - **The mount adapter** (`MountAdapter`, in the toolchain contract's types): a target's
   `…/toolchain/client` mounts a compiled component in the browser and returns a
   `MountedComponent` with `settle()`, `rerender(props)` and `unmount()`, and the console messages
@@ -282,7 +282,7 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   whole: a prop the new props lack takes its default (Angular, whose inputs cannot be unset, sets
   it to `undefined`, which the emitted input's transform turns into the default). Like the
   mount, it resolves once the framework has settled (ADR-0043).
-- **`@unframework/codegen/toolchain-node`** (Node only, never imported by the main entry): what
+- **`@unframework.dev/codegen/toolchain-node`** (Node only, never imported by the main entry): what
   the targets' toolchains share, since targets cannot import each other. `resolveInstalled` and
   `resolveToolBin` find tools in a toolchain directory without NODE_PATH; `runChecker` runs a
   checker over a temporary tsconfig that extends the toolchain's, with `diagnosticsByFile` and

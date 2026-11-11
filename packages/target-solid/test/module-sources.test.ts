@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
 import { transformSync } from "@babel/core";
-import type { ToolchainContext } from "@unframework/codegen";
+import type { ToolchainContext } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { compileComposableCases } from "../../codegen/test/composable-cases.ts";

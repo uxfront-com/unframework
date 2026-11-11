@@ -55,7 +55,7 @@ beforeAll(() => {
   consumer = mkdtempSync(join(tmpdir(), "uf-published-"));
   installBuilt(PACKAGE, "unframework");
   // `unframework/config` types its config through the compiler's published leaf of types.
-  installBuilt(packageDirectory("@unframework/compiler"), "@unframework/compiler");
+  installBuilt(packageDirectory("@unframework.dev/compiler"), "@unframework.dev/compiler");
   for (const dependency of ["csstype", "vue"]) {
     symlinkSync(packageDirectory(dependency), join(consumer, "node_modules", dependency), "dir");
   }

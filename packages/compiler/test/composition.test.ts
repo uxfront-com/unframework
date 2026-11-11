@@ -1,6 +1,6 @@
 // Composition's cells are declared before the targets emit it (ADR-0055): until M3's lanes land,
 // every target reports a component that uses it, and emits nothing for it (P2).
-import type { Diagnostic } from "@unframework/diagnostics";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
 import { describe, expect, it } from "vitest";
 
 import { composition } from "../../ir/test/composition-fixture.ts";

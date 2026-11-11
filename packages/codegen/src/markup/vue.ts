@@ -1,4 +1,4 @@
-import type { Attribute, ComponentAttribute } from "@unframework/ir";
+import type { Attribute, ComponentAttribute } from "@unframework.dev/ir";
 
 // Vue templates (plan §6): `{{ }}` interpolations, `:attr` bindings, `v-if` and `v-for` on the
 // element they control (or on a `<template>` around content that is not one element), `@event`

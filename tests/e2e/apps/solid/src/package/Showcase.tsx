@@ -1,4 +1,4 @@
-import { Button, Card, Counter, TextField, useToggle } from "@unframework/e2e-design-system/solid";
+import { Button, Card, Counter, TextField, useToggle } from "@unframework.dev/e2e-design-system/solid";
 import { createSignal } from "solid-js";
 
 export function Showcase() {

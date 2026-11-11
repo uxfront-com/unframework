@@ -1,4 +1,4 @@
-# @unframework/ir
+# @unframework.dev/ir
 
 The Unframework intermediate representation: what the analyser knows about a `.uf.tsx` module, as
 plain, versioned, schema-validated JSON (plan §5.3).
@@ -64,8 +64,8 @@ plain, versioned, schema-validated JSON (plan §5.3).
   `later` (in a function client code hands to a timer, `then`, `addEventListener` or
   `onCleanup`, ADR-0048): what a `watchEffect` tracks, which every target lists as its
   dependencies.
-- **Schema:** `irSchema` (also `@unframework/ir/schema.json`), generated from the types with
-  `pnpm --filter @unframework/ir generate`. A test fails when it is stale. `validateModule` checks
+- **Schema:** `irSchema` (also `@unframework.dev/ir/schema.json`), generated from the types with
+  `pnpm --filter @unframework.dev/ir generate`. A test fails when it is stale. `validateModule` checks
   a value against it without dependencies (the compiler checks what plugins return with it): a
   node's `kind` picks its branch of a union, and a key set to `undefined` is absent, as in JSON.
 - **Invariants:** `checkInvariants` checks what the types document and the schema cannot say:

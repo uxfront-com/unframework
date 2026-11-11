@@ -42,7 +42,7 @@ import {
   createToggleClass,
   createTypeText,
   span,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Binding,
   ComponentApi,
@@ -50,8 +50,8 @@ import type {
   FragmentNode,
   RenderNode,
   UfComponent,
-} from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import {

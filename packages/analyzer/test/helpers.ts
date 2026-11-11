@@ -1,6 +1,6 @@
-import { applyFixes } from "@unframework/diagnostics";
-import type { Diagnostic } from "@unframework/diagnostics";
-import { checkInvariants } from "@unframework/ir";
+import { applyFixes } from "@unframework.dev/diagnostics";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
+import { checkInvariants } from "@unframework.dev/ir";
 import type {
   BindingReference,
   Code,
@@ -9,8 +9,8 @@ import type {
   FunctionCode,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 
 import { analyze } from "../src/index.ts";
 import type { AnalyzeOptions, AnalyzeResult } from "../src/index.ts";

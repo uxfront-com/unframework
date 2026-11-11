@@ -1,4 +1,4 @@
-import type { MountAdapter, MountListener } from "@unframework/codegen";
+import type { MountAdapter, MountListener } from "@unframework.dev/codegen";
 import { createApp, h, nextTick, shallowReactive } from "vue";
 import type { Component } from "vue";
 

@@ -1,12 +1,12 @@
 // The quarantine (plan §7.7): known failures, each tied to an issue. A quarantined
 // (case, target, layer) still runs and must still fail; it is recorded as quarantined(issue)
 // instead of failing the test. Once it passes, the entry is stale and fails the test until it
-// is removed (`settleOutcome` in @unframework/testing), so this list only shrinks. Each target
+// is removed (`settleOutcome` in @unframework.dev/testing), so this list only shrinks. Each target
 // keeps its entries in its own file, `quarantine/<target>.ts`, so target lanes never edit the
 // same list (ADR-0057); this module joins them.
-import type { TargetName } from "@unframework/compiler";
-import { LAYERS } from "@unframework/testing/node";
-import type { LayerName, QuarantineEntry } from "@unframework/testing/node";
+import type { TargetName } from "@unframework.dev/compiler";
+import { LAYERS } from "@unframework.dev/testing/node";
+import type { LayerName, QuarantineEntry } from "@unframework.dev/testing/node";
 
 import { QUARANTINE as ANGULAR } from "./quarantine/angular.ts";
 import { QUARANTINE as ASTRO } from "./quarantine/astro.ts";

@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
-import { DOM_EVENTS } from "@unframework/ir";
+import { DOM_EVENTS } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { DELEGATED_EVENTS, SOLID_EVENT_PROPS } from "../src/listeners.ts";

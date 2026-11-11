@@ -9,10 +9,10 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
 import { originalPositionFor, TraceMap } from "@jridgewell/trace-mapping";
-import { compile, TARGET_NAMES } from "@unframework/compiler";
-import type { CompileResult, TargetName } from "@unframework/compiler";
-import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
-import type { ProjectKind } from "@unframework/testing/node";
+import { compile, TARGET_NAMES } from "@unframework.dev/compiler";
+import type { CompileResult, TargetName } from "@unframework.dev/compiler";
+import type { ElementNode, RenderNode, UfModule } from "@unframework.dev/ir";
+import type { ProjectKind } from "@unframework.dev/testing/node";
 import { describe, expect, it } from "vitest";
 
 // The unplugin's join, by path: it is internal to the package, and the canary must survive it.

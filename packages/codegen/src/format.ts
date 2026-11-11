@@ -1,6 +1,6 @@
 import type * as AST from "@oxc-project/types";
-import type { Span } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+import type { Span } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { format } from "oxfmt";
 import type { FormatConfig } from "oxfmt";
 

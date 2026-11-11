@@ -1,9 +1,9 @@
-# @unframework/compiler
+# @unframework.dev/compiler
 
 The Unframework compiler (plan §5.1):
 
 ```ts
-import { compile } from "@unframework/compiler";
+import { compile } from "@unframework.dev/compiler";
 
 const result = await compile(source, {
   filename: "src/Hello.uf.tsx",
@@ -137,7 +137,7 @@ and the hook's result is dropped.
 bundler plugin doesn't call them: it takes explicit options.
 
 ```ts
-import { loadConfig, resolveConfig } from "@unframework/compiler";
+import { loadConfig, resolveConfig } from "@unframework.dev/compiler";
 
 async function readConfig(root: string) {
   const loaded = await loadConfig(root);

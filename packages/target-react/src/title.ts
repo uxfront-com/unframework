@@ -10,9 +10,9 @@ import {
   Placeholders,
   printExpression,
   textTemplate,
-} from "@unframework/codegen";
-import type { JsxContext, TextPart } from "@unframework/codegen";
-import type { Expression, IfNode, RenderNode, TextNode, UfComponent } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { JsxContext, TextPart } from "@unframework.dev/codegen";
+import type { Expression, IfNode, RenderNode, TextNode, UfComponent } from "@unframework.dev/ir";
 
 /** An expression in the AST (codegen's builders name the node types). */
 type JsExpression = Exclude<TextPart, string>;

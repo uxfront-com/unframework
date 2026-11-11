@@ -2,7 +2,7 @@
 // user confirms) reads the latest state and props, never those of the render that scheduled it:
 // a state write and a rerender made while it waits are both seen (semantics contract, deferred
 // reads). React's output keeps this with mirror refs for the state and the props.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import DeleteFile from "./DeleteFile.uf.tsx";

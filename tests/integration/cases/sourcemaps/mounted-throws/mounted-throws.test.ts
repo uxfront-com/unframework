@@ -1,6 +1,6 @@
 // sourcemaps/mounted-throws: an error `onMounted` throws names its authored line (L14, ADR-0078).
 // The hook belongs to a child that the click mounts, so the first render has none of it.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ReportPanel from "./ReportPanel.uf.tsx";

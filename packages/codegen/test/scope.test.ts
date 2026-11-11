@@ -1,9 +1,9 @@
 // The child-root rule's shared parts (ADR-0063): the root nodes a JSX target spreads a styled
 // parent's scope attributes on, as Vue's attribute fallthrough reaches them, the helper names a
 // module's components take, and the pattern rest React picks them out of.
-import { analyze } from "@unframework/analyzer";
-import type { UfComponent } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+import { analyze } from "@unframework.dev/analyzer";
+import type { UfComponent } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { js, moduleHelperName, NameScope, printProgram, scopeRoots } from "../src/index.ts";

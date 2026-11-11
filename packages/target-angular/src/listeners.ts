@@ -24,8 +24,8 @@ import {
   parseStatementsSource,
   pascalCase,
   rewriteCode,
-} from "@unframework/codegen";
-import { DOM_EVENTS, walk } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import { DOM_EVENTS, walk } from "@unframework.dev/ir";
 import type {
   Attribute,
   BindingId,
@@ -37,8 +37,8 @@ import type {
   IfNode,
   ListenerAttribute,
   UfComponent,
-} from "@unframework/ir";
-import type { ApiEvent } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { ApiEvent } from "@unframework.dev/ir";
 
 import { childEvent } from "./composition.ts";
 import type { DirectiveSpec } from "./directives.ts";

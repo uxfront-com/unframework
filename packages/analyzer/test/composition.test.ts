@@ -1,9 +1,9 @@
 // Composition (ADR-0053 to ADR-0055): component elements and their fills, a component's own
 // slots, fallthrough, `defineExpose` and component refs, and the imports of component modules.
 // Every source runs through `run`, which checks the IR's invariants.
-import { checkInvariants } from "@unframework/ir";
-import type { ComponentNode, ModuleApi, SlotOutletNode } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+import { checkInvariants } from "@unframework.dev/ir";
+import type { ComponentNode, ModuleApi, SlotOutletNode } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { analyze, componentImports } from "../src/index.ts";

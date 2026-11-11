@@ -1,6 +1,6 @@
 // models/radio: radios whose `v-model` binds one value write their own `value` when chosen
 // (ADR-0054), and the radio whose value the state holds is checked.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Billing from "./Billing.uf.tsx";

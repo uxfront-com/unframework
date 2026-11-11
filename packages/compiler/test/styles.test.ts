@@ -1,8 +1,8 @@
 // Stylesheets through `compile()` (ADR-0063): the resolver reads each sheet, and a child's for
 // the scope id its API carries; the analyser lowers them; the codegen scoper runs once per sheet
 // after the plugins' `ir` hooks, and a selector it rejects (UF5004) withholds the module.
-import { scopeIdOf } from "@unframework/analyzer";
-import type { UfModule } from "@unframework/ir";
+import { scopeIdOf } from "@unframework.dev/analyzer";
+import type { UfModule } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { compile, createFileResolver } from "../src/index.ts";

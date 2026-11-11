@@ -19,11 +19,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { basename, join, relative, sep } from "node:path";
 
 import { decodedMappings, encodedMappings, TraceMap } from "@jridgewell/trace-mapping";
-import { parseStatementsSource } from "@unframework/codegen";
-import type { OutputFile, ParsedStatements, SourceMapV3 } from "@unframework/codegen";
-import { builtinTargets } from "@unframework/compiler";
-import type { CompilerPlugin, OutputHookContext, TargetName } from "@unframework/compiler";
-import type { Diagnostic } from "@unframework/diagnostics";
+import { parseStatementsSource } from "@unframework.dev/codegen";
+import type { OutputFile, ParsedStatements, SourceMapV3 } from "@unframework.dev/codegen";
+import { builtinTargets } from "@unframework.dev/compiler";
+import type { CompilerPlugin, OutputHookContext, TargetName } from "@unframework.dev/compiler";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
 import {
   childrenOf,
   createElement,
@@ -37,7 +37,7 @@ import {
   PERMITTED_CHILDREN,
   SVG_TEXT_ELEMENTS,
   UNINTERPOLATED_ELEMENTS,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Attribute,
   DynamicNode,
@@ -48,9 +48,9 @@ import type {
   StaticAttribute,
   StaticStyle,
   UfModule,
-} from "@unframework/ir";
-import { REQUIRES_SKIP } from "@unframework/testing/node";
-import type { LayerName, ProjectKind } from "@unframework/testing/node";
+} from "@unframework.dev/ir";
+import { REQUIRES_SKIP } from "@unframework.dev/testing/node";
+import type { LayerName, ProjectKind } from "@unframework.dev/testing/node";
 import type { Plugin } from "vite";
 
 import { errorState, expectedDiagnostics, specTests } from "./cases.ts";
@@ -1149,7 +1149,7 @@ export function canaryCase(info: CaseInfo): CanaryCase {
 
 /**
  * Whether a target supports a capability a test requires: the browser setup skips the test
- * where the cell is unsupported (`requiredSkip` in `@unframework/testing`). Throws for a name
+ * where the cell is unsupported (`requiredSkip` in `@unframework.dev/testing`). Throws for a name
  * that is no capability, as the setup does.
  */
 function supports(target: string, capability: string): boolean {

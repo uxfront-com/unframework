@@ -14,7 +14,7 @@ import type {
   CodeReference,
   NarrowedPath,
   Span,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import type { ReactPlan } from "./plan.ts";
 

@@ -1,7 +1,7 @@
 // events/emit-payloads: events declared with named tuples: no payload, one value, two values, an
 // object of a local type, and an optional member, given and left out. `view.events()` keeps the
 // order of the emits; the two of one handler (`archive`) arrive in the order it made them.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import FileRow from "./FileRow.uf.tsx";

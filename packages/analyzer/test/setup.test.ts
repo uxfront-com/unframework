@@ -2,7 +2,7 @@
 // bindings, in source order; the macros' and APIs' places (UF2005, UF2006); the events
 // `defineEmits` declares (UF2009); and what the setup rejects (UF2012, UF1002). Every run checks
 // the IR's invariants (`run`).
-import type { CodeReference, SetupItem, UfComponent } from "@unframework/ir";
+import type { CodeReference, SetupItem, UfComponent } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import {

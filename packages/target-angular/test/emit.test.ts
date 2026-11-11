@@ -1,6 +1,6 @@
 import { join, resolve } from "node:path";
 
-import { CAPABILITY_NAMES } from "@unframework/codegen";
+import { CAPABILITY_NAMES } from "@unframework.dev/codegen";
 import {
   createComponent,
   createElement,
@@ -8,8 +8,8 @@ import {
   createModule,
   createStaticAttribute,
   createText,
-} from "@unframework/ir";
-import type { ElementNode, UfModule } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { ElementNode, UfModule } from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import target from "../src/index.ts";

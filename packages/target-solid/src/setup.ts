@@ -25,9 +25,9 @@ import {
   rewriteCode,
   typeNames,
   writtenValue,
-} from "@unframework/codegen";
-import type { ImportSet, Placeholders, RewriteRules } from "@unframework/codegen";
-import { summarizeCode, summarizeTracked, walk } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { ImportSet, Placeholders, RewriteRules } from "@unframework.dev/codegen";
+import { summarizeCode, summarizeTracked, walk } from "@unframework.dev/ir";
 import type {
   Binding,
   BindingId,
@@ -44,7 +44,7 @@ import type {
   UseItem,
   WatchEffectItem,
   WatchItem,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { assertedCode, assertedFunction, assertedWhole } from "./asserted.ts";
 import type { SolidComposition } from "./composition.ts";

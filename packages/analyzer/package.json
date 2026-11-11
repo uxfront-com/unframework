@@ -1,5 +1,5 @@
 {
-  "name": "@unframework/analyzer",
+  "name": "@unframework.dev/analyzer",
   "version": "0.0.0",
   "private": true,
   "description": "The Unframework analyser: scopes, macros and semantic checks over the parsed source, and lowering of the returned JSX into the portable IR.",
@@ -43,10 +43,10 @@
   },
   "dependencies": {
     "@typescript-eslint/scope-manager": "catalog:",
-    "@unframework/diagnostics": "workspace:*",
-    "@unframework/ir": "workspace:*",
-    "@unframework/parser": "workspace:*",
-    "@unframework/type-oracle": "workspace:*"
+    "@unframework.dev/diagnostics": "workspace:*",
+    "@unframework.dev/ir": "workspace:*",
+    "@unframework.dev/parser": "workspace:*",
+    "@unframework.dev/type-oracle": "workspace:*"
   },
   "devDependencies": {
     "@angular/compiler": "catalog:",

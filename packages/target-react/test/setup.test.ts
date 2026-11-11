@@ -2,7 +2,7 @@
 // ADR-0049): each test lowers a source with the analyser and pins the formatted output, so a change
 // in a shape shows here as well as in the corpus' goldens. Every output here also passes L3, L4
 // and L5 (test/lint.test.ts and test/toolchain.test.ts pin the shapes in lint-probes.ts).
-import { formatOutput } from "@unframework/codegen";
+import { formatOutput } from "@unframework.dev/codegen";
 import { describe, expect, it } from "vitest";
 
 import { analyze } from "../../analyzer/src/index.ts";

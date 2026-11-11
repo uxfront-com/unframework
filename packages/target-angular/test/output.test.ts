@@ -18,8 +18,8 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { format as formatMessage } from "node:util";
 
-import { scopeStylesheet } from "@unframework/codegen";
-import type { OutputFile } from "@unframework/codegen";
+import { scopeStylesheet } from "@unframework.dev/codegen";
+import type { OutputFile } from "@unframework.dev/codegen";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { canonical } from "../../codegen/test/markup-cases.ts";

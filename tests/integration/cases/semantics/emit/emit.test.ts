@@ -2,7 +2,7 @@
 // its listeners (Qwik's run asynchronously). The emits that one synchronous run of code makes
 // arrive in the order it made them: before and after a write, in a loop, and with no payload
 // (semantics contract, emit).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import StarRating from "./StarRating.uf.tsx";

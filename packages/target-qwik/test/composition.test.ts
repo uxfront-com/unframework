@@ -4,8 +4,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { formatOutput } from "@unframework/codegen";
-import type { EmitContext } from "@unframework/codegen";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { EmitContext } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import target from "../src/index.ts";

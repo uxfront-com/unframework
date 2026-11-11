@@ -18,7 +18,7 @@ import {
   createSlotFill,
   createSlotOutlet,
   createStaticClass,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   ComponentApi,
   ComponentAttribute,
@@ -28,8 +28,8 @@ import type {
   SlotFill,
   SlotOutletNode,
   Span,
-} from "@unframework/ir";
-import type { AST } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
 
 import { keyName } from "./api.ts";
 import { keyCase, lowerAttributes, misplacedKey } from "./attributes.ts";

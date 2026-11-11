@@ -1,7 +1,7 @@
 // semantics/derived-consistency: a computed read in client code right after a write of its
 // dependency is consistent, through a chain (seats, total, summary), and again after a second
 // write in the same handler (semantics contract, derived consistency).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import SeatPicker from "./SeatPicker.uf.tsx";

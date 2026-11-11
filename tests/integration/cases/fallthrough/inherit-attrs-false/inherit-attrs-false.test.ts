@@ -1,6 +1,6 @@
 // fallthrough/inherit-attrs-false: a field turns fallthrough off (ADR-0054's `defineOptions`), so
 // its parent passes it its props alone; a `class` on it would be UF3045.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Form from "./Form.uf.tsx";

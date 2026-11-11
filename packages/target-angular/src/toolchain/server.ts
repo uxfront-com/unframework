@@ -4,7 +4,7 @@
 import { DOCUMENT, createComponent, provideZonelessChangeDetection } from "@angular/core";
 import { createApplication, type BootstrapContext } from "@angular/platform-browser";
 import { renderApplication } from "@angular/platform-server";
-import type { SsrRenderer } from "@unframework/codegen";
+import type { SsrRenderer } from "@unframework.dev/codegen";
 
 import { angularComponent } from "./component.ts";
 

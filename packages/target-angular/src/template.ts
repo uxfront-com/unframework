@@ -8,9 +8,9 @@ import {
   spreadStyleExpression,
   staticClassValue,
   vueClassValue,
-} from "@unframework/codegen";
-import type { ClassPart, MarkupDialect } from "@unframework/codegen";
-import { expressionsOf, walk } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { ClassPart, MarkupDialect } from "@unframework.dev/codegen";
+import { expressionsOf, walk } from "@unframework.dev/ir";
 import type {
   Attribute,
   BindingId,
@@ -21,7 +21,7 @@ import type {
   Expression,
   FragmentNode,
   StyleDeclaration,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { selectorOf } from "./composition.ts";
 import type { Composition } from "./composition.ts";

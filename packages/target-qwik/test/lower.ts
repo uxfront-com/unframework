@@ -1,9 +1,9 @@
 // Sources lowered by the real parser and analyser, for the emitter's shape tests: the IR M1
 // emits from is easier to read, and to trust, as the source an author writes. Imported by path,
 // as the render-parity kit does: a target package depends on ir and codegen only.
-import { formatOutput } from "@unframework/codegen";
-import type { EmitContext } from "@unframework/codegen";
-import type { UfModule } from "@unframework/ir";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { EmitContext } from "@unframework.dev/codegen";
+import type { UfModule } from "@unframework.dev/ir";
 import { expect } from "vitest";
 
 import { analyze } from "../../analyzer/src/index.ts";

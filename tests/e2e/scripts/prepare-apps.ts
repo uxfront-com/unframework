@@ -40,7 +40,7 @@ const pack = (directory: string): string => {
   return join(tarballsDir, basename(JSON.parse(output).filename));
 };
 
-const CONSUMED = ["unframework", "@unframework/unplugin"];
+const CONSUMED = ["unframework", "@unframework.dev/unplugin"];
 
 function buildAndPack(): Packed {
   run(

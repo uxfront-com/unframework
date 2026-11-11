@@ -1,7 +1,7 @@
 // state/local-functions: the setup in source order: a constant table, a pure helper that the
 // template and a computed both call, state, handlers that call another local function, and a
 // handler declared as an arrow constant.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import CheckoutTotal from "./CheckoutTotal.uf.tsx";

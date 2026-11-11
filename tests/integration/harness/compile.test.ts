@@ -7,11 +7,11 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative, sep } from "node:path";
 
-import { compile, TARGET_NAMES } from "@unframework/compiler";
-import type { CompileResult, CompilerPlugin } from "@unframework/compiler";
-import { formatDiagnostics, toJsonDiagnostics } from "@unframework/diagnostics";
-import type { Diagnostic, JsonDiagnostic } from "@unframework/diagnostics";
-import { irSchema } from "@unframework/ir";
+import { compile, TARGET_NAMES } from "@unframework.dev/compiler";
+import type { CompileResult, CompilerPlugin } from "@unframework.dev/compiler";
+import { formatDiagnostics, toJsonDiagnostics } from "@unframework.dev/diagnostics";
+import type { Diagnostic, JsonDiagnostic } from "@unframework.dev/diagnostics";
+import { irSchema } from "@unframework.dev/ir";
 import {
   BROWSER_LAYERS,
   checkLayers,
@@ -20,8 +20,8 @@ import {
   NO_SPEC_SKIP,
   settleArtefact,
   settleArtefactDirectory,
-} from "@unframework/testing/node";
-import type { ArtefactContext, LayerCheck, LayerName } from "@unframework/testing/node";
+} from "@unframework.dev/testing/node";
+import type { ArtefactContext, LayerCheck, LayerName } from "@unframework.dev/testing/node";
 import { Ajv } from "ajv";
 import { describe, expect, inject, it } from "vitest";
 

@@ -3,8 +3,8 @@
 // (`import { computed as derive }`) is the API too, and a local `ref` is not. The table is
 // tested against `packages/unframework/src/index.ts`'s exports (`test/authoring.test.ts`).
 
-import { exportName } from "@unframework/parser";
-import type { AST } from "@unframework/parser";
+import { exportName } from "@unframework.dev/parser";
+import type { AST } from "@unframework.dev/parser";
 
 import type { Reporter } from "./context.ts";
 import { isAuthoringModule } from "./frameworks.ts";

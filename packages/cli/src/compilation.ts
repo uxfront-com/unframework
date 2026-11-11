@@ -7,10 +7,10 @@ import {
   createSyntacticOracle,
   loadConfig,
   resolveConfig,
-} from "@unframework/compiler";
-import type { CompileResult, OutputFile, ResolvedConfig, TypeOracle } from "@unframework/compiler";
-import { createDiagnostic, hasErrors, sortDiagnostics } from "@unframework/diagnostics";
-import type { Diagnostic, Span } from "@unframework/diagnostics";
+} from "@unframework.dev/compiler";
+import type { CompileResult, OutputFile, ResolvedConfig, TypeOracle } from "@unframework.dev/compiler";
+import { createDiagnostic, hasErrors, sortDiagnostics } from "@unframework.dev/diagnostics";
+import type { Diagnostic, Span } from "@unframework.dev/diagnostics";
 
 import type { Io } from "./command.ts";
 
@@ -141,7 +141,7 @@ export async function compileSources(
 
   const typeOracle: TypeOracle =
     (oracle ?? config.typeOracle) === "tsgo"
-      ? (await import("@unframework/type-oracle-tsgo")).createTsgoOracle({ root })
+      ? (await import("@unframework.dev/type-oracle-tsgo")).createTsgoOracle({ root })
       : createSyntacticOracle({ root, readFile: read });
   const compiled: Compiled[] = [];
   try {

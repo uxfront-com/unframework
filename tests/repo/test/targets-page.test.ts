@@ -6,10 +6,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { CAPABILITY_NAMES } from "@unframework/codegen";
-import type { CapabilityCell } from "@unframework/codegen";
-import { builtinTargets, TARGET_NAMES } from "@unframework/compiler";
-import type { TargetName } from "@unframework/compiler";
+import { CAPABILITY_NAMES } from "@unframework.dev/codegen";
+import type { CapabilityCell } from "@unframework.dev/codegen";
+import { builtinTargets, TARGET_NAMES } from "@unframework.dev/compiler";
+import type { TargetName } from "@unframework.dev/compiler";
 import { describe, expect, it } from "vitest";
 
 import { root } from "./workspace.ts";

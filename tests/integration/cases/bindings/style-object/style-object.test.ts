@@ -2,7 +2,7 @@
 // and a number), unitless numbers and bound values, and a static font family whose quoted name
 // sits beside a bound declaration: each target escapes the quotes once, on the server too. The
 // family is the harness's bundled font, the only one L10 lets text render with.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import UsageMeter from "./UsageMeter.uf.tsx";

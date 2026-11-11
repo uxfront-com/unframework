@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-import { toolchain as astro } from "@unframework/target-astro/toolchain";
+import { toolchain as astro } from "@unframework.dev/target-astro/toolchain";
 import { playwright } from "@vitest/browser-playwright";
 import { configDefaults, defineConfig } from "vitest/config";
 import type { ViteUserConfig } from "vitest/config";

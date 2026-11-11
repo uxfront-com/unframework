@@ -2,8 +2,8 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, sep } from "node:path";
 import { parseArgs } from "node:util";
 
-import type { OutputFile } from "@unframework/compiler";
-import { formatDiagnostics } from "@unframework/diagnostics";
+import type { OutputFile } from "@unframework.dev/compiler";
+import { formatDiagnostics } from "@unframework.dev/diagnostics";
 
 import type { RunCommand } from "./command.ts";
 import { compileSources, printable, TYPE_ORACLE_OPTION } from "./compilation.ts";

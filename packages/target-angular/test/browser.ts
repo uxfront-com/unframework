@@ -1,7 +1,7 @@
 // What the browser tests share: a corpus case's component mounted by the toolchain's adapter, the
 // emits it made (each `[name, ...args]`, in order), and the user's actions as the page makes
 // them, each followed by the adapter's settle.
-import type { MountedComponent, MountEvent } from "@unframework/codegen";
+import type { MountedComponent, MountEvent } from "@unframework.dev/codegen";
 import { expect } from "vitest";
 
 import { mount } from "../src/toolchain/client.ts";

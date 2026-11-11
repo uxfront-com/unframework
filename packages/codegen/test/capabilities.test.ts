@@ -25,7 +25,7 @@ import {
   createStyleAttribute,
   createText,
   createTypeText,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import {
   createApiReference,
   createCode,
@@ -48,7 +48,7 @@ import {
   createStyleSheet,
   createWatchEffectItem,
   createWatchItem,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   ComponentApi,
   ComponentNode,
@@ -59,7 +59,7 @@ import type {
   ProvideItem,
   SlotOutletNode,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { composition, find } from "../../ir/test/composition-fixture.ts";

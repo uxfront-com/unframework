@@ -3,7 +3,7 @@
 // not submitted), Escape resets. A second field's handler is an expression-bodied `&&` arrow,
 // whose `false` must not prevent the key (Angular prevents a listener's `false`): typing in both
 // fields still works, and Escape clears the second field through a template ref.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import CommandMenu from "./CommandMenu.uf.tsx";

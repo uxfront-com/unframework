@@ -2,7 +2,7 @@
 // renders carries `data-uf-<scopeId>`, a child component's tag carries its styled parent's (the
 // child-root rule), and the content a parent fills into a child whose sheets use `:slotted()`
 // carries `data-uf-<childScopeId>-s`. A target owns only how its child takes them (P6).
-import type { ComponentStylesApi, RenderNode, Span, UfComponent, UfModule } from "@unframework/ir";
+import type { ComponentStylesApi, RenderNode, Span, UfComponent, UfModule } from "@unframework.dev/ir";
 
 import { scopeStylesheet } from "./scoper.ts";
 

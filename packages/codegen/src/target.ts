@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { Diagnostic, DiagnosticCode } from "@unframework/diagnostics";
-import type { UfComponent, UfComposable, UfModule } from "@unframework/ir";
+import type { Diagnostic, DiagnosticCode } from "@unframework.dev/diagnostics";
+import type { UfComponent, UfComposable, UfModule } from "@unframework.dev/ir";
 
 /**
  * The features a target declares support for. Each name maps to IR features (node and

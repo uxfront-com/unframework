@@ -1,5 +1,5 @@
 // The configuration's types, in a file with no imports. `unframework/config` reaches them through
-// `@unframework/compiler/config-types`, so that a project's config type-checks without the
+// `@unframework.dev/compiler/config-types`, so that a project's config type-checks without the
 // compiler's whole type graph, which `skipLibCheck: false` would hold against it (ADR-0076).
 
 /** The names of the built-in targets. */

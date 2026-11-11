@@ -2,14 +2,14 @@
 // (ADR-0037) and do not reach the IR, so the target reads what it needs from an expression's
 // syntax and from its props' declared types, and answers "not certainly" whenever it cannot
 // tell: its callers then write the form that type-checks for any value.
-import { bindingOf, parseExpression } from "@unframework/codegen";
+import { bindingOf, parseExpression } from "@unframework.dev/codegen";
 import type {
   BindingKind,
   BindingReference,
   Expression,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 type Node = ReturnType<typeof parseExpression>;
 

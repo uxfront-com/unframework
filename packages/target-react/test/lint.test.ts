@@ -6,7 +6,7 @@ import { globSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { ToolchainContext } from "@unframework/codegen";
+import type { ToolchainContext } from "@unframework.dev/codegen";
 import {
   ELEMENT_ATTRIBUTES,
   GLOBAL_ATTRIBUTES,
@@ -14,7 +14,7 @@ import {
   SVG_ELEMENT_ATTRIBUTES,
   SVG_ELEMENTS,
   SVG_GLOBAL_ATTRIBUTES,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { REACT_PROP_NAMES } from "../src/props.ts";

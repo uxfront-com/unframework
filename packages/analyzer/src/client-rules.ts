@@ -4,8 +4,8 @@
 // (UF3034). Each is judged once the setup and the render tree are lowered, with every local
 // function's summary, and reported at the exact place.
 
-import type { Fix, TextEdit } from "@unframework/diagnostics";
-import { codeOf, expressionsOf, summarizeCode, walk } from "@unframework/ir";
+import type { Fix, TextEdit } from "@unframework.dev/diagnostics";
+import { codeOf, expressionsOf, summarizeCode, walk } from "@unframework.dev/ir";
 import type {
   Binding,
   BindingId,
@@ -15,9 +15,9 @@ import type {
   FunctionSummary,
   Span,
   UfComponent,
-} from "@unframework/ir";
-import type { AST } from "@unframework/parser";
-import { visitorKeys } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
+import { visitorKeys } from "@unframework.dev/parser";
 
 import { arrowBodySpan, patternNames } from "./code.ts";
 import { setupBindingOf } from "./render.ts";

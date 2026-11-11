@@ -3,8 +3,8 @@
 // bindings, `(event)` listeners running a statement the target writes, and `#name` template
 // refs. Angular's expression language is not JavaScript: its lexer reads fewer escapes and no
 // comments, so literals are re-printed from their values and comments dropped, token by token.
-import { angularLowercases, angularMisreads, BINDABLE_BOOLEAN_ATTRIBUTES } from "@unframework/ir";
-import type { Attribute, ComponentAttribute } from "@unframework/ir";
+import { angularLowercases, angularMisreads, BINDABLE_BOOLEAN_ATTRIBUTES } from "@unframework.dev/ir";
+import type { Attribute, ComponentAttribute } from "@unframework.dev/ir";
 
 import { kebabCase } from "../names.ts";
 import { parseCodeSource, parseExpression } from "../parse.ts";

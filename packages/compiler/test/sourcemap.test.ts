@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
-import { CAPABILITY_NAMES, defineTarget } from "@unframework/codegen";
-import type { Capabilities } from "@unframework/codegen";
+import { CAPABILITY_NAMES, defineTarget } from "@unframework.dev/codegen";
+import type { Capabilities } from "@unframework.dev/codegen";
 import { describe, expect, it } from "vitest";
 
 import { compile, createProject, TARGET_NAMES } from "../src/index.ts";

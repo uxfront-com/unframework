@@ -20,7 +20,7 @@ import {
   unbindableAttribute,
   UNRENDERABLE_ELEMENTS,
   VOID_ELEMENTS,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { defaultTreeAdapter, html as spec, parseFragment } from "parse5";
 import type { DefaultTreeAdapterTypes } from "parse5";
 import { compile as compileSvelte } from "svelte/compiler";

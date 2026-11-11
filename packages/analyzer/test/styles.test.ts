@@ -1,8 +1,8 @@
 // A component's stylesheets (plan §4.4, ADR-0063): the analyser accepts a relative `.css`
 // side-effect import in a module of one component, lowers the sheet the resolver read into the
 // IR with the component's scope id, and reports UF5001, UF5002, UF5003 and UF5005.
-import { checkInvariants } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+import { checkInvariants } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { analyze, scopeIdOf, stylesheetImports } from "../src/index.ts";

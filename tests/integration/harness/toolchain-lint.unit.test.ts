@@ -15,7 +15,7 @@ import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { resolveInstalled, resolveToolBin } from "@unframework/codegen/toolchain-node";
+import { resolveInstalled, resolveToolBin } from "@unframework.dev/codegen/toolchain-node";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { ROOT, toolchainDir } from "./paths.ts";

@@ -1,7 +1,7 @@
 // types/package-types: props whose members a package's generic type declares, beside one a `.ts`
 // module declares (ADR-0067). Vue prints the props' keys, each read off the annotation, since
 // compiler-sfc cannot resolve a package without TypeScript's classic API.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Status from "./Status.uf.tsx";

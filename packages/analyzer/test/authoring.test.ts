@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-import { exportName, parseModule } from "@unframework/parser";
+import { exportName, parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { AUTHORING_APIS, AUTHORING_TYPES, LATER_APIS } from "../src/authoring.ts";

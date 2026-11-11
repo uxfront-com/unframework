@@ -40,7 +40,7 @@ const config: UnframeworkConfig = { targets: ["vue"], srcDir: "components" };
 export default defineConfig(config);
 `,
       );
-      const script = `import { loadConfig, resolveConfig } from "@unframework/compiler";
+      const script = `import { loadConfig, resolveConfig } from "@unframework.dev/compiler";
 const loaded = await loadConfig(process.argv[1]);
 const resolved = await resolveConfig(loaded.raw, loaded);
 console.log(JSON.stringify({ loaded: loaded.diagnostics, ...resolved }));`;

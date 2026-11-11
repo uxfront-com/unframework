@@ -1,7 +1,7 @@
 // L15, budgets (plan §7.2, ADR-0078). It measures what a case costs and compares it with
 // `budgets.json`, a generated file:
 //
-//   pnpm --filter @unframework/integration budgets   the `bench` project, then its summary
+//   pnpm --filter @unframework.dev/integration budgets   the `bench` project, then its summary
 //   pnpm test:budgets:update                         measures, and writes `budgets.json`
 //
 // A compile's time is a ratio with `basics/hello` on the same machine, since an absolute time
@@ -11,9 +11,9 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, posix } from "node:path";
 import { gzipSync } from "node:zlib";
 
-import type { Toolchain, ToolchainFile } from "@unframework/codegen";
-import { compile, TARGET_NAMES } from "@unframework/compiler";
-import type { CompilerPlugin, TargetName } from "@unframework/compiler";
+import type { Toolchain, ToolchainFile } from "@unframework.dev/codegen";
+import { compile, TARGET_NAMES } from "@unframework.dev/compiler";
+import type { CompilerPlugin, TargetName } from "@unframework.dev/compiler";
 import { rolldown } from "rolldown";
 import type { Plugin } from "rolldown";
 import { Bench } from "tinybench";

@@ -9,8 +9,8 @@ import type {
   ModelItem,
   ModuleApi,
   ProvideItem,
-} from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { analyze, componentImports } from "../src/index.ts";

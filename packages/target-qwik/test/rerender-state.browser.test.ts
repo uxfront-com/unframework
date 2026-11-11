@@ -3,7 +3,7 @@
 // component mounted without any props gets its first ones as a new instance: Qwik keeps empty
 // props as one object shared by every element (core's `EMPTY_OBJ`), and new props written into
 // it would reach every later element (./fixtures/Emitter.tsx counts by its `step` prop).
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { page, userEvent } from "vitest/browser";
 

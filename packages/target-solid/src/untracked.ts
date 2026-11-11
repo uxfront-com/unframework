@@ -9,8 +9,8 @@
 // timer's, a listener's, a cleanup's and a `create…` helper's callback, and any arrow passed to a
 // function from code it tracks or calls as a handler (a watcher's callback, a hook, a template
 // listener); a setup function is neither, so it is where an arrow needs `untrack`.
-import { parseCodeSource } from "@unframework/codegen";
-import type { Code, CodeReference, FunctionCode, Span } from "@unframework/ir";
+import { parseCodeSource } from "@unframework.dev/codegen";
+import type { Code, CodeReference, FunctionCode, Span } from "@unframework.dev/ir";
 
 /** Text put into code at an offset of the source, replacing what lies before `end`, if given. */
 export interface Edit {

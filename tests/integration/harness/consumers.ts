@@ -8,8 +8,8 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, sep } from "node:path";
 
-import type { ToolchainMessage } from "@unframework/codegen";
-import type { UfModule } from "@unframework/ir";
+import type { ToolchainMessage } from "@unframework.dev/codegen";
+import type { UfModule } from "@unframework.dev/ir";
 
 import type { CaseInfo } from "./cases.ts";
 import { CASES_DIR, REPO_ROOT, toolchainDir } from "./paths.ts";

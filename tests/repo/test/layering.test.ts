@@ -9,23 +9,23 @@ import { importsOf, packageOf, packages, root, sourceFiles } from "./workspace.t
  * on its own layer. Packages not listed yet must be added here when they are created.
  */
 const LAYERS: readonly (readonly string[])[] = [
-  ["@unframework/ir", "@unframework/diagnostics"],
-  ["@unframework/parser", "@unframework/type-oracle"],
-  ["@unframework/type-oracle-tsgo", "@unframework/codegen"],
-  ["@unframework/analyzer"],
+  ["@unframework.dev/ir", "@unframework.dev/diagnostics"],
+  ["@unframework.dev/parser", "@unframework.dev/type-oracle"],
+  ["@unframework.dev/type-oracle-tsgo", "@unframework.dev/codegen"],
+  ["@unframework.dev/analyzer"],
   [
-    "@unframework/target-react",
-    "@unframework/target-vue",
-    "@unframework/target-svelte",
-    "@unframework/target-solid",
-    "@unframework/target-angular",
-    "@unframework/target-qwik",
-    "@unframework/target-astro",
+    "@unframework.dev/target-react",
+    "@unframework.dev/target-vue",
+    "@unframework.dev/target-svelte",
+    "@unframework.dev/target-solid",
+    "@unframework.dev/target-angular",
+    "@unframework.dev/target-qwik",
+    "@unframework.dev/target-astro",
   ],
-  ["@unframework/compiler"],
-  ["@unframework/unplugin", "@unframework/cli", "@unframework/language-tools"],
-  ["@unframework/testing"],
-  ["@unframework/visual", "@unframework/mcp", "create-unframework"],
+  ["@unframework.dev/compiler"],
+  ["@unframework.dev/unplugin", "@unframework.dev/cli", "@unframework.dev/language-tools"],
+  ["@unframework.dev/testing"],
+  ["@unframework.dev/visual", "@unframework.dev/mcp", "create-unframework"],
   // The umbrella: the authoring API, plus tooling re-exported under subpaths.
   ["unframework"],
 ];
@@ -34,7 +34,7 @@ const layerOf = new Map(
   LAYERS.flatMap((names, layer) => names.map((name) => [name, layer] as const)),
 );
 const isWorkspace = (name: string) =>
-  name === "unframework" || name.startsWith("@unframework/") || name === "create-unframework";
+  name === "unframework" || name.startsWith("@unframework.dev/") || name === "create-unframework";
 
 describe("layering", () => {
   const all = packages();
@@ -69,7 +69,7 @@ describe("layering", () => {
       )
       .filter((record) => {
         const imported = packageOf(record.specifier);
-        return imported && imported !== "@unframework/ir" && imported !== "@unframework/codegen";
+        return imported && imported !== "@unframework.dev/ir" && imported !== "@unframework.dev/codegen";
       })
       .map((record) => `${record.file} imports ${record.specifier}`);
     expect(violations).toEqual([]);
@@ -91,6 +91,6 @@ describe("layering", () => {
 
   it("finds imports, including re-exports and dynamic imports", () => {
     const records = importsOf(join(root, "packages", "compiler", "src", "index.ts"));
-    expect(records.map((record) => record.specifier)).toContain("@unframework/codegen");
+    expect(records.map((record) => record.specifier)).toContain("@unframework.dev/codegen");
   });
 });

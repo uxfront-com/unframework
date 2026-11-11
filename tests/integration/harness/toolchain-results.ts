@@ -6,7 +6,7 @@
 // run as set up.
 import { relative, sep } from "node:path";
 
-import type { FrameworkCompileResult, ToolchainMessage } from "@unframework/codegen";
+import type { FrameworkCompileResult, ToolchainMessage } from "@unframework.dev/codegen";
 
 import { ROOT } from "./paths.ts";
 

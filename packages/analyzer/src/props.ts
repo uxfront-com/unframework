@@ -4,7 +4,7 @@
 // utility type. The props are the type's members, in member order; each gets a binding
 // expressions read it through, and the kinds of value it can have.
 
-import type { DiagnosticCode } from "@unframework/diagnostics";
+import type { DiagnosticCode } from "@unframework.dev/diagnostics";
 import {
   createBinding,
   createExpression,
@@ -15,11 +15,11 @@ import {
   RESERVED_TYPE_NAMES,
   reservedPropName,
   reservedPropsParameterName,
-} from "@unframework/ir";
-import type { Binding, DeclaredBy, Prop, PropsParameter, Span, TypeText } from "@unframework/ir";
-import { parseModule, visitorKeys } from "@unframework/parser";
-import type { AST, ParsedModule } from "@unframework/parser";
-import type { ObjectNode, ShapeMember, TypeShape, UnresolvedType } from "@unframework/type-oracle";
+} from "@unframework.dev/ir";
+import type { Binding, DeclaredBy, Prop, PropsParameter, Span, TypeText } from "@unframework.dev/ir";
+import { parseModule, visitorKeys } from "@unframework.dev/parser";
+import type { AST, ParsedModule } from "@unframework.dev/parser";
+import type { ObjectNode, ShapeMember, TypeShape, UnresolvedType } from "@unframework.dev/type-oracle";
 
 import { Reporter } from "./context.ts";
 import {

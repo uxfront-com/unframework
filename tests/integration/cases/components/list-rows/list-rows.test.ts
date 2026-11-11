@@ -1,6 +1,6 @@
 // components/list-rows: a list renders a component for each item, keyed on it (ADR-0053's
 // components as `.map` roots). Adding an item adds a row; finishing one rerenders its row.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Tasks from "./Tasks.uf.tsx";

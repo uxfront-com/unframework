@@ -1,7 +1,7 @@
 // The per-project mount adapter seam. A browser project's second setup file
-// (`@unframework/testing/<target>`) registers its target's adapter; the shared specs only call
+// (`@unframework.dev/testing/<target>`) registers its target's adapter; the shared specs only call
 // `mount()`, which dispatches here.
-import type { MountAdapter, MountEvent } from "@unframework/codegen";
+import type { MountAdapter, MountEvent } from "@unframework.dev/codegen";
 import { inject } from "vitest";
 
 /** What a registration may add to its adapter. */
@@ -48,7 +48,7 @@ export function currentTarget(): string {
 export function registeredAdapter(): Registration {
   if (!registration) {
     throw new Error(
-      "No mount adapter is registered: the project's setupFiles must include @unframework/testing/<target>.",
+      "No mount adapter is registered: the project's setupFiles must include @unframework.dev/testing/<target>.",
     );
   }
   const target = currentTarget();

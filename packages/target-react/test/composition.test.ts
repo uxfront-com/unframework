@@ -6,8 +6,8 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { formatOutput } from "@unframework/codegen";
-import type { ToolchainContext } from "@unframework/codegen";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { ToolchainContext } from "@unframework.dev/codegen";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { analyze } from "../../analyzer/src/index.ts";

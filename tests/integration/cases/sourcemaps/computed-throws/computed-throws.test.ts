@@ -4,7 +4,7 @@
 // reads the state in the same expression as the computed: Qwik stores a computed's error and
 // doesn't re-run a reader of only that computed, so only a reader that the state's change re-runs
 // throws there (ADR-0078).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import InvoiceTotal from "./InvoiceTotal.uf.tsx";

@@ -10,10 +10,10 @@ import {
   parseCodeSource,
   parseExpressionSource,
   typeNames,
-} from "@unframework/codegen";
-import type { CodeKind, NameScope } from "@unframework/codegen";
-import { codeOf } from "@unframework/ir";
-import type { Code, TypeDeclaration, TypeText, UfComponent, UfModule } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { CodeKind, NameScope } from "@unframework.dev/codegen";
+import { codeOf } from "@unframework.dev/ir";
+import type { Code, TypeDeclaration, TypeText, UfComponent, UfModule } from "@unframework.dev/ir";
 
 import { visit } from "./ast.ts";
 import type { AstNode } from "./ast.ts";

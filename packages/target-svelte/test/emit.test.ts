@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { EmitContext } from "@unframework/codegen";
+import type { EmitContext } from "@unframework.dev/codegen";
 import {
   createComponent,
   createElement,
@@ -9,7 +9,7 @@ import {
   createModule,
   createStaticAttribute,
   createText,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type { Component } from "svelte";
 import { compile } from "svelte/compiler";
 import { afterAll, describe, expect, it } from "vitest";

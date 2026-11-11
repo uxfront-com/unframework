@@ -172,8 +172,8 @@ describe("the copy's manifest and workspace", () => {
   const tarballs = {
     ds: "/t/ds.tgz",
     unframework: "/t/uf.tgz",
-    "@unframework/unplugin": "/t/plugin.tgz",
-    "@unframework/ir": "/t/ir.tgz",
+    "@unframework.dev/unplugin": "/t/plugin.tgz",
+    "@unframework.dev/ir": "/t/ir.tgz",
   };
   const manifest = { name: "app", dependencies: { vue: "3.5.43" } };
 
@@ -201,7 +201,7 @@ describe("the copy's manifest and workspace", () => {
       vue: "3.5.43",
       ds: "file:/t/ds.tgz",
       unframework: "file:/t/uf.tgz",
-      "@unframework/unplugin": "file:/t/plugin.tgz",
+      "@unframework.dev/unplugin": "file:/t/plugin.tgz",
     });
     expect(manifest.dependencies).toEqual({ vue: "3.5.43" });
   });
@@ -211,8 +211,8 @@ describe("the copy's manifest and workspace", () => {
     expect(workspace.overrides).toEqual({
       ds: "file:/t/ds.tgz",
       unframework: "file:/t/uf.tgz",
-      "@unframework/unplugin": "file:/t/plugin.tgz",
-      "@unframework/ir": "file:/t/ir.tgz",
+      "@unframework.dev/unplugin": "file:/t/plugin.tgz",
+      "@unframework.dev/ir": "file:/t/ir.tgz",
     });
     expect(workspace.allowBuilds).toEqual({
       esbuild: true,

@@ -1,4 +1,4 @@
-import { parseModule } from "@unframework/parser";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 // Shared modules and module-level declarations (ADR-0070): a component reads values and types from

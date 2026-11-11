@@ -1,6 +1,6 @@
 // fallthrough/to-component-root: a toolbar passes `class` to a component whose root is another
 // component, which passes it on to its own root element (ADR-0054), beside its own class.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Toolbar from "./Toolbar.uf.tsx";

@@ -5,7 +5,7 @@
 // shortcut this case had is lifecycle/save-shortcut: a control in a function handed to
 // `addEventListener` is Qwik's `conditional-event-control`, which would leave this case without
 // a Qwik output.)
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ProfileMenu from "./ProfileMenu.uf.tsx";

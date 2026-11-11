@@ -3,7 +3,7 @@
 // watcher measures the list a pre watcher's write rendered; `onMounted` reads the DOM its own
 // write produced once it awaited `nextTick()`; a handler reads the DOM a watcher's write produced
 // once it awaited `nextTick()`.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import SearchResults from "./SearchResults.uf.tsx";

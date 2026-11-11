@@ -1,10 +1,10 @@
 // Test helpers: a `.uf.tsx` source lowered as the compiler lowers it (the analyser, then the IR's
 // invariants), and this target's output for it, unformatted (what `emit` prints) or formatted
 // (what the compiler writes).
-import { formatOutput } from "@unframework/codegen";
-import type { EmitContext, OutputFile } from "@unframework/codegen";
-import { checkInvariants } from "@unframework/ir";
-import type { UfModule } from "@unframework/ir";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { EmitContext, OutputFile } from "@unframework.dev/codegen";
+import { checkInvariants } from "@unframework.dev/ir";
+import type { UfModule } from "@unframework.dev/ir";
 
 // The analyser is three layers down: tests lower real sources through it rather than hand-build
 // IR it would never produce (the package's turbo.json hashes it into this package's tests).

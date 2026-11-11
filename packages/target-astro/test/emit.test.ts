@@ -1,8 +1,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { BEHAVIOURAL_CAPABILITIES, CAPABILITY_NAMES, formatOutput } from "@unframework/codegen";
-import type { EmitContext } from "@unframework/codegen";
+import { BEHAVIOURAL_CAPABILITIES, CAPABILITY_NAMES, formatOutput } from "@unframework.dev/codegen";
+import type { EmitContext } from "@unframework.dev/codegen";
 import {
   BINDABLE_BOOLEAN_ATTRIBUTES,
   createBinding,
@@ -17,8 +17,8 @@ import {
   createText,
   createTypeText,
   span,
-} from "@unframework/ir";
-import type { ElementNode, RenderNode } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { ElementNode, RenderNode } from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { expressionAt } from "../../codegen/test/expressions.ts";

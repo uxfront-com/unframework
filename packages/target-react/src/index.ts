@@ -14,8 +14,8 @@ import {
   spreadStyleExpression,
   typeExportsCode,
   typeNames,
-} from "@unframework/codegen";
-import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework/codegen";
+} from "@unframework.dev/codegen";
+import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework.dev/codegen";
 import type {
   Attribute,
   ClassAttribute,
@@ -35,7 +35,7 @@ import type {
   TypeText,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { compilerBailout, declaredNames } from "./bailouts.ts";
 import type { ComponentCode } from "./bailouts.ts";

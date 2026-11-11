@@ -1,7 +1,7 @@
 // What a module's map needs from the framework plugins after `load` (ADR-0074): each plugin in
 // the chain adds its own step once.
-import { chainMap } from "@unframework/codegen";
-import type { SourceMapV3 } from "@unframework/codegen";
+import { chainMap } from "@unframework.dev/codegen";
+import type { SourceMapV3 } from "@unframework.dev/codegen";
 import type { Plugin } from "vite";
 
 /** Vite's name for the Svelte plugin's compile step. */

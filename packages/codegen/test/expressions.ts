@@ -10,8 +10,8 @@ import {
   createGlobalReference,
   createWriteReference,
   span,
-} from "@unframework/ir";
-import type { Binding, Code, CodeReference, Expression, Reference } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { Binding, Code, CodeReference, Expression, Reference } from "@unframework.dev/ir";
 
 /** A reference to find in an expression's code: a binding's, or the global of that name. */
 export type ReferenceTarget = [text: string, target: Binding | "Global"];

@@ -3,9 +3,9 @@
 // does, and the module's top-level constants, which its output declares at module level as the
 // source does. Class code reads both by their module names; the template reads them through
 // members of those names (./members.ts).
-import { codeNames, typeNames, typeSpecifier } from "@unframework/codegen";
-import type { ImportSet } from "@unframework/codegen";
-import type { Binding, TypeDeclaration, UfModule } from "@unframework/ir";
+import { codeNames, typeNames, typeSpecifier } from "@unframework.dev/codegen";
+import type { ImportSet } from "@unframework.dev/codegen";
+import type { Binding, TypeDeclaration, UfModule } from "@unframework.dev/ir";
 
 /** What an output reads of its module. */
 export interface ModuleReads {

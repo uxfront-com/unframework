@@ -1,7 +1,7 @@
 // props/unread-props: a component that reads some of its props. The props it does not read (a
 // required one, optional ones with and without defaults, booleans among them) are still declared,
 // so a consumer may pass them, and they render nothing: no text, and no attribute on the root.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import ArticleTeaser from "./ArticleTeaser.uf.tsx";

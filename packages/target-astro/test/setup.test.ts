@@ -6,7 +6,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { formatOutput } from "@unframework/codegen";
+import { formatOutput } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { astroTypecheck } from "../src/toolchain/check.ts";

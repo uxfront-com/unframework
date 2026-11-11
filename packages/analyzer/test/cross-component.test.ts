@@ -1,6 +1,6 @@
 // Layer 2 of §5.6 (ADR-0055's UF3035 to UF3039): what a parent's compile checks against a
 // child's API, with the name it may mean, and the fixes, which recompile clean.
-import { parseModule } from "@unframework/parser";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { analyze } from "../src/index.ts";

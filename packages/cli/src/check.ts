@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 
-import { formatDiagnostics, toJsonDiagnostics, toSarif } from "@unframework/diagnostics";
+import { formatDiagnostics, toJsonDiagnostics, toSarif } from "@unframework.dev/diagnostics";
 
 import type { RunCommand } from "./command.ts";
 import { compileSources, printable, TYPE_ORACLE_OPTION } from "./compilation.ts";

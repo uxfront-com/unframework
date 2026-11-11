@@ -2,7 +2,7 @@
 // list's item is that item, so comparing them by identity marks the picked row; and the value is
 // plain data, so `structuredClone` copies it (Vue declares such state with `shallowRef`, as
 // Svelte with `$state.raw`: state is replaced whole, never changed in place).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import FruitPicker from "./FruitPicker.uf.tsx";

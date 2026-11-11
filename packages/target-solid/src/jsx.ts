@@ -24,9 +24,9 @@ import {
   spreadClassReads,
   spreadRead,
   staticJsxAttribute,
-} from "@unframework/codegen";
-import type { ImportSet, JsxContext, JsxDialect } from "@unframework/codegen";
-import { walk } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { ImportSet, JsxContext, JsxDialect } from "@unframework.dev/codegen";
+import { walk } from "@unframework.dev/ir";
 import type {
   ClassAttribute,
   ElementNode,
@@ -37,7 +37,7 @@ import type {
   Span,
   StyleAttribute,
   UfComponent,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { isUntyped, untypedAttribute } from "./attributes.ts";
 import type { SolidComposition } from "./composition.ts";

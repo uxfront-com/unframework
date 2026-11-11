@@ -1,7 +1,7 @@
 // dynamic/forwarding: a frame passes its title slot on through `<component is>` (ADR-0054's
 // forwarding), to whichever child its prop chooses. Forwarding keeps presence: where the gallery
 // fills nothing, the child shows its own fallback.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Gallery from "./Gallery.uf.tsx";

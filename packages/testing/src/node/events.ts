@@ -5,8 +5,8 @@
 // their config, and a canary's compile may differ from it on purpose.
 import { realpathSync } from "node:fs";
 
-import type { MountEvent } from "@unframework/codegen";
-import type { UfModule } from "@unframework/ir";
+import type { MountEvent } from "@unframework.dev/codegen";
+import type { UfModule } from "@unframework.dev/ir";
 
 /** A module a project compiled, as the unplugin's `onCompile` reports it. */
 export interface CompiledModule {
@@ -22,7 +22,7 @@ export interface CompiledModule {
  * One store per process, whatever copy of this module records or reads it: the config that
  * builds the projects and the commands it registers may load it apart.
  */
-const STORE = Symbol.for("@unframework/testing:compiled-modules");
+const STORE = Symbol.for("@unframework.dev/testing:compiled-modules");
 
 function store(): Map<string, UfModule | undefined> {
   const holder = globalThis as { [STORE]?: Map<string, UfModule | undefined> };

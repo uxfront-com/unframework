@@ -26,7 +26,7 @@
 // string expression (`{"\n"}`) writes them, as JavaScript reads it; a leading line feed in
 // <pre>, <textarea> and <listing> is reported then (UF3017), because the HTML parser drops it
 // from server-rendered markup.
-import { unkeptCharacter } from "@unframework/ir";
+import { unkeptCharacter } from "@unframework.dev/ir";
 
 import { XHTML_ENTITIES } from "./entities.ts";
 import { HTML_ONLY_ENTITIES } from "./html-entities.ts";

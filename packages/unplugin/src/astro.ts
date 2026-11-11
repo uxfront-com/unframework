@@ -1,4 +1,4 @@
-import { createDiagnostic, formatDiagnostic } from "@unframework/diagnostics";
+import { createDiagnostic, formatDiagnostic } from "@unframework.dev/diagnostics";
 import type { AstroIntegration } from "astro";
 
 import type { UnframeworkOptions } from "./plugin.ts";

@@ -10,9 +10,9 @@ import {
   parseStatementsSource,
   rewriteCode,
   writtenValue,
-} from "@unframework/codegen";
-import type { FunctionTextOptions, RewriteRules, RewriteSite } from "@unframework/codegen";
-import type { Binding, BindingId, BindingReference, Code, FunctionCode } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { FunctionTextOptions, RewriteRules, RewriteSite } from "@unframework.dev/codegen";
+import type { Binding, BindingId, BindingReference, Code, FunctionCode } from "@unframework.dev/ir";
 
 import { assertedCode, assertedPaths } from "./narrowing.ts";
 import type { ReactPlan } from "./plan.ts";

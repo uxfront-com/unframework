@@ -1,5 +1,5 @@
 {
-  "name": "@unframework/e2e-design-system",
+  "name": "@unframework.dev/e2e-design-system",
   "version": "0.0.0",
   "private": true,
   "description": "The sample design system the end-to-end apps consume, written in the built subset.",

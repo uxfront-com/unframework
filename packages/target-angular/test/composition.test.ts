@@ -1,7 +1,7 @@
 // Composition's forms the corpus does not reach (src/models.ts, src/composition.ts, src/plan.ts),
 // each as the emitter writes it.
-import type { EmitContext } from "@unframework/codegen";
-import type { ModuleApi, UfModule } from "@unframework/ir";
+import type { EmitContext } from "@unframework.dev/codegen";
+import type { ModuleApi, UfModule } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { analyze } from "../../analyzer/src/index.ts";

@@ -15,9 +15,9 @@ import {
   spreadRead,
   staticJsxAttribute,
   styleObject,
-} from "@unframework/codegen";
-import type { ImportSet, JsxContext, JsxDialect } from "@unframework/codegen";
-import type { ClassAttribute, ElementNode } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { ImportSet, JsxContext, JsxDialect } from "@unframework.dev/codegen";
+import type { ClassAttribute, ElementNode } from "@unframework.dev/ir";
 
 import { keyedTernary } from "./branches.ts";
 import type { ReactComposer } from "./compose.ts";

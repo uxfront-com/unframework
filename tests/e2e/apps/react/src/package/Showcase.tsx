@@ -1,4 +1,4 @@
-import { Button, Card, Counter, TextField, useToggle } from "@unframework/e2e-design-system/react";
+import { Button, Card, Counter, TextField, useToggle } from "@unframework.dev/e2e-design-system/react";
 import { useState } from "react";
 
 export function Showcase() {

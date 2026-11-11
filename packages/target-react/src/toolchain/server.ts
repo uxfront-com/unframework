@@ -1,5 +1,5 @@
 // The React SSR renderer (Node, inside the `ssr:react` project).
-import type { SsrRenderer } from "@unframework/codegen";
+import type { SsrRenderer } from "@unframework.dev/codegen";
 import { createElement } from "react";
 import { prerender } from "react-dom/static";
 

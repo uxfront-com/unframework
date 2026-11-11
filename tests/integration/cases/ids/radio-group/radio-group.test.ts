@@ -2,7 +2,7 @@
 // radio an id its label points at; a second `useId()` beside it describes the group. A suffixed id
 // never equals the other id, on any target. The normaliser renumbers generated ids wherever they
 // appear, the group's `name` included.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import SizePicker from "./SizePicker.uf.tsx";

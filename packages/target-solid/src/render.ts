@@ -20,8 +20,8 @@ import {
   parseExpression,
   rewriteExpression,
   scopeRoots,
-} from "@unframework/codegen";
-import type { RewriteRules } from "@unframework/codegen";
+} from "@unframework.dev/codegen";
+import type { RewriteRules } from "@unframework.dev/codegen";
 import type {
   Attribute,
   ElementNode,
@@ -32,7 +32,7 @@ import type {
   RenderNode,
   SlotFill,
   UfComponent,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { carriedPaths, narrowsFurther, samePath, slice, wholePath } from "./narrowing.ts";
 import type { BindingTypes } from "./narrowing.ts";

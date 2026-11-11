@@ -3,7 +3,7 @@
 // emits. It runs once, so a rerender does not count again. The server render (L6,
 // ssr.article.html) shows the state before the hook; the first browser capture depends on client
 // code, so it needs `interactivity` (case.json's `requires` note).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ArticlePreview from "./ArticlePreview.uf.tsx";

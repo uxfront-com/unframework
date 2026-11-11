@@ -8,8 +8,8 @@
 // a browser project whose every test of a case its target skipped by capability ran nothing,
 // which is no evidence either way. A target on which the canary applies to no case is not
 // judged, and the verdict says so.
-import { NOT_RENDERED_SKIP, outcomeOfCell } from "@unframework/testing/node";
-import type { PartialMatrix, ProjectKind } from "@unframework/testing/node";
+import { NOT_RENDERED_SKIP, outcomeOfCell } from "@unframework.dev/testing/node";
+import type { PartialMatrix, ProjectKind } from "@unframework.dev/testing/node";
 
 import { canaryProjects, corrupts, skippedByCapability } from "./canaries.ts";
 import type { Canary, CanaryCase, Evidence } from "./canaries.ts";

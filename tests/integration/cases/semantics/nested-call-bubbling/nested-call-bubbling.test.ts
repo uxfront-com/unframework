@@ -4,7 +4,7 @@
 // the same event); a call of an async local function that the source does not await lets the
 // caller go on at the callee's first `await`, so the caller's write lands before the callee's
 // continuation.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Picker from "./Picker.uf.tsx";

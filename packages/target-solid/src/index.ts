@@ -15,9 +15,9 @@ import {
   printComponentModule,
   sourceNames,
   typeExportsCode,
-} from "@unframework/codegen";
-import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework/codegen";
-import type { TypeDeclaration, UfComponent, UfModule } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework.dev/codegen";
+import type { TypeDeclaration, UfComponent, UfModule } from "@unframework.dev/ir";
 
 import {
   addComposableImports,

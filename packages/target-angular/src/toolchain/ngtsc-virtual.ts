@@ -139,7 +139,7 @@ export function ngtscVirtual(
         throw new Error(
           "The Angular toolchain compiles the unframework plugin's output, but this Vite config " +
             'has no plugin named "unframework" exposing api.getCompiled(id) and api.getSheet(file). Add ' +
-            "@unframework/unplugin/vite before the Angular toolchain's plugins.",
+            "@unframework.dev/unplugin/vite before the Angular toolchain's plugins.",
         );
       }
       api = candidate as UnframeworkApi;

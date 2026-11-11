@@ -12,7 +12,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { parseModule } from "@unframework/parser";
+import { parseModule } from "@unframework.dev/parser";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { analyzeModule } from "../src/analyze.ts";

@@ -1,6 +1,6 @@
 // bindings/style-merge: static and bound declarations in one style object; a bound declaration
 // whose value is undefined (an absent prop) or "" is left out, and the others still render.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import Tag from "./Tag.uf.tsx";

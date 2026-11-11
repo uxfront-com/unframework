@@ -7,7 +7,7 @@
 // and a handler awaits `Promise.all(shelves.map(countShelf))` over a local async function. No
 // request leaves the page: each test that fetches puts a fake `fetch` on `window`, which answers
 // after 100 ms of the view's clock, so every reply lands in a `tick` step on every target.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ReadingList from "./ReadingList.uf.tsx";

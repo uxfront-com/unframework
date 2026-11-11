@@ -5,8 +5,8 @@
 // propagation). Svelte's handler types are its own (`svelte/elements`): `oninput` hands a
 // handler an `Event`, where lib.dom dispatches an `InputEvent`, so a handler's parameter is
 // annotated with what Svelte gives it.
-import { DOM_EVENTS, extendsEventInterface, EVENT_INTERFACES } from "@unframework/ir";
-import type { ElementNode, EventAttribute } from "@unframework/ir";
+import { DOM_EVENTS, extendsEventInterface, EVENT_INTERFACES } from "@unframework.dev/ir";
+import type { ElementNode, EventAttribute } from "@unframework.dev/ir";
 
 /**
  * The interface Svelte's element types (`svelte/elements`, 5.57) hand each event's attribute

@@ -1,7 +1,7 @@
 // state/computed-chain: subtotal, tax and total, each computed from the one before, over a
 // quantity that buttons change; a computed with a block body and a literal-union value is bound
 // to an attribute.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import OrderSummary from "./OrderSummary.uf.tsx";

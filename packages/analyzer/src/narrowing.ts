@@ -40,8 +40,8 @@
 //   (`selected.value = member;`, `if (!cache.value) cache.value = make();`), as TypeScript
 //   narrows it by assignment: what it writes is never nullish, or of fewer kinds.
 
-import type { AST } from "@unframework/parser";
-import { visitorKeys } from "@unframework/parser";
+import type { AST } from "@unframework.dev/parser";
+import { visitorKeys } from "@unframework.dev/parser";
 
 import type { RenderContext } from "./render.ts";
 import type { Resolution } from "./scope.ts";

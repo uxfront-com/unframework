@@ -79,13 +79,13 @@ jobs:
       matrix:
         include:
           - group: core
-            filter: --filter='!@unframework/integration' --filter='!@unframework/target-*'
+            filter: --filter='!@unframework.dev/integration' --filter='!@unframework.dev/target-*'
           - group: react, solid, angular
-            filter: --filter=@unframework/target-react --filter=@unframework/target-solid --filter=@unframework/target-angular
+            filter: --filter=@unframework.dev/target-react --filter=@unframework.dev/target-solid --filter=@unframework.dev/target-angular
           - group: vue, qwik
-            filter: --filter=@unframework/target-vue --filter=@unframework/target-qwik
+            filter: --filter=@unframework.dev/target-vue --filter=@unframework.dev/target-qwik
           - group: svelte, astro
-            filter: --filter=@unframework/target-svelte --filter=@unframework/target-astro
+            filter: --filter=@unframework.dev/target-svelte --filter=@unframework.dev/target-astro
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
     steps:
@@ -136,7 +136,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Compile and harness projects
-        run: pnpm --filter @unframework/integration exec vitest run --project compile --project harness
+        run: pnpm --filter @unframework.dev/integration exec vitest run --project compile --project harness
 
       - name: Upload the parity results
         if: ${{ !cancelled() }}
@@ -177,7 +177,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Toolchain projects
-        run: pnpm --filter @unframework/integration exec vitest run --project "toolchain:*"
+        run: pnpm --filter @unframework.dev/integration exec vitest run --project "toolchain:*"
 
       - name: Upload the parity results
         if: ${{ !cancelled() }}
@@ -216,7 +216,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: SSR projects
-        run: pnpm --filter @unframework/integration exec vitest run --project "ssr:*"
+        run: pnpm --filter @unframework.dev/integration exec vitest run --project "ssr:*"
 
       - name: Upload the parity results
         if: ${{ !cancelled() }}
@@ -266,7 +266,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Browser project
-        run: pnpm --filter @unframework/integration exec vitest run --project "browser:${{ matrix.target }}"
+        run: pnpm --filter @unframework.dev/integration exec vitest run --project "browser:${{ matrix.target }}"
 
       - name: Upload the parity results
         if: ${{ !cancelled() }}
@@ -523,7 +523,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Bench project
-        run: pnpm --filter @unframework/integration exec vitest run --project bench
+        run: pnpm --filter @unframework.dev/integration exec vitest run --project bench
 
       - name: Upload the parity results
         if: ${{ !cancelled() }}
@@ -579,7 +579,7 @@ jobs:
           merge-multiple: true
 
       - name: Summarise
-        run: pnpm --filter @unframework/integration summary
+        run: pnpm --filter @unframework.dev/integration summary
 
       - name: Upload the parity matrix
         if: ${{ !cancelled() }}
@@ -622,7 +622,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build and pack
-        run: pnpm --filter @unframework/e2e prepare-apps --pack
+        run: pnpm --filter @unframework.dev/e2e prepare-apps --pack
 
       - name: Upload the tarballs
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -673,10 +673,10 @@ jobs:
           path: tests/e2e/.tarballs
 
       - name: Install the copies
-        run: pnpm --filter @unframework/e2e prepare-apps --reuse-tarballs
+        run: pnpm --filter @unframework.dev/e2e prepare-apps --reuse-tarballs
 
       - name: E2E projects
-        run: pnpm --filter @unframework/e2e e2e
+        run: pnpm --filter @unframework.dev/e2e e2e
 
       - name: Upload the test results
         if: ${{ failure() }}

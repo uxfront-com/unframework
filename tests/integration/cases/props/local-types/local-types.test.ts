@@ -1,6 +1,6 @@
 // props/local-types: props typed by an exported interface that uses a local union alias, a
 // nested object member and an array of a local interface.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import ProductSpec from "./ProductSpec.uf.tsx";

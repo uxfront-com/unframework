@@ -2,7 +2,7 @@
 // (./fixtures/Counter.svelte) calls the `onchange` callback prop the adapter passes for the
 // test's `change` listener, and `onvaluechange` for `valueChange`; a rerender, which replaces
 // the props, keeps them.
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 

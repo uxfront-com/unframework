@@ -16,7 +16,7 @@ import {
   pascalCase,
   sourceNames,
   typeNames,
-} from "@unframework/codegen";
+} from "@unframework.dev/codegen";
 import {
   codeOf,
   expressionsOf,
@@ -24,7 +24,7 @@ import {
   summarize,
   summarizeCode,
   walk,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Binding,
   BindingId,
@@ -46,7 +46,7 @@ import type {
   UfComposable,
   UfModule,
   UseItem,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { planComposition } from "./composition.ts";
 import type { CompositionPlan } from "./composition.ts";
