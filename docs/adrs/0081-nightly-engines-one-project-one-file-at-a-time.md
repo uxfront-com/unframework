@@ -1,7 +1,7 @@
 # ADR-0081: The nightly engines run one project and one file at a time
 
 - **Status:** Accepted
-- **Date:** 2026-11-10
+- **Date:** 2026-11-11
 - **Plan:** §7.3, §7.5, §7.6, §9 M4, P8, R10; amends ADR-0066 (the nightly's ordering,
   parallelism and timeout), ADR-0031 (noise is per target), ADR-0018 (rule 10, `groupOrder`) and
   ADR-0061 (the startup check of the colour scheme)
@@ -16,6 +16,12 @@ that are the harness's, not the targets':
   WebKit instances and five Vite servers in one process. In that group a spec file took about
   45 s instead of 2 s, and the runner killed the job (exit 137) 13 to 16 minutes in, with a fifth
   of the files done and no matrix uploaded.
+- **WebKit's memory builds up over the run.** Vitest 5 starts every browser project's browser as
+  it creates the project, and closes them only when the run's pool closes
+  (`vitest/dist/chunks/index.DpLw24bj.js:7740-7751` and `:10195-10210`). With one project at a
+  time, each project's WebKit content process stays alive after its group: locally, three
+  projects took them from 784 MB to 2017 MB, and none was freed between projects. On GitHub's
+  runner that run was still killed, 35 to 37 minutes in, during the fifth project.
 - **Firefox's results change from night to night.** The failed files went from 87 to 99 of 1463
   between two nights, and the failed cells of two nights differed by 86 rows.
   `events/focus-and-change` logged whole blur and focus cycles while the test was idle, the same
@@ -46,13 +52,25 @@ a quarantine entry.
   keeps every group it had, in every mode. This amends ADR-0018's rule 10, which reserved
   `groupOrder` for ordering the reference first, and ADR-0066, whose job ran five followers at
   once.
-- **Outside Chromium, each browser project runs one spec file at a time** (`fileParallelism:
-false`, from `fileParallelism(mode)` in `harness/projects.ts`). One tester page at a time holds
+- **Outside Chromium, each browser project runs one spec file at a time,** from
+  `fileParallelism(mode)` in `harness/projects.ts`. One tester page at a time holds
   the focus, so no page sees another's blur. Chromium keeps file parallelism. Vitest 5 moves a
   project at group 0 that runs one file at a time after every other group, and refuses one there
   beside projects with another worker count, so outside Chromium the reference starts at 1.
 - **The nightly's timeout is 120 minutes,** up from 45. Running one project and one file at a time
   is slower, and no pull request waits for the nightly.
+- **WebKit runs in three Vitest runs in its one job,** `vue,react,svelte`, `vue,solid,angular` and
+  `vue,qwik,astro` (`batches` in `nightly.yml`). Each run starts its own browsers and frees them
+  when it exits, so at most three full projects are alive at once. Each holds the reference, so
+  live L10 still compares every follower with Vue's capture from the same run, which narrows
+  ADR-0066's one run per engine to one run per batch. A batch without React still runs it for
+  `semantics/listbox`, its own reference (ADR-0057). Firefox stays one run of all seven.
+- **`summary -- --browser-only` merges the batches** (`scripts/summary.ts`). It expects the
+  `browser:` projects, the layers every browser test records (L7 to L11 and L13) and the cases
+  with a spec, and in CI it still requires every one of them, so a batch that never reported
+  fails the job. L14 is left out because `compile` records it for every case, and a diagnostics
+  case because `compile` records its browser layers. Both are still judged where a browser test
+  recorded them.
 - **An engine's own spelling of a property is noise for that engine alone** (rule 3b,
   `renameEngineAliases`). `normalizeHtml` and `normalizeDom` take an `engine`, which the browser
   API passes from `UF_BROWSER`. In Firefox, a `-moz-box-orient` declaration takes the name
@@ -81,8 +99,7 @@ false`, from `fileParallelism(mode)` in `harness/projects.ts`). One tester page 
 
 **Negative:**
 
-- Each engine's job runs far longer than before. The timeout comes from runs on another machine,
-  so the owner's `workflow_dispatch` on GitHub's runner is the real check.
+- Each engine's job runs far longer than before, and WebKit runs the reference three times.
 - A colour scheme that never applies now fails 5 s later than before.
 - Genuine engine differences still fail their job, as ADR-0066 says, until each is fixed or
   declared.
@@ -100,6 +117,10 @@ false`, from `fileParallelism(mode)` in `harness/projects.ts`). One tester page 
   the focus.
 - **Raise the timeout alone.** WebKit is killed for memory, not time, and Firefox's flaky cells
   stay flaky.
+- **Two WebKit jobs.** Their matrices would need an artefact merge in a third job.
+- **Close each project's browser after its group.** Vitest 5 has no option for it, and patching
+  it is a dependency change.
+- **A larger runner.** It costs more and only moves the limit.
 - **Report differences without failing the job.** It reverses ADR-0066's rule that a difference
   fails its engine's job.
 - **Rename every `-moz-*` property.** Most have no `-webkit-*` twin, and renaming one that differs
@@ -119,3 +140,9 @@ false`, from `fileParallelism(mode)` in `harness/projects.ts`). One tester page 
 - `packages/testing/test/determinism.test.ts`: a scheme that applies late passes, and one that
   never applies fails after 5 s with the message from before. With the wait taken out, both
   cases fail.
+- `tests/integration/harness/nightly.unit.test.ts`: WebKit's batches each hold the reference and
+  together run every follower once. `harness/summary.unit.test.ts`: the browser-only merge of the
+  three batches is green, and fails without a batch, on a failed cell and on a missing one.
+- Two dispatches before the batches, runs `43012628802` and `43012642077`: Firefox passed 1463
+  of 1463 files in 45 and 38 minutes, with no failed cell and the same cells in both. WebKit
+  completed four projects and was killed (exit 137) in the fifth, 37 and 35 minutes in.

@@ -328,7 +328,10 @@ the reference first, then the targets a case names as its reference, then each o
 order, and each runs one spec file at a time (ADR-0081): parallel tester pages in one engine take
 the focus from each other, and five followers at once ran WebKit out of memory. Firefox's DOM
 writes `-webkit-box-orient` as `-moz-box-orient`, which the normaliser renames for Firefox alone.
-The nightly workflow runs both engines. A difference there is an issue, never a quarantine entry. A cell is `pass`, `fail`,
+The nightly workflow runs both engines. WebKit runs in three Vitest runs, each with the
+reference, because Vitest keeps every project's browser alive until its run ends, and
+`summary -- --browser-only` merges them, expecting only the browser projects and their layers
+(ADR-0081). A difference there is an issue, never a quarantine entry. A cell is `pass`, `fail`,
 `skip(reason)` or `quarantined(issue)`; a skip on a live layer names a capability the target
 lacks (`requires interactivity: …`) or a mechanical cause (no output, no spec, the live
 reference, a component that did not render, no scripted interaction). The summary itself fills an
