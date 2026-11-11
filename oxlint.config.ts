@@ -48,9 +48,11 @@ export default defineConfig({
                   "A spec imports @unframework/testing and the case's own sources, no other @unframework package (ADR-0085).",
               },
               {
-                regex: "^(\\.\\./)+(integration/)?(harness|scripts)(/|$)",
+                // A `harness`, `scripts` or `packages` segment anywhere in a relative path: the
+                // harness's code, or a package's source reached around its entries.
+                regex: "^\\.\\.?/(.*/)?(harness|scripts|packages)(/|$)",
                 message:
-                  "A spec never imports the harness's own code: use the public API of @unframework/testing (ADR-0085).",
+                  "A spec never imports the harness's code or a package's source by path: use the public API of @unframework/testing (ADR-0085).",
               },
             ],
           },

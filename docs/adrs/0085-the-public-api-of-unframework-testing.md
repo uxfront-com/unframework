@@ -56,7 +56,9 @@ per project, one per target, so it compares no target with another.
 - **A lint rule holds the corpus to the public API.** `oxlint.config.ts` sets
   `no-restricted-imports` to `error` on `tests/integration/cases/**/*.{ts,tsx}`. It refuses any
   `@unframework/testing/*` subpath, any other `@unframework/*` package, and any relative path
-  into the harness's `harness/` or `scripts/`. `ignorePatterns` keeps oxlint off
+  with a `harness`, `scripts` or `packages` segment, which reaches the harness's code or a
+  package's source around its entries. `tests/repo/test/corpus-imports.test.ts` runs oxlint
+  with the rule on a probe spec, with each kind of import. `ignorePatterns` keeps oxlint off
   `cases/diagnostics/`, so the rule doesn't reach it. No spec lives there, since a diagnostics
   case has none.
 - **`"private": true` stays** until a release. Removing it, publishing the packages it depends
@@ -93,9 +95,10 @@ describeTargets("state/counter", () => {
   breaking change once the package is released.
 - oxlint merges the `group` patterns of one rule into one list, and its regular expressions have
   no lookahead. So the subpath pattern is a regular expression, and only the package pattern
-  uses a negated `group`. A later oxlint that changes either behaviour can quietly loosen the
-  rule, and no test lints a forbidden import: a bump of oxlint checks the rule by hand, with one
-  forbidden import of each kind in a spec.
+  uses a negated `group`. A later oxlint that changes either behaviour loosens the rule without
+  an error, which is why `corpus-imports.test.ts` lints its probes with oxlint itself.
+- A case directory can't be named `harness`, `scripts` or `packages`, since the rule would
+  refuse a relative import of a file in it.
 - The rule doesn't cover the sample design system's specs yet. M7's `defineTestConfig` work
   extends it to them.
 

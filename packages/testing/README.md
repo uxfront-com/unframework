@@ -32,7 +32,8 @@ describeTargets("state/counter", () => {
 ## Public API
 
 The root entry is the public API, exactly (ADR-0085). `tests/repo/test/testing-api.test.ts` pins
-these names, and the corpus's lint rule (`oxlint.config.ts`) refuses any other import from a spec:
+these names, and the corpus's lint rule (`oxlint.config.ts`, tested by
+`tests/repo/test/corpus-imports.test.ts`) refuses any other import from a spec:
 
 - **Runtime:** `describeTargets`, `it`, `test`, `mount`, `mountScenario`, `allowConsole`,
   `capturedConsole` and `currentTarget`.

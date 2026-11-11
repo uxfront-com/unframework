@@ -475,7 +475,7 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   internal subpaths the harness uses (`/harness`, `/setup`, `/<target>`, `/node` for the write
   policy, the visual capture and the parity reporter, and `/normalize`). A spec imports nothing
   else from the repository: the lint rule in `oxlint.config.ts` refuses any subpath of the
-  package, any other `@unframework` package and the harness's own files (ADR-0085).
+  package, any other `@unframework` package, and a relative path into `harness/`, `scripts/` or `packages/` (ADR-0085). `tests/repo/test/corpus-imports.test.ts` runs oxlint on it.
 - `@unframework/target-<name>/toolchain`: each framework's Vite plugins, mount adapter (with its
   rerender), server renderer, compiler check (L3), type check (L4), lint (L5) and production
   compile (L15).
