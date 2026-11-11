@@ -150,7 +150,12 @@ describe("CI's parity job", () => {
     ]);
     expect(runs.flatMap((run) => run.projects).toSorted()).toEqual(PARITY.toSorted());
     expect(runs.filter((run) => !run.uploads)).toEqual([]);
-    expect(parityNeeds.toSorted()).toEqual([...new Set(runs.map((run) => run.job))].toSorted());
+    // It also waits for `changes`, which skips it with the jobs it waits for on a docs-only
+    // pull request (ADR-0082).
+    expect(parityNeeds).toContain("changes");
+    expect(parityNeeds.filter((job) => job !== "changes").toSorted()).toEqual(
+      [...new Set(runs.map((run) => run.job))].toSorted(),
+    );
   });
 
   it("leaves out the Baselines job: an update run, which no summary judges (ADR-0062)", () => {

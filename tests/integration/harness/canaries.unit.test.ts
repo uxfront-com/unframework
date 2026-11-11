@@ -385,6 +385,50 @@ describe("canaries", () => {
     expect(changes).not.toMatch(/\|\| true|continue-on-error/);
   });
 
+  it("run by hand, and never on a push to main, which runs every test job (ADR-0082)", () => {
+    const changes = workflowJob("ci.yml", "changes");
+    expect(changes).toContain("tests: ${{ steps.filter.outputs.tests }}\n");
+    // The script prints both lines on a pull request; each other branch writes both itself.
+    expect(changes).toContain(
+      [
+        '          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then',
+        '            echo "canaries=true" >> "$GITHUB_OUTPUT"',
+        '            echo "tests=true" >> "$GITHUB_OUTPUT"',
+        "          else",
+        '            echo "canaries=false" >> "$GITHUB_OUTPUT"',
+        '            echo "tests=true" >> "$GITHUB_OUTPUT"',
+        "          fi\n",
+      ].join("\n"),
+    );
+    expect(changes.match(/canaries=true/g)).toHaveLength(1);
+  });
+
+  // ADR-0082: a docs-only pull request skips the test jobs. Every job but the required checks
+  // (the docs site is built from the docs), the filter itself and the canaries, which keep
+  // ADR-0073's gate, needs `changes` and runs unless it says `tests=false`, so a failed filter,
+  // whose outputs are empty, still runs them. A new job that doesn't opt out fails here.
+  it("leave out the test jobs only when the changes job says so, and run them if it fails (ADR-0082)", () => {
+    const workflow = readFileSync(join(REPO_ROOT, ".github", "workflows", "ci.yml"), "utf8");
+    const ids = [
+      ...workflow.slice(workflow.indexOf("\njobs:\n")).matchAll(/^ {2}([a-z0-9-]+):\n/gm),
+    ].map(([, id]) => id!);
+    const ungated = new Set(["changes", "check", "build", "lighthouse", "canaries"]);
+    expect(ids).toEqual(expect.arrayContaining([...ungated]));
+    const gated = ids.filter((id) => !ungated.has(id));
+    expect(gated.length).toBeGreaterThan(0);
+    for (const id of gated) {
+      const job = workflowJob("ci.yml", id);
+      const needs = /^ {4}needs:\s*(\[[^\]]*\]|\S+)/m.exec(job)?.[1] ?? "";
+      expect(needs.replace(/[[\]\s]/g, "").split(","), id).toContain("changes");
+      const condition = /^ {4}if: \$\{\{ (.*) \}\}$/m.exec(job)?.[1] ?? "";
+      expect(condition, id).toMatch(/^!cancelled\(\) && /);
+      expect(condition, id).toContain("needs.changes.outputs.tests != 'false'");
+    }
+    for (const id of ["check", "build", "lighthouse"]) {
+      expect(workflowJob("ci.yml", id), id).not.toContain("needs.changes");
+    }
+  });
+
   it("run every night with CI's matrix and run line (ADR-0073)", () => {
     const ci = workflowJob("ci.yml", "canaries");
     const nightly = workflowJob("nightly.yml", "canaries");

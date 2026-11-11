@@ -687,7 +687,10 @@ describe("CI's Baselines job", () => {
   it("runs on pull requests and by hand, in the baseline image, and uploads the artefact download reads", () => {
     if (!job) throw new Error("ci.yml has no baselines job.");
     expect(job).toMatch(/^ {4}name: Baselines$/m);
-    expect(job).toMatch(/^ {4}if: \$\{\{ github\.event_name != 'push' \}\}$/m);
+    // A docs-only pull request skips it, like every test job (ADR-0082).
+    expect(job).toMatch(
+      /^ {4}if: \$\{\{ !cancelled\(\) && github\.event_name != 'push' && needs\.changes\.outputs\.tests != 'false' \}\}$/m,
+    );
     expect(/^on:\n((?: {2}.*\n)+)/m.exec(workflow)?.[1]).toMatch(
       /^ {2}pull_request:\n(?:.*\n)* {2}workflow_dispatch:$/m,
     );

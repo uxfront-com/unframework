@@ -70,6 +70,8 @@ jobs:
   # name theirs. Together they run every package once.
   unit:
     name: "Unit tests (${{ matrix.group }})"
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -111,6 +113,8 @@ jobs:
   # harness's own unit tests, the canaries' corruptions of every case among them.
   integration-compile:
     name: "Integration: compile"
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -149,6 +153,8 @@ jobs:
   # ESLint for the template languages) per target over every case.
   integration-toolchains:
     name: "Integration: toolchain (${{ matrix.target }})"
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -190,6 +196,8 @@ jobs:
   # L6: each target's server renderer against the shared SSR expectations.
   integration-ssr:
     name: "Integration: SSR"
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -232,6 +240,8 @@ jobs:
   # a project as run in full once shards 1 to n all reported (harness/summary.unit.test.ts).
   integration-browser:
     name: "Integration: browser (${{ matrix.target }})"
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
@@ -297,7 +307,8 @@ jobs:
   # directory is under the checkout's .reports, which that copy leaves out.
   baselines:
     name: Baselines
-    if: ${{ github.event_name != 'push' }}
+    needs: changes
+    if: ${{ !cancelled() && github.event_name != 'push' && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
@@ -324,16 +335,23 @@ jobs:
           overwrite: true
           retention-days: 7
 
-  # Decides whether the canaries run (ADR-0073). On a pull request it diffs the merge commit against
-  # its first parent: the PR's net change against the current base. --no-renames lists both sides
-  # of a move, so moving a file off the list still counts. `shell: bash` sets pipefail, which a step
-  # with no `shell` lacks: a failed diff turns this job red, and never passes as a skip (P2).
+  # Decides whether the canaries run (ADR-0073) and whether the test jobs run (ADR-0082). On a pull
+  # request it diffs the merge commit against its first parent: the PR's net change against the
+  # current base. --no-renames lists both sides of a move, so moving a file off the list still
+  # counts. `shell: bash` sets pipefail, which a step with no `shell` lacks: a failed diff turns this
+  # job red, and never passes as a skip (P2). A push to main runs every test job and no canary, and
+  # workflow_dispatch runs them all. Each test job needs this one and runs unless `tests` is
+  # 'false', so a failed filter, whose outputs are empty, still runs the tests (fail-open), and a
+  # docs-only pull request skips them. A skipped job counts as passed. The required checks (Format,
+  # lint & types, Build and Lighthouse) never wait for it, since the docs site is built from the
+  # docs. harness/canaries.unit.test.ts holds every new job to the same gate.
   changes:
     name: Changes
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       canaries: ${{ steps.filter.outputs.canaries }}
+      tests: ${{ steps.filter.outputs.tests }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -354,8 +372,12 @@ jobs:
         run: |
           if [ "$EVENT_NAME" = "pull_request" ]; then
             git diff --no-renames --name-only HEAD^1 HEAD | node tests/integration/scripts/canary-paths.ts >> "$GITHUB_OUTPUT"
-          else
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             echo "canaries=true" >> "$GITHUB_OUTPUT"
+            echo "tests=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "canaries=false" >> "$GITHUB_OUTPUT"
+            echo "tests=true" >> "$GITHUB_OUTPUT"
           fi
 
   # Each live layer has a canary: a corruption that layer must catch. A job fails if any of its
@@ -366,13 +388,14 @@ jobs:
   # harness/canaries.unit.test.ts holds the matrix to every canary, once or in every shard, at
   # most one browser canary per job, and shards for each whose browser specs run.
   # A pull request runs them only when it changes a path that can change a canary's answer: the
-  # list is CANARY_PATHS in tests/integration/scripts/canary-paths.ts. A skipped job counts as
-  # passed. A push to main and workflow_dispatch run them all. The accepted risk (ADR-0073): a
-  # change to a compile package the list leaves out (ir, parser, diagnostics, analyzer,
-  # type-oracle, type-oracle-tsgo, codegen and the targets apart from their toolchain files,
-  # unframework) can change a canary's answer, most plainly a target-specific one such as
-  # L13-qwik-handler-throws. The harness's unit tests, which always run, and nightly.yml, which
-  # runs every canary, are the backstop.
+  # list is CANARY_PATHS in tests/integration/scripts/canary-paths.ts, Markdown left out. A
+  # skipped job counts as passed. A push to main runs none, and workflow_dispatch runs them all
+  # (ADR-0082). Unlike the test jobs, they skip when the filter fails, as ADR-0073 decided. The
+  # accepted risk (ADR-0073): a change to a compile package the list leaves out (ir, parser,
+  # diagnostics, analyzer, type-oracle, type-oracle-tsgo, codegen and the targets apart from their
+  # toolchain files, unframework) can change a canary's answer, most plainly a target-specific one
+  # such as L13-qwik-handler-throws. The harness's unit tests, which run on every change that isn't
+  # documentation alone, and nightly.yml, which runs every canary, are the backstop.
   canaries:
     name: "Canaries (${{ matrix.canaries }}${{ matrix.shard && format(', shard {0}', matrix.shard) || '' }})"
     needs: changes
@@ -480,6 +503,8 @@ jobs:
   # Not a required check. The default run leaves this project out, so this job alone reports it.
   bench:
     name: Bench
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -520,8 +545,15 @@ jobs:
   parity:
     name: Parity matrix
     needs:
-      [integration-compile, integration-toolchains, integration-ssr, integration-browser, bench]
-    if: ${{ !cancelled() }}
+      [
+        changes,
+        integration-compile,
+        integration-toolchains,
+        integration-ssr,
+        integration-browser,
+        bench,
+      ]
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -570,6 +602,8 @@ jobs:
   # tarballs it uploads, so the seven apps run on the same packages. Not a required check.
   pack:
     name: Pack
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -608,7 +642,8 @@ jobs:
   # checkout as it requires, from the Pack job's tarballs. Not a required check.
   e2e:
     name: "E2E (${{ matrix.app }})"
-    needs: pack
+    needs: [changes, pack]
+    if: ${{ !cancelled() && needs.pack.result == 'success' && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
