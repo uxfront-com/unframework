@@ -88,7 +88,10 @@ export async function main(
   }
   const commands: ReadonlyMap<string, Command> = new Map([...COMMANDS, ...extra]);
   const [name, ...args] = argv;
-  if (argv.includes("--help") || argv.includes("-h")) {
+  // What follows `--` is a command's to pass on (`test -- --help` is Vitest's help).
+  const end = argv.indexOf("--");
+  const own = end === -1 ? argv : argv.slice(0, end);
+  if (own.includes("--help") || own.includes("-h")) {
     io.stdout(usageOf(commands));
     return 0;
   }

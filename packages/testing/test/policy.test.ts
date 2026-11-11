@@ -179,3 +179,30 @@ describe("settleArtefactDirectory", () => {
     expect(existsSync(directory())).toBe(false);
   });
 });
+
+describe("the command a failure names", () => {
+  it("is the corpus's by default, and the project's in a project's tests (ADR-0086)", () => {
+    const file = join(root, "case", "__expected__", "dom.initial.html");
+    const project: ArtefactContext = {
+      role: "follower",
+      update: false,
+      root,
+      reference: "vue",
+      updateCommand: "unframework test --update",
+    };
+    expect(
+      settleArtefact(file, "<p></p>", { role: "follower", update: false, root, reference: "vue" })
+        .message,
+    ).toBe(
+      "Missing artefact case/__expected__/dom.initial.html. Run `pnpm test:update` to write it (the reference target, vue, writes it).",
+    );
+    expect(settleArtefact(file, "<p></p>", project).message).toBe(
+      "Missing artefact case/__expected__/dom.initial.html. Run `unframework test --update` to write it (the reference target, vue, writes it).",
+    );
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, "<p>old</p>\n");
+    expect(settleArtefact(file, "<p>new</p>\n", project).message).toMatch(
+      /Run `unframework test --update` and review the diff if the change is intended\.$/,
+    );
+  });
+});

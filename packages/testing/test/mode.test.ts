@@ -52,8 +52,12 @@ describe("resolveHarnessMode", () => {
     it("updates live, and writes baselines only in the baseline environment", () => {
       expect(project({ UF_UPDATE: "1" })).toMatchObject({ update: true, pixels: "live" });
       expect(() => project({ UF_UPDATE: "1" }, "baseline")).toThrow(
-        /only mcr.microsoft.com\/playwright/,
+        /only mcr.microsoft.com\/playwright.*Run `UF_PIXELS=live unframework test --update` to update every other expectation\.$/,
       );
+      expect(project({ UF_UPDATE: "1", UF_PIXELS: "live" }, "baseline")).toMatchObject({
+        update: true,
+        pixels: "live",
+      });
       expect(() => project({ UF_UPDATE: "1", CI: "1" })).toThrow(/CI never writes/);
     });
 

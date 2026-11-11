@@ -54,9 +54,10 @@ README documents the first four.
 
 `test` runs a project's tests on every target, through
 `@unframework.dev/testing/cli`: `@unframework.dev/testing` is an optional peer dependency, loaded
-only when `test` runs, so a project that never tests installs none of it. When it, `vitest`,
-`@vitest/browser-playwright` or `playwright` is missing, `test` exits 2 and lists what to install
-(`TEST_PACKAGES` and `TARGET_TEST_PACKAGES` in `src/cli.ts`). `@unframework.dev/testing`'s README
+only when `test` runs, so a project that never tests installs none of it. When it, or a package it
+loads as the command starts, like `vitest`, is missing, `test` exits 2 and lists what to install
+(`TEST_PACKAGES` and `TARGET_TEST_PACKAGES` in `src/cli.ts`). A missing framework or Vite plugin
+exits 2 too, with a message from `@unframework.dev/testing` that names its target. `@unframework.dev/testing`'s README
 documents the command.
 
 The root entry's functions are inert stubs. The compiler recognises them by binding and erases them,

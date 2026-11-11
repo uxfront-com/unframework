@@ -76,7 +76,10 @@ export function parseTestArguments(args: readonly string[]): TestArguments {
  */
 export async function run(args: string[], io: TestIo): Promise<number> {
   const parsed = parseTestArguments(args);
+  const help = parsed.vitest.some((arg) => arg === "--help" || arg === "-h");
   const { filter, options } = parseCLI(["vitest", ...parsed.vitest]);
+  // `-- --help` is Vitest's help, which parseCLI has printed: nothing to run.
+  if (help) return 0;
   if (options.update !== undefined && options.update !== false) {
     throw new Error(
       "Vitest's --update does not update the shared expectations: run unframework test --update.",
