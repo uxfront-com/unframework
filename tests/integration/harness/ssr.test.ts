@@ -1,24 +1,20 @@
-// The ssr projects (L6, plus the render's console as L13): every case's SSR scenarios rendered
-// with the target's own server renderer and compared, normalised, with the shared
-// `__expected__/ssr.<scenario>.html`. Components are imported through `import.meta.glob`, so each
-// one goes through the unplugin and the framework's own Vite plugin, like a user's would.
+// The ssr projects (L6, plus the render's console as L13): every case's SSR scenarios, through
+// the testing package's one server render comparison (`describeServerRender`, ADR-0086), with
+// the corpus's extras decided as the file is collected, after the compile project has written
+// the expected diagnostics in an update run: a case with compile errors has no output and is left
+// out, a case whose expected diagnostics are missing fails, a case whose every test requires a
+// capability the target lacks is skipped (`ssr-skip.ts`), and a project the run adds as some
+// case's reference renders those cases alone (ADR-0057). L14's deliberate throws are the
+// corpus's alone (`ssrThrows`, ADR-0078).
 import { readFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { basename } from "node:path";
 
-import type { SsrRenderer } from "@unframework.dev/codegen";
 import { builtinTargets } from "@unframework.dev/compiler";
 import type { TargetName } from "@unframework.dev/compiler";
-import {
-  checkLayers,
-  diffLines,
-  formatConsoleArgs,
-  NOT_RENDERED_SKIP,
-  settleArtefact,
-  sharedArtefactContext,
-  ssrScenarios,
-} from "@unframework.dev/testing/node";
-import { isNormalizeTarget, normalizeHtml } from "@unframework.dev/testing/normalize";
-import { beforeAll, describe, inject, it } from "vitest";
+import { checkLayers } from "@unframework.dev/testing/node";
+import { describeServerRender } from "@unframework.dev/testing/ssr";
+import type { SsrCase } from "@unframework.dev/testing/ssr";
+import { describe, inject, it } from "vitest";
 
 import { errorState, listCases, specTests } from "./cases.ts";
 import { onlyCases } from "./references.ts";
@@ -27,73 +23,16 @@ import { checkMappedStack } from "./thrown.ts";
 import "./context.ts";
 
 const target = inject("target");
-// The normaliser removes only this target's framework noise, so it must know the target.
-if (!isNormalizeTarget(target)) {
-  throw new Error(
-    `The normaliser does not know the target "${target}": add its noise rules first.`,
-  );
-}
 const harness = inject("ufHarness");
-const server = inject("ufServer");
-// A project the run adds as some case's reference renders those cases alone (ADR-0057).
-const only = inject("ufOnly");
-const cases = onlyCases(listCases(harness.casesDir), only);
+const server = inject("ufServer")!;
+const cases = onlyCases(listCases(harness.casesDir), inject("ufOnly"));
 const components = import.meta.glob<{ default: unknown }>("../cases/**/*.uf.tsx");
 
-let renderer: Promise<SsrRenderer> | undefined;
-/** The target's renderer, imported through this project's Vite pipeline (one framework copy). */
-function loadRenderer(): Promise<SsrRenderer> {
-  renderer ??= (
-    import(/* @vite-ignore */ server) as Promise<{ renderToString?: SsrRenderer }>
-  ).then((module) => {
-    if (typeof module.renderToString !== "function") {
-      throw new Error(`${server} does not export renderToString.`);
-    }
-    return module.renderToString;
-  });
-  return renderer;
-}
-
-/**
- * Renders once, collecting console.warn and console.error into `messages` (the originals still
- * print). Tests in a file run one at a time, so patching the console is safe.
- */
-async function render(
-  component: unknown,
-  props: Record<string, unknown>,
-  messages: string[],
-): Promise<string> {
-  const originals = { warn: console.warn, error: console.error };
-  for (const level of ["warn", "error"] as const) {
-    console[level] = (...args: unknown[]) => {
-      messages.push(`console.${level}: ${formatConsoleArgs(args)}`);
-      originals[level].apply(console, args);
-    };
-  }
-  try {
-    const html = await (await loadRenderer())(component, { props });
-    if (typeof html !== "string")
-      throw new Error(`The ${target} renderer returned ${typeof html}, not HTML.`);
-    return html;
-  } finally {
-    console.warn = originals.warn;
-    console.error = originals.error;
-  }
-}
-
-describe(`ssr:${target}`, () => {
-  // The renderer's cold start (the framework's server modules, through Vite) is the project's,
-  // not the first case's: under a canary's load, every ssr and browser project at once, it can
-  // outlast a test's timeout. A renderer that fails to load fails each case's L6 with the reason.
-  beforeAll(async () => {
-    await loadRenderer().catch(() => undefined);
-  }, 300_000);
-
-  for (const info of cases) {
+describeServerRender(
+  cases.flatMap((info): SsrCase[] => {
     const errors = errorState(info, target);
     // A case with compile errors has no output: the compile project records L6 as skipped.
-    if (errors === true) continue;
-    const key = `../cases/${info.id}/${basename(info.source)}`;
+    if (errors === true) return [];
     // A case whose every test requires a capability the target lacks renders differently there
     // by declaration (`ssr-skip.ts`).
     const skip = info.spec
@@ -102,81 +41,64 @@ describe(`ssr:${target}`, () => {
           builtinTargets[target as TargetName].capabilities,
         )
       : undefined;
-    // L14 (ADR-0078): a render that throws on purpose, apart from the scenarios L6 compares.
-    if (info.config.ssrThrows) {
-      const props = info.config.ssrThrows.props ?? {};
-      it(`${info.id} › throws`, async ({ task }) => {
-        if (errors instanceof Error) throw errors;
-        await checkLayers(
-          task,
-          { case: info.id, target, quarantine: harness.quarantine },
-          {
-            async L14() {
-              const load = components[key];
-              if (!load) throw new Error(`import.meta.glob did not find ${key}.`);
-              const component = (await load()).default;
-              // The first Error, whichever way it comes: Angular's renderer logs it and resolves.
-              let thrown: Error | undefined;
-              const take = (value: unknown) => {
-                if (value instanceof Error) thrown ??= value;
-              };
-              const original = console.error;
-              console.error = (...args: unknown[]) => {
-                args.forEach(take);
-                original.apply(console, args);
-              };
-              try {
-                await render(component, props, []).catch(take);
-              } finally {
-                console.error = original;
-              }
-              if (!thrown) throw new Error("The server render threw no Error.");
-              checkMappedStack(info.dir, info.id, thrown.stack ?? "");
-            },
+    return [
+      {
+        id: info.id,
+        dir: info.dir,
+        source: info.source,
+        ...(skip === undefined ? {} : { skip }),
+        ...(errors instanceof Error ? { failure: errors.message } : {}),
+      },
+    ];
+  }),
+);
+
+/** The target's renderer, imported through this project's Vite pipeline (one framework copy). */
+async function renderer(): Promise<(component: unknown, options: { props: object }) => unknown> {
+  const module = (await import(/* @vite-ignore */ server)) as {
+    renderToString: (component: unknown, options: { props: object }) => unknown;
+  };
+  return module.renderToString;
+}
+
+// L14 (ADR-0078): a render that throws on purpose, apart from the scenarios L6 compares.
+describe(`ssr [${target}] throws`, () => {
+  for (const info of cases) {
+    if (!info.config.ssrThrows) continue;
+    const errors = errorState(info, target);
+    if (errors === true) continue;
+    const key = `../cases/${info.id}/${basename(info.source)}`;
+    const props = info.config.ssrThrows.props ?? {};
+    it(`${info.id} › throws`, async ({ task }) => {
+      if (errors instanceof Error) throw errors;
+      await checkLayers(
+        task,
+        { case: info.id, target, quarantine: harness.quarantine },
+        {
+          async L14() {
+            const load = components[key];
+            if (!load) throw new Error(`import.meta.glob did not find ${key}.`);
+            const component = (await load()).default;
+            // The first Error, whichever way it comes: Angular's renderer logs it and resolves.
+            let thrown: Error | undefined;
+            const take = (value: unknown) => {
+              if (value instanceof Error) thrown ??= value;
+            };
+            const original = console.error;
+            console.error = (...args: unknown[]) => {
+              args.forEach(take);
+              original.apply(console, args);
+            };
+            try {
+              await (async () => (await renderer())(component, { props }))().catch(take);
+            } finally {
+              console.error = original;
+            }
+            if (!thrown) throw new Error("The server render threw no Error.");
+            checkMappedStack(info.dir, info.id, thrown.stack ?? "");
           },
-        );
-      });
-    }
-    for (const [scenario, { props = {} }] of Object.entries(ssrScenarios(info.config))) {
-      it(`${info.id} › ${scenario}`, async ({ task }) => {
-        if (errors instanceof Error) throw errors;
-        const messages: string[] = [];
-        let rendered = false;
-        await checkLayers(
-          task,
-          { case: info.id, target, quarantine: harness.quarantine },
-          {
-            async L6() {
-              if (skip) return { skip };
-              const load = components[key];
-              if (!load) throw new Error(`import.meta.glob did not find ${key}.`);
-              const component = (await load()).default;
-              const first = await render(component, props, messages);
-              const second = await render(component, props, messages);
-              rendered = true;
-              const html = normalizeHtml(first, { target });
-              const again = normalizeHtml(second, { target });
-              if (html !== again) {
-                throw new Error(`Two renders of the same props differ:\n${diffLines(html, again)}`);
-              }
-              const outcome = settleArtefact(
-                join(info.dir, "__expected__", `ssr.${scenario}.html`),
-                html,
-                sharedArtefactContext(harness, target, info.id),
-              );
-              if (!outcome.pass) throw new Error(outcome.message);
-            },
-            L13: () => {
-              if (!messages.length && !rendered) return { skip: skip ?? NOT_RENDERED_SKIP };
-              if (messages.length) {
-                throw new Error(
-                  `${messages.length} console message(s) during the server render:\n  ${messages.join("\n  ")}`,
-                );
-              }
-            },
-          },
-        );
-      });
-    }
+        },
+      );
+    });
   }
 });
