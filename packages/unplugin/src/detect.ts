@@ -74,6 +74,10 @@ interface VueApi {
   options?: VueOptions;
 }
 
+/** plugin-vue's `api`, found by the name it registers. */
+const vueApiOf = (plugins: readonly NamedPlugin[]): VueApi | undefined =>
+  plugins.find(({ name }) => name === VUE_PLUGIN)?.api as VueApi | undefined;
+
 /**
  * The UF7010 message for plugin-vue's whitespace option, when it is `"preserve"`: the printer lays
  * a template out for `"condense"`, and the option can't be set per file (ADR-0026).
@@ -82,9 +86,7 @@ export function hostOptionWarning(
   plugins: readonly NamedPlugin[],
   file: string,
 ): string | undefined {
-  const vue = plugins.find(({ name }) => name === VUE_PLUGIN);
-  const whitespace = (vue?.api as VueApi | undefined)?.options?.template?.compilerOptions
-    ?.whitespace;
+  const whitespace = vueApiOf(plugins)?.options?.template?.compilerOptions?.whitespace;
   if (whitespace !== "preserve") return undefined;
   const diagnostic = createDiagnostic("UF7010", {
     file,
@@ -145,7 +147,7 @@ export const NODE_SCRIPT_FS: ScriptFs = {
  * whichever of the two plugins' hooks runs first.
  */
 export function fillVueScriptFs(plugins: readonly NamedPlugin[]): void {
-  const api = plugins.find(({ name }) => name === VUE_PLUGIN)?.api as VueApi | undefined;
+  const api = vueApiOf(plugins);
   const options = api?.options;
   if (!api || !options || options.script?.fs != null) return;
   api.options = { ...options, script: { ...options.script, fs: NODE_SCRIPT_FS } };

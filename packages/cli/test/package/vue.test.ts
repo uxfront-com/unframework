@@ -52,7 +52,9 @@ describe("build --package: Vue", () => {
       ].toSorted(),
     );
     // The sheet is the compiler's, beside the component that imports it as written.
-    expect(files["vue/Card.uf.tsx.css"]).toEqual(tree(join(root, "dist", "vue"))["Card.uf.tsx.css"]);
+    expect(files["vue/Card.uf.tsx.css"]).toEqual(
+      tree(join(root, "dist", "vue"))["Card.uf.tsx.css"],
+    );
     expect(specifiers(files["vue/Card.vue.js"] ?? "")).toContain("./Card.uf.tsx.css");
     expect(files["vue/Card.vue_vue_type_script_setup_true_lang.js"]).toContain("defineComponent");
     expect(files["vue/index.js"]).toContain('from "./Card.vue.js"');
@@ -75,9 +77,9 @@ describe("build --package: Vue", () => {
       .filter(([path]) => path.startsWith("vue/") && path.endsWith(".js"))
       .flatMap(([, code]) => specifiers(code));
     expect(imported.length).toBeGreaterThan(0);
-    expect(imported.filter((specifier) => specifier !== "vue" && !specifier.startsWith("./"))).toEqual(
-      [],
-    );
+    expect(
+      imported.filter((specifier) => specifier !== "vue" && !specifier.startsWith("./")),
+    ).toEqual([]);
     expect(Object.keys(files).filter((path) => path.endsWith(".vue"))).toEqual([]);
   });
 

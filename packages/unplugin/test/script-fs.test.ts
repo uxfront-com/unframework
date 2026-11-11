@@ -29,25 +29,31 @@ beforeAll(() => {
 });
 afterAll(() => project.remove());
 
+/** The options plugin-vue compiles with, as far as these tests read them. */
+interface Options {
+  script?: Record<string, unknown>;
+  [option: string]: unknown;
+}
+
 /** Options as plugin-vue holds them: replaced whole through the setter, never changed in place. */
 interface StandIn {
   plugin: Plugin;
   /** Each value the setter was given, in order. */
-  sets: Record<string, unknown>[];
-  current(): Record<string, unknown>;
+  sets: Options[];
+  current(): Options;
 }
 
 /** plugin-vue's stand-in, whose options start as `raw`, as `vue(raw)` gives them. */
-function vueStandIn(raw: Record<string, unknown>): StandIn {
-  let options: Record<string, unknown> = { ...raw };
-  const sets: Record<string, unknown>[] = [];
+function vueStandIn(raw: Options): StandIn {
+  let options: Options = { ...raw };
+  const sets: Options[] = [];
   const plugin: Plugin = {
     name: "vite:vue",
     api: {
       get options() {
         return options;
       },
-      set options(value: Record<string, unknown>) {
+      set options(value: Options) {
         sets.push(value);
         options = value;
       },
@@ -67,7 +73,7 @@ async function run(plugins: Plugin[]): Promise<string[]> {
   return server.warnings;
 }
 
-const script = (vue: StandIn) => vue.current().script as Record<string, unknown> | undefined;
+const script = (vue: StandIn) => vue.current().script;
 
 describe("script.fs on Vue", () => {
   it.each<[string, UnframeworkOptions | undefined]>([
@@ -112,9 +118,10 @@ describe("script.fs on Vue", () => {
   });
 });
 
-describe("Node's file system for compileScript", () => {
-  const path = (name: string) => join(project.root, name);
+/** A file in the project, by its name. */
+const path = (name: string) => join(project.root, name);
 
+describe("Node's file system for compileScript", () => {
   it("finds files, and no directory or missing path", () => {
     expect(NODE_SCRIPT_FS.fileExists(path("types.ts"))).toBe(true);
     expect(NODE_SCRIPT_FS.fileExists(path("link.ts"))).toBe(true);

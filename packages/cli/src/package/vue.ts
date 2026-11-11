@@ -73,8 +73,9 @@ interface VueApi {
  */
 const PRODUCTION = {
   name: "unframework:vue-production",
-  configResolved(config: { plugins: readonly { name: string; api?: unknown }[] }) {
-    const api = config.plugins.find(({ name }) => name === PLUGIN_VUE_NAME)?.api as VueApi;
+  configResolved(config: { plugins: readonly { name: string; api?: VueApi }[] }) {
+    const api = config.plugins.find(({ name }) => name === PLUGIN_VUE_NAME)?.api;
+    if (!api) throw new Error(`${PLUGIN_VUE} exposes no options to compile for production with.`);
     api.options = { ...api.options, isProduction: true, devToolsEnabled: false };
   },
 };
