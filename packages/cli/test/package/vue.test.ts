@@ -237,6 +237,30 @@ const { on } = useToggle(true);
     expect(code).toBe(0);
   });
 
+  it.each([
+    ["above", () => process.cwd()],
+    ["at the project's root", (root: string) => root],
+  ])(
+    "reports Vite's syntax error as UF7009 from a working directory %s, naming the tree",
+    async (_, cwd) => {
+      const root = vue();
+      expect((await run(root, "build", "--package")).code).toBe(0);
+      const before = tree(join(root, "dist", "package"));
+      write(root, { "src/shared/format.ts": "export const formatLabel = (;\n" });
+      // Vite names the file relative to the process's working directory.
+      vi.spyOn(process, "cwd").mockReturnValue(cwd(root));
+      const { code, stderr } = await run(root, "build", "--package").finally(() =>
+        vi.restoreAllMocks(),
+      );
+      expect(code).toBe(1);
+      expect(stderr).toContain("UF7009");
+      expect(stderr).toMatch(/[\s[]dist\/vue\/shared\/format\.ts:1:/);
+      expect(stderr).not.toContain(".package-");
+      expect(stderr).not.toContain("../");
+      expect(tree(join(root, "dist", "package"))).toEqual(before);
+    },
+  );
+
   it("reports vue-tsc's own error as UF7009, and keeps the last good package", async () => {
     const root = vue();
     expect((await run(root, "build", "--package")).code).toBe(0);

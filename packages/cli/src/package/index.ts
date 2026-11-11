@@ -130,14 +130,19 @@ async function projectFields(root: string): Promise<Record<string, string>> {
   };
 }
 
+/** A path as it reads in a regular expression. */
+const escape = (path: string): string => path.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+
 /** A packager's own error: no stack, and its paths into the scratch copy as the tree just written. */
 function failure(error: unknown, work: string, tree: string): string {
   const text = stripVTControlCharacters(error instanceof Error ? error.message : String(error));
-  // One pass over both forms, so that neither reads what the other wrote or sits inside the other.
+  // One pass over every form, so that none reads what another wrote or sits inside another.
   // TypeScript names another module by its absolute path, as in TS4023, and a tool names a file
-  // relative to where it ran.
-  const scratch = join(work, "in").replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
-  const paths = new RegExp(`${scratch}|(?<![\\w./-])in(?=/)`, "g");
+  // relative to where it ran. Vite names it relative to the process's working directory.
+  const scratch = join(work, "in");
+  const fromCwd = relative(process.cwd(), scratch).split(sep).join("/");
+  const forms = [escape(scratch), ...(fromCwd ? [`(?<![\\w./-])${escape(fromCwd)}(?=/)`] : [])];
+  const paths = new RegExp([...forms, "(?<![\\w./-])in(?=/)"].join("|"), "g");
   return text
     .replace(paths, () => tree)
     .split("\n")
