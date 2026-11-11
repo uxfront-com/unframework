@@ -68,8 +68,8 @@ path, Markdown included. The rest of ADR-0073 stands.
   such changes on pull requests (ADR-0073).
 - Each test job waits for `Changes`, a few seconds on a quiet queue.
 - The merged toolchain job runs seven projects on one runner's four vCPUs, and the merged E2E job
-  runs the seven apps one after another. Each is still a few minutes. A failure names its project,
-  but no longer its job.
+  runs the seven apps one after another. On the pull request that made this change, they took 84
+  and 126 seconds. A failure names its project, but no longer its job.
 
 ## Alternatives considered
 
@@ -79,5 +79,7 @@ path, Markdown included. The rest of ADR-0073 stands.
 - **Treat every README as tested.** `template.test.ts` checks that each package has one, but a
   README edit can't break that check, so it would run every test for a typo.
 - **Cache `node_modules` instead of merging jobs.** It saves part of the install step, not the
-  container start or Node, and frees no slot. It was measured on the pull request as a separate
-  experiment.
+  container start or Node, and frees no slot. We measured it on the pull request that made this
+  change, beside the pnpm store cache: a hit saved a median of 5.5 seconds of setup over six jobs
+  and made one 9 seconds slower, and a miss spent up to 39 seconds saving it in the Playwright
+  image. So we left it out.
