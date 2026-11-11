@@ -140,7 +140,7 @@ describe("svelte attribute types", () => {
         JSON.stringify({
           extends: join(repoRoot, "tests/integration/tsconfig.cases.json"),
           compilerOptions: {
-            paths: { "unframework/*": [join(repoRoot, "packages/unframework/src/*")] },
+            paths: { "@uxfront/unframework/*": [join(repoRoot, "packages/unframework/src/*")] },
           },
         }),
       );
