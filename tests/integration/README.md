@@ -483,3 +483,11 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   on TypeScript 6 that `../toolchains/qwik` installs: typescript-eslint cannot load the
   TypeScript 7 its tsgo needs. The harness passes them explicitly, since the outputs it lints
   sit outside the toolchain directories (ADR-0042).
+- `scripts/measure.ts`: runs one command in the caller's directory, and writes its wall time, the
+  summed RSS peak of its process tree, its exit status and the processes it left behind to
+  `.reports/measure/<label>.json`. `--max-rss-gib` (32 by default) sets the ceiling where it stops
+  the tree. The report reads `did-not-complete` when the command could not start, or the tool
+  stopped it: at the ceiling, on a signal, or when it could not sample.
+- `scripts/matrix-diff.ts`: compares two parity matrices cell by cell, or with `--stable` two runs
+  of each of two runners, comparing only the cells whose status holds within each runner. Add
+  `--case <id>` to read only some cases.

@@ -134,6 +134,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0079](./0079-the-e2e-apps-and-packed-tarballs.md)                 | The e2e apps install packed tarballs outside the workspace                    | Accepted, amended by ADR-0082                                          | §9 M6                   |
 | [0080](./0080-jsx-import-source-in-host-apps.md)                   | `jsxImportSource` in host apps is a scoped `tsconfig.uf.json`                 | Accepted                                                               | §8.2, §9 M6             |
 | [0082](./0082-vue-without-typescript-sys.md)                       | Vue builds on TypeScript 7 without `script.fs`                                | Accepted                                                               | §8.2, §8.4, §9 M6       |
+| [0083](./0083-browser-layers-stay-on-vitest.md)                    | The browser layers stay on Vitest                                             | Accepted                                                               | §7.2, §7.3              |
 | [0084](./0084-docs-only-pull-requests-skip-the-tests.md)           | Docs-only pull requests skip the tests, and pushes run no canary              | Accepted                                                               | §7.7, §7.9              |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
