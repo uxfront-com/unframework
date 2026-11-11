@@ -1,6 +1,6 @@
 # ADR-0073: Canaries run on harness changes and nightly
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0082
 - **Date:** 2026-11-06
 - **Plan:** §7.7, §7.9; P2; ADR-0043, ADR-0052, ADR-0066; amends ADR-0043 and ADR-0052
 
