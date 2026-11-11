@@ -45,6 +45,9 @@ packages/compiler-v1
 tests/integration/.reports
 tests/integration/.canary
 tests/integration/.live
+# The scratch of a project's run (`unframework test`): the update ledger, live captures, diffs
+tests/e2e/design-system/.reports
+tests/e2e/design-system/.live
 tests/e2e/.tarballs/
 # Vitest browser mode attachments and failure screenshots
 .vitest-attachments

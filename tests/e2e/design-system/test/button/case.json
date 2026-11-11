@@ -1,0 +1,13 @@
+{
+  "description": "The button with its label, in each variant: a harness parent fills its slot.",
+  "ssr": {
+    "primary": {
+      "props": {}
+    },
+    "secondary": {
+      "props": {
+        "variant": "secondary"
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "description": "The counter, which starts at its initial count and adds its step on each click.",
+  "main": "../../src/Counter.uf.tsx",
+  "ssr": {
+    "initial": {
+      "props": {
+        "initial": 2,
+        "step": 3
+      }
+    }
+  }
+}

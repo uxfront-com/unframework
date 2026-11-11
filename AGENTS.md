@@ -213,6 +213,7 @@ Generate each of these with its command. The formatter and the linter skip them 
 | `packages/ir/schema/`                                       | `pnpm --filter @unframework.dev/ir generate`                                                  |
 | `packages/unframework/src/vendor/`                          | `pnpm --filter @uxfront/unframework vendor:jsx`                                               |
 | `tests/integration/budgets.json`                            | `pnpm test:budgets:update`                                                                    |
+| `tests/e2e/design-system/test/**/__expected__/`             | `pnpm -C tests/e2e/design-system exec unframework test --update`                              |
 
 ### Never weaken a check
 

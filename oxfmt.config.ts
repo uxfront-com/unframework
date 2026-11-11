@@ -13,6 +13,8 @@ export default defineConfig({
     // the whitespace and the spellings they report.
     "tests/integration/cases/diagnostics/**",
     "packages/testing/test/parity/cases/**/__expected__/**",
+    // The sample design system's expectations, which `unframework test --update` writes.
+    "tests/e2e/design-system/**/__expected__/**",
     // Generated from the IR's types: `pnpm --filter @unframework.dev/ir generate --check` compares
     // it byte for byte.
     "packages/ir/schema/**",

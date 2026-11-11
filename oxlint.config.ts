@@ -31,7 +31,11 @@ export default defineConfig({
       // list, so a negated group would let the subpaths through, and its regular expressions
       // have no lookahead: the subpath pattern is a regular expression, and only the package
       // pattern negates.
-      files: ["tests/integration/cases/**/*.{ts,tsx}"],
+      // The sample design system's tests are a project's own (ADR-0086), held to the same API.
+      files: [
+        "tests/integration/cases/**/*.{ts,tsx}",
+        "tests/e2e/design-system/test/**/*.{ts,tsx}",
+      ],
       rules: {
         "no-restricted-imports": [
           "error",

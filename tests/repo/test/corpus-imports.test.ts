@@ -17,6 +17,8 @@ import { root } from "./workspace.ts";
  */
 const CASES = "tests/integration/cases/**/*.{ts,tsx}";
 const SPEC = "tests/integration/cases/state/counter/probe.test.ts";
+/** A spec of the sample design system's tests, a project's own, which the rule holds too (ADR-0086). */
+const DESIGN_SYSTEM_SPEC = "tests/e2e/design-system/test/counter/probe.test.ts";
 
 /** Specifiers the rule refuses: a subpath, another package, the harness's or a package's code. */
 const REFUSED: readonly string[] = [
@@ -49,21 +51,21 @@ const project = mkdtempSync(join(tmpdir(), "uf-corpus-imports-"));
 afterAll(() => rmSync(project, { recursive: true, force: true }));
 
 /** The specifiers oxlint reports `no-restricted-imports` for, one import per line of the spec. */
-function refusedBy(specifiers: readonly string[]): string[] {
+function refusedBy(specifiers: readonly string[], spec: string = SPEC): string[] {
   const override = config.overrides?.find((entry) => entry.files.includes(CASES));
   if (!override) throw new Error(`oxlint.config.ts has no override for ${CASES}.`);
   writeFileSync(
     join(project, ".oxlintrc.json"),
-    JSON.stringify({ overrides: [{ files: [CASES], rules: override.rules }] }),
+    JSON.stringify({ overrides: [{ files: override.files, rules: override.rules }] }),
   );
-  mkdirSync(join(project, SPEC, ".."), { recursive: true });
+  mkdirSync(join(project, spec, ".."), { recursive: true });
   writeFileSync(
-    join(project, SPEC),
+    join(project, spec),
     specifiers.map((specifier) => `import ${JSON.stringify(specifier)};\n`).join(""),
   );
   const run = spawnSync(
     join(root, "node_modules/.bin/oxlint"),
-    ["-c", ".oxlintrc.json", "--format", "json", SPEC],
+    ["-c", ".oxlintrc.json", "--format", "json", spec],
     { cwd: project, encoding: "utf8" },
   );
   const report = JSON.parse(run.stdout) as {
@@ -82,5 +84,15 @@ describe("the corpus's import rule", () => {
 
   it("lets the public API and a case's own sources through", () => {
     expect(refusedBy(ALLOWED)).toEqual([]);
+  });
+
+  it("holds the sample design system's tests to the same API", () => {
+    expect(refusedBy(REFUSED, DESIGN_SYSTEM_SPEC)).toEqual([...REFUSED].toSorted());
+    expect(
+      refusedBy(
+        ["@unframework.dev/testing", "vitest", "../../src/Counter.uf.tsx"],
+        DESIGN_SYSTEM_SPEC,
+      ),
+    ).toEqual([]);
   });
 });

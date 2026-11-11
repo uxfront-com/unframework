@@ -1,0 +1,10 @@
+{
+  "description": "The card with its header, body and footer filled: a harness parent fills its slots.",
+  "ssr": {
+    "filled": {
+      "props": {
+        "author": "Ada"
+      }
+    }
+  }
+}

@@ -11,7 +11,8 @@
     "./source/*": "./src/*"
   },
   "scripts": {
-    "pack:dist": "unframework build --package"
+    "pack:dist": "unframework build --package",
+    "parity": "unframework test"
   },
   "devDependencies": {
     "@angular/common": "catalog:",
@@ -20,15 +21,19 @@
     "@qwik.dev/core": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@unframework.dev/testing": "workspace:*",
     "@uxfront/unframework": "workspace:*",
+    "@vitest/browser-playwright": "catalog:",
     "astro": "catalog:",
     "babel-preset-solid": "catalog:",
+    "playwright": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "solid-js": "catalog:",
     "svelte": "catalog:",
     "tsdown": "catalog:",
     "vite": "catalog:",
+    "vitest": "catalog:",
     "vue": "catalog:"
   }
 }
