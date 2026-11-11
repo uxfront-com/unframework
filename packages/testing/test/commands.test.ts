@@ -447,6 +447,7 @@ describe("parityBrowser", () => {
       "ufFocus",
       "ufInput",
       "ufResetInput",
+      "ufSpecFinished",
       "ufVisualCapture",
     ]);
     expect(browser.commands?.ufArtefact).toBe(ufArtefact);

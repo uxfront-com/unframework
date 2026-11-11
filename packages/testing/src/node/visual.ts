@@ -30,6 +30,7 @@ import type {
 } from "../visual-types.ts";
 import { caseDirectory, displayRoot, projectHarness } from "./context.ts";
 import type { CommandProject } from "./context.ts";
+import { specFinished } from "./finished.ts";
 import { BASELINE_ENVIRONMENT } from "./mode.ts";
 import { KEBAB_CASE } from "./names.ts";
 import { writeIfChanged } from "./policy.ts";
@@ -41,8 +42,19 @@ export const ALLOWED_FONTS: readonly string[] = ["Inter"];
 const BROWSER = "chromium";
 const BASELINE_PLATFORM = "linux";
 
+/** A project of the run, as the visual command looks for the reference's browser project. */
+interface RunProject {
+  name: string;
+  config: { browser?: { enabled?: boolean } };
+  getProvidedContext(): { target?: string };
+}
+
 /** What the visual command needs from Vitest's command context (Playwright provider). */
 export interface VisualCommandContext extends CommandProject {
+  project: CommandProject["project"] & {
+    /** The run's projects, after `--project`: whether the reference's browser project is in it. */
+    vitest?: { projects: readonly RunProject[] };
+  };
   page: Page;
   iframe: { locator(selector: string): PlaywrightLocatorLike };
 }
@@ -180,6 +192,20 @@ export async function ufVisualCapture(
     const fromThisRun = references().get(key);
     if (!fromThisRun) {
       writeIfChanged(join(paths.diffs, "actual.png"), png);
+      // The reference's browser project is in the run but never finished this case's spec
+      // file: its connection closed, and Vitest dropped the rest of its queue (ADR-0091).
+      // Nothing was compared, and the summary names that project's failure once. A reference
+      // filtered out of the run, or one that finished the case without capturing this
+      // scenario, stays a failure of this cell.
+      const referenceProject = browserProjectOf(context, reference);
+      if (referenceProject !== undefined && !specFinished(harness.runId, reference, request.case)) {
+        return done({
+          pass: false,
+          outcome: "reference-not-run",
+          referenceProject,
+          message: `The reference's browser project (${referenceProject}) did not finish ${request.case}'s spec file in this run, so ${request.case}/${request.name} has nothing to compare with.`,
+        });
+      }
       return done({
         pass: false,
         outcome: "missing-reference-capture",
@@ -384,6 +410,14 @@ async function fontAudit(page: Page, marker: string): Promise<string[]> {
     }
   }
   return [...violations];
+}
+
+/** The name of a target's browser project in this run, or none when the run leaves it out. */
+function browserProjectOf(context: VisualCommandContext, target: string): string | undefined {
+  return context.project.vitest?.projects.find(
+    (project) =>
+      project.config.browser?.enabled === true && project.getProvidedContext().target === target,
+  )?.name;
 }
 
 function missingReference(reference: string, key: string, why: string): string {

@@ -9,7 +9,7 @@ import { buildPartialMatrix, MATRIX_VERSION, stringifyMatrix } from "../src/node
 import type { PartialMatrix, RunMode, Shard } from "../src/node/matrix.ts";
 import { summarise, writeSummary } from "../src/node/summary.ts";
 import type { SummaryExpectations } from "../src/node/summary.ts";
-import { LIVE_REFERENCE_SKIP } from "../src/visual-types.ts";
+import { LIVE_REFERENCE_SKIP, referenceNotRunSkip } from "../src/visual-types.ts";
 
 const expected: SummaryExpectations = {
   projects: ["compile", "browser:vue"],
@@ -1020,5 +1020,148 @@ describe("summarise: skips on live layers", () => {
         expected,
       ).problems,
     ).toEqual([]);
+  });
+});
+
+describe("summarise: a reference that did not finish some cases (ADR-0091)", () => {
+  const dropExpected: SummaryExpectations = {
+    projects: ["compile", "browser:vue", "browser:react"],
+    cases: ["basics/hello", "basics/nested"],
+    targets: ["vue", "react"],
+    liveLayers: ["L1", "L7", "L10"],
+    notLiveReason: "not live in M1",
+  };
+  const blocked = { status: "skip", reason: referenceNotRunSkip("browser:vue") } as const;
+  const closed =
+    "Failed to run the test cases/basics/nested/nested.test.ts; caused by: [vitest] Browser connection was closed while running tests. Was the page closed unexpectedly?";
+  const at = (caseId: string, target: string, layers: UfLayerMeta["layers"]): UfLayerMeta => ({
+    case: caseId,
+    target,
+    layers,
+    test: `${caseId} > renders`,
+    scenarios: ["initial"],
+  });
+
+  /**
+   * One run of every project: vue finished basics/hello but not basics/nested, so react's L10 of
+   * nested had nothing to compare with, and vue recorded no browser layer of it.
+   */
+  function dropped(
+    options: {
+      errors?: string[];
+      filtered?: string;
+      extra?: { project: string; record: UfLayerMeta }[];
+      quarantine?: QuarantineEntry[];
+    } = {},
+  ): PartialMatrix {
+    const cases = ["basics/hello", "basics/nested"];
+    return buildPartialMatrix({
+      run: options.filtered ? "all+filtered-abc" : "all",
+      projects: [...dropExpected.projects],
+      records: [
+        ...cases.flatMap((caseId) =>
+          dropExpected.targets.map((target) => ({
+            project: "compile",
+            record: { case: caseId, target, layers: { L1: { status: "pass" } } } as UfLayerMeta,
+          })),
+        ),
+        {
+          project: "browser:vue",
+          record: at("basics/hello", "vue", {
+            L7: { status: "pass" },
+            L10: { status: "skip", reason: LIVE_REFERENCE_SKIP },
+          }),
+        },
+        {
+          project: "browser:react",
+          record: at("basics/hello", "react", { L7: { status: "pass" }, L10: { status: "pass" } }),
+        },
+        {
+          project: "browser:react",
+          record: at("basics/nested", "react", { L7: { status: "pass" }, L10: blocked }),
+        },
+        ...(options.extra ?? []),
+      ],
+      finishedAt: "2026-10-01T10:00:00.000Z",
+      mode: { update: false, pixels: "live", canary: null },
+      filtered: options.filtered ?? null,
+      shard: null,
+      empty: [],
+      quarantine: options.quarantine ?? [],
+      reference: "vue",
+      ...(options.errors ? { errors: options.errors } : {}),
+    });
+  }
+
+  it("folds the blocked cells, the reference's missing cells and the scenario differences into one problem, never green", () => {
+    const { problems } = summarise([dropped()], dropExpected);
+    expect(problems).toEqual([
+      "browser:vue did not finish 1 of its spec files in this run (basics/nested); 1 follower cell(s) could not be compared at L10. Vitest reported: no error.",
+    ]);
+  });
+
+  it("quotes the errors Vitest reported outside every test in the run", () => {
+    const { problems } = summarise([dropped({ errors: [closed] })], dropExpected);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("browser:vue did not finish 1 of its spec files");
+    expect(problems[0]).toContain(`Vitest reported: ${closed}.`);
+  });
+
+  it("names the first few errors and counts the rest", () => {
+    const errors = ["one", "two", "three", "four", "five"];
+    const { problems } = summarise([dropped({ errors })], dropExpected);
+    expect(problems[0]).toContain("Vitest reported: one, two, three, and 2 more.");
+  });
+
+  it("lists the drop first and keeps every problem it did not cause", () => {
+    const { problems } = summarise(
+      [
+        dropped({
+          extra: [
+            {
+              project: "browser:react",
+              record: at("basics/hello", "react", {
+                L7: { status: "fail", message: "the DOM differs" },
+              }),
+            },
+          ],
+        }),
+      ],
+      dropExpected,
+    );
+    expect(problems).toHaveLength(2);
+    expect(problems[0]).toMatch(/^browser:vue did not finish 1 of its spec files/);
+    expect(problems[1]).toBe("basics/hello › react › L7: fail: the DOM differs");
+  });
+
+  it("still fails a partial run, which checks no missing cell", () => {
+    const { problems } = summarise([dropped({ filtered: "files matching nested" })], dropExpected);
+    expect(problems).toEqual([expect.stringMatching(/^browser:vue did not finish 1 of/)]);
+  });
+
+  it("folds a blocked cell under a quarantine entry, which would otherwise read as stale", () => {
+    const quarantine: QuarantineEntry[] = [
+      { case: "basics/nested", target: "react", layer: "L10", reason: "x", issue: "UXF-1" },
+    ];
+    const { problems } = summarise([dropped({ quarantine })], dropExpected);
+    expect(problems).toEqual([expect.stringMatching(/^browser:vue did not finish 1 of/)]);
+  });
+
+  it("keeps the reference's missing cells of a case it did not drop", () => {
+    const { problems } = summarise(
+      [
+        dropped({
+          extra: [
+            {
+              project: "compile",
+              record: { case: "basics/other", target: "vue", layers: { L1: { status: "pass" } } },
+            },
+          ],
+        }),
+      ],
+      { ...dropExpected, cases: [...dropExpected.cases, "basics/other"] },
+    );
+    expect(problems).toContain("basics/other › vue › L7: missing (no test recorded it).");
+    expect(problems).toContain("basics/other › react › L10: missing (no test recorded it).");
   });
 });

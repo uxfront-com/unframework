@@ -8,6 +8,7 @@ import { PNG } from "pngjs";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { HarnessContext } from "../src/harness.ts";
+import { ufSpecFinished } from "../src/node/finished.ts";
 import { BASELINE_ENVIRONMENT } from "../src/node/mode.ts";
 import { ufVisualCapture } from "../src/node/visual.ts";
 import type { VisualCommandContext } from "../src/node/visual.ts";
@@ -277,6 +278,120 @@ describe("ufVisualCapture with live pixels", () => {
     expect(result.message).toMatch(
       /The reference target \(vue\) did not capture basics\/hello\/initial/,
     );
+  });
+});
+
+describe("ufVisualCapture when the reference did not finish the case (ADR-0091)", () => {
+  /** The run's projects: each target's browser project, and the SSR projects. */
+  const projects = (...targets: string[]) => [
+    ...targets.map((target) => ({
+      name: `browser:${target}`,
+      config: { browser: { enabled: true } },
+      getProvidedContext: () => ({ target }),
+    })),
+    ...["vue", "react"].map((target) => ({
+      name: `ssr:${target}`,
+      config: { browser: { enabled: false } },
+      getProvidedContext: () => ({ target }),
+    })),
+  ];
+  /** A command context in a run of these browser projects. */
+  const inRun = (
+    target: string,
+    run: ReturnType<typeof projects>,
+    overrides: Partial<HarnessContext> = {},
+  ) => {
+    const fake = context(target, { shots: [png(20, 10)], fonts: inter }, overrides);
+    return { ...fake, project: { ...fake.project, vitest: { projects: run } } };
+  };
+  const finish = (target: string, caseId = "basics/hello") =>
+    ufSpecFinished(inRun(target, projects("vue", "react")), { case: caseId });
+
+  it("names the reference's project when it is in the run and never finished the case", async () => {
+    const result = await ufVisualCapture(inRun("react", projects("vue", "react")), request());
+    expect(result).toMatchObject({
+      pass: false,
+      outcome: "reference-not-run",
+      role: "follower",
+      referenceProject: "browser:vue",
+    });
+    expect(result.message).toContain(
+      "The reference's browser project (browser:vue) did not finish basics/hello's spec file",
+    );
+  });
+
+  it("fails a follower whose reference finished the case without capturing the scenario", async () => {
+    finish("vue");
+    const result = await ufVisualCapture(inRun("react", projects("vue", "react")), request());
+    expect(result.outcome).toBe("missing-reference-capture");
+    expect(result.referenceProject).toBeUndefined();
+  });
+
+  it("fails a follower whose reference project is filtered out of the run", async () => {
+    const result = await ufVisualCapture(inRun("react", projects("react")), request());
+    expect(result.outcome).toBe("missing-reference-capture");
+    expect(result.message).toContain("must not be filtered out with --project");
+  });
+
+  it("reads only the reference's browser project, never its SSR project", async () => {
+    const result = await ufVisualCapture(
+      inRun(
+        "react",
+        projects("react").filter((project) => project.name !== "ssr:react"),
+      ),
+      request(),
+    );
+    expect(result.outcome).toBe("missing-reference-capture");
+  });
+
+  it("reads the finished files of this run only", async () => {
+    finish("vue");
+    const result = await ufVisualCapture(
+      inRun("react", projects("vue", "react"), { runId: `${harness.runId}-next` }),
+      request(),
+    );
+    expect(result.outcome).toBe("reference-not-run");
+  });
+
+  it("reads the reference of a case that names its own", async () => {
+    harness.cases["semantics/listbox"] = { reference: "react" };
+    const result = await ufVisualCapture(inRun("vue", projects("vue", "react")), {
+      ...request(),
+      case: "semantics/listbox",
+    });
+    expect(result).toMatchObject({
+      outcome: "reference-not-run",
+      referenceProject: "browser:react",
+    });
+    finish("react", "semantics/listbox");
+    const after = await ufVisualCapture(inRun("vue", projects("vue", "react")), {
+      ...request(),
+      case: "semantics/listbox",
+    });
+    expect(after.outcome).toBe("missing-reference-capture");
+  });
+
+  it("applies in update mode too, where the followers read the reference's writes", async () => {
+    const update = {
+      update: true,
+      pixels: "baseline" as const,
+      baselineEnvironment: BASELINE_ENVIRONMENT,
+    };
+    const result = await ufVisualCapture(
+      inRun("react", projects("vue", "react"), update),
+      request(),
+    );
+    expect(result).toMatchObject({ outcome: "reference-not-run", mode: "update+baseline" });
+  });
+
+  it("matches as before once the reference has captured the scenario", async () => {
+    await ufVisualCapture(inRun("vue", projects("vue", "react")), request());
+    const result = await ufVisualCapture(inRun("react", projects("vue", "react")), request());
+    expect(result).toMatchObject({ pass: true, outcome: "matched" });
+  });
+
+  it("refuses to record a case that is not in the corpus", () => {
+    expect(() => finish("vue", "../outside")).toThrow(/Unknown case/);
   });
 });
 
