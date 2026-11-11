@@ -136,6 +136,11 @@ On Vue, whichever way the target was chosen, plugin-vue's `template.compilerOpti
 `"preserve"` reports the warning UF7010 at the start, because outputs assume `"condense"`
 (ADR-0026).
 
+On Vue, the plugin also fills plugin-vue's `script.fs` with Node's file system when the app left it
+unset, through plugin-vue's `api.options` (ADR-0082). Vue's `compileScript` reads a props type
+imported from another module through it, or through TypeScript's `sys`, which TypeScript 7 doesn't
+export. An app's own `script.fs` stays, and the fill reaches the app's own `.vue` files too.
+
 ## Module ids
 
 A module id is the absolute path of the `.uf.tsx` file plus the target's suffix (`ID_SUFFIXES`):

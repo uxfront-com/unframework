@@ -1,6 +1,6 @@
 # ADR-0077: Per-target packaging
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0082
 - **Date:** 2026-11-10
 - **Plan:** §8.4, §9 M6; G2, P2; ADR-0016, ADR-0022, ADR-0027, ADR-0074, ADR-0076, ADR-0079
 

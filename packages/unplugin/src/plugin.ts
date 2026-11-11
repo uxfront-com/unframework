@@ -30,7 +30,7 @@ import type {
 
 import { assembleModule } from "./assemble.ts";
 import { chainQwikSegments, chainSvelteOnce } from "./chain.ts";
-import { detectTarget, hostOptionWarning } from "./detect.ts";
+import { detectTarget, fillVueScriptFs, hostOptionWarning } from "./detect.ts";
 import {
   COMPONENT_ID_FILTER,
   COMPOSABLE_EXTENSION,
@@ -1181,8 +1181,11 @@ const factory: UnpluginFactory<UnframeworkOptions | undefined, true> = (options 
           if ("error" in detected) this.error(detected.error);
           else selectTarget(detected.target);
         }
-        const warning = target.name === "vue" && hostOptionWarning(config.plugins, file);
-        if (warning) this.warn(warning);
+        if (target.name === "vue") {
+          const warning = hostOptionWarning(config.plugins, file);
+          if (warning) this.warn(warning);
+          fillVueScriptFs(config.plugins);
+        }
         chainSvelteOnce(config.plugins, (id) => compiled.has(id));
         chainQwikSegments(config.plugins, (id) => {
           const parent = SEGMENT.exec(id)?.[1];

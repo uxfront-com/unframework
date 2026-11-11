@@ -106,8 +106,6 @@ Astro answers an edit that reaches the page with a full reload, so its plugin-mo
 
 Qwik reloads a client-rendered page for every edit too. The unframework plugin sends that reload, because Qwik's own plugin sends its hot update only from the `ssr` environment ([ADR-0075](../../docs/adrs/0075-a-portable-bundler-plugin.md)). So Qwik's plugin-mode HMR spec counts the page's loads and expects one more after each edit.
 
-The Vue app passes `script.fs` to `@vitejs/plugin-vue` in both modes, because a packaged SFC and a compiled `.uf.tsx` import their prop types from a sibling module, and Vue's compiler reads those through TypeScript's `sys`, which TypeScript 7 doesn't export. Without it the page fails with "No fs option provided to `compileScript`".
-
 The run uses one worker and no retries. A project's specs share one copy and an HMR spec edits it, so nothing runs beside it. A flaky spec is a bug, so we never retry it.
 
 ## Servers and ports

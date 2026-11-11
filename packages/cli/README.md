@@ -93,8 +93,10 @@ defaults to the project's root. It's never a dependency of the CLI. Each target 
   so both must resolve beside tsdown.
 - **Svelte:** `@sveltejs/package` keeps the components as Svelte, turns each `.ts` module into JS and
   writes the `.d.ts`, with `types` and `svelte` export conditions. `typescript` must resolve beside it.
-- **Vue:** the SFC sources and `.ts` modules, with `vue-tsc`'s declarations beside them. Vue's compiler
-  builds them in the consumer's app, and `vue-tsc` resolves its TypeScript from where it's installed.
+- **Vue:** a Vite library build through `@vitejs/plugin-vue` compiles the SFCs to JS, one module to a
+  file, with each sheet beside its importer, and `vue-tsc` writes the `.d.ts` (ADR-0082). The package
+  holds no `.vue` file. `vite`, `@vitejs/plugin-vue` and `vue-tsc` must all resolve, and the components
+  compile with the `vue` that resolves from `outDir`.
 
 A declaration's inferred types come from `@angular/core`, `@qwik.dev/core`, `@types/react`, `solid-js`,
 `svelte` or `vue`, so each must resolve from where the package is built, the real path of `outDir`.
