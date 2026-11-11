@@ -1,5 +1,5 @@
 // The composable the component calls: it changes its state through the functions it returns.
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export function useToggle(initial: boolean) {
   const on = ref(initial);

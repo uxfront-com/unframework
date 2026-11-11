@@ -1,8 +1,8 @@
 // UF2019 erased-type-reference: `OnCleanup` is an authoring type, which the compiler erases with
 // its import, so an output that copied the annotation would not type-check; the likely fix removes
 // the annotation, which `watch` already types.
-import { defineEmits, ref, watch } from "unframework";
-import type { OnCleanup } from "unframework";
+import { defineEmits, ref, watch } from "@uxfront/unframework";
+import type { OnCleanup } from "@uxfront/unframework";
 
 export default function PresenceBadge() {
   const emit = defineEmits<{ join: [user: string]; leave: [user: string] }>();

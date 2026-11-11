@@ -1,4 +1,4 @@
-import type { ElementNode } from "@unframework/ir";
+import type { ElementNode } from "@unframework.dev/ir";
 
 /**
  * HTML and SVG attribute names that React spells differently, keyed by their spelling in HTML

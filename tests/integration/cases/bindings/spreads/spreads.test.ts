@@ -1,7 +1,7 @@
 // bindings/spreads: a typed attributes prop spread onto an element beside written attributes
 // (each declared key renders as a bound attribute, a boolean key as a boolean attribute), and an
 // optional spread source, which renders nothing when it is absent.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import TextField from "./TextField.uf.tsx";

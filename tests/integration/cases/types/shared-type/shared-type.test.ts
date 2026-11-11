@@ -1,6 +1,6 @@
 // types/shared-type: a type a `.ts` module declares, read by a component and its child, and
 // re-exported by the component (ADR-0068).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Palette from "./Palette.uf.tsx";

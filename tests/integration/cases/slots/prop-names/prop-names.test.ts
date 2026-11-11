@@ -1,6 +1,6 @@
 // slots/prop-names: a slot's props named `name` and `data-id` reach the fill as written
 // (ADR-0054): neither names the slot, and neither is renamed.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Directory from "./Directory.uf.tsx";

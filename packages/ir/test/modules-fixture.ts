@@ -50,7 +50,7 @@ import type { ComposableApi, Span, UfModule } from "../src/index.ts";
 
 /** The `.uf.ts` module: one composable, with a value and a getter parameter, and an effect. */
 export const COMPOSABLE_SOURCE: string = [
-  'import { onMounted, ref } from "unframework";',
+  'import { onMounted, ref } from "@uxfront/unframework";',
   "export function useToggle(initial: boolean, label: () => string) {",
   "  const on = ref(initial);",
   "  function toggle() {",

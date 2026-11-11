@@ -1,29 +1,29 @@
 # create-unframework
 
 `create-unframework` starts a new Unframework project in a directory you name. It writes the
-project's `package.json`, then scaffolds the rest with the `unframework` installed there.
+project's `package.json`, then scaffolds the rest with the `@uxfront/unframework` installed there.
 
 ```sh
 create-unframework my-components
 ```
 
-It creates the directory if it has to, and writes a private `package.json` with `unframework` as a
+It creates the directory if it has to, and writes a private `package.json` with `@uxfront/unframework` as a
 dependency. Then it runs that project's own `unframework init`, which writes the config, an example
 component, `tsconfig.uf.json` and `AGENTS.md`. The [`init` section of the CLI's README](../cli/README.md#init)
 lists them.
 
 `create-unframework` has no dependencies and installs nothing. So unless the directory already has
-`unframework` in its `node_modules`, it stops after the `package.json`, and tells you to install the
+`@uxfront/unframework` in its `node_modules`, it stops after the `package.json`, and tells you to install the
 dependencies and run `unframework init` there yourself. Keep in mind that nothing is published yet,
-and the name `unframework` on npm belongs to a third party until a release settles it (ADR-0076), so
-an install from the registry won't give you this compiler. The `package.json` lists only
-`unframework`, so add `typescript` to run `tsc --noEmit -p tsconfig.uf.json`.
+so an install from the registry finds no `@uxfront/unframework` until our first release
+(ADR-0090). The `package.json` lists only
+`@uxfront/unframework`, so add `typescript` to run `tsc --noEmit -p tsconfig.uf.json`.
 
-| Exit code | Meaning                                                                              |
-| --------- | ------------------------------------------------------------------------------------ |
-| 0         | The project is created.                                                              |
-| 1         | The `package.json` is written, and `unframework` isn't installed in the project yet. |
-| 2         | A usage error, a `package.json` already there, a failure or `init`'s own refusal.    |
+| Exit code | Meaning                                                                                       |
+| --------- | --------------------------------------------------------------------------------------------- |
+| 0         | The project is created.                                                                       |
+| 1         | The `package.json` is written, and `@uxfront/unframework` isn't installed in the project yet. |
+| 2         | A usage error, a `package.json` already there, a failure or `init`'s own refusal.             |
 
 Once `init` runs, the exit code is its own, so a crash in it exits 1 as well, with its error above.
 A bin killed by a signal exits 2.

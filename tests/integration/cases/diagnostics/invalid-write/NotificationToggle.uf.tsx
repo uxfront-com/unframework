@@ -1,7 +1,7 @@
 // UF2011 invalid-write: a setup arrow function whose expression body writes state returns the
 // written value, which the targets that rewrite writes into setter calls cannot keep; the safe
 // fix gives it a block body.
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export default function NotificationToggle() {
   const on = ref(false);

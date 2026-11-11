@@ -2,15 +2,15 @@ import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { defineTarget } from "@unframework/codegen";
-import type { Capabilities, CapabilityCell, OutputFile } from "@unframework/codegen";
+import { defineTarget } from "@unframework.dev/codegen";
+import type { Capabilities, CapabilityCell, OutputFile } from "@unframework.dev/codegen";
 import {
   compile,
   createFileResolver,
   createSyntacticOracle,
   TARGET_NAMES,
-} from "@unframework/compiler";
-import type { CompilerPlugin } from "@unframework/compiler";
+} from "@unframework.dev/compiler";
+import type { CompilerPlugin } from "@unframework.dev/compiler";
 import { isRunnableDevEnvironment, optimizeDeps, resolveConfig } from "vite";
 import type { Plugin } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -499,7 +499,7 @@ describe("load", () => {
           '1 | import { useState } from "react";',
           "  |                          ^^^^^^^",
           "  |",
-          '  = help: Write the component with the authoring API from "unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.',
+          '  = help: Write the component with the authoring API from "@uxfront/unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.',
           "  = see: https://unframework.dev/diagnostics/UF1201",
         ].join("\n"),
       );
@@ -710,7 +710,7 @@ describe("children (ADR-0053)", () => {
 
 describe("composables (ADR-0069)", () => {
   const TOGGLE = [
-    'import { ref } from "unframework";',
+    'import { ref } from "@uxfront/unframework";',
     "export function useToggle(initial: boolean) {",
     "  const on = ref(initial);",
     "  function toggle() {",
@@ -1181,7 +1181,7 @@ describe("the project graph (ADR-0071)", () => {
     "B.uf.tsx":
       'import type { CardProps } from "./a.ts";\nimport type { Tone } from "./tokens.ts";\n\nexport default function B({ label, tone }: CardProps & { tone?: Tone }) {\n  return <p class={tone}>{label}</p>;\n}\n',
     "useC.uf.ts":
-      'import { computed } from "unframework";\nimport type { CardProps } from "./a.ts";\n\nexport function useC(card: CardProps) {\n  const text = computed(() => card.label);\n  return { text };\n}\n',
+      'import { computed } from "@uxfront/unframework";\nimport type { CardProps } from "./a.ts";\n\nexport function useC(card: CardProps) {\n  const text = computed(() => card.label);\n  return { text };\n}\n',
     "C.uf.tsx":
       'import { useC } from "./useC.uf.ts";\n\nexport default function C({ label }: { label: string }) {\n  const { text } = useC({ label });\n  return <p>{text.value}</p>;\n}\n',
     "D.uf.tsx": "export default function D() {\n  return <p>D</p>;\n}\n",

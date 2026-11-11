@@ -1,4 +1,4 @@
-import { defineModel } from "unframework";
+import { defineModel } from "@uxfront/unframework";
 
 export default function PriceRange({ label }: { label: string }) {
   const min = defineModel<number>("min", { default: 0 });

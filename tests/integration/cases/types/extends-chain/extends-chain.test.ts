@@ -1,6 +1,6 @@
 // types/extends-chain: props whose interface extends another across two modules (ADR-0067): every
 // member of the chain is a prop.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Button from "./Button.uf.tsx";

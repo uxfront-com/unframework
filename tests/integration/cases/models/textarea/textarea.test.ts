@@ -1,5 +1,5 @@
 // models/textarea: `v-model` on a <textarea> binds its text (ADR-0054), both ways.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import NoteEditor from "./NoteEditor.uf.tsx";

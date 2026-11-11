@@ -14,8 +14,8 @@ import {
   pascalCase,
   rewriteExpression,
   typeNames,
-} from "@unframework/codegen";
-import type { JsxContext } from "@unframework/codegen";
+} from "@unframework.dev/codegen";
+import type { JsxContext } from "@unframework.dev/codegen";
 import type {
   BindingId,
   ClassAttribute,
@@ -29,7 +29,7 @@ import type {
   SlotFill,
   SlotOutletNode,
   StyleAttribute,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { slotProp, spanKey } from "./composition.ts";
 import type { ReactListeners } from "./listeners.ts";

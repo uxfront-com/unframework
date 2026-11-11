@@ -3,7 +3,7 @@ import { glob, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join } from "node:path";
 import { promisify } from "node:util";
 
-import type { OutputFile } from "@unframework/compiler";
+import type { OutputFile } from "@unframework.dev/compiler";
 
 /** A subpath's entry in `exports`: a path, or conditions that each hold one. */
 export type SubpathExports = string | { readonly [condition: string]: SubpathExports };

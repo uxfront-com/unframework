@@ -8,7 +8,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "preserve",
-    "jsxImportSource": "unframework",
+    "jsxImportSource": "@uxfront/unframework",
     // tsc never emits a .uf.tsx, and isolatedDeclarations would demand an explicit return type on
     // every exported component (TS9013).
     "declaration": false,

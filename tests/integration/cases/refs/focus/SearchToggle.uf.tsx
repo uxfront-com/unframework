@@ -1,4 +1,4 @@
-import { useTemplateRef } from "unframework";
+import { useTemplateRef } from "@uxfront/unframework";
 
 export default function SearchToggle() {
   const field = useTemplateRef<HTMLInputElement>();

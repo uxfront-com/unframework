@@ -1,6 +1,6 @@
 // jsx/expressions: arithmetic with precedence, string and number methods, template literals,
 // allowed globals (String, Math) and conditional text, interpolated as text.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import OrderSummary from "./OrderSummary.uf.tsx";

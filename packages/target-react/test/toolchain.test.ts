@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { ToolchainContext, ToolchainFile } from "@unframework/codegen";
+import type { ToolchainContext, ToolchainFile } from "@unframework.dev/codegen";
 import {
   createElement as element,
   createEventAttribute,
@@ -11,7 +11,7 @@ import {
   HTML_ELEMENTS,
   SVG_ELEMENTS,
   SVG_UNRENDERABLE_ELEMENTS,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { createElement } from "react";
 import type { ComponentType } from "react";
 import type { Plugin, PluginOption } from "vite";
@@ -59,8 +59,8 @@ function pluginNames(options: readonly PluginOption[]): string[] {
 describe("react toolchain", () => {
   it("names its runtime entries", () => {
     expect(toolchain.name).toBe("react");
-    expect(toolchain.client).toBe("@unframework/target-react/toolchain/client");
-    expect(toolchain.server).toBe("@unframework/target-react/toolchain/server");
+    expect(toolchain.client).toBe("@unframework.dev/target-react/toolchain/client");
+    expect(toolchain.server).toBe("@unframework.dev/target-react/toolchain/server");
   });
 
   it("configures Vite with React's plugin and the runtime the output imports", async () => {

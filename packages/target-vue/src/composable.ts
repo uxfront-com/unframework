@@ -15,8 +15,8 @@ import {
   printProgram,
   typeNames,
   typeSpecifier,
-} from "@unframework/codegen";
-import type { EmitContext, OutputFile } from "@unframework/codegen";
+} from "@unframework.dev/codegen";
+import type { EmitContext, OutputFile } from "@unframework.dev/codegen";
 import type {
   Code,
   TypeDeclaration,
@@ -24,7 +24,7 @@ import type {
   UfComponent,
   UfComposable,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { nameOf, renamedQueries, typeQueries, VueNames } from "./names.ts";
 import { itemCode, itemLayout, laidOut, typeParametersText } from "./script.ts";

@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 
 import { transformSync } from "@babel/core";
-import type { ToolchainContext } from "@unframework/codegen";
+import type { ToolchainContext } from "@unframework.dev/codegen";
 import { format } from "oxfmt";
 import type { FormatConfig } from "oxfmt";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

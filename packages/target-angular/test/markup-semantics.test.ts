@@ -14,8 +14,8 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { format as formatMessage } from "node:util";
 
-import { angularDialect, printMarkup } from "@unframework/codegen";
-import type { MarkupOptions } from "@unframework/codegen";
+import { angularDialect, printMarkup } from "@unframework.dev/codegen";
+import type { MarkupOptions } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
 import {

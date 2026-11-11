@@ -1,7 +1,7 @@
 // refs/focus: template refs give client code the elements: a button focuses the field through
 // one, and Escape in the field returns focus to the button through another. Focus is recorded in
 // the normalised DOM (`uf:focused`), so L7 and L9 compare it on every target.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import SearchToggle from "./SearchToggle.uf.tsx";

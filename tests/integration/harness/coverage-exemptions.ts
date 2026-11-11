@@ -1,8 +1,8 @@
 // What the coverage gate (plan §7.7) excuses, each with the reason. The gate derives coverage
 // from the corpus; an entry here that the corpus covers fails the gate, so the lists only
 // shrink as cases arrive.
-import type { CapabilityName } from "@unframework/codegen";
-import type { TargetName } from "@unframework/compiler";
+import type { CapabilityName } from "@unframework.dev/codegen";
+import type { TargetName } from "@unframework.dev/compiler";
 
 /** The families of IR kinds the gate requires a case for (`KIND_RECORDS` in `coverage.ts`). */
 export type KindFamily =

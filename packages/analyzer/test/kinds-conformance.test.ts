@@ -12,7 +12,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { parseModule } from "@unframework/parser";
+import { parseModule } from "@unframework.dev/parser";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { analyzeModule } from "../src/analyze.ts";
@@ -127,7 +127,7 @@ function typeOf(kinds: Kinds): string {
 /** The kinds the analyser gives `x` in a component with the declaration. */
 function kindsOf(declaration: string): Kinds {
   const source = [
-    'import { computed, ref } from "unframework";',
+    'import { computed, ref } from "@uxfront/unframework";',
     'interface Props { flag: boolean; size: "sm" | "md" }',
     `export function A({ flag, size }: Props) { ${declaration} return <p title={String(flag) + size} />; }`,
   ].join("\n");

@@ -16,10 +16,10 @@ import {
   PASSIVE_EVENTS,
   UNSUPPORTED_EVENTS,
   WINDOW_EVENTS,
-} from "@unframework/ir";
-import type { Attribute, CodeReference, Handler, Span } from "@unframework/ir";
-import type { AST } from "@unframework/parser";
-import { visitorKeys } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { Attribute, CodeReference, Handler, Span } from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
+import { visitorKeys } from "@unframework.dev/parser";
 
 import { list } from "./attribute-names.ts";
 import { Reporter } from "./context.ts";

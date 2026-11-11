@@ -14,6 +14,6 @@
       "column": 33,
       "offset": 32
     },
-    "help": "Write the component with the authoring API from \"unframework\" (ref, computed, watch and the define* macros); the compiler writes the framework code."
+    "help": "Write the component with the authoring API from \"@uxfront/unframework\" (ref, computed, watch and the define* macros); the compiler writes the framework code."
   }
 ]

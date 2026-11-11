@@ -1,4 +1,4 @@
-import type { InjectionKey, Ref } from "unframework";
+import type { InjectionKey, Ref } from "@uxfront/unframework";
 
 export interface Tabs {
   active: Ref<string>;

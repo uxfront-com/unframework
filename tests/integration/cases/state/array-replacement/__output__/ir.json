@@ -5,8 +5,8 @@
     {
       "name": "TaskList",
       "span": {
-        "start": 149,
-        "end": 1791
+        "start": 158,
+        "end": 1800
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "Task[]",
             "span": {
-              "start": 138,
-              "end": 144
+              "start": 147,
+              "end": 153
             }
           },
-          "binding": "initial@184",
+          "binding": "initial@193",
           "span": {
-            "start": 129,
-            "end": 145
+            "start": 138,
+            "end": 154
           }
         }
       ],
@@ -31,13 +31,13 @@
         "type": {
           "code": "TaskListProps",
           "span": {
-            "start": 195,
-            "end": 208
+            "start": 204,
+            "end": 217
           }
         },
         "span": {
-          "start": 182,
-          "end": 208
+          "start": 191,
+          "end": 217
         }
       },
       "types": [
@@ -46,230 +46,230 @@
       ],
       "bindings": [
         {
-          "id": "initial@184",
+          "id": "initial@193",
           "name": "initial",
           "kind": "prop",
           "span": {
-            "start": 184,
-            "end": 191
+            "start": 193,
+            "end": 200
           }
         },
         {
-          "id": "tasks@220",
+          "id": "tasks@229",
           "name": "tasks",
           "kind": "state",
           "span": {
-            "start": 220,
-            "end": 225
+            "start": 229,
+            "end": 234
           }
         },
         {
-          "id": "selected@250",
+          "id": "selected@259",
           "name": "selected",
           "kind": "state",
           "span": {
-            "start": 250,
-            "end": 258
+            "start": 259,
+            "end": 267
           }
         },
         {
-          "id": "added@282",
+          "id": "added@291",
           "name": "added",
           "kind": "localVar",
           "span": {
-            "start": 282,
-            "end": 287
+            "start": 291,
+            "end": 296
           }
         },
         {
-          "id": "add@305",
+          "id": "add@314",
           "name": "add",
           "kind": "localFn",
           "span": {
-            "start": 305,
-            "end": 308
+            "start": 314,
+            "end": 317
           }
         },
         {
-          "id": "select@433",
+          "id": "select@442",
           "name": "select",
           "kind": "localFn",
           "span": {
-            "start": 433,
-            "end": 439
+            "start": 442,
+            "end": 448
           }
         },
         {
-          "id": "remove@495",
+          "id": "remove@504",
           "name": "remove",
           "kind": "localFn",
           "span": {
-            "start": 495,
-            "end": 501
+            "start": 504,
+            "end": 510
           }
         },
         {
-          "id": "moveUp@598",
+          "id": "moveUp@607",
           "name": "moveUp",
           "kind": "localFn",
           "span": {
-            "start": 598,
-            "end": 604
+            "start": 607,
+            "end": 613
           }
         },
         {
-          "id": "task@1077",
+          "id": "task@1086",
           "name": "task",
           "kind": "loopVar",
           "span": {
-            "start": 1077,
-            "end": 1081
+            "start": 1086,
+            "end": 1090
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "tasks@220",
+          "binding": "tasks@229",
           "initial": {
             "code": "initial",
             "span": {
-              "start": 232,
-              "end": 239
+              "start": 241,
+              "end": 248
             },
             "refs": [
               {
                 "kind": "Binding",
-                "binding": "initial@184",
+                "binding": "initial@193",
                 "span": {
-                  "start": 232,
-                  "end": 239
+                  "start": 241,
+                  "end": 248
                 }
               }
             ]
           },
           "span": {
-            "start": 214,
-            "end": 241
+            "start": 223,
+            "end": 250
           }
         },
         {
           "kind": "State",
-          "binding": "selected@250",
+          "binding": "selected@259",
           "type": {
             "code": "string",
             "span": {
-              "start": 265,
-              "end": 271
+              "start": 274,
+              "end": 280
             }
           },
           "span": {
-            "start": 244,
-            "end": 275
+            "start": 253,
+            "end": 284
           }
         },
         {
           "kind": "Variable",
-          "binding": "added@282",
+          "binding": "added@291",
           "initial": {
             "code": "0",
             "span": {
-              "start": 290,
-              "end": 291
+              "start": 299,
+              "end": 300
             },
             "refs": []
           },
           "span": {
-            "start": 278,
-            "end": 292
+            "start": 287,
+            "end": 301
           }
         },
         {
           "kind": "Function",
-          "binding": "add@305",
+          "binding": "add@314",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    added += 1;\n    tasks.value = [...tasks.value, { id: `new-${added}`, label: `New task ${added}` }];\n  }",
               "span": {
-                "start": 311,
-                "end": 420
+                "start": 320,
+                "end": 429
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "added@282",
+                  "binding": "added@291",
                   "operator": "+=",
                   "span": {
-                    "start": 317,
-                    "end": 327
+                    "start": 326,
+                    "end": 336
                   },
                   "target": {
-                    "start": 317,
-                    "end": 322
+                    "start": 326,
+                    "end": 331
                   },
                   "value": {
-                    "start": 326,
-                    "end": 327
+                    "start": 335,
+                    "end": 336
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "tasks@220",
+                  "binding": "tasks@229",
                   "operator": "=",
                   "span": {
-                    "start": 333,
-                    "end": 415
+                    "start": 342,
+                    "end": 424
                   },
                   "target": {
-                    "start": 333,
-                    "end": 344
+                    "start": 342,
+                    "end": 353
                   },
                   "value": {
-                    "start": 347,
-                    "end": 415
+                    "start": 356,
+                    "end": 424
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "tasks@220",
+                  "binding": "tasks@229",
                   "span": {
-                    "start": 351,
-                    "end": 362
+                    "start": 360,
+                    "end": 371
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "added@282",
+                  "binding": "added@291",
                   "span": {
-                    "start": 377,
-                    "end": 382
+                    "start": 386,
+                    "end": 391
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "added@282",
+                  "binding": "added@291",
                   "span": {
-                    "start": 405,
-                    "end": 410
+                    "start": 414,
+                    "end": 419
                   }
                 }
               ]
             },
             "span": {
-              "start": 308,
-              "end": 420
+              "start": 317,
+              "end": 429
             }
           },
           "span": {
-            "start": 296,
-            "end": 420
+            "start": 305,
+            "end": 429
           }
         },
         {
           "kind": "Function",
-          "binding": "select@433",
+          "binding": "select@442",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -278,55 +278,55 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 444,
-                    "end": 450
+                    "start": 453,
+                    "end": 459
                   }
                 },
                 "span": {
-                  "start": 440,
-                  "end": 450
+                  "start": 449,
+                  "end": 459
                 }
               }
             ],
             "body": {
               "code": "{\n    selected.value = id;\n  }",
               "span": {
-                "start": 452,
-                "end": 482
+                "start": 461,
+                "end": 491
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "selected@250",
+                  "binding": "selected@259",
                   "operator": "=",
                   "span": {
-                    "start": 458,
-                    "end": 477
+                    "start": 467,
+                    "end": 486
                   },
                   "target": {
-                    "start": 458,
-                    "end": 472
+                    "start": 467,
+                    "end": 481
                   },
                   "value": {
-                    "start": 475,
-                    "end": 477
+                    "start": 484,
+                    "end": 486
                   }
                 }
               ]
             },
             "span": {
-              "start": 439,
-              "end": 482
+              "start": 448,
+              "end": 491
             }
           },
           "span": {
-            "start": 424,
-            "end": 482
+            "start": 433,
+            "end": 491
           }
         },
         {
           "kind": "Function",
-          "binding": "remove@495",
+          "binding": "remove@504",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -335,140 +335,140 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 506,
-                    "end": 512
+                    "start": 515,
+                    "end": 521
                   }
                 },
                 "span": {
-                  "start": 502,
-                  "end": 512
+                  "start": 511,
+                  "end": 521
                 }
               }
             ],
             "body": {
               "code": "{\n    tasks.value = tasks.value.filter((entry) => entry.id !== id);\n  }",
               "span": {
-                "start": 514,
-                "end": 585
+                "start": 523,
+                "end": 594
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "tasks@220",
+                  "binding": "tasks@229",
                   "operator": "=",
                   "span": {
-                    "start": 520,
-                    "end": 580
+                    "start": 529,
+                    "end": 589
                   },
                   "target": {
-                    "start": 520,
-                    "end": 531
+                    "start": 529,
+                    "end": 540
                   },
                   "value": {
-                    "start": 534,
-                    "end": 580
+                    "start": 543,
+                    "end": 589
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "tasks@220",
+                  "binding": "tasks@229",
                   "span": {
-                    "start": 534,
-                    "end": 545
+                    "start": 543,
+                    "end": 554
                   }
                 }
               ]
             },
             "span": {
-              "start": 501,
-              "end": 585
+              "start": 510,
+              "end": 594
             }
           },
           "span": {
-            "start": 486,
-            "end": 585
+            "start": 495,
+            "end": 594
           }
         },
         {
           "kind": "Function",
-          "binding": "moveUp@598",
+          "binding": "moveUp@607",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    const index = tasks.value.findIndex((entry) => entry.id === selected.value);\n    const above = tasks.value[index - 1];\n    const current = tasks.value[index];\n    if (index > 0 && above && current) {\n      tasks.value = tasks.value.toSpliced(index - 1, 2, current, above);\n    }\n  }",
               "span": {
-                "start": 607,
-                "end": 895
+                "start": 616,
+                "end": 904
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "tasks@220",
+                  "binding": "tasks@229",
                   "span": {
-                    "start": 627,
-                    "end": 638
+                    "start": 636,
+                    "end": 647
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "selected@250",
+                  "binding": "selected@259",
                   "span": {
-                    "start": 673,
-                    "end": 687
+                    "start": 682,
+                    "end": 696
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "tasks@220",
+                  "binding": "tasks@229",
                   "span": {
-                    "start": 708,
-                    "end": 719
+                    "start": 717,
+                    "end": 728
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "tasks@220",
+                  "binding": "tasks@229",
                   "span": {
-                    "start": 752,
-                    "end": 763
+                    "start": 761,
+                    "end": 772
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "tasks@220",
+                  "binding": "tasks@229",
                   "operator": "=",
                   "span": {
-                    "start": 819,
-                    "end": 884
+                    "start": 828,
+                    "end": 893
                   },
                   "target": {
-                    "start": 819,
-                    "end": 830
+                    "start": 828,
+                    "end": 839
                   },
                   "value": {
-                    "start": 833,
-                    "end": 884
+                    "start": 842,
+                    "end": 893
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "tasks@220",
+                  "binding": "tasks@229",
                   "span": {
-                    "start": 833,
-                    "end": 844
+                    "start": 842,
+                    "end": 853
                   }
                 }
               ]
             },
             "span": {
-              "start": 604,
-              "end": 895
+              "start": 613,
+              "end": 904
             }
           },
           "span": {
-            "start": 589,
-            "end": 895
+            "start": 598,
+            "end": 904
           }
         }
       ],
@@ -481,8 +481,8 @@
             "name": "class",
             "value": "task-list",
             "span": {
-              "start": 921,
-              "end": 938
+              "start": 930,
+              "end": 947
             }
           },
           {
@@ -490,8 +490,8 @@
             "name": "aria-label",
             "value": "Tasks",
             "span": {
-              "start": 939,
-              "end": 957
+              "start": 948,
+              "end": 966
             }
           }
         ],
@@ -503,16 +503,16 @@
                 "condition": {
                   "code": "tasks.value.length === 0",
                   "span": {
-                    "start": 966,
-                    "end": 990
+                    "start": 975,
+                    "end": 999
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "tasks@220",
+                      "binding": "tasks@229",
                       "span": {
-                        "start": 966,
-                        "end": 977
+                        "start": 975,
+                        "end": 986
                       }
                     }
                   ]
@@ -527,20 +527,20 @@
                         "kind": "Text",
                         "value": "No tasks yet.",
                         "span": {
-                          "start": 1006,
-                          "end": 1019
+                          "start": 1015,
+                          "end": 1028
                         }
                       }
                     ],
                     "span": {
-                      "start": 1003,
-                      "end": 1023
+                      "start": 1012,
+                      "end": 1032
                     }
                   }
                 ],
                 "span": {
-                  "start": 966,
-                  "end": 1023
+                  "start": 975,
+                  "end": 1032
                 }
               },
               {
@@ -555,34 +555,34 @@
                         "source": {
                           "code": "tasks.value",
                           "span": {
-                            "start": 1060,
-                            "end": 1071
+                            "start": 1069,
+                            "end": 1080
                           },
                           "refs": [
                             {
                               "kind": "Binding",
-                              "binding": "tasks@220",
+                              "binding": "tasks@229",
                               "span": {
-                                "start": 1060,
-                                "end": 1071
+                                "start": 1069,
+                                "end": 1080
                               }
                             }
                           ]
                         },
-                        "item": "task@1077",
+                        "item": "task@1086",
                         "key": {
                           "code": "task.id",
                           "span": {
-                            "start": 1109,
-                            "end": 1116
+                            "start": 1118,
+                            "end": 1125
                           },
                           "refs": [
                             {
                               "kind": "Binding",
-                              "binding": "task@1077",
+                              "binding": "task@1086",
                               "span": {
-                                "start": 1109,
-                                "end": 1113
+                                "start": 1118,
+                                "end": 1122
                               }
                             }
                           ]
@@ -601,8 +601,8 @@
                                   "name": "type",
                                   "value": "button",
                                   "span": {
-                                    "start": 1157,
-                                    "end": 1170
+                                    "start": 1166,
+                                    "end": 1179
                                   }
                                 },
                                 {
@@ -611,31 +611,31 @@
                                   "value": {
                                     "code": "selected.value === task.id",
                                     "span": {
-                                      "start": 1201,
-                                      "end": 1227
+                                      "start": 1210,
+                                      "end": 1236
                                     },
                                     "refs": [
                                       {
                                         "kind": "Binding",
-                                        "binding": "selected@250",
+                                        "binding": "selected@259",
                                         "span": {
-                                          "start": 1201,
-                                          "end": 1215
+                                          "start": 1210,
+                                          "end": 1224
                                         }
                                       },
                                       {
                                         "kind": "Binding",
-                                        "binding": "task@1077",
+                                        "binding": "task@1086",
                                         "span": {
-                                          "start": 1220,
-                                          "end": 1224
+                                          "start": 1229,
+                                          "end": 1233
                                         }
                                       }
                                     ]
                                   },
                                   "span": {
-                                    "start": 1187,
-                                    "end": 1228
+                                    "start": 1196,
+                                    "end": 1237
                                   }
                                 },
                                 {
@@ -648,43 +648,43 @@
                                       "body": {
                                         "code": "select(task.id)",
                                         "span": {
-                                          "start": 1260,
-                                          "end": 1275
+                                          "start": 1269,
+                                          "end": 1284
                                         },
                                         "refs": [
                                           {
                                             "kind": "Binding",
-                                            "binding": "select@433",
+                                            "binding": "select@442",
                                             "span": {
-                                              "start": 1260,
-                                              "end": 1266
+                                              "start": 1269,
+                                              "end": 1275
                                             },
                                             "call": true
                                           },
                                           {
                                             "kind": "Binding",
-                                            "binding": "task@1077",
+                                            "binding": "task@1086",
                                             "span": {
-                                              "start": 1267,
-                                              "end": 1271
+                                              "start": 1276,
+                                              "end": 1280
                                             }
                                           }
                                         ]
                                       },
                                       "expression": true,
                                       "span": {
-                                        "start": 1254,
-                                        "end": 1275
+                                        "start": 1263,
+                                        "end": 1284
                                       }
                                     },
                                     "span": {
-                                      "start": 1254,
-                                      "end": 1275
+                                      "start": 1263,
+                                      "end": 1284
                                     }
                                   },
                                   "span": {
-                                    "start": 1245,
-                                    "end": 1276
+                                    "start": 1254,
+                                    "end": 1285
                                   }
                                 }
                               ],
@@ -694,29 +694,29 @@
                                   "value": {
                                     "code": "task.label",
                                     "span": {
-                                      "start": 1310,
-                                      "end": 1320
+                                      "start": 1319,
+                                      "end": 1329
                                     },
                                     "refs": [
                                       {
                                         "kind": "Binding",
-                                        "binding": "task@1077",
+                                        "binding": "task@1086",
                                         "span": {
-                                          "start": 1310,
-                                          "end": 1314
+                                          "start": 1319,
+                                          "end": 1323
                                         }
                                       }
                                     ]
                                   },
                                   "span": {
-                                    "start": 1309,
-                                    "end": 1321
+                                    "start": 1318,
+                                    "end": 1330
                                   }
                                 }
                               ],
                               "span": {
-                                "start": 1133,
-                                "end": 1345
+                                "start": 1142,
+                                "end": 1354
                               }
                             },
                             {
@@ -728,8 +728,8 @@
                                   "name": "type",
                                   "value": "button",
                                   "span": {
-                                    "start": 1384,
-                                    "end": 1397
+                                    "start": 1393,
+                                    "end": 1406
                                   }
                                 },
                                 {
@@ -738,23 +738,23 @@
                                   "value": {
                                     "code": "`Remove ${task.label}`",
                                     "span": {
-                                      "start": 1426,
-                                      "end": 1448
+                                      "start": 1435,
+                                      "end": 1457
                                     },
                                     "refs": [
                                       {
                                         "kind": "Binding",
-                                        "binding": "task@1077",
+                                        "binding": "task@1086",
                                         "span": {
-                                          "start": 1436,
-                                          "end": 1440
+                                          "start": 1445,
+                                          "end": 1449
                                         }
                                       }
                                     ]
                                   },
                                   "span": {
-                                    "start": 1414,
-                                    "end": 1449
+                                    "start": 1423,
+                                    "end": 1458
                                   }
                                 },
                                 {
@@ -767,43 +767,43 @@
                                       "body": {
                                         "code": "remove(task.id)",
                                         "span": {
-                                          "start": 1481,
-                                          "end": 1496
+                                          "start": 1490,
+                                          "end": 1505
                                         },
                                         "refs": [
                                           {
                                             "kind": "Binding",
-                                            "binding": "remove@495",
+                                            "binding": "remove@504",
                                             "span": {
-                                              "start": 1481,
-                                              "end": 1487
+                                              "start": 1490,
+                                              "end": 1496
                                             },
                                             "call": true
                                           },
                                           {
                                             "kind": "Binding",
-                                            "binding": "task@1077",
+                                            "binding": "task@1086",
                                             "span": {
-                                              "start": 1488,
-                                              "end": 1492
+                                              "start": 1497,
+                                              "end": 1501
                                             }
                                           }
                                         ]
                                       },
                                       "expression": true,
                                       "span": {
-                                        "start": 1475,
-                                        "end": 1496
+                                        "start": 1484,
+                                        "end": 1505
                                       }
                                     },
                                     "span": {
-                                      "start": 1475,
-                                      "end": 1496
+                                      "start": 1484,
+                                      "end": 1505
                                     }
                                   },
                                   "span": {
-                                    "start": 1466,
-                                    "end": 1497
+                                    "start": 1475,
+                                    "end": 1506
                                   }
                                 }
                               ],
@@ -812,43 +812,43 @@
                                   "kind": "Text",
                                   "value": "Remove",
                                   "span": {
-                                    "start": 1513,
-                                    "end": 1551
+                                    "start": 1522,
+                                    "end": 1560
                                   }
                                 }
                               ],
                               "span": {
-                                "start": 1360,
-                                "end": 1560
+                                "start": 1369,
+                                "end": 1569
                               }
                             }
                           ],
                           "span": {
-                            "start": 1100,
-                            "end": 1578
+                            "start": 1109,
+                            "end": 1587
                           }
                         },
                         "span": {
-                          "start": 1060,
-                          "end": 1591
+                          "start": 1069,
+                          "end": 1600
                         }
                       }
                     ],
                     "span": {
-                      "start": 1044,
-                      "end": 1606
+                      "start": 1053,
+                      "end": 1615
                     }
                   }
                 ],
                 "span": {
-                  "start": 1044,
-                  "end": 1606
+                  "start": 1053,
+                  "end": 1615
                 }
               }
             ],
             "span": {
-              "start": 966,
-              "end": 1614
+              "start": 975,
+              "end": 1623
             }
           },
           {
@@ -860,8 +860,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 1630,
-                  "end": 1643
+                  "start": 1639,
+                  "end": 1652
                 }
               },
               {
@@ -869,15 +869,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "add@305",
+                  "binding": "add@314",
                   "span": {
-                    "start": 1653,
-                    "end": 1656
+                    "start": 1662,
+                    "end": 1665
                   }
                 },
                 "span": {
-                  "start": 1644,
-                  "end": 1657
+                  "start": 1653,
+                  "end": 1666
                 }
               }
             ],
@@ -886,14 +886,14 @@
                 "kind": "Text",
                 "value": "Add task",
                 "span": {
-                  "start": 1658,
-                  "end": 1682
+                  "start": 1667,
+                  "end": 1691
                 }
               }
             ],
             "span": {
-              "start": 1622,
-              "end": 1691
+              "start": 1631,
+              "end": 1700
             }
           },
           {
@@ -905,8 +905,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 1706,
-                  "end": 1719
+                  "start": 1715,
+                  "end": 1728
                 }
               },
               {
@@ -914,15 +914,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "moveUp@598",
+                  "binding": "moveUp@607",
                   "span": {
-                    "start": 1729,
-                    "end": 1735
+                    "start": 1738,
+                    "end": 1744
                   }
                 },
                 "span": {
-                  "start": 1720,
-                  "end": 1736
+                  "start": 1729,
+                  "end": 1745
                 }
               }
             ],
@@ -931,20 +931,20 @@
                 "kind": "Text",
                 "value": "Move up",
                 "span": {
-                  "start": 1737,
-                  "end": 1760
+                  "start": 1746,
+                  "end": 1769
                 }
               }
             ],
             "span": {
-              "start": 1698,
-              "end": 1769
+              "start": 1707,
+              "end": 1778
             }
           }
         ],
         "span": {
-          "start": 912,
-          "end": 1784
+          "start": 921,
+          "end": 1793
         }
       }
     }
@@ -955,8 +955,8 @@
       "name": "default",
       "local": "TaskList",
       "span": {
-        "start": 149,
-        "end": 1791
+        "start": 158,
+        "end": 1800
       }
     }
   ],
@@ -966,8 +966,8 @@
       "exported": true,
       "code": "interface Task {\n  id: string;\n  label: string;\n}",
       "span": {
-        "start": 43,
-        "end": 92
+        "start": 52,
+        "end": 101
       }
     },
     {
@@ -975,8 +975,8 @@
       "exported": true,
       "code": "interface TaskListProps {\n  initial: Task[];\n}",
       "span": {
-        "start": 101,
-        "end": 147
+        "start": 110,
+        "end": 156
       }
     }
   ]

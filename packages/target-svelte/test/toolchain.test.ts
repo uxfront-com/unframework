@@ -18,8 +18,8 @@ describe("svelte toolchain", () => {
   });
 
   it("names its runtime adapters by their package subpaths", async () => {
-    expect(toolchain.client).toBe("@unframework/target-svelte/toolchain/client");
-    expect(toolchain.server).toBe("@unframework/target-svelte/toolchain/server");
+    expect(toolchain.client).toBe("@unframework.dev/target-svelte/toolchain/client");
+    expect(toolchain.server).toBe("@unframework.dev/target-svelte/toolchain/server");
     expect(await import(toolchain.client)).toHaveProperty("mount", expect.any(Function));
     expect(await import(toolchain.server)).toHaveProperty("renderToString", expect.any(Function));
   });

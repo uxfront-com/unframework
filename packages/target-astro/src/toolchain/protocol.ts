@@ -2,7 +2,7 @@
 // so in a browser project a compiled component is only a reference: the mount adapter sends it
 // to the `ufAstroRender` browser command, which renders it on the server. Nothing here may
 // import Node or DOM APIs: both halves load this module.
-import type { CapturedConsoleMessage } from "@unframework/codegen";
+import type { CapturedConsoleMessage } from "@unframework.dev/codegen";
 import type { experimental_AstroContainer as AstroContainer } from "astro/container";
 
 /**

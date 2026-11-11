@@ -1,7 +1,7 @@
 // A composable that calls back its caller (ADR-0069): the callback is a function client code
 // calls, here each time the count reaches its limit, with the count it reached. It also returns
 // a constant, its step.
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export function useCounter(limit: number, onLimit: (count: number) => void) {
   const count = ref(0);

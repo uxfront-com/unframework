@@ -1,6 +1,6 @@
 // The Solid mount adapter (browser). Solid updates the DOM synchronously, so a mounted
 // component has rendered by the time `render` returns.
-import type { MountAdapter, MountListener } from "@unframework/codegen";
+import type { MountAdapter, MountListener } from "@unframework.dev/codegen";
 import { $PROXY, batch, createComponent, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 

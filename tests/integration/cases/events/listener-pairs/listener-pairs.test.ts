@@ -6,7 +6,7 @@
 // setup `let` typed `HTMLButtonElement | null`, and `onUnmounted(() => stop())` removes every
 // listener, so a key pressed once the component is gone reaches nothing of it. The events `save`
 // and `status` are named like the function and the state that emit them.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import DraftPanel from "./DraftPanel.uf.tsx";

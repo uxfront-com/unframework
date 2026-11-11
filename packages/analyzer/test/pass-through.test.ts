@@ -1,7 +1,7 @@
 // Imports that pass through (plan §4.4, ADR-0064): an import whose specifier starts with a
 // `passThrough` prefix (`virtual:` by default) passes through into the IR, as named imports a
 // `class` calls or a side-effect import, whatever the engine; any other use of it is UF5006.
-import { parseModule } from "@unframework/parser";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { analyze } from "../src/index.ts";
@@ -163,7 +163,7 @@ describe("the passThrough option", () => {
   });
 
   it.each([
-    ["the authoring API", 'import { ref } from "unframework";\n', "unframework", []],
+    ["the authoring API", 'import { ref } from "@uxfront/unframework";\n', "@uxfront/", []],
     ["a framework", 'import { ref } from "vue";\n', "vue", ["UF1201"]],
     ["a component", 'import Child from "virtual:Child.uf.tsx";\n', "virtual:", ["UF1202"]],
     ["a relative module", 'import "./theme.css";\n', ".", ["UF5005"]],

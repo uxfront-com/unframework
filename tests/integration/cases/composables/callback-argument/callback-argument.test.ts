@@ -1,7 +1,7 @@
 // composables/callback-argument: a callback passed to a composable is called from its client
 // code (ADR-0069), and writes the caller's state and emits as the caller's own function would.
 // The caller also renders a constant the composable returns.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Clicker from "./Clicker.uf.tsx";

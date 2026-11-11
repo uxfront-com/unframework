@@ -1,5 +1,5 @@
 // basics/hello: one element, one static attribute, one text node, on every target.
-import { describeTargets, mount } from "@unframework/testing";
+import { describeTargets, mount } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import Hello from "./Hello.uf.tsx";

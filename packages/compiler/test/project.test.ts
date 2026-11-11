@@ -18,7 +18,7 @@ const FIXTURE: Record<string, string> = {
     "",
   ].join("\n"),
   "useC.uf.ts": [
-    'import { computed } from "unframework";',
+    'import { computed } from "@uxfront/unframework";',
     'import type { CardProps } from "./a.ts";',
     "export function useC(card: CardProps) {",
     "  const text = computed(() => card.label);",
@@ -247,8 +247,8 @@ describe("import cycle (UF1205)", () => {
   it("reports nothing for a consumer that imports its provider's key", async () => {
     const { project } = memoryProject({
       "Provider.uf.tsx": [
-        'import { provide } from "unframework";',
-        'import type { InjectionKey } from "unframework";',
+        'import { provide } from "@uxfront/unframework";',
+        'import type { InjectionKey } from "@uxfront/unframework";',
         'import Consumer from "./Consumer.uf.tsx";',
         'export const LabelKey: InjectionKey<string> = Symbol("uf.label");',
         "export default function Provider() {",
@@ -258,7 +258,7 @@ describe("import cycle (UF1205)", () => {
         "",
       ].join("\n"),
       "Consumer.uf.tsx": [
-        'import { inject } from "unframework";',
+        'import { inject } from "@uxfront/unframework";',
         'import { LabelKey } from "./Provider.uf.tsx";',
         "export default function Consumer() {",
         "  const label = inject(LabelKey);",

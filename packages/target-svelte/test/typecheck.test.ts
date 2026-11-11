@@ -1,7 +1,7 @@
 import { mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { ToolchainMessage } from "@unframework/codegen";
+import type { ToolchainMessage } from "@unframework.dev/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";

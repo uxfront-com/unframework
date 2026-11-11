@@ -16,9 +16,9 @@ import {
   typeExportsCode,
   typeNames,
   typeSpecifier,
-} from "@unframework/codegen";
-import type { ChildImport, ImportSet } from "@unframework/codegen";
-import { expressionsOf, walk } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { ChildImport, ImportSet } from "@unframework.dev/codegen";
+import { expressionsOf, walk } from "@unframework.dev/ir";
 import type {
   BindingId,
   InjectItem,
@@ -26,7 +26,7 @@ import type {
   TypeParameter,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { isRenderProp, ownProps } from "./composition.ts";
 import type { AstroRender } from "./composition.ts";

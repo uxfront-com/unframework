@@ -5,7 +5,7 @@
 // `catch` it rejected into, and around an assignment of an awaited value. Two calls of a local
 // arrow are one run's changes, on each side of `await nextTick()`. Every reply comes from a
 // button, so each run after an `await` is a step of its own on every target.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import InboxLookup from "./InboxLookup.uf.tsx";

@@ -1,7 +1,7 @@
 // What a compiler plugin's `ir` hook may return besides valid IR (ADR-0032): a module that still
 // describes the source it was analysed from, and copies into the outputs no code the analyser
 // did not analyse.
-import { codeOf, expressionsOf, functionsOf, spansOf } from "@unframework/ir";
+import { codeOf, expressionsOf, functionsOf, spansOf } from "@unframework.dev/ir";
 import type {
   Code,
   CodeReference,
@@ -18,7 +18,7 @@ import type {
   TypeText,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 /**
  * Where a plugin's module (schema-valid) stops describing the source it was analysed from:

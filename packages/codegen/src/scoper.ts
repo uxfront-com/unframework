@@ -5,10 +5,10 @@
 // output with `compileStyle({ scoped: true })`. Where Vue rewrites a selector into one that matches
 // nothing or silently drops part of it, the scoper reports UF5004 instead (P2), and where Vue
 // writes one that doesn't parse, it writes one that does.
-import { createDiagnostic } from "@unframework/diagnostics";
-import type { Diagnostic } from "@unframework/diagnostics";
-import type { Span } from "@unframework/ir";
-import { parseStylesheet } from "@unframework/parser";
+import { createDiagnostic } from "@unframework.dev/diagnostics";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
+import type { Span } from "@unframework.dev/ir";
+import { parseStylesheet } from "@unframework.dev/parser";
 import postcss from "postcss";
 import type { AtRule, ChildNode, Container, Declaration, Root, Rule } from "postcss";
 import selectorParser from "postcss-selector-parser";

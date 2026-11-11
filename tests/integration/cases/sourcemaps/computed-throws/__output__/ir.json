@@ -5,8 +5,8 @@
     {
       "name": "InvoiceTotal",
       "span": {
-        "start": 106,
-        "end": 645
+        "start": 115,
+        "end": 654
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "number",
             "span": {
-              "start": 95,
-              "end": 101
+              "start": 104,
+              "end": 110
             }
           },
-          "binding": "quantity@145",
+          "binding": "quantity@154",
           "span": {
-            "start": 85,
-            "end": 102
+            "start": 94,
+            "end": 111
           }
         }
       ],
@@ -31,13 +31,13 @@
         "type": {
           "code": "InvoiceTotalProps",
           "span": {
-            "start": 157,
-            "end": 174
+            "start": 166,
+            "end": 183
           }
         },
         "span": {
-          "start": 143,
-          "end": 174
+          "start": 152,
+          "end": 183
         }
       },
       "types": [
@@ -45,155 +45,155 @@
       ],
       "bindings": [
         {
-          "id": "quantity@145",
+          "id": "quantity@154",
           "name": "quantity",
           "kind": "prop",
           "span": {
-            "start": 145,
-            "end": 153
+            "start": 154,
+            "end": 162
           }
         },
         {
-          "id": "refunded@186",
+          "id": "refunded@195",
           "name": "refunded",
           "kind": "state",
           "span": {
-            "start": 186,
-            "end": 194
+            "start": 195,
+            "end": 203
           }
         },
         {
-          "id": "total@213",
+          "id": "total@222",
           "name": "total",
           "kind": "derived",
           "span": {
-            "start": 213,
-            "end": 218
+            "start": 222,
+            "end": 227
           }
         },
         {
-          "id": "refund@398",
+          "id": "refund@407",
           "name": "refund",
           "kind": "localFn",
           "span": {
-            "start": 398,
-            "end": 404
+            "start": 407,
+            "end": 413
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "refunded@186",
+          "binding": "refunded@195",
           "initial": {
             "code": "0",
             "span": {
-              "start": 201,
-              "end": 202
+              "start": 210,
+              "end": 211
             },
             "refs": []
           },
           "span": {
-            "start": 180,
-            "end": 204
+            "start": 189,
+            "end": 213
           }
         },
         {
           "kind": "Derived",
-          "binding": "total@213",
+          "binding": "total@222",
           "getter": {
             "parameters": [],
             "body": {
               "code": "{\n    const units = quantity - refunded.value;\n    if (units < 0) {\n      throw new Error(\"The total is negative\");\n    }\n    return units * 5;\n  }",
               "span": {
-                "start": 236,
-                "end": 383
+                "start": 245,
+                "end": 392
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "quantity@145",
+                  "binding": "quantity@154",
                   "span": {
-                    "start": 256,
-                    "end": 264
+                    "start": 265,
+                    "end": 273
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "refunded@186",
+                  "binding": "refunded@195",
                   "span": {
-                    "start": 267,
-                    "end": 281
+                    "start": 276,
+                    "end": 290
                   }
                 },
                 {
                   "kind": "Global",
                   "name": "Error",
                   "span": {
-                    "start": 320,
-                    "end": 325
+                    "start": 329,
+                    "end": 334
                   }
                 }
               ]
             },
             "span": {
-              "start": 230,
-              "end": 383
+              "start": 239,
+              "end": 392
             }
           },
           "span": {
-            "start": 207,
-            "end": 385
+            "start": 216,
+            "end": 394
           }
         },
         {
           "kind": "Function",
-          "binding": "refund@398",
+          "binding": "refund@407",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    refunded.value = refunded.value + 3;\n  }",
               "span": {
-                "start": 407,
-                "end": 453
+                "start": 416,
+                "end": 462
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "refunded@186",
+                  "binding": "refunded@195",
                   "operator": "=",
                   "span": {
-                    "start": 413,
-                    "end": 448
+                    "start": 422,
+                    "end": 457
                   },
                   "target": {
-                    "start": 413,
-                    "end": 427
+                    "start": 422,
+                    "end": 436
                   },
                   "value": {
-                    "start": 430,
-                    "end": 448
+                    "start": 439,
+                    "end": 457
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "refunded@186",
+                  "binding": "refunded@195",
                   "span": {
-                    "start": 430,
-                    "end": 444
+                    "start": 439,
+                    "end": 453
                   }
                 }
               ]
             },
             "span": {
-              "start": 404,
-              "end": 453
+              "start": 413,
+              "end": 462
             }
           },
           "span": {
-            "start": 389,
-            "end": 453
+            "start": 398,
+            "end": 462
           }
         }
       ],
@@ -212,37 +212,37 @@
                 "value": {
                   "code": "`${total.value} after ${refunded.value} refunded`",
                   "span": {
-                    "start": 491,
-                    "end": 540
+                    "start": 500,
+                    "end": 549
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "total@213",
+                      "binding": "total@222",
                       "span": {
-                        "start": 494,
-                        "end": 505
+                        "start": 503,
+                        "end": 514
                       }
                     },
                     {
                       "kind": "Binding",
-                      "binding": "refunded@186",
+                      "binding": "refunded@195",
                       "span": {
-                        "start": 515,
-                        "end": 529
+                        "start": 524,
+                        "end": 538
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 490,
-                  "end": 541
+                  "start": 499,
+                  "end": 550
                 }
               }
             ],
             "span": {
-              "start": 482,
-              "end": 550
+              "start": 491,
+              "end": 559
             }
           },
           {
@@ -254,8 +254,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 565,
-                  "end": 578
+                  "start": 574,
+                  "end": 587
                 }
               },
               {
@@ -263,15 +263,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "refund@398",
+                  "binding": "refund@407",
                   "span": {
-                    "start": 588,
-                    "end": 594
+                    "start": 597,
+                    "end": 603
                   }
                 },
                 "span": {
-                  "start": 579,
-                  "end": 595
+                  "start": 588,
+                  "end": 604
                 }
               }
             ],
@@ -280,20 +280,20 @@
                 "kind": "Text",
                 "value": "Refund",
                 "span": {
-                  "start": 596,
-                  "end": 618
+                  "start": 605,
+                  "end": 627
                 }
               }
             ],
             "span": {
-              "start": 557,
-              "end": 627
+              "start": 566,
+              "end": 636
             }
           }
         ],
         "span": {
-          "start": 470,
-          "end": 638
+          "start": 479,
+          "end": 647
         }
       }
     }
@@ -304,8 +304,8 @@
       "name": "default",
       "local": "InvoiceTotal",
       "span": {
-        "start": 106,
-        "end": 645
+        "start": 115,
+        "end": 654
       }
     }
   ],
@@ -315,8 +315,8 @@
       "exported": true,
       "code": "interface InvoiceTotalProps {\n  quantity: number;\n}",
       "span": {
-        "start": 53,
-        "end": 104
+        "start": 62,
+        "end": 113
       }
     }
   ]

@@ -1,11 +1,11 @@
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 
-import type { Toolchain } from "@unframework/codegen";
+import type { Toolchain } from "@unframework.dev/codegen";
 import {
   lintWithEslint,
   lintWithOxlint,
   mergeLintResults,
-} from "@unframework/codegen/toolchain-node";
+} from "@unframework.dev/codegen/toolchain-node";
 import type { UserConfig } from "vite";
 
 import { frameworkCompile, frameworkEmit } from "./framework-compile.ts";
@@ -31,8 +31,8 @@ export const toolchain: Toolchain = {
       ...(mode === "browser" ? { optimizeDeps: { include: ["vue"] } } : {}),
     };
   },
-  client: "@unframework/target-vue/toolchain/client",
-  server: "@unframework/target-vue/toolchain/server",
+  client: "@unframework.dev/target-vue/toolchain/client",
+  server: "@unframework.dev/target-vue/toolchain/server",
   frameworkCompile,
   frameworkEmit,
   typecheck,

@@ -2,10 +2,10 @@
 // the server, so a value is the value itself: a `ref`'s and a `computed`'s `count.value` is
 // `count`, which the frontmatter declares as a constant. Everything else is spelled as written,
 // but for the names the compiled component already declares in the frontmatter's scope.
-import { NameScope, sourceNames } from "@unframework/codegen";
-import type { RewriteRules } from "@unframework/codegen";
-import { RESERVED_PROP_NAMES } from "@unframework/ir";
-import type { Binding, BindingId, UfComponent, UfModule } from "@unframework/ir";
+import { NameScope, sourceNames } from "@unframework.dev/codegen";
+import type { RewriteRules } from "@unframework.dev/codegen";
+import { RESERVED_PROP_NAMES } from "@unframework.dev/ir";
+import type { Binding, BindingId, UfComponent, UfModule } from "@unframework.dev/ir";
 
 /**
  * Names the compiled component already gives a meaning in the frontmatter's scope: the global

@@ -1,13 +1,13 @@
 // Layer 2 of §5.6 (ADR-0055's UF3035 to UF3039): what a parent's compile checks against a
 // child's API, with the name it may mean, and the fixes, which recompile clean.
-import { parseModule } from "@unframework/parser";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { analyze } from "../src/index.ts";
 import { applyAndRecheck, codes, problems, run } from "./helpers.ts";
 
 const API =
-  'import { defineEmits, defineModel, defineSlots, ref } from "unframework";\nimport type { Element } from "unframework";\n';
+  'import { defineEmits, defineModel, defineSlots, ref } from "@uxfront/unframework";\nimport type { Element } from "@uxfront/unframework";\n';
 
 const CHILD = `${API}
 function Field({ label, tone, size }: { label: string; tone?: "info" | "warning" | undefined; size?: 1 | 2 | 3 }) {

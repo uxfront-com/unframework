@@ -5,8 +5,8 @@
     {
       "name": "Mailbox",
       "span": {
-        "start": 171,
-        "end": 2434
+        "start": 180,
+        "end": 2443
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 160,
-              "end": 166
+              "start": 169,
+              "end": 175
             }
           },
-          "binding": "folder@205",
+          "binding": "folder@214",
           "span": {
-            "start": 152,
-            "end": 167
+            "start": 161,
+            "end": 176
           }
         }
       ],
@@ -31,25 +31,25 @@
         "type": {
           "code": "MailboxProps",
           "span": {
-            "start": 215,
-            "end": 227
+            "start": 224,
+            "end": 236
           }
         },
         "span": {
-          "start": 203,
-          "end": 227
+          "start": 212,
+          "end": 236
         }
       },
       "types": [
         "MailboxProps"
       ],
       "emits": {
-        "binding": "emit@239",
+        "binding": "emit@248",
         "type": {
           "code": "{\n    loaded: [name: string, unread: number];\n    progress: [status: string, attempts: number];\n    seen: [text: string];\n    noted: [text: string];\n  }",
           "span": {
-            "start": 258,
-            "end": 410
+            "start": 267,
+            "end": 419
           }
         },
         "events": [
@@ -61,13 +61,13 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 279,
-                    "end": 285
+                    "start": 288,
+                    "end": 294
                   }
                 },
                 "span": {
-                  "start": 273,
-                  "end": 285
+                  "start": 282,
+                  "end": 294
                 }
               },
               {
@@ -75,19 +75,19 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 295,
-                    "end": 301
+                    "start": 304,
+                    "end": 310
                   }
                 },
                 "span": {
-                  "start": 287,
-                  "end": 301
+                  "start": 296,
+                  "end": 310
                 }
               }
             ],
             "span": {
-              "start": 264,
-              "end": 302
+              "start": 273,
+              "end": 311
             }
           },
           {
@@ -98,13 +98,13 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 327,
-                    "end": 333
+                    "start": 336,
+                    "end": 342
                   }
                 },
                 "span": {
-                  "start": 319,
-                  "end": 333
+                  "start": 328,
+                  "end": 342
                 }
               },
               {
@@ -112,19 +112,19 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 345,
-                    "end": 351
+                    "start": 354,
+                    "end": 360
                   }
                 },
                 "span": {
-                  "start": 335,
-                  "end": 351
+                  "start": 344,
+                  "end": 360
                 }
               }
             ],
             "span": {
-              "start": 308,
-              "end": 352
+              "start": 317,
+              "end": 361
             }
           },
           {
@@ -135,19 +135,19 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 371,
-                    "end": 377
+                    "start": 380,
+                    "end": 386
                   }
                 },
                 "span": {
-                  "start": 365,
-                  "end": 377
+                  "start": 374,
+                  "end": 386
                 }
               }
             ],
             "span": {
-              "start": 358,
-              "end": 378
+              "start": 367,
+              "end": 387
             }
           },
           {
@@ -158,231 +158,231 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 398,
-                    "end": 404
+                    "start": 407,
+                    "end": 413
                   }
                 },
                 "span": {
-                  "start": 392,
-                  "end": 404
+                  "start": 401,
+                  "end": 413
                 }
               }
             ],
             "span": {
-              "start": 384,
-              "end": 405
+              "start": 393,
+              "end": 414
             }
           }
         ],
         "span": {
-          "start": 233,
-          "end": 414
+          "start": 242,
+          "end": 423
         }
       },
       "bindings": [
         {
-          "id": "folder@205",
+          "id": "folder@214",
           "name": "folder",
           "kind": "prop",
           "span": {
-            "start": 205,
-            "end": 211
+            "start": 214,
+            "end": 220
           }
         },
         {
-          "id": "emit@239",
+          "id": "emit@248",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 239,
-            "end": 243
+            "start": 248,
+            "end": 252
           }
         },
         {
-          "id": "name@424",
+          "id": "name@433",
           "name": "name",
           "kind": "state",
           "span": {
-            "start": 424,
-            "end": 428
+            "start": 433,
+            "end": 437
           }
         },
         {
-          "id": "unread@455",
+          "id": "unread@464",
           "name": "unread",
           "kind": "state",
           "span": {
-            "start": 455,
-            "end": 461
+            "start": 464,
+            "end": 470
           }
         },
         {
-          "id": "status@480",
+          "id": "status@489",
           "name": "status",
           "kind": "state",
           "span": {
-            "start": 480,
-            "end": 486
+            "start": 489,
+            "end": 495
           }
         },
         {
-          "id": "attempts@510",
+          "id": "attempts@519",
           "name": "attempts",
           "kind": "state",
           "span": {
-            "start": 510,
-            "end": 518
+            "start": 519,
+            "end": 527
           }
         },
         {
-          "id": "summary@537",
+          "id": "summary@546",
           "name": "summary",
           "kind": "state",
           "span": {
-            "start": 537,
-            "end": 544
+            "start": 546,
+            "end": 553
           }
         },
         {
-          "id": "timer@573",
+          "id": "timer@582",
           "name": "timer",
           "kind": "localVar",
           "span": {
-            "start": 573,
-            "end": 578
+            "start": 582,
+            "end": 587
           }
         },
         {
-          "id": "save@1301",
+          "id": "save@1310",
           "name": "save",
           "kind": "localFn",
           "span": {
-            "start": 1301,
-            "end": 1305
+            "start": 1310,
+            "end": 1314
           }
         },
         {
-          "id": "refreshEverySecond@1476",
+          "id": "refreshEverySecond@1485",
           "name": "refreshEverySecond",
           "kind": "localFn",
           "span": {
-            "start": 1476,
-            "end": 1494
+            "start": 1485,
+            "end": 1503
           }
         },
         {
-          "id": "markAllRead@1656",
+          "id": "markAllRead@1665",
           "name": "markAllRead",
           "kind": "localFn",
           "span": {
-            "start": 1656,
-            "end": 1667
+            "start": 1665,
+            "end": 1676
           }
         },
         {
-          "id": "note@1789",
+          "id": "note@1798",
           "name": "note",
           "kind": "localFn",
           "span": {
-            "start": 1789,
-            "end": 1793
+            "start": 1798,
+            "end": 1802
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "name@424",
+          "binding": "name@433",
           "initial": {
             "code": "\"Loading\"",
             "span": {
-              "start": 435,
-              "end": 444
+              "start": 444,
+              "end": 453
             },
             "refs": []
           },
           "span": {
-            "start": 418,
-            "end": 446
+            "start": 427,
+            "end": 455
           }
         },
         {
           "kind": "State",
-          "binding": "unread@455",
+          "binding": "unread@464",
           "initial": {
             "code": "0",
             "span": {
-              "start": 468,
-              "end": 469
+              "start": 477,
+              "end": 478
             },
             "refs": []
           },
           "span": {
-            "start": 449,
-            "end": 471
+            "start": 458,
+            "end": 480
           }
         },
         {
           "kind": "State",
-          "binding": "status@480",
+          "binding": "status@489",
           "initial": {
             "code": "\"idle\"",
             "span": {
-              "start": 493,
-              "end": 499
+              "start": 502,
+              "end": 508
             },
             "refs": []
           },
           "span": {
-            "start": 474,
-            "end": 501
+            "start": 483,
+            "end": 510
           }
         },
         {
           "kind": "State",
-          "binding": "attempts@510",
+          "binding": "attempts@519",
           "initial": {
             "code": "0",
             "span": {
-              "start": 525,
-              "end": 526
+              "start": 534,
+              "end": 535
             },
             "refs": []
           },
           "span": {
-            "start": 504,
-            "end": 528
+            "start": 513,
+            "end": 537
           }
         },
         {
           "kind": "State",
-          "binding": "summary@537",
+          "binding": "summary@546",
           "initial": {
             "code": "\"No messages\"",
             "span": {
-              "start": 551,
-              "end": 564
+              "start": 560,
+              "end": 573
             },
             "refs": []
           },
           "span": {
-            "start": 531,
-            "end": 566
+            "start": 540,
+            "end": 575
           }
         },
         {
           "kind": "Variable",
-          "binding": "timer@573",
+          "binding": "timer@582",
           "type": {
             "code": "ReturnType<typeof setInterval> | undefined",
             "span": {
-              "start": 580,
-              "end": 622
+              "start": 589,
+              "end": 631
             }
           },
           "span": {
-            "start": 569,
-            "end": 623
+            "start": 578,
+            "end": 632
           }
         },
         {
@@ -390,18 +390,18 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "name@424",
+              "binding": "name@433",
               "span": {
-                "start": 634,
-                "end": 638
+                "start": 643,
+                "end": 647
               }
             },
             {
               "kind": "Ref",
-              "binding": "unread@455",
+              "binding": "unread@464",
               "span": {
-                "start": 640,
-                "end": 646
+                "start": 649,
+                "end": 655
               }
             }
           ],
@@ -416,52 +416,52 @@
                     "nextUnread"
                   ],
                   "span": {
-                    "start": 650,
-                    "end": 672
+                    "start": 659,
+                    "end": 681
                   }
                 },
                 "span": {
-                  "start": 650,
-                  "end": 672
+                  "start": 659,
+                  "end": 681
                 }
               }
             ],
             "body": {
               "code": "{\n    emit(\"loaded\", nextName, nextUnread);\n  }",
               "span": {
-                "start": 677,
-                "end": 724
+                "start": 686,
+                "end": 733
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@239",
+                  "binding": "emit@248",
                   "event": "loaded",
                   "span": {
-                    "start": 683,
-                    "end": 719
+                    "start": 692,
+                    "end": 728
                   },
                   "arguments": [
                     {
-                      "start": 698,
-                      "end": 706
+                      "start": 707,
+                      "end": 715
                     },
                     {
-                      "start": 708,
-                      "end": 718
+                      "start": 717,
+                      "end": 727
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 649,
-              "end": 724
+              "start": 658,
+              "end": 733
             }
           },
           "span": {
-            "start": 627,
-            "end": 726
+            "start": 636,
+            "end": 735
           }
         },
         {
@@ -469,18 +469,18 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "status@480",
+              "binding": "status@489",
               "span": {
-                "start": 737,
-                "end": 743
+                "start": 746,
+                "end": 752
               }
             },
             {
               "kind": "Ref",
-              "binding": "attempts@510",
+              "binding": "attempts@519",
               "span": {
-                "start": 745,
-                "end": 753
+                "start": 754,
+                "end": 762
               }
             }
           ],
@@ -495,52 +495,52 @@
                     "nextAttempts"
                   ],
                   "span": {
-                    "start": 757,
-                    "end": 783
+                    "start": 766,
+                    "end": 792
                   }
                 },
                 "span": {
-                  "start": 757,
-                  "end": 783
+                  "start": 766,
+                  "end": 792
                 }
               }
             ],
             "body": {
               "code": "{\n    emit(\"progress\", nextStatus, nextAttempts);\n  }",
               "span": {
-                "start": 788,
-                "end": 841
+                "start": 797,
+                "end": 850
               },
               "refs": [
                 {
                   "kind": "Emit",
-                  "binding": "emit@239",
+                  "binding": "emit@248",
                   "event": "progress",
                   "span": {
-                    "start": 794,
-                    "end": 836
+                    "start": 803,
+                    "end": 845
                   },
                   "arguments": [
                     {
-                      "start": 811,
-                      "end": 821
+                      "start": 820,
+                      "end": 830
                     },
                     {
-                      "start": 823,
-                      "end": 835
+                      "start": 832,
+                      "end": 844
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 756,
-              "end": 841
+              "start": 765,
+              "end": 850
             }
           },
           "span": {
-            "start": 730,
-            "end": 843
+            "start": 739,
+            "end": 852
           }
         },
         {
@@ -548,10 +548,10 @@
           "sources": [
             {
               "kind": "Ref",
-              "binding": "unread@455",
+              "binding": "unread@464",
               "span": {
-                "start": 853,
-                "end": 859
+                "start": 862,
+                "end": 868
               }
             }
           ],
@@ -561,53 +561,53 @@
               {
                 "name": "value",
                 "span": {
-                  "start": 868,
-                  "end": 873
+                  "start": 877,
+                  "end": 882
                 }
               }
             ],
             "body": {
               "code": "{\n    const text = await Promise.resolve(`${value} unread`);\n    summary.value = text;\n  }",
               "span": {
-                "start": 878,
-                "end": 968
+                "start": 887,
+                "end": 977
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "Promise",
                   "span": {
-                    "start": 903,
-                    "end": 910
+                    "start": 912,
+                    "end": 919
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "summary@537",
+                  "binding": "summary@546",
                   "operator": "=",
                   "span": {
-                    "start": 943,
-                    "end": 963
+                    "start": 952,
+                    "end": 972
                   },
                   "target": {
-                    "start": 943,
-                    "end": 956
+                    "start": 952,
+                    "end": 965
                   },
                   "value": {
-                    "start": 959,
-                    "end": 963
+                    "start": 968,
+                    "end": 972
                   }
                 }
               ]
             },
             "span": {
-              "start": 861,
-              "end": 968
+              "start": 870,
+              "end": 977
             }
           },
           "span": {
-            "start": 847,
-            "end": 970
+            "start": 856,
+            "end": 979
           }
         },
         {
@@ -618,59 +618,59 @@
             "body": {
               "code": "{\n    const text = `${status.value} after ${attempts.value}`;\n    await Promise.resolve();\n    emit(\"seen\", text);\n  }",
               "span": {
-                "start": 998,
-                "end": 1116
+                "start": 1007,
+                "end": 1125
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "status@480",
+                  "binding": "status@489",
                   "span": {
-                    "start": 1020,
-                    "end": 1032
+                    "start": 1029,
+                    "end": 1041
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "attempts@510",
+                  "binding": "attempts@519",
                   "span": {
-                    "start": 1042,
-                    "end": 1056
+                    "start": 1051,
+                    "end": 1065
                   }
                 },
                 {
                   "kind": "Global",
                   "name": "Promise",
                   "span": {
-                    "start": 1070,
-                    "end": 1077
+                    "start": 1079,
+                    "end": 1086
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@239",
+                  "binding": "emit@248",
                   "event": "seen",
                   "span": {
-                    "start": 1093,
-                    "end": 1111
+                    "start": 1102,
+                    "end": 1120
                   },
                   "arguments": [
                     {
-                      "start": 1106,
-                      "end": 1110
+                      "start": 1115,
+                      "end": 1119
                     }
                   ]
                 }
               ]
             },
             "span": {
-              "start": 986,
-              "end": 1116
+              "start": 995,
+              "end": 1125
             }
           },
           "span": {
-            "start": 974,
-            "end": 1118
+            "start": 983,
+            "end": 1127
           }
         },
         {
@@ -682,70 +682,70 @@
             "body": {
               "code": "{\n    await Promise.resolve();\n    name.value = folder;\n    unread.value = 3;\n  }",
               "span": {
-                "start": 1144,
-                "end": 1225
+                "start": 1153,
+                "end": 1234
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "Promise",
                   "span": {
-                    "start": 1156,
-                    "end": 1163
+                    "start": 1165,
+                    "end": 1172
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "name@424",
+                  "binding": "name@433",
                   "operator": "=",
                   "span": {
-                    "start": 1179,
-                    "end": 1198
+                    "start": 1188,
+                    "end": 1207
                   },
                   "target": {
-                    "start": 1179,
-                    "end": 1189
+                    "start": 1188,
+                    "end": 1198
                   },
                   "value": {
-                    "start": 1192,
-                    "end": 1198
+                    "start": 1201,
+                    "end": 1207
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "folder@205",
+                  "binding": "folder@214",
                   "span": {
-                    "start": 1192,
-                    "end": 1198
+                    "start": 1201,
+                    "end": 1207
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "unread@455",
+                  "binding": "unread@464",
                   "operator": "=",
                   "span": {
-                    "start": 1204,
-                    "end": 1220
+                    "start": 1213,
+                    "end": 1229
                   },
                   "target": {
-                    "start": 1204,
-                    "end": 1216
+                    "start": 1213,
+                    "end": 1225
                   },
                   "value": {
-                    "start": 1219,
-                    "end": 1220
+                    "start": 1228,
+                    "end": 1229
                   }
                 }
               ]
             },
             "span": {
-              "start": 1132,
-              "end": 1225
+              "start": 1141,
+              "end": 1234
             }
           },
           "span": {
-            "start": 1122,
-            "end": 1227
+            "start": 1131,
+            "end": 1236
           }
         },
         {
@@ -756,41 +756,41 @@
             "body": {
               "code": "{\n    clearInterval(timer);\n  }",
               "span": {
-                "start": 1249,
-                "end": 1280
+                "start": 1258,
+                "end": 1289
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "clearInterval",
                   "span": {
-                    "start": 1255,
-                    "end": 1268
+                    "start": 1264,
+                    "end": 1277
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "timer@573",
+                  "binding": "timer@582",
                   "span": {
-                    "start": 1269,
-                    "end": 1274
+                    "start": 1278,
+                    "end": 1283
                   }
                 }
               ]
             },
             "span": {
-              "start": 1243,
-              "end": 1280
+              "start": 1252,
+              "end": 1289
             }
           },
           "span": {
-            "start": 1231,
-            "end": 1282
+            "start": 1240,
+            "end": 1291
           }
         },
         {
           "kind": "Function",
-          "binding": "save@1301",
+          "binding": "save@1310",
           "form": "declaration",
           "function": {
             "async": true,
@@ -798,338 +798,338 @@
             "body": {
               "code": "{\n    const label = name.value.trim();\n    status.value = `saving ${label}`;\n    attempts.value += 1;\n    await nextTick();\n    status.value = \"saved\";\n  }",
               "span": {
-                "start": 1308,
-                "end": 1463
+                "start": 1317,
+                "end": 1472
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "name@424",
+                  "binding": "name@433",
                   "span": {
-                    "start": 1328,
-                    "end": 1338
+                    "start": 1337,
+                    "end": 1347
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "status@480",
+                  "binding": "status@489",
                   "operator": "=",
                   "span": {
-                    "start": 1351,
-                    "end": 1383
+                    "start": 1360,
+                    "end": 1392
                   },
                   "target": {
-                    "start": 1351,
-                    "end": 1363
+                    "start": 1360,
+                    "end": 1372
                   },
                   "value": {
-                    "start": 1366,
-                    "end": 1383
+                    "start": 1375,
+                    "end": 1392
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "attempts@510",
+                  "binding": "attempts@519",
                   "operator": "+=",
                   "span": {
-                    "start": 1389,
-                    "end": 1408
+                    "start": 1398,
+                    "end": 1417
                   },
                   "target": {
-                    "start": 1389,
-                    "end": 1403
+                    "start": 1398,
+                    "end": 1412
                   },
                   "value": {
-                    "start": 1407,
-                    "end": 1408
+                    "start": 1416,
+                    "end": 1417
                   }
                 },
                 {
                   "kind": "Api",
                   "api": "nextTick",
                   "span": {
-                    "start": 1420,
-                    "end": 1428
+                    "start": 1429,
+                    "end": 1437
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "status@480",
+                  "binding": "status@489",
                   "operator": "=",
                   "span": {
-                    "start": 1436,
-                    "end": 1458
+                    "start": 1445,
+                    "end": 1467
                   },
                   "target": {
-                    "start": 1436,
-                    "end": 1448
+                    "start": 1445,
+                    "end": 1457
                   },
                   "value": {
-                    "start": 1451,
-                    "end": 1458
+                    "start": 1460,
+                    "end": 1467
                   }
                 }
               ]
             },
             "span": {
-              "start": 1305,
-              "end": 1463
+              "start": 1314,
+              "end": 1472
             }
           },
           "span": {
-            "start": 1286,
-            "end": 1463
+            "start": 1295,
+            "end": 1472
           }
         },
         {
           "kind": "Function",
-          "binding": "refreshEverySecond@1476",
+          "binding": "refreshEverySecond@1485",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    clearInterval(timer);\n    timer = setInterval(() => {\n      name.value = `${folder} (refreshed)`;\n      unread.value += 1;\n    }, 1000);\n  }",
               "span": {
-                "start": 1497,
-                "end": 1643
+                "start": 1506,
+                "end": 1652
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "clearInterval",
                   "span": {
-                    "start": 1503,
-                    "end": 1516
+                    "start": 1512,
+                    "end": 1525
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "timer@573",
+                  "binding": "timer@582",
                   "span": {
-                    "start": 1517,
-                    "end": 1522
+                    "start": 1526,
+                    "end": 1531
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "timer@573",
+                  "binding": "timer@582",
                   "operator": "=",
                   "span": {
-                    "start": 1529,
-                    "end": 1638
+                    "start": 1538,
+                    "end": 1647
                   },
                   "target": {
-                    "start": 1529,
-                    "end": 1534
+                    "start": 1538,
+                    "end": 1543
                   },
                   "value": {
-                    "start": 1537,
-                    "end": 1638
+                    "start": 1546,
+                    "end": 1647
                   }
                 },
                 {
                   "kind": "Global",
                   "name": "setInterval",
                   "span": {
-                    "start": 1537,
-                    "end": 1548
+                    "start": 1546,
+                    "end": 1557
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "name@424",
+                  "binding": "name@433",
                   "operator": "=",
                   "span": {
-                    "start": 1563,
-                    "end": 1599
+                    "start": 1572,
+                    "end": 1608
                   },
                   "target": {
-                    "start": 1563,
-                    "end": 1573
+                    "start": 1572,
+                    "end": 1582
                   },
                   "value": {
-                    "start": 1576,
-                    "end": 1599
+                    "start": 1585,
+                    "end": 1608
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "folder@205",
+                  "binding": "folder@214",
                   "span": {
-                    "start": 1579,
-                    "end": 1585
+                    "start": 1588,
+                    "end": 1594
                   },
                   "later": true
                 },
                 {
                   "kind": "Write",
-                  "binding": "unread@455",
+                  "binding": "unread@464",
                   "operator": "+=",
                   "span": {
-                    "start": 1607,
-                    "end": 1624
+                    "start": 1616,
+                    "end": 1633
                   },
                   "target": {
-                    "start": 1607,
-                    "end": 1619
+                    "start": 1616,
+                    "end": 1628
                   },
                   "value": {
-                    "start": 1623,
-                    "end": 1624
+                    "start": 1632,
+                    "end": 1633
                   }
                 }
               ]
             },
             "span": {
-              "start": 1494,
-              "end": 1643
+              "start": 1503,
+              "end": 1652
             }
           },
           "span": {
-            "start": 1467,
-            "end": 1643
+            "start": 1476,
+            "end": 1652
           }
         },
         {
           "kind": "Function",
-          "binding": "markAllRead@1656",
+          "binding": "markAllRead@1665",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    queueMicrotask(() => {\n      unread.value = 0;\n      name.value = `${folder}, all read`;\n    });\n  }",
               "span": {
-                "start": 1670,
-                "end": 1776
+                "start": 1679,
+                "end": 1785
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "queueMicrotask",
                   "span": {
-                    "start": 1676,
-                    "end": 1690
+                    "start": 1685,
+                    "end": 1699
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "unread@455",
+                  "binding": "unread@464",
                   "operator": "=",
                   "span": {
-                    "start": 1705,
-                    "end": 1721
+                    "start": 1714,
+                    "end": 1730
                   },
                   "target": {
-                    "start": 1705,
-                    "end": 1717
+                    "start": 1714,
+                    "end": 1726
                   },
                   "value": {
-                    "start": 1720,
-                    "end": 1721
+                    "start": 1729,
+                    "end": 1730
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "name@424",
+                  "binding": "name@433",
                   "operator": "=",
                   "span": {
-                    "start": 1729,
-                    "end": 1763
+                    "start": 1738,
+                    "end": 1772
                   },
                   "target": {
-                    "start": 1729,
-                    "end": 1739
+                    "start": 1738,
+                    "end": 1748
                   },
                   "value": {
-                    "start": 1742,
-                    "end": 1763
+                    "start": 1751,
+                    "end": 1772
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "folder@205",
+                  "binding": "folder@214",
                   "span": {
-                    "start": 1745,
-                    "end": 1751
+                    "start": 1754,
+                    "end": 1760
                   },
                   "later": true
                 }
               ]
             },
             "span": {
-              "start": 1667,
-              "end": 1776
+              "start": 1676,
+              "end": 1785
             }
           },
           "span": {
-            "start": 1647,
-            "end": 1776
+            "start": 1656,
+            "end": 1785
           }
         },
         {
           "kind": "Function",
-          "binding": "note@1789",
+          "binding": "note@1798",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    void Promise.resolve().then(() => {\n      emit(\"noted\", `${name.value}: ${unread.value}`);\n    });\n  }",
               "span": {
-                "start": 1796,
-                "end": 1904
+                "start": 1805,
+                "end": 1913
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "Promise",
                   "span": {
-                    "start": 1807,
-                    "end": 1814
+                    "start": 1816,
+                    "end": 1823
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@239",
+                  "binding": "emit@248",
                   "event": "noted",
                   "span": {
-                    "start": 1844,
-                    "end": 1891
+                    "start": 1853,
+                    "end": 1900
                   },
                   "arguments": [
                     {
-                      "start": 1858,
-                      "end": 1890
+                      "start": 1867,
+                      "end": 1899
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "name@424",
+                  "binding": "name@433",
                   "span": {
-                    "start": 1861,
-                    "end": 1871
+                    "start": 1870,
+                    "end": 1880
                   },
                   "later": true
                 },
                 {
                   "kind": "Binding",
-                  "binding": "unread@455",
+                  "binding": "unread@464",
                   "span": {
-                    "start": 1876,
-                    "end": 1888
+                    "start": 1885,
+                    "end": 1897
                   },
                   "later": true
                 }
               ]
             },
             "span": {
-              "start": 1793,
-              "end": 1904
+              "start": 1802,
+              "end": 1913
             }
           },
           "span": {
-            "start": 1780,
-            "end": 1904
+            "start": 1789,
+            "end": 1913
           }
         }
       ],
@@ -1142,8 +1142,8 @@
             "name": "class",
             "value": "mailbox",
             "span": {
-              "start": 1930,
-              "end": 1945
+              "start": 1939,
+              "end": 1954
             }
           },
           {
@@ -1151,8 +1151,8 @@
             "name": "aria-label",
             "value": "Mailbox",
             "span": {
-              "start": 1946,
-              "end": 1966
+              "start": 1955,
+              "end": 1975
             }
           }
         ],
@@ -1167,29 +1167,29 @@
                 "value": {
                   "code": "name.value",
                   "span": {
-                    "start": 1979,
-                    "end": 1989
+                    "start": 1988,
+                    "end": 1998
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "name@424",
+                      "binding": "name@433",
                       "span": {
-                        "start": 1979,
-                        "end": 1989
+                        "start": 1988,
+                        "end": 1998
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 1978,
-                  "end": 1990
+                  "start": 1987,
+                  "end": 1999
                 }
               }
             ],
             "span": {
-              "start": 1974,
-              "end": 1995
+              "start": 1983,
+              "end": 2004
             }
           },
           {
@@ -1201,8 +1201,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 2005,
-                  "end": 2018
+                  "start": 2014,
+                  "end": 2027
                 }
               }
             ],
@@ -1212,29 +1212,29 @@
                 "value": {
                   "code": "summary.value",
                   "span": {
-                    "start": 2020,
-                    "end": 2033
+                    "start": 2029,
+                    "end": 2042
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "summary@537",
+                      "binding": "summary@546",
                       "span": {
-                        "start": 2020,
-                        "end": 2033
+                        "start": 2029,
+                        "end": 2042
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 2019,
-                  "end": 2034
+                  "start": 2028,
+                  "end": 2043
                 }
               }
             ],
             "span": {
-              "start": 2002,
-              "end": 2038
+              "start": 2011,
+              "end": 2047
             }
           },
           {
@@ -1246,8 +1246,8 @@
                 "kind": "Text",
                 "value": "Status: ",
                 "span": {
-                  "start": 2048,
-                  "end": 2056
+                  "start": 2057,
+                  "end": 2065
                 }
               },
               {
@@ -1255,29 +1255,29 @@
                 "value": {
                   "code": "status.value",
                   "span": {
-                    "start": 2057,
-                    "end": 2069
+                    "start": 2066,
+                    "end": 2078
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "status@480",
+                      "binding": "status@489",
                       "span": {
-                        "start": 2057,
-                        "end": 2069
+                        "start": 2066,
+                        "end": 2078
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 2056,
-                  "end": 2070
+                  "start": 2065,
+                  "end": 2079
                 }
               }
             ],
             "span": {
-              "start": 2045,
-              "end": 2074
+              "start": 2054,
+              "end": 2083
             }
           },
           {
@@ -1289,8 +1289,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 2089,
-                  "end": 2102
+                  "start": 2098,
+                  "end": 2111
                 }
               },
               {
@@ -1298,15 +1298,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "save@1301",
+                  "binding": "save@1310",
                   "span": {
-                    "start": 2112,
-                    "end": 2116
+                    "start": 2121,
+                    "end": 2125
                   }
                 },
                 "span": {
-                  "start": 2103,
-                  "end": 2117
+                  "start": 2112,
+                  "end": 2126
                 }
               }
             ],
@@ -1315,14 +1315,14 @@
                 "kind": "Text",
                 "value": "Save",
                 "span": {
-                  "start": 2118,
-                  "end": 2138
+                  "start": 2127,
+                  "end": 2147
                 }
               }
             ],
             "span": {
-              "start": 2081,
-              "end": 2147
+              "start": 2090,
+              "end": 2156
             }
           },
           {
@@ -1334,8 +1334,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 2162,
-                  "end": 2175
+                  "start": 2171,
+                  "end": 2184
                 }
               },
               {
@@ -1343,15 +1343,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "refreshEverySecond@1476",
+                  "binding": "refreshEverySecond@1485",
                   "span": {
-                    "start": 2185,
-                    "end": 2203
+                    "start": 2194,
+                    "end": 2212
                   }
                 },
                 "span": {
-                  "start": 2176,
-                  "end": 2204
+                  "start": 2185,
+                  "end": 2213
                 }
               }
             ],
@@ -1360,14 +1360,14 @@
                 "kind": "Text",
                 "value": "Refresh every second",
                 "span": {
-                  "start": 2205,
-                  "end": 2241
+                  "start": 2214,
+                  "end": 2250
                 }
               }
             ],
             "span": {
-              "start": 2154,
-              "end": 2250
+              "start": 2163,
+              "end": 2259
             }
           },
           {
@@ -1379,8 +1379,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 2265,
-                  "end": 2278
+                  "start": 2274,
+                  "end": 2287
                 }
               },
               {
@@ -1388,15 +1388,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "markAllRead@1656",
+                  "binding": "markAllRead@1665",
                   "span": {
-                    "start": 2288,
-                    "end": 2299
+                    "start": 2297,
+                    "end": 2308
                   }
                 },
                 "span": {
-                  "start": 2279,
-                  "end": 2300
+                  "start": 2288,
+                  "end": 2309
                 }
               }
             ],
@@ -1405,14 +1405,14 @@
                 "kind": "Text",
                 "value": "Mark all read",
                 "span": {
-                  "start": 2301,
-                  "end": 2330
+                  "start": 2310,
+                  "end": 2339
                 }
               }
             ],
             "span": {
-              "start": 2257,
-              "end": 2339
+              "start": 2266,
+              "end": 2348
             }
           },
           {
@@ -1424,8 +1424,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 2354,
-                  "end": 2367
+                  "start": 2363,
+                  "end": 2376
                 }
               },
               {
@@ -1433,15 +1433,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "note@1789",
+                  "binding": "note@1798",
                   "span": {
-                    "start": 2377,
-                    "end": 2381
+                    "start": 2386,
+                    "end": 2390
                   }
                 },
                 "span": {
-                  "start": 2368,
-                  "end": 2382
+                  "start": 2377,
+                  "end": 2391
                 }
               }
             ],
@@ -1450,20 +1450,20 @@
                 "kind": "Text",
                 "value": "Note",
                 "span": {
-                  "start": 2383,
-                  "end": 2403
+                  "start": 2392,
+                  "end": 2412
                 }
               }
             ],
             "span": {
-              "start": 2346,
-              "end": 2412
+              "start": 2355,
+              "end": 2421
             }
           }
         ],
         "span": {
-          "start": 1921,
-          "end": 2427
+          "start": 1930,
+          "end": 2436
         }
       }
     }
@@ -1474,8 +1474,8 @@
       "name": "default",
       "local": "Mailbox",
       "span": {
-        "start": 171,
-        "end": 2434
+        "start": 180,
+        "end": 2443
       }
     }
   ],
@@ -1485,8 +1485,8 @@
       "exported": true,
       "code": "interface MailboxProps {\n  folder: string;\n}",
       "span": {
-        "start": 125,
-        "end": 169
+        "start": 134,
+        "end": 178
       }
     }
   ]

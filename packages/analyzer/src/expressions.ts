@@ -11,7 +11,7 @@
 // - client: a handler, a watcher's callback, `watchEffect`, a lifecycle hook or a setup
 //   function: statements, writes of state as statements of their own, emits and `nextTick`.
 
-import type { Fix } from "@unframework/diagnostics";
+import type { Fix } from "@unframework.dev/diagnostics";
 import {
   ALLOWED_GLOBALS,
   ANGULAR_KEYWORDS,
@@ -43,7 +43,7 @@ import {
   PORTABLE_EVENT_MEMBERS,
   PURE_GLOBALS,
   WINDOW_MEMBER_GLOBALS,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Code,
   CodeReference,
@@ -55,9 +55,9 @@ import type {
   Parameter,
   Reference,
   Span,
-} from "@unframework/ir";
-import type { AST } from "@unframework/parser";
-import { visitorKeys } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
+import { visitorKeys } from "@unframework.dev/parser";
 
 import {
   arrowBodySpan,
@@ -6115,7 +6115,7 @@ function callbackParameters(method: string, element: Kinds): Kinds[] {
  * imports, one starting with `$`, as the variables Angular's `@for` declares (`$index`), or one
  * starting with `_`, as Vue's compiled code declares (`_ctx`); or a name Angular's template
  * expressions read as a keyword (`as`). The names besides the component's are
- * `reservedParameterName`'s in `@unframework/ir`, which `checkInvariants` reads too. Returns
+ * `reservedParameterName`'s in `@unframework.dev/ir`, which `checkInvariants` reads too. Returns
  * whether it does.
  */
 export function shadowing(parameter: AST.BindingIdentifier, context: RenderContext): boolean {

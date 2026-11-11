@@ -13,8 +13,8 @@ import {
   DOM_EVENTS,
   extendsEventInterface,
   PORTABLE_EVENT_INTERFACES,
-} from "@unframework/ir";
-import type { EventAttribute } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { EventAttribute } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import {

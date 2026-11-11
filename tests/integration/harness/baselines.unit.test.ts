@@ -21,7 +21,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { BASELINE_ENVIRONMENT, KEBAB_CASE } from "@unframework/testing/node";
+import { BASELINE_ENVIRONMENT, KEBAB_CASE } from "@unframework.dev/testing/node";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { REPO_ROOT, ROOT } from "./paths.ts";

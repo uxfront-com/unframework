@@ -1,4 +1,4 @@
-import type { Attribute, RenderNode, UfModule } from "@unframework/ir";
+import type { Attribute, RenderNode, UfModule } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { enumeratedProblem } from "../src/enumerated.ts";

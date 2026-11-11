@@ -4,8 +4,8 @@
 // event through an output of its selector's name: `<div (ufClickCapture)="record()">`. Being a
 // directive, it listens on every element it matches, inside `@if` and `@for` blocks too, and
 // stops listening when its element goes.
-import { exportDeclaration, js, printExpression } from "@unframework/codegen";
-import type { ImportSet, Placeholders } from "@unframework/codegen";
+import { exportDeclaration, js, printExpression } from "@unframework.dev/codegen";
+import type { ImportSet, Placeholders } from "@unframework.dev/codegen";
 
 /** A directive that listens to one event with one option. */
 export interface DirectiveSpec {

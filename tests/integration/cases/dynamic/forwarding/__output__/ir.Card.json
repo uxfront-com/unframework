@@ -5,18 +5,18 @@
     {
       "name": "Card",
       "span": {
-        "start": 88,
-        "end": 273
+        "start": 106,
+        "end": 291
       },
       "props": [],
       "types": [],
       "slots": {
-        "binding": "slots@129",
+        "binding": "slots@147",
         "type": {
           "code": "{ title?(): Element }",
           "span": {
-            "start": 149,
-            "end": 170
+            "start": 167,
+            "end": 188
           }
         },
         "slots": [
@@ -24,24 +24,24 @@
             "name": "title",
             "optional": true,
             "span": {
-              "start": 151,
-              "end": 168
+              "start": 169,
+              "end": 186
             }
           }
         ],
         "span": {
-          "start": 123,
-          "end": 174
+          "start": 141,
+          "end": 192
         }
       },
       "bindings": [
         {
-          "id": "slots@129",
+          "id": "slots@147",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 129,
-            "end": 134
+            "start": 147,
+            "end": 152
           }
         }
       ],
@@ -55,8 +55,8 @@
             "name": "class",
             "value": "card",
             "span": {
-              "start": 195,
-              "end": 207
+              "start": 213,
+              "end": 225
             }
           }
         ],
@@ -74,26 +74,26 @@
                     "kind": "Text",
                     "value": "Untitled",
                     "span": {
-                      "start": 239,
-                      "end": 249
+                      "start": 257,
+                      "end": 267
                     }
                   }
                 ],
                 "span": {
-                  "start": 219,
-                  "end": 250
+                  "start": 237,
+                  "end": 268
                 }
               }
             ],
             "span": {
-              "start": 215,
-              "end": 255
+              "start": 233,
+              "end": 273
             }
           }
         ],
         "span": {
-          "start": 190,
-          "end": 266
+          "start": 208,
+          "end": 284
         }
       }
     }
@@ -104,8 +104,8 @@
       "name": "default",
       "local": "Card",
       "span": {
-        "start": 88,
-        "end": 273
+        "start": 106,
+        "end": 291
       }
     }
   ],

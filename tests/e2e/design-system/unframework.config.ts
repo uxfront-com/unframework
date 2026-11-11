@@ -1,4 +1,4 @@
-import { defineConfig } from "unframework/config";
+import { defineConfig } from "@uxfront/unframework/config";
 
 export default defineConfig({
   targets: ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"],

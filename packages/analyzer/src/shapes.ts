@@ -3,11 +3,11 @@
 // writes where an API is declared, before it analyses, as it asks its resolver for each child's
 // API (ADR-0053), and hands the shapes to `analyze`.
 
-import type { Span } from "@unframework/ir";
-import { visitorKeys } from "@unframework/parser";
-import type { AST, ParsedModule } from "@unframework/parser";
-import { localShapes } from "@unframework/type-oracle";
-import type { ShapeQuery, TypeShape } from "@unframework/type-oracle";
+import type { Span } from "@unframework.dev/ir";
+import { visitorKeys } from "@unframework.dev/parser";
+import type { AST, ParsedModule } from "@unframework.dev/parser";
+import { localShapes } from "@unframework.dev/type-oracle";
+import type { ShapeQuery, TypeShape } from "@unframework.dev/type-oracle";
 
 import { isAuthoringModule } from "./frameworks.ts";
 

@@ -2,8 +2,8 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { relative } from "node:path";
 
-import { createSyntacticOracle, printShape } from "@unframework/type-oracle";
-import type { ShapeQuery, Span, TypeOracle, TypeShape } from "@unframework/type-oracle";
+import { createSyntacticOracle, printShape } from "@unframework.dev/type-oracle";
+import type { ShapeQuery, Span, TypeOracle, TypeShape } from "@unframework.dev/type-oracle";
 import type { Node, SourceFile, TypeNode } from "typescript/unstable/ast";
 import { isTypeNode } from "typescript/unstable/ast/is";
 import { API } from "typescript/unstable/sync";

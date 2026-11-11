@@ -1,7 +1,7 @@
 // bindings/class-string: a string expression as a class, beside a static name, alone and in a
 // template literal. Its whitespace separates names; an empty string or null adds none, and a
 // class without names is the same as no class attribute (ADR-0044).
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import Banner from "./Banner.uf.tsx";

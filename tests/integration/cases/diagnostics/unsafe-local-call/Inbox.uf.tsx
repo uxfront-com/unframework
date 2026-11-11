@@ -1,7 +1,7 @@
 // UF2024 unsafe-local-call: `markRead` writes state and is called inside a `forEach` callback;
 // Qwik's output calls a local function as a QRL, asynchronously, which a callback cannot await.
 // Call it directly in the handler's body, or write the state once.
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export interface InboxProps {
   initial: string[];

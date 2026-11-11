@@ -1,6 +1,6 @@
 // expose/several: a counter exposes `increment` and `reset` (ADR-0054), and its parent drives
 // it through a component ref.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Controls from "./Controls.uf.tsx";

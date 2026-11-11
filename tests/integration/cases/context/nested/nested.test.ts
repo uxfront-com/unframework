@@ -1,7 +1,7 @@
 // context/nested: a component that injects a key and provides it again reads its parent's value
 // (`inject` comes first, ADR-0054), so nested providers count the depth: the inner provider wins
 // for its descendants, and siblings read the same parent.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Outline from "./Outline.uf.tsx";

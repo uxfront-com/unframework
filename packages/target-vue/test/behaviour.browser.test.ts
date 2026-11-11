@@ -2,7 +2,7 @@
 // for ./behaviour-sources.ts, compiled by @vitejs/plugin-vue and mounted by the toolchain's
 // adapter, keep the semantics contract the corpus relies on Vue, the reference, to define. Each
 // test also fails on any warning or error Vue logs.
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 

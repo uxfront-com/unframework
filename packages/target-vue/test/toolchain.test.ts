@@ -16,8 +16,8 @@ describe("vue toolchain", () => {
   });
 
   it("names its runtime adapters by their package subpaths", async () => {
-    expect(toolchain.client).toBe("@unframework/target-vue/toolchain/client");
-    expect(toolchain.server).toBe("@unframework/target-vue/toolchain/server");
+    expect(toolchain.client).toBe("@unframework.dev/target-vue/toolchain/client");
+    expect(toolchain.server).toBe("@unframework.dev/target-vue/toolchain/server");
     expect(await import(toolchain.client)).toHaveProperty("mount", expect.any(Function));
     expect(await import(toolchain.server)).toHaveProperty("renderToString", expect.any(Function));
   });

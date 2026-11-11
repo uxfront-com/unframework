@@ -1,4 +1,4 @@
-import { defineEmits, ref } from "unframework";
+import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function NoteEditor() {
   const emit = defineEmits<{ saved: [title: string, bold: boolean] }>();

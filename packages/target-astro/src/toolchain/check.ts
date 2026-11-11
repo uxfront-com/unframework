@@ -6,13 +6,13 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { ToolchainContext, ToolchainMessage } from "@unframework/codegen";
+import type { ToolchainContext, ToolchainMessage } from "@unframework.dev/codegen";
 import {
   assertFilesToCheck,
   diagnosticsByFile,
   resolveInstalled,
-} from "@unframework/codegen/toolchain-node";
-import type { DiagnosticsByFile } from "@unframework/codegen/toolchain-node";
+} from "@unframework.dev/codegen/toolchain-node";
+import type { DiagnosticsByFile } from "@unframework.dev/codegen/toolchain-node";
 
 /** The part of `@astrojs/language-server` the check uses (its `AstroCheck` class). */
 interface LanguageServer {

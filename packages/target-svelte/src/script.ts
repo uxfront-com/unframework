@@ -33,9 +33,9 @@ import {
   typeExportsCode,
   typeNames,
   typeSpecifier,
-} from "@unframework/codegen";
-import type { MarkupOptions, RewriteRules } from "@unframework/codegen";
-import { codeOf, expressionsOf, functionsOf, walk } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { MarkupOptions, RewriteRules } from "@unframework.dev/codegen";
+import { codeOf, expressionsOf, functionsOf, walk } from "@unframework.dev/ir";
 import type {
   Binding,
   BindingId,
@@ -68,7 +68,7 @@ import type {
   WatchEffectItem,
   WatchItem,
   WatchSource,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { functionRanges, readsName, visit } from "./ast.ts";
 import {

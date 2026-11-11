@@ -6,8 +6,8 @@ import { mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { buildPartialMatrix, runName, stringifyMatrix } from "@unframework/testing/node";
-import type { LayerName, ProjectRecord, Shard } from "@unframework/testing/node";
+import { buildPartialMatrix, runName, stringifyMatrix } from "@unframework.dev/testing/node";
+import type { LayerName, ProjectRecord, Shard } from "@unframework.dev/testing/node";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { parityJob, runSummary } from "../scripts/summary.ts";

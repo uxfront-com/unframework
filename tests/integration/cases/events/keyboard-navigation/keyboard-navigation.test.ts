@@ -8,7 +8,7 @@
 // top of a listener or alone under an `if` there, so the tests of the `switch` and the `if`
 // block require `conditional-event-control`; events/control-only-listeners pins the bare
 // controls where Qwik runs them.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import CityPicker from "./CityPicker.uf.tsx";

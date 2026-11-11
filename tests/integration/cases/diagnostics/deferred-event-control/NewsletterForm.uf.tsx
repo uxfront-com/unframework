@@ -1,6 +1,6 @@
 // UF3033 deferred-event-control: `preventDefault()` after an `await` runs once the browser has
 // already submitted the form; call it first, at the top of the handler.
-import { nextTick, ref } from "unframework";
+import { nextTick, ref } from "@uxfront/unframework";
 
 export default function NewsletterForm() {
   const sending = ref(false);

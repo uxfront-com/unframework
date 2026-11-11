@@ -1,5 +1,5 @@
 {
-  "name": "@unframework/target-vue",
+  "name": "@unframework.dev/target-vue",
   "version": "0.0.0",
   "private": true,
   "description": "The Vue 3.5 target of the Unframework compiler: emits idiomatic Vue components from the portable IR, declares their capabilities, and provides the toolchain the tests use.",
@@ -56,8 +56,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@unframework/codegen": "workspace:*",
-    "@unframework/ir": "workspace:*"
+    "@unframework.dev/codegen": "workspace:*",
+    "@unframework.dev/ir": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

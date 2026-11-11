@@ -1,4 +1,4 @@
-import { defineEmits, ref } from "unframework";
+import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function StarRating() {
   const emit = defineEmits<{

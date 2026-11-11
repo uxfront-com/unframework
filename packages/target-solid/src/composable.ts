@@ -28,16 +28,16 @@ import {
   sourceNames,
   typeNames,
   typeSpecifier,
-} from "@unframework/codegen";
-import type { CodeKind, EmitContext, OutputFile } from "@unframework/codegen";
-import { codeOf } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { CodeKind, EmitContext, OutputFile } from "@unframework.dev/codegen";
+import { codeOf } from "@unframework.dev/ir";
 import type {
   TypeDeclaration,
   TypeText,
   UfComponent,
   UfComposable,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { SolidComposition } from "./composition.ts";
 import { typeParameterDeclaration } from "./generics.ts";

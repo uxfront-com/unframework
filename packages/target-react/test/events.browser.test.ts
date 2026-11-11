@@ -4,7 +4,7 @@
 // `interact` is flushed when it resolves; and an update an async handler makes after `act` has
 // ended renders without React reporting it, because the adapter declares the act environment
 // only around its own `act` calls.
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { createElement, useState } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";

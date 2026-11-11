@@ -24,9 +24,9 @@ export default defineConfig({
       },
     },
     {
-      // A corpus spec uses the public API of @unframework/testing and nothing else, as a
+      // A corpus spec uses the public API of @unframework.dev/testing and nothing else, as a
       // project's own specs do (ADR-0085): its root entry, never a subpath, no other
-      // @unframework package, and nothing of the harness's. `ignorePatterns` keeps this rule
+      // @unframework.dev package, and nothing of the harness's. `ignorePatterns` keeps this rule
       // off diagnostics/, which holds no spec. oxlint merges a rule's `group` patterns into one
       // list, so a negated group would let the subpaths through, and its regular expressions
       // have no lookahead: the subpath pattern is a regular expression, and only the package
@@ -38,21 +38,21 @@ export default defineConfig({
           {
             patterns: [
               {
-                regex: "^@unframework/testing/",
+                regex: "^@unframework\\.dev/testing/",
                 message:
-                  "A spec imports the public API from the root of @unframework/testing; its subpaths are the harness's (ADR-0085).",
+                  "A spec imports the public API from the root of @unframework.dev/testing; its subpaths are the harness's (ADR-0085).",
               },
               {
-                group: ["@unframework/*", "!@unframework/testing"],
+                group: ["@unframework.dev/*", "!@unframework.dev/testing"],
                 message:
-                  "A spec imports @unframework/testing and the case's own sources, no other @unframework package (ADR-0085).",
+                  "A spec imports @unframework.dev/testing and the case's own sources, no other @unframework.dev package (ADR-0085).",
               },
               {
                 // A `harness`, `scripts` or `packages` segment anywhere in a relative path: the
                 // harness's code, or a package's source reached around its entries.
                 regex: "^\\.\\.?/(.*/)?(harness|scripts|packages)(/|$)",
                 message:
-                  "A spec never imports the harness's code or a package's source by path: use the public API of @unframework/testing (ADR-0085).",
+                  "A spec never imports the harness's code or a package's source by path: use the public API of @unframework.dev/testing (ADR-0085).",
               },
             ],
           },

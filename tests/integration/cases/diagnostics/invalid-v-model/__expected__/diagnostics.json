@@ -7,12 +7,12 @@
     "start": {
       "line": 8,
       "column": 27,
-      "offset": 305
+      "offset": 314
     },
     "end": {
       "line": 8,
       "column": 65,
-      "offset": 343
+      "offset": 352
     },
     "target": "astro"
   },
@@ -24,12 +24,12 @@
     "start": {
       "line": 18,
       "column": 15,
-      "offset": 514
+      "offset": 523
     },
     "end": {
       "line": 18,
       "column": 22,
-      "offset": 521
+      "offset": 530
     },
     "help": "Write `v-model:picked`.",
     "fixes": [
@@ -39,8 +39,8 @@
         "edits": [
           {
             "span": {
-              "start": 514,
-              "end": 521
+              "start": 523,
+              "end": 530
             },
             "text": "v-model:picked"
           }

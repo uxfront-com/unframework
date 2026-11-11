@@ -1,7 +1,7 @@
 // composables/use-toggle: a component calls a composable from a `.uf.ts` module, reads the ref
 // it returns and calls the functions it returns from its listeners (ADR-0069). The composable's
 // value parameter seeds its state once.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Disclosure from "./Disclosure.uf.tsx";

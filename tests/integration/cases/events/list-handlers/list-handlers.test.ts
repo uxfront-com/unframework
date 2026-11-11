@@ -2,7 +2,7 @@
 // function. After a removal, a row's index is its new position. The selection lives in a ref of
 // its own, and no row is replaced or reordered while focus is in the list (semantics contract,
 // keyed lists).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ContactList from "./ContactList.uf.tsx";

@@ -1,4 +1,4 @@
-import { useTemplateRef } from "unframework";
+import { useTemplateRef } from "@uxfront/unframework";
 
 import SearchField from "./SearchField.uf.tsx";
 

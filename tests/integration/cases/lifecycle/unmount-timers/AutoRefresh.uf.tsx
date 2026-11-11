@@ -1,4 +1,4 @@
-import { defineEmits, onUnmounted, ref } from "unframework";
+import { defineEmits, onUnmounted, ref } from "@uxfront/unframework";
 
 export interface AutoRefreshProps {
   /** Milliseconds between two refreshes. */

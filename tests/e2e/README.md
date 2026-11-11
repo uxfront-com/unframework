@@ -7,9 +7,9 @@ This suite shows that what we publish works in a real app. Each app under `apps/
 From the repository root, prepare the apps and then run the specs:
 
 ```sh
-pnpm --filter @unframework/e2e prepare-apps
-pnpm --filter @unframework/e2e e2e
-pnpm --filter @unframework/e2e e2e -- --project 'vue:*'   # some projects only
+pnpm --filter @unframework.dev/e2e prepare-apps
+pnpm --filter @unframework.dev/e2e e2e
+pnpm --filter @unframework.dev/e2e e2e -- --project 'vue:*'   # some projects only
 ```
 
 Run `prepare-apps` again after you change a package or an app's files, because the specs run against the copies and not against `apps/`. A spec file under `e2e/` is the exception: Playwright reads it from `apps/`, so a change to one needs no new copy.
@@ -20,9 +20,9 @@ Outside CI, the root `pnpm install` also installs the Chromium that Playwright d
 
 It takes four steps:
 
-1. It builds `unframework` and `@unframework/unplugin` with what they depend on, then runs the design system's `pack:dist` script if it has one.
+1. It builds `@uxfront/unframework` and `@unframework.dev/unplugin` with what they depend on, then runs the design system's `pack:dist` script if it has one.
 2. It runs `pnpm pack` on them, on every workspace package they reach and on the design system, into `tests/e2e/.tarballs/`. The design system is packed from `design-system/dist/package` when that exists, and from its own directory otherwise.
-3. It replaces each copy at `<work>/<app>`. `<work>` is `$UF_E2E_WORK_DIR`, or `unframework-e2e` in the system's temporary directory. The copy's manifest gains the design system's tarball, plus `unframework` and `@unframework/unplugin` if the app has a plugin mode. Its `pnpm-workspace.yaml` holds an override for every tarball and the `allowBuilds` list, which makes the copy its own workspace root.
+3. It replaces each copy at `<work>/<app>`. `<work>` is `$UF_E2E_WORK_DIR`, or `unframework-e2e` in the system's temporary directory. The copy's manifest gains the design system's tarball, plus `@uxfront/unframework` and `@unframework.dev/unplugin` if the app has a plugin mode. Its `pnpm-workspace.yaml` holds an override for every tarball and the `allowBuilds` list, which makes the copy its own workspace root.
 4. It runs `pnpm install --prefer-offline` in the copy, and prints the copy's path.
 
 Step 2 also writes `.tarballs/packed.json`, which names each package's tarball. Two flags split the steps, so the packages can be built once and installed elsewhere:

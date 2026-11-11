@@ -1,4 +1,4 @@
-# @unframework/testing
+# @unframework.dev/testing
 
 The cross-target test API (plan §7.3, §8.5): one spec, written once, runs in every
 `browser:<target>` project and verifies the shared expectations layer by layer. It stays
@@ -7,7 +7,7 @@ The cross-target test API (plan §7.3, §8.5): one spec, written once, runs in e
 
 ```ts
 // cases/state/counter/counter.test.ts
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Counter from "./Counter.uf.tsx";
@@ -55,7 +55,7 @@ The subpaths are internal, for the harness and the test configuration, never for
 | `./node`      | The Node side: the browser commands, the write policy, the mode, the reporter and the summary                                                             |
 | `./normalize` | The normaliser                                                                                                                                            |
 
-## Browser (`@unframework/testing`)
+## Browser (`@unframework.dev/testing`)
 
 - **`mount(component, { props, clock? })`** mounts with the project's registered adapter into a
   `<div data-uf-root>` in the page's `<body>`, and returns a **`View`**: `container`, a `locator`
@@ -215,7 +215,7 @@ errors>` on every layer, and the summary excuses it on that target alone. A case
   current test, every matching message, whatever the pattern's flags), and
   **`registerTarget(target, mount, { events? })`** for the per-target setup files (`events`
   reads a stub component's declared events, which no compile reports).
-- **The mount contract** (`@unframework/codegen`'s toolchain types): `MountOptions.on` holds a
+- **The mount contract** (`@unframework.dev/codegen`'s toolchain types): `MountOptions.on` holds a
   listener per declared event, by the source's name, and `MountOptions.events` the events'
   payload shapes; each adapter passes the listeners as its framework's consumer would (React's
   and Solid's `onChange`, Vue's `onChange` beside the props, Svelte's `onchange`, Angular's
@@ -270,7 +270,7 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
 
 ## Setup files
 
-- **`@unframework/testing/setup`**, loaded first by every browser project: the bundled Inter font
+- **`@unframework.dev/testing/setup`**, loaded first by every browser project: the bundled Inter font
   as "UF Test Sans", the motion and caret reset, the startup assertions (DPR 1, reduced motion,
   and the case's colour scheme: `case.json`'s `colorScheme`, `light` by default, which the file
   emulates through `ufColorScheme` before anything mounts, ADR-0061), console capture recorded
@@ -295,10 +295,10 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
   frame away. After each test it fails L9 with the steps no `expectParity` compared, and resets
   the input for the next test (`ufResetInput`: the mouse to the frame's corner, the keys
   released, the focus blurred and the frame focused again). It registers the matchers above.
-- **`@unframework/testing/<target>`** (`react`, `vue`, `svelte`, `solid`, `angular`, `qwik`,
-  `astro`): registers `@unframework/target-<target>/toolchain/client`'s mount adapter.
+- **`@unframework.dev/testing/<target>`** (`react`, `vue`, `svelte`, `solid`, `angular`, `qwik`,
+  `astro`): registers `@unframework.dev/target-<target>/toolchain/client`'s mount adapter.
 
-## Node (`@unframework/testing/node`)
+## Node (`@unframework.dev/testing/node`)
 
 - **The write policy** (DESIGN §4.4), as plain functions every driver shares:
   `settleArtefact(path, actual, context)` and `settleArtefactDirectory(dir, files, context)`.
@@ -369,12 +369,12 @@ case)`); its projects run after the run's reference and before every other targe
   target skipped, by capability or for want of output, or ran against a stand-in, under its
   case's table.
 
-## Normalisation (`@unframework/testing/normalize`)
+## Normalisation (`@unframework.dev/testing/normalize`)
 
 `normalizeHtml(html, { target })` turns any target's HTML into one canonical text (plan §7.5).
 A `class` with no token and a `style` with no declaration go, and so does a declaration with an
 empty value; declarations are sorted by property unless the order of two of them decides what
-renders (`@unframework/ir`'s `cssPropertiesOverlap`: the same property, a shorthand and its
+renders (`@unframework.dev/ir`'s `cssPropertiesOverlap`: the same property, a shorthand and its
 longhand, a flow-relative longhand and a physical one), as frameworks disagree on these
 even with themselves (ADR-0044). Class tokens keep their duplicates: a doubled class means a
 broken merge. A boolean attribute's `="true"` is written empty on Qwik only, whose client writes

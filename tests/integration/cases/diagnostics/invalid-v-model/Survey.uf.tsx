@@ -1,6 +1,6 @@
 // UF3042 invalid-v-model: `v-model` on a component binds a model by its name; the safe fix names
 // the one model `Choice` declares.
-import { defineModel, ref } from "unframework";
+import { defineModel, ref } from "@uxfront/unframework";
 
 function Choice() {
   const picked = defineModel<string>("picked", { default: "" });

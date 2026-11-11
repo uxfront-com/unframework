@@ -1,4 +1,4 @@
-import { useId } from "unframework";
+import { useId } from "@uxfront/unframework";
 
 export interface EmailFieldProps {
   label: string;

@@ -11,14 +11,14 @@ import { fileURLToPath } from "node:url";
 export interface PackageTemplateOptions {
   /** The directory under packages/, e.g. `type-oracle`. */
   directory: string;
-  /** The npm name; defaults to `@unframework/<directory>`. */
+  /** The npm name; defaults to `@unframework.dev/<directory>`. */
   name?: string;
   description: string;
 }
 
 /** The files of a new package, by path relative to the package directory. */
 export function packageTemplate(options: PackageTemplateOptions): Record<string, string> {
-  const name = options.name ?? `@unframework/${options.directory}`;
+  const name = options.name ?? `@unframework.dev/${options.directory}`;
   const manifest = {
     name,
     version: "0.0.0",

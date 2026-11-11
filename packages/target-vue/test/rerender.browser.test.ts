@@ -3,7 +3,7 @@
 // branch and a list, and a prop the new props lack takes its default again. The adapter
 // settles before it resolves, so the DOM is read at once, and nothing is logged (Vue warns
 // about a missing required prop or one of the wrong type).
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { defineComponent, h } from "vue";
 import type { PropType } from "vue";

@@ -7,12 +7,12 @@
     "start": {
       "line": 24,
       "column": 35,
-      "offset": 675
+      "offset": 684
     },
     "end": {
       "line": 24,
       "column": 46,
-      "offset": 686
+      "offset": 695
     },
     "help": "Attach it to an element outside the list."
   }

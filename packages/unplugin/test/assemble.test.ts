@@ -1,6 +1,6 @@
 import { SourceMap } from "node:module";
 
-import type { OutputFile, SourceMapV3 } from "@unframework/codegen";
+import type { OutputFile, SourceMapV3 } from "@unframework.dev/codegen";
 import { describe, expect, it } from "vitest";
 
 import { assembleModule, joinModules } from "../src/assemble.ts";

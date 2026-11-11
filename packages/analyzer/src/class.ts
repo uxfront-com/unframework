@@ -3,15 +3,15 @@
 // rendered names are the union of the static names, the toggles whose condition holds and the
 // names each dynamic part holds, in no particular order.
 
-import type { Fix } from "@unframework/diagnostics";
+import type { Fix } from "@unframework.dev/diagnostics";
 import {
   createClassAttribute,
   createDynamicClass,
   createStaticClass,
   createToggleClass,
-} from "@unframework/ir";
-import type { ClassAttribute, ClassItem, Span } from "@unframework/ir";
-import type { AST } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { ClassAttribute, ClassItem, Span } from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
 
 import { checkExpression, span } from "./expressions.ts";
 import type { CheckedExpression } from "./expressions.ts";

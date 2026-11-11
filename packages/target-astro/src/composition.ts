@@ -6,7 +6,7 @@
 //   its bindings (a list's index), and the dialect writes no content for it;
 // - a `<textarea>`'s model as its text, and a `<select>`'s as `selected` on its options.
 // Astro renders once, on the server, so a model renders its initial state and nothing writes it.
-import { rewriteExpression, spreadStyleExpression } from "@unframework/codegen";
+import { rewriteExpression, spreadStyleExpression } from "@unframework.dev/codegen";
 import type {
   Attribute,
   ComponentAttribute,
@@ -22,7 +22,7 @@ import type {
   SlotFill,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { renderPropName, unreachable } from "./spelling.ts";
 import type { Spelling } from "./spelling.ts";

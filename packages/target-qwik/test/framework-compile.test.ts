@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import type { ToolchainFile } from "@unframework/codegen";
+import type { ToolchainFile } from "@unframework.dev/codegen";
 import { describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";

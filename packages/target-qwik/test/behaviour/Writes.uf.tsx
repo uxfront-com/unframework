@@ -1,4 +1,4 @@
-import { computed, defineEmits, ref } from "unframework";
+import { computed, defineEmits, ref } from "@uxfront/unframework";
 
 // Read after write (ADR-0046): in the same function, in a function it calls (a QRL, awaited), after
 // `await`, in a deferred callback, and in another listener of the same event.

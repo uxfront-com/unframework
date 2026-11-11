@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { compile, TARGET_NAMES } from "@unframework/compiler";
+import { compile, TARGET_NAMES } from "@unframework.dev/compiler";
 import { describe, expect, it } from "vitest";
 
 import type { CaseSource } from "./cases.ts";

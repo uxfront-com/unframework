@@ -1,7 +1,7 @@
 // context/fallback: `inject(LocaleKey, "en")` reads its fallback where no ancestor provides the
 // key, and the provided value where one does (ADR-0054). The provider passes its children on
 // through its default slot.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Page from "./Page.uf.tsx";

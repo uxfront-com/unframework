@@ -3,7 +3,7 @@
 // every form of value (ADR-0037), so `key={x}` gets its own diagnostics; listeners and
 // template refs are attributes of their own kinds, lowered apart (`./listeners.ts`).
 
-import type { DiagnosticCode, Fix } from "@unframework/diagnostics";
+import type { DiagnosticCode, Fix } from "@unframework.dev/diagnostics";
 import {
   ARIA_ATTRIBUTES,
   DOCUMENT_ATTRIBUTES,
@@ -18,8 +18,8 @@ import {
   UNRENDERED_ATTRIBUTES,
   UNSUPPORTED_EVENTS,
   WINDOW_EVENTS,
-} from "@unframework/ir";
-import type { Namespace } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { Namespace } from "@unframework.dev/ir";
 
 const words = (text: string): ReadonlySet<string> => new Set(text.trim().split(/\s+/));
 
@@ -168,7 +168,7 @@ export function nameProblem(
       help: "Remove it.",
     };
   }
-  // What the targets render differently (`@unframework/ir`'s portability facts), which
+  // What the targets render differently (`@unframework.dev/ir`'s portability facts), which
   // `checkInvariants` also rejects in a plugin's IR.
   const unrendered = UNRENDERED_ATTRIBUTES.get(name);
   if (unrendered) {

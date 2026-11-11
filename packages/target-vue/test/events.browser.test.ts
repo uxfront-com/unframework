@@ -1,7 +1,7 @@
 // The mount adapter's listeners in Chromium (ADR-0050): a hand-written Vue component that
 // declares its events, as the target emits one, reaches the test's `change` listener through the
 // `onChange` the adapter passes beside the props; a rerender, which replaces the props, keeps it.
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { defineComponent, h, ref } from "vue";

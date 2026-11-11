@@ -1,12 +1,12 @@
-# @unframework/unplugin
+# @unframework.dev/unplugin
 
 The Unframework bundler plugin (plan §8.2). An import of a `.uf.tsx` file compiles it to one
-framework's source with `compile()` from `@unframework/compiler`, under a module id that the
+framework's source with `compile()` from `@unframework.dev/compiler`, under a module id that the
 framework's own Vite plugin claims, and that plugin finishes the job.
 
 ```ts
 // vite.config.ts
-import unframework from "@unframework/unplugin/vite";
+import unframework from "@unframework.dev/unplugin/vite";
 import vue from "@vitejs/plugin-vue";
 
 export default {
@@ -188,7 +188,7 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
 - `moduleId`, `parseModuleId`, `componentId`, `parseComponentId` and `idSuffix` build and take
   these ids apart.
 - **The project** (ADR-0071). Every file compiles through one project graph (`createProject`, from
-  `@unframework/compiler`) at the project's root, shared by every module the plugin loads. Before
+  `@unframework.dev/compiler`) at the project's root, shared by every module the plugin loads. Before
   a load, the plugin compares each file the module reaches through the project's edges, and
   each file of a package it read types from, with what the project holds of it, and hands the
   changed ones to the project's `update` under every name it knows them by: relative to the
@@ -208,7 +208,7 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   importer's compile and resolves to the child's module id, or its component id on a markup
   target where it is not its file's main component.
 - **Types** (ADR-0067). The project reads types through one syntactic type oracle created at
-  the project's root (`createSyntacticOracle`, from `@unframework/compiler`): a props type may come from
+  the project's root (`createSyntacticOracle`, from `@unframework.dev/compiler`): a props type may come from
   another file or a package, and a child's API from its types' shapes. The oracle follows the
   source's imports, so it may read a TypeScript file outside the root.
 
@@ -392,7 +392,7 @@ component like any `.astro` one. It's the `./astro` entry, and it takes the plug
 
 ```ts
 // astro.config.mjs
-import unframework from "@unframework/unplugin/astro";
+import unframework from "@unframework.dev/unplugin/astro";
 import { defineConfig } from "astro/config";
 
 export default defineConfig({
@@ -409,7 +409,7 @@ import Hello from "../components/Hello.uf.tsx";
 ```
 
 `astro dev` and `astro build` both render the component, with its children and its stylesheet. The
-output is static, as `@unframework/target-astro` describes. The integration uses two of Astro's hooks:
+output is static, as `@unframework.dev/target-astro` describes. The integration uses two of Astro's hooks:
 
 - **`astro:config:setup`** adds the plugin. It also takes `.uf.tsx` files out of the dependency
   scan's entries: Astro's entries match every `.tsx` file under `src`, and the scan would read one

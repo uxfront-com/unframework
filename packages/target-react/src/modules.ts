@@ -11,10 +11,16 @@ import {
   parseExpressionSource,
   typeNames,
   typeSpecifier,
-} from "@unframework/codegen";
-import type { CodeKind, ImportSet } from "@unframework/codegen";
-import { codeOf, functionsOf } from "@unframework/ir";
-import type { BindingId, TypeDeclaration, TypeText, UfComponent, UfModule } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { CodeKind, ImportSet } from "@unframework.dev/codegen";
+import { codeOf, functionsOf } from "@unframework.dev/ir";
+import type {
+  BindingId,
+  TypeDeclaration,
+  TypeText,
+  UfComponent,
+  UfModule,
+} from "@unframework.dev/ir";
 
 /** What an owner's output declares of its module. */
 export interface ModuleReads {

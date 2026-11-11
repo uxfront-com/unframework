@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
-import { formatOutput } from "@unframework/codegen";
-import type { EmitContext } from "@unframework/codegen";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { EmitContext } from "@unframework.dev/codegen";
 import {
   createComponent,
   createElement,
@@ -9,8 +9,8 @@ import {
   createModule,
   createStaticAttribute,
   createText,
-} from "@unframework/ir";
-import type { ElementNode, RenderNode, UfExport } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { ElementNode, RenderNode, UfExport } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { QWIK_ATTRIBUTE_NAMES, QWIK_BOOLEAN_ATTRIBUTES } from "../src/attributes.ts";

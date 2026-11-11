@@ -5,18 +5,18 @@
     {
       "name": "Amber",
       "span": {
-        "start": 110,
-        "end": 256
+        "start": 128,
+        "end": 274
       },
       "props": [],
       "types": [],
       "slots": {
-        "binding": "slots@152",
+        "binding": "slots@170",
         "type": {
           "code": "{ default?(): Element }",
           "span": {
-            "start": 172,
-            "end": 195
+            "start": 190,
+            "end": 213
           }
         },
         "slots": [
@@ -24,24 +24,24 @@
             "name": "default",
             "optional": true,
             "span": {
-              "start": 174,
-              "end": 193
+              "start": 192,
+              "end": 211
             }
           }
         ],
         "span": {
-          "start": 146,
-          "end": 199
+          "start": 164,
+          "end": 217
         }
       },
       "bindings": [
         {
-          "id": "slots@152",
+          "id": "slots@170",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 152,
-            "end": 157
+            "start": 170,
+            "end": 175
           }
         }
       ],
@@ -55,8 +55,8 @@
             "name": "class",
             "value": "amber",
             "span": {
-              "start": 214,
-              "end": 227
+              "start": 232,
+              "end": 245
             }
           }
         ],
@@ -66,14 +66,14 @@
             "slot": "default",
             "fallback": [],
             "span": {
-              "start": 228,
-              "end": 247
+              "start": 246,
+              "end": 265
             }
           }
         ],
         "span": {
-          "start": 209,
-          "end": 253
+          "start": 227,
+          "end": 271
         }
       },
       "styles": [
@@ -95,8 +95,8 @@
       "name": "default",
       "local": "Amber",
       "span": {
-        "start": 110,
-        "end": 256
+        "start": 128,
+        "end": 274
       }
     }
   ],

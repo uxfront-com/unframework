@@ -2,7 +2,7 @@
 // two buttons, and `onKeydown={recordKey}` on two fields, whose annotated parameter receives the
 // keyboard event. `addTag(event: MouseEvent | KeyboardEvent)` is a button's click listener and is
 // called with the keyboard event by the tag field's Enter handler: a union of the events it takes.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import NoteEditor from "./NoteEditor.uf.tsx";

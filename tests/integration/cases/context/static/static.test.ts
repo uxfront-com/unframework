@@ -1,6 +1,6 @@
 // context/static: a parent provides a static object under an `InjectionKey` its module declares
 // and exports (ADR-0054), and a child imports the key and injects the object.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ThemeProvider from "./ThemeProvider.uf.tsx";

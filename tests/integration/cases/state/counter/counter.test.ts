@@ -1,6 +1,6 @@
 // state/counter: plan §4.1's Counter. A ref seeded from a prop, a computed over it, a handler
 // that writes by the step prop and emits the new value; the computed shows "Big" past ten.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Counter from "./Counter.uf.tsx";

@@ -1,6 +1,6 @@
 // dynamic/components: `<component is={compact.value ? Chip : Card}>` renders one of two
 // components (ADR-0054), passing both the prop they declare, and switches with the condition.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Tag from "./Tag.uf.tsx";

@@ -1,4 +1,4 @@
-import { defineEmits, nextTick, ref, useTemplateRef } from "unframework";
+import { defineEmits, nextTick, ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function ShippingDetails() {
   const emit = defineEmits<{ toggled: [items: number] }>();

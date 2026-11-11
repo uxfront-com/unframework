@@ -7,12 +7,12 @@
     "start": {
       "line": 9,
       "column": 6,
-      "offset": 293
+      "offset": 302
     },
     "end": {
       "line": 9,
       "column": 9,
-      "offset": 296
+      "offset": 305
     },
     "help": "Put the handler on a `<button>` or a form control, which every user can reach and activate; or give the element a role and the key handling and focus that role takes."
   },
@@ -24,12 +24,12 @@
     "start": {
       "line": 9,
       "column": 6,
-      "offset": 293
+      "offset": 302
     },
     "end": {
       "line": 9,
       "column": 9,
-      "offset": 296
+      "offset": 305
     },
     "help": "Put the handler on a `<button>` or a form control, which every user can reach and activate; or give the element a role and the key handling and focus that role takes."
   }

@@ -19,16 +19,16 @@ import {
   typeDeclarationCode,
   typeExportsCode,
   typeNames,
-} from "@unframework/codegen";
+} from "@unframework.dev/codegen";
 import type {
   EmitContext,
   ImportSet,
   OutputFile,
   RewriteRules,
   Target,
-} from "@unframework/codegen";
-import { codeOf, functionsOf, walk } from "@unframework/ir";
-import type { Span, TypeText, UfComponent, UfModule } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import { codeOf, functionsOf, walk } from "@unframework.dev/ir";
+import type { Span, TypeText, UfComponent, UfModule } from "@unframework.dev/ir";
 
 import { emitComposable } from "./composable.ts";
 import {

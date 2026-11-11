@@ -10,10 +10,10 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createOptimizer } from "@qwik.dev/optimizer";
-import { ImportSet, parseCodeSource } from "@unframework/codegen";
-import type { OutputFile } from "@unframework/codegen";
-import { createComposableParameter, createTypeText } from "@unframework/ir";
-import type { ComposableParameter, ComposableParameterKind } from "@unframework/ir";
+import { ImportSet, parseCodeSource } from "@unframework.dev/codegen";
+import type { OutputFile } from "@unframework.dev/codegen";
+import { createComposableParameter, createTypeText } from "@unframework.dev/ir";
+import type { ComposableParameter, ComposableParameterKind } from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { compileComposableCases } from "../../codegen/test/composable-cases.ts";
@@ -168,7 +168,7 @@ describe("qwik composable forms", () => {
     "keeps a returned function that reads nothing of the hook a `$()` QRL",
     { timeout: 60_000 },
     async () => {
-      const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+      const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 export function useProbe() {
   const count = ref(0);
@@ -190,7 +190,7 @@ export function useProbe() {
     { timeout: 60_000 },
     async () => {
       const { errors, outputs } =
-        await compileProbe(`import { ref, watch, watchEffect } from "unframework";
+        await compileProbe(`import { ref, watch, watchEffect } from "@uxfront/unframework";
 
 export function useProbe(price: () => number, limit?: () => number) {
   const last = ref(0);
@@ -223,7 +223,7 @@ export function useProbe(price: () => number, limit?: () => number) {
     "floats a statement call of a callback that returns a promise, and awaits one whose value is used",
     { timeout: 60_000 },
     async () => {
-      const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+      const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 export function useProbe(onSave: (count: number) => Promise<void>, accept: (count: number) => boolean) {
   const count = ref(0);
@@ -243,7 +243,7 @@ export function useProbe(onSave: (count: number) => Promise<void>, accept: (coun
   );
 
   it("reports a getter passed on or kept other than by a call, and emits nothing", async () => {
-    const { errors, outputs } = await compileProbe(`import { computed } from "unframework";
+    const { errors, outputs } = await compileProbe(`import { computed } from "@uxfront/unframework";
 
 export function useProbe(price: () => number) {
   function apply(get: () => number) {
@@ -263,7 +263,7 @@ export function useProbe(price: () => number) {
   });
 
   it("reports a callback passed on or called in a function of the code's own", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+    const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 export function useProbe(accept: (value: number) => boolean, compare: (a: number, b: number) => number) {
   const list = ref([3, 1, 2]);
@@ -284,7 +284,7 @@ export function useProbe(accept: (value: number) => boolean, compare: (a: number
   });
 
   it("reports a value whose type holds a function where a `$` scope captures it", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+    const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 interface Formats {
   label: string;
@@ -308,7 +308,8 @@ export function useProbe(options: { format: (value: number) => string }, named: 
   });
 
   it("reports a `const` that takes a function-holding value or a part of it, where a `$` scope captures it", async () => {
-    const { errors, outputs } = await compileProbe(`import { computed, ref } from "unframework";
+    const { errors, outputs } =
+      await compileProbe(`import { computed, ref } from "@uxfront/unframework";
 
 export function useProbe(options: { step: number; format: (value: number) => string }) {
   const count = ref(0);
@@ -334,7 +335,7 @@ export function useProbe(options: { step: number; format: (value: number) => str
     "judges a `const` by the types its value reads: a member that holds no function is free",
     { timeout: 60_000 },
     async () => {
-      const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+      const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 interface Base {
   format(value: number): string;
@@ -364,7 +365,7 @@ export function useProbe(options: Options) {
   );
 
   it("judges a `const` by a call's declared return type, a function's `bind` and an array's copies", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+    const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 export function useProbe(options: {
   make: () => (value: number) => string;
@@ -395,7 +396,7 @@ export function useProbe(options: {
     "reads a primitive's methods and a function's `name` as free, and an array's callback by what it returns",
     { timeout: 60_000 },
     async () => {
-      const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+      const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 export function useProbe(options: {
   name: string;
@@ -426,7 +427,7 @@ export function useProbe(options: {
   );
 
   it("reads a value the written types give no type by what it reads", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+    const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 export function useProbe(options: {
   format: (value: number) => string;
@@ -460,7 +461,7 @@ export function useProbe(options: {
   });
 
   it("reads a value the written types don't type exactly by what its code reads", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+    const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 type Format = (value: number) => string;
 
@@ -521,7 +522,7 @@ export function useProbe(options: {
     "reads through an optional array, the utility types and a substituted generic to a free member",
     { timeout: 60_000 },
     async () => {
-      const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+      const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 type Format = (value: number) => string;
 
@@ -551,7 +552,7 @@ export function useProbe(
   );
 
   it("reports a `let` whose initial value holds a function, since it is a signal", async () => {
-    const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+    const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 export function useProbe(options: { format: (value: number) => string; step: number }) {
   const count = ref(0);
@@ -571,7 +572,7 @@ export function useProbe(options: { format: (value: number) => string; step: num
   });
 
   it("reports a value whose type inherits a function from an interface the module extends", async () => {
-    const { errors, outputs } = await compileProbe(`import { computed } from "unframework";
+    const { errors, outputs } = await compileProbe(`import { computed } from "@uxfront/unframework";
 
 interface Base {
   format(value: number): string;
@@ -597,7 +598,8 @@ export function useProbe(options: Options) {
     "tests whether an optional getter or callback was passed, as the source does",
     { timeout: 60_000 },
     async () => {
-      const { errors, outputs } = await compileProbe(`import { computed, ref } from "unframework";
+      const { errors, outputs } =
+        await compileProbe(`import { computed, ref } from "@uxfront/unframework";
 
 export function useProbe(
   price: () => number,
@@ -632,7 +634,7 @@ export function useProbe(
     "declares a module's constant a composable reads beside the hook",
     { timeout: 60_000 },
     async () => {
-      const { errors, outputs } = await compileProbe(`import { ref } from "unframework";
+      const { errors, outputs } = await compileProbe(`import { ref } from "@uxfront/unframework";
 
 const STEP = 2;
 
@@ -740,7 +742,7 @@ async function compileProject(files: Record<string, string>) {
 }
 
 /** A composable that takes a callback, as the pending `callback-argument` case's does. */
-const USE_COUNTER = `import { ref } from "unframework";
+const USE_COUNTER = `import { ref } from "@uxfront/unframework";
 
 export function useCounter(limit: number, onLimit: (count: number) => void) {
   const count = ref(0);
@@ -756,7 +758,7 @@ export function useCounter(limit: number, onLimit: (count: number) => void) {
 `;
 
 /** A composable with state, a derived value, a constant, a function and an async function. */
-const USE_BITS = `import { computed, ref } from "unframework";
+const USE_BITS = `import { computed, ref } from "@uxfront/unframework";
 
 export function useBits(start: number) {
   const count = ref(start);
@@ -849,7 +851,7 @@ export default function Probe() {
   it("reports a returned function the template or a getter calls (UF1002), and emits nothing", async () => {
     const project = await compileProject({
       "/project/useBits.uf.ts": USE_BITS,
-      "/project/Probe.uf.tsx": `import { computed } from "unframework";
+      "/project/Probe.uf.tsx": `import { computed } from "@uxfront/unframework";
 
 import { useBits } from "./useBits.uf.ts";
 
@@ -877,8 +879,8 @@ export default function Probe() {
   it("reports a returned function each other site of render code calls (UF1002)", async () => {
     const project = await compileProject({
       "/project/useBits.uf.ts": USE_BITS,
-      "/project/Probe.uf.tsx": `import { provide, ref, watch } from "unframework";
-import type { InjectionKey } from "unframework";
+      "/project/Probe.uf.tsx": `import { provide, ref, watch } from "@uxfront/unframework";
+import type { InjectionKey } from "@uxfront/unframework";
 
 import { useBits } from "./useBits.uf.ts";
 
@@ -901,7 +903,7 @@ export default function Probe() {
   );
 }
 `,
-      "/project/Reader.uf.tsx": `import { inject } from "unframework";
+      "/project/Reader.uf.tsx": `import { inject } from "@uxfront/unframework";
 
 import { NameKey } from "./Probe.uf.tsx";
 import { useBits } from "./useBits.uf.ts";
@@ -922,7 +924,7 @@ export default function Reader() {
 
   it("reports a returned function a named slot's fill calls, since the fill renders (UF1002)", async () => {
     const project = await compileProject({
-      "/project/useName.uf.ts": `import { ref } from "unframework";
+      "/project/useName.uf.ts": `import { ref } from "@uxfront/unframework";
 
 export function useName() {
   const n = ref("Ada");
@@ -932,8 +934,8 @@ export function useName() {
   return { n, label };
 }
 `,
-      "/project/Card.uf.tsx": `import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+      "/project/Card.uf.tsx": `import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export default function Card() {
   const slots = defineSlots<{ title?(): Element }>();
@@ -1039,7 +1041,7 @@ export default function Probe() {
     async () => {
       const project = await compileProject({
         "/project/useCounter.uf.ts": USE_COUNTER,
-        "/project/Probe.uf.tsx": `import { ref } from "unframework";
+        "/project/Probe.uf.tsx": `import { ref } from "@uxfront/unframework";
 
 import { useCounter } from "./useCounter.uf.ts";
 
@@ -1092,7 +1094,7 @@ export default function Probe() {
     async ({ how, callback, relay, read }) => {
       const project = await compileProject({
         "/project/useCounter.uf.ts": USE_COUNTER,
-        "/project/Probe.uf.tsx": `import { ref } from "unframework";
+        "/project/Probe.uf.tsx": `import { ref } from "@uxfront/unframework";
 
 import { useCounter } from "./useCounter.uf.ts";
 
@@ -1242,7 +1244,7 @@ export default function Pair() {
     async () => {
       const project = await compileProject({
         "/project/units.ts": 'export type Unit = "km" | "mi";\n',
-        "/project/Gauge.uf.tsx": `import { ref } from "unframework";
+        "/project/Gauge.uf.tsx": `import { ref } from "@uxfront/unframework";
 
 import type { Unit } from "./units";
 

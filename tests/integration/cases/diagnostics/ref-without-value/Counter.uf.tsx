@@ -1,6 +1,6 @@
 // UF3026 ref-without-value: `{count}` renders the ref, not its value; the safe fix reads
 // `count.value`.
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export default function Counter() {
   const count = ref(0);

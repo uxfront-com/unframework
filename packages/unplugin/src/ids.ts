@@ -3,9 +3,9 @@
 // the module by extension and compiles the code the unframework plugin returns from `load`.
 import { posix } from "node:path";
 
-import type { Target } from "@unframework/codegen";
-import { builtinTargets, TARGET_NAMES } from "@unframework/compiler";
-import type { TargetName } from "@unframework/compiler";
+import type { Target } from "@unframework.dev/codegen";
+import { builtinTargets, TARGET_NAMES } from "@unframework.dev/compiler";
+import type { TargetName } from "@unframework.dev/compiler";
 
 /** The extension of an authored component file. */
 export const SOURCE_EXTENSION = ".uf.tsx";
@@ -107,7 +107,7 @@ export function parseComposableId(id: string, suffix: string): ModuleRequest | u
  * The prefix of the id a `.uf.tsx` import resolves to during Vite's dependency scan. The
  * scanner reads whatever id it gets from disk with its own loaders, so a module id that only
  * `load` can produce fails the whole scan, and the authored file would expose its compile-time
- * imports (`unframework`, or a rejected framework import) as dependencies to pre-bundle. The
+ * imports (`@uxfront/unframework`, or a rejected framework import) as dependencies to pre-bundle. The
  * scanner externalises ids that contain `\0` and never loads them. Each target's toolchain
  * lists the runtime imports of its compiled output in `optimizeDeps.include` instead.
  */

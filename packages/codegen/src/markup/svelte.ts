@@ -2,8 +2,8 @@
 // blocks, one `class={[…]}` (clsx), `style:` directives, `on<event>` listener attributes and
 // `bind:this`. Svelte parses balanced JavaScript in `{…}`, braces in strings and comments
 // included, so expression code is printed as written.
-import { HTML_ELEMENTS } from "@unframework/ir";
-import type { Attribute, ComponentAttribute, ElementNode } from "@unframework/ir";
+import { HTML_ELEMENTS } from "@unframework.dev/ir";
+import type { Attribute, ComponentAttribute, ElementNode } from "@unframework.dev/ir";
 
 import {
   escapeBraces,

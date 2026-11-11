@@ -5,7 +5,7 @@
 // read at once, and nothing is logged. Written with `jsx()`: the package compiles no JSX of its
 // own outside the render-parity modules and the ssr fixtures.
 import { component$, jsx } from "@qwik.dev/core";
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { mount } from "../src/toolchain/client.ts";

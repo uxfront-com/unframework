@@ -16,7 +16,7 @@
 // compiles the case and the L3 entry goes (ADR-0068, amending ADR-0050).
 import { dirname, resolve } from "node:path";
 
-import type { QuarantineEntry } from "@unframework/testing/node";
+import type { QuarantineEntry } from "@unframework.dev/testing/node";
 import type { Plugin } from "vite";
 
 import { errorState, expectedDiagnostics } from "./cases.ts";

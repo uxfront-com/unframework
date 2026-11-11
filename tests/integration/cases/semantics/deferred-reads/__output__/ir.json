@@ -5,8 +5,8 @@
     {
       "name": "DeleteFile",
       "span": {
-        "start": 107,
-        "end": 1219
+        "start": 116,
+        "end": 1228
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 96,
-              "end": 102
+              "start": 105,
+              "end": 111
             }
           },
-          "binding": "fileName@144",
+          "binding": "fileName@153",
           "span": {
-            "start": 86,
-            "end": 103
+            "start": 95,
+            "end": 112
           }
         }
       ],
@@ -31,25 +31,25 @@
         "type": {
           "code": "DeleteFileProps",
           "span": {
-            "start": 156,
-            "end": 171
+            "start": 165,
+            "end": 180
           }
         },
         "span": {
-          "start": 142,
-          "end": 171
+          "start": 151,
+          "end": 180
         }
       },
       "types": [
         "DeleteFileProps"
       ],
       "emits": {
-        "binding": "emit@183",
+        "binding": "emit@192",
         "type": {
           "code": "{ deleted: [fileName: string, copies: number] }",
           "span": {
-            "start": 202,
-            "end": 249
+            "start": 211,
+            "end": 258
           }
         },
         "events": [
@@ -61,13 +61,13 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 224,
-                    "end": 230
+                    "start": 233,
+                    "end": 239
                   }
                 },
                 "span": {
-                  "start": 214,
-                  "end": 230
+                  "start": 223,
+                  "end": 239
                 }
               },
               {
@@ -75,152 +75,152 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 240,
-                    "end": 246
+                    "start": 249,
+                    "end": 255
                   }
                 },
                 "span": {
-                  "start": 232,
-                  "end": 246
+                  "start": 241,
+                  "end": 255
                 }
               }
             ],
             "span": {
-              "start": 204,
-              "end": 247
+              "start": 213,
+              "end": 256
             }
           }
         ],
         "span": {
-          "start": 177,
-          "end": 253
+          "start": 186,
+          "end": 262
         }
       },
       "bindings": [
         {
-          "id": "fileName@144",
+          "id": "fileName@153",
           "name": "fileName",
           "kind": "prop",
           "span": {
-            "start": 144,
-            "end": 152
+            "start": 153,
+            "end": 161
           }
         },
         {
-          "id": "emit@183",
+          "id": "emit@192",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 183,
-            "end": 187
+            "start": 192,
+            "end": 196
           }
         },
         {
-          "id": "copies@263",
+          "id": "copies@272",
           "name": "copies",
           "kind": "state",
           "span": {
-            "start": 263,
-            "end": 269
+            "start": 272,
+            "end": 278
           }
         },
         {
-          "id": "confirming@288",
+          "id": "confirming@297",
           "name": "confirming",
           "kind": "state",
           "span": {
-            "start": 288,
-            "end": 298
+            "start": 297,
+            "end": 307
           }
         },
         {
-          "id": "resolveConfirmation@319",
+          "id": "resolveConfirmation@328",
           "name": "resolveConfirmation",
           "kind": "localVar",
           "span": {
-            "start": 319,
-            "end": 338
+            "start": 328,
+            "end": 347
           }
         },
         {
-          "id": "requestDelete@384",
+          "id": "requestDelete@393",
           "name": "requestDelete",
           "kind": "localFn",
           "span": {
-            "start": 384,
-            "end": 397
+            "start": 393,
+            "end": 406
           }
         },
         {
-          "id": "addCopy@610",
+          "id": "addCopy@619",
           "name": "addCopy",
           "kind": "localFn",
           "span": {
-            "start": 610,
-            "end": 617
+            "start": 619,
+            "end": 626
           }
         },
         {
-          "id": "confirmDelete@661",
+          "id": "confirmDelete@670",
           "name": "confirmDelete",
           "kind": "localFn",
           "span": {
-            "start": 661,
-            "end": 674
+            "start": 670,
+            "end": 683
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "copies@263",
+          "binding": "copies@272",
           "initial": {
             "code": "1",
             "span": {
-              "start": 276,
-              "end": 277
+              "start": 285,
+              "end": 286
             },
             "refs": []
           },
           "span": {
-            "start": 257,
-            "end": 279
+            "start": 266,
+            "end": 288
           }
         },
         {
           "kind": "State",
-          "binding": "confirming@288",
+          "binding": "confirming@297",
           "initial": {
             "code": "false",
             "span": {
-              "start": 305,
-              "end": 310
+              "start": 314,
+              "end": 319
             },
             "refs": []
           },
           "span": {
-            "start": 282,
-            "end": 312
+            "start": 291,
+            "end": 321
           }
         },
         {
           "kind": "Variable",
-          "binding": "resolveConfirmation@319",
+          "binding": "resolveConfirmation@328",
           "type": {
             "code": "(() => void) | undefined",
             "span": {
-              "start": 340,
-              "end": 364
+              "start": 349,
+              "end": 373
             }
           },
           "span": {
-            "start": 315,
-            "end": 365
+            "start": 324,
+            "end": 374
           }
         },
         {
           "kind": "Function",
-          "binding": "requestDelete@384",
+          "binding": "requestDelete@393",
           "form": "declaration",
           "function": {
             "async": true,
@@ -228,189 +228,189 @@
             "body": {
               "code": "{\n    confirming.value = true;\n    await new Promise<void>((resolve) => {\n      resolveConfirmation = resolve;\n    });\n    confirming.value = false;\n    emit(\"deleted\", fileName, copies.value);\n  }",
               "span": {
-                "start": 400,
-                "end": 597
+                "start": 409,
+                "end": 606
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "confirming@288",
+                  "binding": "confirming@297",
                   "operator": "=",
                   "span": {
-                    "start": 406,
-                    "end": 429
+                    "start": 415,
+                    "end": 438
                   },
                   "target": {
-                    "start": 406,
-                    "end": 422
+                    "start": 415,
+                    "end": 431
                   },
                   "value": {
-                    "start": 425,
-                    "end": 429
+                    "start": 434,
+                    "end": 438
                   }
                 },
                 {
                   "kind": "Global",
                   "name": "Promise",
                   "span": {
-                    "start": 445,
-                    "end": 452
+                    "start": 454,
+                    "end": 461
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "resolveConfirmation@319",
+                  "binding": "resolveConfirmation@328",
                   "operator": "=",
                   "span": {
-                    "start": 480,
-                    "end": 509
+                    "start": 489,
+                    "end": 518
                   },
                   "target": {
-                    "start": 480,
-                    "end": 499
+                    "start": 489,
+                    "end": 508
                   },
                   "value": {
-                    "start": 502,
-                    "end": 509
+                    "start": 511,
+                    "end": 518
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "confirming@288",
+                  "binding": "confirming@297",
                   "operator": "=",
                   "span": {
-                    "start": 523,
-                    "end": 547
+                    "start": 532,
+                    "end": 556
                   },
                   "target": {
-                    "start": 523,
-                    "end": 539
+                    "start": 532,
+                    "end": 548
                   },
                   "value": {
-                    "start": 542,
-                    "end": 547
+                    "start": 551,
+                    "end": 556
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@183",
+                  "binding": "emit@192",
                   "event": "deleted",
                   "span": {
-                    "start": 553,
-                    "end": 592
+                    "start": 562,
+                    "end": 601
                   },
                   "arguments": [
                     {
-                      "start": 569,
-                      "end": 577
+                      "start": 578,
+                      "end": 586
                     },
                     {
-                      "start": 579,
-                      "end": 591
+                      "start": 588,
+                      "end": 600
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "fileName@144",
+                  "binding": "fileName@153",
                   "span": {
-                    "start": 569,
-                    "end": 577
+                    "start": 578,
+                    "end": 586
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "copies@263",
+                  "binding": "copies@272",
                   "span": {
-                    "start": 579,
-                    "end": 591
+                    "start": 588,
+                    "end": 600
                   }
                 }
               ]
             },
             "span": {
-              "start": 397,
-              "end": 597
+              "start": 406,
+              "end": 606
             }
           },
           "span": {
-            "start": 369,
-            "end": 597
+            "start": 378,
+            "end": 606
           }
         },
         {
           "kind": "Function",
-          "binding": "addCopy@610",
+          "binding": "addCopy@619",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    copies.value += 1;\n  }",
               "span": {
-                "start": 620,
-                "end": 648
+                "start": 629,
+                "end": 657
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "copies@263",
+                  "binding": "copies@272",
                   "operator": "+=",
                   "span": {
-                    "start": 626,
-                    "end": 643
+                    "start": 635,
+                    "end": 652
                   },
                   "target": {
-                    "start": 626,
-                    "end": 638
+                    "start": 635,
+                    "end": 647
                   },
                   "value": {
-                    "start": 642,
-                    "end": 643
+                    "start": 651,
+                    "end": 652
                   }
                 }
               ]
             },
             "span": {
-              "start": 617,
-              "end": 648
+              "start": 626,
+              "end": 657
             }
           },
           "span": {
-            "start": 601,
-            "end": 648
+            "start": 610,
+            "end": 657
           }
         },
         {
           "kind": "Function",
-          "binding": "confirmDelete@661",
+          "binding": "confirmDelete@670",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    resolveConfirmation?.();\n  }",
               "span": {
-                "start": 677,
-                "end": 711
+                "start": 686,
+                "end": 720
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "resolveConfirmation@319",
+                  "binding": "resolveConfirmation@328",
                   "span": {
-                    "start": 683,
-                    "end": 702
+                    "start": 692,
+                    "end": 711
                   }
                 }
               ]
             },
             "span": {
-              "start": 674,
-              "end": 711
+              "start": 683,
+              "end": 720
             }
           },
           "span": {
-            "start": 652,
-            "end": 711
+            "start": 661,
+            "end": 720
           }
         }
       ],
@@ -423,8 +423,8 @@
             "name": "class",
             "value": "delete-file",
             "span": {
-              "start": 737,
-              "end": 756
+              "start": 746,
+              "end": 765
             }
           },
           {
@@ -432,8 +432,8 @@
             "name": "aria-label",
             "value": "File",
             "span": {
-              "start": 757,
-              "end": 774
+              "start": 766,
+              "end": 783
             }
           }
         ],
@@ -448,31 +448,31 @@
                 "value": {
                   "code": "fileName",
                   "span": {
-                    "start": 795,
-                    "end": 803
+                    "start": 804,
+                    "end": 812
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "fileName@144",
+                      "binding": "fileName@153",
                       "span": {
-                        "start": 795,
-                        "end": 803
+                        "start": 804,
+                        "end": 812
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 794,
-                  "end": 804
+                  "start": 803,
+                  "end": 813
                 }
               },
               {
                 "kind": "Text",
                 "value": ", ",
                 "span": {
-                  "start": 804,
-                  "end": 806
+                  "start": 813,
+                  "end": 815
                 }
               },
               {
@@ -480,31 +480,31 @@
                 "value": {
                   "code": "copies.value",
                   "span": {
-                    "start": 807,
-                    "end": 819
+                    "start": 816,
+                    "end": 828
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "copies@263",
+                      "binding": "copies@272",
                       "span": {
-                        "start": 807,
-                        "end": 819
+                        "start": 816,
+                        "end": 828
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 806,
-                  "end": 820
+                  "start": 815,
+                  "end": 829
                 }
               },
               {
                 "kind": "Text",
                 "value": " ",
                 "span": {
-                  "start": 820,
-                  "end": 821
+                  "start": 829,
+                  "end": 830
                 }
               },
               {
@@ -512,29 +512,29 @@
                 "value": {
                   "code": "copies.value === 1 ? \"copy\" : \"copies\"",
                   "span": {
-                    "start": 822,
-                    "end": 860
+                    "start": 831,
+                    "end": 869
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "copies@263",
+                      "binding": "copies@272",
                       "span": {
-                        "start": 822,
-                        "end": 834
+                        "start": 831,
+                        "end": 843
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 821,
-                  "end": 861
+                  "start": 830,
+                  "end": 870
                 }
               }
             ],
             "span": {
-              "start": 782,
-              "end": 872
+              "start": 791,
+              "end": 881
             }
           },
           {
@@ -546,8 +546,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 887,
-                  "end": 900
+                  "start": 896,
+                  "end": 909
                 }
               },
               {
@@ -555,15 +555,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "addCopy@610",
+                  "binding": "addCopy@619",
                   "span": {
-                    "start": 910,
-                    "end": 917
+                    "start": 919,
+                    "end": 926
                   }
                 },
                 "span": {
-                  "start": 901,
-                  "end": 918
+                  "start": 910,
+                  "end": 927
                 }
               }
             ],
@@ -572,14 +572,14 @@
                 "kind": "Text",
                 "value": "Add a copy",
                 "span": {
-                  "start": 919,
-                  "end": 945
+                  "start": 928,
+                  "end": 954
                 }
               }
             ],
             "span": {
-              "start": 879,
-              "end": 954
+              "start": 888,
+              "end": 963
             }
           },
           {
@@ -589,16 +589,16 @@
                 "condition": {
                   "code": "confirming.value",
                   "span": {
-                    "start": 962,
-                    "end": 978
+                    "start": 971,
+                    "end": 987
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "confirming@288",
+                      "binding": "confirming@297",
                       "span": {
-                        "start": 962,
-                        "end": 978
+                        "start": 971,
+                        "end": 987
                       }
                     }
                   ]
@@ -613,8 +613,8 @@
                         "name": "type",
                         "value": "button",
                         "span": {
-                          "start": 999,
-                          "end": 1012
+                          "start": 1008,
+                          "end": 1021
                         }
                       },
                       {
@@ -622,15 +622,15 @@
                         "event": "click",
                         "handler": {
                           "kind": "Function",
-                          "binding": "confirmDelete@661",
+                          "binding": "confirmDelete@670",
                           "span": {
-                            "start": 1022,
-                            "end": 1035
+                            "start": 1031,
+                            "end": 1044
                           }
                         },
                         "span": {
-                          "start": 1013,
-                          "end": 1036
+                          "start": 1022,
+                          "end": 1045
                         }
                       }
                     ],
@@ -639,20 +639,20 @@
                         "kind": "Text",
                         "value": "Confirm the deletion",
                         "span": {
-                          "start": 1037,
-                          "end": 1077
+                          "start": 1046,
+                          "end": 1086
                         }
                       }
                     ],
                     "span": {
-                      "start": 991,
-                      "end": 1086
+                      "start": 1000,
+                      "end": 1095
                     }
                   }
                 ],
                 "span": {
-                  "start": 962,
-                  "end": 1086
+                  "start": 971,
+                  "end": 1095
                 }
               },
               {
@@ -666,8 +666,8 @@
                         "name": "type",
                         "value": "button",
                         "span": {
-                          "start": 1115,
-                          "end": 1128
+                          "start": 1124,
+                          "end": 1137
                         }
                       },
                       {
@@ -675,15 +675,15 @@
                         "event": "click",
                         "handler": {
                           "kind": "Function",
-                          "binding": "requestDelete@384",
+                          "binding": "requestDelete@393",
                           "span": {
-                            "start": 1138,
-                            "end": 1151
+                            "start": 1147,
+                            "end": 1160
                           }
                         },
                         "span": {
-                          "start": 1129,
-                          "end": 1152
+                          "start": 1138,
+                          "end": 1161
                         }
                       }
                     ],
@@ -692,32 +692,32 @@
                         "kind": "Text",
                         "value": "Delete",
                         "span": {
-                          "start": 1153,
-                          "end": 1179
+                          "start": 1162,
+                          "end": 1188
                         }
                       }
                     ],
                     "span": {
-                      "start": 1107,
-                      "end": 1188
+                      "start": 1116,
+                      "end": 1197
                     }
                   }
                 ],
                 "span": {
-                  "start": 1107,
-                  "end": 1188
+                  "start": 1116,
+                  "end": 1197
                 }
               }
             ],
             "span": {
-              "start": 962,
-              "end": 1196
+              "start": 971,
+              "end": 1205
             }
           }
         ],
         "span": {
-          "start": 728,
-          "end": 1212
+          "start": 737,
+          "end": 1221
         }
       }
     }
@@ -728,8 +728,8 @@
       "name": "default",
       "local": "DeleteFile",
       "span": {
-        "start": 107,
-        "end": 1219
+        "start": 116,
+        "end": 1228
       }
     }
   ],
@@ -739,8 +739,8 @@
       "exported": true,
       "code": "interface DeleteFileProps {\n  fileName: string;\n}",
       "span": {
-        "start": 56,
-        "end": 105
+        "start": 65,
+        "end": 114
       }
     }
   ]

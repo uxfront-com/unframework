@@ -1,4 +1,4 @@
-import { onMounted } from "unframework";
+import { onMounted } from "@uxfront/unframework";
 
 export default function Chart() {
   onMounted(() => {

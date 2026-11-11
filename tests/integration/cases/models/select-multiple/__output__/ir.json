@@ -5,44 +5,44 @@
     {
       "name": "ToppingPicker",
       "span": {
-        "start": 36,
-        "end": 640
+        "start": 45,
+        "end": 649
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "toppings@86",
+          "id": "toppings@95",
           "name": "toppings",
           "kind": "state",
           "span": {
-            "start": 86,
-            "end": 94
+            "start": 95,
+            "end": 103
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "toppings@86",
+          "binding": "toppings@95",
           "type": {
             "code": "string[]",
             "span": {
-              "start": 101,
-              "end": 109
+              "start": 110,
+              "end": 118
             }
           },
           "initial": {
             "code": "[\"cheese\"]",
             "span": {
-              "start": 111,
-              "end": 121
+              "start": 120,
+              "end": 130
             },
             "refs": []
           },
           "span": {
-            "start": 80,
-            "end": 123
+            "start": 89,
+            "end": 132
           }
         }
       ],
@@ -55,8 +55,8 @@
             "name": "aria-label",
             "value": "Pizza",
             "span": {
-              "start": 148,
-              "end": 166
+              "start": 157,
+              "end": 175
             }
           }
         ],
@@ -70,8 +70,8 @@
                 "kind": "Text",
                 "value": "Toppings ",
                 "span": {
-                  "start": 181,
-                  "end": 203
+                  "start": 190,
+                  "end": 212
                 }
               },
               {
@@ -83,8 +83,8 @@
                     "name": "multiple",
                     "value": true,
                     "span": {
-                      "start": 220,
-                      "end": 228
+                      "start": 229,
+                      "end": 237
                     }
                   },
                   {
@@ -92,24 +92,24 @@
                     "value": {
                       "code": "toppings.value",
                       "span": {
-                        "start": 238,
-                        "end": 252
+                        "start": 247,
+                        "end": 261
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "toppings@86",
+                          "binding": "toppings@95",
                           "span": {
-                            "start": 238,
-                            "end": 252
+                            "start": 247,
+                            "end": 261
                           }
                         }
                       ]
                     },
                     "control": "select-multiple",
                     "span": {
-                      "start": 229,
-                      "end": 253
+                      "start": 238,
+                      "end": 262
                     }
                   }
                 ],
@@ -123,8 +123,8 @@
                         "name": "value",
                         "value": "cheese",
                         "span": {
-                          "start": 273,
-                          "end": 287
+                          "start": 282,
+                          "end": 296
                         }
                       }
                     ],
@@ -133,14 +133,14 @@
                         "kind": "Text",
                         "value": "Cheese",
                         "span": {
-                          "start": 288,
-                          "end": 294
+                          "start": 297,
+                          "end": 303
                         }
                       }
                     ],
                     "span": {
-                      "start": 265,
-                      "end": 303
+                      "start": 274,
+                      "end": 312
                     }
                   },
                   {
@@ -152,8 +152,8 @@
                         "name": "value",
                         "value": "olives",
                         "span": {
-                          "start": 322,
-                          "end": 336
+                          "start": 331,
+                          "end": 345
                         }
                       }
                     ],
@@ -162,14 +162,14 @@
                         "kind": "Text",
                         "value": "Olives",
                         "span": {
-                          "start": 337,
-                          "end": 343
+                          "start": 346,
+                          "end": 352
                         }
                       }
                     ],
                     "span": {
-                      "start": 314,
-                      "end": 352
+                      "start": 323,
+                      "end": 361
                     }
                   },
                   {
@@ -181,8 +181,8 @@
                         "name": "value",
                         "value": "basil",
                         "span": {
-                          "start": 371,
-                          "end": 384
+                          "start": 380,
+                          "end": 393
                         }
                       }
                     ],
@@ -191,26 +191,26 @@
                         "kind": "Text",
                         "value": "Basil",
                         "span": {
-                          "start": 385,
-                          "end": 390
+                          "start": 394,
+                          "end": 399
                         }
                       }
                     ],
                     "span": {
-                      "start": 363,
-                      "end": 399
+                      "start": 372,
+                      "end": 408
                     }
                   }
                 ],
                 "span": {
-                  "start": 212,
-                  "end": 417
+                  "start": 221,
+                  "end": 426
                 }
               }
             ],
             "span": {
-              "start": 174,
-              "end": 432
+              "start": 183,
+              "end": 441
             }
           },
           {
@@ -222,8 +222,8 @@
                 "kind": "Text",
                 "value": "On top: ",
                 "span": {
-                  "start": 447,
-                  "end": 455
+                  "start": 456,
+                  "end": 464
                 }
               },
               {
@@ -231,29 +231,29 @@
                 "value": {
                   "code": "toppings.value.join(\", \") || \"nothing\"",
                   "span": {
-                    "start": 456,
-                    "end": 494
+                    "start": 465,
+                    "end": 503
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "toppings@86",
+                      "binding": "toppings@95",
                       "span": {
-                        "start": 456,
-                        "end": 470
+                        "start": 465,
+                        "end": 479
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 455,
-                  "end": 495
+                  "start": 464,
+                  "end": 504
                 }
               }
             ],
             "span": {
-              "start": 439,
-              "end": 504
+              "start": 448,
+              "end": 513
             }
           },
           {
@@ -265,8 +265,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 519,
-                  "end": 532
+                  "start": 528,
+                  "end": 541
                 }
               },
               {
@@ -279,25 +279,25 @@
                     "body": {
                       "code": "(toppings.value = [\"basil\", \"olives\"])",
                       "span": {
-                        "start": 548,
-                        "end": 586
+                        "start": 557,
+                        "end": 595
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "toppings@86",
+                          "binding": "toppings@95",
                           "operator": "=",
                           "span": {
-                            "start": 548,
-                            "end": 586
+                            "start": 557,
+                            "end": 595
                           },
                           "target": {
-                            "start": 549,
-                            "end": 563
+                            "start": 558,
+                            "end": 572
                           },
                           "value": {
-                            "start": 566,
-                            "end": 585
+                            "start": 575,
+                            "end": 594
                           },
                           "arrowBody": true
                         }
@@ -305,18 +305,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 542,
-                      "end": 586
+                      "start": 551,
+                      "end": 595
                     }
                   },
                   "span": {
-                    "start": 542,
-                    "end": 586
+                    "start": 551,
+                    "end": 595
                   }
                 },
                 "span": {
-                  "start": 533,
-                  "end": 587
+                  "start": 542,
+                  "end": 596
                 }
               }
             ],
@@ -325,20 +325,20 @@
                 "kind": "Text",
                 "value": "Green",
                 "span": {
-                  "start": 588,
-                  "end": 609
+                  "start": 597,
+                  "end": 618
                 }
               }
             ],
             "span": {
-              "start": 511,
-              "end": 618
+              "start": 520,
+              "end": 627
             }
           }
         ],
         "span": {
-          "start": 139,
-          "end": 633
+          "start": 148,
+          "end": 642
         }
       }
     }
@@ -349,8 +349,8 @@
       "name": "default",
       "local": "ToppingPicker",
       "span": {
-        "start": 36,
-        "end": 640
+        "start": 45,
+        "end": 649
       }
     }
   ],

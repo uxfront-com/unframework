@@ -5,8 +5,8 @@
     {
       "name": "Frame",
       "span": {
-        "start": 121,
-        "end": 403
+        "start": 139,
+        "end": 421
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 171,
-              "end": 177
+              "start": 189,
+              "end": 195
             }
           },
-          "binding": "label@153",
+          "binding": "label@171",
           "span": {
-            "start": 164,
-            "end": 177
+            "start": 182,
+            "end": 195
           }
         }
       ],
@@ -31,23 +31,23 @@
         "type": {
           "code": "{ label: string }",
           "span": {
-            "start": 162,
-            "end": 179
+            "start": 180,
+            "end": 197
           }
         },
         "span": {
-          "start": 151,
-          "end": 179
+          "start": 169,
+          "end": 197
         }
       },
       "types": [],
       "slots": {
-        "binding": "slots@191",
+        "binding": "slots@209",
         "type": {
           "code": "{ title?(): Element; default?(): Element }",
           "span": {
-            "start": 211,
-            "end": 253
+            "start": 229,
+            "end": 271
           }
         },
         "slots": [
@@ -55,41 +55,41 @@
             "name": "title",
             "optional": true,
             "span": {
-              "start": 213,
-              "end": 231
+              "start": 231,
+              "end": 249
             }
           },
           {
             "name": "default",
             "optional": true,
             "span": {
-              "start": 232,
-              "end": 251
+              "start": 250,
+              "end": 269
             }
           }
         ],
         "span": {
-          "start": 185,
-          "end": 257
+          "start": 203,
+          "end": 275
         }
       },
       "bindings": [
         {
-          "id": "label@153",
+          "id": "label@171",
           "name": "label",
           "kind": "prop",
           "span": {
-            "start": 153,
-            "end": 158
+            "start": 171,
+            "end": 176
           }
         },
         {
-          "id": "slots@191",
+          "id": "slots@209",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 191,
-            "end": 196
+            "start": 209,
+            "end": 214
           }
         }
       ],
@@ -103,8 +103,8 @@
             "name": "class",
             "value": "frame",
             "span": {
-              "start": 282,
-              "end": 295
+              "start": 300,
+              "end": 313
             }
           },
           {
@@ -113,23 +113,23 @@
             "value": {
               "code": "label",
               "span": {
-                "start": 308,
-                "end": 313
+                "start": 326,
+                "end": 331
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "label@153",
+                  "binding": "label@171",
                   "span": {
-                    "start": 308,
-                    "end": 313
+                    "start": 326,
+                    "end": 331
                   }
                 }
               ]
             },
             "span": {
-              "start": 296,
-              "end": 314
+              "start": 314,
+              "end": 332
             }
           }
         ],
@@ -144,8 +144,8 @@
                 "children": [],
                 "forward": "default",
                 "span": {
-                  "start": 350,
-                  "end": 372
+                  "start": 368,
+                  "end": 390
                 }
               },
               {
@@ -153,20 +153,20 @@
                 "children": [],
                 "forward": "title",
                 "span": {
-                  "start": 330,
-                  "end": 348
+                  "start": 348,
+                  "end": 366
                 }
               }
             ],
             "span": {
-              "start": 322,
-              "end": 381
+              "start": 340,
+              "end": 399
             }
           }
         ],
         "span": {
-          "start": 273,
-          "end": 396
+          "start": 291,
+          "end": 414
         }
       }
     }
@@ -177,8 +177,8 @@
       "name": "default",
       "local": "Frame",
       "span": {
-        "start": 121,
-        "end": 403
+        "start": 139,
+        "end": 421
       }
     }
   ],
@@ -220,14 +220,14 @@
           "imported": "default",
           "local": "Box",
           "span": {
-            "start": 95,
-            "end": 98
+            "start": 113,
+            "end": 116
           }
         }
       ],
       "span": {
-        "start": 88,
-        "end": 119
+        "start": 106,
+        "end": 137
       }
     }
   ]

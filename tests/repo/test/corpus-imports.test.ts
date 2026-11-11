@@ -9,7 +9,7 @@ import config from "../../../oxlint.config.ts";
 import { root } from "./workspace.ts";
 
 /**
- * The lint rule that holds the corpus's specs to the public API of @unframework/testing
+ * The lint rule that holds the corpus's specs to the public API of @unframework.dev/testing
  * (ADR-0085), run through oxlint itself: its patterns are oxlint's (Rust regular expressions with
  * no lookahead, `group` patterns merged into one list), so only oxlint can say what they refuse.
  * The override is copied into a throwaway project outside the repository, with a spec at a
@@ -20,12 +20,13 @@ const SPEC = "tests/integration/cases/state/counter/probe.test.ts";
 
 /** Specifiers the rule refuses: a subpath, another package, the harness's or a package's code. */
 const REFUSED: readonly string[] = [
-  "@unframework/testing/harness",
-  "@unframework/testing/setup",
-  "@unframework/testing/node",
-  "@unframework/compiler",
-  "@unframework/ir",
-  "@unframework/testingx",
+  "@unframework.dev/testing/harness",
+  "@unframework.dev/testing/setup",
+  "@unframework.dev/testing/node",
+  "@unframework.dev/compiler",
+  "@unframework.dev/ir",
+  "@unframework.dev/testingx",
+  "@unframework.dev/testing-harness",
   "../../../harness/cases.ts",
   "../../../scripts/run.ts",
   "./../../../harness/cases.ts",
@@ -36,8 +37,8 @@ const REFUSED: readonly string[] = [
 
 /** Specifiers it lets through: the public API, the authoring stubs, a case's own sources. */
 const ALLOWED: readonly string[] = [
-  "@unframework/testing",
-  "unframework",
+  "@unframework.dev/testing",
+  "@uxfront/unframework",
   "vitest",
   "./Counter.uf.tsx",
   "../../props/primitives/Primitives.uf.tsx",

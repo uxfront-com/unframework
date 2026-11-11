@@ -1,6 +1,6 @@
 // props/null-and-absent: an optional prop that may be `null` tells `null` from absent, in text
 // and in a bound attribute; the empty string and `false` are values too.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import ContactLine from "./ContactLine.uf.tsx";

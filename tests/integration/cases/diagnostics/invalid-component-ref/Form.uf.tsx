@@ -1,6 +1,6 @@
 // UF3046 invalid-component-ref: `Hint` exposes nothing, so a ref on it holds nothing a parent can
 // call.
-import { useTemplateRef } from "unframework";
+import { useTemplateRef } from "@uxfront/unframework";
 
 function Hint({ text }: { text: string }) {
   return <small class="hint">{text}</small>;

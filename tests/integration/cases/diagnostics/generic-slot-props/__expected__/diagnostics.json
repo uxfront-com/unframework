@@ -7,12 +7,12 @@
     "start": {
       "line": 8,
       "column": 31,
-      "offset": 507
+      "offset": 525
     },
     "end": {
       "line": 8,
       "column": 69,
-      "offset": 545
+      "offset": 563
     },
     "target": "angular"
   }

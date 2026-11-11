@@ -5,8 +5,8 @@
     {
       "name": "Panel",
       "span": {
-        "start": 96,
-        "end": 422
+        "start": 105,
+        "end": 431
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 144,
-              "end": 150
+              "start": 153,
+              "end": 159
             }
           },
-          "binding": "name@128",
+          "binding": "name@137",
           "span": {
-            "start": 138,
-            "end": 150
+            "start": 147,
+            "end": 159
           }
         }
       ],
@@ -31,23 +31,23 @@
         "type": {
           "code": "{ name: string }",
           "span": {
-            "start": 136,
-            "end": 152
+            "start": 145,
+            "end": 161
           }
         },
         "span": {
-          "start": 126,
-          "end": 152
+          "start": 135,
+          "end": 161
         }
       },
       "types": [],
       "emits": {
-        "binding": "emit@164",
+        "binding": "emit@173",
         "type": {
           "code": "{ closed: [entry: string] }",
           "span": {
-            "start": 183,
-            "end": 210
+            "start": 192,
+            "end": 219
           }
         },
         "events": [
@@ -59,53 +59,53 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 201,
-                    "end": 207
+                    "start": 210,
+                    "end": 216
                   }
                 },
                 "span": {
-                  "start": 194,
-                  "end": 207
+                  "start": 203,
+                  "end": 216
                 }
               }
             ],
             "span": {
-              "start": 185,
-              "end": 208
+              "start": 194,
+              "end": 217
             }
           }
         ],
         "span": {
-          "start": 158,
-          "end": 214
+          "start": 167,
+          "end": 223
         }
       },
       "bindings": [
         {
-          "id": "name@128",
+          "id": "name@137",
           "name": "name",
           "kind": "prop",
           "span": {
-            "start": 128,
-            "end": 132
+            "start": 137,
+            "end": 141
           }
         },
         {
-          "id": "emit@164",
+          "id": "emit@173",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 164,
-            "end": 168
+            "start": 173,
+            "end": 177
           }
         },
         {
-          "id": "title@225",
+          "id": "title@234",
           "name": "title",
           "kind": "usedDerived",
           "span": {
-            "start": 225,
-            "end": 230
+            "start": 234,
+            "end": 239
           }
         }
       ],
@@ -121,29 +121,29 @@
                 "body": {
                   "code": "name",
                   "span": {
-                    "start": 258,
-                    "end": 262
+                    "start": 267,
+                    "end": 271
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "name@128",
+                      "binding": "name@137",
                       "span": {
-                        "start": 258,
-                        "end": 262
+                        "start": 267,
+                        "end": 271
                       }
                     }
                   ]
                 },
                 "expression": true,
                 "span": {
-                  "start": 252,
-                  "end": 262
+                  "start": 261,
+                  "end": 271
                 }
               },
               "span": {
-                "start": 252,
-                "end": 262
+                "start": 261,
+                "end": 271
               }
             },
             {
@@ -153,30 +153,30 @@
                   {
                     "name": "entry",
                     "span": {
-                      "start": 269,
-                      "end": 274
+                      "start": 278,
+                      "end": 283
                     }
                   }
                 ],
                 "body": {
                   "code": "emit(\"closed\", entry)",
                   "span": {
-                    "start": 279,
-                    "end": 300
+                    "start": 288,
+                    "end": 309
                   },
                   "refs": [
                     {
                       "kind": "Emit",
-                      "binding": "emit@164",
+                      "binding": "emit@173",
                       "event": "closed",
                       "span": {
-                        "start": 279,
-                        "end": 300
+                        "start": 288,
+                        "end": 309
                       },
                       "arguments": [
                         {
-                          "start": 294,
-                          "end": 299
+                          "start": 303,
+                          "end": 308
                         }
                       ]
                     }
@@ -184,30 +184,30 @@
                 },
                 "expression": true,
                 "span": {
-                  "start": 268,
-                  "end": 300
+                  "start": 277,
+                  "end": 309
                 }
               },
               "span": {
-                "start": 268,
-                "end": 300
+                "start": 277,
+                "end": 309
               }
             }
           ],
           "members": [
             {
               "member": "title",
-              "binding": "title@225",
+              "binding": "title@234",
               "span": {
-                "start": 225,
-                "end": 230
+                "start": 234,
+                "end": 239
               }
             }
           ],
           "hasEffects": true,
           "span": {
-            "start": 217,
-            "end": 306
+            "start": 226,
+            "end": 315
           }
         }
       ],
@@ -220,8 +220,8 @@
             "name": "class",
             "value": "panel",
             "span": {
-              "start": 332,
-              "end": 345
+              "start": 341,
+              "end": 354
             }
           },
           {
@@ -230,23 +230,23 @@
             "value": {
               "code": "title.value",
               "span": {
-                "start": 358,
-                "end": 369
+                "start": 367,
+                "end": 378
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "title@225",
+                  "binding": "title@234",
                   "span": {
-                    "start": 358,
-                    "end": 369
+                    "start": 367,
+                    "end": 378
                   }
                 }
               ]
             },
             "span": {
-              "start": 346,
-              "end": 370
+              "start": 355,
+              "end": 379
             }
           }
         ],
@@ -261,35 +261,35 @@
                 "value": {
                   "code": "title.value",
                   "span": {
-                    "start": 383,
-                    "end": 394
+                    "start": 392,
+                    "end": 403
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "title@225",
+                      "binding": "title@234",
                       "span": {
-                        "start": 383,
-                        "end": 394
+                        "start": 392,
+                        "end": 403
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 382,
-                  "end": 395
+                  "start": 391,
+                  "end": 404
                 }
               }
             ],
             "span": {
-              "start": 378,
-              "end": 400
+              "start": 387,
+              "end": 409
             }
           }
         ],
         "span": {
-          "start": 323,
-          "end": 415
+          "start": 332,
+          "end": 424
         }
       }
     }
@@ -300,8 +300,8 @@
       "name": "default",
       "local": "Panel",
       "span": {
-        "start": 96,
-        "end": 422
+        "start": 105,
+        "end": 431
       }
     }
   ],
@@ -346,14 +346,14 @@
           "imported": "useTeardown",
           "local": "useTeardown",
           "span": {
-            "start": 53,
-            "end": 64
+            "start": 62,
+            "end": 73
           }
         }
       ],
       "span": {
-        "start": 44,
-        "end": 94
+        "start": 53,
+        "end": 103
       }
     }
   ]

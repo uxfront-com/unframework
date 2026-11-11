@@ -3,9 +3,9 @@
 import { existsSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync } from "node:fs";
 import { basename, dirname, join, sep } from "node:path";
 
-import { TARGET_NAMES } from "@unframework/compiler";
-import { COLOR_SCHEMES, KEBAB_CASE, ssrScenarios } from "@unframework/testing/node";
-import type { CaseConfig } from "@unframework/testing/node";
+import { TARGET_NAMES } from "@unframework.dev/compiler";
+import { COLOR_SCHEMES, KEBAB_CASE, ssrScenarios } from "@unframework.dev/testing/node";
+import type { CaseConfig } from "@unframework.dev/testing/node";
 
 import { CASES_DIR } from "./paths.ts";
 import { REFERENCE } from "./targets.ts";

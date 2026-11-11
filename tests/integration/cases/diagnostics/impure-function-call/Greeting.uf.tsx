@@ -1,6 +1,6 @@
 // UF2014 impure-function-call: the template calls `greet`, which writes state: rendering must not
 // change anything, and a framework renders when it decides to.
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export interface GreetingProps {
   name: string;

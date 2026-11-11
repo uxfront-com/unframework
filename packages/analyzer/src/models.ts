@@ -3,11 +3,16 @@
 // with `defineModel`. Each binds a ref's value, `text.value`, of a `ref` or a model of the
 // component (UF3042 otherwise): the targets write it back through that binding.
 
-import type { Fix } from "@unframework/diagnostics";
-import { createModelAttribute, createModelBindingAttribute } from "@unframework/ir";
-import type { ComponentApi, ModelAttribute, ModelBindingAttribute, Span } from "@unframework/ir";
-import type { AST } from "@unframework/parser";
-import { parseModule } from "@unframework/parser";
+import type { Fix } from "@unframework.dev/diagnostics";
+import { createModelAttribute, createModelBindingAttribute } from "@unframework.dev/ir";
+import type {
+  ComponentApi,
+  ModelAttribute,
+  ModelBindingAttribute,
+  Span,
+} from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
+import { parseModule } from "@unframework.dev/parser";
 
 import { closest, renameFix } from "./cross-component.ts";
 import { checkExpression, isWritableRef, span } from "./expressions.ts";

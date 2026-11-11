@@ -1,6 +1,6 @@
 import { join, resolve } from "node:path";
 
-import { CAPABILITY_NAMES } from "@unframework/codegen";
+import { CAPABILITY_NAMES } from "@unframework.dev/codegen";
 import {
   createComponent,
   createElement,
@@ -8,8 +8,8 @@ import {
   createModule,
   createStaticAttribute,
   createText,
-} from "@unframework/ir";
-import type { ElementNode, UfModule } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { ElementNode, UfModule } from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import target from "../src/index.ts";
@@ -552,7 +552,7 @@ export default function Panel({ finishes, extra }: PanelProps) {
   it("imports `input` only when there are props, under another name when the module declares it", async () => {
     // A component that opts out of the fallthrough declares no `class` and `style` inputs.
     const plain = await formatted(`
-import { defineOptions } from "unframework";
+import { defineOptions } from "@uxfront/unframework";
 
 export default function Plain() {
   defineOptions({ inheritAttrs: false });
@@ -683,8 +683,8 @@ export default function Table<T extends { id: string }>({ rows }: TableProps<T>)
 
   it("types a generic slot's context at the constraints, which its directive cannot infer", async () => {
     const file = await formatted(`
-import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 export default function Options<T extends { value: string }, U>({ options, extra }: { options: T[]; extra: U }) {
   const slots = defineSlots<{ option?(props: { option: T; extra: U }): Element }>();
@@ -701,7 +701,7 @@ export default function Options<T extends { value: string }, U>({ options, extra
 
   it("writes a select's choice into a model of a type parameter through the template's cast", async () => {
     const file = await formatted(`
-import { defineModel } from "unframework";
+import { defineModel } from "@uxfront/unframework";
 
 export default function Select<T extends string>({ options }: { options: readonly T[] }) {
   const value = defineModel<T>("value", { required: true });

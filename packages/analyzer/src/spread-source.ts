@@ -7,7 +7,7 @@
 // source is followed where every checker narrows it alike, and reported where the compiler
 // cannot tell.
 
-import type { AST } from "@unframework/parser";
+import type { AST } from "@unframework.dev/parser";
 
 import { angularChecks, narrowingAt, referencePath } from "./narrowing.ts";
 import type { RenderContext } from "./render.ts";

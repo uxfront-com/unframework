@@ -2,8 +2,8 @@ export { checkPassThrough, compile } from "./compile.ts";
 export { createFileResolver, createProject } from "./project.ts";
 export type { Project, ProjectOptions, ProjectUpdate } from "./project.ts";
 // The harness and the unplugin build their file-backed oracle from it (ADR-0067).
-export { createSyntacticOracle } from "@unframework/type-oracle";
-export type { SyntacticOracleOptions, TypeOracle } from "@unframework/type-oracle";
+export { createSyntacticOracle } from "@unframework.dev/type-oracle";
+export type { SyntacticOracleOptions, TypeOracle } from "@unframework.dev/type-oracle";
 export type {
   FileResolverOptions,
   ResolvedModule,
@@ -23,7 +23,7 @@ export type { PackageConfig, UnframeworkConfig } from "./config-types.ts";
 export { builtinTargets, resolveTarget, TARGET_NAMES } from "./targets.ts";
 export type { TargetName } from "./targets.ts";
 export { checkCapabilities } from "./capabilities.ts";
-export { requiredCapabilities } from "@unframework/codegen";
-export type { OutputFile, Target } from "@unframework/codegen";
-export type { Diagnostic } from "@unframework/diagnostics";
-export type { UfModule } from "@unframework/ir";
+export { requiredCapabilities } from "@unframework.dev/codegen";
+export type { OutputFile, Target } from "@unframework.dev/codegen";
+export type { Diagnostic } from "@unframework.dev/diagnostics";
+export type { UfModule } from "@unframework.dev/ir";

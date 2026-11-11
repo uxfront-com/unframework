@@ -1,7 +1,7 @@
 // lifecycle/next-tick: a handler writes state, awaits `nextTick()`, then reads the updated DOM
 // through a template ref on an element in a conditional, and emits what it read: the rows once
 // the list renders, and nothing once it is gone (the ref is empty again).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import ShippingDetails from "./ShippingDetails.uf.tsx";

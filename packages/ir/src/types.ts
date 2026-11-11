@@ -6,7 +6,7 @@
  * - Every node carries a span.
  * - A field is added only when a consumer reads it.
  * - The JSON Schema in `schema/ir.schema.json` is generated from these types
- *   (`pnpm --filter @unframework/ir generate`), and a test fails when it is stale.
+ *   (`pnpm --filter @unframework.dev/ir generate`), and a test fails when it is stale.
  * - Optional fields, arrays and string patterns only: no tuples, no `| null`, no `Record`, which
  *   the generator turns into keywords `validateModule` does not implement, or does not check.
  *   The builders leave an absent optional field out, never set it to `undefined`.
@@ -931,7 +931,7 @@ export interface EventReference {
  * the top of the handler's body, or the only statement under an `if` there whose test reads only
  * the event, with no statement before it that may leave the body but guard clauses whose tests
  * read only the event (`if (event.key !== "Enter") return;`, which `handlerControls` of
- * `@unframework/codegen` reads). Qwik runs these synchronously (`preventdefault:click`, `sync$`),
+ * `@unframework.dev/codegen` reads). Qwik runs these synchronously (`preventdefault:click`, `sync$`),
  * apart from the lazily loaded handler.
  */
 export interface EventControl {

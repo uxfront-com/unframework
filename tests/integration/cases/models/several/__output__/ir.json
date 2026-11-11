@@ -5,62 +5,62 @@
     {
       "name": "Search",
       "span": {
-        "start": 83,
-        "end": 486
+        "start": 92,
+        "end": 495
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "low@126",
+          "id": "low@135",
           "name": "low",
           "kind": "state",
           "span": {
-            "start": 126,
-            "end": 129
+            "start": 135,
+            "end": 138
           }
         },
         {
-          "id": "high@149",
+          "id": "high@158",
           "name": "high",
           "kind": "state",
           "span": {
-            "start": 149,
-            "end": 153
+            "start": 158,
+            "end": 162
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "low@126",
+          "binding": "low@135",
           "initial": {
             "code": "20",
             "span": {
-              "start": 136,
-              "end": 138
+              "start": 145,
+              "end": 147
             },
             "refs": []
           },
           "span": {
-            "start": 120,
-            "end": 140
+            "start": 129,
+            "end": 149
           }
         },
         {
           "kind": "State",
-          "binding": "high@149",
+          "binding": "high@158",
           "initial": {
             "code": "50",
             "span": {
-              "start": 160,
-              "end": 162
+              "start": 169,
+              "end": 171
             },
             "refs": []
           },
           "span": {
-            "start": 143,
-            "end": 164
+            "start": 152,
+            "end": 173
           }
         }
       ],
@@ -73,8 +73,8 @@
             "name": "aria-label",
             "value": "Search",
             "span": {
-              "start": 189,
-              "end": 208
+              "start": 198,
+              "end": 217
             }
           }
         ],
@@ -89,14 +89,14 @@
                 "value": {
                   "code": "\"Price\"",
                   "span": {
-                    "start": 234,
-                    "end": 241
+                    "start": 243,
+                    "end": 250
                   },
                   "refs": []
                 },
                 "span": {
-                  "start": 228,
-                  "end": 241
+                  "start": 237,
+                  "end": 250
                 }
               },
               {
@@ -105,23 +105,23 @@
                 "value": {
                   "code": "low.value",
                   "span": {
-                    "start": 255,
-                    "end": 264
+                    "start": 264,
+                    "end": 273
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "low@126",
+                      "binding": "low@135",
                       "span": {
-                        "start": 255,
-                        "end": 264
+                        "start": 264,
+                        "end": 273
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 242,
-                  "end": 265
+                  "start": 251,
+                  "end": 274
                 }
               },
               {
@@ -130,30 +130,30 @@
                 "value": {
                   "code": "high.value",
                   "span": {
-                    "start": 279,
-                    "end": 289
+                    "start": 288,
+                    "end": 298
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "high@149",
+                      "binding": "high@158",
                       "span": {
-                        "start": 279,
-                        "end": 289
+                        "start": 288,
+                        "end": 298
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 266,
-                  "end": 290
+                  "start": 275,
+                  "end": 299
                 }
               }
             ],
             "fills": [],
             "span": {
-              "start": 216,
-              "end": 293
+              "start": 225,
+              "end": 302
             }
           },
           {
@@ -165,8 +165,8 @@
                 "kind": "Text",
                 "value": "Between ",
                 "span": {
-                  "start": 308,
-                  "end": 325
+                  "start": 317,
+                  "end": 334
                 }
               },
               {
@@ -174,31 +174,31 @@
                 "value": {
                   "code": "low.value",
                   "span": {
-                    "start": 326,
-                    "end": 335
+                    "start": 335,
+                    "end": 344
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "low@126",
+                      "binding": "low@135",
                       "span": {
-                        "start": 326,
-                        "end": 335
+                        "start": 335,
+                        "end": 344
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 325,
-                  "end": 336
+                  "start": 334,
+                  "end": 345
                 }
               },
               {
                 "kind": "Text",
                 "value": " and ",
                 "span": {
-                  "start": 336,
-                  "end": 341
+                  "start": 345,
+                  "end": 350
                 }
               },
               {
@@ -206,29 +206,29 @@
                 "value": {
                   "code": "high.value",
                   "span": {
-                    "start": 342,
-                    "end": 352
+                    "start": 351,
+                    "end": 361
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "high@149",
+                      "binding": "high@158",
                       "span": {
-                        "start": 342,
-                        "end": 352
+                        "start": 351,
+                        "end": 361
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 341,
-                  "end": 353
+                  "start": 350,
+                  "end": 362
                 }
               }
             ],
             "span": {
-              "start": 300,
-              "end": 369
+              "start": 309,
+              "end": 378
             }
           },
           {
@@ -240,8 +240,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 384,
-                  "end": 397
+                  "start": 393,
+                  "end": 406
                 }
               },
               {
@@ -254,25 +254,25 @@
                     "body": {
                       "code": "(high.value = 40)",
                       "span": {
-                        "start": 413,
-                        "end": 430
+                        "start": 422,
+                        "end": 439
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "high@149",
+                          "binding": "high@158",
                           "operator": "=",
                           "span": {
-                            "start": 413,
-                            "end": 430
+                            "start": 422,
+                            "end": 439
                           },
                           "target": {
-                            "start": 414,
-                            "end": 424
+                            "start": 423,
+                            "end": 433
                           },
                           "value": {
-                            "start": 427,
-                            "end": 429
+                            "start": 436,
+                            "end": 438
                           },
                           "arrowBody": true
                         }
@@ -280,18 +280,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 407,
-                      "end": 430
+                      "start": 416,
+                      "end": 439
                     }
                   },
                   "span": {
-                    "start": 407,
-                    "end": 430
+                    "start": 416,
+                    "end": 439
                   }
                 },
                 "span": {
-                  "start": 398,
-                  "end": 431
+                  "start": 407,
+                  "end": 440
                 }
               }
             ],
@@ -300,20 +300,20 @@
                 "kind": "Text",
                 "value": "Cheaper",
                 "span": {
-                  "start": 432,
-                  "end": 455
+                  "start": 441,
+                  "end": 464
                 }
               }
             ],
             "span": {
-              "start": 376,
-              "end": 464
+              "start": 385,
+              "end": 473
             }
           }
         ],
         "span": {
-          "start": 180,
-          "end": 479
+          "start": 189,
+          "end": 488
         }
       }
     }
@@ -324,8 +324,8 @@
       "name": "default",
       "local": "Search",
       "span": {
-        "start": 83,
-        "end": 486
+        "start": 92,
+        "end": 495
       }
     }
   ],
@@ -375,14 +375,14 @@
           "imported": "default",
           "local": "PriceRange",
           "span": {
-            "start": 43,
-            "end": 53
+            "start": 52,
+            "end": 62
           }
         }
       ],
       "span": {
-        "start": 36,
-        "end": 81
+        "start": 45,
+        "end": 90
       }
     }
   ]

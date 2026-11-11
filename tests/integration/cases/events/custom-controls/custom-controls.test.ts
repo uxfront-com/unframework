@@ -4,7 +4,7 @@
 // wrote survives the renders the meter causes. The Like control's `toggleLike(event: MouseEvent |
 // KeyboardEvent)` is the click listener and is called by the key listener, which prevents Space
 // (the page would scroll) and toggles on Enter and Space.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import CommentCard from "./CommentCard.uf.tsx";

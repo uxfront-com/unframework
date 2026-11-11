@@ -1,6 +1,6 @@
 // theming/data-theme: a theme a prop toggles (ADR-0064). The prop sets `data-theme`, and
 // Styleframe's `dark` theme gives the element and its descendants the dark tokens.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Themed from "./Themed.uf.tsx";

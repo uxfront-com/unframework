@@ -1,4 +1,4 @@
-import { defineEmits, ref } from "unframework";
+import { defineEmits, ref } from "@uxfront/unframework";
 
 export default function CommentCard() {
   const emit = defineEmits<{ liked: [liked: boolean, by: string] }>();

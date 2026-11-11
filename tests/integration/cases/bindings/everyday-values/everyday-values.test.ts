@@ -1,6 +1,6 @@
 // bindings/everyday-values: values authors write every day render as written: a style object of
 // zero lengths, which resets the quote's default margins, and `dir="auto"` on user text.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import CommentQuote from "./CommentQuote.uf.tsx";

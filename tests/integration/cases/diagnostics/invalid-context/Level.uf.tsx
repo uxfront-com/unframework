@@ -1,7 +1,7 @@
 // UF2032 invalid-context: a component that provides a key and injects it reads its parent's
 // value, so `inject` comes before `provide`, which Angular would answer from first.
-import { defineSlots, inject, provide } from "unframework";
-import type { Element, InjectionKey } from "unframework";
+import { defineSlots, inject, provide } from "@uxfront/unframework";
+import type { Element, InjectionKey } from "@uxfront/unframework";
 
 export const DepthKey: InjectionKey<number> = Symbol("uf.depth");
 

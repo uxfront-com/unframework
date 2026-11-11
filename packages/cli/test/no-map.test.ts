@@ -6,8 +6,8 @@ import { readFileSync } from "node:fs";
 import type * as FsPromises from "node:fs/promises";
 import { join } from "node:path";
 
-import type * as Compiler from "@unframework/compiler";
-import type { Project } from "@unframework/compiler";
+import type * as Compiler from "@unframework.dev/compiler";
+import type { Project } from "@unframework.dev/compiler";
 import { describe, expect, it, vi } from "vitest";
 
 import { project, run, tree } from "./helpers.ts";
@@ -31,7 +31,7 @@ vi.mock("node:fs/promises", async (original) => {
   };
 });
 
-vi.mock("@unframework/type-oracle-tsgo", () => {
+vi.mock("@unframework.dev/type-oracle-tsgo", () => {
   throw new Error("the tsgo oracle was loaded");
 });
 
@@ -43,7 +43,7 @@ const WARNING = {
   span: { start: 0, end: 0 },
 };
 
-vi.mock("@unframework/compiler", async (original) => {
+vi.mock("@unframework.dev/compiler", async (original) => {
   const actual = await original<typeof Compiler>();
   return {
     ...actual,

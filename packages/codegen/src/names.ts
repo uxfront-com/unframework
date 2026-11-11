@@ -1,5 +1,5 @@
-import { codeOf, expressionsOf, functionsOf } from "@unframework/ir";
-import type { TypeText, UfComponent, UfModule } from "@unframework/ir";
+import { codeOf, expressionsOf, functionsOf } from "@unframework.dev/ir";
+import type { TypeText, UfComponent, UfModule } from "@unframework.dev/ir";
 
 import { parseStatementsSource } from "./parse.ts";
 import { codeKind, codeNames, collectNames, expressionNames } from "./rewrite.ts";

@@ -8,8 +8,8 @@ import {
   NameScope,
   passThroughImports,
   sourceNames,
-} from "@unframework/codegen";
-import { summarizeCode, walk } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import { summarizeCode, walk } from "@unframework.dev/ir";
 import type {
   Binding,
   BindingId,
@@ -22,7 +22,7 @@ import type {
   UfComponent,
   UfModule,
   UseItem,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { assertedSetup } from "./narrowing.ts";
 import { outputName } from "./outputs.ts";

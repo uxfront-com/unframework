@@ -1,6 +1,6 @@
 // generics/list: `function List<T>(props: ListProps<T>)`, written in each target's generic form
 // (ADR-0068). Each test mounts it with its own type argument, which the scenario's props hold.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import List from "./List.uf.tsx";

@@ -1,6 +1,6 @@
 # ADR-0006: The authoring API and JSX runtime come from `unframework`
 
-- **Status:** Proposed — the plan proceeds on the recommendation
+- **Status:** Proposed — the plan proceeds on the recommendation, amended by ADR-0090
 - **Date:** 2026-10-01
 - **Plan:** §11 D2; §2, §4.1, §4.6, §5.2, §5.4, §5.6, §8.2, M6
 

@@ -1,4 +1,4 @@
-import { defineModel } from "unframework";
+import { defineModel } from "@uxfront/unframework";
 
 export default function TextField({ label }: { label: string }) {
   const value = defineModel<string>("value", { default: "" });

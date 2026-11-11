@@ -3,7 +3,7 @@
 // updates its text, an attribute, a branch and a list, and a prop the new props lack takes its
 // `$props()` default again. The adapter settles before it resolves, so the DOM is read at once,
 // and nothing is logged.
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { mount } from "../src/toolchain/client.ts";

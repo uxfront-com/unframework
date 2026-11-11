@@ -1,7 +1,7 @@
 // effects/flush-post: a watcher with `{ flush: "post" }` runs after the DOM has updated, so it
 // reads the new list through a template ref. It reads a fact that does not depend on layout, the
 // number of rows.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import MessageList from "./MessageList.uf.tsx";

@@ -7,12 +7,12 @@
     "start": {
       "line": 6,
       "column": 7,
-      "offset": 231
+      "offset": 249
     },
     "end": {
       "line": 6,
       "column": 15,
-      "offset": 239
+      "offset": 257
     },
     "help": "Declare it as `export const ThemeKey: InjectionKey<Theme> = Symbol(\"theme\");`, in the module of the component that provides it."
   }

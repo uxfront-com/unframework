@@ -1,4 +1,4 @@
-// @unframework/testing: the cross-target test API (plan §7.3, §8.5). One spec, written once, runs
+// @unframework.dev/testing: the cross-target test API (plan §7.3, §8.5). One spec, written once, runs
 // in every `browser:<target>` project; the project's setup files install the determinism, the
 // console capture, the matchers and the target's mount adapter.
 //

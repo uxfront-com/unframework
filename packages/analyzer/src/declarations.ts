@@ -8,10 +8,10 @@
 // (`checkMembers`, `checkType`) by the props, which leave to the shape what only it resolves
 // (`props.ts`).
 
-import type { DiagnosticCode } from "@unframework/diagnostics";
-import { isIdentifier, RESERVED_TYPE_NAMES } from "@unframework/ir";
-import type { AST, TypeDeclarationStatement } from "@unframework/parser";
-import { visitorKeys } from "@unframework/parser";
+import type { DiagnosticCode } from "@unframework.dev/diagnostics";
+import { isIdentifier, RESERVED_TYPE_NAMES } from "@unframework.dev/ir";
+import type { AST, TypeDeclarationStatement } from "@unframework.dev/parser";
+import { visitorKeys } from "@unframework.dev/parser";
 
 import type { Reporter } from "./context.ts";
 import { checkDirectives } from "./expressions.ts";
@@ -314,7 +314,7 @@ export const FUNCTIONS: string =
 export function needsChecker(what: string): [message: string, help: string] {
   return [
     `${what} needs a type checker to evaluate, and the default type oracle reads types as written.`,
-    "Write the type out with interfaces, aliases, unions and object types, or compile with the tsgo type oracle, `@unframework/type-oracle-tsgo`.",
+    "Write the type out with interfaces, aliases, unions and object types, or compile with the tsgo type oracle, `@unframework.dev/type-oracle-tsgo`.",
   ];
 }
 

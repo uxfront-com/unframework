@@ -3,7 +3,7 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { SsrRenderer } from "@unframework/codegen";
+import type { SsrRenderer } from "@unframework.dev/codegen";
 import { createServer, resolveConfig } from "vite";
 import { describe, expect, it } from "vitest";
 

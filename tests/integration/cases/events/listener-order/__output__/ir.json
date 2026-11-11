@@ -5,101 +5,101 @@
     {
       "name": "ListenerOrder",
       "span": {
-        "start": 36,
-        "end": 2293
+        "start": 45,
+        "end": 2302
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "log@86",
+          "id": "log@95",
           "name": "log",
           "kind": "state",
           "span": {
-            "start": 86,
-            "end": 89
+            "start": 95,
+            "end": 98
           }
         },
         {
-          "id": "resets@119",
+          "id": "resets@128",
           "name": "resets",
           "kind": "state",
           "span": {
-            "start": 119,
-            "end": 125
+            "start": 128,
+            "end": 134
           }
         },
         {
-          "id": "record@148",
+          "id": "record@157",
           "name": "record",
           "kind": "localFn",
           "span": {
-            "start": 148,
-            "end": 154
+            "start": 157,
+            "end": 163
           }
         },
         {
-          "id": "entry@2190",
+          "id": "entry@2199",
           "name": "entry",
           "kind": "loopVar",
           "span": {
-            "start": 2190,
-            "end": 2195
+            "start": 2199,
+            "end": 2204
           }
         },
         {
-          "id": "index@2197",
+          "id": "index@2206",
           "name": "index",
           "kind": "loopVar",
           "span": {
-            "start": 2197,
-            "end": 2202
+            "start": 2206,
+            "end": 2211
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "log@86",
+          "binding": "log@95",
           "type": {
             "code": "string[]",
             "span": {
-              "start": 96,
-              "end": 104
+              "start": 105,
+              "end": 113
             }
           },
           "initial": {
             "code": "[]",
             "span": {
-              "start": 106,
-              "end": 108
+              "start": 115,
+              "end": 117
             },
             "refs": []
           },
           "span": {
-            "start": 80,
-            "end": 110
+            "start": 89,
+            "end": 119
           }
         },
         {
           "kind": "State",
-          "binding": "resets@119",
+          "binding": "resets@128",
           "initial": {
             "code": "0",
             "span": {
-              "start": 132,
-              "end": 133
+              "start": 141,
+              "end": 142
             },
             "refs": []
           },
           "span": {
-            "start": 113,
-            "end": 135
+            "start": 122,
+            "end": 144
           }
         },
         {
           "kind": "Function",
-          "binding": "record@148",
+          "binding": "record@157",
           "form": "declaration",
           "function": {
             "parameters": [
@@ -108,58 +108,58 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 161,
-                    "end": 167
+                    "start": 170,
+                    "end": 176
                   }
                 },
                 "span": {
-                  "start": 155,
-                  "end": 167
+                  "start": 164,
+                  "end": 176
                 }
               }
             ],
             "body": {
               "code": "{\n    log.value = [...log.value, line];\n  }",
               "span": {
-                "start": 169,
-                "end": 212
+                "start": 178,
+                "end": 221
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "log@86",
+                  "binding": "log@95",
                   "operator": "=",
                   "span": {
-                    "start": 175,
-                    "end": 207
+                    "start": 184,
+                    "end": 216
                   },
                   "target": {
-                    "start": 175,
-                    "end": 184
+                    "start": 184,
+                    "end": 193
                   },
                   "value": {
-                    "start": 187,
-                    "end": 207
+                    "start": 196,
+                    "end": 216
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "log@86",
+                  "binding": "log@95",
                   "span": {
-                    "start": 191,
-                    "end": 200
+                    "start": 200,
+                    "end": 209
                   }
                 }
               ]
             },
             "span": {
-              "start": 154,
-              "end": 212
+              "start": 163,
+              "end": 221
             }
           },
           "span": {
-            "start": 139,
-            "end": 212
+            "start": 148,
+            "end": 221
           }
         }
       ],
@@ -172,8 +172,8 @@
             "name": "class",
             "value": "listener-order",
             "span": {
-              "start": 238,
-              "end": 260
+              "start": 247,
+              "end": 269
             }
           },
           {
@@ -181,8 +181,8 @@
             "name": "aria-label",
             "value": "Listener order",
             "span": {
-              "start": 261,
-              "end": 288
+              "start": 270,
+              "end": 297
             }
           }
         ],
@@ -196,8 +196,8 @@
                 "name": "class",
                 "value": "toolbar",
                 "span": {
-                  "start": 301,
-                  "end": 316
+                  "start": 310,
+                  "end": 325
                 }
               },
               {
@@ -205,8 +205,8 @@
                 "name": "role",
                 "value": "presentation",
                 "span": {
-                  "start": 317,
-                  "end": 336
+                  "start": 326,
+                  "end": 345
                 }
               },
               {
@@ -219,16 +219,16 @@
                     "body": {
                       "code": "record(\"toolbar\")",
                       "span": {
-                        "start": 352,
-                        "end": 369
+                        "start": 361,
+                        "end": 378
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "record@148",
+                          "binding": "record@157",
                           "span": {
-                            "start": 352,
-                            "end": 358
+                            "start": 361,
+                            "end": 367
                           },
                           "call": true
                         }
@@ -236,18 +236,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 346,
-                      "end": 369
+                      "start": 355,
+                      "end": 378
                     }
                   },
                   "span": {
-                    "start": 346,
-                    "end": 369
+                    "start": 355,
+                    "end": 378
                   }
                 },
                 "span": {
-                  "start": 337,
-                  "end": 370
+                  "start": 346,
+                  "end": 379
                 }
               }
             ],
@@ -261,8 +261,8 @@
                     "name": "type",
                     "value": "button",
                     "span": {
-                      "start": 398,
-                      "end": 411
+                      "start": 407,
+                      "end": 420
                     }
                   },
                   {
@@ -275,16 +275,16 @@
                         "body": {
                           "code": "record(\"save\")",
                           "span": {
-                            "start": 437,
-                            "end": 451
+                            "start": 446,
+                            "end": 460
                           },
                           "refs": [
                             {
                               "kind": "Binding",
-                              "binding": "record@148",
+                              "binding": "record@157",
                               "span": {
-                                "start": 437,
-                                "end": 443
+                                "start": 446,
+                                "end": 452
                               },
                               "call": true
                             }
@@ -292,18 +292,18 @@
                         },
                         "expression": true,
                         "span": {
-                          "start": 431,
-                          "end": 451
+                          "start": 440,
+                          "end": 460
                         }
                       },
                       "span": {
-                        "start": 431,
-                        "end": 451
+                        "start": 440,
+                        "end": 460
                       }
                     },
                     "span": {
-                      "start": 422,
-                      "end": 452
+                      "start": 431,
+                      "end": 461
                     }
                   },
                   {
@@ -317,16 +317,16 @@
                         "body": {
                           "code": "record(\"first save\")",
                           "span": {
-                            "start": 482,
-                            "end": 502
+                            "start": 491,
+                            "end": 511
                           },
                           "refs": [
                             {
                               "kind": "Binding",
-                              "binding": "record@148",
+                              "binding": "record@157",
                               "span": {
-                                "start": 482,
-                                "end": 488
+                                "start": 491,
+                                "end": 497
                               },
                               "call": true
                             }
@@ -334,18 +334,18 @@
                         },
                         "expression": true,
                         "span": {
-                          "start": 476,
-                          "end": 502
+                          "start": 485,
+                          "end": 511
                         }
                       },
                       "span": {
-                        "start": 476,
-                        "end": 502
+                        "start": 485,
+                        "end": 511
                       }
                     },
                     "span": {
-                      "start": 463,
-                      "end": 503
+                      "start": 472,
+                      "end": 512
                     }
                   }
                 ],
@@ -354,14 +354,14 @@
                     "kind": "Text",
                     "value": "Save",
                     "span": {
-                      "start": 513,
-                      "end": 537
+                      "start": 522,
+                      "end": 546
                     }
                   }
                 ],
                 "span": {
-                  "start": 380,
-                  "end": 546
+                  "start": 389,
+                  "end": 555
                 }
               },
               {
@@ -373,8 +373,8 @@
                     "name": "type",
                     "value": "button",
                     "span": {
-                      "start": 573,
-                      "end": 586
+                      "start": 582,
+                      "end": 595
                     }
                   },
                   {
@@ -388,16 +388,16 @@
                         "body": {
                           "code": "record(\"first send\")",
                           "span": {
-                            "start": 616,
-                            "end": 636
+                            "start": 625,
+                            "end": 645
                           },
                           "refs": [
                             {
                               "kind": "Binding",
-                              "binding": "record@148",
+                              "binding": "record@157",
                               "span": {
-                                "start": 616,
-                                "end": 622
+                                "start": 625,
+                                "end": 631
                               },
                               "call": true
                             }
@@ -405,18 +405,18 @@
                         },
                         "expression": true,
                         "span": {
-                          "start": 610,
-                          "end": 636
+                          "start": 619,
+                          "end": 645
                         }
                       },
                       "span": {
-                        "start": 610,
-                        "end": 636
+                        "start": 619,
+                        "end": 645
                       }
                     },
                     "span": {
-                      "start": 597,
-                      "end": 637
+                      "start": 606,
+                      "end": 646
                     }
                   },
                   {
@@ -429,16 +429,16 @@
                         "body": {
                           "code": "record(\"send\")",
                           "span": {
-                            "start": 663,
-                            "end": 677
+                            "start": 672,
+                            "end": 686
                           },
                           "refs": [
                             {
                               "kind": "Binding",
-                              "binding": "record@148",
+                              "binding": "record@157",
                               "span": {
-                                "start": 663,
-                                "end": 669
+                                "start": 672,
+                                "end": 678
                               },
                               "call": true
                             }
@@ -446,18 +446,18 @@
                         },
                         "expression": true,
                         "span": {
-                          "start": 657,
-                          "end": 677
+                          "start": 666,
+                          "end": 686
                         }
                       },
                       "span": {
-                        "start": 657,
-                        "end": 677
+                        "start": 666,
+                        "end": 686
                       }
                     },
                     "span": {
-                      "start": 648,
-                      "end": 678
+                      "start": 657,
+                      "end": 687
                     }
                   }
                 ],
@@ -466,14 +466,14 @@
                     "kind": "Text",
                     "value": "Send",
                     "span": {
-                      "start": 688,
-                      "end": 712
+                      "start": 697,
+                      "end": 721
                     }
                   }
                 ],
                 "span": {
-                  "start": 555,
-                  "end": 721
+                  "start": 564,
+                  "end": 730
                 }
               },
               {
@@ -485,8 +485,8 @@
                     "name": "type",
                     "value": "button",
                     "span": {
-                      "start": 748,
-                      "end": 761
+                      "start": 757,
+                      "end": 770
                     }
                   },
                   {
@@ -499,16 +499,16 @@
                         "body": {
                           "code": "record(\"reset\")",
                           "span": {
-                            "start": 787,
-                            "end": 802
+                            "start": 796,
+                            "end": 811
                           },
                           "refs": [
                             {
                               "kind": "Binding",
-                              "binding": "record@148",
+                              "binding": "record@157",
                               "span": {
-                                "start": 787,
-                                "end": 793
+                                "start": 796,
+                                "end": 802
                               },
                               "call": true
                             }
@@ -516,18 +516,18 @@
                         },
                         "expression": true,
                         "span": {
-                          "start": 781,
-                          "end": 802
+                          "start": 790,
+                          "end": 811
                         }
                       },
                       "span": {
-                        "start": 781,
-                        "end": 802
+                        "start": 790,
+                        "end": 811
                       }
                     },
                     "span": {
-                      "start": 772,
-                      "end": 803
+                      "start": 781,
+                      "end": 812
                     }
                   },
                   {
@@ -541,25 +541,25 @@
                         "body": {
                           "code": "(resets.value += 1)",
                           "span": {
-                            "start": 833,
-                            "end": 852
+                            "start": 842,
+                            "end": 861
                           },
                           "refs": [
                             {
                               "kind": "Write",
-                              "binding": "resets@119",
+                              "binding": "resets@128",
                               "operator": "+=",
                               "span": {
-                                "start": 833,
-                                "end": 852
+                                "start": 842,
+                                "end": 861
                               },
                               "target": {
-                                "start": 834,
-                                "end": 846
+                                "start": 843,
+                                "end": 855
                               },
                               "value": {
-                                "start": 850,
-                                "end": 851
+                                "start": 859,
+                                "end": 860
                               },
                               "arrowBody": true
                             }
@@ -567,18 +567,18 @@
                         },
                         "expression": true,
                         "span": {
-                          "start": 827,
-                          "end": 852
+                          "start": 836,
+                          "end": 861
                         }
                       },
                       "span": {
-                        "start": 827,
-                        "end": 852
+                        "start": 836,
+                        "end": 861
                       }
                     },
                     "span": {
-                      "start": 814,
-                      "end": 853
+                      "start": 823,
+                      "end": 862
                     }
                   }
                 ],
@@ -587,20 +587,20 @@
                     "kind": "Text",
                     "value": "Reset",
                     "span": {
-                      "start": 863,
-                      "end": 888
+                      "start": 872,
+                      "end": 897
                     }
                   }
                 ],
                 "span": {
-                  "start": 730,
-                  "end": 897
+                  "start": 739,
+                  "end": 906
                 }
               }
             ],
             "span": {
-              "start": 296,
-              "end": 910
+              "start": 305,
+              "end": 919
             }
           },
           {
@@ -612,8 +612,8 @@
                 "name": "class",
                 "value": "panel",
                 "span": {
-                  "start": 930,
-                  "end": 943
+                  "start": 939,
+                  "end": 952
                 }
               },
               {
@@ -621,8 +621,8 @@
                 "name": "role",
                 "value": "presentation",
                 "span": {
-                  "start": 952,
-                  "end": 971
+                  "start": 961,
+                  "end": 980
                 }
               },
               {
@@ -636,16 +636,16 @@
                     "body": {
                       "code": "record(\"panel capture\")",
                       "span": {
-                        "start": 1002,
-                        "end": 1025
+                        "start": 1011,
+                        "end": 1034
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "record@148",
+                          "binding": "record@157",
                           "span": {
-                            "start": 1002,
-                            "end": 1008
+                            "start": 1011,
+                            "end": 1017
                           },
                           "call": true
                         }
@@ -653,18 +653,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 996,
-                      "end": 1025
+                      "start": 1005,
+                      "end": 1034
                     }
                   },
                   "span": {
-                    "start": 996,
-                    "end": 1025
+                    "start": 1005,
+                    "end": 1034
                   }
                 },
                 "span": {
-                  "start": 980,
-                  "end": 1026
+                  "start": 989,
+                  "end": 1035
                 }
               },
               {
@@ -678,33 +678,33 @@
                         "name": "event",
                         "event": "PointerEvent",
                         "span": {
-                          "start": 1045,
-                          "end": 1050
+                          "start": 1054,
+                          "end": 1059
                         }
                       }
                     ],
                     "body": {
                       "code": "{\n          event.stopPropagation();\n          record(\"panel bubble\");\n        }",
                       "span": {
-                        "start": 1055,
-                        "end": 1135
+                        "start": 1064,
+                        "end": 1144
                       },
                       "refs": [
                         {
                           "kind": "Event",
                           "member": "stopPropagation",
                           "span": {
-                            "start": 1067,
-                            "end": 1088
+                            "start": 1076,
+                            "end": 1097
                           },
                           "call": true
                         },
                         {
                           "kind": "Binding",
-                          "binding": "record@148",
+                          "binding": "record@157",
                           "span": {
-                            "start": 1102,
-                            "end": 1108
+                            "start": 1111,
+                            "end": 1117
                           },
                           "call": true
                         }
@@ -714,24 +714,24 @@
                       {
                         "method": "stopPropagation",
                         "span": {
-                          "start": 1067,
-                          "end": 1091
+                          "start": 1076,
+                          "end": 1100
                         }
                       }
                     ],
                     "span": {
-                      "start": 1044,
-                      "end": 1135
+                      "start": 1053,
+                      "end": 1144
                     }
                   },
                   "span": {
-                    "start": 1044,
-                    "end": 1135
+                    "start": 1053,
+                    "end": 1144
                   }
                 },
                 "span": {
-                  "start": 1035,
-                  "end": 1136
+                  "start": 1044,
+                  "end": 1145
                 }
               }
             ],
@@ -745,8 +745,8 @@
                     "name": "type",
                     "value": "button",
                     "span": {
-                      "start": 1161,
-                      "end": 1174
+                      "start": 1170,
+                      "end": 1183
                     }
                   },
                   {
@@ -759,16 +759,16 @@
                         "body": {
                           "code": "record(\"inside\")",
                           "span": {
-                            "start": 1190,
-                            "end": 1206
+                            "start": 1199,
+                            "end": 1215
                           },
                           "refs": [
                             {
                               "kind": "Binding",
-                              "binding": "record@148",
+                              "binding": "record@157",
                               "span": {
-                                "start": 1190,
-                                "end": 1196
+                                "start": 1199,
+                                "end": 1205
                               },
                               "call": true
                             }
@@ -776,18 +776,18 @@
                         },
                         "expression": true,
                         "span": {
-                          "start": 1184,
-                          "end": 1206
+                          "start": 1193,
+                          "end": 1215
                         }
                       },
                       "span": {
-                        "start": 1184,
-                        "end": 1206
+                        "start": 1193,
+                        "end": 1215
                       }
                     },
                     "span": {
-                      "start": 1175,
-                      "end": 1207
+                      "start": 1184,
+                      "end": 1216
                     }
                   }
                 ],
@@ -796,20 +796,20 @@
                     "kind": "Text",
                     "value": "Inside",
                     "span": {
-                      "start": 1208,
-                      "end": 1234
+                      "start": 1217,
+                      "end": 1243
                     }
                   }
                 ],
                 "span": {
-                  "start": 1153,
-                  "end": 1243
+                  "start": 1162,
+                  "end": 1252
                 }
               }
             ],
             "span": {
-              "start": 917,
-              "end": 1256
+              "start": 926,
+              "end": 1265
             }
           },
           {
@@ -821,8 +821,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 1271,
-                  "end": 1284
+                  "start": 1280,
+                  "end": 1293
                 }
               },
               {
@@ -835,16 +835,16 @@
                     "body": {
                       "code": "record(\"outside\")",
                       "span": {
-                        "start": 1300,
-                        "end": 1317
+                        "start": 1309,
+                        "end": 1326
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "record@148",
+                          "binding": "record@157",
                           "span": {
-                            "start": 1300,
-                            "end": 1306
+                            "start": 1309,
+                            "end": 1315
                           },
                           "call": true
                         }
@@ -852,18 +852,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 1294,
-                      "end": 1317
+                      "start": 1303,
+                      "end": 1326
                     }
                   },
                   "span": {
-                    "start": 1294,
-                    "end": 1317
+                    "start": 1303,
+                    "end": 1326
                   }
                 },
                 "span": {
-                  "start": 1285,
-                  "end": 1318
+                  "start": 1294,
+                  "end": 1327
                 }
               }
             ],
@@ -872,14 +872,14 @@
                 "kind": "Text",
                 "value": "Outside",
                 "span": {
-                  "start": 1319,
-                  "end": 1342
+                  "start": 1328,
+                  "end": 1351
                 }
               }
             ],
             "span": {
-              "start": 1263,
-              "end": 1351
+              "start": 1272,
+              "end": 1360
             }
           },
           {
@@ -891,8 +891,8 @@
                 "name": "class",
                 "value": "claim",
                 "span": {
-                  "start": 1363,
-                  "end": 1376
+                  "start": 1372,
+                  "end": 1385
                 }
               },
               {
@@ -900,8 +900,8 @@
                 "name": "role",
                 "value": "presentation",
                 "span": {
-                  "start": 1377,
-                  "end": 1396
+                  "start": 1386,
+                  "end": 1405
                 }
               },
               {
@@ -915,16 +915,16 @@
                     "body": {
                       "code": "record(\"claim once\")",
                       "span": {
-                        "start": 1416,
-                        "end": 1436
+                        "start": 1425,
+                        "end": 1445
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "record@148",
+                          "binding": "record@157",
                           "span": {
-                            "start": 1416,
-                            "end": 1422
+                            "start": 1425,
+                            "end": 1431
                           },
                           "call": true
                         }
@@ -932,18 +932,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 1410,
-                      "end": 1436
+                      "start": 1419,
+                      "end": 1445
                     }
                   },
                   "span": {
-                    "start": 1410,
-                    "end": 1436
+                    "start": 1419,
+                    "end": 1445
                   }
                 },
                 "span": {
-                  "start": 1397,
-                  "end": 1437
+                  "start": 1406,
+                  "end": 1446
                 }
               }
             ],
@@ -957,8 +957,8 @@
                     "name": "type",
                     "value": "button",
                     "span": {
-                      "start": 1465,
-                      "end": 1478
+                      "start": 1474,
+                      "end": 1487
                     }
                   },
                   {
@@ -972,33 +972,33 @@
                             "name": "event",
                             "event": "PointerEvent",
                             "span": {
-                              "start": 1499,
-                              "end": 1504
+                              "start": 1508,
+                              "end": 1513
                             }
                           }
                         ],
                         "body": {
                           "code": "{\n            event.stopPropagation();\n            record(\"stopped\");\n          }",
                           "span": {
-                            "start": 1509,
-                            "end": 1590
+                            "start": 1518,
+                            "end": 1599
                           },
                           "refs": [
                             {
                               "kind": "Event",
                               "member": "stopPropagation",
                               "span": {
-                                "start": 1523,
-                                "end": 1544
+                                "start": 1532,
+                                "end": 1553
                               },
                               "call": true
                             },
                             {
                               "kind": "Binding",
-                              "binding": "record@148",
+                              "binding": "record@157",
                               "span": {
-                                "start": 1560,
-                                "end": 1566
+                                "start": 1569,
+                                "end": 1575
                               },
                               "call": true
                             }
@@ -1008,24 +1008,24 @@
                           {
                             "method": "stopPropagation",
                             "span": {
-                              "start": 1523,
-                              "end": 1547
+                              "start": 1532,
+                              "end": 1556
                             }
                           }
                         ],
                         "span": {
-                          "start": 1498,
-                          "end": 1590
+                          "start": 1507,
+                          "end": 1599
                         }
                       },
                       "span": {
-                        "start": 1498,
-                        "end": 1590
+                        "start": 1507,
+                        "end": 1599
                       }
                     },
                     "span": {
-                      "start": 1489,
-                      "end": 1591
+                      "start": 1498,
+                      "end": 1600
                     }
                   }
                 ],
@@ -1034,14 +1034,14 @@
                     "kind": "Text",
                     "value": "Stop",
                     "span": {
-                      "start": 1601,
-                      "end": 1625
+                      "start": 1610,
+                      "end": 1634
                     }
                   }
                 ],
                 "span": {
-                  "start": 1447,
-                  "end": 1634
+                  "start": 1456,
+                  "end": 1643
                 }
               },
               {
@@ -1053,8 +1053,8 @@
                     "name": "type",
                     "value": "button",
                     "span": {
-                      "start": 1651,
-                      "end": 1664
+                      "start": 1660,
+                      "end": 1673
                     }
                   },
                   {
@@ -1067,16 +1067,16 @@
                         "body": {
                           "code": "record(\"pass\")",
                           "span": {
-                            "start": 1680,
-                            "end": 1694
+                            "start": 1689,
+                            "end": 1703
                           },
                           "refs": [
                             {
                               "kind": "Binding",
-                              "binding": "record@148",
+                              "binding": "record@157",
                               "span": {
-                                "start": 1680,
-                                "end": 1686
+                                "start": 1689,
+                                "end": 1695
                               },
                               "call": true
                             }
@@ -1084,18 +1084,18 @@
                         },
                         "expression": true,
                         "span": {
-                          "start": 1674,
-                          "end": 1694
+                          "start": 1683,
+                          "end": 1703
                         }
                       },
                       "span": {
-                        "start": 1674,
-                        "end": 1694
+                        "start": 1683,
+                        "end": 1703
                       }
                     },
                     "span": {
-                      "start": 1665,
-                      "end": 1695
+                      "start": 1674,
+                      "end": 1704
                     }
                   }
                 ],
@@ -1104,20 +1104,20 @@
                     "kind": "Text",
                     "value": "Pass",
                     "span": {
-                      "start": 1696,
-                      "end": 1720
+                      "start": 1705,
+                      "end": 1729
                     }
                   }
                 ],
                 "span": {
-                  "start": 1643,
-                  "end": 1729
+                  "start": 1652,
+                  "end": 1738
                 }
               }
             ],
             "span": {
-              "start": 1358,
-              "end": 1742
+              "start": 1367,
+              "end": 1751
             }
           },
           {
@@ -1129,8 +1129,8 @@
                 "name": "class",
                 "value": "outer-zone",
                 "span": {
-                  "start": 1762,
-                  "end": 1780
+                  "start": 1771,
+                  "end": 1789
                 }
               },
               {
@@ -1138,8 +1138,8 @@
                 "name": "role",
                 "value": "group",
                 "span": {
-                  "start": 1789,
-                  "end": 1801
+                  "start": 1798,
+                  "end": 1810
                 }
               },
               {
@@ -1147,8 +1147,8 @@
                 "name": "aria-label",
                 "value": "Outer zone",
                 "span": {
-                  "start": 1810,
-                  "end": 1833
+                  "start": 1819,
+                  "end": 1842
                 }
               },
               {
@@ -1161,16 +1161,16 @@
                     "body": {
                       "code": "record(\"outer wheel\")",
                       "span": {
-                        "start": 1857,
-                        "end": 1878
+                        "start": 1866,
+                        "end": 1887
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "record@148",
+                          "binding": "record@157",
                           "span": {
-                            "start": 1857,
-                            "end": 1863
+                            "start": 1866,
+                            "end": 1872
                           },
                           "call": true
                         }
@@ -1178,18 +1178,18 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 1851,
-                      "end": 1878
+                      "start": 1860,
+                      "end": 1887
                     }
                   },
                   "span": {
-                    "start": 1851,
-                    "end": 1878
+                    "start": 1860,
+                    "end": 1887
                   }
                 },
                 "span": {
-                  "start": 1842,
-                  "end": 1879
+                  "start": 1851,
+                  "end": 1888
                 }
               }
             ],
@@ -1203,8 +1203,8 @@
                     "name": "class",
                     "value": "inner-zone",
                     "span": {
-                      "start": 1911,
-                      "end": 1929
+                      "start": 1920,
+                      "end": 1938
                     }
                   },
                   {
@@ -1212,8 +1212,8 @@
                     "name": "role",
                     "value": "group",
                     "span": {
-                      "start": 1940,
-                      "end": 1952
+                      "start": 1949,
+                      "end": 1961
                     }
                   },
                   {
@@ -1221,8 +1221,8 @@
                     "name": "aria-label",
                     "value": "Inner zone",
                     "span": {
-                      "start": 1963,
-                      "end": 1986
+                      "start": 1972,
+                      "end": 1995
                     }
                   },
                   {
@@ -1236,16 +1236,16 @@
                         "body": {
                           "code": "record(\"inner wheel\")",
                           "span": {
-                            "start": 2019,
-                            "end": 2040
+                            "start": 2028,
+                            "end": 2049
                           },
                           "refs": [
                             {
                               "kind": "Binding",
-                              "binding": "record@148",
+                              "binding": "record@157",
                               "span": {
-                                "start": 2019,
-                                "end": 2025
+                                "start": 2028,
+                                "end": 2034
                               },
                               "call": true
                             }
@@ -1253,18 +1253,18 @@
                         },
                         "expression": true,
                         "span": {
-                          "start": 2013,
-                          "end": 2040
+                          "start": 2022,
+                          "end": 2049
                         }
                       },
                       "span": {
-                        "start": 2013,
-                        "end": 2040
+                        "start": 2022,
+                        "end": 2049
                       }
                     },
                     "span": {
-                      "start": 1997,
-                      "end": 2041
+                      "start": 2006,
+                      "end": 2050
                     }
                   }
                 ],
@@ -1273,20 +1273,20 @@
                     "kind": "Text",
                     "value": "Scroll here",
                     "span": {
-                      "start": 2051,
-                      "end": 2082
+                      "start": 2060,
+                      "end": 2091
                     }
                   }
                 ],
                 "span": {
-                  "start": 1896,
-                  "end": 2088
+                  "start": 1905,
+                  "end": 2097
                 }
               }
             ],
             "span": {
-              "start": 1749,
-              "end": 2101
+              "start": 1758,
+              "end": 2110
             }
           },
           {
@@ -1298,8 +1298,8 @@
                 "kind": "Text",
                 "value": "Resets: ",
                 "span": {
-                  "start": 2111,
-                  "end": 2119
+                  "start": 2120,
+                  "end": 2128
                 }
               },
               {
@@ -1307,29 +1307,29 @@
                 "value": {
                   "code": "resets.value",
                   "span": {
-                    "start": 2120,
-                    "end": 2132
+                    "start": 2129,
+                    "end": 2141
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "resets@119",
+                      "binding": "resets@128",
                       "span": {
-                        "start": 2120,
-                        "end": 2132
+                        "start": 2129,
+                        "end": 2141
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 2119,
-                  "end": 2133
+                  "start": 2128,
+                  "end": 2142
                 }
               }
             ],
             "span": {
-              "start": 2108,
-              "end": 2137
+              "start": 2117,
+              "end": 2146
             }
           },
           {
@@ -1341,8 +1341,8 @@
                 "name": "aria-label",
                 "value": "Log",
                 "span": {
-                  "start": 2148,
-                  "end": 2164
+                  "start": 2157,
+                  "end": 2173
                 }
               }
             ],
@@ -1352,35 +1352,35 @@
                 "source": {
                   "code": "log.value",
                   "span": {
-                    "start": 2175,
-                    "end": 2184
+                    "start": 2184,
+                    "end": 2193
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "log@86",
+                      "binding": "log@95",
                       "span": {
-                        "start": 2175,
-                        "end": 2184
+                        "start": 2184,
+                        "end": 2193
                       }
                     }
                   ]
                 },
-                "item": "entry@2190",
-                "index": "index@2197",
+                "item": "entry@2199",
+                "index": "index@2206",
                 "key": {
                   "code": "index",
                   "span": {
-                    "start": 2228,
-                    "end": 2233
+                    "start": 2237,
+                    "end": 2242
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "index@2197",
+                      "binding": "index@2206",
                       "span": {
-                        "start": 2228,
-                        "end": 2233
+                        "start": 2237,
+                        "end": 2242
                       }
                     }
                   ]
@@ -1395,46 +1395,46 @@
                       "value": {
                         "code": "entry",
                         "span": {
-                          "start": 2236,
-                          "end": 2241
+                          "start": 2245,
+                          "end": 2250
                         },
                         "refs": [
                           {
                             "kind": "Binding",
-                            "binding": "entry@2190",
+                            "binding": "entry@2199",
                             "span": {
-                              "start": 2236,
-                              "end": 2241
+                              "start": 2245,
+                              "end": 2250
                             }
                           }
                         ]
                       },
                       "span": {
-                        "start": 2235,
-                        "end": 2242
+                        "start": 2244,
+                        "end": 2251
                       }
                     }
                   ],
                   "span": {
-                    "start": 2219,
-                    "end": 2247
+                    "start": 2228,
+                    "end": 2256
                   }
                 },
                 "span": {
-                  "start": 2175,
-                  "end": 2258
+                  "start": 2184,
+                  "end": 2267
                 }
               }
             ],
             "span": {
-              "start": 2144,
-              "end": 2271
+              "start": 2153,
+              "end": 2280
             }
           }
         ],
         "span": {
-          "start": 229,
-          "end": 2286
+          "start": 238,
+          "end": 2295
         }
       }
     }
@@ -1445,8 +1445,8 @@
       "name": "default",
       "local": "ListenerOrder",
       "span": {
-        "start": 36,
-        "end": 2293
+        "start": 45,
+        "end": 2302
       }
     }
   ],

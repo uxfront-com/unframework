@@ -1,6 +1,6 @@
 // jsx/fragments: a component whose root is a fragment of several elements, fragments as the
 // branches of a conditional, and a fragment inside an element, flattened into it.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import ArticleHeader from "./ArticleHeader.uf.tsx";

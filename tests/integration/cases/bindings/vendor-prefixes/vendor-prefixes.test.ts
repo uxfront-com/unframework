@@ -1,7 +1,7 @@
 // bindings/vendor-prefixes: vendor-prefixed longhands that Chromium computes (ADR-0065), bound
 // in a style object, whose keys each target spells its own way, and static in a declaration
 // list that clamps a paragraph to two lines.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import Excerpt from "./Excerpt.uf.tsx";

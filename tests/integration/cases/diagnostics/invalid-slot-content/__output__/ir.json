@@ -5,18 +5,18 @@
     {
       "name": "Layout",
       "span": {
-        "start": 227,
-        "end": 421
+        "start": 245,
+        "end": 439
       },
       "props": [],
       "types": [],
       "slots": {
-        "binding": "slots@255",
+        "binding": "slots@273",
         "type": {
           "code": "{ title?(): Element; default?(): Element }",
           "span": {
-            "start": 275,
-            "end": 317
+            "start": 293,
+            "end": 335
           }
         },
         "slots": [
@@ -24,32 +24,32 @@
             "name": "title",
             "optional": true,
             "span": {
-              "start": 277,
-              "end": 295
+              "start": 295,
+              "end": 313
             }
           },
           {
             "name": "default",
             "optional": true,
             "span": {
-              "start": 296,
-              "end": 315
+              "start": 314,
+              "end": 333
             }
           }
         ],
         "span": {
-          "start": 249,
-          "end": 321
+          "start": 267,
+          "end": 339
         }
       },
       "bindings": [
         {
-          "id": "slots@255",
+          "id": "slots@273",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 255,
-            "end": 260
+            "start": 273,
+            "end": 278
           }
         }
       ],
@@ -69,14 +69,14 @@
                 "slot": "title",
                 "fallback": [],
                 "span": {
-                  "start": 354,
-                  "end": 371
+                  "start": 372,
+                  "end": 389
                 }
               }
             ],
             "span": {
-              "start": 350,
-              "end": 376
+              "start": 368,
+              "end": 394
             }
           },
           {
@@ -84,14 +84,14 @@
             "slot": "default",
             "fallback": [],
             "span": {
-              "start": 383,
-              "end": 402
+              "start": 401,
+              "end": 420
             }
           }
         ],
         "span": {
-          "start": 337,
-          "end": 414
+          "start": 355,
+          "end": 432
         }
       }
     }

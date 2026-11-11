@@ -23,7 +23,7 @@ import {
   createStyleSheet,
   createText,
   span,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Attribute,
   ComponentApi,
@@ -32,7 +32,7 @@ import type {
   FragmentNode,
   Handler,
   RenderNode,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import {

@@ -1,16 +1,16 @@
 // Composition (ADR-0053 to ADR-0055): component elements and their fills, a component's own
 // slots, fallthrough, `defineExpose` and component refs, and the imports of component modules.
 // Every source runs through `run`, which checks the IR's invariants.
-import { checkInvariants } from "@unframework/ir";
-import type { ComponentNode, ModuleApi, SlotOutletNode } from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+import { checkInvariants } from "@unframework.dev/ir";
+import type { ComponentNode, ModuleApi, SlotOutletNode } from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { analyze, componentImports } from "../src/index.ts";
 import { applyAndRecheck, codes, problems, run } from "./helpers.ts";
 
 const API =
-  'import { defineEmits, defineExpose, defineOptions, defineSlots, ref, useTemplateRef } from "unframework";\nimport type { Element } from "unframework";\n';
+  'import { defineEmits, defineExpose, defineOptions, defineSlots, ref, useTemplateRef } from "@uxfront/unframework";\nimport type { Element } from "@uxfront/unframework";\n';
 
 /** The first component node of a component's render tree, depth first. */
 function componentNode(render: unknown): ComponentNode {

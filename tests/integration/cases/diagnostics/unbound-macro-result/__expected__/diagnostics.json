@@ -7,12 +7,12 @@
     "start": {
       "line": 6,
       "column": 3,
-      "offset": 247
+      "offset": 256
     },
     "end": {
       "line": 6,
       "column": 31,
-      "offset": 275
+      "offset": 284
     },
     "help": "Bind it: `const emit = defineEmits<{ … }>();`.",
     "fixes": [
@@ -22,8 +22,8 @@
         "edits": [
           {
             "span": {
-              "start": 247,
-              "end": 247
+              "start": 256,
+              "end": 256
             },
             "text": "const emit = "
           }

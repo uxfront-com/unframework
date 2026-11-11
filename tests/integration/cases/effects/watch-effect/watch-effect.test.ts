@@ -2,7 +2,7 @@
 // changes, a state or a prop, each read unconditionally (UF2015); a write of the value a state
 // already holds runs nothing. Its cleanup runs right before the next run, and at unmount. It only
 // emits, so the mounted DOM is the server's.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import UnreadBadge from "./UnreadBadge.uf.tsx";

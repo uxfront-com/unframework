@@ -1,4 +1,4 @@
-# @unframework/diagnostics
+# @unframework.dev/diagnostics
 
 Diagnostics for the Unframework compiler (plan §5.9):
 

@@ -1,4 +1,4 @@
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 import { formatDistance } from "./format";
 import type { Unit } from "./units";

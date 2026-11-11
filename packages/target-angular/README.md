@@ -1,4 +1,4 @@
-# @unframework/target-angular
+# @unframework.dev/target-angular
 
 The Angular 22 target of the Unframework compiler: standalone, zoneless components with inline
 templates, whose host element has `display: contents` (decision D6, ADR-0010).
@@ -55,7 +55,7 @@ emit("save") }`): the class's own member takes another name instead (`src/plan.t
   `currentPage` for any other value, since angular-eslint's `no-output-rename` rejects an alias.
 - **Template.** One `@let name = this.name();` per signal the template reads (an input, a
   state, a derived value, a setup-once constant: props first, then the setup's in source order),
-  then the markup of the Angular dialect (`@unframework/codegen`'s `angularDialect`): `{{ }}`,
+  then the markup of the Angular dialect (`@unframework.dev/codegen`'s `angularDialect`): `{{ }}`,
   `@if`/`@for`, `[attr.x]` bindings, a static `class` beside one `[class]`, a static `style`
   beside `[style.x]`, `#name` for a template ref. The template reads signals through those
   variables because Angular's type checker narrows a template variable as TypeScript narrows a
@@ -382,7 +382,7 @@ follow-up on Angular's host settles the difference.
 
 Tests and tooling build, check and run the Angular output through three subpaths:
 
-- `@unframework/target-angular/toolchain` (Node): the `toolchain` the harness drives.
+- `@unframework.dev/target-angular/toolchain` (Node): the `toolchain` the harness drives.
   - `vite("browser" | "ssr", context)`: Angular's AOT compiler (ngtsc, strict templates) for
     the unframework plugin's virtual `X.uf.tsx.ts` modules and its modules of composables,
     `X.uf.ts.ts`, which a component's program reads so its template is checked against the
@@ -399,13 +399,13 @@ Tests and tooling build, check and run the Angular output through three subpaths
     ESLint with angular-eslint over the file and its inline template.
     `@angular-eslint/no-output-native` is on: an output named like a native event takes the `uf`
     prefix (ADR-0056).
-- `@unframework/target-angular/toolchain/client`: the browser mount adapter (`createApplication`
+- `@unframework.dev/target-angular/toolchain/client`: the browser mount adapter (`createApplication`
   and `createComponent`, zoneless, settled with `whenStable`). `rerender(props)` sets each new
   prop with `setInput`, and `setInput(name, undefined)` for a prop the new props leave out,
   since Angular cannot unset an input (ADR-0043). The test's listeners are bound to the outputs
   of their events (`outputBinding`, `ufChange` for `change`), and each payload is given back by
   its event's shape.
-- `@unframework/target-angular/toolchain/server`: the SSR renderer (`renderApplication`), which
+- `@unframework.dev/target-angular/toolchain/server`: the SSR renderer (`renderApplication`), which
   returns the component's HTML only. It runs on the `ssr` Vite configuration, which links
   Angular's packages as they load.
 

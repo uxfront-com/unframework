@@ -7,12 +7,12 @@
     "start": {
       "line": 8,
       "column": 27,
-      "offset": 316
+      "offset": 325
     },
     "end": {
       "line": 8,
       "column": 65,
-      "offset": 354
+      "offset": 363
     },
     "target": "astro"
   },
@@ -24,12 +24,12 @@
     "start": {
       "line": 18,
       "column": 15,
-      "offset": 525
+      "offset": 534
     },
     "end": {
       "line": 18,
       "column": 29,
-      "offset": 539
+      "offset": 548
     },
     "help": "Bind a model Choice declares with `defineModel`.",
     "fixes": [
@@ -39,8 +39,8 @@
         "edits": [
           {
             "span": {
-              "start": 533,
-              "end": 539
+              "start": 542,
+              "end": 548
             },
             "text": "picked"
           }

@@ -1,6 +1,6 @@
 // UF2023 read-before-declaration: `total` reads `tax`, which is declared after it; a getter runs
 // with the setup on some targets (React's `useMemo`), before `tax` exists. Declare `tax` first.
-import { computed, ref } from "unframework";
+import { computed, ref } from "@uxfront/unframework";
 
 export default function Invoice() {
   const net = ref(100);

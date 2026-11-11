@@ -1,7 +1,7 @@
 // UF2027 self-triggering-effect: the effect writes `history`, which it also reads: Vue ignores an
 // effect's own writes while it runs, and the other targets run it again, without end. Watch
 // `count` instead: a watcher's callback is untracked.
-import { ref, watchEffect } from "unframework";
+import { ref, watchEffect } from "@uxfront/unframework";
 
 export default function VisitLog() {
   const count = ref(0);

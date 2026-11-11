@@ -12,7 +12,7 @@ import {
   useTemplateRef,
   watch,
   type Element,
-} from "unframework";
+} from "@uxfront/unframework";
 
 import { TabsKey } from "../fixtures/keys.ts";
 

@@ -1,9 +1,9 @@
-# ADR-0085: The public API of `@unframework/testing` is its root entry and the case
+# ADR-0085: The public API of `@unframework.dev/testing` is its root entry and the case
 
 - **Status:** Accepted
 - **Date:** 2026-11-11
-- **Plan:** §7.1, §7.2 (L7, L11), §7.3, §8.5, §9 M7; ADR-0016, ADR-0043, ADR-0049, ADR-0050,
-  ADR-0057, ADR-0060, ADR-0061
+- **Plan:** §7.1, §7.2 (L7, L11), §7.3, §8.5, §9 M7; ADR-0043, ADR-0049, ADR-0050, ADR-0057,
+  ADR-0060, ADR-0061, ADR-0090
 
 ## Context
 
@@ -32,7 +32,7 @@ per project, one per target, so it compares no target with another.
   `SpecTest`, `ParityOptions`, `PixelTolerance`, `ConsoleEntry`, `CaseConfig`, `SsrScenario` and
   `NoAxeViolationsOptions`. `tests/repo/test/testing-api.test.ts` pins both lists against the
   entry and this record, so a new name fails until both change.
-- **The matchers are public too.** `@unframework/testing/setup` registers them with
+- **The matchers are public too.** `@unframework.dev/testing/setup` registers them with
   `expect.extend`, and the root's types add them to Vitest's `Matchers`:
   - `toHaveNoAxeViolations(options?)` runs axe-core on the element with L11's options. It passes
     on no violation, or on exactly the rules `options.expected` lists, as `case.json`'s `axe`
@@ -55,18 +55,19 @@ per project, one per target, so it compares no target with another.
   configuration loads them, and M7's `defineTestConfig` is to load them for it.
 - **A lint rule holds the corpus to the public API.** `oxlint.config.ts` sets
   `no-restricted-imports` to `error` on `tests/integration/cases/**/*.{ts,tsx}`. It refuses any
-  `@unframework/testing/*` subpath, any other `@unframework/*` package, and any relative path
+  `@unframework.dev/testing/*` subpath, any other `@unframework.dev/*` package, and any relative path
   with a `harness`, `scripts` or `packages` segment, which reaches the harness's code or a
   package's source around its entries. `tests/repo/test/corpus-imports.test.ts` runs oxlint
   with the rule on a probe spec, with each kind of import. `ignorePatterns` keeps oxlint off
   `cases/diagnostics/`, so the rule doesn't reach it. No spec lives there, since a diagnostics
   case has none.
 - **`"private": true` stays** until a release. Removing it, publishing the packages it depends
-  on and the npm name (ADR-0016, Proposed) are a release decision. Until then the package packs,
+  on and their first versions under the names ADR-0090 gives them are a release decision. Until
+  then the package packs,
   and `publishConfig.exports` names every subpath in `dist`.
 
 ```ts
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Counter from "./Counter.uf.tsx";

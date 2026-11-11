@@ -21,9 +21,9 @@ import {
   referencedBindings,
   rewriteCode,
   typeExportsCode,
-} from "@unframework/codegen";
-import type { RewriteRules } from "@unframework/codegen";
-import { codeOf, expressionsOf, walk } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { RewriteRules } from "@unframework.dev/codegen";
+import { codeOf, expressionsOf, walk } from "@unframework.dev/ir";
 import type {
   Binding,
   BindingId,
@@ -40,7 +40,7 @@ import type {
   UfModule,
   WatchItem,
   WatchSource,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import {
   addReadTypeImports,

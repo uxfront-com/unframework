@@ -3,7 +3,7 @@
 // them across a rerender (setup runs once). Beside them: a watcher of an array source whose
 // callback annotates its tuple parameter, a `watchEffect` that reads its values through a local
 // function, a captured `let` updated inside an arrow's expression, and a type-predicate helper.
-import { describeTargets, it, mount, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mount, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Ballot from "./Ballot.uf.tsx";

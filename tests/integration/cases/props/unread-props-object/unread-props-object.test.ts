@@ -1,7 +1,7 @@
 // props/unread-props-object: a placeholder that takes the article's props, so a page can render
 // it in the article's place, and reads none of them. The props object is still declared, so a
 // consumer may pass every prop, and none renders: no text, and no attribute on the root.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import ArticleSkeleton from "./ArticleSkeleton.uf.tsx";

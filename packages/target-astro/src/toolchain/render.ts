@@ -14,7 +14,7 @@ import type {
   CapturedConsoleMessage,
   ToolchainCommand,
   ToolchainContext,
-} from "@unframework/codegen";
+} from "@unframework.dev/codegen";
 import type * as AstroContainerModule from "astro/container";
 import type { experimental_AstroContainer as AstroContainer } from "astro/container";
 import type {

@@ -6,7 +6,7 @@
 import { symlinkSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import type { TargetName } from "@unframework/compiler";
+import type { TargetName } from "@unframework.dev/compiler";
 import { createServer } from "vite";
 import type { Plugin, ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

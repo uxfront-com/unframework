@@ -2,7 +2,7 @@
 // the analyser and this target, formatted as the compiler formats it, and served as a `.tsx`
 // module under `/__uf_behaviour__/`, which `@vitejs/plugin-react` then transforms as it would the
 // unplugin's output. A test-only path to the analyser, as test/fixtures.ts takes.
-import { formatOutput } from "@unframework/codegen";
+import { formatOutput } from "@unframework.dev/codegen";
 import type { Plugin } from "vite";
 
 import { analyze } from "../../analyzer/src/index.ts";

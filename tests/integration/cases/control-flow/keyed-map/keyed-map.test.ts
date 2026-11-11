@@ -1,6 +1,6 @@
 // control-flow/keyed-map: a list of objects mapped to table rows, keyed by a string; the rows
 // render in the array's order. M1 checks content and order only, not DOM identity (ADR-0036).
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import ContributorTable from "./ContributorTable.uf.tsx";

@@ -29,7 +29,7 @@ describe("the Astro toolchain", () => {
   it("names its runtime entries by package subpath", () => {
     const require = createRequire(import.meta.url);
     for (const specifier of [toolchain.client, toolchain.server]) {
-      expect(specifier).toMatch(/^@unframework\/target-astro\/toolchain\//);
+      expect(specifier).toMatch(/^@unframework\.dev\/target-astro\/toolchain\//);
       expect(existsSync(require.resolve(specifier))).toBe(true);
     }
   });

@@ -1,6 +1,6 @@
 // Whether a media query matches (ADR-0069): false on the server, read from the browser once the
 // caller mounts, and kept current by a listener the caller's unmount removes.
-import { onMounted, onUnmounted, ref } from "unframework";
+import { onMounted, onUnmounted, ref } from "@uxfront/unframework";
 
 export function useMediaQuery(query: string) {
   const matches = ref(false);

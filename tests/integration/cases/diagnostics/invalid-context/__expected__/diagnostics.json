@@ -7,12 +7,12 @@
     "start": {
       "line": 11,
       "column": 17,
-      "offset": 494
+      "offset": 512
     },
     "end": {
       "line": 11,
       "column": 36,
-      "offset": 513
+      "offset": 531
     },
     "help": "Move the `inject` above the `provide`.",
     "related": [
@@ -20,12 +20,12 @@
         "start": {
           "line": 10,
           "column": 3,
-          "offset": 456
+          "offset": 474
         },
         "end": {
           "line": 10,
           "column": 23,
-          "offset": 476
+          "offset": 494
         },
         "message": "Provided here"
       }

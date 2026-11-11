@@ -11,8 +11,8 @@
       // of this package: its transit node carries it into this hash.
       "dependsOn": [
         "$TURBO_EXTENDS$",
-        "@unframework/toolchain-vue#transit",
-        "@unframework/compiler#transit"
+        "@unframework.dev/toolchain-vue#transit",
+        "@unframework.dev/compiler#transit"
       ],
       "inputs": [
         "$TURBO_DEFAULT$",

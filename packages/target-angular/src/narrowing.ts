@@ -17,7 +17,7 @@ import type {
   FunctionCode,
   Span,
   UfComponent,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 /** Whether a reference's own read is narrowed: its whole span is a narrowed path. */
 export function narrowedWhole(reference: BindingReference): boolean {

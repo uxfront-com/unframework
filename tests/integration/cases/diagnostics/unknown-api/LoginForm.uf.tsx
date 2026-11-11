@@ -1,6 +1,6 @@
 // UF2016 unknown-api: `reactive` is outside unframework's subset: state is a `ref`, whose value is
 // replaced whole (ADR-0008).
-import { reactive, ref } from "unframework";
+import { reactive, ref } from "@uxfront/unframework";
 
 export default function LoginForm() {
   const email = ref("");

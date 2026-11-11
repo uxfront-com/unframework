@@ -1,4 +1,4 @@
-import type { SsrRenderer } from "@unframework/codegen";
+import type { SsrRenderer } from "@unframework.dev/codegen";
 import { createSSRApp } from "vue";
 import type { Component } from "vue";
 import { renderToString as renderApp } from "vue/server-renderer";

@@ -1,5 +1,5 @@
 {
-  "name": "@unframework/cli",
+  "name": "@unframework.dev/cli",
   "version": "0.0.0",
   "private": true,
   "description": "The `unframework` command line: `build`, `check`, `explain` and `init`.",
@@ -39,10 +39,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@unframework/compiler": "workspace:*",
-    "@unframework/diagnostics": "workspace:*",
-    "@unframework/parser": "workspace:*",
-    "@unframework/type-oracle-tsgo": "workspace:*"
+    "@unframework.dev/compiler": "workspace:*",
+    "@unframework.dev/diagnostics": "workspace:*",
+    "@unframework.dev/parser": "workspace:*",
+    "@unframework.dev/type-oracle-tsgo": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

@@ -1,4 +1,4 @@
-import { defineEmits, onMounted, onUnmounted, ref, useTemplateRef } from "unframework";
+import { defineEmits, onMounted, onUnmounted, ref, useTemplateRef } from "@uxfront/unframework";
 
 export default function ProfileMenu() {
   const emit = defineEmits<{ closed: [] }>();

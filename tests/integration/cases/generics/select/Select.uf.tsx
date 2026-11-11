@@ -1,4 +1,4 @@
-import { defineModel } from "unframework";
+import { defineModel } from "@uxfront/unframework";
 
 // A generic model (ADR-0068): the value is one of the consumer's options.
 export interface SelectProps<T extends string> {

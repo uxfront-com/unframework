@@ -65,7 +65,7 @@ describe("createFileResolver's `module`", () => {
   it("finds the first framework import and the first unreadable module the module reaches", async () => {
     const { resolve } = memoryResolver({
       "/project/tokens.ts": 'import "./base.ts";\nimport "./gone.ts";\nexport const a = 1;\n',
-      "/project/base.ts": 'import { ref } from "vue";\nexport * from "unframework";\n',
+      "/project/base.ts": 'import { ref } from "vue";\nexport * from "@uxfront/unframework";\n',
     });
     expect(await resolve.module!({ specifier: "./tokens.ts", importer: "A.uf.tsx" })).toMatchObject(
       {
@@ -76,21 +76,24 @@ describe("createFileResolver's `module`", () => {
   });
 
   it.each([
-    ["itself", { "/project/tokens.ts": 'export * from "unframework";\n' }, "tokens.ts"],
+    ["itself", { "/project/tokens.ts": 'export * from "@uxfront/unframework";\n' }, "tokens.ts"],
     [
       "through another module",
       {
         "/project/tokens.ts": 'import { a } from "./base";\nexport const b = a;\n',
-        "/project/base.ts": 'import { ref } from "unframework";\nexport const a = ref;\n',
+        "/project/base.ts": 'import { ref } from "@uxfront/unframework";\nexport const a = ref;\n',
       },
       "base.ts",
     ],
-  ])("finds an import of `unframework` the module makes %s (UF1204)", async (_, files, file) => {
-    const { resolve } = memoryResolver(files);
-    expect(await resolve.module!({ specifier: "./tokens", importer: "A.uf.tsx" })).toMatchObject({
-      framework: { specifier: "unframework", file },
-    });
-  });
+  ])(
+    "finds an import of `@uxfront/unframework` the module makes %s (UF1204)",
+    async (_, files, file) => {
+      const { resolve } = memoryResolver(files);
+      expect(await resolve.module!({ specifier: "./tokens", importer: "A.uf.tsx" })).toMatchObject({
+        framework: { specifier: "@uxfront/unframework", file },
+      });
+    },
+  );
 
   it.each([
     ["`import()`", 'export const load = () => import("react");\n', "react"],
@@ -229,7 +232,7 @@ describe("compile() with shared modules", () => {
     });
     expect(result.diagnostics.map(({ code }) => code)).toEqual(["UF1204"]);
     expect(result.diagnostics[0]!.message).toBe(
-      '"./tokens" reaches "base.ts", which imports "react": a shared module is copied unchanged into every framework\'s output, so it imports no framework, and no `unframework`.',
+      '"./tokens" reaches "base.ts", which imports "react": a shared module is copied unchanged into every framework\'s output, so it imports no framework, and no `@uxfront/unframework`.',
     );
     expect(result.ir).toBeUndefined();
     expect(result.outputs).toEqual({ vue: [], react: [] });

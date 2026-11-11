@@ -2,7 +2,7 @@
 // and the `animation` that names it to match. The browser projects run every animation in no
 // time (the determinism reset), so the dot keeps the last frame's colour through `forwards`, and
 // a name that did not match would leave it uncoloured.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Progress from "./Progress.uf.tsx";

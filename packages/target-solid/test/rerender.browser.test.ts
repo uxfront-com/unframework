@@ -4,7 +4,7 @@
 // the emitted output. The adapter settles before it resolves, so the DOM is read at once, and
 // nothing is logged. Written with Solid's tagged templates: this project compiles no JSX of its
 // own outside the render-parity modules.
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { For, mergeProps, Show } from "solid-js";
 import html from "solid-js/html";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";

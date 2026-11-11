@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 
 import { qwikVite } from "@qwik.dev/core/optimizer";
-import unframework from "@unframework/unplugin/vite";
+import unframework from "@unframework.dev/unplugin/vite";
 import { defineConfig } from "vite";
 
 const root = fileURLToPath(new URL("./src/plugin", import.meta.url));

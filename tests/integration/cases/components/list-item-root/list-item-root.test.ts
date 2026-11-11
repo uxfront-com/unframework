@@ -1,6 +1,6 @@
 // components/list-item-root: a child whose root is an <li> renders as the items of its parent's
 // <ul> (ADR-0054's contextual root: Angular declares it unsupported, ADR-0056).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Menu from "./Menu.uf.tsx";

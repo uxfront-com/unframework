@@ -7,12 +7,12 @@
     "start": {
       "line": 10,
       "column": 3,
-      "offset": 274
+      "offset": 292
     },
     "end": {
       "line": 10,
       "column": 28,
-      "offset": 299
+      "offset": 317
     },
     "target": "astro"
   },
@@ -24,12 +24,12 @@
     "start": {
       "line": 14,
       "column": 29,
-      "offset": 392
+      "offset": 410
     },
     "end": {
       "line": 14,
       "column": 63,
-      "offset": 426
+      "offset": 444
     },
     "target": "astro"
   },
@@ -41,12 +41,12 @@
     "start": {
       "line": 7,
       "column": 3,
-      "offset": 151
+      "offset": 160
     },
     "end": {
       "line": 7,
       "column": 40,
-      "offset": 188
+      "offset": 197
     },
     "target": "astro"
   }

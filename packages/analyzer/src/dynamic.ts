@@ -11,7 +11,7 @@ import {
   createExpression,
   isHtmlElement,
   isVoidElement,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Attribute,
   Reference,
@@ -19,8 +19,8 @@ import type {
   DynamicCandidate,
   DynamicNode,
   SlotFill,
-} from "@unframework/ir";
-import type { AST } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import type { AST } from "@unframework.dev/parser";
 
 import { lowerAttributes } from "./attributes.ts";
 import { componentOf, lowerComponentAs } from "./components.ts";

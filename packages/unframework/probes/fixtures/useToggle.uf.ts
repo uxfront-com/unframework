@@ -1,6 +1,6 @@
 // Composables (ADR-0069): named `use*` exports with value, getter or callback parameters, returning a
 // shorthand object.
-import { computed, ref, watch } from "unframework";
+import { computed, ref, watch } from "@uxfront/unframework";
 
 export function useToggle(initial: boolean) {
   const on = ref(initial);

@@ -4,7 +4,7 @@
   // it, with the type strictness every target's checker shares (the strictest of the seven
   // frameworks' project defaults; harness/toolchain-strictness.unit.test.ts). Types resolve
   // from tests/integration, which holds react and @types/react: the outputs' by their own
-  // location, the consumer fixtures' through `paths`. `@unframework/target-react/toolchain`
+  // location, the consumer fixtures' through `paths`. `@unframework.dev/target-react/toolchain`
   // extends this file with a temporary config that lists the files to check.
   "compilerOptions": {
     "target": "es2024",

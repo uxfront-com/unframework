@@ -2,7 +2,7 @@
 // state as statements of their own (UF2011), emits of declared events (UF2017), `nextTick`, the
 // event parameter's members and the controls a handler makes while its event is dispatched
 // (UF3033); and a ref's value read in a template (UF3026). Every run checks the IR's invariants.
-import type { FunctionItem } from "@unframework/ir";
+import type { FunctionItem } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import {

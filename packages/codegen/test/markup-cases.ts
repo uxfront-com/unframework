@@ -34,7 +34,7 @@ import {
   createToggleClass,
   createTypeText,
   span,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 import type {
   Attribute,
   Binding,
@@ -49,7 +49,7 @@ import type {
   RenderNode,
   StyleDeclaration,
   UfComponent,
-} from "@unframework/ir";
+} from "@unframework.dev/ir";
 
 import { parseExpressionSource } from "../src/index.ts";
 import type { RewriteRules } from "../src/index.ts";

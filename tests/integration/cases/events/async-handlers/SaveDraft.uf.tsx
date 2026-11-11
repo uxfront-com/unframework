@@ -1,4 +1,4 @@
-import { defineEmits, nextTick, ref } from "unframework";
+import { defineEmits, nextTick, ref } from "@uxfront/unframework";
 
 export default function SaveDraft() {
   const emit = defineEmits<{ saved: [attempt: number, status: string] }>();

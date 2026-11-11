@@ -5,9 +5,9 @@ import {
   ImportSet,
   scopeRoots,
   mergesWholeStyle,
-} from "@unframework/codegen";
-import type { CapabilityCell, OutputFile, Target } from "@unframework/codegen";
-import type { UfComponent } from "@unframework/ir";
+} from "@unframework.dev/codegen";
+import type { CapabilityCell, OutputFile, Target } from "@unframework.dev/codegen";
+import type { UfComponent } from "@unframework.dev/ir";
 
 import { emitComposable } from "./composable.ts";
 import { astroRender, takesFallthrough } from "./composition.ts";

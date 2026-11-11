@@ -2,9 +2,9 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { formatOutput } from "@unframework/codegen";
-import type { EmitContext, OutputFile } from "@unframework/codegen";
-import type { UfModule } from "@unframework/ir";
+import { formatOutput } from "@unframework.dev/codegen";
+import type { EmitContext, OutputFile } from "@unframework.dev/codegen";
+import type { UfModule } from "@unframework.dev/ir";
 
 // The analyzer is no dependency of a target (plan §5.2): tests reach it from its source, as the
 // render-parity kit does, to lower source snippets as `compile()` would.

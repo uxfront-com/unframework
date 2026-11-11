@@ -18,7 +18,7 @@ const ESLINT_TARGETS: ReadonlySet<string> = new Set(["vue", "svelte", "astro", "
  * configuration.
  */
 const ESLINT_HOSTS: Readonly<Record<string, string>> = {
-  qwik: "@unframework/toolchain-qwik-eslint",
+  qwik: "@unframework.dev/toolchain-qwik-eslint",
 };
 
 interface DryTask {
@@ -30,7 +30,7 @@ interface DryTask {
 function dryRun(): DryTask[] {
   const result = spawnSync(
     join(REPO_ROOT, "node_modules", ".bin", "turbo"),
-    ["run", "test", "--dry=json", "--filter=@unframework/integration"],
+    ["run", "test", "--dry=json", "--filter=@unframework.dev/integration"],
     { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
   );
   if (result.error) throw result.error;
@@ -40,7 +40,7 @@ function dryRun(): DryTask[] {
 
 describe("the integration test task", () => {
   const tasks = dryRun();
-  const test = tasks.find((task) => task.taskId === "@unframework/integration#test")!;
+  const test = tasks.find((task) => task.taskId === "@unframework.dev/integration#test")!;
 
   it("hashes CI's workflow and the nightly's, which the harness's own tests read", () => {
     expect(Object.keys(test.inputs)).toContain("../../.github/workflows/ci.yml");
@@ -49,7 +49,7 @@ describe("the integration test task", () => {
 
   it("hashes every toolchain's tsconfig and lint configurations through its transit node", () => {
     for (const target of selectTargets(undefined)) {
-      const id = `@unframework/toolchain-${target}#transit`;
+      const id = `@unframework.dev/toolchain-${target}#transit`;
       expect(test.dependencies).toContain(id);
       const transit = tasks.find((task) => task.taskId === id);
       const inputs = Object.keys(transit?.inputs ?? {});

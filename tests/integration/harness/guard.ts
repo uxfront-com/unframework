@@ -5,8 +5,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 
-import { diffLines } from "@unframework/testing/node";
-import type { CompileEvent } from "@unframework/unplugin/vite";
+import { diffLines } from "@unframework.dev/testing/node";
+import type { CompileEvent } from "@unframework.dev/unplugin/vite";
 
 import { ROOT } from "./paths.ts";
 

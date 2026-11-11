@@ -1,6 +1,6 @@
 // generics/scoped-slot: a generic component's scoped slot, whose fill reads the item's own type
 // (ADR-0068).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Fruits from "./Fruits.uf.tsx";

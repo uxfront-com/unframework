@@ -1,6 +1,6 @@
 // components/branch-content: each branch of a conditional renders the child with other props
 // (ADR-0053). Marking everything read swaps the branch.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Inbox from "./Inbox.uf.tsx";

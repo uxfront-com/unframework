@@ -5,8 +5,8 @@
     {
       "name": "AutoRefresh",
       "span": {
-        "start": 166,
-        "end": 1011
+        "start": 175,
+        "end": 1020
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "number",
             "span": {
-              "start": 155,
-              "end": 161
+              "start": 164,
+              "end": 170
             }
           },
-          "binding": "interval@204",
+          "binding": "interval@213",
           "span": {
-            "start": 145,
-            "end": 162
+            "start": 154,
+            "end": 171
           }
         }
       ],
@@ -31,25 +31,25 @@
         "type": {
           "code": "AutoRefreshProps",
           "span": {
-            "start": 216,
-            "end": 232
+            "start": 225,
+            "end": 241
           }
         },
         "span": {
-          "start": 202,
-          "end": 232
+          "start": 211,
+          "end": 241
         }
       },
       "types": [
         "AutoRefreshProps"
       ],
       "emits": {
-        "binding": "emit@244",
+        "binding": "emit@253",
         "type": {
           "code": "{ refresh: [count: number] }",
           "span": {
-            "start": 263,
-            "end": 291
+            "start": 272,
+            "end": 300
           }
         },
         "events": [
@@ -61,327 +61,327 @@
                 "type": {
                   "code": "number",
                   "span": {
-                    "start": 282,
-                    "end": 288
+                    "start": 291,
+                    "end": 297
                   }
                 },
                 "span": {
-                  "start": 275,
-                  "end": 288
+                  "start": 284,
+                  "end": 297
                 }
               }
             ],
             "span": {
-              "start": 265,
-              "end": 289
+              "start": 274,
+              "end": 298
             }
           }
         ],
         "span": {
-          "start": 238,
-          "end": 295
+          "start": 247,
+          "end": 304
         }
       },
       "bindings": [
         {
-          "id": "interval@204",
+          "id": "interval@213",
           "name": "interval",
           "kind": "prop",
           "span": {
-            "start": 204,
-            "end": 212
+            "start": 213,
+            "end": 221
           }
         },
         {
-          "id": "emit@244",
+          "id": "emit@253",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 244,
-            "end": 248
+            "start": 253,
+            "end": 257
           }
         },
         {
-          "id": "enabled@305",
+          "id": "enabled@314",
           "name": "enabled",
           "kind": "state",
           "span": {
-            "start": 305,
-            "end": 312
+            "start": 314,
+            "end": 321
           }
         },
         {
-          "id": "timer@333",
+          "id": "timer@342",
           "name": "timer",
           "kind": "localVar",
           "span": {
-            "start": 333,
-            "end": 338
+            "start": 342,
+            "end": 347
           }
         },
         {
-          "id": "refreshes@390",
+          "id": "refreshes@399",
           "name": "refreshes",
           "kind": "localVar",
           "span": {
-            "start": 390,
-            "end": 399
+            "start": 399,
+            "end": 408
           }
         },
         {
-          "id": "tick@417",
+          "id": "tick@426",
           "name": "tick",
           "kind": "localFn",
           "span": {
-            "start": 417,
-            "end": 421
+            "start": 426,
+            "end": 430
           }
         },
         {
-          "id": "toggle@494",
+          "id": "toggle@503",
           "name": "toggle",
           "kind": "localFn",
           "span": {
-            "start": 494,
-            "end": 500
+            "start": 503,
+            "end": 509
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "enabled@305",
+          "binding": "enabled@314",
           "initial": {
             "code": "false",
             "span": {
-              "start": 319,
-              "end": 324
+              "start": 328,
+              "end": 333
             },
             "refs": []
           },
           "span": {
-            "start": 299,
-            "end": 326
+            "start": 308,
+            "end": 335
           }
         },
         {
           "kind": "Variable",
-          "binding": "timer@333",
+          "binding": "timer@342",
           "type": {
             "code": "ReturnType<typeof setInterval> | undefined",
             "span": {
-              "start": 340,
-              "end": 382
+              "start": 349,
+              "end": 391
             }
           },
           "span": {
-            "start": 329,
-            "end": 383
+            "start": 338,
+            "end": 392
           }
         },
         {
           "kind": "Variable",
-          "binding": "refreshes@390",
+          "binding": "refreshes@399",
           "initial": {
             "code": "0",
             "span": {
-              "start": 402,
-              "end": 403
+              "start": 411,
+              "end": 412
             },
             "refs": []
           },
           "span": {
-            "start": 386,
-            "end": 404
+            "start": 395,
+            "end": 413
           }
         },
         {
           "kind": "Function",
-          "binding": "tick@417",
+          "binding": "tick@426",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    refreshes += 1;\n    emit(\"refresh\", refreshes);\n  }",
               "span": {
-                "start": 424,
-                "end": 481
+                "start": 433,
+                "end": 490
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "refreshes@390",
+                  "binding": "refreshes@399",
                   "operator": "+=",
                   "span": {
-                    "start": 430,
-                    "end": 444
+                    "start": 439,
+                    "end": 453
                   },
                   "target": {
-                    "start": 430,
-                    "end": 439
+                    "start": 439,
+                    "end": 448
                   },
                   "value": {
-                    "start": 443,
-                    "end": 444
+                    "start": 452,
+                    "end": 453
                   }
                 },
                 {
                   "kind": "Emit",
-                  "binding": "emit@244",
+                  "binding": "emit@253",
                   "event": "refresh",
                   "span": {
-                    "start": 450,
-                    "end": 476
+                    "start": 459,
+                    "end": 485
                   },
                   "arguments": [
                     {
-                      "start": 466,
-                      "end": 475
+                      "start": 475,
+                      "end": 484
                     }
                   ]
                 },
                 {
                   "kind": "Binding",
-                  "binding": "refreshes@390",
+                  "binding": "refreshes@399",
                   "span": {
-                    "start": 466,
-                    "end": 475
+                    "start": 475,
+                    "end": 484
                   }
                 }
               ]
             },
             "span": {
-              "start": 421,
-              "end": 481
+              "start": 430,
+              "end": 490
             }
           },
           "span": {
-            "start": 408,
-            "end": 481
+            "start": 417,
+            "end": 490
           }
         },
         {
           "kind": "Function",
-          "binding": "toggle@494",
+          "binding": "toggle@503",
           "form": "declaration",
           "function": {
             "parameters": [],
             "body": {
               "code": "{\n    if (enabled.value) {\n      clearInterval(timer);\n      enabled.value = false;\n    } else {\n      timer = setInterval(tick, interval);\n      enabled.value = true;\n    }\n  }",
               "span": {
-                "start": 503,
-                "end": 680
+                "start": 512,
+                "end": 689
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "enabled@305",
+                  "binding": "enabled@314",
                   "span": {
-                    "start": 513,
-                    "end": 526
+                    "start": 522,
+                    "end": 535
                   }
                 },
                 {
                   "kind": "Global",
                   "name": "clearInterval",
                   "span": {
-                    "start": 536,
-                    "end": 549
+                    "start": 545,
+                    "end": 558
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "timer@333",
+                  "binding": "timer@342",
                   "span": {
-                    "start": 550,
-                    "end": 555
+                    "start": 559,
+                    "end": 564
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "enabled@305",
+                  "binding": "enabled@314",
                   "operator": "=",
                   "span": {
-                    "start": 564,
-                    "end": 585
+                    "start": 573,
+                    "end": 594
                   },
                   "target": {
-                    "start": 564,
-                    "end": 577
+                    "start": 573,
+                    "end": 586
                   },
                   "value": {
-                    "start": 580,
-                    "end": 585
+                    "start": 589,
+                    "end": 594
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "timer@333",
+                  "binding": "timer@342",
                   "operator": "=",
                   "span": {
-                    "start": 606,
-                    "end": 641
+                    "start": 615,
+                    "end": 650
                   },
                   "target": {
-                    "start": 606,
-                    "end": 611
+                    "start": 615,
+                    "end": 620
                   },
                   "value": {
-                    "start": 614,
-                    "end": 641
+                    "start": 623,
+                    "end": 650
                   }
                 },
                 {
                   "kind": "Global",
                   "name": "setInterval",
                   "span": {
-                    "start": 614,
-                    "end": 625
+                    "start": 623,
+                    "end": 634
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "tick@417",
+                  "binding": "tick@426",
                   "span": {
-                    "start": 626,
-                    "end": 630
+                    "start": 635,
+                    "end": 639
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "interval@204",
+                  "binding": "interval@213",
                   "span": {
-                    "start": 632,
-                    "end": 640
+                    "start": 641,
+                    "end": 649
                   }
                 },
                 {
                   "kind": "Write",
-                  "binding": "enabled@305",
+                  "binding": "enabled@314",
                   "operator": "=",
                   "span": {
-                    "start": 649,
-                    "end": 669
+                    "start": 658,
+                    "end": 678
                   },
                   "target": {
-                    "start": 649,
-                    "end": 662
+                    "start": 658,
+                    "end": 671
                   },
                   "value": {
-                    "start": 665,
-                    "end": 669
+                    "start": 674,
+                    "end": 678
                   }
                 }
               ]
             },
             "span": {
-              "start": 500,
-              "end": 680
+              "start": 509,
+              "end": 689
             }
           },
           "span": {
-            "start": 485,
-            "end": 680
+            "start": 494,
+            "end": 689
           }
         },
         {
@@ -392,36 +392,36 @@
             "body": {
               "code": "{\n    clearInterval(timer);\n  }",
               "span": {
-                "start": 702,
-                "end": 733
+                "start": 711,
+                "end": 742
               },
               "refs": [
                 {
                   "kind": "Global",
                   "name": "clearInterval",
                   "span": {
-                    "start": 708,
-                    "end": 721
+                    "start": 717,
+                    "end": 730
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "timer@333",
+                  "binding": "timer@342",
                   "span": {
-                    "start": 722,
-                    "end": 727
+                    "start": 731,
+                    "end": 736
                   }
                 }
               ]
             },
             "span": {
-              "start": 696,
-              "end": 733
+              "start": 705,
+              "end": 742
             }
           },
           "span": {
-            "start": 684,
-            "end": 735
+            "start": 693,
+            "end": 744
           }
         }
       ],
@@ -434,8 +434,8 @@
             "name": "class",
             "value": "auto-refresh",
             "span": {
-              "start": 761,
-              "end": 781
+              "start": 770,
+              "end": 790
             }
           },
           {
@@ -443,8 +443,8 @@
             "name": "aria-label",
             "value": "Auto-refresh",
             "span": {
-              "start": 782,
-              "end": 807
+              "start": 791,
+              "end": 816
             }
           }
         ],
@@ -458,8 +458,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 823,
-                  "end": 836
+                  "start": 832,
+                  "end": 845
                 }
               },
               {
@@ -468,23 +468,23 @@
                 "value": {
                   "code": "enabled.value",
                   "span": {
-                    "start": 851,
-                    "end": 864
+                    "start": 860,
+                    "end": 873
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "enabled@305",
+                      "binding": "enabled@314",
                       "span": {
-                        "start": 851,
-                        "end": 864
+                        "start": 860,
+                        "end": 873
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 837,
-                  "end": 865
+                  "start": 846,
+                  "end": 874
                 }
               },
               {
@@ -492,15 +492,15 @@
                 "event": "click",
                 "handler": {
                   "kind": "Function",
-                  "binding": "toggle@494",
+                  "binding": "toggle@503",
                   "span": {
-                    "start": 875,
-                    "end": 881
+                    "start": 884,
+                    "end": 890
                   }
                 },
                 "span": {
-                  "start": 866,
-                  "end": 882
+                  "start": 875,
+                  "end": 891
                 }
               }
             ],
@@ -509,14 +509,14 @@
                 "kind": "Text",
                 "value": "Auto-refresh",
                 "span": {
-                  "start": 883,
-                  "end": 911
+                  "start": 892,
+                  "end": 920
                 }
               }
             ],
             "span": {
-              "start": 815,
-              "end": 920
+              "start": 824,
+              "end": 929
             }
           },
           {
@@ -528,8 +528,8 @@
                 "name": "role",
                 "value": "status",
                 "span": {
-                  "start": 930,
-                  "end": 943
+                  "start": 939,
+                  "end": 952
                 }
               }
             ],
@@ -539,35 +539,35 @@
                 "value": {
                   "code": "enabled.value ? \"Refreshing\" : \"Paused\"",
                   "span": {
-                    "start": 945,
-                    "end": 984
+                    "start": 954,
+                    "end": 993
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "enabled@305",
+                      "binding": "enabled@314",
                       "span": {
-                        "start": 945,
-                        "end": 958
+                        "start": 954,
+                        "end": 967
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 944,
-                  "end": 985
+                  "start": 953,
+                  "end": 994
                 }
               }
             ],
             "span": {
-              "start": 927,
-              "end": 989
+              "start": 936,
+              "end": 998
             }
           }
         ],
         "span": {
-          "start": 752,
-          "end": 1004
+          "start": 761,
+          "end": 1013
         }
       }
     }
@@ -578,8 +578,8 @@
       "name": "default",
       "local": "AutoRefresh",
       "span": {
-        "start": 166,
-        "end": 1011
+        "start": 175,
+        "end": 1020
       }
     }
   ],
@@ -589,8 +589,8 @@
       "exported": true,
       "code": "interface AutoRefreshProps {\n  /** Milliseconds between two refreshes. */\n  interval: number;\n}",
       "span": {
-        "start": 69,
-        "end": 164
+        "start": 78,
+        "end": 173
       }
     }
   ]

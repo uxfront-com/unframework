@@ -5,46 +5,46 @@
     {
       "name": "Clock",
       "span": {
-        "start": 369,
-        "end": 649
+        "start": 378,
+        "end": 658
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "ready@411",
+          "id": "ready@420",
           "name": "ready",
           "kind": "state",
           "span": {
-            "start": 411,
-            "end": 416
+            "start": 420,
+            "end": 425
           }
         },
         {
-          "id": "started@493",
+          "id": "started@502",
           "name": "started",
           "kind": "usedState",
           "span": {
-            "start": 493,
-            "end": 500
+            "start": 502,
+            "end": 509
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "ready@411",
+          "binding": "ready@420",
           "initial": {
             "code": "false",
             "span": {
-              "start": 423,
-              "end": 428
+              "start": 432,
+              "end": 437
             },
             "refs": []
           },
           "span": {
-            "start": 405,
-            "end": 430
+            "start": 414,
+            "end": 439
           }
         },
         {
@@ -55,37 +55,37 @@
             "body": {
               "code": "{\n    ready.value = true;\n  }",
               "span": {
-                "start": 450,
-                "end": 479
+                "start": 459,
+                "end": 488
               },
               "refs": [
                 {
                   "kind": "Write",
-                  "binding": "ready@411",
+                  "binding": "ready@420",
                   "operator": "=",
                   "span": {
-                    "start": 456,
-                    "end": 474
+                    "start": 465,
+                    "end": 483
                   },
                   "target": {
-                    "start": 456,
-                    "end": 467
+                    "start": 465,
+                    "end": 476
                   },
                   "value": {
-                    "start": 470,
-                    "end": 474
+                    "start": 479,
+                    "end": 483
                   }
                 }
               ]
             },
             "span": {
-              "start": 444,
-              "end": 479
+              "start": 453,
+              "end": 488
             }
           },
           "span": {
-            "start": 434,
-            "end": 481
+            "start": 443,
+            "end": 490
           }
         },
         {
@@ -95,17 +95,17 @@
           "members": [
             {
               "member": "started",
-              "binding": "started@493",
+              "binding": "started@502",
               "span": {
-                "start": 493,
-                "end": 500
+                "start": 502,
+                "end": 509
               }
             }
           ],
           "hasEffects": true,
           "span": {
-            "start": 485,
-            "end": 516
+            "start": 494,
+            "end": 525
           }
         }
       ],
@@ -118,8 +118,8 @@
             "name": "class",
             "value": "clock",
             "span": {
-              "start": 536,
-              "end": 549
+              "start": 545,
+              "end": 558
             }
           }
         ],
@@ -129,31 +129,31 @@
             "value": {
               "code": "ready.value ? \"Ready\" : \"Waiting\"",
               "span": {
-                "start": 558,
-                "end": 591
+                "start": 567,
+                "end": 600
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "ready@411",
+                  "binding": "ready@420",
                   "span": {
-                    "start": 558,
-                    "end": 569
+                    "start": 567,
+                    "end": 578
                   }
                 }
               ]
             },
             "span": {
-              "start": 557,
-              "end": 592
+              "start": 566,
+              "end": 601
             }
           },
           {
             "kind": "Text",
             "value": ", ",
             "span": {
-              "start": 592,
-              "end": 594
+              "start": 601,
+              "end": 603
             }
           },
           {
@@ -161,29 +161,29 @@
             "value": {
               "code": "started.value ? \"started\" : \"stopped\"",
               "span": {
-                "start": 595,
-                "end": 632
+                "start": 604,
+                "end": 641
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "started@493",
+                  "binding": "started@502",
                   "span": {
-                    "start": 595,
-                    "end": 608
+                    "start": 604,
+                    "end": 617
                   }
                 }
               ]
             },
             "span": {
-              "start": 594,
-              "end": 633
+              "start": 603,
+              "end": 642
             }
           }
         ],
         "span": {
-          "start": 533,
-          "end": 642
+          "start": 542,
+          "end": 651
         }
       }
     }
@@ -194,8 +194,8 @@
       "name": "default",
       "local": "Clock",
       "span": {
-        "start": 369,
-        "end": 649
+        "start": 378,
+        "end": 658
       }
     }
   ],
@@ -229,14 +229,14 @@
           "imported": "useClock",
           "local": "useClock",
           "span": {
-            "start": 332,
-            "end": 340
+            "start": 341,
+            "end": 349
           }
         }
       ],
       "span": {
-        "start": 323,
-        "end": 367
+        "start": 332,
+        "end": 376
       }
     }
   ]

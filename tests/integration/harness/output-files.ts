@@ -3,9 +3,9 @@
 import { existsSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-import { compile } from "@unframework/compiler";
-import type { TargetName } from "@unframework/compiler";
-import { writeIfChanged } from "@unframework/testing/node";
+import { compile } from "@unframework.dev/compiler";
+import type { TargetName } from "@unframework.dev/compiler";
+import { writeIfChanged } from "@unframework.dev/testing/node";
 
 import { canaryPlugins } from "./canaries.ts";
 import { errorState } from "./cases.ts";

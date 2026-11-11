@@ -1,6 +1,6 @@
 // UF2020 unwatchable-source: `watch(page, …)` passes the prop's value, which nothing can watch;
 // the safe fix watches a getter, `() => page`.
-import { defineEmits, watch } from "unframework";
+import { defineEmits, watch } from "@uxfront/unframework";
 
 export interface PaginationProps {
   page: number;

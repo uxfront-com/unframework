@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { exportsOf, root } from "./workspace.ts";
 
 /**
- * The public API of @unframework/testing: exactly what its root entry exports (ADR-0085). A
+ * The public API of @unframework.dev/testing: exactly what its root entry exports (ADR-0085). A
  * project's specs import these names and nothing else, so a name added to the entry is a promise
  * to code this repository cannot see. It changes here and in the ADR, or not at all; the
  * harness's machinery goes in the `./harness` subpath.
@@ -53,7 +53,7 @@ function compare(actual: readonly string[], list: readonly string[]) {
   };
 }
 
-describe("the public API of @unframework/testing", () => {
+describe("the public API of @unframework.dev/testing", () => {
   const names = exportsOf(entry);
 
   it("exports exactly the public runtime names from its root", () => {

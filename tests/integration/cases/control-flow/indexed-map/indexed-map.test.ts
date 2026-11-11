@@ -1,6 +1,6 @@
 // control-flow/indexed-map: a list keyed by its index, which also appears in text and in an
 // attribute; repeated values are fine, because the keys are the indices.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import StepList from "./StepList.uf.tsx";

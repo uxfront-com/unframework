@@ -6,13 +6,13 @@ import { dirname, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
-import type { Toolchain } from "@unframework/codegen";
-import type { CompilerPlugin, TargetName } from "@unframework/compiler";
-import { toolchain as qwik } from "@unframework/target-qwik/toolchain";
-import { toolchain as react } from "@unframework/target-react/toolchain";
-import { toolchain as solid } from "@unframework/target-solid/toolchain";
-import { toolchain as svelte } from "@unframework/target-svelte/toolchain";
-import { toolchain as vue } from "@unframework/target-vue/toolchain";
+import type { Toolchain } from "@unframework.dev/codegen";
+import type { CompilerPlugin, TargetName } from "@unframework.dev/compiler";
+import { toolchain as qwik } from "@unframework.dev/target-qwik/toolchain";
+import { toolchain as react } from "@unframework.dev/target-react/toolchain";
+import { toolchain as solid } from "@unframework.dev/target-solid/toolchain";
+import { toolchain as svelte } from "@unframework.dev/target-svelte/toolchain";
+import { toolchain as vue } from "@unframework.dev/target-vue/toolchain";
 import { dev } from "astro";
 import { createServer } from "vite";
 import type { HotPayload, Plugin, ViteDevServer } from "vite";
@@ -416,7 +416,7 @@ describe("what a change reaches", () => {
         "src/Pair.uf.tsx":
           "function Inner() {\n  return <i>one</i>;\n}\n\nexport default function Pair() {\n  return <b><Inner /></b>;\n}\n",
         "src/useCount.uf.ts":
-          'import { ref } from "unframework";\n\nexport function useCount() {\n  const count = ref(1);\n  return { count };\n}\n',
+          'import { ref } from "@uxfront/unframework";\n\nexport function useCount() {\n  const count = ref(1);\n  return { count };\n}\n',
       });
       const hot = await startHot(root, "vue", vue);
       try {
@@ -435,7 +435,7 @@ describe("what a change reaches", () => {
           write(
             root,
             "src/useCount.uf.ts",
-            'import { ref } from "unframework";\n\nexport function useCount() {\n  const count = ref(2);\n  return { count };\n}\n',
+            'import { ref } from "@uxfront/unframework";\n\nexport function useCount() {\n  const count = ref(2);\n  return { count };\n}\n',
           ),
         );
         expect(hot.sent.map((payload) => payload.type)).toContain("full-reload");

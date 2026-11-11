@@ -5,18 +5,18 @@
     {
       "name": "Box",
       "span": {
-        "start": 88,
-        "end": 339
+        "start": 106,
+        "end": 357
       },
       "props": [],
       "types": [],
       "slots": {
-        "binding": "slots@128",
+        "binding": "slots@146",
         "type": {
           "code": "{ title?(): Element; default?(): Element }",
           "span": {
-            "start": 148,
-            "end": 190
+            "start": 166,
+            "end": 208
           }
         },
         "slots": [
@@ -24,32 +24,32 @@
             "name": "title",
             "optional": true,
             "span": {
-              "start": 150,
-              "end": 168
+              "start": 168,
+              "end": 186
             }
           },
           {
             "name": "default",
             "optional": true,
             "span": {
-              "start": 169,
-              "end": 188
+              "start": 187,
+              "end": 206
             }
           }
         ],
         "span": {
-          "start": 122,
-          "end": 194
+          "start": 140,
+          "end": 212
         }
       },
       "bindings": [
         {
-          "id": "slots@128",
+          "id": "slots@146",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 128,
-            "end": 133
+            "start": 146,
+            "end": 151
           }
         }
       ],
@@ -63,8 +63,8 @@
             "name": "class",
             "value": "box",
             "span": {
-              "start": 215,
-              "end": 226
+              "start": 233,
+              "end": 244
             }
           }
         ],
@@ -82,20 +82,20 @@
                     "kind": "Text",
                     "value": "Untitled",
                     "span": {
-                      "start": 258,
-                      "end": 268
+                      "start": 276,
+                      "end": 286
                     }
                   }
                 ],
                 "span": {
-                  "start": 238,
-                  "end": 269
+                  "start": 256,
+                  "end": 287
                 }
               }
             ],
             "span": {
-              "start": 234,
-              "end": 274
+              "start": 252,
+              "end": 292
             }
           },
           {
@@ -111,26 +111,26 @@
                     "kind": "Text",
                     "value": "No content",
                     "span": {
-                      "start": 306,
-                      "end": 316
+                      "start": 324,
+                      "end": 334
                     }
                   }
                 ],
                 "span": {
-                  "start": 303,
-                  "end": 320
+                  "start": 321,
+                  "end": 338
                 }
               }
             ],
             "span": {
-              "start": 281,
-              "end": 321
+              "start": 299,
+              "end": 339
             }
           }
         ],
         "span": {
-          "start": 210,
-          "end": 332
+          "start": 228,
+          "end": 350
         }
       }
     }
@@ -141,8 +141,8 @@
       "name": "default",
       "local": "Box",
       "span": {
-        "start": 88,
-        "end": 339
+        "start": 106,
+        "end": 357
       }
     }
   ],

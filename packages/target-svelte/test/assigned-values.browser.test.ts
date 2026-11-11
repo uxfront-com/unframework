@@ -4,7 +4,7 @@
 // already holds the bound one, so the target writes these as object spreads, which assign it on
 // every render: each element gets its `value` attribute, its own default (0, "", "on") included,
 // as every other target writes it.
-import type { MountedComponent } from "@unframework/codegen";
+import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, beforeEach, expect, it } from "vitest";
 
 import { mount } from "../src/toolchain/client.ts";

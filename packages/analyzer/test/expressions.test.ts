@@ -1,4 +1,4 @@
-import { reservedParameterName } from "@unframework/ir";
+import { reservedParameterName } from "@unframework.dev/ir";
 import { describe, expect, it } from "vitest";
 
 import { applyAndRecheck, codes, component, only, problems, root } from "./helpers.ts";
@@ -100,7 +100,7 @@ describe("references", () => {
 
   it("reads the setup's constants, and reports the authoring API used as a value (UF2005)", () => {
     const { source, diagnostics } = component("<p>{double}{ref}</p>", {
-      before: 'import { ref } from "unframework";\n',
+      before: 'import { ref } from "@uxfront/unframework";\n',
       setup: "const double = 2; ",
     });
     expect(problems(source, diagnostics)).toEqual(["UF2005 ref"]);

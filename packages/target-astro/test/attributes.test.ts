@@ -7,7 +7,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { astroDialect, printMarkup } from "@unframework/codegen";
+import { astroDialect, printMarkup } from "@unframework.dev/codegen";
 import {
   ARIA_ATTRIBUTES,
   BOOLEAN_ATTRIBUTES,
@@ -27,8 +27,8 @@ import {
   SVG_PRESENTATION_ATTRIBUTES,
   UNPORTABLE_ELEMENTS,
   UNRENDERABLE_ELEMENTS,
-} from "@unframework/ir";
-import type { Attribute, ElementNode } from "@unframework/ir";
+} from "@unframework.dev/ir";
+import type { Attribute, ElementNode } from "@unframework.dev/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 // The analyser's verdict on a name, whatever its value: the pairs it rejects never reach a target.

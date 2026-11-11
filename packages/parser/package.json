@@ -1,5 +1,5 @@
 {
-  "name": "@unframework/parser",
+  "name": "@unframework.dev/parser",
   "version": "0.0.0",
   "private": true,
   "description": "Parses Unframework sources: .uf.tsx and .uf.ts files into a TS-ESTree AST with spans (oxc), component discovery, and stylesheets (lightningcss).",

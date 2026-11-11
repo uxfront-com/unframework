@@ -1,7 +1,7 @@
 // jsx/svg-titles: an SVG `<title>` gives its icon its accessible name, on the server too, when it
 // holds several parts (text and interpolations, an absent optional one rendering nothing) or a
 // conditional whose branch holds text and an interpolation.
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import FileTransfer from "./FileTransfer.uf.tsx";

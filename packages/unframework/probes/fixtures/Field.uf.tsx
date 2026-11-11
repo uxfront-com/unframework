@@ -9,7 +9,7 @@ import {
   useTemplateRef,
   watch,
   watchEffect,
-} from "unframework";
+} from "@uxfront/unframework";
 
 import { TabsKey, type Tabs } from "./keys.ts";
 

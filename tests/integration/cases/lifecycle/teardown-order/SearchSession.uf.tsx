@@ -1,4 +1,4 @@
-import { defineEmits, onUnmounted, ref, watch, watchEffect } from "unframework";
+import { defineEmits, onUnmounted, ref, watch, watchEffect } from "@uxfront/unframework";
 
 export default function SearchSession() {
   const emit = defineEmits<{

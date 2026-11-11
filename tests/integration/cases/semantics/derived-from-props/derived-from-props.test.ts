@@ -1,7 +1,7 @@
 // semantics/derived-from-props: a computed over a prop follows the prop, and a watcher over a
 // getter of a prop runs when a rerender changes it, with the previous value (semantics contract,
 // reactive props).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Temperature from "./Temperature.uf.tsx";

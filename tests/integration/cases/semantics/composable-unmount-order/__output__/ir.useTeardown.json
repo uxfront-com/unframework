@@ -8,8 +8,8 @@
     {
       "name": "useTeardown",
       "span": {
-        "start": 235,
-        "end": 441
+        "start": 244,
+        "end": 450
       },
       "parameters": [
         {
@@ -18,14 +18,14 @@
           "type": {
             "code": "() => string",
             "span": {
-              "start": 269,
-              "end": 281
+              "start": 278,
+              "end": 290
             }
           },
-          "binding": "name@263",
+          "binding": "name@272",
           "span": {
-            "start": 263,
-            "end": 281
+            "start": 272,
+            "end": 290
           }
         },
         {
@@ -34,79 +34,79 @@
           "type": {
             "code": "(entry: string) => void",
             "span": {
-              "start": 291,
-              "end": 314
+              "start": 300,
+              "end": 323
             }
           },
-          "binding": "report@283",
+          "binding": "report@292",
           "span": {
-            "start": 283,
-            "end": 314
+            "start": 292,
+            "end": 323
           }
         }
       ],
       "types": [],
       "bindings": [
         {
-          "id": "name@263",
+          "id": "name@272",
           "name": "name",
           "kind": "argument",
           "span": {
-            "start": 263,
-            "end": 267
+            "start": 272,
+            "end": 276
           }
         },
         {
-          "id": "report@283",
+          "id": "report@292",
           "name": "report",
           "kind": "argument",
           "span": {
-            "start": 283,
-            "end": 289
+            "start": 292,
+            "end": 298
           }
         },
         {
-          "id": "title@326",
+          "id": "title@335",
           "name": "title",
           "kind": "derived",
           "span": {
-            "start": 326,
-            "end": 331
+            "start": 335,
+            "end": 340
           }
         }
       ],
       "setup": [
         {
           "kind": "Derived",
-          "binding": "title@326",
+          "binding": "title@335",
           "getter": {
             "parameters": [],
             "body": {
               "code": "`Panel ${name()}`",
               "span": {
-                "start": 349,
-                "end": 366
+                "start": 358,
+                "end": 375
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "name@263",
+                  "binding": "name@272",
                   "span": {
-                    "start": 358,
-                    "end": 362
+                    "start": 367,
+                    "end": 371
                   }
                 }
               ]
             },
             "expression": true,
             "span": {
-              "start": 343,
-              "end": 366
+              "start": 352,
+              "end": 375
             }
           },
           "span": {
-            "start": 320,
-            "end": 368
+            "start": 329,
+            "end": 377
           }
         },
         {
@@ -117,47 +117,47 @@
             "body": {
               "code": "report(`${name()} closed`)",
               "span": {
-                "start": 390,
-                "end": 416
+                "start": 399,
+                "end": 425
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "report@283",
+                  "binding": "report@292",
                   "span": {
-                    "start": 390,
-                    "end": 396
+                    "start": 399,
+                    "end": 405
                   }
                 },
                 {
                   "kind": "Binding",
-                  "binding": "name@263",
+                  "binding": "name@272",
                   "span": {
-                    "start": 400,
-                    "end": 404
+                    "start": 409,
+                    "end": 413
                   }
                 }
               ]
             },
             "expression": true,
             "span": {
-              "start": 384,
-              "end": 416
+              "start": 393,
+              "end": 425
             }
           },
           "span": {
-            "start": 372,
-            "end": 418
+            "start": 381,
+            "end": 427
           }
         }
       ],
       "returns": [
         {
           "name": "title",
-          "binding": "title@326",
+          "binding": "title@335",
           "span": {
-            "start": 431,
-            "end": 436
+            "start": 440,
+            "end": 445
           }
         }
       ]

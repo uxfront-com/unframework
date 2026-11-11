@@ -8,8 +8,8 @@
 // renders only on the server (its browser mount inserts that HTML), and Angular's server
 // platform runs the same AOT instructions through the same `DomRendererFactory2` as the
 // browser, on domino's DOM, whose output its server parity test parses strictly.
-import { elementNamespace } from "@unframework/ir";
-import type { ElementNode, FragmentNode, Namespace } from "@unframework/ir";
+import { elementNamespace } from "@unframework.dev/ir";
+import type { ElementNode, FragmentNode, Namespace } from "@unframework.dev/ir";
 import { describe, expect, it, vi } from "vitest";
 
 import type { CapabilityName, MountAdapter } from "../src/index.ts";

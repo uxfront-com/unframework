@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
-import { CAPABILITY_NAMES, defineTarget } from "@unframework/codegen";
-import type { Capabilities } from "@unframework/codegen";
+import { CAPABILITY_NAMES, defineTarget } from "@unframework.dev/codegen";
+import type { Capabilities } from "@unframework.dev/codegen";
 import { describe, expect, it } from "vitest";
 
 import { compile, createProject, TARGET_NAMES } from "../src/index.ts";
@@ -73,7 +73,7 @@ function tracedLine(mappings: string, line: number, column: number): number | un
   return segment && segment[2]! + 1;
 }
 
-const SOURCE = `import { computed, ref } from "unframework";
+const SOURCE = `import { computed, ref } from "@uxfront/unframework";
 
 export default function Card({ label, size = 2 }: { label: string; size?: number }) {
   const count = ref(0);
@@ -312,7 +312,7 @@ describe("compile with sourceMap", () => {
   });
 
   it("maps a composable's module", async () => {
-    const source = `import { ref } from "unframework";\nexport function useCounter() {\n  const count = ref(0);\n  function fail() {\n    throw new Error("composable");\n  }\n  return { count, fail };\n}\n`;
+    const source = `import { ref } from "@uxfront/unframework";\nexport function useCounter() {\n  const count = ref(0);\n  function fail() {\n    throw new Error("composable");\n  }\n  return { count, fail };\n}\n`;
     const result = await compile(source, {
       filename: "counter.uf.ts",
       targets: ["vue"],
@@ -326,7 +326,7 @@ describe("compile with sourceMap", () => {
 
   it("maps each composable's file from its own code, when two write one line", async () => {
     const source = [
-      'import { ref } from "unframework";',
+      'import { ref } from "@uxfront/unframework";',
       "export function useFirst() {",
       "  const count = ref(0);",
       '  function fail() { throw new Error("same"); }',

@@ -1,4 +1,4 @@
-import { catalogue, docsUrl } from "@unframework/diagnostics";
+import { catalogue, docsUrl } from "@unframework.dev/diagnostics";
 import { describe, expect, it } from "vitest";
 
 import { run } from "./helpers.ts";

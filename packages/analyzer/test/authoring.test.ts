@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-import { exportName, parseModule } from "@unframework/parser";
+import { exportName, parseModule } from "@unframework.dev/parser";
 import { describe, expect, it } from "vitest";
 
 import { AUTHORING_APIS, AUTHORING_TYPES, LATER_APIS } from "../src/authoring.ts";
@@ -39,9 +39,9 @@ describe("the authoring API", () => {
 
   it("accepts named imports of the API and its types, aliases and type-only imports included", () => {
     const source = [
-      'import { computed as derive, ref, type Ref } from "unframework";',
-      'import type { ComputedRef, Anything } from "unframework";',
-      'import type { JSX } from "unframework/jsx-runtime";',
+      'import { computed as derive, ref, type Ref } from "@uxfront/unframework";',
+      'import type { ComputedRef, Anything } from "@uxfront/unframework";',
+      'import type { JSX } from "@uxfront/unframework/jsx-runtime";',
       "export function A() { const count = ref(1); const double = derive(() => count.value * 2); return <p>{double.value}</p>; }",
     ].join("\n");
     expect(run(source).diagnostics).toEqual([]);
@@ -49,11 +49,11 @@ describe("the authoring API", () => {
 
   it("reports what is not the API (UF2016)", () => {
     const source = [
-      'import * as uf from "unframework";',
-      'import api from "unframework";',
-      'import "unframework";',
-      'import { reactive, toRefs, defineModel, provide, nope } from "unframework";',
-      'import { ref } from "unframework/jsx-runtime";',
+      'import * as uf from "@uxfront/unframework";',
+      'import api from "@uxfront/unframework";',
+      'import "@uxfront/unframework";',
+      'import { reactive, toRefs, defineModel, provide, nope } from "@uxfront/unframework";',
+      'import { ref } from "@uxfront/unframework/jsx-runtime";',
       "export function A() { return <p />; }",
     ].join("\n");
     const { diagnostics, module } = run(source);
@@ -61,7 +61,7 @@ describe("the authoring API", () => {
     expect(problems(source, diagnostics)).toEqual([
       "UF2016 * as uf",
       "UF2016 api",
-      'UF2016 import "unframework";',
+      'UF2016 import "@uxfront/unframework";',
       "UF2016 reactive",
       "UF2016 toRefs",
       "UF2016 nope",
@@ -70,12 +70,12 @@ describe("the authoring API", () => {
     expect(diagnostics[3]!.message).toBe(
       "`reactive` is Vue's, not unframework's: state is a `ref`, whose value is replaced whole (ADR-0008).",
     );
-    expect(diagnostics[5]!.message).toBe('"unframework" exports no `nope`.');
+    expect(diagnostics[5]!.message).toBe('"@uxfront/unframework" exports no `nope`.');
   });
 
   it("recognises the API by binding, not by name: a local `ref` is no API", () => {
     const { source, diagnostics, module } = component("<p>{count.value}</p>", {
-      before: 'import { ref as state } from "unframework";\n',
+      before: 'import { ref as state } from "@uxfront/unframework";\n',
       setup: "const count = state(0); ",
     });
     expect(problems(source, diagnostics)).toEqual([]);

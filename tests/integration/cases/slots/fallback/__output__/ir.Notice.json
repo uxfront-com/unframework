@@ -5,8 +5,8 @@
     {
       "name": "Notice",
       "span": {
-        "start": 88,
-        "end": 440
+        "start": 106,
+        "end": 458
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 139,
-              "end": 145
+              "start": 157,
+              "end": 163
             }
           },
-          "binding": "label@121",
+          "binding": "label@139",
           "span": {
-            "start": 132,
-            "end": 145
+            "start": 150,
+            "end": 163
           }
         }
       ],
@@ -31,23 +31,23 @@
         "type": {
           "code": "{ label: string }",
           "span": {
-            "start": 130,
-            "end": 147
+            "start": 148,
+            "end": 165
           }
         },
         "span": {
-          "start": 119,
-          "end": 147
+          "start": 137,
+          "end": 165
         }
       },
       "types": [],
       "slots": {
-        "binding": "slots@159",
+        "binding": "slots@177",
         "type": {
           "code": "{ default?(): Element; action?(): Element }",
           "span": {
-            "start": 179,
-            "end": 222
+            "start": 197,
+            "end": 240
           }
         },
         "slots": [
@@ -55,41 +55,41 @@
             "name": "default",
             "optional": true,
             "span": {
-              "start": 181,
-              "end": 201
+              "start": 199,
+              "end": 219
             }
           },
           {
             "name": "action",
             "optional": true,
             "span": {
-              "start": 202,
-              "end": 220
+              "start": 220,
+              "end": 238
             }
           }
         ],
         "span": {
-          "start": 153,
-          "end": 226
+          "start": 171,
+          "end": 244
         }
       },
       "bindings": [
         {
-          "id": "label@121",
+          "id": "label@139",
           "name": "label",
           "kind": "prop",
           "span": {
-            "start": 121,
-            "end": 126
+            "start": 139,
+            "end": 144
           }
         },
         {
-          "id": "slots@159",
+          "id": "slots@177",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 159,
-            "end": 164
+            "start": 177,
+            "end": 182
           }
         }
       ],
@@ -103,8 +103,8 @@
             "name": "role",
             "value": "note",
             "span": {
-              "start": 247,
-              "end": 258
+              "start": 265,
+              "end": 276
             }
           },
           {
@@ -113,23 +113,23 @@
             "value": {
               "code": "label",
               "span": {
-                "start": 271,
-                "end": 276
+                "start": 289,
+                "end": 294
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "label@121",
+                  "binding": "label@139",
                   "span": {
-                    "start": 271,
-                    "end": 276
+                    "start": 289,
+                    "end": 294
                   }
                 }
               ]
             },
             "span": {
-              "start": 259,
-              "end": 277
+              "start": 277,
+              "end": 295
             }
           },
           {
@@ -137,8 +137,8 @@
             "name": "class",
             "value": "notice",
             "span": {
-              "start": 278,
-              "end": 292
+              "start": 296,
+              "end": 310
             }
           }
         ],
@@ -161,26 +161,26 @@
                         "kind": "Text",
                         "value": "Nothing to report.",
                         "span": {
-                          "start": 329,
-                          "end": 347
+                          "start": 347,
+                          "end": 365
                         }
                       }
                     ],
                     "span": {
-                      "start": 325,
-                      "end": 352
+                      "start": 343,
+                      "end": 370
                     }
                   }
                 ],
                 "span": {
-                  "start": 303,
-                  "end": 353
+                  "start": 321,
+                  "end": 371
                 }
               }
             ],
             "span": {
-              "start": 300,
-              "end": 357
+              "start": 318,
+              "end": 375
             }
           },
           {
@@ -196,8 +196,8 @@
                     "name": "class",
                     "value": "muted",
                     "span": {
-                      "start": 391,
-                      "end": 404
+                      "start": 409,
+                      "end": 422
                     }
                   }
                 ],
@@ -206,26 +206,26 @@
                     "kind": "Text",
                     "value": "No action",
                     "span": {
-                      "start": 405,
-                      "end": 414
+                      "start": 423,
+                      "end": 432
                     }
                   }
                 ],
                 "span": {
-                  "start": 385,
-                  "end": 421
+                  "start": 403,
+                  "end": 439
                 }
               }
             ],
             "span": {
-              "start": 364,
-              "end": 422
+              "start": 382,
+              "end": 440
             }
           }
         ],
         "span": {
-          "start": 242,
-          "end": 433
+          "start": 260,
+          "end": 451
         }
       }
     }
@@ -236,8 +236,8 @@
       "name": "default",
       "local": "Notice",
       "span": {
-        "start": 88,
-        "end": 440
+        "start": 106,
+        "end": 458
       }
     }
   ],

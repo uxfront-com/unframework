@@ -1,6 +1,6 @@
 // generics/constrained: `T extends { id: string; label: string }`, whose members key and label
 // the rows (ADR-0068).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Table from "./Table.uf.tsx";

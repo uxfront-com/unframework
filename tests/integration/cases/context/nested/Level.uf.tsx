@@ -1,5 +1,5 @@
-import { defineSlots, inject, provide } from "unframework";
-import type { Element, InjectionKey } from "unframework";
+import { defineSlots, inject, provide } from "@uxfront/unframework";
+import type { Element, InjectionKey } from "@uxfront/unframework";
 
 export const DepthKey: InjectionKey<number> = Symbol("uf.depth");
 

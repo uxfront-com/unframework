@@ -1,6 +1,6 @@
 # ADR-0016: `unframework` plus `@unframework/*`
 
-- **Status:** Proposed — the plan proceeds on the recommendation
+- **Status:** Superseded by ADR-0090
 - **Date:** 2026-10-01
 - **Plan:** §11 D12; §3 (G6), §4.1, §5.2, §8.1, §8.3
 

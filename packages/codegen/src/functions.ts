@@ -2,7 +2,7 @@
 // methods) needs the parameters, the body and the flags apart, and every other target prints
 // them back as the author wrote them, with each reference respelled. The parts are copied as
 // written (parameters, types, defaults); only the body's references are rewritten.
-import type { FunctionCode, Handler, Parameter, UfComponent } from "@unframework/ir";
+import type { FunctionCode, Handler, Parameter, UfComponent } from "@unframework.dev/ir";
 
 import { parseExpression } from "./parse.ts";
 import { bindingOf, parenthesesNeeded, rewriteCode } from "./rewrite.ts";

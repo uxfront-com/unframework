@@ -1,8 +1,8 @@
 /**
- * The JSX-types probe suite: tests that pin what `unframework`'s types catch and what they
+ * The JSX-types probe suite: tests that pin what `@uxfront/unframework`'s types catch and what they
  * deliberately do not (plan §5.6 layer 1, ADR-0017).
  *
- *   pnpm --filter unframework probes [--tsc=<path to a tsc executable>]
+ *   pnpm --filter @uxfront/unframework probes [--tsc=<path to a tsc executable>]
  *
  * The package's tests run it too (test/probes.test.ts). A probe tree holds a `tsconfig.json` with the
  * authoring settings and three folders: `fixtures/` (components the probes use), `caught/` (mistakes
@@ -204,7 +204,7 @@ export function runProbes(options: ProbeOptions = {}): ProbeReport {
     return { ok: false, pinned: 0, problems };
   }
 
-  // The copy sits inside the tree, so `unframework` and the base tsconfig resolve exactly as they do
+  // The copy sits inside the tree, so `@uxfront/unframework` and the base tsconfig resolve exactly as they do
   // for the original. Disabling rewrites the directive's name: TypeScript would still read
   // `@ts-expect-error-disabled` as a directive.
   const scratch = mkdtempSync(join(directory, ".pinned-"));

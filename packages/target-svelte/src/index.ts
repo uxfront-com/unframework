@@ -1,7 +1,7 @@
-import { defineTarget, printMarkup, svelteDialect } from "@unframework/codegen";
-import type { MarkupDialect } from "@unframework/codegen";
-import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
-import type { UfComponent, UfComposable } from "@unframework/ir";
+import { defineTarget, printMarkup, svelteDialect } from "@unframework.dev/codegen";
+import type { MarkupDialect } from "@unframework.dev/codegen";
+import type { EmitContext, OutputFile, Target } from "@unframework.dev/codegen";
+import type { UfComponent, UfComposable } from "@unframework.dev/ir";
 
 import { composableModule, instanceScript } from "./script.ts";
 

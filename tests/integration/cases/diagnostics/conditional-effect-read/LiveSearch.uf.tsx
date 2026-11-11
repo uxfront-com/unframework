@@ -1,7 +1,7 @@
 // UF2015 conditional-effect-read: the effect reads `query` only while `live` is on, so a target
 // that lists an effect's dependencies statically (React, Qwik's `track`) would miss it. Read every
 // value first, or `watch` explicit sources.
-import { defineEmits, ref, watchEffect } from "unframework";
+import { defineEmits, ref, watchEffect } from "@uxfront/unframework";
 
 export default function LiveSearch() {
   const emit = defineEmits<{ search: [query: string] }>();

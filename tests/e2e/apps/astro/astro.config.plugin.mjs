@@ -1,4 +1,4 @@
-import unframework from "@unframework/unplugin/astro";
+import unframework from "@unframework.dev/unplugin/astro";
 import { defineConfig } from "astro/config";
 
 export default defineConfig({

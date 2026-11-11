@@ -1,7 +1,7 @@
 // slots/forwarding: a frame passes its title and default slots on to a box (ADR-0054's
 // forwarding). Forwarding keeps presence: where the gallery fills nothing, the box shows its own
 // fallback.
-import { describeTargets, it, mount } from "@unframework/testing";
+import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Gallery from "./Gallery.uf.tsx";

@@ -1,6 +1,6 @@
-import { applyFixes } from "@unframework/diagnostics";
-import type { Diagnostic } from "@unframework/diagnostics";
-import { checkInvariants } from "@unframework/ir";
+import { applyFixes } from "@unframework.dev/diagnostics";
+import type { Diagnostic } from "@unframework.dev/diagnostics";
+import { checkInvariants } from "@unframework.dev/ir";
 import type {
   BindingReference,
   Code,
@@ -9,8 +9,8 @@ import type {
   FunctionCode,
   UfComponent,
   UfModule,
-} from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 
 import { analyze } from "../src/index.ts";
 import type { AnalyzeOptions, AnalyzeResult } from "../src/index.ts";
@@ -168,7 +168,7 @@ export function applyAndRecheck(source: string, diagnostics: readonly Diagnostic
 
 /** Every authoring API M2 lowers, imported as a component writes it. */
 export const API: string =
-  'import { computed, defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef, watch, watchEffect } from "unframework";\n';
+  'import { computed, defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef, watch, watchEffect } from "@uxfront/unframework";\n';
 
 /** A component with the API imported, the props and the setup given, returning `jsx`. */
 export function setupOf(

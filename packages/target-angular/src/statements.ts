@@ -11,9 +11,9 @@
 // input, a derived value or a template ref are calls of their members (`this.count()`,
 // `this.field()?.nativeElement`): those calls are reads, as the source's `count.value` is; every
 // other call may change something.
-import { functionBodyText, parseExpression, parseStatementsSource } from "@unframework/codegen";
-import type { RewriteRules } from "@unframework/codegen";
-import type { FunctionCode } from "@unframework/ir";
+import { functionBodyText, parseExpression, parseStatementsSource } from "@unframework.dev/codegen";
+import type { RewriteRules } from "@unframework.dev/codegen";
+import type { FunctionCode } from "@unframework.dev/ir";
 
 import { isSignal, memberOf } from "./plan.ts";
 import type { Plan } from "./plan.ts";

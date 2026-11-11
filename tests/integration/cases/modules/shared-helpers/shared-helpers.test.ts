@@ -1,6 +1,6 @@
 // modules/shared-helpers: a component calls pure functions a `.ts` module exports, in its
 // template, in a derived value and in a listener (ADR-0070).
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import PriceTag from "./PriceTag.uf.tsx";

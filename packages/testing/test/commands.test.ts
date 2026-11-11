@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import type { UfModule } from "@unframework/ir";
+import type { UfModule } from "@unframework.dev/ir";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { HarnessContext } from "../src/harness.ts";

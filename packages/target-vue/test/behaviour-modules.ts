@@ -6,7 +6,7 @@
 import { sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { formatOutput } from "@unframework/codegen";
+import { formatOutput } from "@unframework.dev/codegen";
 import type { Plugin } from "vite";
 
 import target from "../src/index.ts";

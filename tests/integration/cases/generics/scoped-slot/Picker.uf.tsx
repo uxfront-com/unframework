@@ -1,5 +1,5 @@
-import { defineSlots } from "unframework";
-import type { Element } from "unframework";
+import { defineSlots } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
 
 // A scoped slot whose props name the type parameter (ADR-0068): a consumer's fill reads `T`.
 export interface PickerProps<T> {

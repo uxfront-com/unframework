@@ -1,6 +1,6 @@
 // slots/in-list: a list renders its `marker` slot inside `.map` (ADR-0054), so one fill renders
 // before each item.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Recipe from "./Recipe.uf.tsx";

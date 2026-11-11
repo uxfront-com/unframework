@@ -1,4 +1,4 @@
-import { defineExpose, ref } from "unframework";
+import { defineExpose, ref } from "@uxfront/unframework";
 
 export default function Counter({ start }: { start: number }) {
   const count = ref(start);

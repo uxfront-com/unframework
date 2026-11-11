@@ -10,7 +10,7 @@ exports[`check > prints --format json 1`] = `
       "offset": 32,
     },
     "file": "src/Widget.uf.tsx",
-    "help": "Write the component with the authoring API from "unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.",
+    "help": "Write the component with the authoring API from "@uxfront/unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.",
     "message": ""react" is a React module, and components are framework-free.",
     "severity": "error",
     "start": {
@@ -54,7 +54,7 @@ exports[`check > prints --format sarif 1`] = `
             "text": ""react" is a React module, and components are framework-free.",
           },
           "properties": {
-            "help": "Write the component with the authoring API from "unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.",
+            "help": "Write the component with the authoring API from "@uxfront/unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.",
           },
           "ruleId": "UF1201",
         },
@@ -73,10 +73,10 @@ exports[`check > prints --format sarif 1`] = `
 compiler writes each framework's code for you: hooks in React, refs in Vue, runes in
 Svelte, signals in Solid.
 
-Write the component with the authoring API from \`unframework\` instead:
+Write the component with the authoring API from \`@uxfront/unframework\` instead:
 
 \`\`\`tsx
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export default function Counter() {
   const count = ref(0);
@@ -87,10 +87,10 @@ export default function Counter() {
 compiler writes each framework's code for you: hooks in React, refs in Vue, runes in
 Svelte, signals in Solid.
 
-Write the component with the authoring API from \`unframework\` instead:
+Write the component with the authoring API from \`@uxfront/unframework\` instead:
 
 \`\`\`tsx
-import { ref } from "unframework";
+import { ref } from "@uxfront/unframework";
 
 export default function Counter() {
   const count = ref(0);
@@ -121,7 +121,7 @@ exports[`check > prints a code frame by default, and writes no file 1`] = `
 1 | import { useState } from "react";
   |                          ^^^^^^^
   |
-  = help: Write the component with the authoring API from "unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.
+  = help: Write the component with the authoring API from "@uxfront/unframework" (ref, computed, watch and the define* macros); the compiler writes the framework code.
   = see: https://unframework.dev/diagnostics/UF1201
 "
 `;

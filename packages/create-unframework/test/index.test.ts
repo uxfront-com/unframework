@@ -46,11 +46,12 @@ function temporary(): string {
   return root;
 }
 
-/** A directory whose `node_modules` holds the workspace's `unframework` and `typescript`. */
+/** A directory whose `node_modules` holds the workspace's `@uxfront/unframework` and `typescript`. */
 function linked(): string {
   const project = join(temporary(), "app");
   mkdirSync(join(project, "node_modules"), { recursive: true });
-  symlinkSync(umbrella, join(project, "node_modules", "unframework"));
+  mkdirSync(join(project, "node_modules", "@uxfront"), { recursive: true });
+  symlinkSync(umbrella, join(project, "node_modules", "@uxfront", "unframework"));
   symlinkSync(typescript, join(project, "node_modules", "typescript"));
   return project;
 }
@@ -86,7 +87,7 @@ describe("create-unframework", () => {
     for (const file of SCAFFOLD) expect(created.output).toContain(`Wrote ${file}\n`);
     for (const file of SCAFFOLD) expect(existsSync(join(project, file)), file).toBe(true);
 
-    const bin = join(project, "node_modules", "unframework", "bin", "unframework.js");
+    const bin = join(project, "node_modules", "@uxfront", "unframework", "bin", "unframework.js");
     const check = node(project, bin, "check", "--format", "json");
     expect(check.status).toBe(0);
     const severities = (JSON.parse(check.output) as { severity: string }[]).map(
@@ -133,7 +134,7 @@ describe("create-unframework", () => {
     expect(JSON.parse(readFileSync(join(project, "package.json"), "utf8"))).toEqual({
       private: true,
       type: "module",
-      dependencies: { unframework: "latest" },
+      dependencies: { "@uxfront/unframework": "latest" },
     });
   }, 60_000);
 
@@ -149,10 +150,23 @@ describe("create-unframework", () => {
   it("looks for the bin only in the project's own node_modules", () => {
     const root = temporary();
     mkdirSync(join(root, "node_modules"));
-    symlinkSync(umbrella, join(root, "node_modules", "unframework"));
+    mkdirSync(join(root, "node_modules", "@uxfront"), { recursive: true });
+    symlinkSync(umbrella, join(root, "node_modules", "@uxfront", "unframework"));
     const { code } = run(root, "app");
     expect(code).toBe(1);
     expect(existsSync(join(root, "app", "AGENTS.md"))).toBe(false);
+  });
+
+  // The unscoped name on npm is another project's package (ADR-0090), so its bin is never run.
+  it("ignores a package installed under the unscoped name", () => {
+    const root = temporary();
+    const installed = join(root, "app", "node_modules", "unframework");
+    mkdirSync(installed, { recursive: true });
+    writeFileSync(join(installed, "package.json"), '{ "bin": { "unframework": "bin.js" } }\n');
+    writeFileSync(join(installed, "bin.js"), "process.exit(7);\n");
+    const { code, stderr } = run(root, "app");
+    expect(code).toBe(1);
+    expect(stderr).toContain('run "unframework init"');
   });
 
   it.each([
@@ -161,7 +175,7 @@ describe("create-unframework", () => {
     ["no entry in its bin", '{ "bin": {} }'],
   ])("treats an unframework with %s as not installed", (_, manifest) => {
     const root = temporary();
-    const installed = join(root, "app", "node_modules", "unframework");
+    const installed = join(root, "app", "node_modules", "@uxfront", "unframework");
     mkdirSync(installed, { recursive: true });
     writeFileSync(join(installed, "package.json"), `${manifest}\n`);
     const { code, stderr } = run(root, "app");
@@ -172,7 +186,7 @@ describe("create-unframework", () => {
 
   it("passes on the exit code of a bin that fails", () => {
     const root = temporary();
-    const installed = join(root, "app", "node_modules", "unframework");
+    const installed = join(root, "app", "node_modules", "@uxfront", "unframework");
     mkdirSync(installed, { recursive: true });
     writeFileSync(join(installed, "package.json"), '{ "bin": { "unframework": "bin.js" } }\n');
     writeFileSync(join(installed, "bin.js"), "process.exit(7);\n");
@@ -181,7 +195,7 @@ describe("create-unframework", () => {
 
   it("exits 2 when a signal kills the bin", () => {
     const root = temporary();
-    const installed = join(root, "app", "node_modules", "unframework");
+    const installed = join(root, "app", "node_modules", "@uxfront", "unframework");
     mkdirSync(installed, { recursive: true });
     writeFileSync(join(installed, "package.json"), '{ "bin": { "unframework": "bin.js" } }\n');
     writeFileSync(join(installed, "bin.js"), 'process.kill(process.pid, "SIGKILL");\n');
@@ -261,7 +275,7 @@ describe("create-unframework", () => {
   it("fails on the example's ES module config under commonjs, until the file is renamed", () => {
     const project = linked();
     writeFileSync(join(project, "package.json"), '{ "type": "commonjs" }\n');
-    const bin = join(project, "node_modules", "unframework", "bin", "unframework.js");
+    const bin = join(project, "node_modules", "@uxfront", "unframework", "bin", "unframework.js");
     expect(node(project, bin, "init")).toMatchObject({ status: 0 });
     const refused = node(project, bin, "check");
     expect(refused.status).toBe(2);

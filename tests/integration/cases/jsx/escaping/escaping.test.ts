@@ -2,7 +2,7 @@
 // `@if`, quotes, backslashes) in interpolated strings, in string-literal children, in static
 // text and in static and bound attribute values all render as written. `&check;` is an HTML-only
 // reference that JSX leaves as written (UF3011, a warning, so the case still has output).
-import { describeTargets, mountScenario } from "@unframework/testing";
+import { describeTargets, mountScenario } from "@unframework.dev/testing";
 import { expect, it } from "vitest";
 
 import TemplateTip from "./TemplateTip.uf.tsx";

@@ -7,12 +7,12 @@
     "start": {
       "line": 12,
       "column": 3,
-      "offset": 268
+      "offset": 277
     },
     "end": {
       "line": 12,
       "column": 51,
-      "offset": 316
+      "offset": 325
     },
     "target": "astro"
   },
@@ -24,12 +24,12 @@
     "start": {
       "line": 14,
       "column": 3,
-      "offset": 320
+      "offset": 329
     },
     "end": {
       "line": 14,
       "column": 69,
-      "offset": 386
+      "offset": 395
     },
     "target": "react"
   },
@@ -41,12 +41,12 @@
     "start": {
       "line": 14,
       "column": 3,
-      "offset": 320
+      "offset": 329
     },
     "end": {
       "line": 14,
       "column": 69,
-      "offset": 386
+      "offset": 395
     },
     "target": "solid"
   }

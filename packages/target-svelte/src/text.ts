@@ -4,7 +4,7 @@
 // shifted to where the target puts it; a line that starts inside a string or template literal
 // never moves, as that would change the literal's value. The literals come from parsing the code,
 // so a regular expression holding a quote or a backtick cannot mislead it.
-import { parseExpression, parseStatementsSource } from "@unframework/codegen";
+import { parseExpression, parseStatementsSource } from "@unframework.dev/codegen";
 
 import { visit } from "./ast.ts";
 

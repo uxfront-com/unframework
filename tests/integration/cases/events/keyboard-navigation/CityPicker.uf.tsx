@@ -1,4 +1,4 @@
-import { computed, defineEmits, ref, useId } from "unframework";
+import { computed, defineEmits, ref, useId } from "@uxfront/unframework";
 
 export interface CityPickerProps {
   cities: string[];

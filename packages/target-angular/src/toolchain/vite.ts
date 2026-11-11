@@ -2,7 +2,7 @@
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import type { ToolchainContext } from "@unframework/codegen";
+import type { ToolchainContext } from "@unframework.dev/codegen";
 import type { Plugin } from "vite";
 // Vite's config, with the `test` options Vitest declares on it.
 import type { ViteUserConfig } from "vitest/config";

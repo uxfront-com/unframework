@@ -5,8 +5,8 @@
     {
       "name": "Options",
       "span": {
-        "start": 383,
-        "end": 696
+        "start": 401,
+        "end": 714
       },
       "typeParameters": [
         {
@@ -14,13 +14,13 @@
           "constraint": {
             "code": "{ value: string }",
             "span": {
-              "start": 425,
-              "end": 442
+              "start": 443,
+              "end": 460
             }
           },
           "span": {
-            "start": 415,
-            "end": 442
+            "start": 433,
+            "end": 460
           }
         }
       ],
@@ -31,14 +31,14 @@
           "type": {
             "code": "T[]",
             "span": {
-              "start": 468,
-              "end": 471
+              "start": 486,
+              "end": 489
             }
           },
-          "binding": "options@446",
+          "binding": "options@464",
           "span": {
-            "start": 459,
-            "end": 471
+            "start": 477,
+            "end": 489
           }
         }
       ],
@@ -47,23 +47,23 @@
         "type": {
           "code": "{ options: T[] }",
           "span": {
-            "start": 457,
-            "end": 473
+            "start": 475,
+            "end": 491
           }
         },
         "span": {
-          "start": 444,
-          "end": 473
+          "start": 462,
+          "end": 491
         }
       },
       "types": [],
       "slots": {
-        "binding": "slots@485",
+        "binding": "slots@503",
         "type": {
           "code": "{ option?(props: { option: T }): Element }",
           "span": {
-            "start": 505,
-            "end": 547
+            "start": 523,
+            "end": 565
           }
         },
         "slots": [
@@ -73,50 +73,50 @@
             "props": {
               "code": "{ option: T }",
               "span": {
-                "start": 522,
-                "end": 535
+                "start": 540,
+                "end": 553
               }
             },
             "references": [
               "T"
             ],
             "span": {
-              "start": 507,
-              "end": 545
+              "start": 525,
+              "end": 563
             }
           }
         ],
         "span": {
-          "start": 479,
-          "end": 551
+          "start": 497,
+          "end": 569
         }
       },
       "bindings": [
         {
-          "id": "options@446",
+          "id": "options@464",
           "name": "options",
           "kind": "prop",
           "span": {
-            "start": 446,
-            "end": 453
+            "start": 464,
+            "end": 471
           }
         },
         {
-          "id": "slots@485",
+          "id": "slots@503",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 485,
-            "end": 490
+            "start": 503,
+            "end": 508
           }
         },
         {
-          "id": "option@592",
+          "id": "option@610",
           "name": "option",
           "kind": "loopVar",
           "span": {
-            "start": 592,
-            "end": 598
+            "start": 610,
+            "end": 616
           }
         }
       ],
@@ -131,34 +131,34 @@
             "source": {
               "code": "options",
               "span": {
-                "start": 579,
-                "end": 586
+                "start": 597,
+                "end": 604
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "options@446",
+                  "binding": "options@464",
                   "span": {
-                    "start": 579,
-                    "end": 586
+                    "start": 597,
+                    "end": 604
                   }
                 }
               ]
             },
-            "item": "option@592",
+            "item": "option@610",
             "key": {
               "code": "option.value",
               "span": {
-                "start": 622,
-                "end": 634
+                "start": 640,
+                "end": 652
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "option@592",
+                  "binding": "option@610",
                   "span": {
-                    "start": 622,
-                    "end": 628
+                    "start": 640,
+                    "end": 646
                   }
                 }
               ]
@@ -174,16 +174,16 @@
                   "props": {
                     "code": "{ option }",
                     "span": {
-                      "start": 652,
-                      "end": 662
+                      "start": 670,
+                      "end": 680
                     },
                     "refs": [
                       {
                         "kind": "Binding",
-                        "binding": "option@592",
+                        "binding": "option@610",
                         "span": {
-                          "start": 654,
-                          "end": 660
+                          "start": 672,
+                          "end": 678
                         },
                         "shorthand": true
                       }
@@ -191,25 +191,25 @@
                   },
                   "fallback": [],
                   "span": {
-                    "start": 636,
-                    "end": 664
+                    "start": 654,
+                    "end": 682
                   }
                 }
               ],
               "span": {
-                "start": 613,
-                "end": 669
+                "start": 631,
+                "end": 687
               }
             },
             "span": {
-              "start": 579,
-              "end": 678
+              "start": 597,
+              "end": 696
             }
           }
         ],
         "span": {
-          "start": 567,
-          "end": 689
+          "start": 585,
+          "end": 707
         }
       }
     }
@@ -220,8 +220,8 @@
       "name": "default",
       "local": "Options",
       "span": {
-        "start": 383,
-        "end": 696
+        "start": 401,
+        "end": 714
       }
     }
   ],

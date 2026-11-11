@@ -29,7 +29,7 @@ const styles = {
  * 1 | import { useState } from "react";
  *   |                          ^^^^^^^
  *   |
- *   = help: Write the component with the authoring API from "unframework".
+ *   = help: Write the component with the authoring API from "@uxfront/unframework".
  *   = see: https://unframework.dev/diagnostics/UF1201
  * ```
  */

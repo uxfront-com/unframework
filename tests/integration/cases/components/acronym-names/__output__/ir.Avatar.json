@@ -5,8 +5,8 @@
     {
       "name": "Avatar",
       "span": {
-        "start": 44,
-        "end": 350
+        "start": 53,
+        "end": 359
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 109,
-              "end": 115
+              "start": 118,
+              "end": 124
             }
           },
-          "binding": "imageURL@77",
+          "binding": "imageURL@86",
           "span": {
-            "start": 99,
-            "end": 116
+            "start": 108,
+            "end": 125
           }
         },
         {
@@ -31,14 +31,14 @@
           "type": {
             "code": "number",
             "span": {
-              "start": 125,
-              "end": 131
+              "start": 134,
+              "end": 140
             }
           },
-          "binding": "userID@87",
+          "binding": "userID@96",
           "span": {
-            "start": 117,
-            "end": 131
+            "start": 126,
+            "end": 140
           }
         }
       ],
@@ -47,23 +47,23 @@
         "type": {
           "code": "{ imageURL: string; userID: number }",
           "span": {
-            "start": 97,
-            "end": 133
+            "start": 106,
+            "end": 142
           }
         },
         "span": {
-          "start": 75,
-          "end": 133
+          "start": 84,
+          "end": 142
         }
       },
       "types": [],
       "emits": {
-        "binding": "emit@145",
+        "binding": "emit@154",
         "type": {
           "code": "{ pickedURL: [url: string] }",
           "span": {
-            "start": 164,
-            "end": 192
+            "start": 173,
+            "end": 201
           }
         },
         "events": [
@@ -75,53 +75,53 @@
                 "type": {
                   "code": "string",
                   "span": {
-                    "start": 183,
-                    "end": 189
+                    "start": 192,
+                    "end": 198
                   }
                 },
                 "span": {
-                  "start": 178,
-                  "end": 189
+                  "start": 187,
+                  "end": 198
                 }
               }
             ],
             "span": {
-              "start": 166,
-              "end": 190
+              "start": 175,
+              "end": 199
             }
           }
         ],
         "span": {
-          "start": 139,
-          "end": 196
+          "start": 148,
+          "end": 205
         }
       },
       "bindings": [
         {
-          "id": "imageURL@77",
+          "id": "imageURL@86",
           "name": "imageURL",
           "kind": "prop",
           "span": {
-            "start": 77,
-            "end": 85
+            "start": 86,
+            "end": 94
           }
         },
         {
-          "id": "userID@87",
+          "id": "userID@96",
           "name": "userID",
           "kind": "prop",
           "span": {
-            "start": 87,
-            "end": 93
+            "start": 96,
+            "end": 102
           }
         },
         {
-          "id": "emit@145",
+          "id": "emit@154",
           "name": "emit",
           "kind": "emit",
           "span": {
-            "start": 145,
-            "end": 149
+            "start": 154,
+            "end": 158
           }
         }
       ],
@@ -135,8 +135,8 @@
             "name": "type",
             "value": "button",
             "span": {
-              "start": 220,
-              "end": 233
+              "start": 229,
+              "end": 242
             }
           },
           {
@@ -145,23 +145,23 @@
             "value": {
               "code": "userID",
               "span": {
-                "start": 245,
-                "end": 251
+                "start": 254,
+                "end": 260
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "userID@87",
+                  "binding": "userID@96",
                   "span": {
-                    "start": 245,
-                    "end": 251
+                    "start": 254,
+                    "end": 260
                   }
                 }
               ]
             },
             "span": {
-              "start": 234,
-              "end": 252
+              "start": 243,
+              "end": 261
             }
           },
           {
@@ -174,49 +174,49 @@
                 "body": {
                   "code": "emit(\"pickedURL\", imageURL)",
                   "span": {
-                    "start": 268,
-                    "end": 295
+                    "start": 277,
+                    "end": 304
                   },
                   "refs": [
                     {
                       "kind": "Emit",
-                      "binding": "emit@145",
+                      "binding": "emit@154",
                       "event": "pickedURL",
                       "span": {
-                        "start": 268,
-                        "end": 295
+                        "start": 277,
+                        "end": 304
                       },
                       "arguments": [
                         {
-                          "start": 286,
-                          "end": 294
+                          "start": 295,
+                          "end": 303
                         }
                       ]
                     },
                     {
                       "kind": "Binding",
-                      "binding": "imageURL@77",
+                      "binding": "imageURL@86",
                       "span": {
-                        "start": 286,
-                        "end": 294
+                        "start": 295,
+                        "end": 303
                       }
                     }
                   ]
                 },
                 "expression": true,
                 "span": {
-                  "start": 262,
-                  "end": 295
+                  "start": 271,
+                  "end": 304
                 }
               },
               "span": {
-                "start": 262,
-                "end": 295
+                "start": 271,
+                "end": 304
               }
             },
             "span": {
-              "start": 253,
-              "end": 296
+              "start": 262,
+              "end": 305
             }
           }
         ],
@@ -225,8 +225,8 @@
             "kind": "Text",
             "value": "User ",
             "span": {
-              "start": 297,
-              "end": 309
+              "start": 306,
+              "end": 318
             }
           },
           {
@@ -234,31 +234,31 @@
             "value": {
               "code": "userID",
               "span": {
-                "start": 310,
-                "end": 316
+                "start": 319,
+                "end": 325
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "userID@87",
+                  "binding": "userID@96",
                   "span": {
-                    "start": 310,
-                    "end": 316
+                    "start": 319,
+                    "end": 325
                   }
                 }
               ]
             },
             "span": {
-              "start": 309,
-              "end": 317
+              "start": 318,
+              "end": 326
             }
           },
           {
             "kind": "Text",
             "value": ": ",
             "span": {
-              "start": 317,
-              "end": 319
+              "start": 326,
+              "end": 328
             }
           },
           {
@@ -266,29 +266,29 @@
             "value": {
               "code": "imageURL",
               "span": {
-                "start": 320,
-                "end": 328
+                "start": 329,
+                "end": 337
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "imageURL@77",
+                  "binding": "imageURL@86",
                   "span": {
-                    "start": 320,
-                    "end": 328
+                    "start": 329,
+                    "end": 337
                   }
                 }
               ]
             },
             "span": {
-              "start": 319,
-              "end": 329
+              "start": 328,
+              "end": 338
             }
           }
         ],
         "span": {
-          "start": 212,
-          "end": 343
+          "start": 221,
+          "end": 352
         }
       }
     }
@@ -299,8 +299,8 @@
       "name": "default",
       "local": "Avatar",
       "span": {
-        "start": 44,
-        "end": 350
+        "start": 53,
+        "end": 359
       }
     }
   ],

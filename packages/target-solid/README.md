@@ -1,4 +1,4 @@
-# @unframework/target-solid
+# @unframework.dev/target-solid
 
 The Solid 1.9 target of the Unframework compiler: one function component in TSX per source
 component, written as a Solid developer would write it (plan §6).
@@ -464,18 +464,18 @@ attributes through `spread` and `mergeProps`, and render it on the server with `
 
 The tests and tooling build, check and run Solid output through three entries:
 
-- `@unframework/target-solid/toolchain` (Node): the Vite configuration of browser and SSR
+- `@unframework.dev/target-solid/toolchain` (Node): the Vite configuration of browser and SSR
   projects (`vite-plugin-solid`, with `ssr: true` for SSR and without solid-refresh), the
   framework compile check (L3: babel-preset-solid in `dom` and `ssr` modes, where a template a
   browser would parse differently is a warning, and a `.ts` module parses without JSX), the type check (L4: one TypeScript 7 run over
   all files, against `tests/toolchains/solid/tsconfig.json`) and the lint (L5: oxlint with the
   shared baseline and eslint-plugin-solid as a JS plugin,
   `tests/toolchains/solid/output.oxlintrc.json`).
-- `@unframework/target-solid/toolchain/client` (browser): mounts with `render`, its props a
+- `@unframework.dev/target-solid/toolchain/client` (browser): mounts with `render`, its props a
   proxy with a signal per key, which `mergeProps` reads as reactive props, holding the values the
   test passed (never a store's proxies), and rerenders by replacing each prop, removing those
   left out.
-- `@unframework/target-solid/toolchain/server` (Node): renders with `renderToStringAsync`.
+- `@unframework.dev/target-solid/toolchain/server` (Node): renders with `renderToStringAsync`.
 
 `test/output.test.ts` runs L3, L4 and L5 over what the emitter writes for sources that reach
 every shape above, and renders the rewritten ones on the server (`test/rewrites.browser.test.ts`

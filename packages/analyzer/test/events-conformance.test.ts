@@ -1,4 +1,4 @@
-// The event vocabulary `@unframework/ir` holds as data (ADR-0047), against what it stands for:
+// The event vocabulary `@unframework.dev/ir` holds as data (ADR-0047), against what it stands for:
 // the listeners the authoring types declare (the vendored Vue JSX `Events`), the interface lib.dom
 // dispatches each event with, and the members of each interface both the DOM's event and React's
 // synthetic event carry (@types/react, which the React target's output is checked against). The
@@ -17,8 +17,8 @@ import {
   PORTABLE_EVENT_MEMBERS,
   UNSUPPORTED_EVENTS,
   WINDOW_EVENTS,
-} from "@unframework/ir";
-import { parseModule } from "@unframework/parser";
+} from "@unframework.dev/ir";
+import { parseModule } from "@unframework.dev/parser";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { listenerName } from "../src/listeners.ts";

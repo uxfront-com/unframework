@@ -1,6 +1,6 @@
 // types/intersection-props: props typed with an intersection of imported interfaces and a type
 // literal (ADR-0067): every part's members are props.
-import { describeTargets, it, mountScenario } from "@unframework/testing";
+import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
 import Chip from "./Chip.uf.tsx";
