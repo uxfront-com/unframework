@@ -38,36 +38,56 @@ pnpm dev
 
 ## Scripts
 
-| Command                        | Does                                                                               |
-| ------------------------------ | ---------------------------------------------------------------------------------- |
-| `pnpm build`                   | Builds every workspace (`turbo run build`)                                         |
-| `pnpm dev`                     | Runs every workspace's `dev` task                                                  |
-| `pnpm check-types`             | Type-checks every workspace with TypeScript 7 (tsgo)                               |
-| `pnpm test`                    | Runs every workspace's tests, the integration corpus on all seven targets included |
-| `pnpm test:update`             | Rewrites the corpus's golden outputs and shared expectations (refused in CI)       |
-| `pnpm test:baselines`          | Rewrites the Linux screenshot baselines in Docker                                  |
-| `pnpm test:baselines:download` | Copies in the Linux screenshot baselines that CI generated for the branch          |
-| `pnpm test:canaries`           | Checks that every live test layer catches the corruption it exists for             |
-| `pnpm test:budgets:update`     | Rewrites the compile time and output size budgets (refused in CI)                  |
-| `pnpm lint`                    | Lints the repo with oxlint (type-aware)                                            |
-| `pnpm format`                  | Formats the repo with oxfmt                                                        |
-| `pnpm new:package`             | Creates a package from the package template                                        |
-| `pnpm changeset`               | Records a change to a published package                                            |
+| Command                        | Does                                                                                     |
+| ------------------------------ | ---------------------------------------------------------------------------------------- |
+| `pnpm build`                   | Builds every workspace (`turbo run build`)                                               |
+| `pnpm dev`                     | Runs every workspace's `dev` task                                                        |
+| `pnpm check-types`             | Type-checks every workspace with TypeScript 7 (tsgo)                                     |
+| `pnpm test`                    | Runs every workspace's tests, the integration corpus on all seven targets included       |
+| `pnpm test:quick`              | Runs the changed packages' tests, the repo invariants and the corpus's `compile` project |
+| `pnpm test:full`               | Runs what CI's test jobs run, before a pull request                                      |
+| `pnpm test:update`             | Rewrites the corpus's golden outputs and shared expectations (refused in CI)             |
+| `pnpm test:baselines`          | Rewrites the Linux screenshot baselines in Docker                                        |
+| `pnpm test:baselines:download` | Copies in the Linux screenshot baselines that CI generated for the branch                |
+| `pnpm test:canaries`           | Checks that every live test layer catches the corruption it exists for                   |
+| `pnpm test:budgets:update`     | Rewrites the compile time and output size budgets (refused in CI)                        |
+| `pnpm lint`                    | Lints the repo with oxlint (type-aware)                                                  |
+| `pnpm format`                  | Formats the repo with oxfmt                                                              |
+| `pnpm new:package`             | Creates a package from the package template                                              |
+| `pnpm changeset`               | Records a change to a published package                                                  |
 
 ## Verifying a change
 
+Use `pnpm test:quick` while you work. It runs the unit tests of
+the packages changed since the merge base of `origin/main` and HEAD, the repo invariants and the
+corpus's `compile` project. It runs no `browser:*`, `ssr:*` or `toolchain:*` project and no e2e
+app: those are for before a pull request. Fetch `origin/main` first, or pass `--base <ref>` to
+compare with another branch.
+
 A change to the compiler is done when the corpus is green on every target, not when it emits
-code (plan P1):
+code (plan P1). Before you open a pull request:
 
 1. `pnpm check-types && pnpm lint && pnpm format:check`
-2. `pnpm test`. When a change is meant to change the output, run `pnpm test:update` and review
-   every changed file under `tests/integration/cases`: the golden outputs and expectations are
-   reviewed like code.
-3. If the change touches what the browser renders, push it, and once CI's `Baselines` job has
+2. `pnpm test:full`. It runs what CI's test jobs run: every package's tests, the whole corpus, the
+   `bench` project, the e2e apps, and the canaries when the branch changes a path on
+   `CANARY_PATHS` (`tests/integration/scripts/canary-paths.ts`). It leaves out the CI jobs it
+   can't stand in for, and `pnpm test:full --list` names each with its reason:
+   - `check`: format, lint and types, which step 1 runs.
+   - `changes`: CI's gate, which `test:full` reuses for the canaries alone.
+   - `baselines`: it needs Docker. See step 4.
+   - `parity`: it merges CI's artefacts. The corpus's own summary judges the local run.
+   - `build` and `lighthouse`: they build and audit the docs site, not tests.
+3. When a change is meant to change the output, run `pnpm test:update` and review every changed
+   file under `tests/integration/cases`: the golden outputs and expectations are reviewed like
+   code.
+4. If the change touches what the browser renders, push it, and once CI's `Baselines` job has
    run, `pnpm test:baselines:download` copies in the Linux screenshots it generated.
    `pnpm test:baselines` (Docker) rewrites them locally. On macOS, the browser tests compare the targets with each other live, so a
    visual difference between targets fails locally without a baseline.
-4. If the change touches the harness, `pnpm test:canaries`.
+
+A new job in `.github/workflows/ci.yml` needs a step in `scripts/test-loop.ts`, or an entry with
+its reason in that script's list of jobs left out, which this page names too. `tests/repo` fails
+otherwise.
 
 ## Shared parts from uxfront
 
