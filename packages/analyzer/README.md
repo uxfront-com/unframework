@@ -396,3 +396,18 @@ UF3030's tables against Svelte's and its verdict on every HTML element, with eac
 and `tabindex` its rules read, against Svelte's compiler. The IR holds the tables both read
 (`UNDECLARED_ATTRIBUTES`, `UNBINDABLE_ATTRIBUTES`, `RESERVED_TYPE_NAMES`, `CSS_PROPERTIES`), so
 `checkInvariants` rejects the same.
+
+A local run is fast, and CI runs every check at full strength. With `CI` set, the property tests
+run at their full sizes with their own seeds, and `types-conformance.test.ts` runs `tsc` every
+time. Locally, each property test takes a seeded sample of 500 (`test/property.ts`), and the
+probe's verdicts are kept in `node_modules/.cache/types-conformance/` under a hash of everything
+that decides them (`test/probe-cache.ts`). These variables change that:
+
+| Variable               | Effect                                                                   |
+| ---------------------- | ------------------------------------------------------------------------ |
+| `UF_PROPERTY_RUNS=<n>` | Runs `n` samples of each property test, at most its full size, in CI too |
+| `UF_PROPERTY_SEED=<n>` | Draws the samples with seed `n`                                          |
+| `UF_TYPES_CACHE=0`     | Runs `tsc` and ignores the cache, as CI does                             |
+
+A failing property test names its seed and its size. To replay it, set both variables to those
+values and run that test alone with `-t`.
