@@ -106,6 +106,7 @@ export function readCaseConfig(id: string, file: string): CaseConfig {
   } catch (error) {
     throw new Error(
       `[uf] Case ${id}: case.json is not JSON: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
     );
   }
   if (typeof config !== "object" || config === null || Array.isArray(config)) {

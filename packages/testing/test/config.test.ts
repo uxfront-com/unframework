@@ -39,12 +39,35 @@ afterEach(() => {
   else process.env.UF_UPDATE = env.update;
 });
 
+/** A configuration's projects, in order. */
+async function projectsOf(
+  options: Parameters<typeof defineTestConfig>[0],
+): Promise<TestProjectInlineConfiguration[]> {
+  const projects = (await defineTestConfig(options)).test?.projects;
+  if (!projects) throw new Error("defineTestConfig gave no projects.");
+  return projects as TestProjectInlineConfiguration[];
+}
+
 /** The names of a configuration's projects, in order. */
 async function projectNames(root: string): Promise<string[]> {
-  const config = await defineTestConfig({ root });
-  return (config.test?.projects as TestProjectInlineConfiguration[]).map(
-    (each) => each.test?.name as string,
-  );
+  return (await projectsOf({ root })).map((each) => each.test?.name as string);
+}
+
+/** A project that tests Vue and React, with one case. */
+function twoTargets(): string {
+  return project({
+    "unframework.config.mjs": 'export default { targets: ["vue", "react"] };\n',
+    "test/badge/Badge.uf.tsx": COMPONENT,
+    "test/badge/badge.test.ts": SPEC,
+  });
+}
+
+/** Each project's name and group. */
+async function groups(): Promise<unknown[][]> {
+  return (await projectsOf({ root: twoTargets() })).map((each) => [
+    each.test?.name,
+    each.test?.sequence?.groupOrder,
+  ]);
 }
 
 describe("discoverCases", () => {
@@ -154,13 +177,6 @@ describe("discoverCases", () => {
 });
 
 describe("defineTestConfig", () => {
-  const twoTargets = () =>
-    project({
-      "unframework.config.mjs": 'export default { targets: ["vue", "react"] };\n',
-      "test/badge/Badge.uf.tsx": COMPONENT,
-      "test/badge/badge.test.ts": SPEC,
-    });
-
   it("gives a browser and an ssr project for exactly the config's targets", async () => {
     delete process.env.UF_TARGETS;
     expect(await projectNames(twoTargets())).toEqual([
@@ -183,11 +199,6 @@ describe("defineTestConfig", () => {
 
   it("orders the reference first in live mode, and before the others in update mode", async () => {
     delete process.env.UF_TARGETS;
-    const groups = async () =>
-      (
-        (await defineTestConfig({ root: twoTargets() })).test
-          ?.projects as TestProjectInlineConfiguration[]
-      ).map((each) => [each.test?.name, each.test?.sequence?.groupOrder]);
     expect(await groups()).toEqual([
       ["browser:vue", 0],
       ["ssr:vue", 0],
@@ -231,8 +242,7 @@ describe("defineTestConfig", () => {
   it("provides the run, the cases and the server render spec to each project", async () => {
     delete process.env.UF_TARGETS;
     const root = twoTargets();
-    const [browser, ssr] = (await defineTestConfig({ root })).test
-      ?.projects as TestProjectInlineConfiguration[];
+    const [browser, ssr] = await projectsOf({ root });
     expect(browser!.test?.include).toEqual([join(root, "test/badge/badge.test.ts")]);
     expect(browser!.test?.provide).toMatchObject({
       target: "vue",
