@@ -26,7 +26,6 @@ import { noErrorBroadcast } from "./broadcast.ts";
 import { discoverCases, EXCLUDED } from "./cases.ts";
 import type { ProjectCase } from "./cases.ts";
 
-export { NO_ERROR_BROADCAST, noErrorBroadcast } from "./broadcast.ts";
 export { discoverCases } from "./cases.ts";
 export type { DiscoverOptions, ProjectCase } from "./cases.ts";
 
