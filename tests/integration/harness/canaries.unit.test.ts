@@ -1,12 +1,13 @@
-// The canaries' corruptions, on components of their own and on the corpus: each one must change
-// every target's output of every case it is judged on (a canary that changes nothing would pass
-// and prove nothing), keep the IR valid (a plugin whose IR breaks an invariant is a UF8001, and
-// the targets emit the uncorrupted module instead), and change only what its layer is meant to
-// catch. The runner (`pnpm test:canaries`) then proves each layer catches it on every case of
-// the corpus, and the verdict tests (canary-verdict.unit.test.ts) how it judges a run.
+// The canaries' corruptions, on components of their own: each one must change every target's
+// output of every case it is judged on (a canary that changes nothing would pass and prove
+// nothing), keep the IR valid (a plugin whose IR breaks an invariant is a UF8001, and the targets
+// emit the uncorrupted module instead), and change only what its layer is meant to catch. The
+// same on the corpus is `canaries-corpus.ts`, in shard files (ADR-0093). The runner
+// (`pnpm test:canaries`) then proves each layer catches it on every case of the corpus, and the
+// verdict tests (canary-verdict.unit.test.ts) how it judges a run.
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { originalPositionFor, TraceMap } from "@jridgewell/trace-mapping";
 import { compile, TARGET_NAMES } from "@unframework.dev/compiler";
@@ -26,6 +27,7 @@ import {
   shardCases,
   shardFilters,
 } from "../scripts/canaries.ts";
+import { corruptedTargets } from "./canaries-corpus.ts";
 import {
   addRootAttribute,
   anyExportedTypes,
@@ -34,7 +36,6 @@ import {
   dropFirstRule,
   canaryFixes,
   canaryFormats,
-  canaryMaps,
   canaryPlugins,
   canaryProjects,
   canaryServePlugin,
@@ -47,18 +48,13 @@ import {
   mismatchClosingTag,
   withQwikImports,
 } from "./canaries.ts";
-import type { Canary, CanaryCase } from "./canaries.ts";
+import type { CanaryCase } from "./canaries.ts";
 import { projectOf } from "./canary-verdict.ts";
 import { listCases } from "./cases.ts";
-import {
-  checkFixes,
-  formattingProblems,
-  nondeterminism,
-  sourceMapProblems,
-} from "./compile-checks.ts";
+import { checkFixes, formattingProblems, nondeterminism } from "./compile-checks.ts";
 import { CASES_DIR, REPO_ROOT } from "./paths.ts";
 import { LIVE_LAYERS } from "./quarantine.ts";
-import { caseOracle, caseResolver } from "./sources.ts";
+import { caseResolver } from "./sources.ts";
 import { REFERENCE } from "./targets.ts";
 
 /** The canary jobs' run line, in ci.yml and nightly.yml alike. */
@@ -214,13 +210,6 @@ async function markedElements(input: string): Promise<string[]> {
       children.some((child) => child.kind === "Text" && child.value.endsWith("(canary)")),
     )
     .map(({ tag }) => tag);
-}
-
-/** The targets a canary corrupts: every one, the followers, or the ones it names. */
-function corruptedTargets(canary: Canary): TargetName[] {
-  return (
-    canary.followersOnly ? TARGET_NAMES.filter((name) => name !== REFERENCE) : [...TARGET_NAMES]
-  ).filter((name) => corrupts(canary, name));
 }
 
 describe("canaries", () => {
@@ -1726,126 +1715,6 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
       "export default function List<T extends { on: () => void }>(props: { items: T[] }) {\n  return <ul>{props.items.length}</span>;\n}\n",
     );
   });
-});
-
-describe("every canary on the corpus", () => {
-  const cases = listCases();
-
-  it("L14-map-shifted corrupts one map of every case with output, on every target", async () => {
-    const canary = findCanary("L14-map-shifted");
-    const evidence = canary.evidence.compile!["round trip"]!;
-    const pattern = (target: string) =>
-      typeof evidence === "function" ? evidence(target) : evidence;
-    const problems: string[] = [];
-    let corrupted = 0;
-    for (const info of cases) {
-      const modules = new Set(info.modules.map(({ source }) => basename(source)));
-      const results = await Promise.all(
-        info.sources.map(async (source) => {
-          const text = readFileSync(source.source, "utf8");
-          const typeOracle = caseOracle(info, CASES_DIR, { filename: source.filename, text });
-          try {
-            const result = await compile(text, {
-              filename: source.filename,
-              targets: TARGET_NAMES,
-              sourceMap: true,
-              resolve: caseResolver(info, CASES_DIR, typeOracle),
-              typeOracle,
-            });
-            return { source, text, result };
-          } finally {
-            await typeOracle.dispose();
-          }
-        }),
-      );
-      for (const target of TARGET_NAMES) {
-        if (
-          results.some(({ result }) =>
-            result.diagnostics.some(
-              (diagnostic) =>
-                diagnostic.severity === "error" &&
-                (diagnostic.target === undefined || diagnostic.target === target),
-            ),
-          )
-        ) {
-          continue;
-        }
-        const where = `${info.id} › ${target}`;
-        const reports = results.map(({ source, text, result }) => {
-          const files = result.outputs[target] ?? [];
-          const input = { filename: source.filename, text };
-          return {
-            before: sourceMapProblems(target, files, input, modules),
-            after: sourceMapProblems(target, canaryMaps(canary.id, files), input, modules),
-          };
-        });
-        const before = reports.flatMap((report) => report.before);
-        if (before.length) problems.push(`${where}: clean maps fail: ${before.join("; ")}`);
-        const after = reports.flatMap((report) => report.after);
-        if (after.some((message) => pattern(target).test(message))) corrupted += 1;
-        else problems.push(`${where}: not caught: ${after.join("; ") || "no problem"}`);
-      }
-    }
-    expect(problems).toEqual([]);
-    expect(corrupted).toBeGreaterThan(1000);
-  });
-
-  const compiled = new Map<string, Promise<{ input: string; result: CompileResult }>>();
-  /** A case's source and its clean compile, once per run. */
-  const clean = (info: (typeof cases)[number]) => {
-    let pending = compiled.get(info.id);
-    if (!pending) {
-      const input = readFileSync(info.source, "utf8");
-      pending = compile(input, { filename: info.filename, targets: TARGET_NAMES }).then(
-        (result) => ({ input, result }),
-      );
-      compiled.set(info.id, pending);
-    }
-    return pending;
-  };
-
-  it.each(
-    CANARIES.filter(
-      (canary) =>
-        canary.plugin && canary.id !== "L1-plugin-throws" && canary.id !== "L15-slow-compile",
-    ),
-  )(
-    "$id corrupts every case with output on every target it corrupts, keeping the IR valid",
-    async (canary) => {
-      const problems: string[] = [];
-      for (const info of cases) {
-        const { input, result } = await clean(info);
-        // Only the cases it applies to on each target: the verdict judges no other.
-        const applies = canaryCase(info);
-        const targets = corruptedTargets(canary).filter(
-          (target) =>
-            result.outputs[target]?.length &&
-            (!canary.appliesTo || canary.appliesTo(applies, target)) &&
-            !result.diagnostics.some(
-              (diagnostic) =>
-                diagnostic.severity === "error" &&
-                (diagnostic.target === undefined || diagnostic.target === target),
-            ),
-        );
-        if (!targets.length) continue;
-        const after = await compile(input, {
-          filename: info.filename,
-          targets,
-          plugins: canaryPlugins(canary.id, targets[0]),
-          format: canaryFormats(canary.id),
-        });
-        for (const diagnostic of after.diagnostics.filter(({ code }) => code === "UF8001")) {
-          problems.push(`${info.id}: ${diagnostic.message}`);
-        }
-        for (const target of targets) {
-          if (JSON.stringify(after.outputs[target]) === JSON.stringify(result.outputs[target])) {
-            problems.push(`${info.id} › ${target}: the output did not change`);
-          }
-        }
-      }
-      expect(problems).toEqual([]);
-    },
-  );
 });
 
 /** A line the L4-consumer canary widened that is not an exported type's declaration. */

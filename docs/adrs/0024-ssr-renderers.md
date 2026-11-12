@@ -1,6 +1,6 @@
 # ADR-0024: SSR renderers for L6 in `ssr:<target>` projects
 
-- **Status:** Accepted (M0 spike), amended by ADR-0027 and ADR-0031
+- **Status:** Accepted (M0 spike), amended by ADR-0027, ADR-0031 and ADR-0093
 - **Date:** 2026-10-01
 - **Plan:** §9 (M0, an extra spike); §7.2 (L6, L12), §7.3, §7.5, §8.5, R5, R6, R7, Appendix C
 
