@@ -23,6 +23,11 @@ export const TYPE_ORACLE_OPTION = { "type-oracle": { type: "string" } } as const
 
 const TYPE_ORACLES = ["syntactic", "tsgo"];
 const SOURCES = "**/*.uf.{tsx,ts}";
+/**
+ * An example (`*.example.uf.tsx`) is `unframework visual`'s to render, never a source to build or
+ * package, even beside the components it shows (ADR-0087).
+ */
+const EXAMPLE = ".example.uf.tsx";
 const NO_SPAN: Span = { start: 0, end: 0 };
 /** Each target's barrel, at the top of its tree. */
 const BARREL = "index.ts";
@@ -247,7 +252,8 @@ async function findSources(
       entry.name === "node_modules" || join(entry.parentPath, entry.name) === config.outDir,
   });
   for await (const entry of entries) {
-    if (!entry.isDirectory()) files.push(named(join(entry.parentPath, entry.name)));
+    if (entry.isDirectory() || entry.name.endsWith(EXAMPLE)) continue;
+    files.push(named(join(entry.parentPath, entry.name)));
   }
   return files.toSorted();
 }

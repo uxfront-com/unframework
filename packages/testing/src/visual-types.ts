@@ -95,6 +95,15 @@ export interface CaptureAttachment {
   height: number;
 }
 
+/** One difference between two geometry snapshots, at an element path. */
+export interface GeometryDelta {
+  path: string;
+  /** `box`, `(node)` for an element on one side only, or a computed style's name. */
+  property: string;
+  expected: unknown;
+  actual: unknown;
+}
+
 /** What `ufVisualCapture` returns. */
 export interface CaptureResult {
   pass: boolean;
@@ -107,4 +116,8 @@ export interface CaptureResult {
   attachments: CaptureAttachment[];
   /** `reference-not-run`: the reference's browser project, which did not finish the case. */
   referenceProject?: string;
+  /** A failed comparison: the geometry and computed-style deltas, which may be none. */
+  deltas?: GeometryDelta[];
+  /** Where the capture was written, when its location keeps every capture (ADR-0087). */
+  capture?: string;
 }

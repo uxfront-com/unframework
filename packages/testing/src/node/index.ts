@@ -78,8 +78,16 @@ export type {
   SummaryOptions,
   SummaryResult,
 } from "./summary.ts";
-export { ALLOWED_FONTS, diffGeometry, formatGeometryDiff, ufVisualCapture } from "./visual.ts";
-export type { GeometryDelta, VisualCommandContext } from "./visual.ts";
+export {
+  ALLOWED_FONTS,
+  baselineFileName,
+  captureAt,
+  caseCaptureLocation,
+  diffGeometry,
+  formatGeometryDiff,
+  ufVisualCapture,
+} from "./visual.ts";
+export type { CaptureLocation, GeometryDelta, VisualCommandContext } from "./visual.ts";
 export { formatConsoleArgs } from "../browser/console.ts";
 export { diffLines } from "../diff.ts";
 export type { DiffOptions } from "../diff.ts";
