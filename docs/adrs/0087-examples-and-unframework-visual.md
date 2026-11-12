@@ -19,7 +19,9 @@ Nothing found examples, and `unframework build` compiled every `**/*.uf.{tsx,ts}
 so an example kept beside its component would have been packaged.
 
 ADR-0083 keeps the browser layers on Vitest, and ADR-0086 gave a project the corpus's browser
-projects through `defineTestConfig`. A second runner would split L10 in two.
+projects through `defineTestConfig`. A second runner would split L10 in two. ADR-0083 also kept an
+earlier `@unframework/visual`, built on Storybook and Playwright, off `main`. This package takes
+the name, under ADR-0090's scope, and none of that code.
 
 ## Decision
 
@@ -50,16 +52,21 @@ projects through `defineTestConfig`. A second runner would split L10 in two.
   `missing-artefact`. `--update` writes them, and only in the baseline environment
   (`BASELINE_ENVIRONMENT`), as L10 does. Elsewhere it's refused before the run starts.
 - **The run directory**, `.unframework/visual/` by default (`--out`), holds `report.json` and
-  every capture: `<example id>/<target>.png` for each cell, and for a failure
-  `<example id>/<target>/` with `reference.png`, `actual.png`, `diff.png` and
-  `geometry.actual.json`. A run empties it first, so it refuses a directory that holds the project,
-  or one with files no earlier run marked as its own.
+  every capture: `<example id>/<target>.png` for each cell, and for a failed comparison
+  `<example id>/<target>/` with what it got to: `actual.png` and `geometry.actual.json`, then
+  `reference.png`, and `diff.png` when the two images are the same size. A run empties it once
+  its configuration loads. So it refuses a directory that holds the project or the generated
+  specs, one among the specs, and one with files no earlier run marked as its own.
 - **`report.json` is versioned (`version: 1`)** and typed as `VisualReport`: the pixel mode, the
   reference, the targets and, for each example and target, the status, the outcome, the message,
   the pixel count, every geometry delta and the image paths, relative to the report. A cell with
-  no capture fails as `not-captured`, with its test's error. A follower whose reference never
-  finished the example fails too (ADR-0091): the report never shows a cell as passed that
-  compared nothing.
+  no capture fails as `not-captured`, with its test's error and the example's compile errors. A
+  cell whose capture matched fails as `test-failed` when its test failed after it (L8, L13). A
+  follower whose reference never finished the example fails too (ADR-0091): the report never shows
+  a cell as passed that its test failed, or that compared nothing.
+- **A module that fails to compile fails its own cells alone.** The browser projects of
+  `defineTestConfig` keep Vite from sending a compile error to every page, as the corpus's do, so
+  its overlay never covers another example's capture.
 - **`unframework visual [--target <t>]… [--baseline | --live] [--update] [--out <dir>]`** is
   registered by the umbrella, as `test` is (ADR-0086), with `@unframework.dev/visual` as another
   optional peer. It prints a line per example and the report's path, and exits 0 when every cell
