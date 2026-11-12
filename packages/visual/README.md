@@ -3,8 +3,8 @@
 Visual parity and the preview for a project's examples (plan §8.6, ADR-0087, ADR-0088). It finds every `*.example.uf.tsx`
 file, renders each on every target in Chromium, and compares each target's geometry, computed
 styles and pixels with the reference target's, live or against baselines committed beside each
-example. Each run writes `report.json` and an image of every capture. Private until its first
-release.
+example. Each run writes `report.json`, an image of every capture and `report.html`, a page that shows
+them. Private until its first release.
 
 `unframework preview` shows every example and component side by side on every target while you
 work (below).
@@ -56,8 +56,8 @@ directory.
 6. Empties the run directory, once the configuration has loaded, so a run that can't start keeps
    the last report.
 7. Runs them with Vitest in this process, so the command's captures reach the report. Then it
-   writes `<out>/report.json`, from the captures and each test's result, and prints a line per
-   example and the report's path.
+   writes `<out>/report.json`, from the captures and each test's result, and `report.html`
+   beside it (`renderReport`), and prints a line per example and the report's path.
 
 `./browser`'s `captureExample(id, caseId, component)` declares one test, which mounts the example,
 settles it and captures it with the testing package's `captureVisual`, sent to `ufExampleCapture`.
@@ -88,6 +88,27 @@ errors first. A cell whose capture matched fails as `test-failed` when its test 
 as the setup file judged it (L8, L13). A follower whose reference never finished the example fails
 `reference-not-run` (ADR-0091), and a cell captured twice fails too, so a cell passes only when
 its own comparison and its test did.
+
+## The report page
+
+`renderReport(report)` returns `report.html`: a whole page, with its styles inline and no script,
+that names each image by the path `report.json` gives it. So it opens from `file://` with no
+server and makes no request but those images. It holds:
+
+- A header with the run's status, the count of failed cells, the pixel mode, the reference and
+  the targets.
+- For each example, a grid with one cell for each target of the run, in the run's order: its
+  capture, or `actual.png` when it left no capture, its target, its role, its status and its
+  outcome. The grid holds seven cells across from 70rem and wraps below that.
+- For each failed cell, a section with its message, a diff overlay and its geometry deltas. The
+  overlay is a radio group, so the arrow keys switch it, over one frame that stacks the cell's
+  `reference.png`, `actual.png` and `diff.png`, and it offers only the images the cell left. The
+  section names the files the cell didn't leave. The delta table lists the first
+  `MAX_DELTA_ROWS` (100) deltas, with the node's path, the property and both values, and names
+  the total when it holds more.
+
+Every value is escaped, and every path is encoded segment by segment, so a path in the report
+stays a relative file.
 
 ## The preview
 
@@ -123,10 +144,17 @@ props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on 
 
 ## Tests
 
-`pnpm --filter @unframework.dev/visual test` runs the package's tests in Node. `run.test.ts` runs a
-whole visual run in Chromium on `test/fixtures/differs`, whose example draws a blue box on Vue and a
-red one on React, and checks that the run fails and that the report holds the cell's diff and
-deltas. The command's tests drive `ufExampleCapture` with a fake browser.
+`pnpm --filter @unframework.dev/visual test` runs the package's tests, in Node but for the
+`browser` project below. `run.test.ts` runs a whole visual run in Chromium on
+`test/fixtures/differs`, whose example draws a blue box on Vue and a red one on React, and checks
+that the run fails and that the report and its page hold the cell's diff and deltas. The
+command's tests drive `ufExampleCapture` with a fake browser.
+
+The `browser` project runs `test/**/*.browser.test.ts` in Chromium. `report-page.browser.test.ts`
+renders the fixture runs under `test/fixtures/report-failed` (one failed cell on seven targets)
+and `test/fixtures/report-missing` (cells that left fewer files) to `.output/<fixture>/report.html`,
+which stays on disk, and checks the grid, the overlay by keyboard, the delta table, the tab order
+and axe-core, through the testing package's `toHaveNoAxeViolations`.
 
 `preview.test.ts` starts the preview on `tests/e2e/design-system`, loads the shell in Chromium and checks seven
 frames from seven origins, a control that reaches all of them, and that no port listens after

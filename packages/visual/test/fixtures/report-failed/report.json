@@ -1,0 +1,223 @@
+{
+  "version": 1,
+  "pixels": "live",
+  "update": false,
+  "reference": "vue",
+  "targets": ["vue", "react", "svelte", "solid", "angular", "qwik", "astro"],
+  "passed": false,
+  "examples": [
+    {
+      "id": "examples/Buttons",
+      "file": "examples/Buttons.example.uf.tsx",
+      "cells": [
+        {
+          "target": "vue",
+          "role": "reference",
+          "status": "passed",
+          "outcome": "published-reference",
+          "message": "The reference's capture is this run's expectation (live).",
+          "diffPixels": null,
+          "geometry": [],
+          "images": {
+            "capture": "examples/Buttons/vue.png"
+          }
+        },
+        {
+          "target": "react",
+          "role": "follower",
+          "status": "passed",
+          "outcome": "matched",
+          "message": "",
+          "diffPixels": 0,
+          "geometry": [],
+          "images": {
+            "capture": "examples/Buttons/react.png"
+          }
+        },
+        {
+          "target": "svelte",
+          "role": "follower",
+          "status": "passed",
+          "outcome": "matched",
+          "message": "",
+          "diffPixels": 0,
+          "geometry": [],
+          "images": {
+            "capture": "examples/Buttons/svelte.png"
+          }
+        },
+        {
+          "target": "solid",
+          "role": "follower",
+          "status": "passed",
+          "outcome": "matched",
+          "message": "",
+          "diffPixels": 0,
+          "geometry": [],
+          "images": {
+            "capture": "examples/Buttons/solid.png"
+          }
+        },
+        {
+          "target": "angular",
+          "role": "follower",
+          "status": "passed",
+          "outcome": "matched",
+          "message": "",
+          "diffPixels": 0,
+          "geometry": [],
+          "images": {
+            "capture": "examples/Buttons/angular.png"
+          }
+        },
+        {
+          "target": "qwik",
+          "role": "follower",
+          "status": "passed",
+          "outcome": "matched",
+          "message": "",
+          "diffPixels": 0,
+          "geometry": [],
+          "images": {
+            "capture": "examples/Buttons/qwik.png"
+          }
+        },
+        {
+          "target": "astro",
+          "role": "follower",
+          "status": "passed",
+          "outcome": "matched",
+          "message": "",
+          "diffPixels": 0,
+          "geometry": [],
+          "images": {
+            "capture": "examples/Buttons/astro.png"
+          }
+        }
+      ]
+    },
+    {
+      "id": "examples/Card",
+      "file": "examples/Card.example.uf.tsx",
+      "cells": [
+        {
+          "target": "vue",
+          "role": "reference",
+          "status": "passed",
+          "outcome": "published-reference",
+          "message": "The reference's capture is this run's expectation (live).",
+          "diffPixels": null,
+          "geometry": [],
+          "images": {
+            "capture": "examples/Card/vue.png"
+          }
+        },
+        {
+          "target": "react",
+          "role": "follower",
+          "status": "failed",
+          "outcome": "pixel-mismatch",
+          "message": "geometry differs from the reference (3 deltas), and 1,056 pixels differ",
+          "diffPixels": 1056,
+          "geometry": [
+            {
+              "path": "div[0] > div[1] > button[0]",
+              "property": "box",
+              "expected": {
+                "x": 20,
+                "y": 70,
+                "width": 64,
+                "height": 24
+              },
+              "actual": {
+                "x": 20,
+                "y": 70,
+                "width": 72,
+                "height": 28
+              }
+            },
+            {
+              "path": "div[0] > div[1] > button[0]",
+              "property": "padding-left",
+              "expected": "12px",
+              "actual": "16px"
+            },
+            {
+              "path": "div[0] > div[1] > button[0]",
+              "property": "padding-top",
+              "expected": "4px",
+              "actual": "6px"
+            }
+          ],
+          "images": {
+            "capture": "examples/Card/react.png",
+            "reference": "examples/Card/react/reference.png",
+            "actual": "examples/Card/react/actual.png",
+            "diff": "examples/Card/react/diff.png",
+            "geometry": "examples/Card/react/geometry.actual.json"
+          }
+        },
+        {
+          "target": "svelte",
+          "role": "follower",
+          "status": "passed",
+          "outcome": "matched",
+          "message": "",
+          "diffPixels": 0,
+          "geometry": [],
+          "images": {
+            "capture": "examples/Card/svelte.png"
+          }
+        },
+        {
+          "target": "solid",
+          "role": "follower",
+          "status": "passed",
+          "outcome": "matched",
+          "message": "",
+          "diffPixels": 0,
+          "geometry": [],
+          "images": {
+            "capture": "examples/Card/solid.png"
+          }
+        },
+        {
+          "target": "angular",
+          "role": "follower",
+          "status": "passed",
+          "outcome": "matched",
+          "message": "",
+          "diffPixels": 0,
+          "geometry": [],
+          "images": {
+            "capture": "examples/Card/angular.png"
+          }
+        },
+        {
+          "target": "qwik",
+          "role": "follower",
+          "status": "passed",
+          "outcome": "matched",
+          "message": "",
+          "diffPixels": 0,
+          "geometry": [],
+          "images": {
+            "capture": "examples/Card/qwik.png"
+          }
+        },
+        {
+          "target": "astro",
+          "role": "follower",
+          "status": "passed",
+          "outcome": "matched",
+          "message": "",
+          "diffPixels": 0,
+          "geometry": [],
+          "images": {
+            "capture": "examples/Card/astro.png"
+          }
+        }
+      ]
+    }
+  ]
+}
