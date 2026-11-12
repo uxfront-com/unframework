@@ -51,6 +51,13 @@ describe("the Astro toolchain", () => {
     const commands = toolchain.browserCommands!(context);
     expect(Object.keys(commands)).toEqual(["ufAstroRender"]);
   });
+
+  it("names the render command a host outside Vitest calls, and closes what it starts", async () => {
+    // The preview (ADR-0088) runs it behind an endpoint and passes the adapter its transport.
+    expect(toolchain.renderCommandName).toBe("ufAstroRender");
+    expect(Object.keys(toolchain.browserCommands!(context))).toContain(toolchain.renderCommandName);
+    await expect(toolchain.close!()).resolves.toBeUndefined();
+  });
 });
 
 describe("the browser protocol", () => {
