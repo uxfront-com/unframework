@@ -8,7 +8,9 @@ import {
   captureExternalConsole,
   capturedConsole,
   consoleMark,
+  beginSpecFileConsole,
   describeConsole,
+  endSpecFileConsole,
   endTestConsole,
   excuseConsoleSince,
   installConsoleCapture,
@@ -71,6 +73,33 @@ describe("the console capture", () => {
     );
     endTestConsole();
     expect(capturedConsole()).toEqual([]);
+  });
+
+  // Spec files share a page (ADR-0092): what one logs after its last judgement reaches the next.
+  it("names the spec file a message came after, until the next file starts", () => {
+    endSpecFileConsole("state/counter");
+    console.warn("[unit] after the file");
+    beginSpecFileConsole();
+    console.warn("[unit] in the next file");
+    beginTestConsole();
+    expect(capturedConsole()).toEqual([
+      {
+        level: "warn",
+        message: "[unit] after the file",
+        source: "page",
+        afterFile: "state/counter",
+        beforeTest: true,
+      },
+      { level: "warn", message: "[unit] in the next file", source: "page", beforeTest: true },
+    ]);
+    expect(describeConsole(unexpectedConsole())).toBe(
+      [
+        "2 unexpected console message(s):",
+        `  console.warn (${BEFORE}; after the last test of state/counter, which ran earlier on this page): [unit] after the file`,
+        `  console.warn (${BEFORE}): [unit] in the next file`,
+      ].join("\n"),
+    );
+    endTestConsole();
   });
 
   it("ends a test's allowances when the next test begins", () => {

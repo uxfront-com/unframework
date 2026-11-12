@@ -5,6 +5,8 @@
 import { expect } from "vitest";
 import { server } from "vitest/browser";
 
+let bound = false;
+
 /**
  * Gives every `expect.element` call that names no timeout the project's poll timeout. A locator
  * that never matches then fails at that deadline, mostly with the element's own error, which
@@ -16,12 +18,16 @@ import { server } from "vitest/browser";
  * project without a poll timeout cannot bound its assertions, so that throws.
  */
 export function boundElementTimeout(): void {
+  // Once per page: the setup file runs again for every spec file that shares it (ADR-0092), and
+  // each run would wrap the wrapper again.
+  if (bound) return;
   const timeout = server.config.expect?.poll?.timeout;
   if (timeout === undefined) {
     throw new Error(
       "[uf] The browser project sets no `expect.poll.timeout`: `expect.element` would wait for the whole test timeout.",
     );
   }
+  bound = true;
   const element = expect.element;
   expect.element = ((subject, options) =>
     element(subject, { timeout, ...options })) as typeof expect.element;

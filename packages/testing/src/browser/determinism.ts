@@ -7,8 +7,9 @@ import regular from "@fontsource/inter/files/inter-latin-400-normal.woff2?url";
 // - Motion: animations, transitions and the caret are off here; the browser context also sets
 //   prefers-reduced-motion (the project's `contextOptions`), which the startup check asserts.
 // - Colour scheme: light, unless the case opts into dark (`case.json`'s `colorScheme`,
-//   ADR-0061); the setup file emulates it, and the startup check asserts the case's scheme once
-//   it applies, waiting at most five seconds (ADR-0081).
+//   ADR-0061); the setup file emulates it for every spec file, and the startup check asserts the
+//   file's scheme once it applies, waiting at most five seconds (ADR-0081). Spec files share a
+//   page (ADR-0092), so the check runs for each file, and the fonts and the reset install once.
 // - Viewport and DPR: fixed by the project (800×600, deviceScaleFactor 1), asserted here.
 // The font files are imported with Vite's `?url`, typed by vite/client (see tsconfig.json).
 import bold from "@fontsource/inter/files/inter-latin-700-normal.woff2?url";
@@ -52,13 +53,22 @@ button, input, select, textarea, code, kbd, listing, plaintext, pre, samp, tt, x
 let ready: Promise<void> | undefined;
 
 /**
- * Installs the fonts and the reset once per page, after checking that the browser context is
- * the deterministic one, in the case's colour scheme. The first call decides: the setup file's,
- * with the scheme it emulated. Every later call returns the same promise, so a failure fails
- * every test that depends on it.
+ * Checks that the browser context is the deterministic one, in the spec file's colour scheme,
+ * then installs the fonts and the reset if the page has none yet. The setup file calls it for
+ * every spec file, since files share a page (ADR-0092): each file's own scheme is checked, not
+ * only the first file's.
  */
-export function installDeterminism(colorScheme: ColorScheme = "light"): Promise<void> {
-  ready ??= install(colorScheme);
+export async function prepareSpecFile(colorScheme: ColorScheme): Promise<void> {
+  await checkEnvironment(colorScheme);
+  await installDeterminism();
+}
+
+/**
+ * Installs the fonts and the reset once per page. Every later call returns the same promise, so
+ * a failure fails every test that depends on it.
+ */
+export function installDeterminism(): Promise<void> {
+  ready ??= install();
   return ready;
 }
 
@@ -103,8 +113,7 @@ async function matchesWithin(query: string, timeout: number): Promise<boolean> {
   return true;
 }
 
-async function install(colorScheme: ColorScheme): Promise<void> {
-  await checkEnvironment(colorScheme);
+async function install(): Promise<void> {
   const style = document.createElement("style");
   style.setAttribute("data-uf-determinism", "");
   style.textContent = RESET;

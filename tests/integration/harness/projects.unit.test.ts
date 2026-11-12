@@ -6,8 +6,10 @@ import { caseConfigs, listCases } from "./cases.ts";
 import { noOutputCases } from "./no-output.ts";
 import {
   BENCH_PROJECT,
+  FRESH_PAGE_PER_FILE,
   fileParallelism,
   harnessProjects,
+  isolatesFiles,
   isSelected,
   noErrorBroadcast,
   parityProjects,
@@ -50,6 +52,11 @@ describe("projects", () => {
     expect(fileParallelism({ browser: "chromium" })).toBe(true);
     expect(fileParallelism({ browser: "firefox" })).toBe(false);
     expect(fileParallelism({ browser: "webkit" })).toBe(false);
+  });
+
+  it("shares each page among spec files, but on Vue, with the reason (ADR-0092)", () => {
+    expect(selectTargets(undefined).filter(isolatesFiles)).toEqual(["vue"]);
+    expect(FRESH_PAGE_PER_FILE.vue).toMatch(/post-flush queue/);
   });
 
   it("names one compile and one harness project, and three projects per target", () => {

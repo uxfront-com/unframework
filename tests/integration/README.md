@@ -42,7 +42,7 @@ the diagnostics, and `__output__/diagnostics.txt` is the code frame people and a
 The browser projects run every case in the light colour scheme. A dark-theme case opts in with
 `"colorScheme": "dark"`: the setup file emulates `prefers-color-scheme: dark` before the spec
 mounts anything, and the startup check asserts it once it applies, waiting at most 5 s
-(ADR-0061, ADR-0081). A case may also hold `.css` files
+(ADR-0061, ADR-0081). Both run for every spec file, since files may share a page. A case may also hold `.css` files
 beside its inputs; the loader reads them as neither inputs nor specs, and a stylesheet a target
 emits is a golden file under `__output__/<target>/` like any other. The toolchain projects leave
 emitted `.css` files out of what L3, L4 and L5 check; the compile project parses each with
@@ -312,6 +312,17 @@ of its component (`generic-slot-props`), which leaves the target's other slots c
 `L4-consumer` canary types every output's props, events and slots `any`, and declares every
 exported `interface` and type alias, and each name of a type re-export, `any`, so every directive
 must go unmet. `../toolchains/README.md` has the layout and the notes per checker.
+
+A browser project runs its spec files one after another on each of its tester pages, which keep
+their modules, so the testing setup and the framework load once per page (ADR-0092). The setup file
+still runs for every spec file, and resets what a test leaves on the page: the mounted views, the
+mouse, the keys, the focus, the clock and the colour scheme. A console message logged after a
+file's last test, once its `afterAll` hooks have run, is judged with the next file's first test and
+names the case it came after.
+
+`browser:vue` keeps a fresh frame for each spec file, because Vue's development build stops
+running mounted hooks on a page where one threw, and `sourcemaps/mounted-throws` throws on purpose.
+`FRESH_PAGE_PER_FILE` in `harness/projects.ts` lists each such target with its reason.
 
 Each test records its layers in its task meta: `expectParity` records L7, L9, L10 and L11
 without throwing, so the assertions after it always run, and the setup's `afterEach` records L8

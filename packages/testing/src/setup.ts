@@ -1,6 +1,7 @@
-// The setup file every browser project loads first (plan §7.3):
-// - determinism: the case's colour scheme, the bundled font, the motion and caret reset, and the
-//   startup assertions;
+// The setup file every browser project loads first (plan §7.3). It runs again for every spec
+// file, and spec files may share a page (ADR-0092), so what it installs on the page installs once:
+// - determinism: the case's colour scheme and the startup assertions, for every spec file, and
+//   the bundled font and the motion and caret reset, once per page;
 // - console capture from the moment this file loads, recorded as L13 for every test of a case,
 //   then failed on; a message logged outside a test is judged with the next test, and one
 //   logged after the last test is recorded on the file and fails it;
@@ -32,13 +33,15 @@ import { judgeTest } from "./browser/behaviour.ts";
 import { noOutputReason, requiredSkip, standInCause } from "./browser/capabilities.ts";
 import { restoreClock } from "./browser/clock.ts";
 import {
+  beginSpecFileConsole,
   beginTestConsole,
   describeConsole,
+  endSpecFileConsole,
   endTestConsole,
   installConsoleCapture,
   unexpectedConsole,
 } from "./browser/console.ts";
-import { installDeterminism } from "./browser/determinism.ts";
+import { prepareSpecFile } from "./browser/determinism.ts";
 import { boundElementTimeout } from "./browser/element-timeout.ts";
 import { installMatchers } from "./browser/matchers.ts";
 import { installNavigationGuard, takePreventedNavigations } from "./browser/navigation.ts";
@@ -52,6 +55,7 @@ import { BROWSER_LAYERS, recordLayer, recordStandIn } from "./layers.ts";
 import type { LayerSubject } from "./layers.ts";
 
 installConsoleCapture();
+beginSpecFileConsole();
 boundElementTimeout();
 installMatchers();
 installNavigationGuard();
@@ -69,7 +73,7 @@ aroundAll(async (runSuite, {}, suite) => {
 // The first parameter is the file's fixtures, a destructuring pattern (see the afterAll below).
 // oxlint-disable-next-line no-empty-pattern
 beforeAll(async ({}, suite) => {
-  await installDeterminism(await emulateColorScheme(suite.file.filepath));
+  await prepareSpecFile(await emulateColorScheme(suite.file.filepath));
 });
 
 /**
@@ -196,15 +200,19 @@ afterAll(async ({}, suite) => {
   await settleTeardown();
   const late = unexpectedConsole();
   endTestConsole();
-  if (!late.length) return;
   const file = suite.file;
   const harness = inject("ufHarness");
+  const caseId = caseOfFile(file.filepath, harness);
+  // What the page logs from here on, before the next spec file that shares it starts, is judged
+  // with that file's first test, which names this case (ADR-0092).
+  endSpecFileConsole(caseId);
+  if (!late.length) return;
   // The last test has recorded L13 already; the file's own record reaches the parity reporter
   // with the file's result, and the quarantine applies to it as to any record.
   const recorded = recordLayer(
     file,
     {
-      case: caseOfFile(file.filepath, harness),
+      case: caseId,
       target: currentTarget(),
       quarantine: harness.quarantine,
     },

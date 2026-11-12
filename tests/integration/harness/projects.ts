@@ -158,6 +158,20 @@ export function fileParallelism(mode: Pick<HarnessMode, "browser">): boolean {
 }
 
 /**
+ * The targets whose spec files each get a fresh page, with the reason (ADR-0092). Every other
+ * browser project runs its spec files one after another on each of its pages, which keep their
+ * modules: the testing setup and the framework load once per page, not once per file.
+ */
+export const FRESH_PAGE_PER_FILE: Readonly<Record<string, string>> = {
+  vue: "Vue's development build rethrows an error that a lifecycle hook throws out of its post-flush queue, which then never runs again on that page. sourcemaps/mounted-throws throws there on purpose (L14), so no later spec file's mounted hooks would run.",
+};
+
+/** Whether a target's browser project gives every spec file a fresh page (`isolate`). */
+export function isolatesFiles(target: string): boolean {
+  return Object.hasOwn(FRESH_PAGE_PER_FILE, target);
+}
+
+/**
  * A project's `sequence.groupOrder`, from every target the run's browser projects cover: the
  * run's targets, then the case references it adds (`referencesOnly`).
  */
@@ -399,6 +413,8 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
           ufStandIn: standIns,
         },
         sequence: { groupOrder: projectGroup(setup, "browser", target) },
+        // Spec files share a page, but where the target's runtime cannot (ADR-0092).
+        isolate: isolatesFiles(target),
         // Outside Chromium, parallel tester pages in one engine take the focus from each other.
         ...(fileParallelism(setup.mode) ? {} : { fileParallelism: false }),
         browser: {
