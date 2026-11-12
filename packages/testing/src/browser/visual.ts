@@ -7,13 +7,20 @@ import { commands } from "vitest/browser";
 import type { Locator } from "vitest/browser";
 
 import "../commands.ts";
-import type { CaptureResult, PixelTolerance } from "../visual-types.ts";
+import type { CaptureRequest, CaptureResult, PixelTolerance } from "../visual-types.ts";
 import { captureGeometry } from "./geometry.ts";
 import { withMergedTextRuns } from "./text-runs.ts";
 
 let markers = 0;
 
-/** Captures a settled container and compares it under the run's policy. */
+/** Sends a capture to Node: `ufVisualCapture` for a case, or another package's own command. */
+export type CaptureCommand = (request: CaptureRequest) => Promise<CaptureResult>;
+
+/**
+ * Captures a settled container and compares it under the run's policy. `send` is the command
+ * that locates and compares it: the corpus's `ufVisualCapture` by default, or the visual
+ * runner's for an example (ADR-0087).
+ */
 export async function captureVisual(
   test: RunnerTestCase,
   input: {
@@ -23,6 +30,7 @@ export async function captureVisual(
     locator: Locator;
     tolerance?: PixelTolerance;
   },
+  send: CaptureCommand = (request) => commands.ufVisualCapture(request),
 ): Promise<CaptureResult> {
   const marker = `${Date.now().toString(36)}-${(markers += 1)}`;
   input.container.setAttribute("data-uf-capture", marker);
@@ -30,7 +38,7 @@ export async function captureVisual(
     // Geometry and pixels of the same merged tree; the tree is restored before anything else
     // runs (L11, the spec's assertions, a rerender).
     const result = await withMergedTextRuns(input.container, () =>
-      commands.ufVisualCapture({
+      send({
         element: input.locator.serialize(),
         case: input.case,
         name: input.name,

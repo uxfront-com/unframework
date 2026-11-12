@@ -47,16 +47,16 @@ these names, and the corpus's lint rule (`oxlint.config.ts`, tested by
 
 The subpaths are internal, for the harness and the test configuration, never for a spec:
 
-| Subpath       | Holds                                                                                                                                                     |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `./harness`   | The browser machinery: `registerTarget`, `cleanup`, `checkLayers`, `LAYERS`, `LayerFailure`, `recordLayer`, the layer and adapter types, `HarnessContext` |
-| `./setup`     | The setup file every browser project loads first (below)                                                                                                  |
-| `./<target>`  | The setup file that registers a target's mount adapter                                                                                                    |
-| `./node`      | The Node side: the browser commands, the write policy, the mode, the reporter and the summary                                                             |
-| `./normalize` | The normaliser                                                                                                                                            |
-| `./ssr`       | `describeServerRender(cases)`, the one server render comparison (L6, L13), which the corpus's ssr spec calls with its own skips                           |
-| `./ssr/spec`  | The ssr spec `defineTestConfig`'s `ssr:<target>` projects run, by its resolved path                                                                       |
-| `./cli`       | `run(args, io)`, the `unframework test` command, which the umbrella registers                                                                             |
+| Subpath       | Holds                                                                                                                                                                      |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `./harness`   | The browser machinery: `registerTarget`, `cleanup`, `captureVisual`, `checkLayers`, `LAYERS`, `LayerFailure`, `recordLayer`, the layer and adapter types, `HarnessContext` |
+| `./setup`     | The setup file every browser project loads first (below)                                                                                                                   |
+| `./<target>`  | The setup file that registers a target's mount adapter                                                                                                                     |
+| `./node`      | The Node side: the browser commands, the write policy, the mode, the reporter and the summary                                                                              |
+| `./normalize` | The normaliser                                                                                                                                                             |
+| `./ssr`       | `describeServerRender(cases)`, the one server render comparison (L6, L13), which the corpus's ssr spec calls with its own skips                                            |
+| `./ssr/spec`  | The ssr spec `defineTestConfig`'s `ssr:<target>` projects run, by its resolved path                                                                                        |
+| `./cli`       | `run(args, io)`, the `unframework test` command, which the umbrella registers                                                                                              |
 
 `./config` is public, for a project's `vitest.config.ts`: `defineTestConfig` (below).
 
@@ -253,6 +253,14 @@ errors>` on every layer, and the summary excuses it on that target alone. A case
   `ufSpecFinished`). Then its L10 is `skip(reference not run: <project> …)`, and the summary
   reports one problem for that project, with the errors Vitest reported outside every test, in
   place of one per cell (ADR-0091).
+- **L10 is one code path for cases and examples (ADR-0087).** `captureAt(context, request,
+location)` in `./node` runs the font audit, the capture, the policy and the comparison at a
+  `CaptureLocation`: the baselines, where the reference publishes its live capture, where a
+  failure's images go, where every capture goes (none for a case) and the command that writes the
+  baselines. `ufVisualCapture` builds a case's location (`caseCaptureLocation`), and
+  `@unframework.dev/visual`'s `ufExampleCapture` an example's. In the browser, `captureVisual`
+  (`./harness`) takes the command it sends to, `ufVisualCapture` by default. A failed comparison's
+  result carries its geometry `deltas`, and a location that keeps every capture its `capture` path.
 - **`describeTargets`**, **`currentTarget`**, **`allowConsole(pattern, reason)`** (for the
   current test, every matching message, whatever the pattern's flags), and
   **`registerTarget(target, mount, { events? })`** for the per-target setup files (`events`
