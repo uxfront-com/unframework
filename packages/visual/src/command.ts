@@ -3,6 +3,7 @@
 // images in the run directory), runs the corpus's own capture and comparison (`captureAt`), and
 // records the result for the run's report. Commands run in Vitest's main process, which is the
 // process `runVisual` started Vitest in, so the report reads what every project recorded.
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { captureAt, projectHarness } from "@unframework.dev/testing/node";
@@ -20,6 +21,14 @@ export type { ExampleCaptureRequest, VisualContext } from "./types.ts";
 
 /** The command that writes an example's committed baselines, in the baseline environment. */
 export const BASELINE_COMMAND = "unframework visual --update";
+
+/** The files a failed comparison leaves in its target's directory (L10, `captureAt`). */
+const FAILURE_FILES = {
+  actual: "actual.png",
+  geometry: "geometry.actual.json",
+  reference: "reference.png",
+  diff: "diff.png",
+} as const;
 
 /** Per process: each run's captures, by run id. */
 const STATE = Symbol.for("unframework.visual.captures");
@@ -86,7 +95,18 @@ export async function ufExampleCapture(
   );
   const result = await captureAt(context, request, location);
   const captures = store().get(harness.runId) ?? [];
-  captures.push({ example: request.example, target, result });
+  // The run directory is emptied before each run, so what is there is this capture's.
+  const failure = Object.fromEntries(
+    Object.entries(FAILURE_FILES)
+      .map(([name, file]) => [name, join(location.diffs, file)] as const)
+      .filter(([, file]) => existsSync(file)),
+  );
+  captures.push({
+    example: request.example,
+    target,
+    result,
+    ...(Object.keys(failure).length ? { failure } : {}),
+  });
   store().set(harness.runId, captures);
   return result;
 }

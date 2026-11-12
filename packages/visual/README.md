@@ -41,16 +41,20 @@ directory.
 
 1. Refuses `--update` with live pixels, and outside `BASELINE_ENVIRONMENT`, before it writes
    anything. These throw `VisualUsageError`, which the CLI reports with exit 2.
-2. Checks the run directory: never the root or a directory above it, and never a non-empty one
-   that no earlier run marked with `.unframework-visual`.
+2. Checks the run directory: never the root or a directory above it, never one that holds
+   `.unframework/specs/` or lies in it, and never a non-empty one that no earlier run marked with
+   `.unframework-visual`.
 3. Discovers the examples and checks them. UF7011 stops the run with exit 1.
 4. Writes one case per example under `.unframework/specs/` (`writeSpecs`): `visual.test.ts`, which
    calls `captureExample` from `./browser`, and a `case.json` whose `main` is the example.
 5. Builds `defineTestConfig({ root, pixels, include })`, keeps its `browser:<target>` projects,
    and gives each the `ufExampleCapture` command and the run's `ufVisual` context. It keeps this
    package out of Vite's dependency pre-bundling, as the testing package is.
-6. Runs them with Vitest in this process, so the command's captures reach the report, then writes
-   `<out>/report.json` and prints a line per example and the report's path.
+6. Empties the run directory, once the configuration has loaded, so a run that can't start keeps
+   the last report.
+7. Runs them with Vitest in this process, so the command's captures reach the report. Then it
+   writes `<out>/report.json`, from the captures and each test's result, and prints a line per
+   example and the report's path.
 
 `./browser`'s `captureExample(id, caseId, component)` declares one test, which mounts the example,
 settles it and captures it with the testing package's `captureVisual`, sent to `ufExampleCapture`.
@@ -59,8 +63,10 @@ The test fails with L10's message when the capture fails.
 `ufExampleCapture` locates the capture at the example (`exampleLocation`) and runs the testing
 package's `captureAt`, so the font audit, the policy and the comparison are L10's own, with no
 image code here. Its location writes each target's capture to `<out>/<id>/<target>.png`, publishes
-the reference's live capture there, and leaves a failure's `reference.png`, `actual.png`,
-`diff.png` and `geometry.actual.json` in `<out>/<id>/<target>/`. A missing baseline fails
+the reference's live capture there, and leaves what a failed comparison got to in
+`<out>/<id>/<target>/`: `actual.png` and `geometry.actual.json`, then `reference.png`, and
+`diff.png` when the two images are the same size. The command records which of them exist for
+the report. A missing baseline fails
 `missing-artefact`, naming `unframework visual --update`.
 
 ## The report
@@ -69,14 +75,16 @@ the reference's live capture there, and leaves a failure's `reference.png`, `act
 
 - `pixels`, `update`, `reference`, `targets` and `passed`.
 - `examples`, each with its `id`, its `file` relative to the root and one cell per target, in the
-  run's order: `target`, `role`, `status` (`passed` or `failed`), `outcome` (L10's, or
-  `not-captured`), `message`, `diffPixels` (`null` when none were compared), every `geometry`
-  delta and `images`, relative to the report: `capture`, and for a failure `reference`, `actual`,
-  `diff` and `geometry`.
+  run's order: `target`, `role`, `status` (`passed` or `failed`), `outcome` (L10's,
+  `not-captured` or `test-failed`), `message`, `diffPixels` (`null` when none were compared),
+  every `geometry` delta and `images`, relative to the report: `capture`, and for a failed
+  comparison each of `actual`, `geometry`, `reference` and `diff` it left.
 
-A cell with no capture fails as `not-captured`, with its test's errors. A follower whose reference
-never finished the example fails `reference-not-run` (ADR-0091), and a cell captured twice fails
-too, so a cell passes only when its own comparison did.
+A cell with no capture fails as `not-captured`, with its test's errors, the example's compile
+errors first. A cell whose capture matched fails as `test-failed` when its test failed after it,
+as the setup file judged it (L8, L13). A follower whose reference never finished the example fails
+`reference-not-run` (ADR-0091), and a cell captured twice fails too, so a cell passes only when
+its own comparison and its test did.
 
 ## Tests
 

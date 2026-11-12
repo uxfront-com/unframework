@@ -11,10 +11,12 @@ export const REPORT_VERSION = 1;
 export type VisualStatus = "passed" | "failed";
 
 /**
- * Why a cell has no capture: its test failed before it captured (the example did not compile or
- * mount on the target, say), or never ran (its browser project stopped).
+ * Why a cell failed outside its capture: `not-captured`, when its test failed before it captured
+ * (the example did not compile or mount on the target, say) or never ran (its browser project
+ * stopped); `test-failed`, when it captured and matched, and its test failed after, as the setup
+ * file judged it (a console message, L13, or an unmount that threw, L8).
  */
-export type MissingCapture = "not-captured";
+export type MissingCapture = "not-captured" | "test-failed";
 
 /** The images and files a cell left, relative to the report's directory. */
 export interface VisualImages {
@@ -34,7 +36,7 @@ export interface VisualCell {
   /** The reference's capture is the expectation every other target is compared with. */
   role: "reference" | "follower";
   status: VisualStatus;
-  /** L10's outcome, or `not-captured`. */
+  /** L10's outcome, or `not-captured` or `test-failed`. */
   outcome: CaptureOutcome | MissingCapture;
   /** Why it failed, or what it noted; empty when there is nothing to say. */
   message: string;
@@ -73,6 +75,11 @@ export interface RecordedCapture {
   example: string;
   target: string;
   result: CaptureResult;
+  /**
+   * The files a failed comparison left in its target's directory, absolute: as far as it got, its
+   * capture, its geometry, the image it was compared with and their diff.
+   */
+  failure?: { actual?: string; geometry?: string; reference?: string; diff?: string };
 }
 
 /** What {@link buildReport} reads. */
@@ -86,7 +93,10 @@ export interface ReportInput {
   targets: readonly string[];
   examples: readonly { id: string; file: string }[];
   captures: readonly RecordedCapture[];
-  /** Why a cell has no capture, by `<example> <target>`: its test's errors. */
+  /**
+   * The cells whose test failed, by `<example> <target>`, with the test's errors: a cell passes
+   * only when its capture matched and its test passed.
+   */
   errors?: ReadonlyMap<string, string>;
 }
 
@@ -97,8 +107,9 @@ export function cellKey(example: string, target: string): string {
 
 /**
  * The report of a run: every example on every target. A cell with no capture fails, and so does
- * one whose capture failed, a follower whose reference never captured included (ADR-0091): the
- * report never shows a cell as passed that compared nothing it should have.
+ * one whose capture failed, a follower whose reference never captured included (ADR-0091), and
+ * one whose test failed after a capture that matched: the report never shows a cell as passed
+ * that its test failed, or that compared nothing it should have.
  */
 export function buildReport(input: ReportInput): VisualReport {
   const rel = (file: string) => posixRelative(input.out, file);
@@ -123,20 +134,27 @@ export function buildReport(input: ReportInput): VisualReport {
           images: {},
         };
       }
+      const failure = input.errors?.get(cellKey(example.id, target));
       const images: VisualImages = {};
       if (result.capture) images.capture = rel(result.capture);
-      for (const attachment of result.attachments) images[attachment.name] = rel(attachment.path);
-      if (images.actual) images.geometry = rel(geometryFileBeside(result.attachments));
+      const left = recorded.at(-1)?.failure ?? {};
+      for (const name of ["reference", "actual", "diff", "geometry"] as const) {
+        const file = left[name];
+        if (file !== undefined) images[name] = rel(file);
+      }
+      // Two captures of one cell would mean a spec ran twice: the last one wins, and fails.
+      const once = recorded.length === 1;
+      const testFailed = result.pass && once && failure !== undefined;
       return {
         target,
         role: result.role,
-        // Two captures of one cell would mean a spec ran twice: the last one wins, and fails.
-        status: result.pass && recorded.length === 1 ? "passed" : "failed",
-        outcome: result.outcome,
-        message:
-          recorded.length === 1
-            ? result.message
-            : `The example was captured ${recorded.length} times on this target.`,
+        status: result.pass && once && failure === undefined ? "passed" : "failed",
+        outcome: testFailed ? "test-failed" : result.outcome,
+        message: !once
+          ? `The example was captured ${recorded.length} times on this target.`
+          : testFailed
+            ? failure
+            : result.message,
         diffPixels: result.diffPixels ?? null,
         geometry: result.deltas ?? [],
         images,
@@ -158,12 +176,6 @@ export function buildReport(input: ReportInput): VisualReport {
 /** A path relative to a directory, with forward slashes. */
 export function posixRelative(from: string, file: string): string {
   return relative(from, file).split(sep).join("/");
-}
-
-/** A failure leaves `geometry.actual.json` beside its images (L10, `node/visual.ts`). */
-function geometryFileBeside(attachments: CaptureResult["attachments"]): string {
-  const actual = attachments.find((attachment) => attachment.name === "actual")!;
-  return actual.path.replace(/actual\.png$/, "geometry.actual.json");
 }
 
 /** The report's lines for the terminal: one per example, then each failed cell's message. */

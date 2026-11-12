@@ -4,7 +4,7 @@
 // case's main source, so the setup file, the mount and L10's capture see an ordinary case. The run
 // then writes `<out>/report.json` from what `ufExampleCapture` recorded.
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { Diagnostic, TargetName } from "@unframework.dev/compiler";
@@ -98,15 +98,13 @@ export async function runVisual(options: VisualRunOptions): Promise<VisualRunRes
       `No example under ${root}: an example is a *.example.uf.tsx file with a component that takes no props, such as examples/Buttons.example.uf.tsx.`,
     );
   }
-  const diagnostics = await checkExamples(root, examples);
+  const compileErrors = new Map<string, Diagnostic[]>();
+  const diagnostics = await checkExamples(root, examples, compileErrors);
   if (diagnostics.some((each) => each.severity === "error")) {
     return { exitCode: 1, diagnostics };
   }
 
   const specs = writeSpecs(root, examples);
-  rmSync(out, { recursive: true, force: true });
-  mkdirSync(out, { recursive: true });
-  writeFileSync(join(out, RUN_MARKER), "");
 
   const saved = {
     targets: process.env.UF_TARGETS,
@@ -123,6 +121,10 @@ export async function runVisual(options: VisualRunOptions): Promise<VisualRunRes
   try {
     const config = await visualConfig(root, out, examples, specs, pixels);
     const harness = config.harness;
+    // Emptied once the configuration loaded: a run that cannot start keeps the last report.
+    rmSync(out, { recursive: true, force: true });
+    mkdirSync(out, { recursive: true });
+    writeFileSync(join(out, RUN_MARKER), "");
     process.exitCode = 0;
     const vitest = await startVitest(
       [],
@@ -130,6 +132,16 @@ export async function runVisual(options: VisualRunOptions): Promise<VisualRunRes
       config.vite,
     );
     const errors = testErrors(vitest.state.getTestModules(), specs);
+    // The browser sees only that the import failed: the compile's own errors say why.
+    for (const [example, failed] of compileErrors) {
+      for (const target of config.targets) {
+        const key = cellKey(example, target);
+        const known = errors.get(key);
+        if (known === undefined) continue;
+        const lines = failed.map((each) => `${each.code}: ${each.message}`);
+        errors.set(key, [...lines, known].join("\n"));
+      }
+    }
     const unhandled = vitest.state.getUnhandledErrors();
     await vitest.close();
     const report = buildReport({
@@ -164,13 +176,19 @@ export async function runVisual(options: VisualRunOptions): Promise<VisualRunRes
 }
 /**
  * Refuses a run directory the run could not safely empty: the root itself, a directory above it,
- * or an existing directory with files that no earlier run marked as its own.
+ * one that holds the generated specs or lies among them, or an existing directory with files that
+ * no earlier run marked as its own.
  */
 export function checkRunDirectory(root: string, out: string): void {
-  const inside = relative(out, root);
-  if (out === root || !inside.startsWith("..")) {
+  if (contains(out, root)) {
     throw new VisualUsageError(
       `--out ${out} holds the project: the run empties its directory, so name one of its own, such as ${DEFAULT_OUT}.`,
+    );
+  }
+  const specs = join(root, SPECS_DIR);
+  if (contains(out, specs) || contains(specs, out)) {
+    throw new VisualUsageError(
+      `--out ${out} overlaps ${SPECS_DIR}, where the run writes its specs before it empties the run directory: name another, such as ${DEFAULT_OUT}.`,
     );
   }
   if (!existsSync(out)) return;
@@ -180,6 +198,12 @@ export function checkRunDirectory(root: string, out: string): void {
       `--out ${out} is not empty and no earlier run wrote it: the run empties its directory, so name a new one.`,
     );
   }
+}
+
+/** Whether `path` is `directory` or lies inside it. */
+function contains(directory: string, path: string): boolean {
+  const rel = relative(directory, path);
+  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
 }
 
 /** The generated cases, by example id: each spec's file (absolute). */
@@ -280,23 +304,43 @@ function nameOf(project: UserWorkspaceConfig): string {
   return typeof name === "string" ? name : (name?.label ?? "");
 }
 
-/** Each cell's test errors, by `<example> <target>`: why a cell that never captured failed. */
-function testErrors(modules: readonly TestModule[], specs: Specs): Map<string, string> {
+/**
+ * The cells whose spec file or test failed, by `<example> <target>`, with their errors: the setup
+ * file judges a test after its capture (L8, L13), so a capture that matched does not mean the
+ * cell passed.
+ */
+export function testErrors(modules: readonly TestModule[], specs: Specs): Map<string, string> {
   const byFile = new Map([...specs].map(([id, spec]) => [resolve(spec), id]));
   const errors = new Map<string, string>();
   for (const module of modules) {
     const example = byFile.get(resolve(module.moduleId));
     if (example === undefined) continue;
     const target = module.project.name.replace(/^browser:/, "");
+    const tests = [...module.children.allTests()];
+    const failed =
+      module.state() === "failed" || tests.some((test) => test.result().state === "failed");
+    if (!failed) continue;
     const messages = [
-      ...module.errors().map((error) => error.message),
-      ...[...module.children.allTests()].flatMap((test) =>
-        (test.result().errors ?? []).map((error) => error.message),
-      ),
+      ...module.errors().map(describeError),
+      ...tests.flatMap((test) => (test.result().errors ?? []).map(describeError)),
     ];
-    if (messages.length) errors.set(cellKey(example, target), messages.join("\n"));
+    errors.set(
+      cellKey(example, target),
+      messages.length ? messages.join("\n") : "The example's test failed on this target.",
+    );
   }
   return errors;
+}
+
+/** An error Vitest reported, with the causes it carries: an import's names the compile error. */
+function describeError(error: { message: string; cause?: unknown }): string {
+  const lines = [error.message];
+  let cause = error.cause as { message?: unknown; cause?: unknown } | undefined;
+  for (let depth = 0; cause && depth < 5; depth += 1) {
+    if (typeof cause.message === "string" && cause.message) lines.push(cause.message);
+    cause = cause.cause as typeof cause;
+  }
+  return lines.join("\n");
 }
 
 function restore(name: string, value: string | undefined): void {

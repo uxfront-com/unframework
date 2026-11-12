@@ -44,14 +44,19 @@ export interface DiscoverExamplesOptions {
 export function discoverExamples(options: DiscoverExamplesOptions): Example[] {
   const root = resolve(options.root);
   const skipped = new Set((options.skip ?? []).map((directory) => resolve(directory)));
-  const files = globSync(`**/*${EXAMPLE_SUFFIX}`, {
+  // Entries, not paths: `exclude` gets some entries by their bare name, which would skip every
+  // directory named like the run directory, wherever it lies.
+  const entries = globSync(`**/*${EXAMPLE_SUFFIX}`, {
     cwd: root,
-    exclude: (path) =>
-      SKIPPED_DIRECTORIES.includes(basename(path)) || skipped.has(resolve(root, path)),
+    withFileTypes: true,
+    exclude: (entry) =>
+      SKIPPED_DIRECTORIES.includes(entry.name) ||
+      skipped.has(resolve(entry.parentPath, entry.name)),
   });
-  return files
-    .map((file): Example => {
-      const absolute = resolve(root, file);
+  return entries
+    .filter((entry) => !entry.isDirectory())
+    .map((entry): Example => {
+      const absolute = resolve(entry.parentPath, entry.name);
       const id = relative(root, absolute).split(sep).join("/").slice(0, -EXAMPLE_SUFFIX.length);
       return { id, file: absolute, name: basename(absolute).slice(0, -EXAMPLE_SUFFIX.length) };
     })
@@ -77,12 +82,14 @@ export function exampleBaselines(example: Pick<Example, "file" | "name">): Examp
 
 /**
  * Checks each example's default export: UF7011 at the props parameter of one that declares props.
- * An example that does not compile is left to the run, which reports its error on every target.
- * Throws for an example with no default export, which the run could not mount.
+ * An example that does not compile is left to the run, which fails it on every target: its errors
+ * go in `compileErrors`, by example id, so the report can say why its import failed. Throws for an
+ * example with no default export, which the run could not mount.
  */
 export async function checkExamples(
   root: string,
   examples: readonly Example[],
+  compileErrors?: Map<string, Diagnostic[]>,
 ): Promise<Diagnostic[]> {
   const read = (path: string) => readFile(path, "utf8").catch(() => undefined);
   const resolver = createFileResolver({ root, readFile: read });
@@ -95,7 +102,11 @@ export async function checkExamples(
       targets: [],
       resolve: resolver,
     });
-    if (!ir || errors.some((each) => each.severity === "error")) continue;
+    const failed = errors.filter((each) => each.severity === "error");
+    if (!ir || failed.length) {
+      compileErrors?.set(example.id, failed);
+      continue;
+    }
     const exported = ir.exports.find((entry) => entry.kind === "default");
     const component = ir.components.find((each) => each.name === exported?.local);
     if (!component) {

@@ -49,6 +49,18 @@ describe("discoverExamples", () => {
     ]);
   });
 
+  it("skips the run directory alone, never another directory of its name", () => {
+    const root = project({
+      "reports/Old.example.uf.tsx": EXAMPLE,
+      "examples/reports/CardReport.example.uf.tsx": EXAMPLE,
+      "src/widgets/reports/Table.example.uf.tsx": EXAMPLE,
+    });
+    const ids = discoverExamples({ root, skip: [join(root, "reports")] }).map((each) => each.id);
+    expect(ids).toEqual(["examples/reports/CardReport", "src/widgets/reports/Table"]);
+    const nested = discoverExamples({ root, skip: [join(root, "examples/reports")] });
+    expect(nested.map((each) => each.id)).toEqual(["reports/Old", "src/widgets/reports/Table"]);
+  });
+
   it("finds none in a project without examples", () => {
     expect(discoverExamples({ root: project({ "src/Card.uf.tsx": EXAMPLE }) })).toEqual([]);
   });

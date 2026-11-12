@@ -79,6 +79,27 @@ describe("runVisual's refusals", () => {
     await expect(runVisual({ root, env: {} })).rejects.toThrow("No example under");
   });
 
+  it("refuses --out .unframework, which holds the generated specs", async () => {
+    const root = project({
+      "unframework.config.ts": CONFIG,
+      "examples/Hello.example.uf.tsx": EXAMPLE,
+    });
+    await expect(runVisual({ root, out: ".unframework", env: {} })).rejects.toThrow(
+      "overlaps .unframework/specs",
+    );
+  });
+
+  it("keeps the last report when the configuration cannot start a run", async () => {
+    const root = project({
+      "unframework.config.ts": 'export default { targets: ["preact"] };\n',
+      "examples/Hello.example.uf.tsx": EXAMPLE,
+      [`.unframework/visual/${RUN_MARKER}`]: "",
+      ".unframework/visual/report.json": "{}\n",
+    });
+    await expect(runVisual({ root, env: {} })).rejects.toThrow("UF7003");
+    expect(readFileSync(join(root, ".unframework/visual/report.json"), "utf8")).toBe("{}\n");
+  });
+
   it("stops at UF7011 with exit 1, and reports it at the props", async () => {
     const root = project({
       "unframework.config.ts": CONFIG,
@@ -113,6 +134,18 @@ describe("checkRunDirectory", () => {
     expect(() => checkRunDirectory(root, root)).toThrow("holds the project");
     expect(() => checkRunDirectory(root, dirname(root))).toThrow("holds the project");
     expect(() => checkRunDirectory(root, join(root, "a"))).toThrow("no earlier run wrote it");
+  });
+
+  it("refuses a directory that holds the generated specs, or lies among them", () => {
+    const root = project({ "a/x.txt": "" });
+    for (const out of [".unframework", ".unframework/specs", ".unframework/specs/examples"]) {
+      expect(() => checkRunDirectory(root, join(root, out)), out).toThrow(
+        "overlaps .unframework/specs",
+      );
+    }
+    for (const out of [".unframework/visual", ".unframework/specs-report", "reports"]) {
+      expect(() => checkRunDirectory(root, join(root, out)), out).not.toThrow();
+    }
   });
 });
 

@@ -186,6 +186,12 @@ describe("ufExampleCapture with live pixels", () => {
     for (const file of ["reference.png", "actual.png", "diff.png", "geometry.actual.json"]) {
       expect(existsSync(join(failures, file)), file).toBe(true);
     }
+    expect(takeCaptures(harness.runId)[1]!.failure).toEqual({
+      actual: join(failures, "actual.png"),
+      geometry: join(failures, "geometry.actual.json"),
+      reference: join(failures, "reference.png"),
+      diff: join(failures, "diff.png"),
+    });
   });
 
   it("fails a follower whose reference never finished the example, and the report marks it failed", async () => {
@@ -243,6 +249,12 @@ describe("ufExampleCapture with baseline pixels", () => {
       `Missing artefact ${project}/examples/__expected__/geometry.Buttons.json and ${project}/examples/__screenshots__/Buttons-chromium-linux.png. Run \`unframework visual --update\` to write it (the reference target, vue, in the Linux image).`,
     );
     expect(existsSync(join(visual.out, "examples", "Buttons", "vue", "actual.png"))).toBe(true);
+    // The report lists what the failure left: its capture and geometry, with nothing to diff.
+    const failures = join(visual.out, "examples", "Buttons", "vue");
+    expect(takeCaptures(harness.runId)[0]!.failure).toEqual({
+      actual: join(failures, "actual.png"),
+      geometry: join(failures, "geometry.actual.json"),
+    });
   });
 
   it("writes the reference's baselines beside the example in the baseline environment only", async () => {

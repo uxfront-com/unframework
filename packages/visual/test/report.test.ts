@@ -69,6 +69,12 @@ const captures: RecordedCapture[] = [
         { name: "diff", path: `${OUT}/examples/Card/react/diff.png`, width: 2, height: 2 },
       ],
     },
+    failure: {
+      actual: `${OUT}/examples/Card/react/actual.png`,
+      geometry: `${OUT}/examples/Card/react/geometry.actual.json`,
+      reference: `${OUT}/examples/Card/react/reference.png`,
+      diff: `${OUT}/examples/Card/react/diff.png`,
+    },
   },
 ];
 
