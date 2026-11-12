@@ -1,5 +1,5 @@
-// The compile of `ngtscVirtual` (ngtsc-virtual.ts), in a worker thread: `NgtscProgram`, its
-// diagnostics and the emit. The main thread posts each request with the generated source of
+// The compile of `ngtscVirtual` (ngtsc-virtual.ts), in one worker thread of its pool
+// (`compilePool`): `NgtscProgram`, its diagnostics and the emit. The main thread posts each request with the generated source of
 // every virtual module it reads, since only the main thread can ask the unframework plugin, and
 // gets back JavaScript, its source map and the diagnostics as ngc prints them.
 import { dirname, resolve } from "node:path";
@@ -26,7 +26,7 @@ const loaded = loadCompiler(toolchainDir).then((compiler) => {
   };
   return { compiler, options };
 });
-/** Each plugin's previous program, which its next compile reuses. */
+/** Each plugin's previous program in this worker, which its next compile here reuses. */
 const previous = new Map<number, NgtscProgram>();
 // NgtscProgram reuse is sequential: a program can be the previous one of a single successor.
 let queue: Promise<unknown> = Promise.resolve();

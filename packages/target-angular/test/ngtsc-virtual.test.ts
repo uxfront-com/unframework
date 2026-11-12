@@ -1,9 +1,17 @@
+import { EventEmitter } from "node:events";
 import { join } from "node:path";
 
 import type { ResolvedConfig } from "vite";
 import { afterAll, describe, expect, it } from "vitest";
 
-import { ngtscVirtual, workerUrl } from "../src/toolchain/ngtsc-virtual.ts";
+import { compilePool, ngtscVirtual, poolSize, workerUrl } from "../src/toolchain/ngtsc-virtual.ts";
+import type {
+  CompileRequest,
+  CompileThread,
+  Compiled,
+  WorkerReply,
+  WorkerRequest,
+} from "../src/toolchain/ngtsc-virtual.ts";
 import { loadCompiler } from "../src/toolchain/tools.ts";
 import { component, context, isolatedDir, ngtscPlugin, removeScratch } from "./helpers.ts";
 
@@ -362,5 +370,160 @@ describe("workerUrl", () => {
     expect(workerUrl("file:///pkg/dist/toolchain/ngtsc-virtual.js").href).toBe(
       "file:///pkg/dist/toolchain/ngtsc-worker.js",
     );
+  });
+});
+
+/** A thread that records what it gets, and replies only when a test says so. */
+class FakeThread extends EventEmitter implements CompileThread {
+  readonly received: WorkerRequest[] = [];
+  referenced = false;
+  postMessage(message: WorkerRequest): void {
+    this.received.push(message);
+  }
+  ref(): void {
+    this.referenced = true;
+  }
+  unref(): void {
+    this.referenced = false;
+  }
+  /** The compiles it holds that it has not replied to, by request number. */
+  get compiles(): (CompileRequest & { request: number })[] {
+    return this.received.filter((message) => "request" in message);
+  }
+  /** Replies to the compile of `id` with code naming the thread. */
+  reply(id: string, code: string): void {
+    const { request } = this.compiles.find((message) => message.id === id)!;
+    this.emit("message", { request, compiled: compiled(code) } satisfies WorkerReply);
+  }
+}
+
+const compiled = (code: string): Compiled => ({
+  code,
+  errors: "",
+  codes: [],
+  warnings: "",
+  exports: [],
+});
+const request = (plugin: number, id: string): CompileRequest => ({
+  plugin,
+  id,
+  sources: [],
+  children: [],
+  declarations: [],
+});
+
+describe("compilePool", () => {
+  /** A pool of fake threads, and the threads it started. */
+  const fakePool = (size: number) => {
+    const threads: FakeThread[] = [];
+    const pool = compilePool(() => {
+      const thread = new FakeThread();
+      threads.push(thread);
+      return thread;
+    }, size);
+    return { pool, threads };
+  };
+
+  it("runs two compiles of one plugin at once, on two threads, each with its own outcome", async () => {
+    const { pool, threads } = fakePool(4);
+    const first = pool.compile(request(0, "A"));
+    const second = pool.compile(request(0, "B"));
+    // Both are posted before either replies: the second does not wait for the first.
+    expect(threads).toHaveLength(2);
+    expect(threads.map((thread) => thread.compiles.map(({ id }) => id))).toEqual([["A"], ["B"]]);
+    threads[1]!.reply("B", "b");
+    threads[0]!.reply("A", "a");
+    expect(await second).toEqual(compiled("b"));
+    expect(await first).toEqual(compiled("a"));
+  });
+
+  it("starts a thread only when every thread alive is busy, and no more than its size", async () => {
+    const { pool, threads } = fakePool(2);
+    const a = pool.compile(request(0, "A"));
+    threads[0]!.reply("A", "a");
+    await a;
+    // The first thread is idle again: the next compile reuses it, and its program.
+    const b = pool.compile(request(0, "B"));
+    expect(threads).toHaveLength(1);
+    const c = pool.compile(request(0, "C"));
+    const d = pool.compile(request(0, "D"));
+    // At its size, a compile waits on the thread with the fewest compiles waiting.
+    expect(threads).toHaveLength(2);
+    expect(threads.map((thread) => thread.compiles.map(({ id }) => id))).toEqual([
+      ["A", "B", "D"],
+      ["C"],
+    ]);
+    threads[0]!.reply("B", "b");
+    threads[1]!.reply("C", "c");
+    threads[0]!.reply("D", "d");
+    expect(await Promise.all([b, c, d])).toEqual([compiled("b"), compiled("c"), compiled("d")]);
+  });
+
+  it("holds the process open only while a compile waits on a thread", async () => {
+    const { pool, threads } = fakePool(1);
+    const a = pool.compile(request(0, "A"));
+    expect(threads[0]!.referenced).toBe(true);
+    threads[0]!.reply("A", "a");
+    await a;
+    expect(threads[0]!.referenced).toBe(false);
+  });
+
+  it("sends a released plugin to every thread, so its programs leave each one", async () => {
+    const { pool, threads } = fakePool(3);
+    const pending = [pool.compile(request(7, "A")), pool.compile(request(7, "B"))];
+    pool.release(7);
+    expect(threads).toHaveLength(2);
+    for (const thread of threads) expect(thread.received.at(-1)).toEqual({ release: 7 });
+    threads[0]!.reply("A", "a");
+    threads[1]!.reply("B", "b");
+    await Promise.all(pending);
+  });
+
+  it("fails only the compiles a dead thread held, and starts another for the next", async () => {
+    const { pool, threads } = fakePool(2);
+    const a = pool.compile(request(0, "A"));
+    const b = pool.compile(request(0, "B"));
+    const crash = new Error("out of memory");
+    threads[0]!.emit("error", crash);
+    await expect(a).rejects.toBe(crash);
+    expect(pool.threads).toBe(1);
+    // A thread emits `exit` after `error`: it rejects nothing more.
+    threads[0]!.emit("exit", 1);
+    const c = pool.compile(request(0, "C"));
+    expect(threads).toHaveLength(3);
+    expect(threads[2]!.compiles.map(({ id }) => id)).toEqual(["C"]);
+    threads[1]!.reply("B", "b");
+    threads[2]!.reply("C", "c");
+    expect(await b).toEqual(compiled("b"));
+    expect(await c).toEqual(compiled("c"));
+  });
+
+  it("fails the compiles of a thread that exits without an error", async () => {
+    const { pool, threads } = fakePool(1);
+    const a = pool.compile(request(0, "A"));
+    threads[0]!.emit("exit", 0);
+    await expect(a).rejects.toThrow(/exited with code 0/);
+    expect(pool.threads).toBe(0);
+  });
+
+  it("passes on what a compile threw, and keeps the thread", async () => {
+    const { pool, threads } = fakePool(1);
+    const a = pool.compile(request(0, "A"));
+    const { request: number } = threads[0]!.compiles[0]!;
+    threads[0]!.emit("message", { request: number, failure: "boom" } satisfies WorkerReply);
+    await expect(a).rejects.toBe("boom");
+    expect(pool.threads).toBe(1);
+  });
+
+  it.each([0, -1, 1.5, Number.NaN])("refuses a size of %d", (size) => {
+    expect(() => compilePool(() => new FakeThread(), size)).toThrow(/at least one thread/);
+  });
+});
+
+describe("poolSize", () => {
+  it("is half the machine's parallelism, from 1 to 4", () => {
+    expect([1, 2, 3, 4, 6, 8, 9, 14, 64].map((parallelism) => poolSize(parallelism))).toEqual([
+      1, 1, 1, 2, 3, 4, 4, 4, 4,
+    ]);
   });
 });
