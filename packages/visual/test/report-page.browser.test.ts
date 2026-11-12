@@ -14,7 +14,8 @@ async function open(name: ReportFixture): Promise<void> {
   for (const element of report.querySelectorAll("[src], [href]")) {
     for (const attribute of ["src", "href"]) {
       const value = element.getAttribute(attribute);
-      if (value !== null && !value.startsWith("#")) element.setAttribute(attribute, `${base}${value}`);
+      if (value !== null && !value.startsWith("#"))
+        element.setAttribute(attribute, `${base}${value}`);
     }
   }
   document.head.querySelector("style[data-report]")?.remove();
