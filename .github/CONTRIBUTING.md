@@ -68,7 +68,8 @@ code (plan P1). Before you open a pull request:
 
 1. `pnpm check-types && pnpm lint && pnpm format:check`
 2. `pnpm test:full`. It runs what CI's test jobs run: every package's tests, the whole corpus, the
-   `bench` project, the e2e apps, and the canaries when the branch changes a path on
+   `bench` project, the e2e apps, the sample design system's tests and visual suite from
+   tarballs, and the canaries when the branch changes a path on
    `CANARY_PATHS` (`tests/integration/scripts/canary-paths.ts`). It leaves out the CI jobs it
    can't stand in for, and `pnpm test:full --list` names each with its reason. The `bench` step
    measures each case's compile time against `basics/hello` in the same run, so run `test:full`

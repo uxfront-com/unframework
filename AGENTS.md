@@ -270,10 +270,11 @@ Generate each of these with its command. The formatter and the linter skip them 
   `tests/toolchains/{vue,svelte,astro,angular}` and in `tests/toolchains/qwik-eslint`, the lint
   host that runs Qwik's type-aware rules (ADR-0045). The Angular compiler stack loads from
   `tests/toolchains/angular` and is never a package dependency.
-- One exception sits outside the workspace: the Angular e2e app (`tests/e2e/apps/angular`) declares
-  TypeScript 6 with `@angular/cli` and `@angular/compiler-cli`, as an Angular CLI app must. It's
-  installed only into its working copy outside the repository, so TypeScript 6 still reaches no
-  workspace package (ADR-0079).
+- Two exceptions sit outside the workspace. The Angular e2e app (`tests/e2e/apps/angular`) declares
+  TypeScript 6 with `@angular/cli` and `@angular/compiler-cli`, as an Angular CLI app must
+  (ADR-0079). The sample design system's copy declares it with Angular's compiler stack, as the
+  testing docs tell a project to (ADR-0089). Each is installed only into its working copy outside
+  the repository, so TypeScript 6 still reaches no workspace package.
 
 ### Targets and the IR
 
