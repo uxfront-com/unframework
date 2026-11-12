@@ -4,6 +4,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, matchesGlob } from "node:path";
 
+import { TARGET_NAMES } from "@unframework.dev/compiler";
 import type { HarnessContext } from "@unframework.dev/testing/node";
 import { describe, expect, inject, it } from "vitest";
 import type { UserWorkspaceConfig } from "vitest/config";
@@ -13,7 +14,7 @@ import { CANARIES } from "./canaries.ts";
 import { listCases } from "./cases.ts";
 import { ROOT } from "./paths.ts";
 import { harnessProjects, ssrShardCount } from "./projects.ts";
-import { SHARDS, shardFiles, shardOf } from "./shards.ts";
+import { SHARDS, SSR_SHARDS, shardFiles, shardOf } from "./shards.ts";
 import type { ShardKind } from "./shards.ts";
 
 /** Every shard of `items` for `count`, in order. */
@@ -92,25 +93,35 @@ describe("the ssr shards", () => {
     return project.test!;
   };
 
-  it("are what an ssr project includes, with the count it provides", async () => {
+  it("are as many as the target's count, or one, and the files on disk hold the most", () => {
+    expect(ssrShardCount({}, "angular")).toBe(SSR_SHARDS.angular);
+    expect(ssrShardCount({}, "react")).toBe(1);
+    expect(TARGET_NAMES).toEqual(expect.arrayContaining(Object.keys(SSR_SHARDS)));
+    expect(SHARDS.ssr).toBe(Math.max(...TARGET_NAMES.map((target) => ssrShardCount({}, target))));
+    // A count of one is the default: naming it would only hide which targets are split.
+    expect(Object.values(SSR_SHARDS).every((count) => Number.isInteger(count) && count > 1)).toBe(
+      true,
+    );
+  });
+
+  it("are what an ssr project includes, its first shard files, with the count it provides", async () => {
     const test = await ssrProject();
-    expect(test.include).toEqual(shardFiles("ssr"));
-    expect(test.provide).toMatchObject({ ufSsrShards: SHARDS.ssr });
+    expect(test.include).toEqual(shardFiles("ssr", ssrShardCount({}, "react")));
+    expect(test.provide).toMatchObject({ ufSsrShards: ssrShardCount({}, "react") });
   });
 
   it("are one for a project that renders a reference's cases alone (ADR-0057)", async () => {
-    const only = { react: ["semantics/listbox"] };
-    expect(ssrShardCount({ referencesOnly: only }, "react")).toBe(1);
-    expect(ssrShardCount({ referencesOnly: only }, "vue")).toBe(SHARDS.ssr);
-    expect(ssrShardCount({}, "react")).toBe(SHARDS.ssr);
-    const test = await ssrProject(only);
+    const only = { angular: ["semantics/listbox"] };
+    expect(ssrShardCount({ referencesOnly: only }, "angular")).toBe(1);
+    expect(ssrShardCount({ referencesOnly: only }, "vue")).toBe(1);
+    const test = await ssrProject({ react: ["semantics/listbox"] });
     expect(test.include).toEqual(["harness/ssr.0.test.ts"]);
     expect(test.provide).toMatchObject({ ufSsrShards: 1, ufOnly: ["semantics/listbox"] });
   });
 
-  it("render every case of the corpus in exactly one shard", () => {
+  it.each(Object.keys(SSR_SHARDS))("render every case of the corpus once on %s", (target) => {
     const cases = listCases(harness.casesDir).map((info) => info.id);
-    const shards = shardsOf(cases, SHARDS.ssr);
+    const shards = shardsOf(cases, ssrShardCount({}, target));
     expect(shards.flat().toSorted()).toEqual(cases.toSorted());
     expect(shards.every((shard) => shard.length > 0)).toBe(true);
   });

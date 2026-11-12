@@ -10,7 +10,8 @@
 // A project's renders run as shard files (`ssr.<k>.test.ts`, ADR-0093), each one call of
 // `describeSsrShard` with its index, which takes its share of the cases by position (`shardOf`),
 // so Vitest renders them in parallel. The project provides how many shards it runs
-// (`ufSsrShards`, `ssrShardCount`).
+// (`ufSsrShards`, `ssrShardCount`), and runs the first ones of the files on disk: four for
+// Angular, whose renders wait on ngtsc, and one for every other target (`SSR_SHARDS`).
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 

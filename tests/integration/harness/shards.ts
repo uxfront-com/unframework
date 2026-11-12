@@ -8,8 +8,22 @@
 /** The kinds of shard file: the canaries' corpus check, and the ssr projects' renders. */
 export type ShardKind = "canaries-corpus" | "ssr";
 
-/** How many shard files each kind has. One constant per kind, so a change is in one place. */
-export const SHARDS: Readonly<Record<ShardKind, number>> = { "canaries-corpus": 4, ssr: 4 };
+/**
+ * How many shard files an ssr project runs, by target: one unless it is named here. Only
+ * Angular's renders are slow, since each case's modules wait on ngtsc, so only its project is
+ * split. Every shard file is one more Vitest worker while the project runs, and splitting the six
+ * fast projects too took the ssr run's peak memory up by two thirds for a few seconds (ADR-0093).
+ */
+export const SSR_SHARDS: Readonly<Record<string, number>> = { angular: 4 };
+
+/**
+ * How many shard files each kind has on disk: for the ssr projects, as many as the most any
+ * target runs, of which a project runs the first ones. Each count is in one place.
+ */
+export const SHARDS: Readonly<Record<ShardKind, number>> = {
+  "canaries-corpus": 4,
+  ssr: Math.max(1, ...Object.values(SSR_SHARDS)),
+};
 
 /** The share of `items` that shard `index` of `count` takes: every item whose position, modulo
  * the count, is the index. Over `0 … count - 1`, the shards hold every item exactly once. */

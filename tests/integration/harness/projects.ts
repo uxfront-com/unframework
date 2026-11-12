@@ -44,7 +44,7 @@ import { ENGINE_DECLARATIONS, enginePlugins } from "./engines.ts";
 import { goldenGuard } from "./guard.ts";
 import { noOutputCases, noOutputPlugin, standInCases, standInReasons } from "./no-output.ts";
 import { FAILURE_SCREENSHOTS_DIR, ROOT, toolchainDir } from "./paths.ts";
-import { SHARDS, shardFiles } from "./shards.ts";
+import { SSR_SHARDS, shardFiles } from "./shards.ts";
 import { loadToolchain, REFERENCE } from "./targets.ts";
 import { ufMapStack } from "./thrown.ts";
 
@@ -292,12 +292,12 @@ function toolchainContext(target: string): ToolchainContext {
 }
 
 /**
- * How many shard files run an ssr project's renders (ADR-0093): `SHARDS.ssr`, but one for a
- * project the run adds as some case's reference, whose few cases a shard file each would leave
- * some files without a test, which fails them.
+ * How many shard files run an ssr project's renders (ADR-0093): the target's `SSR_SHARDS`, or
+ * one, and one for a project the run adds as some case's reference, whose few cases a shard
+ * file each would leave some files without a test, which fails them.
  */
 export function ssrShardCount(setup: Pick<HarnessSetup, "referencesOnly">, target: string): number {
-  return setup.referencesOnly?.[target] ? 1 : SHARDS.ssr;
+  return setup.referencesOnly?.[target] ? 1 : (SSR_SHARDS[target] ?? 1);
 }
 
 const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework) => {
