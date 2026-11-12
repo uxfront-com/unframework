@@ -280,7 +280,7 @@ location)` in `./node` runs the font audit, the capture, the policy and the comp
   `outputBinding("change")` with the payload spread back by its shape, Qwik's `onChange$` QRL,
   none on Astro) and keeps them across `rerender`. `MountedComponent.interact(action)` runs a
   user's action the framework's way. `MountOptions.renderCommand` is how a host outside Vitest
-  reaches a server render (Astro's, ADR-0088); the test projects leave it out, so Astro's
+  reaches a server render (Astro's, ADR-0088). The test projects leave it out, so Astro's
   adapter calls its Vitest command.
 
 ## Writing a spec

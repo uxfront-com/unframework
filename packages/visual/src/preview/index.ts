@@ -111,7 +111,11 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
     let closing: Promise<void> | undefined;
     return {
       url: shell.url,
-      frames: frames.map((frame) => ({ target: frame.target, origin: frame.origin, port: frame.port })),
+      frames: frames.map((frame) => ({
+        target: frame.target,
+        origin: frame.origin,
+        port: frame.port,
+      })),
       close: () => (closing ??= closeAll(shell)),
     };
   } catch (error) {

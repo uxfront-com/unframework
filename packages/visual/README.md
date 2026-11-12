@@ -3,9 +3,11 @@
 Visual parity and the preview for a project's examples (plan §8.6, ADR-0087, ADR-0088). It finds every `*.example.uf.tsx`
 file, renders each on every target in Chromium, and compares each target's geometry, computed
 styles and pixels with the reference target's, live or against baselines committed beside each
-example. Each run writes `report.json` and an image of every capture. `unframework preview` shows
-every example and component side by side on every target while you work. Private until its first
+example. Each run writes `report.json` and an image of every capture. Private until its first
 release.
+
+`unframework preview` shows every example and component side by side on every target while you
+work (below).
 
 ```sh
 unframework visual [--target <t>]... [--baseline | --live] [--update] [--out <dir>]
@@ -124,8 +126,9 @@ props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on 
 `pnpm --filter @unframework.dev/visual test` runs the package's tests in Node. `run.test.ts` runs a
 whole visual run in Chromium on `test/fixtures/differs`, whose example draws a blue box on Vue and a
 red one on React, and checks that the run fails and that the report holds the cell's diff and
-deltas. The command's tests drive `ufExampleCapture` with a fake browser. `preview.test.ts`
-starts the preview on `tests/e2e/design-system`, loads the shell in Chromium and checks seven
+deltas. The command's tests drive `ufExampleCapture` with a fake browser.
+
+`preview.test.ts` starts the preview on `tests/e2e/design-system`, loads the shell in Chromium and checks seven
 frames from seven origins, a control that reaches all of them, and that no port listens after
 `close()` or after the command's SIGINT. `preview-catalogue.test.ts` covers the catalogue, the
 controls and the command's arguments.

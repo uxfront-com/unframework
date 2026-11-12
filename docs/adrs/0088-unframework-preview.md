@@ -29,7 +29,7 @@ The other six adapters import no Vitest. ADR-0083 kept an earlier preview on a S
 toolchainDirs? })` in `@unframework.dev/visual` starts a dev server for each of the project's
   targets, or the ones asked for: the unframework plugin with that target, the target's
   `vite("browser")` fragment, and the preview's own plugin. Each listens on `127.0.0.1` on a port
-  the system picks, so each frame has an origin of its own, and keeps its optimizer cache in
+  the system picks, so each frame has an origin of its own, and keeps its dependency cache in
   `node_modules/.vite/uf-preview-<target>`. A plain HTTP server serves the shell page at `/` on
   `port`, any free one by default. It resolves to `{ url, frames, close }` once every server
   listens, and `close()` stops them all. A start that fails closes what it started.
