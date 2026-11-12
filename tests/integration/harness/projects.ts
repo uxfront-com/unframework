@@ -44,6 +44,7 @@ import { ENGINE_DECLARATIONS, enginePlugins } from "./engines.ts";
 import { goldenGuard } from "./guard.ts";
 import { noOutputCases, noOutputPlugin, standInCases, standInReasons } from "./no-output.ts";
 import { FAILURE_SCREENSHOTS_DIR, ROOT, toolchainDir } from "./paths.ts";
+import { SHARDS, shardFiles } from "./shards.ts";
 import { loadToolchain, REFERENCE } from "./targets.ts";
 import { ufMapStack } from "./thrown.ts";
 
@@ -290,7 +291,17 @@ function toolchainContext(target: string): ToolchainContext {
   };
 }
 
+/**
+ * How many shard files run an ssr project's renders (ADR-0093): `SHARDS.ssr`, but one for a
+ * project the run adds as some case's reference, whose few cases a shard file each would leave
+ * some files without a test, which fails them.
+ */
+export function ssrShardCount(setup: Pick<HarnessSetup, "referencesOnly">, target: string): number {
+  return setup.referencesOnly?.[target] ? 1 : SHARDS.ssr;
+}
+
 const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework) => {
+  const shards = ssrShardCount(setup, target);
   const context = toolchainContext(target);
   const fragment = await toolchain.vite("ssr", context);
   const config = mergeConfig(
@@ -311,11 +322,12 @@ const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework)
     test: projectTest(target, fragment.test, NODE_TEST, {
       name: `ssr:${target}`,
       root: ROOT,
-      include: ["harness/ssr.test.ts"],
+      include: shardFiles("ssr", shards),
       provide: {
         target,
         ufHarness: setup.harness,
         ufServer: toolchain.server,
+        ufSsrShards: shards,
         ...(setup.referencesOnly?.[target] ? { ufOnly: [...setup.referencesOnly[target]] } : {}),
       },
       sequence: {
