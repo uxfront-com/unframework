@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 
 import { nameProblem } from "../src/attribute-names.ts";
 import { applyAndRecheck, codes, component, problems, root, slices } from "./helpers.ts";
+import { propertyRun, replayable, sampleOf, scaledBound } from "./property.ts";
 
 /** The first element that has an attribute as its own. */
 function ownerOf(name: string): string | undefined {
@@ -797,25 +798,28 @@ describe("fixes", () => {
       ' formaction="/x"',
       ' type="button"',
     ];
-    let checked = 0;
+    const combinations: string[] = [];
     for (const tag of elements) {
       for (const name of names) {
         for (const value of values) {
           const attribute = value === null ? name : `${name}="${value}"`;
           for (const other of neighbours(name)) {
-            for (const jsx of [
-              `<${tag}${other} ${attribute} />`,
-              `<${tag} ${attribute}${other} />`,
-            ]) {
-              const { source, diagnostics } = component(jsx);
-              applyAndRecheck(source, diagnostics);
-              checked++;
-            }
+            combinations.push(`<${tag}${other} ${attribute} />`, `<${tag} ${attribute}${other} />`);
           }
         }
       }
     }
-    expect(checked).toBe(elements.length * names.length * values.length * 5 * 2);
+    const product = elements.length * names.length * values.length * 5 * 2;
+    expect(combinations).toHaveLength(product);
+    replayable(propertyRun(product, 0), (run) => {
+      let checked = 0;
+      for (const jsx of sampleOf(combinations, run)) {
+        const { source, diagnostics } = component(jsx);
+        applyAndRecheck(source, diagnostics);
+        checked++;
+      }
+      expect(checked).toBe(run.size);
+    });
   }, 60_000);
 
   // Each element's every attribute written bare, beside each of its other attributes with
@@ -823,8 +827,7 @@ describe("fixes", () => {
   // `type=""` did for a submit button's overrides (r3-analyzer-2).
   it("for a bare attribute recompile clean beside every other attribute of its element", () => {
     const values = [null, "", "x", "submit", "button", "1", "true"];
-    const failures: string[] = [];
-    let fixed = 0;
+    const combinations: string[] = [];
     for (const [tag, own] of ELEMENT_ATTRIBUTES) {
       if (UNRENDERABLE_ELEMENTS.has(tag)) continue;
       const names = [...own, "id", "title", "class", "tabindex", "popover"];
@@ -836,20 +839,27 @@ describe("fixes", () => {
             const element = VOID_ELEMENTS.has(tag)
               ? `<${tag} ${attributes} />`
               : `<${tag} ${attributes}>t</${tag}>`;
-            const { source, diagnostics } = component(inParents(tag, element));
-            if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) continue;
-            try {
-              applyAndRecheck(source, diagnostics);
-              fixed++;
-            } catch (error) {
-              failures.push((error as Error).message);
-            }
+            combinations.push(inParents(tag, element));
           }
         }
       }
     }
-    expect(failures).toEqual([]);
-    expect(fixed).toBeGreaterThan(5_000);
+    replayable(propertyRun(combinations.length, 0), (run) => {
+      const failures: string[] = [];
+      let fixed = 0;
+      for (const jsx of sampleOf(combinations, run)) {
+        const { source, diagnostics } = component(jsx);
+        if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) continue;
+        try {
+          applyAndRecheck(source, diagnostics);
+          fixed++;
+        } catch (error) {
+          failures.push((error as Error).message);
+        }
+      }
+      expect(failures).toEqual([]);
+      expect(fixed).toBeGreaterThan(scaledBound(5_000, run));
+    });
   }, 60_000);
 
   it.each([
