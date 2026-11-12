@@ -11,6 +11,8 @@
     "format:check": "oxfmt --check",
     "check-types": "turbo run check-types",
     "test": "turbo run test",
+    "test:quick": "node scripts/test-loop.ts quick",
+    "test:full": "node scripts/test-loop.ts full",
     "test:update": "pnpm --filter @unframework.dev/integration test:update",
     "test:canaries": "pnpm --filter @unframework.dev/integration test:canaries",
     "test:budgets:update": "pnpm --filter @unframework.dev/integration test:budgets:update",

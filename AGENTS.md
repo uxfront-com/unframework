@@ -137,10 +137,12 @@ checks need no build first.
 
 ```sh
 pnpm install                          # also installs the Chromium that the browser tests use
-pnpm format:check && pnpm lint && pnpm check-types && pnpm test   # the full verify loop, as CI runs it
+pnpm format:check && pnpm lint && pnpm check-types && pnpm test:full   # the full verify loop, before a PR
 pnpm format                           # oxfmt; pnpm lint:fix for oxlint's fixes
 
 # Narrower loops while you work
+pnpm test:quick                       # the changed packages' tests, the repo invariants and the compile project
+pnpm test:quick --base <ref>          # changed since the merge base of <ref> and HEAD, not origin/main
 pnpm --filter @unframework.dev/analyzer test                          # one package's own tests
 pnpm --filter @unframework.dev/integration test -- --project compile  # L1 and L2 only: the fastest corpus check
 pnpm --filter @unframework.dev/integration test -- --project "toolchain:angular"   # L3, L4 and L5, one target
@@ -168,6 +170,14 @@ pnpm --filter @uxfront/unframework probes               # the JSX type probes (t
 
 pnpm new:package <dir> "<description>"         # a new package; then add it to LAYERS (see below)
 ```
+
+Use `pnpm test:quick` while you work, and `pnpm test:full` before you open a pull request.
+`test:quick` runs the unit tests of the packages changed since the merge base of `origin/main` and
+HEAD, the repo invariants and the corpus's `compile` project, so fetch `origin/main` first. It runs
+no `browser:*`, `ssr:*` or `toolchain:*` project and no e2e app: those are for before a PR, through
+`test:full`, which runs what CI's test jobs run (`pnpm test:full --list` names each step and the
+jobs it leaves out). A change to `turbo.json` or `tsconfig.base.json` counts every package as
+changed, so `test:quick` then runs every unit suite.
 
 A run that names a project, applies a filter or sets `UF_TARGETS` is a partial run. Its summary
 judges only what ran. `UF_TARGETS` still runs a case on the target the case names as its own
