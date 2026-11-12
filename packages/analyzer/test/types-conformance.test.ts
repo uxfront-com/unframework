@@ -6,7 +6,7 @@
 // its compiler does not type. The check runs the `tsc` executable over generated probes, as the
 // unframework package's type probes do: it never loads TypeScript's API.
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -35,6 +35,7 @@ import { enumeratedValues, staticTokens } from "../src/enumerated.ts";
 import type { Enumerated } from "../src/enumerated.ts";
 import { BOOLEAN, NUMBER, STRING, stringLiteral, union, UNKNOWN } from "../src/types/kinds.ts";
 import type { Kinds } from "../src/types/kinds.ts";
+import { probeCache, probeKey } from "./probe-cache.ts";
 
 const ROOT = new URL("../../../", import.meta.url);
 
@@ -143,6 +144,22 @@ interface Check {
 const folder = mkdtempSync(join(tmpdir(), "uf-types-conformance-"));
 afterAll(() => rmSync(folder, { recursive: true, force: true }));
 
+// The verdicts of a probe already checked, kept locally: CI checks every run (./probe-cache.ts).
+const cache = probeCache(
+  new URL("../node_modules/.cache/types-conformance/", import.meta.url).pathname,
+);
+
+/** The authoring types' sources, which the probe imports, with their names, in name order. */
+function authoringSources(): string[] {
+  const directory = dirname(AUTHORING);
+  return readdirSync(directory, { recursive: true, encoding: "utf8" })
+    .toSorted()
+    .flatMap((name) => {
+      const path = join(directory, name);
+      return statSync(path).isFile() ? [`${name}\n${readFileSync(path, "utf8")}`] : [];
+    });
+}
+
 /** Each check's verdict: whether the library accepts the value, or declares nothing. */
 function verdicts(checks: readonly Check[]): ("accepted" | "rejected" | "missing")[] {
   const vue = packageFolder("packages/target-vue", "vue");
@@ -159,41 +176,62 @@ function verdicts(checks: readonly Check[]): ("accepted" | "rejected" | "missing
     "svelte/elements": [join(svelte, "elements.d.ts")],
   };
   const astro = join(packageFolder("packages/target-astro", "astro"), "astro-jsx.d.ts");
-  writeFileSync(
-    join(folder, "tsconfig.json"),
-    JSON.stringify({
-      compilerOptions: {
-        strict: true,
-        noEmit: true,
-        skipLibCheck: true,
-        types: [],
-        lib: ["esnext", "dom", "dom.iterable"],
-        module: "esnext",
-        moduleResolution: "bundler",
-        target: "esnext",
-        allowImportingTsExtensions: true,
-        paths,
-      },
-      files: ["probe.ts", astro],
-    }),
-  );
+  const tsconfig = JSON.stringify({
+    compilerOptions: {
+      strict: true,
+      noEmit: true,
+      skipLibCheck: true,
+      types: [],
+      lib: ["esnext", "dom", "dom.iterable"],
+      module: "esnext",
+      moduleResolution: "bundler",
+      target: "esnext",
+      allowImportingTsExtensions: true,
+      paths,
+    },
+    files: ["probe.ts", astro],
+  });
   const lines = checks.map(
     (check, index) =>
       `export const c${index}: A<${check.value}, P<${check.library.elements}, ${JSON.stringify(check.tag)}, ${JSON.stringify(check.library.key(check.namespace, check.name))}>> = 3;`,
   );
-  writeFileSync(join(folder, "probe.ts"), [...HEADER, ...lines].join("\n"));
+  const probe = [...HEADER, ...lines].join("\n");
   const require = createRequire(import.meta.url);
   const manifestPath = require.resolve("typescript/package.json");
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as { bin: { tsc: string } };
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+    version: string;
+    bin: { tsc: string };
+  };
+  // The tsconfig names every typed library's resolved folder; the lockfile pins what those
+  // libraries import, and the authoring types are local sources.
+  const key = probeKey({
+    probe,
+    tsconfig,
+    typescript: `${manifest.version} ${dirname(manifestPath)} ${TSC_FLAGS.join(" ")}`,
+    files: [readFileSync(new URL("pnpm-lock.yaml", ROOT), "utf8"), ...authoringSources()],
+  });
+  // One digit per check, as `A` writes it: 1 accepted, 0 rejected, 2 declares nothing.
+  const cached = cache.read(key);
+  const digits =
+    cached?.length === checks.length && /^[012]*$/.test(cached)
+      ? cached
+      : runProbe(checks, probe, tsconfig, join(dirname(manifestPath), manifest.bin.tsc));
+  if (digits !== cached) cache.write(key, digits);
+  return Array.from(digits, (digit) =>
+    digit === "1" ? "accepted" : digit === "0" ? "rejected" : "missing",
+  );
+}
+
+/** The flags `tsc` runs with, beside the project: part of the cache key. */
+const TSC_FLAGS = ["--pretty", "false"];
+
+/** Runs `tsc` over the probe, and reads each check's verdict digit from the error it reports. */
+function runProbe(checks: readonly Check[], probe: string, tsconfig: string, tsc: string): string {
+  writeFileSync(join(folder, "tsconfig.json"), tsconfig);
+  writeFileSync(join(folder, "probe.ts"), probe);
   const result = spawnSync(
     process.execPath,
-    [
-      join(dirname(manifestPath), manifest.bin.tsc),
-      "-p",
-      join(folder, "tsconfig.json"),
-      "--pretty",
-      "false",
-    ],
+    [tsc, "-p", join(folder, "tsconfig.json"), ...TSC_FLAGS],
     { cwd: folder, encoding: "utf8", maxBuffer: 1 << 28 },
   );
   if (result.error) throw new Error(`could not start tsc: ${result.error.message}`);
@@ -207,14 +245,16 @@ function verdicts(checks: readonly Check[]): ("accepted" | "rejected" | "missing
   }
   if (unexpected.length)
     throw new Error(`tsc reported more than the probes:\n${unexpected.slice(0, 20).join("\n")}`);
-  return checks.map((check, index) => {
-    const verdict = found.get(index);
-    if (verdict === undefined)
-      throw new Error(
-        `no verdict for ${JSON.stringify({ ...check, library: check.library.name })}`,
-      );
-    return verdict === "1" ? "accepted" : verdict === "0" ? "rejected" : "missing";
-  });
+  return checks
+    .map((check, index) => {
+      const verdict = found.get(index);
+      if (verdict === undefined)
+        throw new Error(
+          `no verdict for ${JSON.stringify({ ...check, library: check.library.name })}`,
+        );
+      return verdict;
+    })
+    .join("");
 }
 
 interface Pair {

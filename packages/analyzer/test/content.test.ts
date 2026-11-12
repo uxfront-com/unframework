@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { applyAndRecheck, codes, component, root, slices } from "./helpers.ts";
+import { propertyRun, replayable, scaledBound } from "./property.ts";
 import { randomSamples } from "./random.ts";
 
 /** The text children of the component's root. */
@@ -152,14 +153,16 @@ describe("the fixes of random text", () => {
   // Plan §5.9 and the harness's L1: applying every fix leaves exactly the diagnostics that had
   // none. A vertical tab or U+0085 beside a fixed space once turned its UF3009 into a UF3010.
   it("leave exactly the diagnostics that have none", () => {
-    let checked = 0;
-    for (const [index, text] of randomSamples(3, 10_000, PIECES).entries()) {
-      const { source, diagnostics } = component(WRAPPERS[index % WRAPPERS.length]!(text));
-      if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) continue;
-      applyAndRecheck(source, diagnostics);
-      checked++;
-    }
-    expect(checked).toBeGreaterThan(5000);
+    replayable(propertyRun(10_000, 3), (run) => {
+      let checked = 0;
+      for (const [index, text] of randomSamples(run.seed, run.size, PIECES).entries()) {
+        const { source, diagnostics } = component(WRAPPERS[index % WRAPPERS.length]!(text));
+        if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) continue;
+        applyAndRecheck(source, diagnostics);
+        checked++;
+      }
+      expect(checked).toBeGreaterThan(scaledBound(5000, run));
+    });
   }, 60_000);
 });
 
