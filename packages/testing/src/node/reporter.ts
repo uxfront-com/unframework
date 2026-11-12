@@ -300,14 +300,17 @@ function setupFailuresOf(
 /**
  * An error's causes, outermost first, each with its name where that says more than `Error`: a
  * `SyntaxError` is a module that did not parse, a `TypeError` one the page could not fetch.
+ * Vitest serialises a cause from the browser with its name as `Caused by: <name>`, for its own
+ * report, so that prefix goes.
  */
 function namedCauses(error: unknown): string[] {
   const causes = errorMessages(error).slice(1);
   let cause: unknown = error;
   return causes.map((message) => {
     cause = typeof cause === "object" && cause !== null && "cause" in cause ? cause.cause : null;
-    const name =
+    const raw =
       typeof cause === "object" && cause !== null && "name" in cause ? cause.name : undefined;
+    const name = typeof raw === "string" ? raw.replace(/^Caused by: /, "") : undefined;
     return typeof name === "string" && name !== "Error" && !message.startsWith(`${name}:`)
       ? `${name}: ${message}`
       : message;

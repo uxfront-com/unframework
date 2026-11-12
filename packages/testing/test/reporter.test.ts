@@ -254,6 +254,19 @@ describe("ParityReporter", () => {
       ]);
     });
 
+    it("names a cause as the browser threw it, not as Vitest's report prints it", () => {
+      // How Vitest serialises a failed fetch from the page: the cause's name carries its prefix.
+      const cause = Object.assign(new TypeError("Failed to fetch dynamically imported module"), {
+        name: "Caused by: TypeError",
+      });
+      const reporter = new ParityReporter({ reportsDir });
+      reporter.onInit(vitest(["browser:solid"], { harness: harness({ cases }), setupFiles }));
+      reporter.onTestRunEnd([failed("basics/hello", SETUP, cause)], [], "failed");
+      expect(reporter.matrix?.setupFailures?.[0]?.errors).toEqual([
+        "TypeError: Failed to fetch dynamically imported module",
+      ]);
+    });
+
     it("keeps a spec file's own import failure, and any other error, a case's", () => {
       const reporter = new ParityReporter({ reportsDir });
       reporter.onInit(vitest(["browser:solid"], { harness: harness({ cases }), setupFiles }));
