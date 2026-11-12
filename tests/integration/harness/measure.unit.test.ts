@@ -1,12 +1,25 @@
 // scripts/measure.ts: which processes a sampled tree holds, on fake `ps` output, then the script
-// itself on real commands, some of which leave a sleeper behind.
+// itself on real commands, some of which leave a sleeper behind. The tests of an amount sample
+// through a `ps` of their own, which reports the RSS each process declares: under memory pressure
+// the OS takes a real allocation's pages out of RSS, so no amount of real memory gives an exact sum.
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, readFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import type { SpawnSyncOptions } from "node:child_process";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { delimiter, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
-import { afterAll, afterEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { identityOf, membersOf, parseArgs, parseProcesses } from "../scripts/measure.ts";
 import type { MeasureReport, ProcessInfo } from "../scripts/measure.ts";
@@ -14,6 +27,8 @@ import { REPORTS_DIR } from "./paths.ts";
 
 const SCRIPT = fileURLToPath(new URL("../scripts/measure.ts", import.meta.url));
 const STARTED = "Fri Nov  6 21:42:00 2026";
+const KIB_PER_MIB = 1024;
+const shellQuote = (value: string) => `'${value.replaceAll("'", `'\\''`)}'`;
 
 const proc = (pid: number, ppid: number, pgid: number, rssKib = 1024): ProcessInfo => ({
   pid,
@@ -128,20 +143,123 @@ describe("the script", () => {
   const LABEL = "unit-test";
   const reportFile = join(REPORTS_DIR, "measure", `${LABEL}.json`);
   const sleepers: number[] = [];
+  /** The limit ends a command the tool failed to stop, which would otherwise hang the suite. */
+  const LIMIT_MS = 30_000;
 
-  /** Runs a command through the tool, and reads the report it leaves. */
-  function measure(command: readonly string[], ...flags: string[]) {
-    rmSync(reportFile, { force: true });
-    // The limit ends a command the tool failed to stop, which would otherwise hang the suite.
-    const result = spawnSync(process.execPath, [SCRIPT, LABEL, ...flags, "--", ...command], {
+  /**
+   * Runs the tool, and fails when it did not exit by itself. At the limit `spawnSync` kills the
+   * tool and closes its pipes, so what it printed is lost: the failure must name the limit, not
+   * a word missing from an empty `stderr`.
+   */
+  function runTool(args: readonly string[], options: SpawnSyncOptions = {}) {
+    const result = spawnSync(process.execPath, [SCRIPT, ...args], {
+      ...options,
       encoding: "utf8",
-      timeout: 30_000,
+      timeout: LIMIT_MS,
+    });
+    if (result.error) {
+      throw new Error(`The tool did not exit within ${LIMIT_MS / 1000} s: ${result.error.message}`);
+    }
+    if (result.signal) throw new Error(`The tool was ended by ${result.signal}`);
+    return { status: result.status, out: result.stdout, err: result.stderr };
+  }
+  /** Runs a command through the tool, and reads the report it leaves. */
+  function measure(
+    command: readonly string[],
+    options: { flags?: readonly string[]; env?: NodeJS.ProcessEnv } = {},
+  ) {
+    rmSync(reportFile, { force: true });
+    const result = runTool([LABEL, ...(options.flags ?? []), "--", ...command], {
+      env: options.env,
     });
     const report = existsSync(reportFile)
       ? (JSON.parse(readFileSync(reportFile, "utf8")) as MeasureReport)
       : undefined;
-    return { status: result.status, out: result.stdout, err: result.stderr, report };
+    return { ...result, report };
   }
+
+  /**
+   * A `ps` first on `PATH`: it runs the real one and reports, in the `rss=` column, the KiB each
+   * process declared in a file named by its PID, and 0 for any other. It keeps every other byte
+   * of the line, so the script parses it as it parses `ps`. It reads the PID and the RSS by their
+   * places among the `-o` columns, which holds while no column before them has spaces (`lstart`
+   * is last), and it refuses a call without both, so a sampler that reads another column fails.
+   */
+  let fakeRoot = "";
+  let declaredDir = "";
+  let fakeEnv: NodeJS.ProcessEnv = {};
+  beforeAll(() => {
+    const realPs = spawnSync("sh", ["-c", "command -v ps"], { encoding: "utf8" }).stdout.trim();
+    expect(realPs, "the real ps").toMatch(/^\//);
+    fakeRoot = mkdtempSync(join(tmpdir(), "uf-measure-"));
+    const binDir = join(fakeRoot, "bin");
+    declaredDir = join(fakeRoot, "rss");
+    mkdirSync(binDir);
+    mkdirSync(declaredDir);
+    const fakePs = join(binDir, "ps");
+    writeFileSync(
+      fakePs,
+      `#!/bin/sh
+n=0 pid_at=0 rss_at=0 previous=
+for arg in "$@"; do
+  if [ "$previous" = "-o" ]; then
+    n=$((n + 1))
+    case "$arg" in pid=) pid_at=$n ;; rss=) rss_at=$n ;; esac
+  fi
+  previous=$arg
+done
+if [ "$pid_at" -eq 0 ] || [ "$rss_at" -eq 0 ]; then
+  echo "the test's ps reports declared RSS, and needs -o pid= and -o rss=: got $*" >&2
+  exit 64
+fi
+listed=$(${shellQuote(realPs)} "$@") || exit $?
+printf '%s\\n' "$listed" | awk -v dir=${shellQuote(declaredDir)} -v pid_at="$pid_at" -v rss_at="$rss_at" '
+NF == 0 { print; next }
+{
+  kib = 0
+  file = dir "/" $pid_at
+  if ((getline declared < file) > 0) kib = declared + 0
+  close(file)
+  rest = $0
+  head = ""
+  for (i = 1; i < rss_at; i++) {
+    match(rest, /^[ \\t]*[^ \\t]+/)
+    head = head substr(rest, 1, RLENGTH)
+    rest = substr(rest, RLENGTH + 1)
+  }
+  match(rest, /^[ \\t]*/)
+  head = head substr(rest, 1, RLENGTH)
+  rest = substr(rest, RLENGTH + 1)
+  match(rest, /^[^ \\t]+/)
+  print head kib substr(rest, RLENGTH + 1)
+}'
+`,
+    );
+    chmodSync(fakePs, 0o755);
+    fakeEnv = { ...process.env, PATH: `${binDir}${delimiter}${process.env.PATH ?? ""}` };
+  });
+  afterAll(() => {
+    if (fakeRoot) rmSync(fakeRoot, { recursive: true, force: true });
+  });
+  /** No declaration outlives its test, where a later process could reuse the PID. */
+  afterEach(() => {
+    if (!declaredDir) return;
+    rmSync(declaredDir, { recursive: true, force: true });
+    mkdirSync(declaredDir);
+  });
+  /** Declares the process's RSS to the test's `ps`, whole or not at all: by a rename. */
+  const declare = (pid: number, kib: number) => {
+    const file = join(declaredDir, String(pid));
+    writeFileSync(`${file}.tmp`, String(kib));
+    renameSync(`${file}.tmp`, file);
+  };
+  /** Script that declares the running process's RSS, before what follows it. */
+  const holds = (kib: number) => `{
+    const fs = require("node:fs");
+    const file = ${JSON.stringify(declaredDir)} + "/" + process.pid;
+    fs.writeFileSync(file + ".tmp", "${kib}");
+    fs.renameSync(file + ".tmp", file);
+  }`;
   /** `kill(pid, 0)` also succeeds on a zombie. */
   const isAlive = (pid: number) => {
     const { stdout } = spawnSync("ps", ["-o", "stat=", "-p", String(pid)], { encoding: "utf8" });
@@ -191,8 +309,8 @@ describe("the script", () => {
     return { status: await exited, pid };
   }
   const node = (script: string) => [process.execPath, "-e", script];
-  /** Passes the ceiling these tests set, once the script has set up what it needs. */
-  const HOG = "globalThis.hog = Buffer.alloc(300 * 1024 * 1024, 1);";
+  /** Passes the ceiling these tests set: 300 MiB, which the report rounds to 0.293 GiB. */
+  const hog = () => holds(300 * KIB_PER_MIB);
   const CEILING = ["--max-rss-gib", "0.2"];
   /** The first PID the command printed, kept to kill after the test. */
   const sleeperOf = (out: string) => {
@@ -220,6 +338,7 @@ describe("the script", () => {
     rmSync(reportFile, { force: true });
   });
 
+  // Through the real `ps`, which proves what the fake cannot: that the script reads the live sampler.
   it("forwards stdout and the exit status, and writes the report", () => {
     const { status, out, report } = measure(["sh", "-c", "sleep 2.2; echo measured; exit 3"]);
     expect(out).toContain("measured");
@@ -239,22 +358,28 @@ describe("the script", () => {
   });
 
   it("sums the tree's RSS: neither process alone reaches what it reports", () => {
-    const half = "globalThis.hog = Buffer.alloc(100 * 1024 * 1024, 1);";
+    // 110 MiB each: 0.107 GiB for one, 0.215 for both. This process, outside the tree, declares
+    // 1 GiB, so a sum of what is not the tree's reads 1.2 or more.
+    declare(process.pid, 1024 * KIB_PER_MIB);
+    const half = holds(110 * KIB_PER_MIB);
     const { report } = measure(
-      node(`const { spawnSync } = require("node:child_process");
-        ${half}
+      node(`${half}
+        const { spawnSync } = require("node:child_process");
         spawnSync(process.execPath, ["-e", ${JSON.stringify(`${half} setTimeout(() => {}, 3000);`)}]);`),
+      { env: fakeEnv },
     );
-    expect(report!.peakRssGib).toBeGreaterThan(0.2);
+    expect(report).toMatchObject({ outcome: "completed", peakRssGib: 0.215 });
   });
 
   it("reports the peak, not the last sample", () => {
+    // The parent declares nothing and outlives the child, so the last samples read 0.
     const { report } = measure(
       node(`const { spawnSync } = require("node:child_process");
-        spawnSync(process.execPath, ["-e", ${JSON.stringify(`${HOG} setTimeout(() => {}, 2500);`)}]);
+        spawnSync(process.execPath, ["-e", ${JSON.stringify(`${hog()} setTimeout(() => {}, 2500);`)}]);
         setTimeout(() => {}, 2500);`),
+      { env: fakeEnv },
     );
-    expect(report!.peakRssGib).toBeGreaterThan(0.2);
+    expect(report).toMatchObject({ outcome: "completed", peakRssGib: 0.293 });
   });
 
   it("counts an orphan left in its process group as leftover, outside the wall time", () => {
@@ -282,22 +407,26 @@ describe("the script", () => {
     });
     const other = sleeperOf(bystander.stdout);
     const { status, out, report, err } = measure(
-      node(`${DETACHED_SLEEPER} ${HOG} setInterval(() => {}, 1000);`),
-      ...CEILING,
+      node(`${DETACHED_SLEEPER} ${hog()} setInterval(() => {}, 1000);`),
+      { flags: CEILING, env: fakeEnv },
     );
     const sleeper = sleeperOf(out);
     expect(status).not.toBe(0);
     expect(err).toContain("ceiling");
-    expect(report).toMatchObject({ outcome: "did-not-complete", maxRssGib: 0.2, leftover: 0 });
-    expect(report!.peakRssGib).toBeGreaterThanOrEqual(0.2);
+    expect(report).toMatchObject({
+      outcome: "did-not-complete",
+      maxRssGib: 0.2,
+      peakRssGib: 0.293,
+      leftover: 0,
+    });
     expect(isAlive(sleeper)).toBe(false);
     expect(isAlive(other)).toBe(true);
   });
 
   it("kills a process that ignores SIGTERM at the ceiling", () => {
     const { status, report, err } = measure(
-      node(`process.on("SIGTERM", () => {}); ${HOG} setInterval(() => {}, 1000);`),
-      ...CEILING,
+      node(`process.on("SIGTERM", () => {}); ${hog()} setInterval(() => {}, 1000);`),
+      { flags: CEILING, env: fakeEnv },
     );
     expect(err).toContain("ceiling");
     expect(status).toBe(137);
@@ -306,8 +435,8 @@ describe("the script", () => {
 
   it("does not call a command that exits 0 on SIGTERM a success at the ceiling", () => {
     const { status, report, err } = measure(
-      node(`process.on("SIGTERM", () => process.exit(0)); ${HOG} setInterval(() => {}, 1000);`),
-      ...CEILING,
+      node(`process.on("SIGTERM", () => process.exit(0)); ${hog()} setInterval(() => {}, 1000);`),
+      { flags: CEILING, env: fakeEnv },
     );
     expect(err).toContain("ceiling");
     expect(status).toBe(1);
@@ -359,13 +488,11 @@ describe("the script", () => {
 
   it("stops the tree and fails when it cannot sample, since no sample means no ceiling", () => {
     rmSync(reportFile, { force: true });
-    const result = spawnSync(
-      process.execPath,
-      [SCRIPT, LABEL, "--", process.execPath, "-e", "setInterval(() => {}, 1000)"],
-      { encoding: "utf8", env: { PATH: "/nonexistent" }, timeout: 30_000 },
-    );
+    const result = runTool([LABEL, "--", process.execPath, "-e", "setInterval(() => {}, 1000)"], {
+      env: { PATH: "/nonexistent" },
+    });
     expect(result.status).toBe(143);
-    expect(result.stderr).toContain("cannot sample");
+    expect(result.err).toContain("cannot sample");
     expect(JSON.parse(readFileSync(reportFile, "utf8"))).toMatchObject({
       outcome: "did-not-complete",
       leftover: null,
