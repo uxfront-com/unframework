@@ -87,6 +87,9 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
   optimizer, so its imports go through the project's Vite pipeline and share one Vitest runner. The mode is a project's
   (`resolveHarnessMode({ project })`): pixels compare live unless the project chose `baseline`,
   and CI may compare live. It runs in Chromium alone.
+- **A module that fails to compile fails its own spec alone.** The browser projects keep Vite from
+  sending the error to every page they serve (`noErrorBroadcast`, a copy of the harness's), whose
+  overlay would cover every later spec's page and capture.
 - **`unframework test [--target <t>]… [--update] [-- <vitest args>]`** passes what follows `--`
   to Vitest, refuses Vitest's `--update`, and exits 0, 1 on a failed test, or 2 on a usage or
   configuration error.
