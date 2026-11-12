@@ -5,10 +5,12 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+import type { Plugin, ViteDevServer } from "vite";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 import type { TestProjectInlineConfiguration } from "vitest/config";
 
 import { parseTestArguments, run } from "../src/cli.ts";
+import { NO_ERROR_BROADCAST, noErrorBroadcast } from "../src/config/broadcast.ts";
 import { discoverCases } from "../src/config/cases.ts";
 import {
   defineTestConfig,
@@ -264,6 +266,10 @@ describe("defineTestConfig", () => {
     expect(browser!.test?.include).toEqual([join(root, "test/badge/badge.test.ts")]);
     // Installed, a pre-bundled copy of the package would hold its own Vitest runner.
     expect(browser!.optimizeDeps?.exclude).toContain("@unframework.dev/testing");
+    // A module that fails to compile fails its own spec, never the pages of the others.
+    expect((browser!.plugins ?? []).flat().map((plugin) => (plugin as Plugin)?.name)).toContain(
+      NO_ERROR_BROADCAST,
+    );
     expect(browser!.test?.provide).toMatchObject({
       target: "vue",
       ufHarness: { casesDir: root, reference: "vue", pixels: "live", cases: { "test/badge": {} } },
@@ -287,6 +293,20 @@ describe("defineTestConfig", () => {
         },
       ],
     });
+  });
+});
+
+describe("noErrorBroadcast", () => {
+  it("keeps a compile error off every page, and passes every other message on", () => {
+    const sent: unknown[] = [];
+    const hot = { send: (payload: unknown) => void sent.push(payload) };
+    const server = { environments: { client: { hot } } } as unknown as ViteDevServer;
+    const hook = noErrorBroadcast().configureServer as (server: ViteDevServer) => void;
+    hook(server);
+    hot.send({ type: "error", err: { message: "UF1002" } });
+    hot.send({ type: "full-reload" });
+    hot.send("custom");
+    expect(sent).toEqual([{ type: "full-reload" }, "custom"]);
   });
 });
 

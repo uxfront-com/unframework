@@ -22,9 +22,11 @@ import { recordCompiledModule } from "../node/events.ts";
 import { createHarnessRun, groupOrder, resolveHarnessMode } from "../node/mode.ts";
 import type { HarnessMode, ProjectKind } from "../node/mode.ts";
 import { ufMapStack } from "../node/thrown.ts";
+import { noErrorBroadcast } from "./broadcast.ts";
 import { discoverCases, EXCLUDED } from "./cases.ts";
 import type { ProjectCase } from "./cases.ts";
 
+export { NO_ERROR_BROADCAST, noErrorBroadcast } from "./broadcast.ts";
 export { discoverCases } from "./cases.ts";
 export type { DiscoverOptions, ProjectCase } from "./cases.ts";
 
@@ -318,7 +320,7 @@ async function browserProject(
   const config = mergeConfig(
     {
       root: setup.root,
-      plugins: await unpluginOf(target),
+      plugins: [...(await unpluginOf(target)), noErrorBroadcast()],
       // The testing API's own browser dependencies (CommonJS axe-core, parse5), listed up front:
       // one discovered mid-run reloads the page. The package itself is not pre-bundled: installed,
       // it would carry a second copy of Vitest's runner, whose suite the specs' tests never reach.
