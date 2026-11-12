@@ -70,6 +70,17 @@ export interface Toolchain {
   vite(mode: "browser" | "ssr", context: ToolchainContext): UserConfig | Promise<UserConfig>;
   /** Browser commands the mount adapter calls, such as Astro's server-side render. */
   browserCommands?(context: ToolchainContext): Record<string, ToolchainCommand>;
+  /**
+   * The browser command a target with no client runtime renders through, among
+   * `browserCommands`, such as Astro's `ufAstroRender`. A host outside Vitest (the preview, ADR-0088)
+   * runs it in Node and passes the page's way to call it as {@link MountOptions.renderCommand}.
+   */
+  readonly renderCommandName?: string;
+  /**
+   * Closes what the browser commands started, such as Astro's render servers. Vitest projects
+   * close them through the toolchain's own plugin; a host outside Vitest calls this when it stops.
+   */
+  close?(): Promise<void>;
   /** The module specifier of the browser mount adapter, which exports `mount: MountAdapter`. */
   readonly client: string;
   /** The module specifier of the SSR renderer, which exports `renderToString: SsrRenderer`. */
@@ -134,6 +145,21 @@ export interface MountEvent {
 /** A listener a test gives a mounted component: the arguments of one emit, as the source passed them. */
 export type MountListener = (...args: unknown[]) => void;
 
+/** What a {@link RenderCommand} renders: a compiled component, by its id, with its props. */
+export interface RenderRequest {
+  id: string;
+  props: Record<string, unknown>;
+}
+
+/** What a {@link RenderCommand} gives back: the server's HTML, and what the render logged. */
+export interface RenderResult {
+  html: string;
+  console: CapturedConsoleMessage[];
+}
+
+/** Renders a component on the server, called from the page: a target with no client runtime. */
+export type RenderCommand = (request: RenderRequest) => Promise<RenderResult>;
+
 /** What a test mounts a component with. */
 export interface MountOptions {
   props?: Readonly<Record<string, unknown>>;
@@ -147,6 +173,12 @@ export interface MountOptions {
   on?: Readonly<Record<string, MountListener>>;
   /** The events the component declares, every one `on` names among them (see {@link MountEvent}). */
   events?: readonly MountEvent[];
+  /**
+   * How a target with no client runtime (Astro) reaches its server render from the page. Its
+   * adapter calls the Vitest browser command when this is absent, as the test projects need; a host
+   * outside Vitest, such as the preview (ADR-0088), passes its own. The other adapters ignore it.
+   */
+  renderCommand?: RenderCommand;
 }
 
 /** A console message captured outside the page, such as during Astro's server render. */

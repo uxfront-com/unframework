@@ -249,8 +249,12 @@ const TOOLCHAINS: Readonly<Record<TargetName, () => Promise<ToolchainModule>>> =
   astro: () => import("@unframework.dev/target-astro/toolchain"),
 };
 
-/** Loads a target's toolchain, refusing one of another name. */
-async function loadToolchain(target: TargetName): Promise<Toolchain> {
+/**
+ * Loads a target's toolchain, refusing one of another name. It loads from this package, which
+ * depends on every target, so a project need not install the target packages itself: the
+ * preview (`@unframework.dev/visual`) builds its servers from it too.
+ */
+export async function loadToolchain(target: TargetName): Promise<Toolchain> {
   let module: ToolchainModule;
   try {
     module = await TOOLCHAINS[target]();
@@ -306,6 +310,15 @@ function projectTest(
 
 function resolveModule(specifier: string): string {
   return fileURLToPath(import.meta.resolve(specifier));
+}
+
+/**
+ * The file of a toolchain's browser mount adapter (`toolchain.client`), resolved from this
+ * package, which depends on the target: a Vite server outside the test projects imports it by
+ * path, since the project need not install the target package (pnpm keeps it out of reach).
+ */
+export function toolchainClientFile(toolchain: Toolchain): string {
+  return resolveModule(toolchain.client);
 }
 
 async function browserProject(

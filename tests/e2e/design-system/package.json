@@ -13,6 +13,7 @@
   "scripts": {
     "pack:dist": "unframework build --package",
     "parity": "unframework test",
+    "preview": "unframework preview",
     "visual": "unframework visual"
   },
   "devDependencies": {

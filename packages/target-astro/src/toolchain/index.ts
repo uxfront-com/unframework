@@ -12,7 +12,7 @@ import { astroBrowserRef } from "./browser.ts";
 import { astroTypecheck } from "./check.ts";
 import { astroFrameworkCompile, astroFrameworkEmit } from "./compile.ts";
 import { astroViteConfig } from "./config.ts";
-import { createAstroRenderCommand } from "./render.ts";
+import { closeAstroRenderServers, createAstroRenderCommand } from "./render.ts";
 
 /**
  * Astro is static: there is no client runtime and nothing to hydrate (interactivity is
@@ -28,6 +28,8 @@ export const toolchain: Toolchain = {
     return { plugins: [astroBrowserRef()] };
   },
   browserCommands: (context) => ({ ufAstroRender: createAstroRenderCommand(context) }),
+  renderCommandName: "ufAstroRender",
+  close: closeAstroRenderServers,
   client: "@unframework.dev/target-astro/toolchain/client",
   server: "@unframework.dev/target-astro/toolchain/server",
   frameworkCompile: astroFrameworkCompile,

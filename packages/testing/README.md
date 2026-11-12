@@ -90,6 +90,11 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
 - **A module that fails to compile fails its own spec alone.** The browser projects keep Vite from
   sending the error to every page they serve (`noErrorBroadcast`, a copy of the harness's), whose
   overlay would cover every later spec's page and capture.
+- **The toolchains, for a host outside the test projects:** `loadToolchain(target)` loads a
+  target's toolchain from this package, which depends on every target, and
+  `toolchainClientFile(toolchain)` gives its mount adapter's file, so a Vite server can import it
+  by path where the project doesn't install the target package. The preview builds its servers
+  from them (ADR-0088).
 - **`unframework test [--target <t>]… [--update] [-- <vitest args>]`** passes what follows `--`
   to Vitest, refuses Vitest's `--update`, and exits 0, 1 on a failed test, or 2 on a usage or
   configuration error.
@@ -274,7 +279,9 @@ location)` in `./node` runs the font audit, the capture, the policy and the comp
   and Solid's `onChange`, Vue's `onChange` beside the props, Svelte's `onchange`, Angular's
   `outputBinding("change")` with the payload spread back by its shape, Qwik's `onChange$` QRL,
   none on Astro) and keeps them across `rerender`. `MountedComponent.interact(action)` runs a
-  user's action the framework's way.
+  user's action the framework's way. `MountOptions.renderCommand` is how a host outside Vitest
+  reaches a server render (Astro's, ADR-0088). The test projects leave it out, so Astro's
+  adapter calls its Vitest command.
 
 ## Writing a spec
 
