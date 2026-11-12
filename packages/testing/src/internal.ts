@@ -5,6 +5,8 @@
 export { registerTarget } from "./browser/target.ts";
 export type { TargetOptions } from "./browser/target.ts";
 export { cleanup } from "./browser/view.ts";
+export { captureVisual } from "./browser/visual.ts";
+export type { CaptureCommand } from "./browser/visual.ts";
 export type { HarnessContext } from "./harness.ts";
 export { checkLayers, LAYERS, LayerFailure, recordLayer } from "./layers.ts";
 export type {

@@ -47,9 +47,9 @@ export default function Counter({ initial = 0, step = 1 }: CounterProps) {
 | `@uxfront/unframework/config`          | `defineConfig` and the `UnframeworkConfig` type, for a project's `unframework.config.ts` (plan §8.1). Its one import is type-only, so importing it loads no compiler.                                                                                                                                          |
 | `@uxfront/unframework/jsx-runtime`     | The `JSX` namespace TypeScript reads for `"jsxImportSource": "@uxfront/unframework"`. Types only.                                                                                                                                                                                                              |
 | `@uxfront/unframework/jsx-dev-runtime` | The same types, for tools that pick the `react-jsxdev` transform.                                                                                                                                                                                                                                              |
-| `@uxfront/unframework/cli`             | `main(argv, io?)`, the command line the bin runs: `@unframework.dev/cli`'s commands, and `test` (ADR-0086).                                                                                                                                                                                                    |
+| `@uxfront/unframework/cli`             | `main(argv, io?)`, the command line the bin runs: `@unframework.dev/cli`'s commands, `test` (ADR-0086) and `visual` (ADR-0087).                                                                                                                                                                                |
 
-The package's bin is `unframework` (`build`, `check`, `explain`, `init` and `test`). `@unframework.dev/cli`'s
+The package's bin is `unframework` (`build`, `check`, `explain`, `init`, `test` and `visual`). `@unframework.dev/cli`'s
 README documents the first four.
 
 `test` runs a project's tests on every target, through
@@ -59,6 +59,11 @@ loads as the command starts, like `vitest`, is missing, `test` exits 2 and lists
 (`TEST_PACKAGES` and `TARGET_TEST_PACKAGES` in `src/cli.ts`). A missing framework or Vite plugin
 exits 2 too, with a message from `@unframework.dev/testing` that names its target. `@unframework.dev/testing`'s README
 documents the command.
+
+`visual` renders a project's examples on every target, through `@unframework.dev/visual/cli`,
+another optional peer dependency that loads the same way. When it, or a package it loads, is
+missing, `visual` exits 2 and lists what to install (`VISUAL_PACKAGES`: the visual package and
+`TEST_PACKAGES`). `@unframework.dev/visual`'s README documents the command.
 
 The root entry's functions are inert stubs. The compiler recognises them by binding and erases them,
 so no `@uxfront/unframework` import survives into any output. Calling one at runtime means the file was not

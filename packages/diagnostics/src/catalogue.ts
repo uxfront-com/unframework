@@ -2671,6 +2671,20 @@ const entries: CatalogueEntry[] = [
     ].join("\n"),
   },
   {
+    code: "UF7011",
+    name: "example-with-props",
+    severity: "error",
+    title: "An example declares props",
+    description: [
+      "`unframework visual` renders each `*.example.uf.tsx` file on every target with no props, so",
+      "every target renders the same thing (ADR-0087). This example's component declares props,",
+      "which no target is given.",
+      "",
+      "Remove the props, and write the values the example shows into it, as the props of the",
+      "components it renders. To show several states, render each one, or write an example for each.",
+    ].join("\n"),
+  },
+  {
     code: "UF8001",
     name: "plugin-failed",
     severity: "error",
