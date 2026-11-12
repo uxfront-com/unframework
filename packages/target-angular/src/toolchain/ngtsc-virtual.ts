@@ -230,13 +230,14 @@ export interface CompilePool {
 }
 
 /**
- * How many workers a pool may start: half the machine's parallelism, from 1 to 4. Vitest's own
- * workers render and test while ngtsc compiles, and each compile worker holds a TypeScript
- * program with Angular's declarations for each plugin, so more would cost memory for little
- * time (ADR-0093).
+ * How many workers a pool may start: one, or two on a machine with four cores or more. Vitest's
+ * own workers render and test while ngtsc compiles, and each compile worker holds about 400 MB,
+ * a TypeScript program with Angular's declarations for each plugin. On the ssr run, three or
+ * four workers took the peak memory past 1.5 times that of a single worker, and saved no time
+ * that a loaded machine's measurements could tell apart from two's (ADR-0093).
  */
 export function poolSize(parallelism: number = availableParallelism()): number {
-  return Math.min(4, Math.max(1, Math.floor(parallelism / 2)));
+  return Math.min(2, Math.max(1, Math.floor(parallelism / 2)));
 }
 
 /**

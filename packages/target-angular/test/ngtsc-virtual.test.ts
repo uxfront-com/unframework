@@ -521,9 +521,9 @@ describe("compilePool", () => {
 });
 
 describe("poolSize", () => {
-  it("is half the machine's parallelism, from 1 to 4", () => {
-    expect([1, 2, 3, 4, 6, 8, 9, 14, 64].map((parallelism) => poolSize(parallelism))).toEqual([
-      1, 1, 1, 2, 3, 4, 4, 4, 4,
+  it("is one, or two on a machine with four cores or more", () => {
+    expect([1, 2, 3, 4, 5, 8, 14, 64].map((parallelism) => poolSize(parallelism))).toEqual([
+      1, 1, 1, 2, 2, 2, 2, 2,
     ]);
   });
 });
