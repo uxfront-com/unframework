@@ -13,6 +13,7 @@ export {
 } from "./examples.ts";
 export type { DiscoverExamplesOptions, Example, ExampleBaselines } from "./examples.ts";
 export { buildReport, cellKey, formatReport, REPORT_VERSION } from "./report.ts";
+export { MAX_DELTA_ROWS, renderReport } from "./report-page.ts";
 export type {
   MissingCapture,
   RecordedCapture,

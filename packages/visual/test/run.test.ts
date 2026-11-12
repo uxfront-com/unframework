@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { renderReport } from "../src/report-page.ts";
 import type { VisualReport } from "../src/report.ts";
 import { runVisual } from "../src/run.ts";
 import { pixelAt } from "./png.ts";
@@ -46,6 +47,10 @@ describe("runVisual", () => {
       expect(existsSync(join(out, react.images[image]!)), image).toBe(true);
     }
     expect(react.images.diff).toBe("examples/Box/react/diff.png");
+    // The page beside the report, which names its images by the same relative paths.
+    const html = readFileSync(join(out, "report.html"), "utf8");
+    expect(html).toBe(renderReport(report));
+    expect(html).toContain('src="examples/Box/react/diff.png"');
     expect(printed).toContain("✗ examples/Box: failed on react (geometry-mismatch)");
   });
 

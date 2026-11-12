@@ -47,16 +47,16 @@ these names, and the corpus's lint rule (`oxlint.config.ts`, tested by
 
 The subpaths are internal, for the harness and the test configuration, never for a spec:
 
-| Subpath       | Holds                                                                                                                                                                      |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `./harness`   | The browser machinery: `registerTarget`, `cleanup`, `captureVisual`, `checkLayers`, `LAYERS`, `LayerFailure`, `recordLayer`, the layer and adapter types, `HarnessContext` |
-| `./setup`     | The setup file every browser project loads first (below)                                                                                                                   |
-| `./<target>`  | The setup file that registers a target's mount adapter                                                                                                                     |
-| `./node`      | The Node side: the browser commands, the write policy, the mode, the reporter and the summary                                                                              |
-| `./normalize` | The normaliser                                                                                                                                                             |
-| `./ssr`       | `describeServerRender(cases)`, the one server render comparison (L6, L13), which the corpus's ssr spec calls with its own skips                                            |
-| `./ssr/spec`  | The ssr spec `defineTestConfig`'s `ssr:<target>` projects run, by its resolved path                                                                                        |
-| `./cli`       | `run(args, io)`, the `unframework test` command, which the umbrella registers                                                                                              |
+| Subpath       | Holds                                                                                                                                                                                         |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `./harness`   | The browser machinery: `registerTarget`, `cleanup`, `captureVisual`, `checkLayers`, `LAYERS`, `LayerFailure`, `recordLayer`, `installMatchers`, the layer and adapter types, `HarnessContext` |
+| `./setup`     | The setup file every browser project loads first (below)                                                                                                                                      |
+| `./<target>`  | The setup file that registers a target's mount adapter                                                                                                                                        |
+| `./node`      | The Node side: the browser commands, the write policy, the mode, the reporter and the summary                                                                                                 |
+| `./normalize` | The normaliser                                                                                                                                                                                |
+| `./ssr`       | `describeServerRender(cases)`, the one server render comparison (L6, L13), which the corpus's ssr spec calls with its own skips                                                               |
+| `./ssr/spec`  | The ssr spec `defineTestConfig`'s `ssr:<target>` projects run, by its resolved path                                                                                                           |
+| `./cli`       | `run(args, io)`, the `unframework test` command, which the umbrella registers                                                                                                                 |
 
 `./config` is public, for a project's `vitest.config.ts`: `defineTestConfig` (below).
 

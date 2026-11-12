@@ -2,7 +2,7 @@
 // `defineTestConfig` builds for the project's own tests (ADR-0086). Each example gets a generated
 // case under `.unframework/specs/`, a spec that mounts it and a `case.json` that names it as the
 // case's main source, so the setup file, the mount and L10's capture see an ordinary case. The run
-// then writes `<out>/report.json` from what `ufExampleCapture` recorded.
+// then writes `<out>/report.json` from what `ufExampleCapture` recorded, and `report.html` beside it.
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,6 +19,7 @@ import { takeCaptures, ufExampleCapture } from "./command.ts";
 import type { VisualContext } from "./command.ts";
 import { checkExamples, discoverExamples } from "./examples.ts";
 import type { Example } from "./examples.ts";
+import { renderReport } from "./report-page.ts";
 import { buildReport, cellKey, formatReport, posixRelative } from "./report.ts";
 import type { VisualReport } from "./report.ts";
 
@@ -157,6 +158,8 @@ export async function runVisual(options: VisualRunOptions): Promise<VisualRunRes
     });
     const reportPath = join(out, "report.json");
     writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+    // The page to browse it, beside it, so its relative image paths hold (plan §8.6).
+    writeFileSync(join(out, "report.html"), renderReport(report));
     for (const line of formatReport(report)) print(`${line}\n`);
     for (const error of unhandled)
       print(`unhandled error: ${String((error as Error)?.message ?? error)}\n`);

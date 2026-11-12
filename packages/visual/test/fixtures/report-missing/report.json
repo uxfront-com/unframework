@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "pixels": "baseline",
+  "update": false,
+  "reference": "vue",
+  "targets": ["vue", "react", "svelte"],
+  "passed": false,
+  "examples": [
+    {
+      "id": "examples/Badge",
+      "file": "examples/Badge.example.uf.tsx",
+      "cells": [
+        {
+          "target": "vue",
+          "role": "reference",
+          "status": "failed",
+          "outcome": "missing-artefact",
+          "message": "No baseline examples/__screenshots__/Badge-chromium-linux.png: write it with unframework visual --update.",
+          "diffPixels": null,
+          "geometry": [],
+          "images": {
+            "actual": "examples/Badge/vue/actual.png",
+            "geometry": "examples/Badge/vue/geometry.actual.json"
+          }
+        },
+        {
+          "target": "react",
+          "role": "follower",
+          "status": "failed",
+          "outcome": "not-captured",
+          "message": "The example's test on this target ended before it captured anything.",
+          "diffPixels": null,
+          "geometry": [],
+          "images": {}
+        },
+        {
+          "target": "svelte",
+          "role": "follower",
+          "status": "failed",
+          "outcome": "test-failed",
+          "message": "L13: the example logged an unexpected console.error: <Badge> received an unknown prop.",
+          "diffPixels": 0,
+          "geometry": [],
+          "images": {
+            "capture": "examples/Badge/svelte.png"
+          }
+        }
+      ]
+    }
+  ]
+}
