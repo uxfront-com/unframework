@@ -16,6 +16,7 @@ import {
   defineTestConfig,
   runTargets,
   selectedTargets,
+  TARGET_PACKAGES,
   TESTING_PACKAGE,
   toolchainDirOf,
 } from "../src/config/index.ts";
@@ -266,6 +267,8 @@ describe("defineTestConfig", () => {
     expect(browser!.test?.include).toEqual([join(root, "test/badge/badge.test.ts")]);
     // Installed, a pre-bundled copy of the package would hold its own Vitest runner.
     expect(browser!.optimizeDeps?.exclude).toContain("@unframework.dev/testing");
+    // Pre-bundled, Qwik's mount adapter would skip Qwik's plugin, and its `$()` would throw.
+    expect(browser!.optimizeDeps?.exclude).toContain("@unframework.dev/target-qwik");
     // A module that fails to compile fails its own spec, never the pages of the others.
     expect((browser!.plugins ?? []).flat().map((plugin) => (plugin as Plugin)?.name)).toContain(
       NO_ERROR_BROADCAST,
@@ -282,7 +285,8 @@ describe("defineTestConfig", () => {
     expect(ssr!.test?.exclude).toEqual([]);
     // Installed, the package is ESM under node_modules: inlined, its imports of each case's
     // `.uf.tsx` go through the unplugin, not to Node.
-    expect(ssr!.test?.server?.deps?.inline).toEqual([TESTING_PACKAGE]);
+    // The targets' server renderers too, so they share the component's copy of its framework.
+    expect(ssr!.test?.server?.deps?.inline).toEqual([TESTING_PACKAGE, TARGET_PACKAGES]);
     expect(ssr!.test?.provide).toMatchObject({
       ufServer: "@unframework.dev/target-vue/toolchain/server",
       ufSsrCases: [
@@ -336,6 +340,26 @@ describe("TESTING_PACKAGE", () => {
       "/repo/packages/testing/src/ssr/index.ts",
     ]) {
       expect(path).not.toMatch(TESTING_PACKAGE);
+    }
+  });
+});
+
+describe("TARGET_PACKAGES", () => {
+  it("matches every target package wherever npm or pnpm installs it, and nothing else", () => {
+    for (const path of [
+      "/p/node_modules/@unframework.dev/target-angular/dist/toolchain/server.js",
+      "/p/node_modules/.pnpm/@unframework.dev+target-qwik@0.1.0/node_modules/@unframework.dev/target-qwik/dist/toolchain/server.js",
+      "C:\\p\\node_modules\\@unframework.dev\\target-svelte\\dist\\toolchain\\server.js",
+    ]) {
+      expect(path).toMatch(TARGET_PACKAGES);
+    }
+    for (const path of [
+      "/p/node_modules/@unframework.dev/testing/dist/ssr/index.js",
+      "/p/node_modules/@unframework.dev/codegen/dist/index.js",
+      "/p/node_modules/@angular/core/fesm2022/core.mjs",
+      "/repo/packages/target-angular/src/toolchain/server.ts",
+    ]) {
+      expect(path).not.toMatch(TARGET_PACKAGES);
     }
   });
 });

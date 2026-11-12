@@ -84,7 +84,10 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
   case names as its own (`runTargets`), and writes with `UF_UPDATE=1` (`--update`). Its scratch
   goes in the root's `.reports/` and `.live/`. Installed under `node_modules`, the package is
   inlined in the ssr projects (`TESTING_PACKAGE`) and left out of the browser projects' dep
-  optimizer, so its imports go through the project's Vite pipeline and share one Vitest runner. The mode is a project's
+  optimizer, so its imports go through the project's Vite pipeline and share one Vitest runner.
+  The target packages are inlined in the ssr projects too (`TARGET_PACKAGES`), so a server
+  renderer loads the framework copy the component loads, and Qwik's target is left out of the
+  dep optimizer, since its mount adapter needs Qwik's plugin. The mode is a project's
   (`resolveHarnessMode({ project })`): pixels compare live unless the project chose `baseline`,
   and CI may compare live. It runs in Chromium alone.
 - **A module that fails to compile fails its own spec alone.** The browser projects keep Vite from
