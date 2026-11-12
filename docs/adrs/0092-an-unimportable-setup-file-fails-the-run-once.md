@@ -32,8 +32,8 @@ the case's failure. Only the path tells the two apart.
 
 Not found yet. Fifteen cold runs of the browser projects, with `node_modules/.vite` deleted and
 load averages up to 120, passed every setup import. In 14 of them, a scratch Vite plugin parsed
-every JavaScript body the projects' servers sent, and every one parsed. So this record doesn't
-fix the cause. It makes the failure name itself when it comes back.
+every JavaScript body the projects' servers sent, and every one parsed. So this record makes the
+failure name itself when it comes back, and doesn't fix its cause.
 
 ## Decision
 
