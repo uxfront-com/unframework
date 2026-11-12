@@ -63,6 +63,7 @@ describe("the config and tooling codes", () => {
       ["UF7008", "packager-missing", "error"],
       ["UF7009", "packager-failed", "error"],
       ["UF7010", "host-option-incompatible", "warning"],
+      ["UF7011", "example-with-props", "error"],
       ["UF9002", "sourcemap-not-remapped", "error"],
       ["UF9003", "sourcemap-skipped", "warning"],
     ]);

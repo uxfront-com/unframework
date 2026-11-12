@@ -52,6 +52,8 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
   UF7008: RAISED_OUTSIDE_COMPILE,
   UF7009: RAISED_OUTSIDE_COMPILE,
   UF7010: RAISED_OUTSIDE_COMPILE,
+  UF7011:
+    "raised by @unframework.dev/visual for an example with props, outside `compile()`; tested in that package",
   UF8001:
     "Raised by a crashing compiler plugin: the L1 canary triggers it, and no case installs plugins.",
   UF9001:
