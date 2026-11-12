@@ -1,8 +1,9 @@
-// The `unframework` command line of the umbrella (ADR-0016, ADR-0076, ADR-0086, ADR-0087): the
-// commands of `@unframework.dev/cli`, and the ones that need packages above it. `test` runs Vitest
-// through `@unframework.dev/testing`, and `visual` the examples through `@unframework.dev/visual`,
-// both optional peer dependencies, so each loads when it runs, and says what to install when it
-// can't (D3 of the M7 plan: `cli` sits below `testing` and `visual` in LAYERS).
+// The `unframework` command line of the umbrella (ADR-0016, ADR-0076, ADR-0086, ADR-0087,
+// ADR-0088): the commands of `@unframework.dev/cli`, and the ones that need packages above it.
+// `test` runs Vitest through `@unframework.dev/testing`, and `visual` and `preview` the examples
+// through `@unframework.dev/visual`, both optional peer dependencies, so each loads when it runs,
+// and says what to install when it can't (D3 of the M7 plan: `cli` sits below `testing` and
+// `visual` in LAYERS).
 import { main as runCli } from "@unframework.dev/cli";
 import type { Command, Io, RunCommand } from "@unframework.dev/cli";
 
@@ -54,6 +55,8 @@ export type TestLoader = () => Promise<{ run: RunCommand }>;
 
 const loadTesting: TestLoader = () => import("@unframework.dev/testing/cli");
 const loadVisual: TestLoader = () => import("@unframework.dev/visual/cli");
+const loadPreview: TestLoader = () =>
+  import("@unframework.dev/visual/cli").then((module) => ({ run: module.preview }));
 
 /**
  * The `test` command. When a package it needs is not installed, it runs a command that says what to
@@ -73,6 +76,24 @@ export function visualCommand(load: TestLoader = loadVisual): Command {
     usage: "visual [--target <t>]... [--baseline | --live] [--update] [--out <dir>]",
     summary: "Render every example on every target and compare them, geometry then pixels.",
     load: () => loadOrExplain("visual", VISUAL_PACKAGES, load),
+  };
+}
+
+/**
+ * What `unframework preview` needs besides the umbrella: what `visual` needs, since it loads from
+ * the same entry, and Vite, whose dev servers it runs.
+ */
+export const PREVIEW_PACKAGES: readonly string[] = [...VISUAL_PACKAGES, "vite"];
+
+/**
+ * The `preview` command (ADR-0088), which loads and fails as `test` does. It runs until it is
+ * interrupted.
+ */
+export function previewCommand(load: TestLoader = loadPreview): Command {
+  return {
+    usage: "preview [--target <t>]... [--port <n>]",
+    summary: "Show every example and component side by side on every target, until interrupted.",
+    load: () => loadOrExplain("preview", PREVIEW_PACKAGES, load),
   };
 }
 
@@ -116,6 +137,7 @@ export function main(
   io?: Io,
   load: TestLoader = loadTesting,
   visual: TestLoader = loadVisual,
+  preview: TestLoader = loadPreview,
 ): Promise<number> {
   return runCli(
     argv,
@@ -123,6 +145,7 @@ export function main(
     new Map([
       ["test", testCommand(load)],
       ["visual", visualCommand(visual)],
+      ["preview", previewCommand(preview)],
     ]),
   );
 }

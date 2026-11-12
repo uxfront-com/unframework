@@ -1,6 +1,7 @@
 // `unframework visual [--target <t>]… [--baseline | --live] [--update] [--out <dir>]` (ADR-0087):
 // every example on every target, compared live by default. The umbrella registers it, as it does
-// `test` (ADR-0086), so `@unframework.dev/cli`, a layer below, never imports it.
+// `test` (ADR-0086), so `@unframework.dev/cli`, a layer below, never imports it. `preview` is
+// `unframework preview`'s entry (ADR-0088), which the umbrella loads from here too.
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -8,6 +9,9 @@ import { TARGET_NAMES } from "@unframework.dev/compiler";
 import type { TargetName } from "@unframework.dev/compiler";
 
 import { runVisual, VisualUsageError } from "./run.ts";
+
+export { parsePreviewArguments, preview } from "./preview/command.ts";
+export type { PreviewArguments } from "./preview/command.ts";
 
 /** Where the command runs and writes: the shape of `@unframework.dev/cli`'s `Io`. */
 export interface VisualIo {

@@ -17,8 +17,8 @@ process's.
 `extra` adds commands by name, each a `Command` (`usage`, `summary` and `load()`, which resolves to
 `{ run }`), listed after the built-in ones in the usage text. A package above this one adds its
 commands that way, since `LAYERS` keeps this package from importing it (ADR-0086): the umbrella's
-bin adds `test`, which `@unframework.dev/testing` runs, and `visual`, which `@unframework.dev/visual`
-runs (ADR-0087). An extra command may not take a built-in
+bin adds `test`, which `@unframework.dev/testing` runs, and `visual` and `preview`, which
+`@unframework.dev/visual` runs (ADR-0087, ADR-0088). An extra command may not take a built-in
 one's name, which exits 2.
 
 ## build

@@ -1,7 +1,9 @@
 // The browser half of the Astro toolchain: a static mount. Astro has no client runtime, so the
-// server renders the component (the `ufAstroRender` command) and this adapter only inserts the
-// HTML. Nothing is hydrated and no handler is attached; `<script>` elements parsed from HTML
-// never run.
+// server renders the component and this adapter only inserts the HTML. Nothing is hydrated and no
+// handler is attached; `<script>` elements parsed from HTML never run. The render goes through
+// `options.renderCommand` when a host passes one (the preview, ADR-0088), and through the
+// `ufAstroRender` Vitest browser command otherwise, which the test projects register. A host outside
+// Vitest serves its own module for `vitest/browser`, which throws when it loads anywhere else.
 import type { MountAdapter } from "@unframework.dev/codegen";
 import { commands } from "vitest/browser";
 
@@ -30,10 +32,12 @@ export const mount: MountAdapter = async (component, container, options) => {
       "Astro mount: expected what a `.uf.tsx` import yields in an Astro browser project ({ __ufTarget: 'astro', id, name }).",
     );
   }
+  // The host's transport, or else Vitest's command, which a host outside Vitest never reaches.
+  const renderCommand = options.renderCommand ?? ((request) => commands.ufAstroRender(request));
   const render = async (props: Readonly<Record<string, unknown>>) => {
     const copy = { ...props };
     assertSerialisableProps(copy);
-    return commands.ufAstroRender({ id: component.id, props: copy });
+    return renderCommand({ id: component.id, props: copy });
   };
   const rendered = await render(options.props ?? {});
   let styles = insert(container, component.name, rendered.html);

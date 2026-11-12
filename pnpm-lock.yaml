@@ -1176,15 +1176,24 @@ importers:
 
   packages/visual:
     dependencies:
+      '@unframework.dev/codegen':
+        specifier: workspace:*
+        version: link:../codegen
       '@unframework.dev/compiler':
         specifier: workspace:*
         version: link:../compiler
       '@unframework.dev/diagnostics':
         specifier: workspace:*
         version: link:../diagnostics
+      '@unframework.dev/ir':
+        specifier: workspace:*
+        version: link:../ir
       '@unframework.dev/testing':
         specifier: workspace:*
         version: link:../testing
+      '@unframework.dev/unplugin':
+        specifier: workspace:*
+        version: link:../unplugin
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
