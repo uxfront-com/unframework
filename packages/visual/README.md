@@ -1,10 +1,13 @@
 # @unframework.dev/visual
 
-Visual parity for a project's examples (plan §8.6, ADR-0087). It finds every `*.example.uf.tsx`
+Visual parity and the preview for a project's examples (plan §8.6, ADR-0087, ADR-0088). It finds every `*.example.uf.tsx`
 file, renders each on every target in Chromium, and compares each target's geometry, computed
 styles and pixels with the reference target's, live or against baselines committed beside each
 example. Each run writes `report.json` and an image of every capture. Private until its first
 release.
+
+`unframework preview` shows every example and component side by side on every target while you
+work (below).
 
 ```sh
 unframework visual [--target <t>]... [--baseline | --live] [--update] [--out <dir>]
@@ -86,9 +89,46 @@ as the setup file judged it (L8, L13). A follower whose reference never finished
 `reference-not-run` (ADR-0091), and a cell captured twice fails too, so a cell passes only when
 its own comparison and its test did.
 
+## The preview
+
+`unframework preview [--target <t>]... [--port <n>]` (`./cli`'s `preview`) runs `startPreview`,
+prints the shell's URL and each target's origin, and runs until SIGINT or SIGTERM, then closes
+every server and exits 0. It exits 2 on a usage error, nothing to show or a configuration that
+won't load. The docs page is `apps/web/content/docs/4.tooling/7.preview.md`.
+
+`startPreview({ root, targets?, port?, toolchainDirs? })` resolves to `{ url, frames, close }` once
+every server listens (ADR-0088):
+
+- **One Vite dev server per target** (`src/preview/servers.ts`), on `127.0.0.1` and a port the
+  system picks: the unframework plugin, the target's `vite("browser")` fragment (`loadToolchain`
+  from the testing package's `./config`) and the preview's plugin. That plugin serves the frame
+  page at `/__uf/frame`, its module, which mounts the selection with the target's adapter
+  (`toolchainClientFile`) and loads each entry lazily, and an empty `vitest/browser`. A target
+  that renders on the server (`renderCommandName`, Astro's) gets `POST /__uf/render`, which runs
+  the command and which the frame passes to the adapter as `MountOptions.renderCommand`. Vite's
+  `oxc` transform is set so Analog's Angular plugin leaves it on, and each server's cache is
+  `node_modules/.vite/uf-preview-<target>`. The package is kept out of pre-bundling.
+- **The shell** (`src/preview/shell.ts`) is a static page served at `/` on `port`, any free one
+  by default. It lists the examples and the components (`readCatalogue`: the default export of
+  each `.uf.tsx` under `srcDir`), shows one labelled iframe per target, and keeps the selection in
+  the URL's hash.
+- **The protocol** (`src/preview/protocol.ts`): the shell sends `render` messages, `{ seq, entry,
+props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on load and
+  `rendered` or `failed` with the `seq`. Each side checks the other's origin and window.
+- **Controls** (`src/preview/controls.ts`, `propControls`): `boolean`, `string`, `number` and a
+  union of string literals, as written or resolved from an alias (`ApiMember.literals`), with
+  `| undefined` read as optional. Any other prop is listed as not controllable, with its type.
+- **`close()`** stops the shell and every target's server, then what a toolchain's commands
+  started (`toolchain.close`, Astro's render servers). A start that fails closes what it started.
+
 ## Tests
 
 `pnpm --filter @unframework.dev/visual test` runs the package's tests in Node. `run.test.ts` runs a
 whole visual run in Chromium on `test/fixtures/differs`, whose example draws a blue box on Vue and a
 red one on React, and checks that the run fails and that the report holds the cell's diff and
 deltas. The command's tests drive `ufExampleCapture` with a fake browser.
+
+`preview.test.ts` starts the preview on `tests/e2e/design-system`, loads the shell in Chromium and checks seven
+frames from seven origins, a control that reaches all of them, and that no port listens after
+`close()` or after the command's SIGINT. `preview-catalogue.test.ts` covers the catalogue, the
+controls and the command's arguments.

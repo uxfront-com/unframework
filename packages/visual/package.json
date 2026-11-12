@@ -2,7 +2,7 @@
   "name": "@unframework.dev/visual",
   "version": "0.0.0",
   "private": true,
-  "description": "Visual parity for a project's examples: discovers *.example.uf.tsx files, renders each on every target and compares geometry and pixels, live or against committed baselines, and writes the run's report. Private until its first release.",
+  "description": "Visual parity and the preview for a project's examples: discovers *.example.uf.tsx files, renders each on every target and compares geometry and pixels, live or against committed baselines, writes the run's report, and shows every example and component side by side on every target. Private until its first release.",
   "keywords": [
     "unframework"
   ],
@@ -23,6 +23,7 @@
     ".": "./src/index.ts",
     "./browser": "./src/browser.ts",
     "./cli": "./src/cli.ts",
+    "./frame": "./src/preview/frame.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -39,6 +40,10 @@
         "types": "./dist/cli.d.ts",
         "default": "./dist/cli.js"
       },
+      "./frame": {
+        "types": "./dist/preview/frame.d.ts",
+        "default": "./dist/preview/frame.js"
+      },
       "./package.json": "./package.json"
     },
     "access": "public"
@@ -49,9 +54,12 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@unframework.dev/codegen": "workspace:*",
     "@unframework.dev/compiler": "workspace:*",
     "@unframework.dev/diagnostics": "workspace:*",
-    "@unframework.dev/testing": "workspace:*"
+    "@unframework.dev/ir": "workspace:*",
+    "@unframework.dev/testing": "workspace:*",
+    "@unframework.dev/unplugin": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",
@@ -67,6 +75,7 @@
   },
   "peerDependencies": {
     "@vitest/browser-playwright": "catalog:",
+    "vite": "catalog:",
     "vitest": "catalog:"
   }
 }
