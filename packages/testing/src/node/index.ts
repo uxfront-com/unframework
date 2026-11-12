@@ -50,6 +50,7 @@ export type {
   ProjectRecord,
   RunInfo,
   RunMode,
+  SetupFailure,
   Shard,
 } from "./matrix.ts";
 export {

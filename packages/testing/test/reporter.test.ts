@@ -43,11 +43,22 @@ const test = (project: string, uf?: UfLayerMeta, state: State = "passed", name =
   meta: () => (uf ? { uf } : {}),
   result: () => ({ state }),
 });
-const testModule = (project: string, tests: ReturnType<typeof test>[], uf?: UfLayerMeta) => ({
+const testModule = (
+  project: string,
+  tests: ReturnType<typeof test>[],
+  uf?: UfLayerMeta,
+  options: { file?: string; errors?: unknown[] } = {},
+) => ({
   project: { name: project },
+  moduleId: join(root, options.file ?? "cases/basics/hello/hello.test.ts"),
   meta: () => (uf ? { uf } : {}),
+  errors: () => options.errors ?? [],
   children: { allTests: () => tests },
 });
+
+/** What Vitest's browser tester throws when the page cannot import a file of the root. */
+const imported = (file: string, cause?: unknown) =>
+  new Error(`Failed to import test file ${join(root, file)}`, { cause });
 
 function harness(overrides: Partial<HarnessContext> = {}): HarnessContext {
   return {
@@ -82,12 +93,20 @@ const vitest = (
     only?: Record<string, string[]>;
     /** Project → the specs it includes, when not every case's. */
     include?: Record<string, string[]>;
+    /** Every project's setup files, relative to the root. */
+    setupFiles?: string[];
   } = {},
 ) => ({
   projects: projects.map((name) => ({
     name,
-    config: { root, include: options.include?.[name] ?? ["cases/**/*.test.ts"] },
+    config: {
+      root,
+      include: options.include?.[name] ?? ["cases/**/*.test.ts"],
+      setupFiles: (options.setupFiles ?? []).map((file) => join(root, file)),
+    },
     getProvidedContext: () => ({
+      // The target the project verifies, as the harness provides it to a browser project.
+      ...(name.startsWith("browser:") ? { target: name.slice("browser:".length) } : {}),
       ...(options.harness ? { ufHarness: options.harness } : {}),
       ...(options.only?.[name] ? { ufOnly: options.only[name] } : {}),
     }),
@@ -193,6 +212,106 @@ describe("ParityReporter", () => {
     reporter.onInit(vitest(["compile"], { harness: harness() }));
     reporter.onTestRunEnd([testModule("compile", [test("compile")])], [], "passed");
     expect(reporter.matrix).not.toHaveProperty("errors");
+  });
+
+  describe("a setup file a project could not import (ADR-0092)", () => {
+    const SETUP = "../packages/testing/src/setup.ts";
+    const setupFiles = [SETUP, "../packages/testing/src/targets/solid.ts"];
+    const cases = { "basics/hello": {}, "basics/nested": {} };
+    const syntax = new SyntaxError("Unexpected token ')'");
+    /** A spec file of `browser:solid` that failed on a file with this cause, so ran no test. */
+    const failed = (caseId: string, file: string, cause: unknown = syntax) =>
+      testModule("browser:solid", [], undefined, {
+        file: `cases/${caseId}/${caseId.split("/")[1]}.test.ts`,
+        errors: [imported(file, cause)],
+      });
+
+    it("records the setup file, each spec file that could not import it and the cause", () => {
+      const reporter = new ParityReporter({ reportsDir });
+      reporter.onInit(vitest(["browser:solid"], { harness: harness({ cases }), setupFiles }));
+      reporter.onTestRunEnd(
+        [
+          failed("basics/nested", SETUP),
+          failed("basics/hello", SETUP, new Error("a transform error", { cause: syntax })),
+        ],
+        [],
+        "failed",
+      );
+      expect(reporter.matrix?.setupFailures).toEqual([
+        {
+          project: "browser:solid",
+          target: "solid",
+          file: SETUP,
+          specs: [
+            { file: "cases/basics/hello/hello.test.ts", case: "basics/hello" },
+            { file: "cases/basics/nested/nested.test.ts", case: "basics/nested" },
+          ],
+          errors: [
+            "SyntaxError: Unexpected token ')'",
+            "a transform error; caused by: SyntaxError: Unexpected token ')'",
+          ],
+        },
+      ]);
+    });
+
+    it("keeps a spec file's own import failure, and any other error, a case's", () => {
+      const reporter = new ParityReporter({ reportsDir });
+      reporter.onInit(vitest(["browser:solid"], { harness: harness({ cases }), setupFiles }));
+      reporter.onTestRunEnd(
+        [
+          // The golden guard's evidence: the spec's component throws on import.
+          failed("basics/hello", "cases/basics/hello/hello.test.ts"),
+          testModule("browser:solid", [], undefined, {
+            file: "cases/basics/nested/nested.test.ts",
+            errors: [new Error(`Failed to import test file ${join(root, SETUP)}.bak`)],
+          }),
+        ],
+        [],
+        "failed",
+      );
+      expect(reporter.matrix).not.toHaveProperty("setupFailures");
+      expect(errors.join("\n")).toMatch(
+        /1 selected project\(s\) collected zero tests: browser:solid/,
+      );
+    });
+
+    it("leaves a project out of the zero-tests problem when none of its spec files could import a setup file", () => {
+      const reporter = new ParityReporter({ reportsDir });
+      reporter.onInit(
+        vitest(["browser:solid", "browser:vue"], { harness: harness({ cases }), setupFiles }),
+      );
+      reporter.onTestRunEnd(
+        [failed("basics/hello", SETUP), failed("basics/nested", setupFiles[1]!)],
+        [],
+        "failed",
+      );
+      expect(reporter.matrix?.empty).toEqual(["browser:solid", "browser:vue"]);
+      expect(reporter.matrix?.setupFailures?.map((failure) => failure.file)).toEqual([
+        SETUP,
+        setupFiles[1],
+      ]);
+      // browser:vue ran no spec file at all, so it keeps the line.
+      expect(errors.join("\n")).toMatch(
+        /1 selected project\(s\) collected zero tests: browser:vue\./,
+      );
+    });
+
+    it("keeps the zero-tests problem of a project with a spec file that failed for another reason", () => {
+      const reporter = new ParityReporter({ reportsDir });
+      reporter.onInit(vitest(["browser:solid"], { harness: harness({ cases }), setupFiles }));
+      reporter.onTestRunEnd(
+        [
+          failed("basics/hello", SETUP),
+          failed("basics/nested", "cases/basics/nested/nested.test.ts"),
+        ],
+        [],
+        "failed",
+      );
+      expect(reporter.matrix?.setupFailures).toHaveLength(1);
+      expect(errors.join("\n")).toMatch(
+        /1 selected project\(s\) collected zero tests: browser:solid/,
+      );
+    });
   });
 
   it("fails the run loudly when a selected project collected zero tests", () => {

@@ -16,7 +16,7 @@ import {
   stringifyMatrix,
   withoutProjects,
 } from "../src/node/matrix.ts";
-import type { PartialMatrix, ProjectRecord } from "../src/node/matrix.ts";
+import type { PartialMatrix, ProjectRecord, SetupFailure } from "../src/node/matrix.ts";
 
 const record = (target: string, layers: UfLayerMeta["layers"], caseId = "basics/hello") => ({
   case: caseId,
@@ -296,6 +296,30 @@ describe("narrowing", () => {
   });
 });
 
+/** A setup file `browser:<target>` could not import, for the spec files of these cases. */
+const setupFailure = (project: string, cases: string[]): SetupFailure => ({
+  project,
+  target: project.slice("browser:".length),
+  file: "../../packages/testing/src/setup.ts",
+  specs: cases.map((caseId) => ({ file: `cases/${caseId}/spec.test.ts`, case: caseId })),
+  errors: ["SyntaxError: Unexpected token ')'"],
+});
+
+/** A run in which only compile recorded, and the browser projects failed these setup files. */
+const withFailures = (failures: SetupFailure[]): PartialMatrix =>
+  buildPartialMatrix({
+    run: "all",
+    projects: ["compile", "browser:solid", "browser:vue"],
+    records: [{ project: "compile", record: record("solid", { L1: { status: "pass" } }) }],
+    finishedAt: "2026-10-01T10:00:00.000Z",
+    mode: null,
+    filtered: null,
+    shard: null,
+    empty: ["browser:solid", "browser:vue"],
+    quarantine: [],
+    setupFailures: failures,
+  });
+
 describe("withoutProjects", () => {
   it("drops a project's records and recomputes the merged cells", () => {
     const matrix = {
@@ -366,6 +390,45 @@ describe("withoutProjects", () => {
     // A scope that covers none of a matrix's records leaves it as it is.
     const untouched = new Map([["compile", { targets: new Set(["svelte"]) }]]);
     expect(withoutProjects(matrix, new Set(["compile"]), untouched)).toBe(matrix);
+  });
+
+  describe("a setup file a project could not import (ADR-0092)", () => {
+    it("keeps them in the partial matrix, and writes none when there are none", () => {
+      const failures = [setupFailure("browser:solid", ["basics/hello"])];
+      expect(withFailures(failures).setupFailures).toEqual(failures);
+      expect(withFailures([])).not.toHaveProperty("setupFailures");
+    });
+
+    it("drops a re-judged project's failures with the project, and keeps the others", () => {
+      const before = withFailures([
+        setupFailure("browser:solid", ["basics/hello"]),
+        setupFailure("browser:vue", ["basics/hello"]),
+      ]);
+      const kept = withoutProjects(before, new Set(["browser:solid"]));
+      expect(kept?.projects).toEqual(["browser:vue", "compile"]);
+      expect(kept?.setupFailures).toEqual([setupFailure("browser:vue", ["basics/hello"])]);
+      const none = withoutProjects(before, new Set(["browser:solid", "browser:vue"]));
+      expect(none).not.toHaveProperty("setupFailures");
+      expect(none?.projects).toEqual(["compile"]);
+    });
+
+    it("drops only the spec files of the cases a scope names, and keeps the project for the rest", () => {
+      const before = withFailures([
+        setupFailure("browser:solid", ["basics/hello", "basics/nested"]),
+      ]);
+      const kept = withoutProjects(
+        before,
+        new Set(["browser:solid"]),
+        new Map([["browser:solid", { cases: new Set(["basics/hello"]) }]]),
+      );
+      expect(kept?.projects).toContain("browser:solid");
+      expect(kept?.setupFailures).toEqual([setupFailure("browser:solid", ["basics/nested"])]);
+      // A scope of another target re-judged none of them.
+      const other = new Map([["browser:solid", { targets: new Set(["vue"]) }]]);
+      expect(withoutProjects(before, new Set(["browser:solid"]), other)?.setupFailures).toEqual(
+        before.setupFailures,
+      );
+    });
   });
 });
 

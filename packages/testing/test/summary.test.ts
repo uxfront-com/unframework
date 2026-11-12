@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { LayerName, QuarantineEntry, UfLayerMeta } from "../src/layers.ts";
 import { buildPartialMatrix, MATRIX_VERSION, stringifyMatrix } from "../src/node/matrix.ts";
-import type { PartialMatrix, RunMode, Shard } from "../src/node/matrix.ts";
+import type { PartialMatrix, RunMode, SetupFailure, Shard } from "../src/node/matrix.ts";
 import { summarise, writeSummary } from "../src/node/summary.ts";
 import type { SummaryExpectations } from "../src/node/summary.ts";
 import { LIVE_REFERENCE_SKIP, referenceNotRunSkip } from "../src/visual-types.ts";
@@ -1163,5 +1163,250 @@ describe("summarise: a reference that did not finish some cases (ADR-0091)", () 
     );
     expect(problems).toContain("basics/other › vue › L7: missing (no test recorded it).");
     expect(problems).toContain("basics/other › react › L10: missing (no test recorded it).");
+  });
+});
+
+/** A browser test's record of a case, which checked the scenario `initial`. */
+const browserRecord = (caseId: string, target: string, layers: UfLayerMeta["layers"]) => ({
+  project: `browser:${target}`,
+  record: { case: caseId, target, layers, test: `${caseId} > renders`, scenarios: ["initial"] },
+});
+
+describe("summarise: a setup file a project could not import (ADR-0092)", () => {
+  const setupExpected: SummaryExpectations = {
+    projects: ["compile", "browser:vue", "browser:react"],
+    cases: ["basics/hello", "basics/nested"],
+    targets: ["vue", "react"],
+    liveLayers: ["L1", "L7", "L10"],
+    notLiveReason: "not live in M1",
+  };
+  const CASES = ["basics/hello", "basics/nested"];
+  const SETUP = "../../packages/testing/src/setup.ts";
+  const CAUSE = "SyntaxError: Unexpected token ')'";
+  const pass = { status: "pass" } as const;
+  const blocked = { status: "skip", reason: referenceNotRunSkip("browser:vue") } as const;
+
+  /** The setup file `browser:<target>` could not import, for the spec files of these cases. */
+  const failure = (target: string, cases: string[], errors = [CAUSE]): SetupFailure => ({
+    project: `browser:${target}`,
+    target,
+    file: SETUP,
+    specs: cases.map((caseId) => ({
+      file: `cases/${caseId}/${caseId.split("/")[1]}.test.ts`,
+      case: caseId,
+    })),
+    errors,
+  });
+  /** Vue's records of a case it finished, as the reference. */
+  const reference = (caseId: string) =>
+    browserRecord(caseId, "vue", {
+      L7: pass,
+      L10: { status: "skip", reason: LIVE_REFERENCE_SKIP },
+    });
+  /** React's records of a case, as a follower. */
+  const follower = (caseId: string, L10: UfLayerMeta["layers"]["L10"] = pass) =>
+    browserRecord(caseId, "react", { L7: pass, L10 });
+
+  /** A run of every project, in which compile passed every case. */
+  function ran(
+    records: { project: string; record: UfLayerMeta }[],
+    options: {
+      failures?: SetupFailure[];
+      filtered?: string;
+      shard?: Shard;
+      empty?: string[];
+      at?: string;
+      run?: string;
+    } = {},
+  ): PartialMatrix {
+    return buildPartialMatrix({
+      run: options.run ?? "all",
+      projects: [...setupExpected.projects],
+      records: [
+        ...CASES.flatMap((caseId) =>
+          setupExpected.targets.map((target) => ({
+            project: "compile",
+            record: { case: caseId, target, layers: { L1: pass } } as UfLayerMeta,
+          })),
+        ),
+        ...records,
+      ],
+      finishedAt: options.at ?? "2026-10-01T10:00:00.000Z",
+      mode: { update: false, pixels: "live", canary: null },
+      filtered: options.filtered ?? null,
+      shard: options.shard ?? null,
+      empty: options.empty ?? [],
+      quarantine: [],
+      reference: "vue",
+      setupFailures: options.failures ?? [],
+    });
+  }
+
+  /** The one problem a setup file makes. */
+  const problem = (project: string, specs: number, followers = 0, cause = CAUSE) =>
+    `${project}: ${specs} spec file(s) could not import the setup file ${SETUP}, so none of their tests ran${followers ? `, and ${followers} follower cell(s) could not be compared at L10` : ""}. This is the harness's failure, not a case's. Vitest reported: ${cause}.`;
+
+  it("folds a follower's missing cells and scenario differences into one problem, listed first, in a complete run", () => {
+    const { problems, complete } = summarise(
+      [
+        ran(
+          [
+            ...CASES.map(reference),
+            {
+              project: "compile",
+              record: {
+                case: "basics/hello",
+                target: "vue",
+                layers: { L1: { status: "fail", message: "the output differs" } },
+              },
+            },
+          ],
+          { failures: [failure("react", CASES)], empty: ["browser:react"] },
+        ),
+      ],
+      setupExpected,
+    );
+    expect(complete).toBe(true);
+    expect(problems).toEqual([
+      problem("browser:react", 2),
+      "basics/hello › vue › L1: fail: the output differs",
+    ]);
+  });
+
+  it("reports it in a filtered run too, which checks no missing cell", () => {
+    const { problems, complete } = summarise(
+      [
+        ran([reference("basics/hello")], {
+          failures: [failure("react", ["basics/hello"])],
+          filtered: "files matching hello",
+          empty: ["browser:react"],
+        }),
+      ],
+      setupExpected,
+    );
+    expect(complete).toBe(false);
+    expect(problems).toEqual([problem("browser:react", 1)]);
+  });
+
+  it("reports one problem per project and setup file, each with its own spec files", () => {
+    const TARGET_SETUP = "../../packages/testing/src/targets/react.ts";
+    const { problems } = summarise(
+      [
+        ran(CASES.map(reference), {
+          failures: [
+            failure("react", ["basics/hello"]),
+            { ...failure("react", ["basics/nested"]), file: TARGET_SETUP },
+          ],
+          empty: ["browser:react"],
+        }),
+      ],
+      setupExpected,
+    );
+    expect(problems).toEqual([
+      problem("browser:react", 1),
+      problem("browser:react", 1).replace(SETUP, TARGET_SETUP),
+    ]);
+  });
+
+  it("keeps no zero-tests line for a project no shard ran a test of, for that reason", () => {
+    const records = CASES.map(reference);
+    const withFailure = summarise(
+      [
+        ran(records, {
+          failures: [failure("react", CASES)],
+          shard: { index: 1, count: 1 },
+          empty: ["browser:react"],
+          run: "all+shard-1-of-1",
+        }),
+      ],
+      setupExpected,
+    );
+    expect(withFailure.problems).toEqual([problem("browser:react", 2)]);
+    const without = summarise(
+      [ran(records, { shard: { index: 1, count: 1 }, empty: ["browser:react"] })],
+      setupExpected,
+    );
+    expect(without.problems).toContain(
+      "browser:react: collected zero tests in every shard. A project that runs nothing verifies nothing.",
+    );
+  });
+
+  it("counts the reference's blocked follower cells in place of ADR-0091's drop", () => {
+    const { problems } = summarise(
+      [
+        ran(
+          CASES.map((caseId) => follower(caseId, blocked)),
+          { failures: [failure("vue", CASES)], empty: ["browser:vue"] },
+        ),
+      ],
+      setupExpected,
+    );
+    expect(problems).toEqual([problem("browser:vue", 2, 2)]);
+  });
+
+  it("keeps ADR-0091's drop for a case the reference did not finish for another reason", () => {
+    const { problems } = summarise(
+      [
+        ran(
+          [
+            // Vue's page closed after basics/hello's test, before the file finished.
+            browserRecord("basics/hello", "vue", { L7: pass }),
+            follower("basics/hello", blocked),
+            follower("basics/nested", blocked),
+          ],
+          { failures: [failure("vue", ["basics/nested"])] },
+        ),
+      ],
+      setupExpected,
+    );
+    expect(problems).toEqual([
+      problem("browser:vue", 1, 1),
+      "browser:vue did not finish 1 of its spec files in this run (basics/hello); 1 follower cell(s) could not be compared at L10. Vitest reported: no error.",
+    ]);
+  });
+
+  it("counts each spec file once, by the newest run that recorded its case or failed on it", () => {
+    const older = ran(CASES.map(reference), {
+      failures: [failure("react", CASES)],
+      empty: ["browser:react"],
+    });
+    const again = ran(CASES.map(reference), {
+      failures: [failure("react", CASES)],
+      at: "2026-10-01T11:00:00.000Z",
+      run: "all+filtered-abc",
+      filtered: "files matching basics",
+    });
+    expect(summarise([older, again], setupExpected).problems).toEqual([
+      problem("browser:react", 2),
+    ]);
+    const fixed = ran([reference("basics/hello"), follower("basics/hello")], {
+      at: "2026-10-01T11:00:00.000Z",
+      run: "all+filtered-abc",
+      filtered: "files matching hello",
+    });
+    expect(summarise([older, fixed], setupExpected).problems).toEqual([
+      problem("browser:react", 1),
+    ]);
+  });
+
+  it("names the first few causes and counts the rest", () => {
+    const errors = ["a", "b", "c", "d", "e"];
+    const { problems } = summarise(
+      [ran(CASES.map(reference), { failures: [failure("react", CASES, errors)] })],
+      setupExpected,
+    );
+    expect(problems).toEqual([problem("browser:react", 2, 0, "a, b, c, and 2 more")]);
+  });
+
+  it("keeps every cell's and scenario's problem when no setup file failed, as for a spec's own import failure", () => {
+    const { problems } = summarise(
+      [ran(CASES.map(reference), { empty: ["browser:react"] })],
+      setupExpected,
+    );
+    expect(problems).toContain("basics/hello › react › L7: missing (no test recorded it).");
+    expect(problems).toContain("basics/nested › react › L10: missing (no test recorded it).");
+    expect(problems).toContainEqual(
+      expect.stringMatching(/^basics\/hello › react: its parity scenarios differ from vue's/),
+    );
   });
 });

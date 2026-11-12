@@ -1,13 +1,15 @@
 // The parity reporter (plan §7.4): collects every test's `meta.uf`, and each test file's (what
 // a file records after its last test: setup.ts's late console check), writes this run's partial
 // matrix to `<reportsDir>/parity-matrix.<run>.json`, and fails the run loudly (plan §7.7) when:
-// - a selected project collected no tests: a project that silently runs nothing is never green;
+// - a selected project collected no tests: a project that silently runs nothing is never green
+//   (one none of whose spec files could import a setup file is that failure's, ADR-0092);
 // - a test was skipped without recording why;
 // - two tests of a case share a name, so the summary could not tell them apart;
 // - a quarantine entry is stale, once the run has every record of its cell.
-// It also keeps the run's errors outside every test, which the summary quotes (ADR-0091).
+// It also keeps the run's errors outside every test, which the summary quotes (ADR-0091), and
+// each setup file a project could not import, which the summary reports once (ADR-0092).
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
 
 import { errorMessages } from "../errors.ts";
 import { BROWSER_ENGINES, caseOfFile } from "../harness.ts";
@@ -21,7 +23,7 @@ import {
   stringifyMatrix,
   withoutProjects,
 } from "./matrix.ts";
-import type { PartialMatrix, ProjectRecord, ProjectScope, Shard } from "./matrix.ts";
+import type { PartialMatrix, ProjectRecord, ProjectScope, SetupFailure, Shard } from "./matrix.ts";
 
 /** The part of a Vitest test case the reporter reads. */
 interface ReportedTest {
@@ -34,15 +36,20 @@ interface ReportedTest {
 /** The part of a Vitest test module the reporter reads. */
 interface ReportedModule {
   project: { name: string };
+  /** The spec file, usually its absolute path. */
+  moduleId: string;
   meta(): { uf?: UfLayerMeta };
+  /** Errors outside every test, such as a failed import. */
+  errors(): readonly unknown[];
   children: { allTests(): Iterable<ReportedTest> };
 }
 
 /** The part of a Vitest project the reporter reads. */
 interface ReportedProject {
   name: string;
-  config: { root: string; include: string[] };
-  getProvidedContext(): { ufHarness?: HarnessContext; ufOnly?: string[] };
+  /** `setupFiles` are absolute, as Vitest resolves them. */
+  config: { root: string; include: string[]; setupFiles: readonly string[] };
+  getProvidedContext(): { target?: string; ufHarness?: HarnessContext; ufOnly?: string[] };
 }
 
 /** The part of the Vitest instance the reporter reads. */
@@ -145,15 +152,22 @@ export class ParityReporter {
       }
     }
 
+    const { setupFailures, failedSetup } = setupFailuresOf(testModules, vitest.projects, harness);
     const empty = projects.filter((name) => !counts.get(name));
-    if (empty.length) {
+    // A project none of whose spec files could import a setup file collected nothing for that
+    // reason alone, which the summary names with Vitest's cause (ADR-0092).
+    const unexplained = empty.filter((name) => {
+      const ofProject = testModules.filter((module) => module.project.name === name);
+      return !ofProject.length || !ofProject.every((module) => failedSetup.has(module));
+    });
+    if (unexplained.length) {
       if (narrowed) {
         vitest.logger.log(
-          `[uf:parity] Not checking for empty projects: the run covers only ${narrowed}. Empty: ${empty.join(", ")}.`,
+          `[uf:parity] Not checking for empty projects: the run covers only ${narrowed}. Empty: ${unexplained.join(", ")}.`,
         );
       } else {
         problems.push(
-          `${empty.length} selected project(s) collected zero tests: ${empty.join(", ")}. A project that runs nothing verifies nothing.`,
+          `${unexplained.length} selected project(s) collected zero tests: ${unexplained.join(", ")}. A project that runs nothing verifies nothing.`,
         );
       }
     }
@@ -186,6 +200,7 @@ export class ParityReporter {
       // What the summary quotes when a reference's project stopped before it finished a case
       // its followers compare with (ADR-0091): Vitest reports the closed connection only here.
       errors: [...new Set(errors.map((error) => errorMessages(error).join("; caused by: ")))],
+      setupFailures,
     });
     if (complete) {
       // Every record of every cell is here: a quarantined cell that no longer fails is stale.
@@ -221,6 +236,98 @@ export class ParityReporter {
       );
       process.exitCode = 1;
     }
+  }
+}
+
+/**
+ * The setup files each project's spec files could not import, and those spec files' modules.
+ * The browser tester wraps whatever the import threw in `Failed to import test file <path>`, a
+ * spec's own import failure as much as a setup file's (`@vitest/browser`'s `importFile`), so only
+ * a path that is one of the project's `setupFiles` makes it the harness's failure (ADR-0092). A
+ * spec whose own module throws on import, as the golden guard makes it, stays a case's failure.
+ */
+function setupFailuresOf(
+  modules: readonly ReportedModule[],
+  projects: readonly ReportedProject[],
+  harness: HarnessContext | undefined,
+): { setupFailures: SetupFailure[]; failedSetup: Set<ReportedModule> } {
+  const byName = new Map(projects.map((project) => [project.name, project]));
+  const failures = new Map<string, SetupFailure & { causes: Set<string> }>();
+  const failedSetup = new Set<ReportedModule>();
+  for (const module of modules) {
+    const project = byName.get(module.project.name);
+    if (!project) continue;
+    for (const error of module.errors()) {
+      const [message = ""] = errorMessages(error);
+      const setupFile = project.config.setupFiles.find(
+        (file) => message === `${IMPORT_FAILED}${file}`,
+      );
+      if (setupFile === undefined) continue;
+      failedSetup.add(module);
+      const file = relativeTo(project.config.root, setupFile);
+      const key = JSON.stringify([project.name, file]);
+      const target = project.getProvidedContext().target;
+      const failure = failures.get(key) ?? {
+        project: project.name,
+        ...(target === undefined ? {} : { target }),
+        file,
+        specs: [],
+        errors: [],
+        causes: new Set<string>(),
+      };
+      const caseId = harness && caseIn(module.moduleId, harness);
+      failure.specs.push({
+        file: relativeTo(project.config.root, module.moduleId),
+        ...(caseId === undefined ? {} : { case: caseId }),
+      });
+      const causes = namedCauses(error);
+      failure.causes.add(causes.length ? causes.join("; caused by: ") : message);
+      failures.set(key, failure);
+      // Vitest stops a spec file at the first setup file it cannot import.
+      break;
+    }
+  }
+  const setupFailures = [...failures.values()]
+    .map(({ causes, ...failure }) => ({
+      ...failure,
+      specs: failure.specs.toSorted((a, b) => a.file.localeCompare(b.file)),
+      errors: [...causes].toSorted(),
+    }))
+    .toSorted((a, b) => a.project.localeCompare(b.project) || a.file.localeCompare(b.file));
+  return { setupFailures, failedSetup };
+}
+
+/**
+ * An error's causes, outermost first, each with its name where that says more than `Error`: a
+ * `SyntaxError` is a module that did not parse, a `TypeError` one the page could not fetch.
+ */
+function namedCauses(error: unknown): string[] {
+  const causes = errorMessages(error).slice(1);
+  let cause: unknown = error;
+  return causes.map((message) => {
+    cause = typeof cause === "object" && cause !== null && "cause" in cause ? cause.cause : null;
+    const name =
+      typeof cause === "object" && cause !== null && "name" in cause ? cause.name : undefined;
+    return typeof name === "string" && name !== "Error" && !message.startsWith(`${name}:`)
+      ? `${name}: ${message}`
+      : message;
+  });
+}
+
+/** What `@vitest/browser`'s tester throws when a module it imports fails, before the path. */
+const IMPORT_FAILED = "Failed to import test file ";
+
+/** A path relative to a root, with forward slashes. */
+function relativeTo(root: string, file: string): string {
+  return relative(root, file).split(sep).join("/");
+}
+
+/** The case a spec file belongs to, or none for a file outside every case. */
+function caseIn(file: string, harness: HarnessContext): string | undefined {
+  try {
+    return caseOfFile(file, harness);
+  } catch {
+    return undefined;
   }
 }
 

@@ -134,12 +134,34 @@ export interface PartialMatrix extends ParityMatrix, RunInfo {
    * project (ADR-0091). Absent when there were none.
    */
   errors?: string[];
+  /**
+   * The setup files a project could not import, each with the spec files that failed on it, so
+   * recorded nothing (ADR-0092). Absent when every spec file imported its setup files.
+   */
+  setupFailures?: SetupFailure[];
   /** Project → its own cells, so a later run of a project replaces exactly its cells. */
   byProject: Record<string, MatrixCells>;
   /** Project → its own scenarios, kept and replaced with its cells. */
   scenariosByProject: Record<string, MatrixScenarios>;
   /** Project → its own tests, kept and replaced with its cells. */
   testsByProject: Record<string, MatrixTests>;
+}
+
+/**
+ * A setup file of a project that some of its spec files could not import: Vitest wraps the cause
+ * in `Failed to import test file <setup file>`, and none of those files' tests ran (ADR-0092).
+ */
+export interface SetupFailure {
+  /** The Vitest project, such as `browser:solid`. */
+  project: string;
+  /** The target the project verifies, whose cells those spec files left without a record. */
+  target?: string;
+  /** The setup file, relative to the project's root, with forward slashes. */
+  file: string;
+  /** Each spec file that could not import it, relative to the project's root, and its case. */
+  specs: { file: string; case?: string }[];
+  /** What Vitest reported as the cause, each error's causes on one line, once each, sorted. */
+  errors: string[];
 }
 
 /** A merge of partial matrices (`parity-matrix.json`), with what it was merged from. */
@@ -344,6 +366,8 @@ export function buildPartialMatrix(input: {
   references?: Record<string, string>;
   /** The errors Vitest reported outside every test, one line each. */
   errors?: readonly string[];
+  /** The setup files the run's projects could not import. */
+  setupFailures?: readonly SetupFailure[];
 }): PartialMatrix {
   const projects = [...new Set(input.projects)].sort();
   const byProject: Record<string, MatrixCells> = {};
@@ -372,6 +396,7 @@ export function buildPartialMatrix(input: {
       ? { references: { ...input.references } }
       : {}),
     ...(input.errors?.length ? { errors: [...input.errors] } : {}),
+    ...(input.setupFailures?.length ? { setupFailures: [...input.setupFailures] } : {}),
     cases: mergeCells(Object.values(byProject)),
     scenarios: mergeScenarios(Object.values(scenariosByProject)),
     tests: mergeTests(Object.values(testsByProject)),
@@ -393,8 +418,9 @@ export interface ProjectScope {
 
 /**
  * A partial matrix without some projects' records (a newer run has them), or none if empty. A
- * project with a scope loses only the cells inside it, and goes once it has none left. A matrix
- * that loses nothing is returned as it is, and a project that loses nothing keeps its records.
+ * project with a scope loses only the cells inside it, and its setup failures' spec files inside
+ * it, and goes once it has none of either left. A matrix that loses nothing is returned as it
+ * is, and a project that loses nothing keeps its records.
  */
 export function withoutProjects(
   matrix: PartialMatrix,
@@ -404,9 +430,24 @@ export function withoutProjects(
   const byProject: Record<string, MatrixCells> = {};
   const scenariosByProject: Record<string, MatrixScenarios> = {};
   const testsByProject: Record<string, MatrixTests> = {};
+  const scopeOf = (project: string) =>
+    projects.has(project) ? (scopes.get(project) ?? {}) : undefined;
   let dropped = false;
+  const setupFailures = (matrix.setupFailures ?? []).flatMap((failure) => {
+    const scope = scopeOf(failure.project);
+    // As `outsideScope` judges a cell: a scope without cases or targets covers all of them.
+    const covered = (spec: SetupFailure["specs"][number]) =>
+      scope !== undefined &&
+      (scope.cases === undefined || (spec.case !== undefined && scope.cases.has(spec.case))) &&
+      (scope.targets === undefined ||
+        (failure.target !== undefined && scope.targets.has(failure.target)));
+    const specs = failure.specs.filter((spec) => !covered(spec));
+    if (specs.length === failure.specs.length) return [failure];
+    dropped = true;
+    return specs.length ? [{ ...failure, specs }] : [];
+  });
   for (const project of matrix.projects) {
-    const scope = projects.has(project) ? (scopes.get(project) ?? {}) : undefined;
+    const scope = scopeOf(project);
     const before = [
       matrix.byProject[project] ?? {},
       matrix.scenariosByProject[project] ?? {},
@@ -416,7 +457,11 @@ export function withoutProjects(
     const scenarios = outsideScope(before[1], scope);
     const tests = outsideScope(before[2], scope);
     if (cells !== before[0] || scenarios !== before[1] || tests !== before[2]) dropped = true;
-    if (scope && ![cells, scenarios, tests].some((set) => Object.keys(set).length)) {
+    if (
+      scope &&
+      ![cells, scenarios, tests].some((set) => Object.keys(set).length) &&
+      !setupFailures.some((failure) => failure.project === project)
+    ) {
       dropped = true;
       continue;
     }
@@ -427,10 +472,12 @@ export function withoutProjects(
   if (!dropped) return matrix;
   const kept = matrix.projects.filter((project) => project in byProject);
   if (!kept.length) return undefined;
+  const { setupFailures: _superseded, ...rest } = matrix;
   return {
-    ...matrix,
+    ...rest,
     projects: kept,
     empty: matrix.empty.filter((project) => kept.includes(project)),
+    ...(setupFailures.length ? { setupFailures } : {}),
     byProject,
     scenariosByProject,
     testsByProject,

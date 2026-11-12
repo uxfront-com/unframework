@@ -398,7 +398,10 @@ case)`); its projects run after the run's reference and before every other targe
   (`testKey`): the scenarios it checked, or why it was skipped by capability or ran against a
   stand-in (`tests`); and what
   a test file recorded after its last test, the run's mode, its reference target and when it
-  ended. It fails the run when a selected project collected no tests, when a test was skipped
+  ended. It also keeps each setup file a project couldn't import (`setupFailures`), with the spec
+  files that failed on it and Vitest's cause: the browser tester wraps that cause in `Failed to
+import test file <setup file>`. It fails the run when a selected project collected no tests
+  (but for one none of whose spec files could import a setup file), when a test was skipped
   without recording why, when two tests of a case share a name, and, once a run has every record
   of a cell, on a stale quarantine entry. A run of some projects replaces exactly those projects' records in earlier
   matrices; a filtered run (files, test names, tags, `--changed`, `related`, watch mode) or a
@@ -423,7 +426,10 @@ case)`); its projects run after the run's reference and before every other targe
   records (`SummaryExpectations.recordedOnlyBy`) reads `skip(not in this run)` in a run without
   that project in full, unless every project must have reported. The Markdown lists each test a
   target skipped, by capability or for want of output, or ran against a stand-in, under its
-  case's table.
+  case's table. A setup file a project couldn't import is one problem for that project and file,
+  listed first, in a filtered run too: it stands in for the missing browser cells, the scenario
+  differences and, for a reference, the blocked follower cells of the cases whose spec files
+  failed on it (ADR-0092).
 
 ## Normalisation (`@unframework.dev/testing/normalize`)
 

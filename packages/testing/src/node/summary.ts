@@ -5,7 +5,9 @@
 // have), every missing or partly run project, every missing (case, target, live layer) cell and
 // every target whose parity scenarios of a case differ from the reference's. A reference's
 // browser project that stopped before it finished some cases is one problem, first, rather than
-// one per cell it left without a comparison (ADR-0091).
+// one per cell it left without a comparison (ADR-0091). Before it, a setup file a project could
+// not import is one problem per project and setup file, rather than one per cell, scenario or
+// case its spec files left without a record (ADR-0092).
 import { appendFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -31,7 +33,7 @@ import {
   settleQuarantine,
   stringifyMatrix,
 } from "./matrix.ts";
-import type { MatrixCells, MergedMatrix, PartialMatrix, RunInfo } from "./matrix.ts";
+import type { MatrixCells, MergedMatrix, PartialMatrix, RunInfo, SetupFailure } from "./matrix.ts";
 import { isCI } from "./mode.ts";
 import { readPartialMatrices } from "./reporter.ts";
 
@@ -189,8 +191,14 @@ export function summarise(
   const problems: string[] = [];
   const live = new Set(expected.liveLayers);
   const knownCases = new Set(expected.cases);
+  const setup = setupProblems(partials);
+  // A browser layer of a case whose spec file could not import a setup file on the project of
+  // its target: part of that setup file's one problem (ADR-0092).
+  const notImported = (caseId: string, target: string, layer: LayerName) =>
+    setup.cells.has(cellKey(caseId, target)) && BROWSER_LAYERS.includes(layer);
 
   for (const project of coverage.emptyProjects) {
+    if (setup.emptied(project)) continue;
     problems.push(
       `${project}: collected zero tests in every shard. A project that runs nothing verifies nothing.`,
     );
@@ -233,7 +241,11 @@ export function summarise(
           if (!live.has(layer)) cells[layer] = `skip(${expected.notLiveReason})`;
           else if (!judgement.requireComplete && recordedBy && !ranInFull(merged, recordedBy))
             cells[layer] = `skip(${NOT_IN_THIS_RUN_SKIP})`;
-          else if ((checkMissing || recordedBy) && !dropped(caseId, target, layer))
+          else if (
+            (checkMissing || recordedBy) &&
+            !dropped(caseId, target, layer) &&
+            !notImported(caseId, target, layer)
+          )
             problems.push(`${caseId} › ${target} › ${layer}: missing (no test recorded it).`);
           continue;
         }
@@ -255,10 +267,15 @@ export function summarise(
     if (checkMissing && reference !== null && !blockedCases.has(caseId)) {
       // A case that names its own reference (ADR-0057) is judged against that target's scenarios.
       const judge = references[caseId] ?? reference;
-      problems.push(...scenarioProblems(merged, caseId, judge, expected.targets));
+      // A target whose spec file never ran checked no scenario; without the judge's, there is
+      // nothing to compare with (`scenarioProblems`).
+      const compared = expected.targets.filter(
+        (target) => !setup.cells.has(cellKey(caseId, target)),
+      );
+      problems.push(...scenarioProblems(merged, caseId, judge, compared));
     }
   }
-  problems.unshift(...dropProblems(drops, partials));
+  problems.unshift(...setup.problems(drops), ...dropProblems(withoutSetup(drops, setup), partials));
   const matrix: MergedMatrix = {
     ...merged,
     cases: Object.fromEntries(Object.entries(merged.cases).sort(([a], [b]) => a.localeCompare(b))),
@@ -291,6 +308,7 @@ type ReferenceDrops = Map<string, ReferenceDrop> & {
 };
 
 const cellKey = (caseId: string, target: string) => `${caseId}\u0000${target}`;
+const caseOfKey = (key: string) => key.slice(0, key.indexOf("\u0000"));
 
 /** The project a blocked L10 cell names, or none for any other cell. */
 function blockedBy(cell: string | undefined): string | undefined {
@@ -316,6 +334,125 @@ function referenceDrops(cells: MatrixCells): ReferenceDrops {
   }
   return Object.assign(drops, {
     blocks: (caseId: string, target: string) => blocked.has(cellKey(caseId, target)),
+  });
+}
+
+/** A setup file a project could not import, across the merged runs (ADR-0092). */
+interface SetupProblem {
+  project: string;
+  file: string;
+  /** The spec files that could not import it, in the newest run of each. */
+  specs: Set<string>;
+  /** Their cases. */
+  cases: Set<string>;
+  /** What Vitest reported as the cause. */
+  errors: Set<string>;
+}
+
+/** Every setup problem of the merged runs, and what the summary folds into them. */
+interface SetupProblems {
+  /** By project, then setup file. */
+  list: SetupProblem[];
+  /** The (case, target) pairs whose browser cells no spec file recorded, by `cellKey`. */
+  cells: Set<string>;
+  /** Whether every run in which the project collected no test also failed its setup import. */
+  emptied(project: string): boolean;
+  /** One line per setup problem; a reference's counts the follower cells its drop blocked. */
+  problems(drops: ReferenceDrops): string[];
+}
+
+/**
+ * The setup problems of partial matrices. Of each project's spec file, the newest run that
+ * recorded its case or failed on it counts, as for a cell: a later run that recorded the case,
+ * or failed on another setup file, replaces an older run's failure.
+ */
+function setupProblems(partials: readonly PartialMatrix[]): SetupProblems {
+  const ordered = partials.toSorted(
+    (a, b) => a.finishedAt.localeCompare(b.finishedAt) || a.run.localeCompare(b.run),
+  );
+  /** `project`, then the spec file → the failure that holds it now. */
+  const latest = new Map<string, { failure: SetupFailure; spec: SetupFailure["specs"][number] }>();
+  for (const partial of ordered) {
+    for (const [project, cells] of Object.entries(partial.byProject)) {
+      for (const [key, { failure, spec }] of latest) {
+        if (failure.project === project && spec.case !== undefined && spec.case in cells) {
+          latest.delete(key);
+        }
+      }
+    }
+    for (const failure of partial.setupFailures ?? []) {
+      for (const spec of failure.specs) {
+        latest.set(JSON.stringify([failure.project, spec.file]), { failure, spec });
+      }
+    }
+  }
+  const byFile = new Map<string, SetupProblem & { target?: string }>();
+  for (const { failure, spec } of latest.values()) {
+    const key = JSON.stringify([failure.project, failure.file]);
+    const problem = byFile.get(key) ?? {
+      project: failure.project,
+      file: failure.file,
+      ...(failure.target === undefined ? {} : { target: failure.target }),
+      specs: new Set<string>(),
+      cases: new Set<string>(),
+      errors: new Set<string>(),
+    };
+    problem.specs.add(spec.file);
+    if (spec.case !== undefined) problem.cases.add(spec.case);
+    for (const error of failure.errors) problem.errors.add(error);
+    byFile.set(key, problem);
+  }
+  const list = [...byFile.values()].toSorted(
+    (a, b) => a.project.localeCompare(b.project) || a.file.localeCompare(b.file),
+  );
+  const cells = new Set(
+    list.flatMap(({ target, cases }) =>
+      target === undefined ? [] : [...cases].map((caseId) => cellKey(caseId, target)),
+    ),
+  );
+  return {
+    list,
+    cells,
+    emptied: (project) => {
+      const runs = partials.filter((partial) => partial.empty.includes(project));
+      return (
+        runs.length > 0 &&
+        runs.every((partial) =>
+          partial.setupFailures?.some((failure) => failure.project === project),
+        )
+      );
+    },
+    problems: (drops) =>
+      list.map(({ project, file, specs, cases, errors }) => {
+        const blocked = [...(drops.get(project)?.cells ?? [])].filter((key) =>
+          cases.has(caseOfKey(key)),
+        ).length;
+        const followers = blocked
+          ? `, and ${blocked} follower cell(s) could not be compared at L10`
+          : "";
+        return `${project}: ${specs.size} spec file(s) could not import the setup file ${file}, so none of their tests ran${followers}. This is the harness's failure, not a case's. Vitest reported: ${named([...errors].toSorted())}.`;
+      }),
+  };
+}
+
+/**
+ * Each reference drop without the cases whose spec file could not import a setup file on the
+ * reference's project: that file's problem names them, and their blocked follower cells, in
+ * place of ADR-0091's. A drop left without cases is no problem of its own.
+ */
+function withoutSetup(drops: ReferenceDrops, setup: SetupProblems): ReferenceDrops {
+  const kept = new Map<string, ReferenceDrop>();
+  for (const [project, drop] of drops) {
+    const failed = new Set(
+      setup.list.filter((problem) => problem.project === project).flatMap((p) => [...p.cases]),
+    );
+    const cases = new Set([...drop.cases].filter((caseId) => !failed.has(caseId)));
+    if (!cases.size) continue;
+    const cells = new Set([...drop.cells].filter((key) => cases.has(caseOfKey(key))));
+    kept.set(project, { cases, cells });
+  }
+  return Object.assign(kept, {
+    blocks: (caseId: string, target: string) => drops.blocks(caseId, target),
   });
 }
 
