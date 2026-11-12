@@ -16,7 +16,7 @@ export interface RenderMessage {
   kind: "render";
   /** Grows with each message the shell sends, so a frame's answer names what it rendered. */
   seq: number;
-  /** The entry's id, an example's or a component's. */
+  /** The entry's key, `example:<id>` or `component:<id>` (`entryKey`). */
   entry: string;
   props: Record<string, unknown>;
 }

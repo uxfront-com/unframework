@@ -16,8 +16,16 @@ const COMPONENT_SUFFIX = ".uf.tsx";
 
 /** One entry the shell can select: an example, or a component with its controls. */
 export type PreviewEntry =
-  | { kind: "example"; id: string; file: string }
-  | ({ kind: "component"; id: string; file: string; name: string } & PropControls);
+  | { kind: "example"; key: string; id: string; file: string }
+  | ({ kind: "component"; key: string; id: string; file: string; name: string } & PropControls);
+
+/**
+ * The key the frames and the shell's URL name an entry by: its kind and its id, since an example
+ * kept beside its component (`src/Card.example.uf.tsx`, `src/Card.uf.tsx`) has the component's id.
+ */
+export function entryKey(kind: PreviewEntry["kind"], id: string): string {
+  return `${kind}:${id}`;
+}
 
 /** What the shell lists, in order: the examples, then the components, each sorted by id. */
 export interface PreviewCatalogue {
@@ -58,6 +66,7 @@ export function discoverComponentFiles(srcDir: string): string[] {
 export async function readCatalogue(root: string, srcDir: string): Promise<PreviewCatalogue> {
   const examples = discoverExamples({ root }).map((example) => ({
     kind: "example" as const,
+    key: entryKey("example", example.id),
     id: example.id,
     file: example.file,
   }));
@@ -73,9 +82,11 @@ export async function readCatalogue(root: string, srcDir: string): Promise<Previ
       const api = await resolver({ specifier, importer: "preview.uf.tsx" }).catch(() => undefined);
       const component = api?.components.find((each) => each.export === "default");
       if (!component) continue;
+      const id = idOf(root, file, COMPONENT_SUFFIX);
       components.push({
         kind: "component",
-        id: idOf(root, file, COMPONENT_SUFFIX),
+        key: entryKey("component", id),
+        id,
         file,
         name: component.name,
         ...propControls(component.props),

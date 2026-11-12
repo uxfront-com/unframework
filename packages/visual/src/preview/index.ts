@@ -56,7 +56,7 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
   const targets = previewTargets(config.targets, options.targets);
   const catalogue = await readCatalogue(root, config.srcDir);
   const entries = Object.fromEntries(
-    [...catalogue.examples, ...catalogue.components].map((entry) => [entry.id, entry.file]),
+    [...catalogue.examples, ...catalogue.components].map((entry) => [entry.key, entry.file]),
   );
   if (!Object.keys(entries).length) {
     throw new VisualUsageError(

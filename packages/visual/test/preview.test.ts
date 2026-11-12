@@ -145,6 +145,49 @@ describe("startPreview", () => {
     },
   );
 
+  it(
+    "shows an example kept beside its component apart from the component",
+    { timeout: 180_000 },
+    async () => {
+      const root = fileURLToPath(new URL("fixtures/beside", import.meta.url));
+      const preview = await startPreview({ root });
+      const browser = await chromium.launch();
+      try {
+        const page = await browser.newPage();
+        // The example is the page's first entry, and its key names it in the URL.
+        await page.goto(preview.url);
+        await expect.poll(() => page.evaluate(() => location.hash)).toBe("#example:src/Card");
+        const nav = page.getByRole("navigation");
+        const current = nav.locator('button[aria-current="true"]');
+        await expect.poll(() => current.count()).toBe(1);
+        expect(await current.getAttribute("data-entry")).toBe("example:src/Card");
+        for (const { target } of preview.frames) {
+          const frame = page.frameLocator(`figure[data-target="${target}"] iframe`);
+          await frame.getByText("Release notes").waitFor({ timeout: 120_000 });
+        }
+        // The component under the same id renders with no content.
+        await nav.getByRole("listitem").nth(1).getByRole("button", { name: "src/Card" }).click();
+        await expect.poll(() => current.count()).toBe(1);
+        expect(await current.getAttribute("data-entry")).toBe("component:src/Card");
+        for (const { target } of preview.frames) {
+          const frame = page.frameLocator(`figure[data-target="${target}"] iframe`);
+          await frame.locator("article.card").waitFor({ state: "attached" });
+          await expect.poll(() => frame.getByText("Release notes").count()).toBe(0);
+        }
+        // A link to the example shows it again.
+        await page.goto(`${preview.url}#example:src/Card`);
+        expect(await current.getAttribute("data-entry")).toBe("example:src/Card");
+        for (const { target } of preview.frames) {
+          const frame = page.frameLocator(`figure[data-target="${target}"] iframe`);
+          await frame.getByText("Release notes").waitFor();
+        }
+      } finally {
+        await browser.close();
+        await preview.close();
+      }
+    },
+  );
+
   it("refuses a target the project lacks, a port that is not one, and nothing to show", async () => {
     const root = project({ "unframework.config.ts": 'export default { targets: ["vue"] };\n' });
     await expect(startPreview({ root })).rejects.toThrow("Nothing to preview");

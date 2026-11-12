@@ -164,6 +164,13 @@ describe("readCatalogue", () => {
     const catalogue = await readCatalogue(root, join(root, "src"));
     expect(catalogue.components.map((each) => each.id)).toEqual(["src/Shown"]);
     expect(catalogue.examples.map((each) => each.id)).toEqual(["src/Shown"]);
+    // The example beside its component shares its id, so each is keyed by its kind too.
+    expect(catalogue.examples.map((each) => [each.key, each.file])).toEqual([
+      ["example:src/Shown", join(root, "src/Shown.example.uf.tsx")],
+    ]);
+    expect(catalogue.components.map((each) => [each.key, each.file])).toEqual([
+      ["component:src/Shown", join(root, "src/Shown.uf.tsx")],
+    ]);
   });
 });
 

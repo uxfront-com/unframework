@@ -14,8 +14,9 @@ import { PREVIEW_HOST } from "./servers.ts";
 /** What the shell page is given: the frames' origins and the catalogue, without file paths. */
 export interface ShellData {
   frames: { target: string; origin: string }[];
-  examples: { id: string }[];
+  examples: { key: string; id: string }[];
   components: {
+    key: string;
     id: string;
     name: string;
     controls: PreviewCatalogue["components"][number]["controls"];
@@ -30,8 +31,9 @@ export function shellData(
 ): ShellData {
   return {
     frames: frames.map(({ target, origin }) => ({ target, origin })),
-    examples: catalogue.examples.map(({ id }) => ({ id })),
-    components: catalogue.components.map(({ id, name, controls, uncontrolled }) => ({
+    examples: catalogue.examples.map(({ key, id }) => ({ key, id })),
+    components: catalogue.components.map(({ key, id, name, controls, uncontrolled }) => ({
+      key,
       id,
       name,
       controls,
@@ -224,46 +226,45 @@ function shellScript(constants: { frame: string; message: string }): void {
     }
   };
 
-  const select = (id: string) => {
-    const component = data.components.find((each) => each.id === id);
-    if (!component && !data.examples.some((each) => each.id === id)) return;
-    selected = id;
-    heading.textContent = component ? `${component.name} (${id})` : id;
+  // An entry by its key, `example:<id>` or `component:<id>`: an example beside its component
+  // shares its id.
+  const select = (key: string) => {
+    const component = data.components.find((each) => each.key === key);
+    const example = data.examples.find((each) => each.key === key);
+    if (!component && !example) return;
+    selected = key;
+    heading.textContent = component ? `${component.name} (${component.id})` : example!.id;
     for (const button of nav.querySelectorAll<HTMLButtonElement>("button")) {
-      button.setAttribute("aria-current", String(button.dataset.entry === id));
+      button.setAttribute("aria-current", String(button.dataset.entry === key));
     }
     showControls(component);
     props = component ? propsOf(component.controls) : {};
-    if (location.hash !== `#${id}`) history.replaceState(null, "", `#${id}`);
+    if (location.hash !== `#${key}`) history.replaceState(null, "", `#${key}`);
     sendAll();
   };
 
-  const section = (title: string, ids: string[]) => {
+  const section = (title: string, entries: { key: string; id: string }[]) => {
     const label = document.createElement("h2");
     label.textContent = title;
     const list = document.createElement("ul");
-    for (const id of ids) {
+    for (const { key, id } of entries) {
       const item = document.createElement("li");
       const button = document.createElement("button");
       button.type = "button";
-      button.dataset.entry = id;
+      button.dataset.entry = key;
       button.textContent = id;
-      button.addEventListener("click", () => select(id));
+      button.addEventListener("click", () => select(key));
       item.append(button);
       list.append(item);
     }
     nav.append(label, list);
   };
-  section(
-    "Examples",
-    data.examples.map((each) => each.id),
-  );
-  section(
-    "Components",
-    data.components.map((each) => each.id),
-  );
+  section("Examples", data.examples);
+  section("Components", data.components);
   const first = decodeURIComponent(location.hash.slice(1));
-  select(first || data.examples[0]?.id || data.components[0]?.id || "");
+  select(first || data.examples[0]?.key || data.components[0]?.key || "");
+  // A link to another entry on this page, or the browser's back and forward, changes the hash.
+  window.addEventListener("hashchange", () => select(decodeURIComponent(location.hash.slice(1))));
 }
 
 /** The running shell server. */

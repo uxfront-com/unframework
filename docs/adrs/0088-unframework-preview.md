@@ -44,7 +44,9 @@ toolchainDirs? })` in `@unframework.dev/visual` starts a dev server for each of 
   frame answers `{ kind: "rendered" | "failed", target, seq, message? }`. A frame says
   `{ kind: "ready", target }` on every load, and the shell then sends it the current selection, so
   a reload after Vite optimises a dependency it found recovers by itself. The same entry with new
-  props rerenders in place, through the adapter's `rerender`. Each side checks the other's origin
+  props rerenders in place, through the adapter's `rerender`. An entry is named by its kind and
+  its id, `example:src/Card` or `component:src/Card`, in the messages and in the shell's URL hash,
+  since an example kept beside its component has the component's id. Each side checks the other's origin
   and window: the shell passes its origin in the frame's URL (`?shell=`), and the shell takes
   answers only from its iframes, at their servers' origins.
 - **Controls (A4 of the M7 plan).** The shell lists the examples, which `discoverExamples` finds,
@@ -95,6 +97,9 @@ toolchainDirs? })` in `@unframework.dev/visual` starts a dev server for each of 
 **Negative:**
 
 - Seven dev servers take seven ports and the memory of seven Vite pipelines.
+- Two previews of one project in one process share Astro's render server, and closing either
+  closes it, since Astro's `close()` closes every render server it started. The command runs one
+  preview per process.
 - A frame may reload once while Vite optimises a dependency it found, and the shell sends the
   selection again.
 - Slots render empty and models can't be set, so a component that shows its content through them
