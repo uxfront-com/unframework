@@ -25,6 +25,7 @@ The umbrella's bin registers the command, and loads `./cli` only when it runs, s
 An example is a `*.example.uf.tsx` file whose default export takes no props. `discoverExamples`
 finds them under the root at any depth, sorted by id, the path from the root without the suffix
 (`examples/Buttons`). It skips `node_modules`, `dist`, dot directories and the run directory.
+
 `checkExamples` compiles each one with no target and reports UF7011 at the props parameter of a
 default export that declares props. It leaves an example that doesn't compile to the run, which
 fails it on every target with the error, and throws for one with no default export.
@@ -47,7 +48,7 @@ directory.
    calls `captureExample` from `./browser`, and a `case.json` whose `main` is the example.
 5. Builds `defineTestConfig({ root, pixels, include })`, keeps its `browser:<target>` projects,
    and gives each the `ufExampleCapture` command and the run's `ufVisual` context. It keeps this
-   package out of the dep optimizer, as the testing package is.
+   package out of Vite's dependency pre-bundling, as the testing package is.
 6. Runs them with Vitest in this process, so the command's captures reach the report, then writes
    `<out>/report.json` and prints a line per example and the report's path.
 
@@ -80,6 +81,6 @@ too, so a cell passes only when its own comparison did.
 ## Tests
 
 `pnpm --filter @unframework.dev/visual test` runs the package's tests in Node. `run.test.ts` runs a
-whole visual run in Chromium on `test/fixtures/differs`, whose example renders differently on React
-and Vue, and checks that the run fails and that the report holds the cell's diff and deltas. The
-command's tests drive `ufExampleCapture` with a fake browser.
+whole visual run in Chromium on `test/fixtures/differs`, whose example draws a blue box on Vue and a
+red one on React, and checks that the run fails and that the report holds the cell's diff and
+deltas. The command's tests drive `ufExampleCapture` with a fake browser.

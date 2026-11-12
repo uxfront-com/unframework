@@ -11,9 +11,9 @@ Plan §8.6 asks for visual parity on a project's own examples: `*.example.uf.tsx
 on every target and compared geometry first, then pixels, against one shared baseline or live.
 L10 already does this for the corpus, but every piece of it was bound to a case's scenario:
 
-- the baseline paths were the case's `__screenshots__/` and `__expected__/geometry.<name>.json`;
-- the reference's live capture and a failure's images went to the run's scratch, by case id;
-- a passing capture left no image, so nothing could show what each target drew.
+- The baseline paths were the case's `__screenshots__/` and `__expected__/geometry.<name>.json`.
+- The reference's live capture and a failure's images went to the run's scratch, by case id.
+- A passing capture left no image, so nothing could show what each target drew.
 
 Nothing found examples, and `unframework build` compiled every `**/*.uf.{tsx,ts}` under `srcDir`,
 so an example kept beside its component would have been packaged.
