@@ -48,6 +48,8 @@ tests/integration/.live
 # The scratch of a project's run (`unframework test`): the update ledger, live captures, diffs
 tests/e2e/design-system/.reports
 tests/e2e/design-system/.live
+# A visual run's generated specs, captures and report (`unframework visual`, ADR-0087)
+.unframework/
 tests/e2e/.tarballs/
 # Vitest browser mode attachments and failure screenshots
 .vitest-attachments

@@ -1,7 +1,8 @@
-// The `unframework` command line of the umbrella (ADR-0016, ADR-0076, ADR-0086): the commands of
-// `@unframework.dev/cli`, and the ones that need packages above it. `test` runs Vitest through
-// `@unframework.dev/testing`, an optional peer dependency, so it loads when it runs, and says what
-// to install when it can't (D3 of the M7 plan: `cli` sits below `testing` in LAYERS).
+// The `unframework` command line of the umbrella (ADR-0016, ADR-0076, ADR-0086, ADR-0087): the
+// commands of `@unframework.dev/cli`, and the ones that need packages above it. `test` runs Vitest
+// through `@unframework.dev/testing`, and `visual` the examples through `@unframework.dev/visual`,
+// both optional peer dependencies, so each loads when it runs, and says what to install when it
+// can't (D3 of the M7 plan: `cli` sits below `testing` and `visual` in LAYERS).
 import { main as runCli } from "@unframework.dev/cli";
 import type { Command, Io, RunCommand } from "@unframework.dev/cli";
 
@@ -14,6 +15,9 @@ export const TEST_PACKAGES: readonly string[] = [
   "@vitest/browser-playwright",
   "playwright",
 ];
+
+/** What `unframework visual` needs besides the umbrella: the visual package and the test runner. */
+export const VISUAL_PACKAGES: readonly string[] = ["@unframework.dev/visual", ...TEST_PACKAGES];
 
 /**
  * What each target's tests need in the project: its framework and the framework's Vite plugin, which
@@ -45,10 +49,11 @@ export const TARGET_TEST_PACKAGES: Readonly<Record<string, readonly string[]>> =
   astro: ["astro"],
 };
 
-/** Loads the test command, from `@unframework.dev/testing/cli`. */
+/** Loads a command from the package that implements it, such as `@unframework.dev/testing/cli`. */
 export type TestLoader = () => Promise<{ run: RunCommand }>;
 
 const loadTesting: TestLoader = () => import("@unframework.dev/testing/cli");
+const loadVisual: TestLoader = () => import("@unframework.dev/visual/cli");
 
 /**
  * The `test` command. When a package it needs is not installed, it runs a command that says what to
@@ -58,15 +63,30 @@ export function testCommand(load: TestLoader = loadTesting): Command {
   return {
     usage: "test [--target <t>]... [--update] [-- <vitest args>]",
     summary: "Run the project's tests on every target, through Vitest.",
-    async load() {
-      try {
-        return await load();
-      } catch (error) {
-        if (!isMissingModule(error)) throw error;
-        return { run: (_args, io) => Promise.resolve(missing(error, io)) };
-      }
-    },
+    load: () => loadOrExplain("test", TEST_PACKAGES, load),
   };
+}
+
+/** The `visual` command, which loads and fails as `test` does (ADR-0087). */
+export function visualCommand(load: TestLoader = loadVisual): Command {
+  return {
+    usage: "visual [--target <t>]... [--baseline | --live] [--update] [--out <dir>]",
+    summary: "Render every example on every target and compare them, geometry then pixels.",
+    load: () => loadOrExplain("visual", VISUAL_PACKAGES, load),
+  };
+}
+
+async function loadOrExplain(
+  name: string,
+  packages: readonly string[],
+  load: TestLoader,
+): Promise<{ run: RunCommand }> {
+  try {
+    return await load();
+  } catch (error) {
+    if (!isMissingModule(error)) throw error;
+    return { run: (_args, io) => Promise.resolve(missing(name, packages, error, io)) };
+  }
 }
 
 function isMissingModule(error: unknown): error is Error {
@@ -74,14 +94,14 @@ function isMissingModule(error: unknown): error is Error {
   return code === "ERR_MODULE_NOT_FOUND" || code === "MODULE_NOT_FOUND";
 }
 
-function missing(error: Error, io: Io): number {
+function missing(name: string, packages: readonly string[], error: Error, io: Io): number {
   const targets = Object.entries(TARGET_TEST_PACKAGES)
     .map(([target, names]) => `  ${target}: ${names.join(", ")}`)
     .join("\n");
   io.stderr(
-    `unframework test: ${error.message}\n\n` +
-      `unframework test needs ${TEST_PACKAGES.join(", ")} in the project:\n\n` +
-      `  npm install --save-dev ${TEST_PACKAGES.join(" ")}\n\n` +
+    `unframework ${name}: ${error.message}\n\n` +
+      `unframework ${name} needs ${packages.join(", ")} in the project:\n\n` +
+      `  npm install --save-dev ${packages.join(" ")}\n\n` +
       `and, for each target it tests, the framework and its Vite plugin:\n\n${targets}\n`,
   );
   return 2;
@@ -95,6 +115,14 @@ export function main(
   argv: readonly string[],
   io?: Io,
   load: TestLoader = loadTesting,
+  visual: TestLoader = loadVisual,
 ): Promise<number> {
-  return runCli(argv, io, new Map([["test", testCommand(load)]]));
+  return runCli(
+    argv,
+    io,
+    new Map([
+      ["test", testCommand(load)],
+      ["visual", visualCommand(visual)],
+    ]),
+  );
 }
