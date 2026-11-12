@@ -142,6 +142,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0087](./0087-examples-and-unframework-visual.md)                  | Examples run on every target through `@unframework.dev/visual`                | Accepted                                                               | §8.6, §9 M7             |
 | [0090](./0090-npm-package-names.md)                                | `@uxfront/unframework` plus `@unframework.dev/*`                              | Accepted                                                               | §11 D2, D12             |
 | [0091](./0091-a-dropped-reference-fails-the-run-once.md)           | A reference that did not finish a case fails the run once                     | Accepted                                                               | §7.2, §7.4, §7.7        |
+| [0092](./0092-an-unimportable-setup-file-fails-the-run-once.md)    | A setup file a project can't import fails the run once                        | Accepted                                                               | §7.4, §7.7              |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 

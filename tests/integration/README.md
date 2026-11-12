@@ -340,11 +340,18 @@ didn't finish the case's spec file, as when its browser connection closes and Vi
 rest of its queue. The summary never accepts that skip: it folds the blocked cells, the
 reference's missing cells of those cases and their scenario differences into one problem that
 names the reference's project and quotes Vitest's error, so the run fails once, with its cause
-(ADR-0091). The summary itself fills an
+(ADR-0091). A spec file whose page can't import one of its project's setup files runs no test,
+and Vitest names that setup file in its error. The summary reports one problem for each project
+and setup file, listed first, in a filtered run too. It names the file, how many spec files
+couldn't import it and Vitest's cause, and it takes the place of those cases' missing browser
+cells and scenario differences. For a reference, it also counts the follower cells it left
+without a comparison, in place of ADR-0091's problem (ADR-0092). A spec file that fails its own
+import, as the golden guard makes it, is still its case's failure. The summary itself fills an
 L15 cell with `skip(not in this run)` in a run without the `bench` project. A diagnostics case has no
 spec: where its target has output (its only diagnostic is a capability's note, as UF4004), the
 compile project records its browser layers `skip(no spec: …)`, and its server render checks the
-output. A project that collects no tests fails, and when every
+output. A project that collects no tests fails (one none of whose spec files could import a
+setup file reads as that setup problem), and when every
 project ran, a missing cell fails. A project ran when an unfiltered run, or every shard of one
 (`--shard 1/n` to `n/n`, of the same projects and nothing else filtered), ran it; a file or
 test-name filter, or a missing shard, makes a partial run. In CI the summary is the parity job,
