@@ -13,9 +13,12 @@ import {
   isSelected,
   noErrorBroadcast,
   parityProjects,
+  projectEntries,
+  projectGroup,
   projectNames,
   projectPatterns,
   projectTest,
+  referencePages,
   referencesOnly,
 } from "./projects.ts";
 import { selectTargets } from "./targets.ts";
@@ -274,5 +277,65 @@ describe("a case's own reference outside UF_TARGETS (ADR-0057)", () => {
     const browser = await (projects[6] as () => Promise<UserWorkspaceConfig>)();
     expect(browser.test?.name).toBe("browser:react");
     expect(browser.test?.include).toEqual(["cases/semantics/listbox/listbox.test.ts"]);
+  });
+});
+
+describe("the reference's own page count (ADR-0092)", () => {
+  const targets = selectTargets(undefined);
+  const live = { ...mode, pixels: "live" } as const;
+  const modes = { live, update: { ...live, update: true }, baseline: mode } as const;
+  const filters: Record<string, string[] | undefined> = {
+    "no filter": undefined,
+    "browser:*": ["browser:*"],
+    "harness and browser:vue": ["harness", "browser:vue"],
+  };
+
+  for (const [modeName, runMode] of Object.entries(modes)) {
+    for (const [filterName, projectFilter] of Object.entries(filters)) {
+      it(`gives every group one maxWorkers: ${modeName}, ${filterName}`, () => {
+        const setup = { harness, mode: runMode, targets, projectFilter };
+        const pages = referencePages(setup, 14, [], {});
+        const groups = new Map<number, Set<number | undefined>>();
+        for (const entry of projectEntries(setup)) {
+          if (!isSelected(entry.name, projectFilter)) continue;
+          const group = projectGroup(setup, entry.kind, entry.target);
+          const workers = entry.name === "browser:vue" ? pages : undefined;
+          groups.set(group, (groups.get(group) ?? new Set()).add(workers));
+        }
+        for (const workers of groups.values()) expect(workers.size).toBe(1);
+        // Only a live run of the browser projects leaves the reference alone in its group.
+        const alone = modeName === "live" && filterName === "browser:*";
+        expect(pages).toBe(alone ? 21 : undefined);
+      });
+    }
+  }
+
+  it("leaves the page count to a caller's --maxWorkers, and to the engines outside Chromium", () => {
+    const setup = { harness, mode: live, targets, projectFilter: ["browser:*"] };
+    expect(referencePages(setup, 14, ["--maxWorkers=1"], {})).toBeUndefined();
+    expect(referencePages(setup, 14, ["--maxWorkers", "1"], {})).toBeUndefined();
+    expect(referencePages(setup, 14, [], { VITEST_MAX_WORKERS: "1" })).toBeUndefined();
+    const firefox = { ...setup, mode: { ...live, browser: "firefox" as const } };
+    expect(referencePages(firefox, 14, [], {})).toBeUndefined();
+    expect(referencePages(setup, 1, [], {})).toBe(2);
+  });
+
+  it("lists the projects harnessProjects makes, in its order", async () => {
+    const only = { react: ["semantics/listbox"] };
+    for (const setup of [
+      { harness, mode, targets, projectFilter: ["none"] },
+      { harness, mode, targets: ["vue"], referencesOnly: only, projectFilter: ["none", "bench"] },
+    ]) {
+      const projects = await Promise.all(
+        harnessProjects(setup).map((project) =>
+          typeof project === "function"
+            ? (project as () => Promise<UserWorkspaceConfig>)()
+            : (project as UserWorkspaceConfig),
+        ),
+      );
+      expect(projects.map((project) => project.test?.name)).toEqual(
+        projectEntries(setup).map((entry) => entry.name),
+      );
+    }
   });
 });
