@@ -215,7 +215,7 @@ export function projectEntries(setup: HarnessSetup): ProjectEntry[] {
 }
 
 /** The tester pages the reference's browser project opens for each CPU, while it runs alone. */
-export const REFERENCE_PAGES_PER_CPU = 1.5;
+export const REFERENCE_PAGES_PER_CPU = 2;
 
 /**
  * How many tester pages the reference's browser project opens, or `undefined` for Vitest's

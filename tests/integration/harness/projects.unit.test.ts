@@ -305,7 +305,7 @@ describe("the reference's own page count (ADR-0092)", () => {
         for (const workers of groups.values()) expect(workers.size).toBe(1);
         // Only a live run of the browser projects leaves the reference alone in its group.
         const alone = modeName === "live" && filterName === "browser:*";
-        expect(pages).toBe(alone ? 21 : undefined);
+        expect(pages).toBe(alone ? 28 : undefined);
       });
     }
   }
