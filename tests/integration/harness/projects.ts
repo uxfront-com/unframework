@@ -13,6 +13,7 @@
 // project (the browser-projects ADR), and a project must hold its own toolchain only. Toolchains
 // and the unplugin load inside each ssr and browser project's factory, so one that cannot load
 // fails its own projects, loudly, through `harness/unavailable.test.ts`.
+import { availableParallelism } from "node:os";
 import { relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -159,10 +160,113 @@ export function fileParallelism(mode: Pick<HarnessMode, "browser">): boolean {
 }
 
 /**
+ * The targets whose spec files each get a fresh page, with the reason (ADR-0092). Every other
+ * browser project runs its spec files one after another on each of its pages, which keep their
+ * modules: the testing setup and the framework load once per page, not once per file.
+ */
+export const FRESH_PAGE_PER_FILE: Readonly<Record<string, string>> = {
+  vue: "Vue's development build rethrows an error that a lifecycle hook throws out of its post-flush queue, which then never runs again on that page. sourcemaps/mounted-throws throws there on purpose (L14), so no later spec file's mounted hooks would run.",
+};
+
+/** A project's `maxWorkers`, when it has its own page count. */
+function pagesOption(pages: number | undefined): { maxWorkers?: number } {
+  return pages === undefined ? {} : { maxWorkers: pages };
+}
+
+/** Whether a target's browser project gives every spec file a fresh page (`isolate`). */
+export function isolatesFiles(target: string): boolean {
+  return Object.hasOwn(FRESH_PAGE_PER_FILE, target);
+}
+
+/** A project of the harness, as `harnessProjects` lists it: what its group depends on. */
+export interface ProjectEntry {
+  name: string;
+  kind: ProjectKind;
+  target: string | undefined;
+}
+
+/** Every project `harnessProjects` makes, with its kind and target, in the same order. */
+export function projectEntries(setup: HarnessSetup): ProjectEntry[] {
+  const extra = Object.keys(setup.referencesOnly ?? {}).filter(
+    (target) => !setup.targets.includes(target),
+  );
+  return [
+    { name: "compile", kind: "compile", target: undefined },
+    { name: "harness", kind: "harness", target: undefined },
+    ...(setup.projectFilter?.includes(BENCH_PROJECT)
+      ? [{ name: BENCH_PROJECT, kind: "bench" as const, target: undefined }]
+      : []),
+    ...setup.targets.map((target) => ({
+      name: `toolchain:${target}`,
+      kind: "toolchain" as const,
+      target,
+    })),
+    ...setup.targets.map((target) => ({ name: `ssr:${target}`, kind: "ssr" as const, target })),
+    ...setup.targets.map((target) => ({
+      name: `browser:${target}`,
+      kind: "browser" as const,
+      target,
+    })),
+    ...extra.flatMap((target) => [
+      { name: `ssr:${target}`, kind: "ssr" as const, target },
+      { name: `browser:${target}`, kind: "browser" as const, target },
+    ]),
+  ];
+}
+
+/** The tester pages the reference's browser project opens for each CPU, while it runs alone. */
+export const REFERENCE_PAGES_PER_CPU = 2;
+
+/**
+ * The most tester pages the reference opens: the count measured best, on 14 CPUs (ADR-0092).
+ * Vitest caps the followers' default at 12 pages, so without a cap a large machine would give the
+ * reference several times the pages the followers have.
+ */
+export const MAX_REFERENCE_PAGES = 28;
+
+/**
+ * How many tester pages the reference's browser project opens, or `undefined` for Vitest's
+ * default (ADR-0092). In a live `browser:*` run the reference runs alone, first, and the
+ * followers wait for it, so it opens more pages. Its files keep a fresh frame each and mostly wait
+ * on the browser, so the CPUs have room. Vitest refuses two projects in one `sequence.groupOrder`
+ * group with different `maxWorkers`, so the reference takes them only when no other project the
+ * run selects shares its group: not in a full run or in CI's baseline mode. An update run and a
+ * `--maxWorkers` the caller gives keep their own.
+ */
+export function referencePages(
+  setup: HarnessSetup,
+  cpus: number,
+  argv: readonly string[] = process.argv,
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): number | undefined {
+  // An update run writes artefacts, so it keeps the page count it has always had.
+  if (setup.mode.update || !fileParallelism(setup.mode)) return undefined;
+  if (env.VITEST_MAX_WORKERS !== undefined) return undefined;
+  if (argv.some((arg) => /^--max-?workers(=|$)/i.test(arg))) return undefined;
+  const selected = projectEntries(setup).filter((entry) =>
+    isSelected(entry.name, setup.projectFilter),
+  );
+  const reference = selected.find(
+    (entry) => entry.kind === "browser" && entry.target === REFERENCE,
+  );
+  if (!reference) return undefined;
+  const group = projectGroup(setup, reference.kind, reference.target);
+  const shared = selected.some(
+    (entry) => entry !== reference && projectGroup(setup, entry.kind, entry.target) === group,
+  );
+  if (shared) return undefined;
+  return Math.min(MAX_REFERENCE_PAGES, Math.max(1, Math.round(cpus * REFERENCE_PAGES_PER_CPU)));
+}
+
+/**
  * A project's `sequence.groupOrder`, from every target the run's browser projects cover: the
  * run's targets, then the case references it adds (`referencesOnly`).
  */
-function projectGroup(setup: HarnessSetup, kind: ProjectKind, target: string | undefined): number {
+export function projectGroup(
+  setup: HarnessSetup,
+  kind: ProjectKind,
+  target: string | undefined,
+): number {
   const targets = [
     ...setup.targets,
     ...Object.keys(setup.referencesOnly ?? {}).filter((name) => !setup.targets.includes(name)),
@@ -411,8 +515,11 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
           ufStandIn: standIns,
         },
         sequence: { groupOrder: projectGroup(setup, "browser", target) },
+        // Spec files share a page, but where the target's runtime cannot (ADR-0092).
+        isolate: isolatesFiles(target),
         // Outside Chromium, parallel tester pages in one engine take the focus from each other.
         ...(fileParallelism(setup.mode) ? {} : { fileParallelism: false }),
+        ...(target === REFERENCE ? pagesOption(referencePages(setup, availableParallelism())) : {}),
         browser: {
           ...parityBrowser({
             name,

@@ -3,7 +3,10 @@
 // The setup file judges them after each test and fails it on any message that is not
 // allowlisted with a reason. Nothing is discarded: a message logged outside a test (while the
 // modules evaluate, in a beforeAll hook, or after the previous test's teardown) is judged with
-// the next test, and one logged after the last test is recorded on the file, which fails.
+// the next test, and one logged after the last test is recorded on the file, which fails. Spec
+// files may share a page (ADR-0092): a message logged after a file's last judgement, before the
+// next file's setup runs, is judged with the next file's first test, and names the file it
+// followed.
 
 /** A captured console message. */
 export interface ConsoleEntry {
@@ -15,6 +18,8 @@ export interface ConsoleEntry {
   beforeTest?: true;
   /** Why it is not judged: a step that fails on purpose logged it (ADR-0078). */
   excused?: string;
+  /** The case of the spec file that had ended on this page when it was logged (ADR-0092). */
+  afterFile?: string;
 }
 
 interface Allowance {
@@ -26,6 +31,12 @@ const entries: ConsoleEntry[] = [];
 const allowances: Allowance[] = [];
 let installed = false;
 let errorWatcher: ((value: unknown) => void) | undefined;
+let endedFile: string | undefined;
+
+/** A captured message, with the spec file it followed if it came between two files. */
+function capture(entry: ConsoleEntry): void {
+  entries.push(endedFile === undefined ? entry : { ...entry, afterFile: endedFile });
+}
 
 /**
  * Wraps console.warn and console.error once per page. The originals still print, so the run log
@@ -37,7 +48,7 @@ export function installConsoleCapture(): void {
   for (const level of ["warn", "error"] as const) {
     const original = console[level].bind(console);
     console[level] = (...args: unknown[]) => {
-      entries.push({ level, message: formatConsoleArgs(args), source: "page" });
+      capture({ level, message: formatConsoleArgs(args), source: "page" });
       for (const arg of args) errorWatcher?.(arg);
       original(...args);
     };
@@ -48,7 +59,7 @@ export function installConsoleCapture(): void {
 export function captureExternalConsole(
   messages: readonly { level: "warn" | "error"; message: string }[],
 ): void {
-  for (const { level, message } of messages) entries.push({ level, message, source: "server" });
+  for (const { level, message } of messages) capture({ level, message, source: "server" });
 }
 
 /**
@@ -77,6 +88,19 @@ export function beginTestConsole(): void {
 /** Ends a judgement: the messages captured so far have been judged. */
 export function endTestConsole(): void {
   entries.length = 0;
+}
+
+/**
+ * Ends a spec file, whose case is `caseId`: what the page logs from now on, until the next spec
+ * file starts, came after it.
+ */
+export function endSpecFileConsole(caseId: string): void {
+  endedFile = caseId;
+}
+
+/** Starts a spec file: what the page logs from now on is this file's. */
+export function beginSpecFileConsole(): void {
+  endedFile = undefined;
 }
 
 /** Calls `watch` with each argument the console is given, until the returned function runs. */
@@ -123,6 +147,9 @@ export function describeConsole(unexpected: readonly ConsoleEntry[]): string {
       ...(entry.beforeTest
         ? ["before the test: module evaluation, a beforeAll hook or an earlier teardown"]
         : []),
+      ...(entry.afterFile === undefined
+        ? []
+        : [`after the last test of ${entry.afterFile}, which ran earlier on this page`]),
     ];
     return `  console.${entry.level}${where.length ? ` (${where.join("; ")})` : ""}: ${entry.message.split("\n")[0]}`;
   });
