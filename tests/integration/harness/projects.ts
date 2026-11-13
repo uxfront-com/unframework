@@ -218,6 +218,13 @@ export function projectEntries(setup: HarnessSetup): ProjectEntry[] {
 export const REFERENCE_PAGES_PER_CPU = 2;
 
 /**
+ * The most tester pages the reference opens: the count measured best, on 14 CPUs (ADR-0092).
+ * Vitest caps the followers' default at 12 pages, so without a cap a large machine would give the
+ * reference several times the pages the followers have.
+ */
+export const MAX_REFERENCE_PAGES = 28;
+
+/**
  * How many tester pages the reference's browser project opens, or `undefined` for Vitest's
  * default (ADR-0092). In a live `browser:*` run the reference runs alone, first, and the
  * followers wait for it, so it opens more pages. Its files keep a fresh frame each and mostly wait
@@ -247,7 +254,8 @@ export function referencePages(
   const shared = selected.some(
     (entry) => entry !== reference && projectGroup(setup, entry.kind, entry.target) === group,
   );
-  return shared ? undefined : Math.max(1, Math.round(cpus * REFERENCE_PAGES_PER_CPU));
+  if (shared) return undefined;
+  return Math.min(MAX_REFERENCE_PAGES, Math.max(1, Math.round(cpus * REFERENCE_PAGES_PER_CPU)));
 }
 
 /**

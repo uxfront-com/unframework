@@ -33,20 +33,43 @@ shared the machine, so each row gives the load average when it started:
 | Shared pages, run 2        | 11.04        | 134.8 s   | 576 s    | 25.6 GiB                 |
 | Shared pages, run 3        | 24.37        | 130.9 s   | 559 s    | 27.1 GiB                 |
 
-The median wall time falls from 178.9 s to 130.9 s, by 26.8 %, and the CPU time by about 45 %. One
-project on its own gains less, because its 12 pages mostly wait on the browser. On macOS a follower
-needs `browser:vue` in the same run (its L10 compares with Vue's live captures), so each follower
-was timed beside it, once on each side:
+The median wall time falls from 178.9 s to 130.9 s, by 26.8 %, and the CPU time by about 45 %.
 
-| Projects                            | Fresh frames | Shared pages |
-| ----------------------------------- | ------------ | ------------ |
-| `browser:vue`                       | 33.4 s       | 34.0 s       |
-| `browser:vue` and `browser:react`   | 65.4 s       | 61.6 s       |
-| `browser:vue` and `browser:svelte`  | 64.9 s       | 61.4 s       |
-| `browser:vue` and `browser:solid`   | 64.5 s       | 61.7 s       |
-| `browser:vue` and `browser:angular` | 73.8 s       | 71.9 s       |
-| `browser:vue` and `browser:qwik`    | 64.3 s       | 61.3 s       |
-| `browser:vue` and `browser:astro`   | 43.8 s       | 41.1 s       |
+That left `browser:vue` on the critical path. In a live run it is the reference and runs alone,
+first, while the six followers wait for it (`groupOrder`, ADR-0018). Its files keep a fresh frame
+each and mostly wait on the browser, so it gains from more pages: alone, it took 33.8 s with 12
+pages, 23.8 s with 21, 20.5 s with 28 and 22.5 s with 35. With 28 pages for `browser:vue` (two per
+CPU) and the default for the followers, a second session at `64f11547` gave:
+
+| Full `browser:*` run, warm             | Load average | Wall time | Peak memory (summed RSS) |
+| -------------------------------------- | ------------ | --------- | ------------------------ |
+| Fresh frames, run 1                    | 13.66        | 200.0 s   | 24.8 GiB                 |
+| Fresh frames, run 2                    | 15.01        | 184.6 s   | 26.3 GiB                 |
+| Fresh frames, run 3                    | 13.45        | 202.6 s   | 18.9 GiB                 |
+| Shared pages, more for the reference 1 | 14.95        | 128.0 s   | 29.0 GiB                 |
+| Shared pages, more for the reference 2 | 21.79        | 144.8 s   | 24.5 GiB                 |
+| Shared pages, more for the reference 3 | 12.54        | 117.2 s   | 30.3 GiB                 |
+
+The median falls from 200.0 s to 128.0 s, by 36.0 %. A last run on the final head, at a load of
+4.46, took 113.4 s with a peak of 28.2 GiB. The median peak rises from 24.8 to 29.0 GiB, because
+Vitest keeps each project's browser open until the run ends, so Vue's extra pages stay alive while
+the followers run. Every run completed under the 32 GiB ceiling of `scripts/measure.ts`, which one
+run with fresh frames crossed at 32.2 GiB in another session.
+
+On macOS a follower needs `browser:vue` in the same run (its L10 compares with Vue's live
+captures), so each follower was timed beside it, once each: with fresh frames at `f09c5ce1`, with
+shared pages at the same commit, and on the final head `ee277c2b`, where `browser:vue` runs with 28
+pages in both kinds of run:
+
+| Projects                            | Fresh frames | Shared pages | Final head |
+| ----------------------------------- | ------------ | ------------ | ---------- |
+| `browser:vue`                       | 33.4 s       | 34.0 s       | 20.1 s     |
+| `browser:vue` and `browser:react`   | 65.4 s       | 61.6 s       | 48.2 s     |
+| `browser:vue` and `browser:svelte`  | 64.9 s       | 61.4 s       | 47.9 s     |
+| `browser:vue` and `browser:solid`   | 64.5 s       | 61.7 s       | 48.7 s     |
+| `browser:vue` and `browser:angular` | 73.8 s       | 71.9 s       | 74.5 s     |
+| `browser:vue` and `browser:qwik`    | 64.3 s       | 61.3 s       | 59.2 s     |
+| `browser:vue` and `browser:astro`   | 43.8 s       | 41.1 s       | 35.8 s     |
 
 Sharing a page exposed one leak. Vue's development build rethrows an error that a lifecycle hook
 throws (`logError`), out of `flushPostFlushCbs`, which leaves its `activePostFlushCbs` set. From
@@ -71,17 +94,23 @@ never made.
   `expect.element` wraps it once per page.
 - A console message that a spec file's page logs after its last judgement, before the next file
   starts, is judged with the next file's first test, and its failure names the case it followed.
-- The number of tester pages stays Vitest's default. With shared pages, 14 pages a project took
-  129.4 s, no faster than 12, and 16 took 123.3 s at a peak of 31.9 GiB, at the 32 GiB ceiling of
-  `scripts/measure.ts`. 24 went over it.
+- `browser:vue` opens two tester pages per CPU (`REFERENCE_PAGES_PER_CPU`) when no other project
+  the run selects shares its `sequence.groupOrder` group, which in practice is a live `browser:*`
+  run or `browser:vue` alone (`referencePages` in `harness/projects.ts`). Vitest refuses two
+  `maxWorkers` in one group, so a full run, CI's baseline mode and Firefox and WebKit keep
+  Vitest's default. So do an update run, which writes artefacts, and a caller's `--maxWorkers` or
+  `VITEST_MAX_WORKERS`.
+- Every other project keeps Vitest's default page count. With shared pages, 14 pages a project took
+  129.4 s, no faster than 12, and 16 took 123.3 s at a peak of 31.9 GiB. 24 went over the 32 GiB
+  ceiling.
 - Firefox and WebKit share pages too, and still run one spec file at a time (ADR-0081).
 
 ## Consequences
 
 **Positive:**
 
-- A full `browser:*` run takes about a quarter less time and half the CPU work, and each follower loads its framework once
-  per page, not once per file.
+- A full `browser:*` run takes about a third less time and half the CPU work, and each follower
+  loads its framework once per page, not once per file.
 - The parity matrix is unchanged: `scripts/matrix-diff.ts` found 0 of 9,048 cells different
   between fresh frames and each of the three runs with shared pages above, and each of four
   earlier runs at `ee74571d`, two of them with 16 pages a project.
@@ -97,12 +126,15 @@ never made.
   own components, and the styling engines' sheets, which are the same for every case. The one
   `:global()` rule in the corpus (`styles/global`) styles `.uf-highlight`, which no other case uses.
   A new global rule needs the same check.
-- Vue's project is still the slowest per file, and on macOS it runs alone, first.
+- The peak memory of a full `browser:*` run is higher: a median of 29.0 GiB against 24.8 GiB, and
+  30.3 GiB at most, which leaves under 2 GiB below the 32 GiB ceiling. A full `pnpm test`, an
+  update run and CI don't change.
+- Vue's page count stops at 28 (`MAX_REFERENCE_PAGES`), the count measured best on 14 CPUs. Vitest
+  caps the followers' default at 12 pages, so without a limit a machine with 32 hardware threads
+  would give Vue 64. A machine much larger or smaller than the one measured may want another count.
 
 **Open:**
 
-- The 26.8 % falls short of the 30 % the work set out to save. Grouping cases into fewer files
-  is the next option, and it needs a plan of its own.
 - Firefox and WebKit haven't run on shared pages yet: the nightly workflow is their first run.
 
 ## Alternatives considered

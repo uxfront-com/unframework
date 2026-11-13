@@ -318,6 +318,8 @@ describe("the reference's own page count (ADR-0092)", () => {
     const firefox = { ...setup, mode: { ...live, browser: "firefox" as const } };
     expect(referencePages(firefox, 14, [], {})).toBeUndefined();
     expect(referencePages(setup, 1, [], {})).toBe(2);
+    // At most the count measured best, however many CPUs the machine has.
+    expect(referencePages(setup, 32, [], {})).toBe(28);
   });
 
   it("lists the projects harnessProjects makes, in its order", async () => {
@@ -327,9 +329,9 @@ describe("the reference's own page count (ADR-0092)", () => {
       { harness, mode, targets: ["vue"], referencesOnly: only, projectFilter: ["none", "bench"] },
     ]) {
       const projects = await Promise.all(
-        harnessProjects(setup).map((project) =>
+        harnessProjects(setup).map(async (project) =>
           typeof project === "function"
-            ? (project as () => Promise<UserWorkspaceConfig>)()
+            ? await (project as () => Promise<UserWorkspaceConfig>)()
             : (project as UserWorkspaceConfig),
         ),
       );

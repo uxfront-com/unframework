@@ -322,7 +322,9 @@ names the case it came after.
 
 `browser:vue` keeps a fresh frame for each spec file, because Vue's development build stops
 running mounted hooks on a page where one threw, and `sourcemaps/mounted-throws` throws on purpose.
-`FRESH_PAGE_PER_FILE` in `harness/projects.ts` lists each such target with its reason.
+`FRESH_PAGE_PER_FILE` in `harness/projects.ts` lists each such target with its reason. In a live
+`browser:*` run, `browser:vue` runs alone before the followers, so it opens two tester pages per
+CPU, and every other run keeps Vitest's default (`referencePages`).
 
 Each test records its layers in its task meta: `expectParity` records L7, L9, L10 and L11
 without throwing, so the assertions after it always run, and the setup's `afterEach` records L8
