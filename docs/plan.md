@@ -1,6 +1,6 @@
 # Unframework compiler: plan
 
-**Status:** proposal, 2026-10-01. M0 to M6 are built, and M7 is next (§9). **Supersedes:** the
+**Status:** proposal, 2026-10-01. M0 to M7 are built, and M8 is next (§9). **Supersedes:** the
 Inkline compiler (`packages/compiler-v1`, reference only and gitignored; also at
 `~/Workspace/inkline/core/compiler`).
 
@@ -426,7 +426,7 @@ Each package follows the `@uxfront/scene` model:
 | `@unframework.dev/unplugin`         | The bundler plugin (`/vite`, `/rolldown`, `/rollup`, `/webpack`, `/rspack`, `/esbuild`, `/bun`, …).                                                                                | `compiler`, `unplugin`                              |
 | `@unframework.dev/cli`              | `build`, `check`, `test`, `preview`, `visual`, `manifest`, `explain`, `fix` and `init`.                                                                                            | `compiler`                                          |
 | `@unframework.dev/language-tools`   | The TS 7.1 content mapper for `.uf.tsx`: consumer typing and UF diagnostics in editors and tsgo (not built yet, ADR-0072).                                                         | `compiler`                                          |
-| `@unframework.dev/testing`          | The cross-target test API, mount adapters, matchers and a Vitest preset. Private until M7.                                                                                         | `vitest`, the targets' toolchains                   |
+| `@unframework.dev/testing`          | The cross-target test API, mount adapters, matchers and a Vitest preset. Private until its first release.                                                                          | `vitest`, the targets' toolchains                   |
 | `@unframework.dev/visual`           | The visual parity runner, its report, and the seven-up preview server.                                                                                                             | `testing`                                           |
 | `@unframework.dev/mcp`              | The MCP server for agents (M9).                                                                                                                                                    | `compiler`, `testing`                               |
 | `create-unframework`                | The project scaffolder (M6).                                                                                                                                                       | none                                                |
@@ -1026,7 +1026,8 @@ Consumers of a published package get each framework's native types for free.
 
 ### 8.5 `@unframework.dev/testing`
 
-This is the API the corpus is written in. It is published once it is stable (M7), and it includes:
+This is the API the corpus is written in. M7 settled its public surface (ADR-0085), and it is
+published with its first release, which is the owner's call. It includes:
 
 - `describeTargets`, `mount`, `View` and `expectParity`
 - trace recording and SSR rendering
@@ -1091,8 +1092,8 @@ layer. Sizes are relative effort: S is about a week, M two to three weeks, L fou
 | M4        | Styling and visual parity                       | M    | ~138                        | Done    |
 | M5        | Cross-file: types, consumer typing, composables | L    | ~163                        | Done    |
 | M6        | Build integration and distribution              | L    | ~163, plus e2e apps         | Done    |
-| M7        | Public testing and visual tooling               | M    | (the corpus on public APIs) | Next    |
-| M8        | Advanced features and versioned targets         | L    | ~193                        | Planned |
+| M7        | Public testing and visual tooling               | M    | (the corpus on public APIs) | Done    |
+| M8        | Advanced features and versioned targets         | L    | ~193                        | Next    |
 | M9        | Agent tooling                                   | M    | -                           | Planned |
 | M10       | Design-system acceptance and 1.0                | L    | ~233                        | Planned |
 
@@ -1318,6 +1319,20 @@ a report that gates no pull request.
 
 - The corpus uses public APIs only, enforced by a lint rule.
 - The sample design system's tests and visual suite run in CI from published-shape packages.
+
+**As built:** done, with ADR-0085 to ADR-0089, and four changes to the scope:
+
+- `@unframework.dev/testing` and `@unframework.dev/visual` keep `"private": true`. Publishing them,
+  with the private packages they depend on, is a release decision for the owner. "Published-shape"
+  means packed tarballs installed outside the repository, as CI's `Design system` job does
+  (ADR-0089).
+- The public test unit is the corpus's own case: one test file, its `.uf.tsx`, an optional
+  `case.json` and the generated `__expected__/`. So `mountScenario` and `case.json` are public
+  (ADR-0085).
+- `unframework test`, `visual` and `preview` come from the umbrella, not from
+  `@unframework.dev/cli`, since `cli` sits below `testing` and `visual` in `LAYERS`. The umbrella
+  takes both packages as optional peer dependencies (ADR-0086, ADR-0087, ADR-0088).
+- The fuzzing stretch goal is left for later.
 
 ### M8. Advanced features and versioned targets (L)
 
