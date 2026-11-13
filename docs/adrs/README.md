@@ -144,6 +144,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0089](./0089-the-design-system-runs-from-tarballs.md)             | The sample design system's tests run from tarballs, outside the workspace       | Accepted                                                               | §7.9, §8.5, §9 M7       |
 | [0090](./0090-npm-package-names.md)                                | `@uxfront/unframework` plus `@unframework.dev/*`                                | Accepted                                                               | §11 D2, D12             |
 | [0091](./0091-a-dropped-reference-fails-the-run-once.md)           | A reference that did not finish a case fails the run once                       | Accepted                                                               | §7.2, §7.4, §7.7        |
+| [0092](./0092-browser-spec-files-share-a-page.md)                  | Browser spec files share a page, but on Vue                                     | Accepted                                                               | §7.3, §7.6              |
 | [0093](./0093-slow-harness-files-run-as-shards.md)                 | The slow harness files run as shards, and Angular's ngtsc compiles in a pool    | Accepted                                                               | §7.3, §7.7, R5          |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".

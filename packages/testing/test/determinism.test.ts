@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { COLOR_SCHEME_WAIT_MS, checkEnvironment } from "../src/browser/determinism.ts";
+import {
+  COLOR_SCHEME_WAIT_MS,
+  checkEnvironment,
+  prepareSpecFile,
+} from "../src/browser/determinism.ts";
 
 /**
  * A page whose media queries match the deterministic context, but for the overrides, and whose
@@ -84,5 +88,50 @@ describe("checkEnvironment", () => {
     const reads = stubPage(1000);
     await expect(checkEnvironment("light")).resolves.toBeUndefined();
     expect(reads.get("(prefers-color-scheme: light)")).toBe(1);
+  });
+});
+
+/** A document that records the sheets put in its head, and fonts that load at once. */
+function stubDocument(): unknown[] {
+  const appended: unknown[] = [];
+  vi.stubGlobal("document", {
+    createElement: () => ({ setAttribute() {}, textContent: "" }),
+    head: { append: (node: unknown) => appended.push(node) },
+    fonts: { add() {}, ready: Promise.resolve() },
+  });
+  vi.stubGlobal(
+    "FontFace",
+    class {
+      status = "loaded";
+      load(): Promise<this> {
+        return Promise.resolve(this);
+      }
+    },
+  );
+  return appended;
+}
+
+// Spec files share a page (ADR-0092): each file's own colour scheme is checked.
+describe("prepareSpecFile", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("checks every spec file's colour scheme, and installs the fonts and the reset once", async () => {
+    stubPage(Infinity);
+    const appended = stubDocument();
+    await prepareSpecFile("light");
+    await prepareSpecFile("light");
+    expect(appended).toHaveLength(1);
+    // A later file that asks for dark on a page that stayed light fails its own check.
+    const check = prepareSpecFile("dark");
+    const failure = expect(check).rejects.toThrow(MESSAGE);
+    await vi.advanceTimersByTimeAsync(COLOR_SCHEME_WAIT_MS + 100);
+    await failure;
+    expect(appended).toHaveLength(1);
   });
 });
