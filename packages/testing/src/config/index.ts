@@ -22,6 +22,7 @@ import { recordCompiledModule } from "../node/events.ts";
 import { createHarnessRun, groupOrder, resolveHarnessMode } from "../node/mode.ts";
 import type { HarnessMode, ProjectKind } from "../node/mode.ts";
 import { ufMapStack } from "../node/thrown.ts";
+import { noErrorBroadcast } from "./broadcast.ts";
 import { discoverCases, EXCLUDED } from "./cases.ts";
 import type { ProjectCase } from "./cases.ts";
 
@@ -62,6 +63,13 @@ export const DEFAULT_INCLUDE: readonly string[] = ["**/*.test.ts"];
  * each case's main source, which must go through the project's Vite pipeline.
  */
 export const TESTING_PACKAGE: RegExp = /[\\/]node_modules[\\/]@unframework\.dev[\\/]testing[\\/]/;
+
+/**
+ * The target packages' modules, wherever a project installs them: a server renderer imports its
+ * framework, which must be the copy the component the project's Vite pipeline compiles imports.
+ */
+export const TARGET_PACKAGES: RegExp =
+  /[\\/]node_modules[\\/]@unframework\.dev[\\/]target-[a-z]+[\\/]/;
 
 /** How long a test runs at most: a cold browser project's first mount compiles its framework. */
 const TEST_TIMEOUT = 60_000;
@@ -248,8 +256,12 @@ const TOOLCHAINS: Readonly<Record<TargetName, () => Promise<ToolchainModule>>> =
   astro: () => import("@unframework.dev/target-astro/toolchain"),
 };
 
-/** Loads a target's toolchain, refusing one of another name. */
-async function loadToolchain(target: TargetName): Promise<Toolchain> {
+/**
+ * Loads a target's toolchain, refusing one of another name. It loads from this package, which
+ * depends on every target, so a project need not install the target packages itself: the
+ * preview (`@unframework.dev/visual`) builds its servers from it too.
+ */
+export async function loadToolchain(target: TargetName): Promise<Toolchain> {
   let module: ToolchainModule;
   try {
     module = await TOOLCHAINS[target]();
@@ -307,6 +319,15 @@ function resolveModule(specifier: string): string {
   return fileURLToPath(import.meta.resolve(specifier));
 }
 
+/**
+ * The file of a toolchain's browser mount adapter (`toolchain.client`), resolved from this
+ * package, which depends on the target: a Vite server outside the test projects imports it by
+ * path, since the project need not install the target package (pnpm keeps it out of reach).
+ */
+export function toolchainClientFile(toolchain: Toolchain): string {
+  return resolveModule(toolchain.client);
+}
+
 async function browserProject(
   setup: ProjectSetup,
   target: TargetName,
@@ -318,13 +339,15 @@ async function browserProject(
   const config = mergeConfig(
     {
       root: setup.root,
-      plugins: await unpluginOf(target),
+      plugins: [...(await unpluginOf(target)), noErrorBroadcast()],
       // The testing API's own browser dependencies (CommonJS axe-core, parse5), listed up front:
       // one discovered mid-run reloads the page. The package itself is not pre-bundled: installed,
       // it would carry a second copy of Vitest's runner, whose suite the specs' tests never reach.
+      // Nor is Qwik's target: its mount adapter holds a `component$` and a `$()` that Qwik's
+      // plugin must compile, which it never does in a pre-bundled dependency.
       optimizeDeps: {
         include: ["@unframework.dev/testing > axe-core", "@unframework.dev/testing > parse5"],
-        exclude: ["@unframework.dev/testing"],
+        exclude: ["@unframework.dev/testing", "@unframework.dev/target-qwik"],
       },
     },
     fragment,
@@ -394,8 +417,10 @@ async function ssrProject(setup: ProjectSetup, target: TargetName): Promise<User
         exclude: [],
         // Vitest hands an ESM package under `node_modules` to Node, which would import each case's
         // `.uf.tsx` past the unplugin. Inlined, the comparison's imports go through this
-        // project's Vite pipeline, as the corpus's do from the workspace.
-        server: { deps: { inline: [TESTING_PACKAGE] } },
+        // project's Vite pipeline, as the corpus's do from the workspace. The targets' server
+        // renderers are inlined too, so they render with the framework the component imports:
+        // through Node they would load a second copy, and Angular's would never be linked.
+        server: { deps: { inline: [TESTING_PACKAGE, TARGET_PACKAGES] } },
         provide: {
           target,
           ufHarness: setup.harness,

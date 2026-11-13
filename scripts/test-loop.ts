@@ -138,8 +138,9 @@ export const FULL_STEPS: readonly Step[] = [
     commands: [
       { command: "pnpm", args: ["--filter", "@unframework.dev/e2e", "prepare-apps"] },
       { command: "pnpm", args: ["--filter", "@unframework.dev/e2e", "e2e"] },
+      { command: "pnpm", args: ["--filter", "@unframework.dev/e2e", "design-system"] },
     ],
-    jobs: ["pack", "e2e"],
+    jobs: ["pack", "e2e", "design-system"],
   },
   {
     name: "canaries",

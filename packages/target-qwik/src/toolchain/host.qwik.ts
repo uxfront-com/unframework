@@ -1,8 +1,9 @@
 // The component the Qwik mount adapter renders: it renders the mounted component with the props
 // a signal holds, so a rerender is setting the signal (browser). Qwik has no public way to
 // update a root's props, and a component built by hand from a QRL renders an error host
-// instead: this one is compiled by the optimizer, like the output under test, which the
-// toolchain's Vite configuration runs on every module, this one included.
+// instead: this one is compiled by the optimizer, like the output under test. Qwik's plugin
+// compiles a package's JavaScript only in a `.qwik.js` file, hence the name: installed, this
+// module is `dist/toolchain/host.qwik.js`.
 import { component$ } from "@qwik.dev/core";
 import type { Component, Signal } from "@qwik.dev/core";
 

@@ -19,15 +19,25 @@ import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  ANALOG_EXTENSION,
   assertInstalledFromTarball,
   copyManifest,
   copyMarker,
   copyWorkspace,
+  DESIGN_SYSTEM_TEST_DEPENDENCIES,
+  designSystemCopyConfig,
+  designSystemCopyManifest,
+  designSystemCopyWorkspace,
+  designSystemDir,
   designSystemSource,
   e2eRoot,
   findApps,
   packedFile,
+  QWIK_VITEST_PEER,
+  readCatalog,
   readPacked,
+  repoRoot,
+  TYPESCRIPT6_OLD,
   startCopy,
   workDir,
   workspaceClosure,
@@ -221,6 +231,116 @@ describe("the copy's manifest and workspace", () => {
       "msgpackr-extract": true,
       sharp: true,
     });
+  });
+});
+
+describe("the design system's copy", () => {
+  const tarballs = {
+    "@uxfront/unframework": "/t/uf.tgz",
+    "@unframework.dev/testing": "/t/testing.tgz",
+    "@unframework.dev/visual": "/t/visual.tgz",
+    "@unframework.dev/ir": "/t/ir.tgz",
+  };
+  const rootWorkspace = readFileSync(join(repoRoot, "pnpm-workspace.yaml"), "utf8");
+  const catalog = readCatalog(rootWorkspace);
+
+  it("reads the root's catalog, quoted names included", () => {
+    expect(catalog.vitest).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(catalog["@vitest/browser-playwright"]).toBe(catalog.vitest);
+    expect(Object.keys(catalog).length).toBeGreaterThan(50);
+  });
+
+  it("refuses a catalog line it can't read, rather than skipping it", () => {
+    expect(readCatalog("catalog:\n  a: 1\n  # note\n\nother:\n  b: 2\n")).toEqual({ a: "1" });
+    expect(() => readCatalog("catalog:\n  a: { b: 1 }\n")).toThrow(/can't take/);
+    expect(() => readCatalog("packages: []\n")).toThrow(/no catalog/);
+  });
+
+  it("installs the packed packages from their tarballs and the rest at the catalog's versions", () => {
+    const manifest = designSystemCopyManifest(tarballs, catalog, "npm:ts6@6", "pnpm@1");
+    expect(manifest.packageManager).toBe("pnpm@1");
+    expect(Object.keys(manifest.devDependencies)).toEqual(DESIGN_SYSTEM_TEST_DEPENDENCIES);
+    expect(manifest.devDependencies).toMatchObject({
+      "@uxfront/unframework": "file:/t/uf.tgz",
+      "@unframework.dev/testing": "file:/t/testing.tgz",
+      "@unframework.dev/visual": "file:/t/visual.tgz",
+      vitest: catalog.vitest,
+      "@angular/compiler-cli": catalog["@angular/compiler-cli"],
+      typescript: "npm:ts6@6",
+    });
+    expect(manifest.dependencies).toBeUndefined();
+    for (const specifier of Object.values<string>(manifest.devDependencies)) {
+      expect(specifier).not.toMatch(/^(workspace|link|catalog):/);
+    }
+  });
+
+  it("fails on a package that is neither packed nor in the catalog", () => {
+    expect(() => designSystemCopyManifest(tarballs, {}, "npm:ts6@6", "pnpm@1")).toThrow(
+      /vitest is neither packed nor in the catalog/,
+    );
+  });
+
+  it("takes TypeScript 6 from the Angular toolchain, as the workspace pins it", () => {
+    const toolchain = JSON.parse(
+      readFileSync(join(repoRoot, "tests/toolchains/angular/package.json"), "utf8"),
+    );
+    expect(toolchain.devDependencies.typescript).toMatch(/^npm:@typescript\/typescript6@6\./);
+  });
+
+  it("repeats the root's settings for Analog, TypeScript 6 and Qwik's Vitest peer", () => {
+    const workspace = JSON.parse(designSystemCopyWorkspace(tarballs));
+    expect(workspace.overrides).toMatchObject({
+      "@unframework.dev/testing": "file:/t/testing.tgz",
+      [TYPESCRIPT6_OLD.key]: TYPESCRIPT6_OLD.value,
+    });
+    expect(workspace.allowBuilds).toEqual(JSON.parse(copyWorkspace(tarballs)).allowBuilds);
+    expect(workspace.packageExtensions).toEqual({ [ANALOG_EXTENSION.key]: ANALOG_EXTENSION.value });
+    expect(workspace.peerDependencyRules).toEqual({
+      allowedVersions: { [QWIK_VITEST_PEER.key]: QWIK_VITEST_PEER.value },
+    });
+    // The root's own entries, as it writes them, so the copy can't drift from them.
+    expect(rootWorkspace).toContain(`  "${TYPESCRIPT6_OLD.key}": ${TYPESCRIPT6_OLD.value}\n`);
+    expect(rootWorkspace).toContain(
+      `  "${ANALOG_EXTENSION.key}":\n    peerDependencies:\n      typescript: "${ANALOG_EXTENSION.value.peerDependencies.typescript}"\n`,
+    );
+    expect(rootWorkspace).toContain(`    "${QWIK_VITEST_PEER.key}": "${QWIK_VITEST_PEER.value}"\n`);
+  });
+
+  it("installs what the testing and visual pages tell a project to install", () => {
+    const docs = join(repoRoot, "apps/web/content/docs/4.tooling");
+    const testing = readFileSync(join(docs, "5.testing.md"), "utf8");
+    const section = testing.slice(
+      testing.indexOf("### Install what it needs"),
+      testing.indexOf("### Configure the run"),
+    );
+    const named = (text: string): Set<string> =>
+      new Set([...text.matchAll(/`((?:@[a-z0-9.-]+\/)?[a-z0-9.-]+)`/g)].map(([, name]) => name!));
+    // The table's second column, and the sentence that names Angular's compiler stack.
+    const packages = section
+      .split("\n")
+      .filter((line) => line.startsWith("| `"))
+      .map((line) => line.split("|")[2]!)
+      .concat(/Angular's compiler stack is [^.]*/.exec(section)![0]);
+    for (const name of named(packages.join("\n"))) {
+      expect(DESIGN_SYSTEM_TEST_DEPENDENCIES, name).toContain(name);
+    }
+    const documented = named(section);
+    const visual = named(readFileSync(join(docs, "6.visual.md"), "utf8"));
+    for (const name of DESIGN_SYSTEM_TEST_DEPENDENCIES) {
+      // TypeScript 6 is named in prose, and the umbrella is what the command comes with.
+      if (name === "typescript" || name === "@uxfront/unframework") continue;
+      expect(documented.has(name) || visual.has(name), name).toBe(true);
+    }
+  });
+
+  it("keeps the design system's targets, without the repository's toolchain paths", () => {
+    const config = readFileSync(join(designSystemDir, "unframework.config.ts"), "utf8");
+    const copy = designSystemCopyConfig(config);
+    expect(copy).toContain(
+      'targets: ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"],',
+    );
+    expect(copy).not.toMatch(/resolveFrom|toolchains/);
+    expect(() => designSystemCopyConfig("export default {};")).toThrow(/names no targets/);
   });
 });
 

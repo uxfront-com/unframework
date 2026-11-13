@@ -13,7 +13,7 @@
 // as it was, so the layer would fail for the wrong reason, or not at all. So the IR canaries
 // change only elements every render shows, with attributes each element takes (an `<svg>` has
 // no `hidden`), and replace what an element already sets rather than set it twice;
-// `canaries.unit.test.ts` runs each canary on every case of the corpus.
+// `canaries-corpus.ts` runs each canary on every case of the corpus.
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join, relative, sep } from "node:path";

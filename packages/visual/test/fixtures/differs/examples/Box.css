@@ -1,0 +1,11 @@
+.box {
+  width: 24px;
+  height: 24px;
+  background-color: rgb(220, 38, 38);
+}
+
+/* Only Vue's mount container has this attribute, so only Vue's box is blue: scoping marks
+   `.box` alone, the last part of the selector. */
+[data-v-app] .box {
+  background-color: rgb(37, 99, 235);
+}

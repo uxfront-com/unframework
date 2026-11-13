@@ -12,7 +12,9 @@
   },
   "scripts": {
     "pack:dist": "unframework build --package",
-    "parity": "unframework test"
+    "parity": "unframework test",
+    "preview": "unframework preview",
+    "visual": "unframework visual"
   },
   "devDependencies": {
     "@angular/common": "catalog:",
@@ -22,6 +24,7 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@unframework.dev/testing": "workspace:*",
+    "@unframework.dev/visual": "workspace:*",
     "@uxfront/unframework": "workspace:*",
     "@vitest/browser-playwright": "catalog:",
     "astro": "catalog:",

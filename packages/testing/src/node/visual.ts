@@ -21,11 +21,13 @@ import type { CDPSession, Page } from "playwright";
 import { PNG } from "pngjs";
 
 import { caseReference } from "../harness.ts";
+import type { HarnessContext } from "../harness.ts";
 import type {
   CaptureAttachment,
   CaptureOutcome,
   CaptureRequest,
   CaptureResult,
+  GeometryDelta,
   GeometrySnapshot,
 } from "../visual-types.ts";
 import { caseDirectory, displayRoot, projectHarness } from "./context.ts";
@@ -34,6 +36,8 @@ import { specFinished } from "./finished.ts";
 import { BASELINE_ENVIRONMENT } from "./mode.ts";
 import { KEBAB_CASE } from "./names.ts";
 import { writeIfChanged } from "./policy.ts";
+
+export type { GeometryDelta } from "../visual-types.ts";
 
 /** The font file's internal family name that CDP reports for the bundled "UF Test Sans". */
 export const ALLOWED_FONTS: readonly string[] = ["Inter"];
@@ -87,42 +91,108 @@ function references(): Map<string, ReferenceCapture> {
 
 const cdpSessions = new WeakMap<Page, Promise<CDPSession>>();
 
+/**
+ * Where one capture's expectations and evidence live, and what its messages call it: a corpus
+ * case's scenario ({@link caseCaptureLocation}), or a project's example (`@unframework.dev/visual`,
+ * ADR-0087). L10's policy and comparison are the same for both.
+ */
+export interface CaptureLocation {
+  /** Identifies the scenario among the run's captures: the reference's capture is kept under it. */
+  key: string;
+  /** What messages call the scenario, such as `basics/hello/initial`. */
+  label: string;
+  /** The case whose spec file captures it: whether the reference finished it (ADR-0091). */
+  case: string;
+  /** The target whose capture is the expectation: it publishes or writes, the others compare. */
+  reference: string;
+  /** The committed Linux screenshot. */
+  baselinePng: string;
+  /** The committed geometry and computed styles. */
+  geometry: string;
+  /** Where the reference publishes its capture with live pixels. */
+  livePng: string;
+  /** Where a failed comparison leaves its reference, actual and diff images and its geometry. */
+  diffs: string;
+  /** Where every capture of this target is written, a passing one too; none by default. */
+  capture?: string;
+  /** The command that writes the committed baselines, which a refusal or a missing one names. */
+  baselineCommand: string;
+}
+
+/** A case's scenario as L10 locates it: the case's `__screenshots__/` and `__expected__/`. */
+export function caseCaptureLocation(
+  harness: HarnessContext,
+  caseId: string,
+  name: string,
+  target: string,
+): CaptureLocation {
+  const caseDir = caseDirectory(harness, caseId);
+  return {
+    key: `${caseId}/${name}`,
+    label: `${caseId}/${name}`,
+    case: caseId,
+    // The case's reference (ADR-0057) publishes or writes its pixels; every other target compares.
+    reference: caseReference(harness, caseId),
+    baselinePng: join(caseDir, "__screenshots__", baselineFileName(name)),
+    geometry: join(caseDir, "__expected__", `geometry.${name}.json`),
+    livePng: join(harness.liveDir, caseId, `${name}.png`),
+    diffs: join(harness.diffsDir, caseId, `${name}.${target}`),
+    baselineCommand: "pnpm test:baselines",
+  };
+}
+
+/** A baseline PNG's file name: the scenario, then the browser and platform that produced it. */
+export function baselineFileName(name: string): string {
+  return `${name}-${BROWSER}-${BASELINE_PLATFORM}.png`;
+}
+
 /** `ufVisualCapture`: the L10 command. */
 export async function ufVisualCapture(
   context: VisualCommandContext,
   request: CaptureRequest,
 ): Promise<CaptureResult> {
   const { target, harness } = projectHarness(context);
-  const caseDir = caseDirectory(harness, request.case);
+  const location = caseCaptureLocation(harness, request.case, request.name, target);
   if (!KEBAB_CASE.test(request.name)) {
     throw new Error(`[uf:visual] "${request.name}" is not a kebab-case scenario name.`);
   }
+  return captureAt(context, request, location);
+}
+
+/**
+ * L10 at a location: audits the fonts, captures a stable PNG, then publishes, writes or compares
+ * it under the run's policy. The corpus's command and a project's examples both run it.
+ */
+export async function captureAt(
+  context: VisualCommandContext,
+  request: CaptureRequest,
+  location: CaptureLocation,
+): Promise<CaptureResult> {
+  const { target, harness } = projectHarness(context);
   if (request.tolerance && !request.tolerance.reason.trim()) {
-    throw new Error(`[uf:visual] ${request.case} "${request.name}": a tolerance needs a reason.`);
+    throw new Error(`[uf:visual] ${location.label}: a tolerance needs a reason.`);
   }
   const root = displayRoot(harness);
   const rel = (file: string) => relative(root, file).split(sep).join("/");
-  // The case's reference (ADR-0057) publishes or writes its pixels; every other target compares.
-  const reference = caseReference(harness, request.case);
+  const reference = location.reference;
   const isReference = target === reference;
   const mode = `${harness.update ? "update" : "check"}+${harness.pixels}`;
-  const key = `${harness.runId}:${request.case}/${request.name}`;
+  const key = `${harness.runId}:${location.key}`;
   const paths = {
-    baselinePng: join(
-      caseDir,
-      "__screenshots__",
-      `${request.name}-${BROWSER}-${BASELINE_PLATFORM}.png`,
-    ),
-    geometry: join(caseDir, "__expected__", `geometry.${request.name}.json`),
-    livePng: join(harness.liveDir, request.case, `${request.name}.png`),
-    diffs: join(harness.diffsDir, request.case, `${request.name}.${target}`),
+    baselinePng: location.baselinePng,
+    geometry: location.geometry,
+    livePng: location.livePng,
+    diffs: location.diffs,
   };
+  // Set once the capture is written where the location keeps every capture.
+  let captured = false;
   const done = (
     result: Pick<CaptureResult, "pass" | "outcome" | "message"> & Partial<CaptureResult>,
   ): CaptureResult => ({
     mode,
     role: isReference ? "reference" : "follower",
     attachments: [],
+    ...(location.capture && captured ? { capture: location.capture } : {}),
     ...result,
   });
 
@@ -148,6 +218,10 @@ export async function ufVisualCapture(
     });
   }
   const geometryJson = `${JSON.stringify(request.geometry, null, 2)}\n`;
+  if (location.capture) {
+    writeIfChanged(location.capture, png);
+    captured = true;
+  }
 
   // 3. The reference publishes its capture (live), or writes the baselines (update, in the
   //    baseline environment).
@@ -167,7 +241,7 @@ export async function ufVisualCapture(
       return done({
         pass: false,
         outcome: "refused-write",
-        message: `Refusing to write ${rel(paths.geometry)} and ${rel(paths.baselinePng)}: the committed baselines come from ${BASELINE_ENVIRONMENT} (\`pnpm test:baselines\`), and this run is in ${harness.baselineEnvironment ?? "another environment"}.`,
+        message: `Refusing to write ${rel(paths.geometry)} and ${rel(paths.baselinePng)}: the committed baselines come from ${BASELINE_ENVIRONMENT} (\`${location.baselineCommand}\`), and this run is in ${harness.baselineEnvironment ?? "another environment"}.`,
       });
     }
     writeIfChanged(paths.geometry, geometryJson);
@@ -198,22 +272,21 @@ export async function ufVisualCapture(
       // filtered out of the run, or one that finished the case without capturing this
       // scenario, stays a failure of this cell.
       const referenceProject = browserProjectOf(context, reference);
-      if (referenceProject !== undefined && !specFinished(harness.runId, reference, request.case)) {
+      if (
+        referenceProject !== undefined &&
+        !specFinished(harness.runId, reference, location.case)
+      ) {
         return done({
           pass: false,
           outcome: "reference-not-run",
           referenceProject,
-          message: `The reference's browser project (${referenceProject}) did not finish ${request.case}'s spec file in this run, so ${request.case}/${request.name} has nothing to compare with.`,
+          message: `The reference's browser project (${referenceProject}) did not finish ${location.case}'s spec file in this run, so ${location.label} has nothing to compare with.`,
         });
       }
       return done({
         pass: false,
         outcome: "missing-reference-capture",
-        message: missingReference(
-          reference,
-          `${request.case}/${request.name}`,
-          harness.update ? "update" : "live",
-        ),
+        message: missingReference(reference, location.label, harness.update ? "update" : "live"),
       });
     }
     expectedGeometry = fromThisRun.geometry;
@@ -226,7 +299,7 @@ export async function ufVisualCapture(
       return done({
         pass: false,
         outcome: "missing-artefact",
-        message: `Missing artefact ${missing.map(rel).join(" and ")}. Run \`pnpm test:baselines\` to write it (the reference target, ${reference}, in the Linux image).`,
+        message: `Missing artefact ${missing.map(rel).join(" and ")}. Run \`${location.baselineCommand}\` to write it (the reference target, ${reference}, in the Linux image).`,
       });
     }
     expectedGeometry = JSON.parse(readFileSync(paths.geometry, "utf8")) as GeometrySnapshot;
@@ -266,6 +339,7 @@ export async function ufVisualCapture(
         `The capture is ${actual.width}×${actual.height}px; ${against} is ${expected.width}×${expected.height}px.`,
       ].join("\n"),
       attachments,
+      deltas: geometryDiff,
     });
   }
   const diffPixels = countDifferentPixels(expected.data, actual.data);
@@ -288,6 +362,7 @@ export async function ufVisualCapture(
         `${diffPixels} pixel(s) differ from ${against} (allowed: ${allowed}${request.tolerance ? `, because ${request.tolerance.reason}` : ""}).`,
       ].join("\n"),
       attachments,
+      deltas: geometryDiff,
     });
   }
   const outcome: CaptureOutcome = diffPixels ? "matched-within-tolerance" : "matched";
@@ -437,14 +512,6 @@ function countDifferentPixels(a: Uint8Array, b: Uint8Array): number {
     }
   }
   return count;
-}
-
-/** One difference between two geometry snapshots. */
-export interface GeometryDelta {
-  path: string;
-  property: string;
-  expected: unknown;
-  actual: unknown;
 }
 
 /** Every box and computed-style difference, by element path. */

@@ -231,3 +231,146 @@ const ALLOWED_BUILDS = {
   "msgpackr-extract": true,
   sharp: true,
 };
+
+/** Where `prepare-apps` installs the design system as a project of its own (ADR-0089). */
+export const designSystemCopyName = "design-system";
+
+/**
+ * What a project installs to run `unframework test` and `unframework visual` on all seven targets:
+ * the lists of `4.tooling/5.testing.md` and `6.visual.md`, each target's framework and Vite plugin
+ * included, since a target's tarball keeps them as devDependencies. The copy installs exactly
+ * these, so a package the docs forgot fails here, as it would in a user's project.
+ */
+export const DESIGN_SYSTEM_TEST_DEPENDENCIES: readonly string[] = [
+  "@uxfront/unframework",
+  "@unframework.dev/testing",
+  "@unframework.dev/visual",
+  "vitest",
+  "@vitest/browser-playwright",
+  "playwright",
+  // react
+  "react",
+  "react-dom",
+  "@vitejs/plugin-react",
+  "@babel/core",
+  "babel-plugin-react-compiler",
+  // vue
+  "vue",
+  "@vitejs/plugin-vue",
+  // svelte
+  "svelte",
+  "@sveltejs/vite-plugin-svelte",
+  // solid
+  "solid-js",
+  "vite-plugin-solid",
+  // angular, with its compiler stack on TypeScript 6
+  "@angular/core",
+  "@angular/common",
+  "@angular/platform-browser",
+  "@angular/platform-server",
+  "@angular/compiler",
+  "@angular/compiler-cli",
+  "@angular/build",
+  "@analogjs/vite-plugin-angular",
+  "typescript",
+  // qwik
+  "@qwik.dev/core",
+  // astro
+  "astro",
+];
+
+/**
+ * The `catalog:` of a `pnpm-workspace.yaml`. It reads the flat mapping this repository writes,
+ * one `name: version` line each, rather than YAML at large, so it needs no parser.
+ */
+export function readCatalog(text: string): Record<string, string> {
+  const lines = text.split("\n");
+  const start = lines.indexOf("catalog:");
+  if (start === -1) throw new Error("pnpm-workspace.yaml has no catalog.");
+  const catalog: Record<string, string> = {};
+  for (const line of lines.slice(start + 1)) {
+    if (/^\s*(#.*)?$/.test(line)) continue;
+    const entry = /^ {2}("?)([^":\s]+)\1: (\S+)$/.exec(line);
+    if (!entry) {
+      if (/^\S/.test(line)) break;
+      throw new Error(`The catalog has a line this reader can't take: ${line}`);
+    }
+    catalog[entry[2]!] = entry[3]!;
+  }
+  return catalog;
+}
+
+/**
+ * The design system's copy's manifest. The packed packages come from their tarballs and the rest
+ * at the catalog's versions. TypeScript 6 isn't in the catalog: it's the Angular toolchain's,
+ * which the workspace keeps outside every package (AGENTS.md).
+ */
+export function designSystemCopyManifest(
+  tarballs: Record<string, string>,
+  catalog: Record<string, string>,
+  typescript6: string,
+  packageManager: string,
+): Manifest {
+  const devDependencies: Record<string, string> = {};
+  for (const name of DESIGN_SYSTEM_TEST_DEPENDENCIES) {
+    const version = name === "typescript" ? typescript6 : (tarballs[name] ?? catalog[name]);
+    if (!version) throw new Error(`${name} is neither packed nor in the catalog.`);
+    devDependencies[name] = name in tarballs ? `file:${version}` : version;
+  }
+  return {
+    name: "e2e-design-system-copy",
+    version: "0.0.0",
+    private: true,
+    type: "module",
+    packageManager,
+    devDependencies,
+  };
+}
+
+/**
+ * The design system's copy's `pnpm-workspace.yaml`: the apps' overrides and builds, and the
+ * settings of the root's that its toolchains need. Analog imports `typescript` without declaring
+ * it, `@typescript/typescript6` takes `typescript@^6` unpinned, and Qwik's beta peers an older
+ * Vitest. The harness's tests hold each to the root's own entry.
+ */
+export function designSystemCopyWorkspace(tarballs: Record<string, string>): string {
+  const workspace = JSON.parse(copyWorkspace(tarballs));
+  workspace.overrides[TYPESCRIPT6_OLD.key] = TYPESCRIPT6_OLD.value;
+  workspace.packageExtensions = { [ANALOG_EXTENSION.key]: ANALOG_EXTENSION.value };
+  workspace.peerDependencyRules = {
+    allowedVersions: { [QWIK_VITEST_PEER.key]: QWIK_VITEST_PEER.value },
+  };
+  return `${JSON.stringify(workspace, null, 2)}\n`;
+}
+
+/** The root's settings the copy repeats, each as the root's `pnpm-workspace.yaml` writes it. */
+export const TYPESCRIPT6_OLD = {
+  key: "@typescript/typescript6>@typescript/old",
+  value: "npm:typescript@6.0.3",
+};
+export const ANALOG_EXTENSION = {
+  key: "@analogjs/vite-plugin-angular@2",
+  value: { peerDependencies: { typescript: ">=6.0 <6.1" } },
+};
+export const QWIK_VITEST_PEER = { key: "@qwik.dev/core>vitest", value: "5" };
+
+/**
+ * The design system's `unframework.config.ts` for its copy: the same targets, without
+ * `package.resolveFrom`, whose `../../toolchains/…` exists only in the repository. The copy
+ * installs those toolchains itself, at its root.
+ */
+export function designSystemCopyConfig(config: string): string {
+  const targets = /^ {2}targets: (\[[^\]\n]*\]),$/m.exec(config)?.[1];
+  if (!targets) throw new Error("The design system's unframework.config.ts names no targets.");
+  return [
+    `import { defineConfig } from "@uxfront/unframework/config";`,
+    "",
+    "export default defineConfig({",
+    `  targets: ${targets},`,
+    "});",
+    "",
+  ].join("\n");
+}
+
+/** The design system's files a copy takes: its sources, examples and cases, not its scratch. */
+export const DESIGN_SYSTEM_COPIED: readonly string[] = ["src", "examples", "test"];

@@ -20,7 +20,7 @@ Found a bug, or have an idea? Search the [existing issues](https://github.com/ux
   | `@unframework.dev/compiler`         | `compile()`: the passes in order, for every selected target.                                                                                        |
   | `@unframework.dev/unplugin`         | The bundler plugin: `.uf.tsx` imports compile to the host framework, on Vite (tested) and every bundler unplugin offers, and the Astro integration. |
   | `@uxfront/unframework`              | The authoring API and the JSX types of `.uf.tsx` components.                                                                                        |
-  | `@unframework.dev/testing`          | The cross-target test API, normalisation, the parity reporter. Private until M7.                                                                    |
+  | `@unframework.dev/testing`          | The cross-target test API, normalisation, the parity reporter. Private until its first release.                                                     |
 
 - `tests/integration`: the corpus and its harness, which verify every case on every target. See [`tests/integration/README.md`](../tests/integration/README.md).
 - `tests/toolchains/<name>`: the type checkers of each target's output, with TypeScript 6 where a checker still needs it.
@@ -68,7 +68,8 @@ code (plan P1). Before you open a pull request:
 
 1. `pnpm check-types && pnpm lint && pnpm format:check`
 2. `pnpm test:full`. It runs what CI's test jobs run: every package's tests, the whole corpus, the
-   `bench` project, the e2e apps, and the canaries when the branch changes a path on
+   `bench` project, the e2e apps, the sample design system's tests and visual suite from
+   tarballs, and the canaries when the branch changes a path on
    `CANARY_PATHS` (`tests/integration/scripts/canary-paths.ts`). It leaves out the CI jobs it
    can't stand in for, and `pnpm test:full --list` names each with its reason. The `bench` step
    measures each case's compile time against `basics/hello` in the same run, so run `test:full`

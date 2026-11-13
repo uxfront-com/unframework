@@ -275,6 +275,29 @@ export { Card };
     expect(existsSync(join(root, "dist"))).toBe(false);
   });
 
+  it("emits nothing for an example in src, which unframework visual renders (ADR-0087)", async () => {
+    const root = project({
+      ...FIXTURE,
+      "src/Card.example.uf.tsx":
+        'import Card from "./Card.uf.tsx";\n\nexport default function CardExample() {\n  return <Card label="Hi" />;\n}\n',
+      // Never compiled: a broken example would fail the build.
+      "src/forms/Broken.example.uf.tsx": "broken <",
+    });
+    const { code, stderr } = await run(root, "build");
+    expect(code).toBe(0);
+    expect(stderr).not.toMatch(/example|Broken/i);
+    for (const target of TARGETS) {
+      const paths = Object.keys(tree(join(root, "dist", target)));
+      expect(
+        paths.filter((path) => /example|Broken/i.test(path)),
+        target,
+      ).toEqual([]);
+      expect(readFileSync(join(root, "dist", target, "index.ts"), "utf8")).not.toMatch(/example/i);
+    }
+    const { code: checked } = await run(root, "check");
+    expect(checked).toBe(0);
+  });
+
   it("exits 1 on an error diagnostic, and leaves the last build in place", async () => {
     const root = project(FIXTURE);
     await run(root, "build");

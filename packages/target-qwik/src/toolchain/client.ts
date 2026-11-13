@@ -10,9 +10,9 @@ import { _getDomContainer, _waitUntilRendered } from "@qwik.dev/core/internal";
 import type { MountAdapter, MountListener } from "@unframework.dev/codegen";
 
 import { asComponent } from "./component.ts";
-import { Host } from "./host.ts";
-import type { HostState } from "./host.ts";
-import { listenerQrl } from "./listener.ts";
+import { Host } from "./host.qwik.ts";
+import type { HostState } from "./host.qwik.ts";
+import { listenerQrl } from "./listener.qwik.ts";
 import { nextTask, SegmentLoads } from "./loads.ts";
 
 /** The segments loading in the page, which the toolchain's browser build reports (./loads.ts). */
@@ -21,7 +21,7 @@ loads.install();
 
 /**
  * Mounts a compiled Qwik component with a client-only render (no SSR, no resumption). The
- * component is rendered by `Host` (./host.ts), which passes it the props a signal holds: a
+ * component is rendered by `Host` (./host.qwik.ts), which passes it the props a signal holds: a
  * rerender sets the signal. Qwik marks the container `q:container="resumed"` and refuses to
  * render into it twice, so every mount needs a fresh container. `render()` resolves after the
  * first render, component segments included; `settle()` waits for the render a later update
