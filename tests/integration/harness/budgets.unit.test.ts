@@ -29,12 +29,6 @@ import { loadToolchain } from "./targets.ts";
 const budget: CaseCost = { time: 2, sizes: { vue: { raw: 1000, gzip: 500 } } };
 const size = { raw: 1000, gzip: 500 };
 
-/** Spins for `ms` on the calling thread. */
-function spin(ms: number): void {
-  const end = performance.now() + ms;
-  while (performance.now() < end);
-}
-
 describe("cpuTime", () => {
   // What another thread burns stands in for V8's background GC and JIT, which made a case's time
   // differ more than twofold between runs on a quiet machine.
@@ -62,10 +56,20 @@ describe("cpuTime", () => {
     }
   });
 
+  // It spins until the thread has run for 100 ms, not for a fixed time on the wall: on a loaded
+  // machine, 200 ms on the wall gave the thread 33 ms. The deadline makes a clock that never moves
+  // fail here, not at Vitest's timeout, and leaves the thread 1% of a core to get there.
   it("counts this thread's own work", () => {
+    const start = performance.now();
     const before = cpuTime();
-    spin(200);
-    expect(cpuTime() - before).toBeGreaterThan(100);
+    while (cpuTime() - before < 100 && performance.now() - start < 10_000);
+    const used = cpuTime() - before;
+    const elapsed = performance.now() - start;
+    expect(used).toBeGreaterThanOrEqual(100);
+    // One thread runs for no longer than the time that passed, so a clock that counts too much,
+    // like one in microseconds, fails here. On Linux, a read can lag by one scheduler tick, which
+    // is 10 ms at most.
+    expect(used).toBeLessThanOrEqual(elapsed + 10);
   });
 });
 
