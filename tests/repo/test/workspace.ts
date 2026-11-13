@@ -28,15 +28,20 @@ export function packages(): WorkspacePackage[] {
     }));
 }
 
-/** Every TypeScript source file under a directory. */
+/**
+ * Every TypeScript source file under a directory. The walk skips `node_modules`, `dist` and every
+ * dot directory, as Node's `glob` does, so the git-ignored scratch the tests leave (`.canary/`,
+ * `.reports/`, `.vitest/`) is never read.
+ */
 export function sourceFiles(directory: string): string[] {
   if (!existsSync(directory)) return [];
   const files: string[] = [];
   for (const entry of readdirSync(directory)) {
     if (entry === "node_modules" || entry === "dist") continue;
     const path = join(directory, entry);
-    if (statSync(path).isDirectory()) files.push(...sourceFiles(path));
-    else if (/\.(?:[cm]?ts|tsx)$/.test(entry) && !entry.endsWith(".d.ts")) files.push(path);
+    if (statSync(path).isDirectory()) {
+      if (!entry.startsWith(".")) files.push(...sourceFiles(path));
+    } else if (/\.(?:[cm]?ts|tsx)$/.test(entry) && !entry.endsWith(".d.ts")) files.push(path);
   }
   return files.sort();
 }

@@ -329,7 +329,7 @@ or at module scope, and a setup `let` a signal: a `$` scope captures only what Q
 serialise, and never assigns a `let` it captures.
 
 The mount adapter renders the component through
-`Host` (`src/toolchain/host.ts`), a `component$` the optimizer compiles, which passes it the
+`Host` (`src/toolchain/host.qwik.ts`), a `component$` the optimizer compiles, which passes it the
 props a signal holds: `rerender` replaces the signal's props whole, so an absent prop takes its
 default again (ADR-0043). Both adapters hand the props over as a parent's written attributes
 do (`<Card bio={bio} />`, which the optimizer compiles to `_jsxSorted`), so a `null` arrives as

@@ -51,7 +51,7 @@ describe("LoadFailureReporter", () => {
   it("writes an empty list when every module loaded", () => {
     const file = join(root, "clean.json");
     new LoadFailureReporter({ file, root }).onTestRunEnd([
-      module("ssr:vue", "harness/ssr.test.ts", []),
+      module("ssr:vue", "harness/ssr.0.test.ts", []),
     ]);
     expect(readLoadFailures(file)).toEqual([]);
   });

@@ -82,6 +82,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@unframework.dev/testing": "workspace:*",
+    "@unframework.dev/visual": "workspace:*",
     "@uxfront/typescript-config": "catalog:",
     "@vue/runtime-dom": "3.5.43",
     "tsdown": "catalog:",
@@ -90,10 +91,14 @@
     "vue": "catalog:"
   },
   "peerDependencies": {
-    "@unframework.dev/testing": "workspace:*"
+    "@unframework.dev/testing": "workspace:*",
+    "@unframework.dev/visual": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@unframework.dev/testing": {
+      "optional": true
+    },
+    "@unframework.dev/visual": {
       "optional": true
     }
   }

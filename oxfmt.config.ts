@@ -15,6 +15,8 @@ export default defineConfig({
     "packages/testing/test/parity/cases/**/__expected__/**",
     // The sample design system's expectations, which `unframework test --update` writes.
     "tests/e2e/design-system/**/__expected__/**",
+    // A visual run's generated specs and report (`unframework visual`, ADR-0087).
+    "**/.unframework/**",
     // Generated from the IR's types: `pnpm --filter @unframework.dev/ir generate --check` compares
     // it byte for byte.
     "packages/ir/schema/**",

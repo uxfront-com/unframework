@@ -33,21 +33,52 @@ pnpm -C tests/e2e/design-system exec unframework test --update
 The script is named `parity`, not `test`, so CI's unit job doesn't pick up its fourteen browser
 and server render projects. Review every file `--update` writes under `__expected__/`.
 
+### From the tarballs
+
+`prepare-apps` also installs the design system as a project of its own, `<work>/design-system`,
+from the packed tarballs ([ADR-0089](../../docs/adrs/0089-the-design-system-runs-from-tarballs.md)).
+Run its tests and then its visual suite there, on all seven targets:
+
+```sh
+pnpm --filter @unframework.dev/e2e prepare-apps
+pnpm --filter @unframework.dev/e2e design-system
+```
+
+The script runs `unframework test` and then `unframework visual`. Both always run, and it fails
+when either does. It prints the visual run directory, `<work>/design-system/.unframework/visual`,
+which holds `report.html`, `report.json` and the images. CI's `Design system` job runs it and
+uploads that directory, even on failure.
+
+The copy holds the design system's `src`, `examples` and `test`, and its own
+`unframework.config.ts`, with the same targets and no `resolveFrom`. Its `package.json` holds
+exactly what the [testing](../../apps/web/content/docs/4.tooling/5.testing.md) and
+[visual](../../apps/web/content/docs/4.tooling/6.visual.md) pages tell a project to install:
+`@uxfront/unframework`, `@unframework.dev/testing` and `@unframework.dev/visual` from the tarballs,
+and every other package at its version in the `catalog:`, Angular's compiler stack on TypeScript 6
+included. So when a page's list changes, `DESIGN_SYSTEM_TEST_DEPENDENCIES` in `harness/apps.ts`
+changes with it, and the harness's tests fail until it does.
+
+An edit to the design system's files needs a new copy, as an app's does. A change to a package needs
+a new pack too.
+
 ## What `prepare-apps` does
 
 It takes four steps:
 
-1. It builds `@uxfront/unframework` and `@unframework.dev/unplugin` with what they depend on, then runs the design system's `pack:dist` script if it has one.
+1. It builds `@uxfront/unframework`, `@unframework.dev/unplugin`, `@unframework.dev/testing` and `@unframework.dev/visual` with what they depend on, then runs the design system's `pack:dist` script if it has one. The umbrella reaches testing and visual only through optional peers, so they're named.
 2. It runs `pnpm pack` on them, on every workspace package they reach and on the design system, into `tests/e2e/.tarballs/`. The design system is packed from `design-system/dist/package` when that exists, and from its own directory otherwise.
 3. It replaces each copy at `<work>/<app>`. `<work>` is `$UF_E2E_WORK_DIR`, or `unframework-e2e` in the system's temporary directory. The copy's manifest gains the design system's tarball, plus `@uxfront/unframework` and `@unframework.dev/unplugin` if the app has a plugin mode. Its `pnpm-workspace.yaml` holds an override for every tarball and the `allowBuilds` list, which makes the copy its own workspace root.
 4. It runs `pnpm install --prefer-offline` in the copy, and prints the copy's path.
+
+Then it installs the design system's copy the same way, and checks with `assertInstalledFromTarball` that `@uxfront/unframework`, `@unframework.dev/testing` and `@unframework.dev/visual` come from their tarballs. Its `pnpm-workspace.yaml` also repeats three of the root's settings its toolchains need: Analog's `typescript` peer, the TypeScript that `@typescript/typescript6` installs, and Qwik's `vitest` peer.
 
 Step 2 also writes `.tarballs/packed.json`, which names each package's tarball. Two flags split the steps, so the packages can be built once and installed elsewhere:
 
 - `prepare-apps --pack` stops after step 2.
 - `prepare-apps --reuse-tarballs` starts at step 3, with the tarballs that `packed.json` names. It fails if the record or a tarball is missing, and it never checks that they match your checkout, so pack again after you change a package.
+- `--only apps` or `--only design-system` installs one kind of copy. Either goes with `--reuse-tarballs` or with no flag.
 
-CI's `Pack` job runs the first and uploads `.tarballs`. The `E2E` job downloads it, runs the second, then runs every project of every app in the Playwright image.
+CI's `Pack` job runs the first and uploads `.tarballs`. The `E2E` job downloads it, runs the second with `--only apps`, then runs every project of every app in the Playwright image. The `Design system` job runs it with `--only design-system`, then the `design-system` script, in the same image.
 
 `<work>` must be outside the repository: a copy inside it would resolve upward into the workspace's `node_modules`, so a dependency a tarball forgot would still pass. `prepare-apps` refuses such a directory. It also refuses to replace a directory it didn't make, which it recognises by the `.unframework-e2e-copy` file in each copy.
 

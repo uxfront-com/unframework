@@ -4,7 +4,10 @@
 // then finds no decorators left and passes the module through (the Angular+Qwik ADR). A child
 // that a module imports is a virtual module too, so it is resolved and loaded first (ADR-0053).
 // The compile itself runs in a worker (ngtsc-worker): Vitest serves every project's transforms
-// from one main thread, and a compile there would stall all of them while it runs.
+// from one main thread, and a compile there would stall all of them while it runs. The workers
+// are a small pool, so the compiles that several test files ask for at once run at once
+// (ADR-0093).
+import { availableParallelism } from "node:os";
 import { dirname, extname, resolve } from "node:path";
 import { Worker } from "node:worker_threads";
 
@@ -57,7 +60,7 @@ export interface CompileRequest {
   declarations: string[];
 }
 
-/** What the worker receives: a compile, or a plugin whose program it can drop. */
+/** What a worker receives: a compile, or a plugin whose program it can drop. */
 export type WorkerRequest = (CompileRequest & { request: number }) | { release: number };
 
 /** The outcome of one compile: JavaScript and its source map, or what stopped it. */
@@ -72,15 +75,16 @@ export interface Compiled {
   exports: string[];
 }
 
-/** What the worker replies to a compile: its outcome, or what it threw. */
+/** What a worker replies to a compile: its outcome, or what it threw. */
 export type WorkerReply = { request: number } & ({ compiled: Compiled } | { failure: unknown });
 
 /**
  * Compiles `<abs>/X.uf.tsx.ts` and `<abs>/X.uf.ts.ts` ids with Angular's AOT compiler under the
  * strict options L3 checks with, failing the module on any error (template type errors included)
- * and passing warnings to Vite. Compiles run one at a time in a worker, each reusing the previous
- * program, so libraries are analysed once. `declarations` are the ambient declarations each
- * program reads beside the module (`ToolchainContext.declarations`).
+ * and passing warnings to Vite. Compiles run in a pool of workers (`compilePool`), as many at once
+ * as it has workers, and each worker's compiles for a plugin reuse its previous program, so each
+ * worker analyses the libraries once. `declarations` are the ambient declarations each program
+ * reads beside the module (`ToolchainContext.declarations`).
  */
 export function ngtscVirtual(
   compiler: AngularCompiler,
@@ -90,9 +94,6 @@ export function ngtscVirtual(
   let api: UnframeworkApi | undefined;
   /** The virtual module each relative import of a virtual module resolved to, by importer. */
   const children = new Map<string, string>();
-  // Compiles run in order, and each collects the sources it reads only once the one before it
-  // is done, when its host would have read them on this thread.
-  let queue: Promise<unknown> = Promise.resolve();
 
   function compile(id: string, code: string): Promise<Compiled> {
     const sources = new Map([[id, code]]);
@@ -117,7 +118,7 @@ export function ngtscVirtual(
         if (source !== undefined) sources.set(child, source);
       }
     }
-    return compileWorker(compiler).compile({
+    return compilePoolOf(compiler).compile({
       plugin: pluginId,
       id,
       sources: [...sources, ...sheets],
@@ -174,13 +175,11 @@ export function ngtscVirtual(
             return { code: failingModule(message, exportedNames(code)), map: null };
           }
         }
-        const run = queue.then(() => compile(id, code));
-        // The queue only orders compiles; each caller still gets its own outcome or error.
-        queue = run.then(
-          () => undefined,
-          () => undefined,
-        );
-        const compiled = await run;
+        // Compiles need no order among themselves: the sources one reads are collected here,
+        // after the loop above has loaded every child it imports, so the unframework plugin
+        // holds them, and the worker reads nothing else of the plugin. Two transforms that
+        // compile at once go to two workers, or wait in one, each with its own outcome.
+        const compiled = await compile(id, code);
         if (compiled.warnings) this.warn(compiled.warnings);
         if (compiled.codes.length) {
           const message = `ngtsc rejected ${id} (${compiled.codes.join(", ")}):\n${compiled.errors}`;
@@ -198,8 +197,8 @@ export function ngtscVirtual(
       },
     },
   };
-  // The worker keeps each plugin's previous program: a plugin that is gone needs it no more.
-  released.register(result, () => workers.get(compiler)?.release(pluginId));
+  // The workers keep each plugin's previous program: a plugin that is gone needs it no more.
+  released.register(result, () => pools.get(compiler)?.release(pluginId));
   return result;
 }
 
@@ -211,63 +210,126 @@ export function workerUrl(moduleUrl: string): URL {
   return new URL(`./ngtsc-worker${extname(new URL(moduleUrl).pathname)}`, moduleUrl);
 }
 
-/** A worker thread that compiles for every plugin on one compiler, in the order asked. */
-interface CompileWorker {
-  compile(request: CompileRequest): Promise<Compiled>;
-  release(plugin: number): void;
+/** A thread the pool compiles on: a `Worker` running ngtsc-worker, or a stand-in in tests. */
+export interface CompileThread {
+  postMessage(message: WorkerRequest): void;
+  on(event: "message", listener: (reply: WorkerReply) => void): unknown;
+  on(event: "error", listener: (error: Error) => void): unknown;
+  on(event: "exit", listener: (code: number) => void): unknown;
+  ref(): unknown;
+  unref(): unknown;
 }
 
-let nextPlugin = 0;
-const workers = new WeakMap<AngularCompiler, CompileWorker>();
-const released = new FinalizationRegistry<() => void>((release) => release());
+/** Workers that compile for every plugin on one compiler. */
+export interface CompilePool {
+  compile(request: CompileRequest): Promise<Compiled>;
+  /** Tells every worker started so far that `plugin` is gone, so it drops its program. */
+  release(plugin: number): void;
+  /** How many workers are alive. */
+  readonly threads: number;
+}
 
 /**
- * The worker of `compiler`, started on its first compile. One per compiler and so per process:
- * it loads the compiler and parses the library declarations once, as one main thread did for
- * every plugin. It holds the process open only while a compile waits on it.
+ * How many workers a pool may start: one, or two on a machine with four cores or more. Vitest's
+ * own workers render and test while ngtsc compiles, and each compile worker holds about 400 MB,
+ * a TypeScript program with Angular's declarations for each plugin. On the ssr run, three or
+ * four workers took the peak memory past 1.5 times that of a single worker, and saved no time
+ * that a loaded machine's measurements could tell apart from two's (ADR-0093).
  */
-function compileWorker(compiler: AngularCompiler): CompileWorker {
-  const existing = workers.get(compiler);
-  if (existing) return existing;
-  // `angularScope` is the toolchain directory's `node_modules/@angular` (tools.ts).
-  const toolchainDir = dirname(dirname(compiler.angularScope));
-  const thread = new Worker(workerUrl(import.meta.url), {
-    workerData: { toolchainDir },
-  });
-  thread.unref();
-  const pending = new Map<
-    number,
-    { resolve(compiled: Compiled): void; reject(e: unknown): void }
-  >();
+export function poolSize(parallelism: number = availableParallelism()): number {
+  return Math.min(2, Math.max(1, Math.floor(parallelism / 2)));
+}
+
+/**
+ * A pool of at most `size` threads, each started by `start` only when every thread alive is
+ * busy. A compile goes to an idle thread, the one started first, so a light load keeps reusing
+ * one program, or else to a new thread, or else to the thread with the fewest compiles waiting.
+ * Each thread compiles one request at a time, in the order it gets them. A thread holds the
+ * process open only while a compile waits on it. A thread that dies fails only the compiles it
+ * holds, or exits, and the next compile starts another in its place.
+ */
+export function compilePool(start: () => CompileThread, size: number): CompilePool {
+  if (!Number.isInteger(size) || size < 1) {
+    throw new Error(`A compile pool needs at least one thread, not ${size}.`);
+  }
+  interface Slot {
+    thread: CompileThread;
+    pending: Map<number, { resolve(compiled: Compiled): void; reject(e: unknown): void }>;
+  }
+  const slots: Slot[] = [];
   let nextRequest = 0;
-  thread.on("message", (reply: WorkerReply) => {
-    const waiting = pending.get(reply.request)!;
-    pending.delete(reply.request);
-    if (!pending.size) thread.unref();
-    if ("failure" in reply) waiting.reject(reply.failure);
-    else waiting.resolve(reply.compiled);
-  });
-  // A worker that died fails what it was compiling, and the next compile starts another.
-  thread.on("error", (error) => {
-    workers.delete(compiler);
-    for (const waiting of pending.values()) waiting.reject(error);
-    pending.clear();
-  });
-  const worker: CompileWorker = {
+
+  function open(): Slot {
+    const thread = start();
+    thread.unref();
+    const slot: Slot = { thread, pending: new Map() };
+    thread.on("message", (reply: WorkerReply) => {
+      const waiting = slot.pending.get(reply.request);
+      if (!waiting) return;
+      slot.pending.delete(reply.request);
+      if (!slot.pending.size) thread.unref();
+      if ("failure" in reply) waiting.reject(reply.failure);
+      else waiting.resolve(reply.compiled);
+    });
+    const end = (error: unknown) => {
+      const index = slots.indexOf(slot);
+      if (index !== -1) slots.splice(index, 1);
+      for (const waiting of slot.pending.values()) waiting.reject(error);
+      slot.pending.clear();
+    };
+    thread.on("error", end);
+    // A thread that exits without an error would otherwise leave its compiles waiting forever.
+    thread.on("exit", (code) => end(new Error(`An ngtsc worker exited with code ${code}.`)));
+    slots.push(slot);
+    return slot;
+  }
+
+  function pick(): Slot {
+    const idle = slots.find((slot) => !slot.pending.size);
+    if (idle) return idle;
+    if (slots.length < size) return open();
+    return slots.reduce((least, slot) => (slot.pending.size < least.pending.size ? slot : least));
+  }
+
+  return {
     compile(request) {
+      const slot = pick();
       const number = nextRequest++;
-      if (!pending.size) thread.ref();
+      if (!slot.pending.size) slot.thread.ref();
       return new Promise((fulfil, reject) => {
-        pending.set(number, { resolve: fulfil, reject });
-        thread.postMessage({ ...request, request: number } satisfies WorkerRequest);
+        slot.pending.set(number, { resolve: fulfil, reject });
+        slot.thread.postMessage({ ...request, request: number } satisfies WorkerRequest);
       });
     },
     release(plugin) {
-      thread.postMessage({ release: plugin } satisfies WorkerRequest);
+      for (const { thread } of slots)
+        thread.postMessage({ release: plugin } satisfies WorkerRequest);
+    },
+    get threads() {
+      return slots.length;
     },
   };
-  workers.set(compiler, worker);
-  return worker;
+}
+
+let nextPlugin = 0;
+const pools = new WeakMap<AngularCompiler, CompilePool>();
+const released = new FinalizationRegistry<() => void>((release) => release());
+
+/**
+ * The pool of `compiler`, made on its first compile. One per compiler and so per process: each
+ * of its workers loads the compiler and parses the library declarations once, for every plugin.
+ */
+function compilePoolOf(compiler: AngularCompiler): CompilePool {
+  const existing = pools.get(compiler);
+  if (existing) return existing;
+  // `angularScope` is the toolchain directory's `node_modules/@angular` (tools.ts).
+  const toolchainDir = dirname(dirname(compiler.angularScope));
+  const pool = compilePool(
+    () => new Worker(workerUrl(import.meta.url), { workerData: { toolchainDir } }),
+    poolSize(),
+  );
+  pools.set(compiler, pool);
+  return pool;
 }
 
 /** The values a module's code exports by name, for a module that stands in for it. */

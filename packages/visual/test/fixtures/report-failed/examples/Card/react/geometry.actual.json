@@ -1,0 +1,13 @@
+{
+  "nodes": [
+    {
+      "path": "div[0] > div[1] > button[0]",
+      "box": {
+        "x": 20,
+        "y": 70,
+        "width": 72,
+        "height": 28
+      }
+    }
+  ]
+}

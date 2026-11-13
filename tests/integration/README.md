@@ -476,9 +476,10 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   `sources.ts`: how a case's inputs join their diagnostics and golden files.
 - `harness/bench.test.ts`: L15, which reads `budgets.json`. `scripts/budgets.ts`: how it measures,
   and `pnpm test:budgets:update`.
-- `harness/compile.test.ts`, `toolchain.test.ts`, `ssr.test.ts`: the node-side layers, with
-  `ssr.test.ts` running the testing package's one server render comparison
-  (`describeServerRender`, ADR-0086) with the corpus's skips, and L14's deliberate throws;
+- `harness/compile.test.ts`, `toolchain.test.ts`, `ssr.<k>.test.ts`: the node-side layers, with
+  each `ssr.<k>.test.ts` one shard of `ssr.ts` (ADR-0093), which runs the testing package's one
+  server render comparison (`describeServerRender`, ADR-0086) with the corpus's skips, and L14's
+  deliberate throws;
   `compile-checks.ts`: L1's fix check, L2's determinism and formatting checks, and the scoped
   sheets' parse; `toolchain-results.ts`: what L3, L4 and L5 make of each tool's report, and the
   files they check; `consumers.ts`: L4's
@@ -497,6 +498,15 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   output for, or cannot compile yet.
 - `harness/canaries.ts`, `canary-verdict.ts`, `load-failures.ts`: the canaries, how
   `pnpm test:canaries` judges each run, and the specs a canary run could not load.
+  `canaries.unit.test.ts` tests each canary on components of its own, and `canaries-corpus.ts`
+  on every case of the corpus, in the shard files `canaries-corpus.<k>.unit.test.ts`.
+- `harness/shards.ts`: how many shard files the slow node-side checks run as, and how each shard
+  takes its share by position, so Vitest runs one project's shards in parallel (ADR-0093): four
+  corpus shards, and four ssr shards for Angular, whose renders wait on ngtsc, and one for every
+  other target. `shards.unit.test.ts` holds the files on disk to the counts.
+- `harness/measure.unit.test.ts`: how `scripts/measure.ts` reads `ps` and its arguments, and
+  `measure-report`, `measure-tree` and `measure-interrupt.unit.test.ts` the script itself on real
+  commands, through `measure-script.ts`.
 - `@unframework.dev/testing`: the public API every spec imports from its root (`describeTargets`,
   `it`, `mount`, `mountScenario`, the `View` with `expectParity`, and the matchers), and the
   internal subpaths the harness uses (`/harness`, `/setup`, `/<target>`, `/node` for the write

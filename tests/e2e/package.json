@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "check-types": "tsc --noEmit",
+    "design-system": "node scripts/design-system.ts",
     "e2e": "node scripts/e2e.ts",
     "prepare-apps": "node scripts/prepare-apps.ts",
     "test": "vitest run --dir harness"
