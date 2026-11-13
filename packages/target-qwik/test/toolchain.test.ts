@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
@@ -61,5 +62,40 @@ describe("the component a test mounts or renders", () => {
     expect(() => asComponent(null)).toThrow("received null.");
     // A plain function would render as an inline component, which the target never emits.
     expect(() => asComponent(function Inline() {})).toThrow("received the function Inline.");
+  });
+});
+
+describe("the toolchain modules Qwik's optimizer compiles", () => {
+  // Qwik's plugin compiles a dependency's JavaScript only in a `*.qwik.js` file. Installed, a
+  // module that calls `component$` or `$()` under another name reaches the page as written, and
+  // throws "Optimizer should replace all usages of $()". tsdown keeps the source's name.
+  const dir = new URL("../src/toolchain/", import.meta.url);
+  const IMPORT = /^import\s+\{([^}]*)\}\s+from\s+"@qwik\.dev\/core";/gm;
+
+  function dollarImports(source: string): string[] {
+    return [...source.matchAll(IMPORT)].flatMap((match) =>
+      match[1]!
+        .split(",")
+        .map((name) => name.trim())
+        .filter((name) => name.endsWith("$") && !name.startsWith("type ")),
+    );
+  }
+
+  it("are named *.qwik.ts, so their build is *.qwik.js", () => {
+    const files = readdirSync(dir).filter((file) => file.endsWith(".ts"));
+    const compiled = files.filter(
+      (file) => dollarImports(readFileSync(new URL(file, dir), "utf8")).length,
+    );
+    expect(compiled.toSorted()).toEqual(["host.qwik.ts", "listener.qwik.ts"]);
+    expect(files.filter((file) => file.endsWith(".qwik.ts")).toSorted()).toEqual(
+      compiled.toSorted(),
+    );
+  });
+
+  it("finds a value import of a $ function, and not a type import", () => {
+    expect(dollarImports('import { $, noSerialize } from "@qwik.dev/core";')).toEqual(["$"]);
+    expect(dollarImports('import { component$ } from "@qwik.dev/core";')).toEqual(["component$"]);
+    expect(dollarImports('import { type QRL$, jsx } from "@qwik.dev/core";')).toEqual([]);
+    expect(dollarImports('import type { QRL } from "@qwik.dev/core";')).toEqual([]);
   });
 });

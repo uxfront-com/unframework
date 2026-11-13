@@ -64,6 +64,13 @@ export const DEFAULT_INCLUDE: readonly string[] = ["**/*.test.ts"];
  */
 export const TESTING_PACKAGE: RegExp = /[\\/]node_modules[\\/]@unframework\.dev[\\/]testing[\\/]/;
 
+/**
+ * The target packages' modules, wherever a project installs them: a server renderer imports its
+ * framework, which must be the copy the component the project's Vite pipeline compiles imports.
+ */
+export const TARGET_PACKAGES: RegExp =
+  /[\\/]node_modules[\\/]@unframework\.dev[\\/]target-[a-z]+[\\/]/;
+
 /** How long a test runs at most: a cold browser project's first mount compiles its framework. */
 const TEST_TIMEOUT = 60_000;
 
@@ -336,9 +343,11 @@ async function browserProject(
       // The testing API's own browser dependencies (CommonJS axe-core, parse5), listed up front:
       // one discovered mid-run reloads the page. The package itself is not pre-bundled: installed,
       // it would carry a second copy of Vitest's runner, whose suite the specs' tests never reach.
+      // Nor is Qwik's target: its mount adapter holds a `component$` and a `$()` that Qwik's
+      // plugin must compile, which it never does in a pre-bundled dependency.
       optimizeDeps: {
         include: ["@unframework.dev/testing > axe-core", "@unframework.dev/testing > parse5"],
-        exclude: ["@unframework.dev/testing"],
+        exclude: ["@unframework.dev/testing", "@unframework.dev/target-qwik"],
       },
     },
     fragment,
@@ -408,8 +417,10 @@ async function ssrProject(setup: ProjectSetup, target: TargetName): Promise<User
         exclude: [],
         // Vitest hands an ESM package under `node_modules` to Node, which would import each case's
         // `.uf.tsx` past the unplugin. Inlined, the comparison's imports go through this
-        // project's Vite pipeline, as the corpus's do from the workspace.
-        server: { deps: { inline: [TESTING_PACKAGE] } },
+        // project's Vite pipeline, as the corpus's do from the workspace. The targets' server
+        // renderers are inlined too, so they render with the framework the component imports:
+        // through Node they would load a second copy, and Angular's would never be linked.
+        server: { deps: { inline: [TESTING_PACKAGE, TARGET_PACKAGES] } },
         provide: {
           target,
           ufHarness: setup.harness,
