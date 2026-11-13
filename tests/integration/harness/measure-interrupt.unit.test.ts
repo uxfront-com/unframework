@@ -1,7 +1,6 @@
 // scripts/measure.ts on real commands: how it stops its tree when it is interrupted, or cannot
 // sample. One of the files that split these tests, which wait on sleeps and sampling, so Vitest
 // runs them in parallel (ADR-0093).
-import { spawnSync } from "node:child_process";
 import { readFileSync, rmSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
@@ -9,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import {
   isAlive,
   node,
-  SCRIPT,
+  runTool,
   scriptHarness,
   SLEEPER_AND_WAIT,
   SLOW_SPAWN,
@@ -63,13 +62,11 @@ describe("the script", () => {
 
   it("stops the tree and fails when it cannot sample, since no sample means no ceiling", () => {
     rmSync(reportFile, { force: true });
-    const result = spawnSync(
-      process.execPath,
-      [SCRIPT, label, "--", process.execPath, "-e", "setInterval(() => {}, 1000)"],
-      { encoding: "utf8", env: { PATH: "/nonexistent" }, timeout: 30_000 },
-    );
+    const result = runTool([label, "--", process.execPath, "-e", "setInterval(() => {}, 1000)"], {
+      env: { PATH: "/nonexistent" },
+    });
     expect(result.status).toBe(143);
-    expect(result.stderr).toContain("cannot sample");
+    expect(result.err).toContain("cannot sample");
     expect(JSON.parse(readFileSync(reportFile, "utf8"))).toMatchObject({
       outcome: "did-not-complete",
       leftover: null,

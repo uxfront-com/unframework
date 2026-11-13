@@ -6,11 +6,20 @@ import { existsSync, rmSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { HOG, node, SCRIPT, scriptHarness } from "./measure-script.ts";
+import {
+  declaredRss,
+  HOG_KIB,
+  KIB_PER_MIB,
+  node,
+  SCRIPT,
+  scriptHarness,
+} from "./measure-script.ts";
 
 describe("the script", () => {
   const { label, reportFile, measure } = scriptHarness("unit-test-report");
+  const { env, declare, holds } = declaredRss();
 
+  // Through the real `ps`, which proves what the fake cannot: that the script reads the live sampler.
   it("forwards stdout and the exit status, and writes the report", () => {
     const { status, out, report } = measure(["sh", "-c", "sleep 2.2; echo measured; exit 3"]);
     expect(out).toContain("measured");
@@ -30,22 +39,28 @@ describe("the script", () => {
   });
 
   it("sums the tree's RSS: neither process alone reaches what it reports", () => {
-    const half = "globalThis.hog = Buffer.alloc(100 * 1024 * 1024, 1);";
+    // 110 MiB each: 0.107 GiB for one, 0.215 for both. This process, outside the tree, declares
+    // 1 GiB, so a sum of what is not the tree's reads 1.2 or more.
+    declare(process.pid, 1024 * KIB_PER_MIB);
+    const half = holds(110 * KIB_PER_MIB);
     const { report } = measure(
-      node(`const { spawnSync } = require("node:child_process");
-        ${half}
+      node(`${half}
+        const { spawnSync } = require("node:child_process");
         spawnSync(process.execPath, ["-e", ${JSON.stringify(`${half} setTimeout(() => {}, 3000);`)}]);`),
+      { env: env() },
     );
-    expect(report!.peakRssGib).toBeGreaterThan(0.2);
+    expect(report).toMatchObject({ outcome: "completed", peakRssGib: 0.215 });
   });
 
   it("reports the peak, not the last sample", () => {
+    // The parent declares nothing and outlives the child, so the last samples read 0.
     const { report } = measure(
       node(`const { spawnSync } = require("node:child_process");
-        spawnSync(process.execPath, ["-e", ${JSON.stringify(`${HOG} setTimeout(() => {}, 2500);`)}]);
+        spawnSync(process.execPath, ["-e", ${JSON.stringify(`${holds(HOG_KIB)} setTimeout(() => {}, 2500);`)}]);
         setTimeout(() => {}, 2500);`),
+      { env: env() },
     );
-    expect(report!.peakRssGib).toBeGreaterThan(0.2);
+    expect(report).toMatchObject({ outcome: "completed", peakRssGib: 0.293 });
   });
 
   it("fails loudly on a command that cannot start", () => {
