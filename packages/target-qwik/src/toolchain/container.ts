@@ -33,9 +33,11 @@ export function componentHtml(render: string): string {
     }
     end = script.index;
   }
-  return inner.slice(0, end).replace(SCRIPT, (script, attributes: string, body: string) =>
-    isInlineRegistration(attributes, body) ? "" : script,
-  );
+  return inner
+    .slice(0, end)
+    .replace(SCRIPT, (script, attributes: string, body: string) =>
+      isInlineRegistration(attributes, body) ? "" : script,
+    );
 }
 
 /** The attributes Qwik gives its own inline scripts: none, or a CSP nonce. */
