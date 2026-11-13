@@ -100,7 +100,7 @@ import { isPrimitiveValue } from "./values.ts";
 /** The scope helper's name, before the name scope makes it unique. */
 const SCOPE_HELPER = "scopeAttributes";
 
-/** The Qwik 2 target (experimental while Qwik 2 is in beta). */
+/** The Qwik 2 target (experimental until Qwik 2.0.0 ships, ADR-0094). */
 export const qwik: Target = defineTarget({
   name: "qwik",
   framework: { package: "@qwik.dev/core", range: ">=2.0.0-rc.5 <3" },

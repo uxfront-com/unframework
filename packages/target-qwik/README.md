@@ -1,6 +1,6 @@
 # @unframework.dev/target-qwik
 
-The Qwik 2 target of the Unframework compiler (experimental while Qwik 2 is in beta): one
+The Qwik 2 target of the Unframework compiler (experimental until Qwik 2.0.0 ships, ADR-0094): one
 `component$` in TSX per source component, written as a Qwik developer would write it (ADR-0034
 to ADR-0040).
 

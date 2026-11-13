@@ -101,9 +101,9 @@ export class Listeners {
   readonly helpers: string[] = [];
   /**
    * The listeners and models in a fill and in a list, whose `$` handler is written `$(…)` in
-   * place: Qwik's optimizer (2.1.0-rc.11, with core 2.0.0-rc.5) hoists the capture of an arrow in a list out of the
-   * fill's segment, which then reads a name it does not declare; an explicit `$()` captures the
-   * item where it is (./composition.ts).
+   * place: Qwik's optimizer (2.1.0-rc.11, with core 2.0.0-rc.5) hoists the capture of an arrow
+   * in a list out of the fill's segment, which then reads a name it does not declare; an
+   * explicit `$()` captures the item where it is (./composition.ts).
    */
   readonly explicit: Set<EventAttribute | ModelAttribute> = new Set();
 
@@ -170,12 +170,11 @@ export class Listeners {
     for (const marker of new Set(markers)) attributes.push(js.jsxAttribute(marker));
     for (const scope of ["element", "window"] as const) {
       const found = lowered.get(scope);
-      // A `$` handler beside a `sync$` waits for it: Qwik's loader starts the handler once every
-      // handler started before it on the page has finished (qwikloader's `dispatch` and
-      // `queueTasks`), which the semantics page declares. Where nothing is left but markers, a
-      // `sync$` that runs the same controls keeps the element's listener of the event: Qwik's
-      // loader listens only to the events some element has a handler of, and applies a marker
-      // only as it dispatches one.
+      // A `$` handler beside a `sync$` runs after it, in the dispatch: from Qwik 2.0.0-rc.5 a
+      // `sync$` returns no promise, so the loader's `dispatch` defers nothing behind it
+      // (ADR-0094). Where nothing is left but markers, a `sync$` that runs the same controls
+      // keeps the element's listener of the event: Qwik's loader listens only to the events
+      // some element has a handler of, and applies a marker only as it dispatches one.
       const syncs =
         found && !found.handler && !found.syncs.length && found.markers.length
           ? batches(found.controls.map(({ lifted }) => lifted))

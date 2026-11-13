@@ -623,7 +623,7 @@ export function canonicalNumber(
 
 /**
  * Attributes of every element, HTML or SVG, whose JSX type is `number` on React (`@types/react`
- * 19.3) and on Qwik (2.0 beta): `tabindex` and ARIA's numeric properties.
+ * 19.3) and on Qwik (2.0.0-rc.5): `tabindex` and ARIA's numeric properties.
  */
 export const NUMBER_TYPED_GLOBAL_ATTRIBUTES: ReadonlySet<string> = words(`
   tabindex aria-colcount aria-colindex aria-colspan aria-level aria-posinset aria-rowcount

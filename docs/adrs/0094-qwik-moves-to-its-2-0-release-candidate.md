@@ -2,7 +2,9 @@
 
 - **Status:** Accepted
 - **Date:** 2026-11-13
-- **Plan:** §11 D7; §9 M8, R6, Appendix C; amends ADR-0011 (its Qwik row only)
+- **Plan:** §11 D7; §7.5, §9 M8, R6, Appendix C; amends ADR-0011 (its Qwik row only), ADR-0034
+  and ADR-0043 (a spread losing a `null` on Qwik), ADR-0044 (its addendum on Qwik's `"true"`) and
+  ADR-0047 (the queued `[sync$, $]` handler)
 
 ## Context
 
@@ -28,6 +30,9 @@ changed for this target:
 - **rc.5:** `runEventHandlerQRL` returns a `sync$` handler's result at once. So a listener written
   `[sync$(…), $(…)]` runs its `$` handler in the dispatch, before its container's, as every other
   target does, where the loader used to queue it behind the `sync$`'s promise.
+- **rc.5:** the client writes a boolean attribute that is on as `name=""`, as the server does,
+  where the betas wrote `name="true"`. ADR-0044 read that `"true"` as presence on Qwik alone, and
+  the corpus passes on every browser project without that exception.
 - **rc.2 and rc.4** changed two places this target works around: `executeAfterFlush` skips a queued
   visible task that is no longer dirty, and the keyed diff no longer re-inserts siblings that stay
   in place.
@@ -38,8 +43,8 @@ the target's claims about Qwik still hold on rc.5:
 - The props proxy still subscribes only to keys the props hold (`late-prop`), and the test that
   fails once Qwik follows a later key still passes.
 - `useContext` and the development build's `<errored-host>` wrapping are byte for byte the same.
-- The JSX types still need the attribute spellings `src/attributes.ts` lists, and `test/
-attributes.test.ts` still passes.
+- The JSX types still need the attribute spellings `src/attributes.ts` lists, and its type test
+  still passes. Qwik's unitless style properties and its number-typed attributes are unchanged.
 - The optimizer still writes `onClick$` on a `<Tag>` as a plain prop.
 - The optimizer still hoists an arrow's capture out of a fill's list: without the explicit `$()`,
   `test/behaviour.browser.test.ts` fails with a `ReferenceError`.
@@ -56,10 +61,21 @@ attributes.test.ts` still passes.
   pin, and the corpus running the real optimizer on every output.
 - **No release-age exclusion.** rc.5 is older than pnpm's 24 hours, and the stale
   `@qwik.dev/core@2.0.0-beta.47` entry leaves `minimumReleaseAgeExclude`.
+- **Rule 4b holds Qwik to the same spelling as every target.** `canonicalizeBooleanAttributes` no
+  longer reads Qwik's `"true"` as presence, so a Qwik client that writes `"true"` again fails L7.
+- **The docs follow rc.5.** The semantics page drops the `[sync$, $]` queueing item, and the Props
+  page drops the note that a spread loses a `null` on Qwik.
 - Solid and Vue keep ADR-0011's rows. M8 reviews them separately.
 
-This amends ADR-0011's Qwik row: Qwik 2, experimental, pinned exactly at `2.0.0-rc.5`. The rest of
-ADR-0011 stands.
+This amends ADR-0011's Qwik row: Qwik 2, experimental, pinned exactly at `2.0.0-rc.5`. It also
+amends four records, whose other points stand:
+
+- **ADR-0034 and ADR-0043:** a spread or a `jsx()` call keeps a `null` on Qwik, as a written
+  attribute does.
+- **ADR-0044:** its addendum "On Qwik, `"true"` on a boolean attribute is presence" no longer
+  applies, and rule 4b treats Qwik as every other target.
+- **ADR-0047:** the "Outside the contract" item on Qwik queuing a `[sync$, $]` listener's `$`
+  handler no longer applies: the handler runs in the dispatch.
 
 ## Consequences
 
@@ -67,17 +83,17 @@ ADR-0011 stands.
 
 - The target runs on the release Qwik's maintainers recommend, with seven weeks of fixes, and the
   next step to `2.0.0` should be small.
-- A `[sync$, $]` listener now runs in the DOM's order, and a spread keeps a `null`, as on the other
-  targets.
+- A `[sync$, $]` listener now runs in the DOM's order, a spread keeps a `null` and a boolean
+  attribute reads `name=""`, as on the other targets. The semantics contract loses a difference,
+  and normalisation loses an exception.
 
 **Negative:**
 
 - A release candidate can still change. The next one needs the same review, though the corpus
   catches what the server or the client does differently, as it caught rc.4's scripts.
-- Some prose now describes the betas. ADR-0034 and ADR-0043 record the spread losing a `null`, and
-  the Props page still tells consumers it does. ADR-0047 and the semantics page still say the loader
-  queues a `[sync$, $]` listener's handler. Those pages need a follow-up, and accepted records keep
-  their text.
+- The records this one amends keep their text, so they still describe the betas where it names
+  their points: ADR-0034 and ADR-0043 on a spread losing a `null`, ADR-0044 on Qwik's `"true"`, and
+  ADR-0047's "Outside the contract" item on the queued `[sync$, $]` handler.
 
 **Open:**
 

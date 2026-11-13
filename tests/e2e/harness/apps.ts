@@ -330,7 +330,7 @@ export function designSystemCopyManifest(
 /**
  * The design system's copy's `pnpm-workspace.yaml`: the apps' overrides and builds, and the
  * settings of the root's that its toolchains need. Analog imports `typescript` without declaring
- * it, `@typescript/typescript6` takes `typescript@^6` unpinned, and Qwik's beta peers an older
+ * it, `@typescript/typescript6` takes `typescript@^6` unpinned, and Qwik's 2.0 RC peers an older
  * Vitest. The harness's tests hold each to the root's own entry.
  */
 export function designSystemCopyWorkspace(tarballs: Record<string, string>): string {

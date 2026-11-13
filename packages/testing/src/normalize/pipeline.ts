@@ -61,7 +61,7 @@ export function normalizeTree(
   unwrapAngularHosts(root, target);
   renameEngineAliases(root, engine);
   canonicalizeStyles(root);
-  canonicalizeBooleanAttributes(root, target);
+  canonicalizeBooleanAttributes(root);
   canonicalizeClasses(root);
   removeSettledValues(root);
   removeReactDefaultStates(root, target);
