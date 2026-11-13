@@ -19,18 +19,34 @@ Vitest's own summary looked like it settled the question: `worker 93%, tests 7%`
 open. Summed per file, the tests themselves take 365 s of the 12 tester pages' time in a
 `browser:vue` run of about 35 s, which is most of the run.
 
-What the fresh frame does cost is work in Vitest's main process and in Chromium. On an Apple M4
-Max (14 cores, 36 GB, Node 26.13.1), at `ee74571d`, a full warm `browser:*` run took 1,035 to
-1,070 s of CPU time with fresh frames, and 570 to 764 s with shared pages, for the same 3,335
-passed and 263 skipped tests. Its wall time is less clear, because other runs shared the machine
-(the load average was 8 to 35, and 69 once). The runs at the lowest load went from 225 s to 155 s.
+What the fresh frame does cost is work in Vitest's main process and in Chromium, and that work
+counts when several projects run at once. On an Apple M4 Max (14 cores, 36 GB, Node 26.13.1), at
+`f09c5ce1`, three warm full `browser:*` runs of each, interleaved, gave these figures. Other runs
+shared the machine, so each row gives the load average when it started:
 
 | Full `browser:*` run, warm | Load average | Wall time | CPU time | Peak memory (summed RSS) |
 | -------------------------- | ------------ | --------- | -------- | ------------------------ |
-| Fresh frames, run 1        | 7.85         | 225.1 s   | 1,070 s  | 26.4 GiB                 |
-| Fresh frames, run 2        | 21.15        | 206.6 s   | 1,035 s  | 26.9 GiB                 |
-| Shared pages, run 1        | 17.15        | 154.9 s   | 570 s    | 23.7 GiB                 |
-| Shared pages, run 2        | 21.24        | 275.0 s   | 764 s    | 12.1 GiB                 |
+| Fresh frames, run 1        | 15.95        | 178.9 s   | 1,034 s  | 28.1 GiB                 |
+| Fresh frames, run 2        | 11.26        | 185.6 s   | 1,057 s  | 27.7 GiB                 |
+| Fresh frames, run 3        | 9.76         | 174.0 s   | 1,002 s  | 27.4 GiB                 |
+| Shared pages, run 1        | 11.70        | 130.8 s   | 567 s    | 27.1 GiB                 |
+| Shared pages, run 2        | 11.04        | 134.8 s   | 576 s    | 25.6 GiB                 |
+| Shared pages, run 3        | 24.37        | 130.9 s   | 559 s    | 27.1 GiB                 |
+
+The median wall time falls from 178.9 s to 130.9 s, by 26.8 %, and the CPU time by about 45 %. One
+project on its own gains less, because its 12 pages mostly wait on the browser. On macOS a follower
+needs `browser:vue` in the same run (its L10 compares with Vue's live captures), so each follower
+was timed beside it, once on each side:
+
+| Projects                            | Fresh frames | Shared pages |
+| ----------------------------------- | ------------ | ------------ |
+| `browser:vue`                       | 33.4 s       | 34.0 s       |
+| `browser:vue` and `browser:react`   | 65.4 s       | 61.6 s       |
+| `browser:vue` and `browser:svelte`  | 64.9 s       | 61.4 s       |
+| `browser:vue` and `browser:solid`   | 64.5 s       | 61.7 s       |
+| `browser:vue` and `browser:angular` | 73.8 s       | 71.9 s       |
+| `browser:vue` and `browser:qwik`    | 64.3 s       | 61.3 s       |
+| `browser:vue` and `browser:astro`   | 43.8 s       | 41.1 s       |
 
 Sharing a page exposed one leak. Vue's development build rethrows an error that a lifecycle hook
 throws (`logError`), out of `flushPostFlushCbs`, which leaves its `activePostFlushCbs` set. From
@@ -55,20 +71,20 @@ never made.
   `expect.element` wraps it once per page.
 - A console message that a spec file's page logs after its last judgement, before the next file
   starts, is judged with the next file's first test, and its failure names the case it followed.
-- The number of tester pages stays Vitest's default. In this run's measurements, 12, 14, 16 and 21
-  pages a project made no difference that the machine's load didn't hide, and 24 passed the 32 GiB
-  ceiling of `scripts/measure.ts`.
+- The number of tester pages stays Vitest's default. With shared pages, 14 pages a project took
+  129.4 s, no faster than 12, and 16 took 123.3 s at a peak of 31.9 GiB, at the 32 GiB ceiling of
+  `scripts/measure.ts`. 24 went over it.
 - Firefox and WebKit share pages too, and still run one spec file at a time (ADR-0081).
 
 ## Consequences
 
 **Positive:**
 
-- A full `browser:*` run does about half the CPU work, and each follower loads its framework once
+- A full `browser:*` run takes about a quarter less time and half the CPU work, and each follower loads its framework once
   per page, not once per file.
 - The parity matrix is unchanged: `scripts/matrix-diff.ts` found 0 of 9,048 cells different
-  between the run with fresh frames and each of four runs with shared pages, two of them with 16
-  pages a project.
+  between fresh frames and each of the three runs with shared pages above, and each of four
+  earlier runs at `ee74571d`, two of them with 16 pages a project.
 
 **Negative:**
 
@@ -85,8 +101,8 @@ never made.
 
 **Open:**
 
-- The wall-time gain on a quiet machine is still to be measured, against the 30 % the work set
-  out to save.
+- The 26.8 % falls short of the 30 % the work set out to save. Grouping cases into fewer files
+  is the next option, and it needs a plan of its own.
 - Firefox and WebKit haven't run on shared pages yet: the nightly workflow is their first run.
 
 ## Alternatives considered
