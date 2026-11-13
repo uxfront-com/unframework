@@ -57,7 +57,8 @@ directory.
    the last report.
 7. Runs them with Vitest in this process, so the command's captures reach the report. Then it
    writes `<out>/report.json`, from the captures and each test's result, and `report.html`
-   beside it (`renderReport`), and prints a line per example and the report's path.
+   beside it (`renderReport`), and prints a line per example, then the paths of `report.json`
+   (`report:`) and `report.html` (`page:`).
 
 `./browser`'s `captureExample(id, caseId, component)` declares one test, which mounts the example,
 settles it and captures it with the testing package's `captureVisual`, sent to `ufExampleCapture`.

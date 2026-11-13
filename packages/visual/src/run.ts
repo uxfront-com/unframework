@@ -159,11 +159,14 @@ export async function runVisual(options: VisualRunOptions): Promise<VisualRunRes
     const reportPath = join(out, "report.json");
     writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
     // The page to browse it, beside it, so its relative image paths hold (plan §8.6).
-    writeFileSync(join(out, "report.html"), renderReport(report));
+    const pagePath = join(out, "report.html");
+    writeFileSync(pagePath, renderReport(report));
     for (const line of formatReport(report)) print(`${line}\n`);
     for (const error of unhandled)
       print(`unhandled error: ${String((error as Error)?.message ?? error)}\n`);
     print(`report: ${relative(process.cwd(), reportPath) || reportPath}\n`);
+    // A reader of a CI log learns from this line that the run left a page to open.
+    print(`page: ${relative(process.cwd(), pagePath) || pagePath}\n`);
     return {
       exitCode: report.passed && !unhandled.length ? 0 : 1,
       report,
