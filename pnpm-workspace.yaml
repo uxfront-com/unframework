@@ -55,7 +55,7 @@ packageExtensions:
       typescript: ">=4.8.4 <6.1.0"
 peerDependencyRules:
   allowedVersions:
-    # Qwik 2.0.0-beta.47 declares an optional `vitest: ">=2 <5"` peer; the harness runs Vitest 5.
+    # Qwik 2.0.0-rc.5 declares an optional `vitest: ">=2 <5"` peer; the harness runs Vitest 5.
     "@qwik.dev/core>vitest": "5"
     # The compiler pins oxfmt 0.71 (plan, Appendix C); the shared config still names ^0.70.
     "@uxfront/oxfmt-config>oxfmt": "0.71"
@@ -84,7 +84,6 @@ minimumReleaseAgeExclude:
   - "@angular/core@22.2.1"
   - "@angular/platform-browser@22.2.1"
   - "@angular/platform-server@22.2.1"
-  - "@qwik.dev/core@2.0.0-beta.47"
   - "@vitest/browser-playwright@5.0.3"
   - "@vitest/browser@5.0.3"
   - "@vitest/pretty-format@5.0.3"
@@ -117,8 +116,8 @@ catalog:
   "@jridgewell/trace-mapping": 0.3.31
   "@oxc-project/types": 0.152.0
   "@playwright/test": 1.63.0
-  "@qwik.dev/core": 2.0.0-beta.47
-  "@qwik.dev/optimizer": 2.1.0-beta.9
+  "@qwik.dev/core": 2.0.0-rc.5
+  "@qwik.dev/optimizer": 2.1.0-rc.11
   "@standard-schema/spec": ^1.1.0
   "@styleframe/runtime": 3.2.2
   "@styleframe/theme": 3.10.0
@@ -143,7 +142,7 @@ catalog:
   csstype: ^3.2.3
   eslint: 10.11.0
   eslint-plugin-astro: 3.2.1
-  eslint-plugin-qwik: 2.0.0-beta.47
+  eslint-plugin-qwik: 2.0.0-rc.5
   eslint-plugin-solid: 0.18.0
   eslint-plugin-svelte: 3.23.0
   eslint-plugin-vue: 10.11.1

@@ -1,6 +1,6 @@
 # ADR-0011: Target framework versions
 
-- **Status:** Proposed — the plan proceeds on the recommendation
+- **Status:** Proposed — the plan proceeds on the recommendation, amended by ADR-0094
 - **Date:** 2026-10-01
 - **Plan:** §11 D7; §3 (G3), §5.5, §5.7, §9 (M8), R6, R7, R8, Appendix C
 

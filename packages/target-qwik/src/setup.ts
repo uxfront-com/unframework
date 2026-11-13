@@ -355,7 +355,7 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
     case "Provide":
       return [block(`${names.core("useContextProvider")}(${item.key}, ${pure(item.value)});`)];
     case "Inject": {
-      // Qwik 2.0.0-beta.47's `useContext` throws where no ancestor provides the key, unless its
+      // Qwik 2.0.0-rc.5's `useContext` throws where no ancestor provides the key, unless its
       // default is not `undefined`, and calls a function default with the provided value: so it
       // takes a function, which gives the fallback, or `undefined` without one (ADR-0054), and
       // never mistakes a function fallback for one. Its optional parameter is the key's type or
@@ -1092,10 +1092,12 @@ function singleRead(plan: SetupPlan, getter: FunctionCode): BindingId | undefine
 
 /**
  * `watchEffect` as a visible task that tracks, before it runs, each prop, state and derived value
- * its body reads, itself or through the functions it calls (static dependencies, ADR-0048). Qwik
- * 2.0.0-beta.47 runs a visible task twice when a task that ran for the same change writes what it
+ * its body reads, itself or through the functions it calls (static dependencies, ADR-0048). Qwik's
+ * 2.0 betas ran a visible task twice when a task that ran for the same change wrote what it
  * tracks (core `executeTasks` queues every dirty visible task each time it runs for the
- * component, and `executeAfterFlush` runs the queue as it is): so, as a watcher does, the effect
+ * component, and `executeAfterFlush` ran the queue as it was). From 2.0.0-rc.2,
+ * `executeAfterFlush` skips a queued task that is no longer dirty, but no case shows that each
+ * change now runs once, so the guard stays (ADR-0094): as a watcher does, the effect
  * keeps the values it last ran for and runs only when one changed by `Object.is`, with its
  * `onCleanup` callbacks in a list it empties before it runs again and at unmount (Qwik's own
  * `cleanup` would run before the skipped run too).

@@ -337,7 +337,7 @@ describe("a prop the parent passes after the mount (late-prop, unsupported)", ()
     expect(events).toEqual([["pageChange", 3, 1]]);
   });
 
-  // Qwik 2.0.0-beta.47's props proxy subscribes a reader only to the keys the props hold (core's
+  // Qwik 2.0.0-rc.5's props proxy subscribes a reader only to the keys the props hold (core's
   // `PropsProxyHandler.get`), so this target declares `late-prop` unsupported. This test fails
   // once Qwik follows such a key: the cell can then be native.
   it("does not follow, in a computed or a task, a prop key the parent adds later", async () => {
@@ -351,18 +351,19 @@ describe("a prop the parent passes after the mount (late-prop, unsupported)", ()
 });
 
 describe("controls at dispatch and calls where another listener follows (ADR-0047)", () => {
-  it("prevents only Enter in a guarded field, and runs its handler after its container's", async () => {
+  it("prevents only Enter in a guarded field, and runs its handler before its container's", async () => {
     await start("Guards");
     const tag = page.getByRole("textbox", { name: "Tag" });
     await act(() => userEvent.type(tag, "ab"));
     await act(() => userEvent.type(tag, "{Enter}"));
     expect((container.querySelector("input") as HTMLInputElement).value).toBe("ab");
     expect(container.textContent).toContain("Tags: ab");
-    // The field's \`sync$\` prevents Enter as the event is dispatched, and Qwik's loader queues the
-    // field's \`$\` handler behind it, after its container's handler: the container reads the
-    // tags before Enter added one (declared on the semantics page; it fails once Qwik runs the
-    // handler in the dispatch).
-    expect(logEntries()).toEqual(["container a 0", "container b 0", "container Enter 0"]);
+    // The field's \`sync$\` prevents Enter as the event is dispatched, and its \`$\` handler runs
+    // after it in the dispatch, before its container's, as on every target: Qwik 2.0.0-rc.5's
+    // \`runEventHandlerQRL\` returns a \`sync$\`'s result at once ("Sync handlers must not defer
+    // subsequent handlers"), where the betas' promise made the loader queue the rest
+    // (ADR-0094). The container reads the tags after Enter added one.
+    expect(logEntries()).toEqual(["container a 0", "container b 0", "container Enter 1"]);
   });
 
   it("keeps a listener whose handler only prevents: the form is not submitted, the focus stays", async () => {

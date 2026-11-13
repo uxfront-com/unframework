@@ -1,7 +1,7 @@
 // `null` props on Qwik's client (ADR-0034: `null` is a value), as test/ssr/null-props.test.ts
 // checks them on the server: the mount adapter hands the props over as a parent's written
-// attributes, on the first render and on a rerender, while a spread or a `jsx()` call loses a
-// `null` (Qwik's `_jsxSplit`).
+// attributes, on the first render and on a rerender. From 2.0.0-rc.3, a spread or a `jsx()`
+// call keeps a `null` too: Qwik's `_jsxSplit` deletes one only on a native element (ADR-0094).
 import type { MountedComponent } from "@unframework.dev/codegen";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -45,10 +45,10 @@ describe("null props on Qwik's client", () => {
   it.each([
     ["Written", "null"],
     ["Held", "null"],
-    ["Spread", "undefined"],
-    ["Called", "undefined"],
+    ["Spread", "null"],
+    ["Called", "null"],
   ])("keep or lose `null` as Qwik does: %s", async (name, expected) => {
-    // Qwik's own behaviour, pinned: a consumer that spreads its props loses a `null`.
+    // Qwik's own behaviour, pinned: a consumer that spreads its props keeps a `null`.
     expect((await mounting(name))()).toBe(expected);
   });
 });

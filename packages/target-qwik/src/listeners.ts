@@ -101,7 +101,7 @@ export class Listeners {
   readonly helpers: string[] = [];
   /**
    * The listeners and models in a fill and in a list, whose `$` handler is written `$(…)` in
-   * place: Qwik 2.0.0-beta.47's optimizer hoists the capture of an arrow in a list out of the
+   * place: Qwik's optimizer (2.1.0-rc.11, with core 2.0.0-rc.5) hoists the capture of an arrow in a list out of the
    * fill's segment, which then reads a name it does not declare; an explicit `$()` captures the
    * item where it is (./composition.ts).
    */

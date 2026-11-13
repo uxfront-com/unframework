@@ -8,7 +8,7 @@ import { DOM_EVENTS } from "@unframework.dev/ir";
 
 /**
  * The multi-word event names Qwik's JSX types capitalise (`PascalCaseNames` in
- * `@qwik.dev/core`'s `core-internal.d.ts`, 2.0.0-beta.47), by their DOM name. Every other event
+ * `@qwik.dev/core`'s `core-internal.d.ts`, 2.0.0-rc.5), by their DOM name. Every other event
  * takes a capital first letter only (`onScrollend$`, `onBeforeinput$`), as Qwik's
  * `Capitalize<T>` does.
  */

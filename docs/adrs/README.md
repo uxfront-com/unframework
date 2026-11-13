@@ -63,7 +63,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0008](./0008-state-updates.md)                                    | State is replaced whole, never mutated in place                                 | Proposed                                                               | §11 D4                  |
 | [0009](./0009-css-scoping-algorithm.md)                            | CSS is scoped with Vue's attribute algorithm                                    | Accepted, amended by ADR-0063                                          | §11 D5                  |
 | [0010](./0010-angular-host-element.md)                             | Angular hosts are elements with `display: contents`                             | Accepted, amended by ADR-0056, ADR-0060                                | §11 D6, §9 M1           |
-| [0011](./0011-target-versions.md)                                  | Target framework versions                                                       | Proposed                                                               | §11 D7                  |
+| [0011](./0011-target-versions.md)                                  | Target framework versions                                                       | Proposed, amended by ADR-0094                                          | §11 D7                  |
 | [0012](./0012-output-event-and-model-names.md)                     | Events and models take each target's naming convention                          | Proposed, amended by ADR-0056                                          | §11 D8                  |
 | [0013](./0013-visual-baselines.md)                                 | Visual baselines live in Linux CI, plus a live mode                             | Accepted                                                               | §11 D9                  |
 | [0014](./0014-reference-target.md)                                 | Vue is the reference target for expectations                                    | Proposed, amended by ADR-0057                                          | §11 D10                 |
@@ -145,6 +145,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0090](./0090-npm-package-names.md)                                | `@uxfront/unframework` plus `@unframework.dev/*`                                | Accepted                                                               | §11 D2, D12             |
 | [0091](./0091-a-dropped-reference-fails-the-run-once.md)           | A reference that did not finish a case fails the run once                       | Accepted                                                               | §7.2, §7.4, §7.7        |
 | [0093](./0093-slow-harness-files-run-as-shards.md)                 | The slow harness files run as shards, and Angular's ngtsc compiles in a pool    | Accepted                                                               | §7.3, §7.7, R5          |
+| [0094](./0094-qwik-moves-to-its-2-0-release-candidate.md)          | Qwik moves to its 2.0 release candidate                                         | Accepted                                                               | §11 D7, §9 M8, R6       |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 

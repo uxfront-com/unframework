@@ -28,6 +28,32 @@ describe("componentHtml", () => {
     expect(componentHtml(`${open}<p>Hi</p>${nonced}${close}`)).toBe("<p>Hi</p>");
   });
 
+  it("drops the self-removing event registrations Qwik writes inside the component", () => {
+    const inline = (names: string) =>
+      `<script>(window._qwikEv||(window._qwikEv=[])).push(${names});document.currentScript.remove()</script>`;
+    const component = `<div><button q-e:click="c#s#1">+1</button>${inline('"e:click"')}<input q-e:keydown="c#k#2" />${inline('"e:keydown","ep:touchstart"')}<p>Hi</p></div>`;
+    expect(componentHtml(`${open}${component}${state}${events}${close}`)).toBe(
+      `<div><button q-e:click="c#s#1">+1</button><input q-e:keydown="c#k#2" /><p>Hi</p></div>`,
+    );
+    const nonced = inline('"e:click"').replace("<script>", `<script nonce="abc">`);
+    expect(componentHtml(`${open}<p>Hi</p>${nonced}<p>Again</p>${close}`)).toBe(
+      "<p>Hi</p><p>Again</p>",
+    );
+  });
+
+  it("keeps a script inside the component that only resembles an inline registration", () => {
+    const kept = [
+      `<script type="module">(window._qwikEv||(window._qwikEv=[])).push("e:click");document.currentScript.remove()</script>`,
+      `<script>(window._qwikEv||(window._qwikEv=[])).push("e:click")</script>`,
+      `<script>(window._qwikEv||(window._qwikEv=[])).push(0,"e:click");document.currentScript.remove()</script>`,
+      `<script>(window._qwikEv||(window._qwikEv=[])).push("e:click");document.currentScript.remove();alert(1)</script>`,
+    ];
+    for (const script of kept) {
+      const component = `<p>Hi</p>${script}<p>Again</p>`;
+      expect(componentHtml(`${open}${component}${close}`)).toBe(component);
+    }
+  });
+
   it("keeps the component's own scripts, even ones that look like Qwik's", () => {
     const own = `<script type="qwik/state">{}</script>`;
     const component = `${own}<p>Hi</p>`;
