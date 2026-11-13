@@ -5,10 +5,20 @@ import { spawnSync } from "node:child_process";
 
 import { describe, expect, it } from "vitest";
 
-import { CEILING, DETACHED_SLEEPER, HOG, isAlive, node, scriptHarness } from "./measure-script.ts";
+import {
+  CEILING,
+  declaredRss,
+  DETACHED_SLEEPER,
+  HOG_KIB,
+  isAlive,
+  node,
+  scriptHarness,
+} from "./measure-script.ts";
 
 describe("the script", () => {
   const { measure, sleeperOf } = scriptHarness("unit-test-tree");
+  const { env, holds } = declaredRss();
+  const hog = () => holds(HOG_KIB);
 
   it("counts an orphan left in its process group as leftover, outside the wall time", () => {
     const before = performance.now();
@@ -35,22 +45,26 @@ describe("the script", () => {
     });
     const other = sleeperOf(bystander.stdout);
     const { status, out, report, err } = measure(
-      node(`${DETACHED_SLEEPER} ${HOG} setInterval(() => {}, 1000);`),
-      ...CEILING,
+      node(`${DETACHED_SLEEPER} ${hog()} setInterval(() => {}, 1000);`),
+      { flags: CEILING, env: env() },
     );
     const sleeper = sleeperOf(out);
     expect(status).not.toBe(0);
     expect(err).toContain("ceiling");
-    expect(report).toMatchObject({ outcome: "did-not-complete", maxRssGib: 0.2, leftover: 0 });
-    expect(report!.peakRssGib).toBeGreaterThanOrEqual(0.2);
+    expect(report).toMatchObject({
+      outcome: "did-not-complete",
+      maxRssGib: 0.2,
+      peakRssGib: 0.293,
+      leftover: 0,
+    });
     expect(isAlive(sleeper)).toBe(false);
     expect(isAlive(other)).toBe(true);
   });
 
   it("kills a process that ignores SIGTERM at the ceiling", () => {
     const { status, report, err } = measure(
-      node(`process.on("SIGTERM", () => {}); ${HOG} setInterval(() => {}, 1000);`),
-      ...CEILING,
+      node(`process.on("SIGTERM", () => {}); ${hog()} setInterval(() => {}, 1000);`),
+      { flags: CEILING, env: env() },
     );
     expect(err).toContain("ceiling");
     expect(status).toBe(137);
@@ -59,8 +73,8 @@ describe("the script", () => {
 
   it("does not call a command that exits 0 on SIGTERM a success at the ceiling", () => {
     const { status, report, err } = measure(
-      node(`process.on("SIGTERM", () => process.exit(0)); ${HOG} setInterval(() => {}, 1000);`),
-      ...CEILING,
+      node(`process.on("SIGTERM", () => process.exit(0)); ${hog()} setInterval(() => {}, 1000);`),
+      { flags: CEILING, env: env() },
     );
     expect(err).toContain("ceiling");
     expect(status).toBe(1);
