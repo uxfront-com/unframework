@@ -358,8 +358,8 @@ describe("qwik target: watchers, effects and lifecycle", () => {
       "},",
       '{ strategy: "document-ready" },',
     );
-    // Qwik 2.0.0-beta.47 may run a visible task twice for one change: the effect runs only when
-    // a value it read changed.
+    // Qwik's 2.0 betas could run a visible task twice for one change, and no case shows rc.5
+    // runs it once (ADR-0094): the effect runs only when a value it read changed.
     at(
       "const previousEffect = useSignal<[typeof items.value, typeof app]>();",
       "useVisibleTask$(",
@@ -434,7 +434,7 @@ describe("qwik target: listeners", () => {
     expect(contents).toContain("<form preventdefault:submit onSubmit$={add}>");
     expect(contents).toContain('const add = $(() => {\n    tags.value = [...tags.value, "x"];');
     // Beside a \`$\` handler, a conditional \`preventDefault()\` runs in a \`sync$\` before it, on the
-    // element (Qwik's loader queues the handler behind it, which the semantics page declares).
+    // element, and the handler runs after it in the dispatch (ADR-0094).
     expect(contents).toContain(
       'onKeyDown$={[\n          sync$((event: KeyboardEvent) => {\n            if (event.key === "Enter") event.preventDefault();\n          }),\n          key,\n        ]}',
     );
@@ -1073,8 +1073,8 @@ describe("qwik target: controls at dispatch and merged listeners (ADR-0047)", ()
 }`,
       ),
     );
-    // One \`sync$\` before the handler: Qwik's loader starts the handler after the \`sync$\`'s
-    // promise, after its container's handler (the semantics page declares it).
+    // One \`sync$\` before the handler, which runs after it in the dispatch, before its
+    // container's handler (ADR-0094).
     expect(contents).toContain(
       [
         "onKeyDown$={[",

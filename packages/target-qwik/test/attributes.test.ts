@@ -87,7 +87,7 @@ function authoringPairs(): [tag: string, attribute: string, type: string][] {
 type Elements = { readonly on: readonly string[] } | { readonly except: readonly string[] };
 
 /**
- * Attributes the authoring types accept that Qwik 2.0.0-beta.47's JSX types do not declare on
+ * Attributes the authoring types accept that Qwik 2.0.0-rc.5's JSX types do not declare on
  * some elements, and that the analyser rejects there (the second test proves it), so no IR
  * carries them. Pinned so the list only shrinks (an entry that starts passing fails the test).
  * What the analyser accepts and Qwik does not declare is QWIK_UNTYPED_ATTRIBUTES.

@@ -100,10 +100,10 @@ import { isPrimitiveValue } from "./values.ts";
 /** The scope helper's name, before the name scope makes it unique. */
 const SCOPE_HELPER = "scopeAttributes";
 
-/** The Qwik 2 target (experimental while Qwik 2 is in beta). */
+/** The Qwik 2 target (experimental until Qwik 2.0.0 ships, ADR-0094). */
 export const qwik: Target = defineTarget({
   name: "qwik",
-  framework: { package: "@qwik.dev/core", range: ">=2.0.0-beta.47 <3" },
+  framework: { package: "@qwik.dev/core", range: ">=2.0.0-rc.5 <3" },
   capabilities: {
     element: { support: "native" },
     text: { support: "native" },
@@ -137,7 +137,7 @@ export const qwik: Target = defineTarget({
       helper: "nextTick",
       note: "Qwik has no public way to wait for a render: `nextTick()` resolves after a macrotask, by which time the render its writes scheduled (in a microtask) has run.",
     },
-    // Qwik 2.0.0-beta.47's props proxy subscribes a reader only to the keys the props hold
+    // Qwik 2.0.0-rc.5's props proxy subscribes a reader only to the keys the props hold
     // (core's `PropsProxyHandler.get`: `if (prop in this.owner.varProps)`), and a key a parent
     // adds later finds no subscriber, so only the component's own render runs again.
     "late-prop": {
@@ -1290,7 +1290,7 @@ function qwikDialect(
 
 /**
  * A `<component is>` with listeners, as one element per candidate tag: `Tag === "a" ? <a …> :
- * <button …>`. Qwik 2.0.0-beta.47's runtime makes a `$` prop an element's listener only where
+ * <button …>`. Qwik 2.0.0-rc.5's runtime makes a `$` prop an element's listener only where
  * the optimizer splits the props, which it does not for `<Tag>`, so `onClick$` on it would be an
  * attribute. Listeners are on tags only: a component candidate's are its props (ADR-0054).
  */
@@ -1367,10 +1367,13 @@ function listsInFills(root: ElementNode | FragmentNode): Set<EventAttribute | Mo
 }
 
 /**
- * The conditionals and `<component is>` nodes that a sibling follows. Qwik 2.0.0-beta.47's diff
- * inserts a node that replaces another before it, then moves each unkeyed sibling after it back
- * in place (core's `retrieveChildWithKey`), and a focused sibling loses its focus. In a fragment
+ * The conditionals and `<component is>` nodes that a sibling follows. Qwik's 2.0 betas' diff
+ * inserted a node that replaces another before it, then moved each unkeyed sibling after it back
+ * in place (core's `retrieveChildWithKey`), and a focused sibling lost its focus. In a fragment
  * of its own, the replacement happens among the fragment's children, and no sibling moves.
+ * 2.0.0-rc.4 changed that diff ("no longer re-inserts the siblings that stay in place"), and the
+ * corpus passes on rc.5 without the fragment, but no case is known to catch the lost focus, so
+ * the fragment stays (ADR-0094).
  */
 function replacedBeforeSiblings(root: ElementNode | FragmentNode): Set<RenderNode> {
   const found = new Set<RenderNode>();

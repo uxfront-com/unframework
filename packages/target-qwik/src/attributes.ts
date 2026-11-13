@@ -6,7 +6,7 @@ import type { ElementNode, FragmentNode, RenderNode } from "@unframework.dev/ir"
  * `colSpan`). The DOM is the same either way: HTML attribute names are case-insensitive, so
  * Qwik's `setAttribute` and the HTML parser reading its server output both store `tabindex`.
  * The lower-case spelling fails type-checking (L4). Read from the `QwikIntrinsicElements` of
- * @qwik.dev/core 2.0.0-beta.47; test/attributes.test.ts type-checks every attribute the
+ * @qwik.dev/core 2.0.0-rc.5; test/attributes.test.ts type-checks every attribute the
  * authoring types accept, so a missing entry or a Qwik upgrade that changes one fails loudly.
  *
  * `autocorrect` is here for its value: Qwik types the HTML name by the DOM property, a
@@ -101,7 +101,7 @@ export const QWIK_BOOLEAN_ATTRIBUTES: ReadonlySet<string> = new Set([
 type Elements = { readonly on: readonly string[] } | { readonly except: readonly string[] };
 
 /**
- * HTML attributes the analyser accepts that Qwik 2.0.0-beta.47's JSX types declare under no
+ * HTML attributes the analyser accepts that Qwik 2.0.0-rc.5's JSX types declare under no
  * name on some elements: their DOM property is read-only (`<input form>`, `<input list>`), or
  * Qwik declares it on a few elements only (`enterkeyhint`). Qwik
  * renders them as written, so the target writes each as an object spread, whose keys TypeScript

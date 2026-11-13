@@ -2,7 +2,7 @@
 // import the optimizer writes (`qrlDEV(() => import("./X.tsx_s.js"), …)`): a handler, a task or
 // a local function runs once its QRL has resolved, and a QRL resolves on its first run.
 //
-// Qwik's preloader (`@qwik.dev/core/preloader`, 2.0 beta) only fetches the bundles of the page's
+// Qwik's preloader (`@qwik.dev/core/preloader`, 2.0.0-rc.5) only fetches the bundles of the page's
 // QRLs: a QRL still resolves through its import on its first run, which the browser answers in a
 // later task, in an order the page does not decide. Once resolved, a QRL runs inside the event's
 // dispatch, so Qwik runs the listeners whose code has run once in the DOM's order. The browser

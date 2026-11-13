@@ -62,7 +62,7 @@ describe("build --package: Qwik", () => {
     });
     // Conditions match in order: `default` before `qwik` would hide it.
     expect(Object.keys(manifest.exports["./qwik"])).toEqual(["types", "qwik", "default"]);
-    expect(manifest.peerDependencies).toEqual({ "@qwik.dev/core": "^2.0.0-beta.47" });
+    expect(manifest.peerDependencies).toEqual({ "@qwik.dev/core": "^2.0.0-rc.5" });
   });
 
   it.each(["R&D", "C++"])("gives the same package under a directory named %s", async (under) => {

@@ -1727,7 +1727,7 @@ These are npm `latest` versions on 2026-10-01. Each target pins its tested range
 | svelte                                    | 5.57.1            | async is still experimental, so output never uses it                       |
 | solid-js                                  | 1.9.15            | 2.0.0-rc.13 (`@solidjs/web`)                                               |
 | @angular/core                             | 22.2.1            | zoneless and OnPush by default; compiler-cli peers TypeScript `>=6.0 <6.1` |
-| @qwik.dev/core                            | 2.0.0-beta.47     | `@builder.io/qwik` 1.20.1 is the v1 line                                   |
+| @qwik.dev/core                            | 2.0.0-rc.5        | with `@qwik.dev/optimizer` 2.1.0-rc.11, experimental (ADR-0094)            |
 | astro                                     | 7.3.5             | a Rust compiler; the Container API serves SSR tests                        |
 | vite / rolldown                           | 8.3.1 / 1.2.12    |                                                                            |
 | vitest / @vitest/browser-playwright       | 5.0.3             | Browser Mode is stable; `toMatchScreenshot`                                |
@@ -1749,5 +1749,5 @@ These are npm `latest` versions on 2026-10-01. Each target pins its tested range
 | eslint-plugin-astro / astro-eslint-parser | 3.2.1 / 3.2.0     | L5 for Astro                                                               |
 | @angular-eslint/eslint-plugin             | 22.5.0            | with `eslint-plugin-template` and `template-parser`: L5 for Angular        |
 | eslint-plugin-solid                       | 0.18.0            | L5 for Solid, as an oxlint JS plugin                                       |
-| eslint-plugin-qwik                        | 2.0.0-beta.47     | the `beta` tag (`latest` is Qwik 1's); typed rules in ESLint (ADR-0045)    |
+| eslint-plugin-qwik                        | 2.0.0-rc.5        | the `rc` tag (`latest` is Qwik 1's); typed rules in ESLint (ADR-0045)      |
 | vue-jsx-vapor                             | 3.2.25            | prior art: Vue directives and macros in JSX                                |

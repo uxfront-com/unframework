@@ -33,7 +33,7 @@ interface Optimizer {
  * `noCheck` for the reason Vue's have it (ADR-0077).
  */
 export const qwik: Packager = {
-  peer: { name: "@qwik.dev/core", range: "^2.0.0-beta.47" },
+  peer: { name: "@qwik.dev/core", range: "^2.0.0-rc.5" },
   needs: [VITE, CORE, TYPESCRIPT],
   types: "@qwik.dev/core",
   exports: {

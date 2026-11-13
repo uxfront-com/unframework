@@ -1,8 +1,8 @@
 // `null` props on Qwik's server (ADR-0034: `null` is a value). Qwik keeps a `null` a parent
-// writes as an attribute, which the optimizer compiles to `_jsxSorted`, and deletes it from a
-// spread or a `jsx()` call, which go through `_jsxSplit`: the component reads `undefined`
-// there. The server adapter hands the props over as written attributes, so a scenario's `null`
-// reaches the component as `null`.
+// writes as an attribute, which the optimizer compiles to `_jsxSorted`, and, from 2.0.0-rc.3, a
+// `null` in a spread or a `jsx()` call too, which go through `_jsxSplit`: that deletes a
+// null-valued prop only on a native element (ADR-0094). The server adapter hands the props over
+// as written attributes, so a scenario's `null` reaches the component as `null`.
 import { describe, expect, it } from "vitest";
 
 import { renderToString } from "../../src/toolchain/server.ts";
@@ -25,13 +25,13 @@ describe("null props on Qwik's server", () => {
     expect(await read("NullProbe", { value: "x" })).toBe("x");
   });
 
-  it("keep `null` as a parent writes it, and lose it through a spread or `jsx()`", async () => {
-    // Qwik's own behaviour, pinned: a consumer that spreads its props loses a `null`.
+  it("keep `null` as a parent writes it, through a spread and through `jsx()`", async () => {
+    // Qwik's own behaviour, pinned: a consumer that spreads its props keeps a `null`.
     expect({
       written: await read("Written"),
       held: await read("Held"),
       spread: await read("Spread"),
       called: await read("Called"),
-    }).toEqual({ written: "null", held: "null", spread: "undefined", called: "undefined" });
+    }).toEqual({ written: "null", held: "null", spread: "null", called: "null" });
   });
 });

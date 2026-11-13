@@ -694,7 +694,7 @@ export const CANARIES: readonly Canary[] = [
     layer: "L13",
     description:
       "Gives every Qwik component a leaf component, rendered last, with a document listener, for the events every action dispatches, that throws a task later: nothing the component renders or does changes, and only Qwik's report of the error on the console (`QWIK ERROR`) shows it, on the cases whose specs act. Qwik's test mode (`qTest`) would silence the report.",
-    // Qwik 2.0.0-beta.47's development build wraps the host of a handler that throws in an
+    // Qwik 2.0.0-rc.5's development build wraps the host of a handler that throws in an
     // `<errored-host>`, and loops forever where that host re-renders or holds another errored
     // host, or where its first wrap lands with a re-render the same event schedules (a select's
     // `input` and its model's `change` come in one task). The leaf has no props, no state and no

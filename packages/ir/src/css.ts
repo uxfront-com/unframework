@@ -6,7 +6,7 @@ import { table, words } from "./tables.ts";
 
 /**
  * The properties a number renders on without a unit, as CSS names: the standard properties both
- * react-dom's `isUnitlessNumber` (19.3) and Qwik's `unitlessNumbers` (2.0 beta) list, which add
+ * react-dom's `isUnitlessNumber` (19.3) and Qwik's `unitlessNumbers` (2.0.0-rc.5) list, which add
  * no `px` to a number, where every other target writes the number as it is. A number on any
  * other property gets `px` from React or Qwik only. Left out of their intersection: `box-flex`,
  * `box-flex-group` and `box-ordinal-group` (old flexbox, never standard), `line-clamp`

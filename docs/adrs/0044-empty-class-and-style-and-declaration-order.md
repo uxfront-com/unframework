@@ -1,6 +1,6 @@
 # ADR-0044: An empty `class` or `style` is no attribute, and style declarations compare as a set
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0094
 - **Date:** 2026-10-05
 - **Plan:** §7.5 (normalisation), §7.7, §9 M1; P2, P4; ADR-0014, ADR-0019, ADR-0024, ADR-0029,
   ADR-0038; amends ADR-0031

@@ -72,7 +72,7 @@ const VENDOR_PROPERTIES: ReadonlySet<string> = new Set([
 
 /**
  * The standard properties react-dom 19.3 writes a number to without a unit (`unitlessNumbers`)
- * and Qwik 2.0 beta with `px`: SVG's stroke and opacity properties. On the properties in
+ * and Qwik 2.0.0-rc.5 with `px`: SVG's stroke and opacity properties. On the properties in
  * neither list (`UNITLESS_PROPERTIES` holds those in both), both add `px`.
  */
 const REACT_UNITLESS: ReadonlySet<string> = new Set([
