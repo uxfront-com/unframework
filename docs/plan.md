@@ -1727,7 +1727,7 @@ These are npm `latest` versions on 2026-10-01. Each target pins its tested range
 | svelte                                    | 5.57.1            | async is still experimental, so output never uses it                       |
 | solid-js                                  | 1.9.15            | 2.0.0-rc.13 (`@solidjs/web`)                                               |
 | @angular/core                             | 22.2.1            | zoneless and OnPush by default; compiler-cli peers TypeScript `>=6.0 <6.1` |
-| @qwik.dev/core                            | 2.0.0-rc.5        | with `@qwik.dev/optimizer` 2.1.0-rc.11; experimental (ADR-0094)            |
+| @qwik.dev/core                            | 2.0.0-rc.5        | with `@qwik.dev/optimizer` 2.1.0-rc.11, experimental (ADR-0094)            |
 | astro                                     | 7.3.5             | a Rust compiler; the Container API serves SSR tests                        |
 | vite / rolldown                           | 8.3.1 / 1.2.12    |                                                                            |
 | vitest / @vitest/browser-playwright       | 5.0.3             | Browser Mode is stable; `toMatchScreenshot`                                |
