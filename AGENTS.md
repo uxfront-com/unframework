@@ -74,8 +74,26 @@ in a real browser.
   oxfmt (ADR-0074), so a thrown error resolves to its `.uf.tsx` line on every target. L14 (source
   maps) and L15 (budgets) are live (ADR-0078). `tests/e2e` installs packed tarballs of a sample
   design system in seven apps, six of them in plugin mode too, with Playwright smoke and HMR specs
-  (ADR-0079). Documented on unframework.dev (`4.tooling/`). **M7, public testing and visual
-  tooling, is next** (plan §9).
+  (ADR-0079). Documented on unframework.dev (`4.tooling/`).
+- **M7, public testing and visual tooling, is done:** a design system tests its components the way
+  the corpus tests the compiler. The root entry of `@unframework.dev/testing` is its public API
+  (`describeTargets`, `it`, `mount`, `mountScenario`, …), with two matchers,
+  `toHaveNoAxeViolations` and `toHaveAriaTree`, and the case (one test file, its `.uf.tsx`, an
+  optional `case.json` and the generated `__expected__/`) is the public test unit. The harness's
+  machinery lives under `./harness`, and a lint rule holds the corpus and the sample design
+  system's tests and examples to the root entry (ADR-0085). `defineTestConfig`
+  (`@unframework.dev/testing/config`) builds a project's browser and SSR projects from its
+  `unframework.config.ts`, and a project compares pixels live by default, in CI too (ADR-0086).
+  `@unframework.dev/visual` renders each `*.example.uf.tsx` on every target, compares them with
+  L10 and writes `report.json` and `report.html`. An example that declares props is UF7011
+  (ADR-0087). `unframework preview` shows every example and component on every target side by
+  side, with a Vite server for each (ADR-0088). `test`, `visual` and `preview` come from the
+  umbrella's `unframework` bin, which takes both packages as optional peer dependencies, since
+  `cli` sits below them in `LAYERS`. CI's `Design system` job runs the sample design system's
+  tests and visual suite from packed tarballs on all seven targets (ADR-0089). Both packages
+  stay private until their first release, which is the owner's call, and property-based fuzzing
+  is left for later. Documented on unframework.dev (`4.tooling/5.testing.md`, `6.visual.md`,
+  `7.preview.md`). **M8, advanced features and versioned targets, is next** (plan §9).
 - Anything outside the built subset is rejected as UF1002 (`unsupported-syntax`) until its
   milestone lands. The authoring types already accept the whole language (plan §4).
 - The plan describes the target state. The code is the truth for what is built:
@@ -86,13 +104,13 @@ in a real browser.
 
 ## Read first
 
-| Document                            | Read it                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/plan.md`                      | For the architecture. Cited everywhere as §n, principles P1–P8, goals G1–G7, layers L1–L15, milestones M0–M10, decisions C1–C4 and D1–D13, risks R1–R14.                                                                                                                                                                                                                                                          |
-| `docs/adrs/README.md` and the index | Before you reopen a decision. ADR-0018 to ADR-0033 record what the M0 spikes and build settled, ADR-0034 to ADR-0044 what M1 settled, ADR-0045 to ADR-0052 what M2 settled, ADR-0053 to ADR-0060 what M3 settled, ADR-0061 to ADR-0066 what M4 settled, ADR-0067 to ADR-0071 what M5 settled, ADR-0074 to ADR-0080 what M6 settled. An accepted ADR is newer than the plan: where the two differ, follow the ADR. |
-| `tests/integration/README.md`       | Before you touch the corpus or the harness.                                                                                                                                                                                                                                                                                                                                                                       |
-| `packages/<name>/README.md`         | Before you change a package. Each README states the package's contract and its toolchain. Keep the README true when you change the contract.                                                                                                                                                                                                                                                                      |
-| `.github/CONTRIBUTING.md`           | For scripts, the package template and releases.                                                                                                                                                                                                                                                                                                                                                                   |
+| Document                            | Read it                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/plan.md`                      | For the architecture. Cited everywhere as §n, principles P1–P8, goals G1–G7, layers L1–L15, milestones M0–M10, decisions C1–C4 and D1–D13, risks R1–R14.                                                                                                                                                                                                                                                                                                |
+| `docs/adrs/README.md` and the index | Before you reopen a decision. ADR-0018 to ADR-0033 record what the M0 spikes and build settled, ADR-0034 to ADR-0044 what M1 settled, ADR-0045 to ADR-0052 what M2 settled, ADR-0053 to ADR-0060 what M3 settled, ADR-0061 to ADR-0066 what M4 settled, ADR-0067 to ADR-0071 what M5 settled, ADR-0074 to ADR-0080 what M6 settled, ADR-0085 to ADR-0089 what M7 settled. An accepted ADR is newer than the plan: where the two differ, follow the ADR. |
+| `tests/integration/README.md`       | Before you touch the corpus or the harness.                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `packages/<name>/README.md`         | Before you change a package. Each README states the package's contract and its toolchain. Keep the README true when you change the contract.                                                                                                                                                                                                                                                                                                            |
+| `.github/CONTRIBUTING.md`           | For scripts, the package template and releases.                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ## Layout
 
@@ -113,7 +131,11 @@ packages/        ir, diagnostics           pure data and the UF catalogue (no de
                                            explain, init
                  create-unframework        create-unframework <dir>: a new project, through init
                  testing                   describeTargets, it, mount, view.user, expectParity,
-                                           traces, normaliser, parity reporter (private until M7)
+                                           the axe and ARIA matchers, defineTestConfig (/config),
+                                           the harness's machinery (/harness); public API in
+                                           ADR-0085; first release is the owner's
+                 visual                    examples on every target: unframework visual, its
+                                           report (report.json, report.html), unframework preview
                  unframework               the authoring stubs and the JSX types (vendored from
                                            @vue/runtime-dom), with type probes
 tests/integration  the corpus (cases/<area>/<name>/) and its harness (harness/, scripts/)

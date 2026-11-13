@@ -179,4 +179,4 @@ The example's config is an ES module, so there `check` and `build` exit 2 with U
 `"type": "module"`, or rename the file `unframework.config.mts`. A `package.json` with no `type` works,
 with a warning from Node.
 
-`init` writes no test yet, because `@unframework.dev/testing` stays private until M7.
+`init` writes no test yet, because `@unframework.dev/testing` isn't on npm until its first release.
