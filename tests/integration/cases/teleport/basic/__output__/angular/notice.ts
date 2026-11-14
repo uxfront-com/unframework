@@ -1,14 +1,15 @@
 import {
+  ApplicationRef,
   Component,
   DOCUMENT,
   DestroyRef,
   Directive,
   ElementRef,
+  type EmbeddedViewRef,
   type OnInit,
   Renderer2,
   TemplateRef,
-  ViewContainerRef,
-  afterNextRender,
+  afterEveryRender,
   inject,
   input,
   signal,
@@ -62,33 +63,42 @@ export class Teleport implements OnInit {
 
   constructor() {
     const template = inject<TemplateRef<unknown>>(TemplateRef);
-    const container = inject(ViewContainerRef);
+    const application = inject(ApplicationRef);
     const document = inject(DOCUMENT);
-    let nodes: Node[] = [];
+    const anchor: Node = inject<ElementRef<Comment>>(ElementRef).nativeElement;
+    let view: EmbeddedViewRef<unknown> | undefined;
     const mount = () => {
       const target = document.querySelector(this.ufTeleport());
       if (!target) return;
-      const view = container.createEmbeddedView(template);
+      view = template.createEmbeddedView({});
+      application.attachView(view);
       view.detectChanges();
-      nodes = view.rootNodes;
-      target.append(...nodes);
+      target.append(...view.rootNodes);
+    };
+    const unmount = () => {
+      const nodes: Node[] = view?.rootNodes ?? [];
+      view?.destroy();
+      view = undefined;
+      for (const node of nodes) node.parentNode?.removeChild(node);
     };
     // Angular runs a render's callbacks in no source order: each teleport queues itself, and the
-    // first to write mounts them all in the order of their anchors.
-    afterNextRender({
+    // first to write mounts them all in the order of their anchors. A template projected into a
+    // slot that isn't rendered has no anchor in the document, so it waits for one.
+    afterEveryRender({
       earlyRead: () => {
-        TeleportQueue.push({ anchor: container.element.nativeElement as Node, mount });
+        if (!view && anchor.isConnected) TeleportQueue.push({ anchor, mount });
       },
       write: () => {
         const due = TeleportQueue.splice(0).sort((a, b) =>
           a.anchor.compareDocumentPosition(b.anchor) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
         );
         for (const each of due) each.mount();
+        // The view reads the component's state, which this render may have changed.
+        if (view && !anchor.isConnected) unmount();
+        else view?.detectChanges();
       },
     });
-    inject(DestroyRef).onDestroy(() => {
-      for (const node of nodes) node.parentNode?.removeChild(node);
-    });
+    inject(DestroyRef).onDestroy(unmount);
   }
 }
 

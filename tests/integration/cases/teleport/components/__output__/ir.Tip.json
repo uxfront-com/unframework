@@ -1,0 +1,172 @@
+{
+  "irVersion": 1,
+  "file": "teleport/components/Tip.uf.tsx",
+  "components": [
+    {
+      "name": "Tip",
+      "span": {
+        "start": 98,
+        "end": 288
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 87,
+              "end": 93
+            }
+          },
+          "binding": "label@128",
+          "span": {
+            "start": 80,
+            "end": 94
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "TipProps",
+          "span": {
+            "start": 137,
+            "end": 145
+          }
+        },
+        "span": {
+          "start": 126,
+          "end": 145
+        }
+      },
+      "types": [
+        "TipProps"
+      ],
+      "bindings": [
+        {
+          "id": "label@128",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 128,
+            "end": 133
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Teleport",
+            "to": "body",
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "p",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "data-teleported",
+                    "value": "true",
+                    "span": {
+                      "start": 194,
+                      "end": 209
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "class",
+                    "value": "tip",
+                    "span": {
+                      "start": 210,
+                      "end": 221
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "role",
+                    "value": "note",
+                    "span": {
+                      "start": 222,
+                      "end": 233
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "label",
+                      "span": {
+                        "start": 244,
+                        "end": 249
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "label@128",
+                          "span": {
+                            "start": 244,
+                            "end": 249
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 243,
+                      "end": 250
+                    }
+                  },
+                  {
+                    "kind": "Text",
+                    "value": " tip",
+                    "span": {
+                      "start": 250,
+                      "end": 261
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 191,
+                  "end": 265
+                }
+              }
+            ],
+            "span": {
+              "start": 164,
+              "end": 281
+            }
+          }
+        ],
+        "span": {
+          "start": 164,
+          "end": 281
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Tip",
+      "span": {
+        "start": 98,
+        "end": 288
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "TipProps",
+      "exported": true,
+      "code": "interface TipProps {\n  label: string;\n}",
+      "span": {
+        "start": 57,
+        "end": 96
+      }
+    }
+  ]
+}

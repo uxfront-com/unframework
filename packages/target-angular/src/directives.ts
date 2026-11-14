@@ -160,15 +160,17 @@ export const TELEPORT_HOST_INPUT = "ufTeleportHost";
 
 /**
  * The directive that mounts a `<Teleport>`'s content into the element `to` selects (ADR-0098):
- * `<ng-template ufTeleport="body">`. Once the application has rendered, so that the server and
- * the hydrating client render none of it, it creates the template's view in its own view
- * container, which keeps the view in its component's change detection, and moves the view's
- * nodes into `to`, as the CDK's `DomPortalOutlet` does. The container holds that one view, so
- * Angular never inserts a node before one it moved, and it removes a node from wherever it is.
- * Destroying a view removes none of its nodes, so it removes them with the component. At the
- * root of its component, it takes the host's scope attributes off, which its styled parents put
- * there and a teleport root takes nowhere, as Vue drops them. It is exported, as ngtsc's
- * type-check imports every directive a template uses.
+ * `<ng-template ufTeleport="body">`. After a render that left its anchor in the document, so that
+ * neither the server nor the hydrating client renders it, it creates the template's view,
+ * attaches it to the application and appends its nodes to `to`, and it refreshes the view after
+ * every render, since the view reads the component's `@let` values, which mark it dirty in no
+ * signal. The view is in no view container, so neither an insertion nor a slot's projection
+ * moves a node it moved. A template projected into a slot that isn't rendered has no anchor in
+ * the document: it mounts when the slot renders, and unmounts when the slot goes. Destroying a
+ * view removes none of its nodes, so it removes them. At the root of its component, it takes the
+ * host's scope attributes off, which its styled parents put there and a teleport root takes
+ * nowhere, as Vue drops them. It is exported, as ngtsc's type-check imports every directive a
+ * template uses.
  */
 export function teleportDirectiveCode(className: string, imports: ImportSet): string {
   const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
@@ -191,33 +193,42 @@ export class ${className} implements ${core("OnInit", true)} {
 
   constructor() {
     const template = ${core("inject")}<${core("TemplateRef", true)}<unknown>>(${core("TemplateRef")});
-    const container = ${core("inject")}(${core("ViewContainerRef")});
+    const application = ${core("inject")}(${core("ApplicationRef")});
     const document = ${core("inject")}(${core("DOCUMENT")});
-    let nodes: Node[] = [];
+    const anchor: Node = ${core("inject")}<${core("ElementRef", true)}<Comment>>(${core("ElementRef")}).nativeElement;
+    let view: ${core("EmbeddedViewRef", true)}<unknown> | undefined;
     const mount = () => {
       const target = document.querySelector(this.${TELEPORT_ATTRIBUTE}());
       if (!target) return;
-      const view = container.createEmbeddedView(template);
+      view = template.createEmbeddedView({});
+      application.attachView(view);
       view.detectChanges();
-      nodes = view.rootNodes;
-      target.append(...nodes);
+      target.append(...view.rootNodes);
+    };
+    const unmount = () => {
+      const nodes: Node[] = view?.rootNodes ?? [];
+      view?.destroy();
+      view = undefined;
+      for (const node of nodes) node.parentNode?.removeChild(node);
     };
     // Angular runs a render's callbacks in no source order: each teleport queues itself, and the
-    // first to write mounts them all in the order of their anchors.
-    ${core("afterNextRender")}({
+    // first to write mounts them all in the order of their anchors. A template projected into a
+    // slot that isn't rendered has no anchor in the document, so it waits for one.
+    ${core("afterEveryRender")}({
       earlyRead: () => {
-        ${className}Queue.push({ anchor: container.element.nativeElement as Node, mount });
+        if (!view && anchor.isConnected) ${className}Queue.push({ anchor, mount });
       },
       write: () => {
         const due = ${className}Queue.splice(0).sort((a, b) =>
           a.anchor.compareDocumentPosition(b.anchor) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
         );
         for (const each of due) each.mount();
+        // The view reads the component's state, which this render may have changed.
+        if (view && !anchor.isConnected) unmount();
+        else view?.detectChanges();
       },
     });
-    ${core("inject")}(${core("DestroyRef")}).onDestroy(() => {
-      for (const node of nodes) node.parentNode?.removeChild(node);
-    });
+    ${core("inject")}(${core("DestroyRef")}).onDestroy(unmount);
   }
 }
 `;

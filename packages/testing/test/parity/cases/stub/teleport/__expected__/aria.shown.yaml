@@ -1,3 +1,4 @@
 - paragraph: In place
-- status: Saved
-- button "Dismiss"
+- dialog "Saved":
+  - status: Saved
+  - button "Dismiss"

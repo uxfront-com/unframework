@@ -40,6 +40,11 @@ a call or a read as a value, is UF1002 at the identifier. The compiler checks ho
   Svelte, Angular and Qwik move one node and remove one node.
 - Another attribute is UF3035, `key` outside a list UF3014, `ref` UF3046, a spread UF1002, and a
   teleport as a list's element UF1002. A teleport inside an `<svg>` is UF1002.
+- The element is checked where the teleport is, as an element there would be: Svelte creates it
+  there before it moves it, and its server build warns about an element its place does not permit,
+  so `<div>` in a `<p>` is UF3003.
+- `to` reads as JSX reads a string attribute, character references decoded, and each target writes
+  that selector its own way.
 - `disabled` and `defer` are left out: only Vue's lowering of them would be native.
 
 The IR node is `{ kind: "Teleport", to, children, span }`, whose invariants require one `Element`
@@ -56,6 +61,9 @@ teleport is a root of kind `other`: the root is wrapped in a fragment, a parent'
   of `to`. Vue also leaves two empty text nodes around it, which hold nothing.
 - **Lifetime.** It unmounts with its component, or when a condition around the teleport turns
   false. Nothing is left in `to`.
+- **Place.** It stays where it mounted while the list rows or the components that teleported it
+  reorder, on every target, Vue's included. A teleport filled into a child's slot mounts only while
+  the child renders the slot.
 - **Not guaranteed:**
   - The holder's `onMounted` may run before the content exists. A component inside the teleport
     sees it in its own `onMounted`.
@@ -63,38 +71,47 @@ teleport is a root of kind `other`: the root is wrapped in a fragment, a parent'
     events bubble through a portal, the DOM's don't.
   - What happens when `to` matches nothing. Each target renders nothing.
   - A selector across the boundary: `.panel .dialog` no longer matches a teleported `.dialog`.
-  - Where a teleported element goes when a list reorders the rows that teleported it: it stays
-    where it was mounted, on every target, Vue's included.
 
 ### The lowering
 
-| Target  | Cell                       | Lowering                                                                                                                                                                                                                                                                                                                                     |
-| ------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vue     | native                     | `<Teleport v-if="mounted" to="body">`, with a `mounted` ref set in `onMounted`. A plain `<Teleport>` buffers its content on the server and mismatches as it hydrates. A component whose root is a teleport sets `inheritAttrs: false`, so Vue doesn't warn about a parent's scope attribute.                                                 |
-| React   | emulated, `teleport`       | `{mounted ? teleport(<div …/>, "body") : null}`, with `mounted` from `useSyncExternalStore`, false on the server and while hydrating. The inline `teleport` is `createPortal` into the element `to` selects, or `null`. The output imports `react-dom`, React's renderer, and a React package peers on it.                                   |
-| Solid   | emulated, `Teleport`       | `<Teleport to="body">`, an inline helper that copies `<Portal>`'s branch without a wrapper: in `onMount`, it inserts the children into `to` in a root its owner owns, and a signal empties the insertion on cleanup.                                                                                                                         |
-| Svelte  | emulated, `teleport`       | `{#if mounted}<div {@attach teleport("body")} …>{/if}`, with `mounted` set in `onMount`. The attachment appends the element to `to`, gives back the focus the move took, and removes it on teardown.                                                                                                                                         |
-| Angular | emulated, `Teleport`       | `<ng-template ufTeleport="body">`. Its inline directive, after the next render, creates the template's view in its own view container and appends the view's nodes to `to`, as the CDK's `DomPortalOutlet` does. A render's teleports mount in the order of their anchors. A root teleport takes its parents' scope attributes off the host. |
-| Qwik    | emulated, `teleport`       | `{mounted.value && <>{""}<div ref={teleport("body")} …/></>}`, with `mounted` set by a `document-ready` visible task. The ref moves the element into `to` once Qwik has inserted it, and removes it once the element that held it leaves the document.                                                                                       |
-| Astro   | unsupported, UF4001 (info) | Prints nothing: a static page has no client to mount the content.                                                                                                                                                                                                                                                                            |
+| Target  | Cell                       | Lowering                                                                                                                                                                                                                                                                                                                                                                |
+| ------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vue     | native                     | `<Teleport v-if="mounted" to="body">`, with a `mounted` ref set in `onMounted`. A plain `<Teleport>` buffers its content on the server and mismatches as it hydrates. A component whose root is a teleport sets `inheritAttrs: false`, so Vue doesn't warn about a parent's scope attribute.                                                                            |
+| React   | emulated, `teleport`       | `{mounted ? teleport(<div …/>, "body") : null}`, with `mounted` from `useSyncExternalStore`, false on the server and while hydrating. The inline `teleport` is `createPortal` into the element `to` selects, or `null`. The output imports `react-dom`, React's renderer, and a React package peers on it.                                                              |
+| Solid   | emulated, `Teleport`       | `<Teleport to="body">`, an inline helper that copies `<Portal>`'s branch without a wrapper: in `onMount`, it inserts the children into `to` in a root its owner owns, and a signal empties the insertion on cleanup.                                                                                                                                                    |
+| Svelte  | emulated, `teleport`       | `{#if mounted}<div {@attach teleport("body")} …>{/if}`, with `mounted` set in `onMount`. The attachment appends the element to `to`, gives back the focus the move took, and removes it on teardown.                                                                                                                                                                    |
+| Angular | emulated, `Teleport`       | `<ng-template ufTeleport="body">`. After a render that leaves its anchor in the document, its inline directive creates the template's view, attaches it to the application, appends its nodes to `to`, and refreshes it after every render. A render's teleports mount in the order of their anchors. A root teleport takes its parents' scope attributes off the host. |
+| Qwik    | emulated, `teleport`       | `{mounted.value && <>{""}<div ref={teleport("body")} …/></>}`, with `mounted` set by a `document-ready` visible task. The ref moves the element into `to` once Qwik has inserted it, puts it back there when Qwik moves it with its component, removes it once the element that held it leaves the document, and stops watching once it is gone.                        |
+| Astro   | unsupported, UF4001 (info) | Prints nothing: a static page has no client to mount the content.                                                                                                                                                                                                                                                                                                       |
 
-Four lowerings differ from the plan's starting points, each for a reason the cases found:
+Some lowerings differ from the plan's starting points, each for a reason the cases found:
 
-- **Angular uses a view container**, not a view attached to `ApplicationRef`. Zoneless change
-  detection refreshes an attached view only when it is dirty, so a teleported view that reads the
-  component's `@let` values never updated.
-- **Angular orders its teleports.** It runs a render's `afterNextRender` callbacks in no source
-  order: each teleport queues itself in the `earlyRead` phase, and the first `write` callback
-  mounts them all, sorted by their anchors' position in the document.
+- **Angular refreshes its view after every render** (`afterEveryRender`). Zoneless change
+  detection refreshes a view attached to `ApplicationRef` only when it is dirty, and a teleported
+  view reads the component's `@let` values, which mark it dirty in no signal. A view in the
+  directive's own view container would stay fresh, but Angular creates content projected into a
+  slot whether or not the slot renders, and its projection inserts every view of the container,
+  the moved nodes included, into the slot. So the view is in no container, and it mounts only
+  while its anchor is in the document: a template projected into a slot that isn't rendered has
+  none.
+- **Angular orders its teleports.** It runs a render's callbacks in no source order: each teleport
+  queues itself in the `earlyRead` phase, and the first `write` callback mounts them all, sorted by
+  their anchors' position in the document.
 - **Qwik's moved element stands in for its container.** Qwik finds a handler's container with
   `element.closest("[q:container]")`, which an element moved out of a container that is not
   `<html>` no longer reaches. The helper copies the container's `q:container` attribute, which
   the normaliser drops, and its `qContainer` onto the element. In an SSR page, whose container is
-  `<html>`, `body` is inside it and nothing is copied.
+  `<html>`, `body` is inside it and nothing is copied. `qContainer` is an internal of Qwik's,
+  which the target may read because Qwik is pinned exactly to its release candidate (ADR-0094):
+  a Qwik bump runs the teleport cases, which a change to it breaks.
 - **Qwik's helper watches the element that held the teleport**, not the empty text before it. A
   capture merges adjacent text runs, which detaches that text for a moment. Qwik removes the
   element itself with its branch, and only the outermost node of an element it removes, so the
-  helper removes it once its holder leaves the document.
+  helper removes it once its holder leaves the document, and stops watching once the element is
+  gone, removed by Qwik or by itself.
+- **Qwik's helper puts back an element Qwik moves.** Qwik moves a component by moving every DOM
+  node under it, so a keyed list that reorders components whose root is a teleport pulls their
+  elements back into the page. The helper puts each back where it was in `to`.
 
 Svelte and Qwik move the element after a component inside it may have focused one of its
 elements, and moving a node blurs it, so both give the focus back.
@@ -116,11 +133,12 @@ does it in five parts:
    - **Screenshot:** the clip is the union of the boxes.
    - **axe:** the context includes each element.
    - **L12:** the hydrated view's capture, and the client render's, which claims its own.
-3. **Queries.** A claimed element carries the view's test id, so `view.getBy*` and `view.user`
-   reach what it holds, as they reach what the container holds. Like the container, a teleported
-   element itself is no query's result. The DOM capture never shows the stamp, the ARIA and
-   screenshot captures locate the container alone, and an element with a test id of its own fails
-   the test. `view.locator` matches the container and what the view teleported.
+3. **Queries.** A claimed element carries a test id of the view's, `uf-root-N-teleported`. A
+   query of the view matches what the container holds, what a teleported element holds, and a
+   teleported element itself, which a query chained from it never matches: `q` is
+   `container.q.or(teleported.q).or(page.q.and(teleported))`. `view.user` names its step `q`, as
+   before, the same on every target. The DOM capture never shows the stamp, `view.locator` is the
+   container alone, and an element with a test id of its own fails the test.
 4. **The after-test check.** After `cleanup()`, `body` holds no element the test added, or the
    test fails L8, naming each one. This proves "unmounts with its component" for every case.
 5. **The normaliser** drops Qwik's visible-task placeholder, an empty `<script hidden>` that only

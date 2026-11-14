@@ -1,0 +1,433 @@
+{
+  "irVersion": 1,
+  "file": "teleport/components/Board.uf.tsx",
+  "components": [
+    {
+      "name": "Board",
+      "span": {
+        "start": 172,
+        "end": 755
+      },
+      "props": [],
+      "types": [
+        "Row"
+      ],
+      "bindings": [
+        {
+          "id": "rows@214",
+          "name": "rows",
+          "kind": "state",
+          "span": {
+            "start": 214,
+            "end": 218
+          }
+        },
+        {
+          "id": "row@506",
+          "name": "row",
+          "kind": "loopVar",
+          "span": {
+            "start": 506,
+            "end": 509
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "rows@214",
+          "type": {
+            "code": "Row[]",
+            "span": {
+              "start": 225,
+              "end": 230
+            }
+          },
+          "initial": {
+            "code": "[\n    { id: 1, label: \"Alpha\" },\n    { id: 2, label: \"Beta\" },\n  ]",
+            "span": {
+              "start": 232,
+              "end": 298
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 208,
+            "end": 300
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "board",
+            "span": {
+              "start": 326,
+              "end": 339
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Board",
+            "span": {
+              "start": 340,
+              "end": 358
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 374,
+                  "end": 387
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(rows.value = [...rows.value].reverse())",
+                      "span": {
+                        "start": 403,
+                        "end": 443
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "rows@214",
+                          "operator": "=",
+                          "span": {
+                            "start": 403,
+                            "end": 443
+                          },
+                          "target": {
+                            "start": 404,
+                            "end": 414
+                          },
+                          "value": {
+                            "start": 417,
+                            "end": 442
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "rows@214",
+                          "span": {
+                            "start": 421,
+                            "end": 431
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 397,
+                      "end": 443
+                    }
+                  },
+                  "span": {
+                    "start": 397,
+                    "end": 443
+                  }
+                },
+                "span": {
+                  "start": 388,
+                  "end": 444
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Reverse tips",
+                "span": {
+                  "start": 445,
+                  "end": 473
+                }
+              }
+            ],
+            "span": {
+              "start": 366,
+              "end": 482
+            }
+          },
+          {
+            "kind": "For",
+            "source": {
+              "code": "rows.value",
+              "span": {
+                "start": 490,
+                "end": 500
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "rows@214",
+                  "span": {
+                    "start": 490,
+                    "end": 500
+                  }
+                }
+              ]
+            },
+            "item": "row@506",
+            "key": {
+              "code": "row.id",
+              "span": {
+                "start": 534,
+                "end": 540
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "row@506",
+                  "span": {
+                    "start": 534,
+                    "end": 537
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Component",
+              "component": "Tip",
+              "attributes": [
+                {
+                  "kind": "Prop",
+                  "name": "label",
+                  "value": {
+                    "code": "row.label",
+                    "span": {
+                      "start": 549,
+                      "end": 558
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "row@506",
+                        "span": {
+                          "start": 549,
+                          "end": 552
+                        }
+                      }
+                    ]
+                  },
+                  "span": {
+                    "start": 542,
+                    "end": 559
+                  }
+                }
+              ],
+              "fills": [],
+              "span": {
+                "start": 524,
+                "end": 562
+              }
+            },
+            "span": {
+              "start": 490,
+              "end": 571
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Card",
+            "attributes": [],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Teleport",
+                    "to": "body",
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "div",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "data-teleported",
+                            "value": "true",
+                            "span": {
+                              "start": 630,
+                              "end": 645
+                            }
+                          },
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "slotted",
+                            "span": {
+                              "start": 646,
+                              "end": 661
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Slotted",
+                            "span": {
+                              "start": 662,
+                              "end": 693
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 625,
+                          "end": 699
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 594,
+                      "end": 719
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 594,
+                  "end": 719
+                }
+              }
+            ],
+            "span": {
+              "start": 579,
+              "end": 733
+            }
+          }
+        ],
+        "span": {
+          "start": 317,
+          "end": 748
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Board",
+      "span": {
+        "start": 172,
+        "end": 755
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Row",
+      "exported": false,
+      "code": "interface Row {\n  id: number;\n  label: string;\n}",
+      "span": {
+        "start": 122,
+        "end": 170
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./Card.uf.tsx",
+      "file": "Card.uf.tsx",
+      "api": {
+        "file": "Card.uf.tsx",
+        "components": [
+          {
+            "name": "Card",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Card",
+          "span": {
+            "start": 62,
+            "end": 66
+          }
+        }
+      ],
+      "span": {
+        "start": 55,
+        "end": 88
+      }
+    },
+    {
+      "specifier": "./Tip.uf.tsx",
+      "file": "Tip.uf.tsx",
+      "api": {
+        "file": "Tip.uf.tsx",
+        "components": [
+          {
+            "name": "Tip",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "other"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Tip",
+          "span": {
+            "start": 96,
+            "end": 99
+          }
+        }
+      ],
+      "span": {
+        "start": 89,
+        "end": 120
+      }
+    }
+  ]
+}

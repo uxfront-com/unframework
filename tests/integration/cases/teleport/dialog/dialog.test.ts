@@ -12,7 +12,7 @@ describeTargets("teleport/dialog", () => {
     const view = await mountScenario(Files, "closed");
     await view.expectParity("closed");
     await expect.element(view.getByRole("button", { name: "Delete notes.txt" })).toBeVisible();
-    expect(document.querySelector(".backdrop")).toBeNull();
+    await expect.element(view.getByRole("dialog")).not.toBeInTheDocument();
   });
 
   it(
@@ -34,12 +34,25 @@ describeTargets("teleport/dialog", () => {
     async () => {
       const view = await mountScenario(Files, "closed");
       await view.user.click(view.getByRole("button", { name: "Delete notes.txt" }));
+      await view.expectParity("open-for-escape");
       await view.user.keyboard("{Escape}");
       await view.expectParity("escaped");
-      expect(document.querySelector(".backdrop")).toBeNull();
+      await expect.element(view.getByRole("button", { name: "Delete notes.txt" })).toBeVisible();
+      await expect.element(view.getByRole("dialog")).not.toBeInTheDocument();
       expect(view.emitted("delete")).toEqual([]);
     },
   );
+
+  it("closes on Cancel", { requires: ["teleport", "interactivity"] }, async () => {
+    const view = await mountScenario(Files, "closed");
+    await view.user.click(view.getByRole("button", { name: "Delete notes.txt" }));
+    await view.expectParity("open-for-cancel");
+    await view.user.click(view.getByRole("button", { name: "Cancel" }));
+    await view.expectParity("cancelled");
+    await expect.element(view.getByRole("button", { name: "Delete notes.txt" })).toBeVisible();
+    await expect.element(view.getByRole("dialog")).not.toBeInTheDocument();
+    expect(view.emitted("delete")).toEqual([]);
+  });
 
   it(
     "closes on confirming, and emits the file it deletes",
@@ -47,9 +60,11 @@ describeTargets("teleport/dialog", () => {
     async () => {
       const view = await mountScenario(Files, "closed");
       await view.user.click(view.getByRole("button", { name: "Delete notes.txt" }));
+      await view.expectParity("open-for-confirm");
       await view.user.click(view.getByRole("button", { name: "Delete", exact: true }));
       await view.expectParity("confirmed");
-      expect(document.querySelector(".backdrop")).toBeNull();
+      await expect.element(view.getByText("notes.txt", { exact: true })).toBeVisible();
+      await expect.element(view.getByRole("dialog")).not.toBeInTheDocument();
       expect(view.emitted("delete")).toEqual([["notes.txt"]]);
     },
   );

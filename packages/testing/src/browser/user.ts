@@ -16,6 +16,7 @@ import type { InputRequest } from "../commands.ts";
 import { assertInteractive } from "./capabilities.ts";
 import { isCharacter, parseKeys } from "./keys.ts";
 import type { KeyInput } from "./keys.ts";
+import { teleportedTestId } from "./teleports.ts";
 
 /** Where a click presses: a point from the element's top left corner, its centre by default. */
 export interface ClickOptions {
@@ -260,7 +261,28 @@ function underRoot(testId: string, target: unknown, kind: string): string {
       `view.user.${kind}: act on a locator of this view, such as view.getByRole("button", { name: "Save" }), not ${serialized === undefined ? "an element" : serialized}: a step names its target the same way on every target.`,
     );
   }
-  return serialized.slice(prefix.length);
+  return withoutTeleported(serialized.slice(prefix.length), teleportedTestId(testId));
+}
+
+/**
+ * A view's query with what reaches its teleported elements taken out (ADR-0098): the view writes
+ * `q` as `q.or(getByTestId('uf-root-N-teleported').q).or(q.and(getByTestId(…)))`, and a step
+ * names it `q`, as it did before teleports, the same on every target.
+ */
+function withoutTeleported(serialized: string, teleportId: string): string {
+  const roots = `getByTestId('${teleportId}')`;
+  const start = `.or(${roots}.`;
+  let name = serialized;
+  for (let at = name.indexOf(start); at !== -1; at = name.indexOf(start)) {
+    const end = name.indexOf(").or(", at);
+    const query = name.slice(at + start.length, end);
+    const rest = `).or(${query}.and(${roots}))`;
+    if (end === -1 || !name.startsWith(rest, end) || !name.slice(0, at).endsWith(query)) {
+      throw new Error(`view.user: cannot read the step's target from ${serialized}.`);
+    }
+    name = name.slice(0, at) + name.slice(end + rest.length);
+  }
+  return name;
 }
 
 /** An options object, or nothing when it has no options set. */

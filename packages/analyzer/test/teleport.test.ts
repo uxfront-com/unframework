@@ -42,6 +42,17 @@ describe("<Teleport>", () => {
     },
   );
 
+  it.each([
+    [`to='[data-overlay="root"]'`, '[data-overlay="root"]'],
+    ['to="#a &amp; b"', "#a & b"],
+    ["to={'#a &amp; b'}", "#a &amp; b"],
+  ])("reads %s as JSX reads it", (to, selector) => {
+    const { module, diagnostics } = run(source(`<div><Teleport ${to}><p /></Teleport></div>`));
+    expect(diagnostics).toEqual([]);
+    const [teleport] = (only(module).render as { children: TeleportNode[] }).children;
+    expect(teleport!.to).toBe(selector);
+  });
+
   it("is recognised by its import's binding, so an alias is Teleport too", () => {
     const text = `import { Teleport as Portal } from "@uxfront/unframework";
 export function A() { return <div><Portal to="body"><p /></Portal></div>; }`;
@@ -120,6 +131,13 @@ export function A() { return <div><Portal to="body"><p /></Portal></div>; }`;
       const text = `${IMPORT}function Child() { return <p />; }
 export function A() { const label = "x"; const open = ref(false); return ${jsx}; }`;
       expect(problems(text, run(text).diagnostics)).toEqual([expected]);
+    });
+
+    it.each([
+      '<p>a<Teleport to="body"><div>b</div></Teleport>c</p>',
+      '<table><Teleport to="body"><div>b</div></Teleport></table>',
+    ])("checks the element where the teleport is: %s", (jsx) => {
+      expect(reported(jsx).map((each) => each.split(" ")[0])).toContain("UF3003");
     });
 
     it("keeps the whitespace JSX drops out of the content", () => {

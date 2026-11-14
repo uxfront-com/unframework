@@ -157,7 +157,7 @@ export function solidJsx(
     teleport: (node, context) =>
       js.jsxElement(
         (teleportHelper ??= imports.claim(TELEPORT_HELPER)),
-        [js.jsxAttribute("to", js.stringLiteral(node.to))],
+        [js.jsxAttribute("to", jsxAttributeValue(node.to))],
         jsxChildren(node.children, context),
       ),
     staticAttribute(attribute, element, context) {

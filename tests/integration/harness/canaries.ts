@@ -1383,7 +1383,12 @@ function markText(render: ElementNode | FragmentNode): boolean {
               ? node.fills.flatMap((fill) =>
                   fill.children.filter((child): child is ElementNode => child.kind === "Element"),
                 )
-              : [],
+              : // A root teleport's element renders in `to` once mounted (ADR-0098): the DOM, the
+                // ARIA tree and the client's render show its text, and a parent's server HTML
+                // its own.
+                node.kind === "Teleport"
+                ? node.children.filter((child): child is ElementNode => child.kind === "Element")
+                : [],
         );
   for (const root of always) {
     const holder = textHolder(root, "html");

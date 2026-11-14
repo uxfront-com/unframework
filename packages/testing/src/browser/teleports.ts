@@ -7,10 +7,16 @@
 // that holds no mount root, was not there when the test started, and no view or client render
 // has claimed yet is claimed by the one reading. The harness reads a view right after each of
 // its actions settles, so what an action teleported goes to the view that acted. A claimed
-// element carries its view's test id, so the view's queries (`view.getByRole`) and `view.user`,
-// which look under `getByTestId('uf-root-N')`, reach it; the captures leave that stamp out.
+// element carries a test id of its view's, `uf-root-N-teleported`, through which the view's
+// queries (`view.getByRole`) and `view.user` reach it and what it holds. The captures leave that
+// stamp out.
 
 import { ROOT_ATTRIBUTE } from "./determinism.ts";
+
+/** The test id of what a view teleported, beside its container's `uf-root-N`. */
+export function teleportedTestId(testId: string): string {
+  return `${testId}-teleported`;
+}
 
 /** Who claims teleported elements: a view, or L12's client render. */
 export type TeleportOwner = object;
@@ -38,8 +44,8 @@ function holdsRoot(element: Element): boolean {
 
 /**
  * Claims what `body` holds that no one has, then gives the owner's elements in `body` order.
- * `stamp` is the view's test id, which each element it claims carries; an element with a test
- * id of its own fails, since the stamp would replace it.
+ * `stamp` is the test id each element it claims carries for its view; an element with a test id
+ * of its own fails, since the stamp would replace it.
  */
 export function teleportedBy(owner: TeleportOwner, stamp?: string): Element[] {
   const found: Element[] = [];
@@ -49,7 +55,7 @@ export function teleportedBy(owner: TeleportOwner, stamp?: string): Element[] {
         const own = element.getAttribute("data-testid");
         if (own !== null && own !== stamp) {
           throw new Error(
-            `A teleported <${element.localName}> has a data-testid of its own, "${own}": the harness gives what a view teleports the view's test id, so its queries reach it. Query it by its role, its label or its text.`,
+            `A teleported <${element.localName}> has a data-testid of its own, "${own}": the harness gives what a view teleports a test id of the view's, so its queries reach it. Query it by its role, its label or its text.`,
           );
         }
         element.setAttribute("data-testid", stamp);

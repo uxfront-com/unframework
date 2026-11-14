@@ -363,7 +363,8 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   UF3030), on the source's listeners, its tables Svelte's own.
 - **Teleport** (`teleport.ts`, ADR-0098): `<Teleport to>`, the authoring API written only as a
   tag, recognised by its import's binding, lowered to a `Teleport` node around its one element,
-  which is lowered as a component's root is. `to` is a static selector (UF3053), and the content
+  which is checked where the teleport is (UF3003 for an element its place does not permit), and
+  `to` decoded as JSX decodes an attribute. `to` is a static selector (UF3053), and the content
   exactly one element (UF3054). Another attribute is UF3035, `key` UF3014, `ref` UF3046, a spread,
   a list's element, a teleport inside an `<svg>` and `Teleport` used as anything but a tag
   UF1002. A component whose whole render is a teleport is a root of kind `other`, wrapped in a

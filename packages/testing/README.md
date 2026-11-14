@@ -112,12 +112,12 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
   authored function, so `props` (and `rerender`'s) are checked against its props type; the untyped
   overload takes what is not a function only (the test stubs).
 - **What a view teleports** (ADR-0098) is the view's: each element its render appends to `<body>`
-  outside its container. It carries the view's test id, so `locator`, the `getBy*` queries and
-  `view.user` reach what it holds, as they reach what the container holds. Neither the container
-  nor a teleported element itself is a query's result. `html()` and L7 write each one after the
-  container's children, in a `<uf:teleported>` marker, and L7's ARIA snapshot, L10's geometry
-  (under `uf:teleported[i]/`) and screenshot, and L11's axe cover it too. An element of its own
-  with a `data-testid` fails the test, since the stamp would replace it.
+  outside its container. It carries a test id of the view's, `uf-root-N-teleported`, so the
+  `getBy*` queries and `view.user` reach it and what it holds, as they reach what the container
+  holds; `locator` is the container alone. `html()` and L7 write each one after the container's
+  children, in a `<uf:teleported>` marker, and L7's ARIA snapshot, L10's geometry (under
+  `uf:teleported[i]/`) and screenshot, and L11's axe cover it too. An element with a `data-testid`
+  of its own fails the test, since the stamp would replace it.
 - **The after-test check** (ADR-0098): once a test's views are unmounted, `<body>` holds no
   element the test added, or the test fails L8, naming each one. A component removes what it
   appends to `<body>`, a teleport's content or a toast container among it, as it unmounts.
@@ -465,7 +465,8 @@ Only the named target's framework noise is removed (Angular's hosts only from An
 output, Qwik's `preventdefault:`, `stoppropagation:` and `capture:` dispatch attributes and its
 `q:template` elements, where its server render keeps a slot's unclaimed fallback, and its
 `<style q:style>` elements, where its server render writes a `useStyles$` sheet that its client
-writes in `<head>`, only from Qwik's, React's stale `checked` and `selected` attributes only from
+writes in `<head>`, and its empty `<script hidden>` with only its own attributes, where its server
+render writes the visible task of a component that renders no element, only from Qwik's, React's stale `checked` and `selected` attributes only from
 React's, and the space Playwright's ARIA snapshot puts at an Angular host only from Angular's
 snapshot); without a
 target nothing is noise. On every target, the markup of a control's initial state is left out

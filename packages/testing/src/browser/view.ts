@@ -10,7 +10,7 @@ import type {
 import { inject, TestRunner } from "vitest";
 import type { RunnerTestCase } from "vitest";
 import { commands, page } from "vitest/browser";
-import type { Locator } from "vitest/browser";
+import type { Locator, LocatorSelectors } from "vitest/browser";
 
 import "../commands.ts";
 import { normalizeDomWithIds } from "../dom/serialize.ts";
@@ -43,7 +43,7 @@ import { expectParity } from "./parity.ts";
 import type { ParityOptions } from "./parity.ts";
 import { registeredAdapter } from "./target.ts";
 import type { TargetOptions } from "./target.ts";
-import { teleportedBy, withoutStamps } from "./teleports.ts";
+import { teleportedBy, teleportedTestId, withoutStamps } from "./teleports.ts";
 import { expectThrown } from "./thrown.ts";
 import { Trace } from "./trace.ts";
 import { createUser } from "./user.ts";
@@ -52,7 +52,10 @@ import type { Input, ViewUser } from "./user.ts";
 /** Props as an adapter takes them. */
 export type Props = Readonly<Record<string, unknown>>;
 
-/** A mounted component. Queries are scoped to its container. */
+/**
+ * A mounted component. Queries are scoped to its container and to what it teleported: the
+ * elements its render appended to `<body>` (ADR-0098).
+ */
 export interface View<P = Props> {
   readonly target: string;
   /**
@@ -301,14 +304,25 @@ async function mountWith(
   }
   report(instance);
 
-  // The container, and what the view teleported (ADR-0098), which carries its test id: the
-  // container is first in `body`, since it is there before the component mounts.
+  // The container, and what the view teleported (ADR-0098), which carries a test id of its own.
   const locator = page.getByTestId(testId);
-  const containerLocator = locator.first();
+  const containerLocator = locator;
+  const teleportId = teleportedTestId(testId);
+  const teleportedRoots = page.getByTestId(teleportId);
   const owner = {};
-  const teleported = () => teleportedBy(owner, testId);
+  const teleported = () => teleportedBy(owner, teleportId);
   const teleportedLocators = () =>
-    teleported().map((element, index) => ({ element, locator: locator.nth(index + 1) }));
+    teleported().map((element, index) => ({ element, locator: teleportedRoots.nth(index) }));
+  /**
+   * A query of the view: what the container holds, what a teleported element holds, or a
+   * teleported element itself, which a query chained from it never matches.
+   */
+  const query =
+    <A extends unknown[]>(find: (root: LocatorSelectors, ...args: A) => Locator) =>
+    (...args: A): Locator =>
+      find(locator, ...args)
+        .or(find(teleportedRoots, ...args))
+        .or(find(page, ...args).and(teleportedRoots));
   // The engine too: Firefox serialises some prefixed properties under its own alias (ADR-0081).
   // Outside the harness (this package's own tests) nothing provides it.
   const engine = (inject("ufHarness") as HarnessContext | undefined)?.browser;
@@ -321,7 +335,7 @@ async function mountWith(
   // A target the normaliser does not know (a test stub) has no framework noise to remove.
   const dom = () => {
     const elements = teleported();
-    return withoutStamps(elements, testId, () =>
+    return withoutStamps(elements, teleportId, () =>
       normalizeDomWithIds(container, normalizeOptions, elements),
     );
   };
@@ -415,13 +429,23 @@ async function mountWith(
     target,
     container,
     locator,
-    getByRole: (...args) => locator.getByRole(...args),
-    getByText: (...args) => locator.getByText(...args),
-    getByLabelText: (...args) => locator.getByLabelText(...args),
-    getByPlaceholder: (...args) => locator.getByPlaceholder(...args),
-    getByAltText: (...args) => locator.getByAltText(...args),
-    getByTitle: (...args) => locator.getByTitle(...args),
-    getByTestId: (...args) => locator.getByTestId(...args),
+    getByRole: query((root, ...args: Parameters<Locator["getByRole"]>) => root.getByRole(...args)),
+    getByText: query((root, ...args: Parameters<Locator["getByText"]>) => root.getByText(...args)),
+    getByLabelText: query((root, ...args: Parameters<Locator["getByLabelText"]>) =>
+      root.getByLabelText(...args),
+    ),
+    getByPlaceholder: query((root, ...args: Parameters<Locator["getByPlaceholder"]>) =>
+      root.getByPlaceholder(...args),
+    ),
+    getByAltText: query((root, ...args: Parameters<Locator["getByAltText"]>) =>
+      root.getByAltText(...args),
+    ),
+    getByTitle: query((root, ...args: Parameters<Locator["getByTitle"]>) =>
+      root.getByTitle(...args),
+    ),
+    getByTestId: query((root, ...args: Parameters<Locator["getByTestId"]>) =>
+      root.getByTestId(...args),
+    ),
     user: createUser({ testId, perform }),
     clock: {
       async tick(ms) {

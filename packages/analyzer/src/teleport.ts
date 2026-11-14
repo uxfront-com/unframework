@@ -9,12 +9,13 @@ import type { TeleportNode } from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
 
 import { misplacedKey } from "./attributes.ts";
-import type { Reporter } from "./context.ts";
+import { reportDivergence } from "./context.ts";
+import type { RawSpan, Reporter } from "./context.ts";
 import { closest } from "./cross-component.ts";
 import { span } from "./expressions.ts";
-import { readJsxText } from "./jsx/text.ts";
+import { readJsxAttribute, readJsxText } from "./jsx/text.ts";
 import { isStaticString, valueOf } from "./literals.ts";
-import { lowerElement, ROOT } from "./lower.ts";
+import { lowerElement } from "./lower.ts";
 import type { Place } from "./lower.ts";
 import type { RenderContext } from "./render.ts";
 
@@ -103,11 +104,25 @@ export function lowerTeleport(
     );
     return undefined;
   }
-  // The content's parent is `to`'s element, not anything around the teleport: it is lowered as a
-  // component's root is, with no open element around it.
-  const lowered = lowerElement(first, ROOT, render).element;
+  // The element is checked where the teleport is: Svelte creates it there before it moves it, and
+  // its server build warns about an element its place does not permit (`<div>` in `<p>`).
+  const lowered = lowerElement(first, place, render).element;
   if (!lowered || to === undefined || reporter.hasErrorsSince(mark)) return undefined;
   return createTeleportNode(to, [lowered], span(node));
+}
+
+/**
+ * The selector a `to` attribute's string reads as, as JSX decodes it: a reference only HTML
+ * decodes is reported, as on any attribute.
+ */
+function readTo(literal: AST.StringLiteral, reporter: Reporter): string {
+  const reading = readJsxAttribute(literal.value);
+  const at: RawSpan = (range) => ({
+    start: literal.start + 1 + range.start,
+    end: literal.start + 1 + range.end,
+  });
+  for (const divergence of reading.divergences) reportDivergence(divergence, at, reporter);
+  return reading.value;
 }
 
 /** What a child that is not one plain element is, for UF3054's message. */
@@ -205,7 +220,9 @@ function selectorOf(
       );
       continue;
     }
-    const selector = valueOf(expression);
+    // An attribute's string is JSX text, whose character references JSX decodes, and the
+    // selector is what it reads as, written each target's own way (ADR-0098).
+    const selector = value?.type === "Literal" ? readTo(value, reporter) : valueOf(expression);
     if (!selector.trim()) {
       reporter.report("UF3053", item, "`to` is empty: it is the selector of an element.", {
         help,

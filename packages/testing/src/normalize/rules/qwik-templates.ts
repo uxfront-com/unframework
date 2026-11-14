@@ -17,14 +17,16 @@ export function removeQwikTemplates(root: TreeParent, target?: NormalizeTarget):
 
 /**
  * Whether an element is Qwik's placeholder for a component that renders no element of its own
- * (ADR-0098): an empty `<script hidden>` that carries the component's visible task
- * (`q-d:qinit`), with nothing but Qwik's own attributes. It renders nothing, and the client
- * render, which runs the task in place, does not have it.
+ * (ADR-0098): an empty `<script hidden>` whose other attributes are all Qwik's own, where its
+ * server render writes the listener of the component's visible task. Rule 2 has removed those
+ * by now, so it holds `hidden` alone. It renders nothing, and the client render, which runs the
+ * task in place, does not have it.
  */
 function isTaskPlaceholder(node: TreeElement): boolean {
   return (
     node.tagName === "script" &&
     childrenOf(node).length === 0 &&
+    node.attrs.some((attribute) => attributeName(attribute) === "hidden") &&
     node.attrs.every((attribute) => {
       const name = attributeName(attribute);
       return name === "hidden" || isFrameworkAttribute(name, "qwik");
