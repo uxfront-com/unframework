@@ -126,6 +126,7 @@ export default function Counter(
   the item, read as `item.value` and `item.index`, which TypeScript narrows as it narrows a prop.
   `by` takes the item and the index as values, as the key reads them. A parameter neither
   callback reads is left out of it.
+- `teleport` is emulated (ADR-0098): an inline helper, `Teleport`, inserts the element into `to` once the component has mounted, as `<Portal>` does in `<head>`, with no wrapper, in a root its owner owns.
 - HTML's attribute names as written (`class`, `for`, `tabindex`, `readonly`), which Solid's JSX
   takes; SVG's in their own case (`viewBox`, `stroke-width`). Every bindable boolean attribute
   is one Solid's compiler sets as a boolean, so none needs `bool:` (`test/attributes.test.ts`).

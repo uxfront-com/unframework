@@ -171,6 +171,8 @@ refs, watchers and hooks never run and state keeps its initial value; the compil
 `scoped-slot` (a render prop named as the slot), `child-root-scope` (`scopeAttributes`) and
 `style-binding` (`styleObject`, for a style bound to a value that a merge spreads, ADR-0065).
 
+`teleport` is unsupported (UF4001, info, ADR-0098): a static page has no client to mount the content, so the output prints nothing for it.
+
 `keyed-identity` is unsupported (UF4001, for information): a list renders once on the server, and
 nothing reorders it. No list reports it, since no IR kind requires it (ADR-0096). Every other
 capability is native.

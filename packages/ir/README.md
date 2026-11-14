@@ -19,7 +19,8 @@ plain, versioned, schema-validated JSON (plan §5.3).
 - **Composition (ADR-0055):** a module's `imports` of other `.uf.tsx` modules, each with the
   `ModuleApi` the compiler's resolver returned (ADR-0053), and its injection `keys`; a
   component's `slots`, `exposes` and `inheritAttrs`; the render nodes `Component`, `SlotOutlet`
-  and `Dynamic` (`<component is>`), a list's body that is a component, a component's attributes
+  and `Dynamic` (`<component is>`), the render node `Teleport` (`<Teleport to>`, one element
+  mounted elsewhere, ADR-0098), a list's body that is a component, a component's attributes
   (`Prop`, `Listener`, `ModelBinding`, `Class`, `Style`, `Ref`) and fills, an element's `v-model`
   (`Model`), the setup items `Model`, `Provide` and `Inject`, the binding kinds `model`, `slots`,
   `slotScope`, `context` and `component`, and a slot's presence (`Slot` references). The analyser
@@ -100,7 +101,8 @@ plain, versioned, schema-validated JSON (plan §5.3).
   declaration of its API; a slot outlet, a slot's presence and a forwarded fill name a declared
   slot; a model's binding is a `state`'s or a `model`'s `.value`; an injected value is never
   written; a `Dynamic` node's candidates are all tags, whose attributes and children each tag
-  keeps as an element, or all components; slots, exposed functions and models are declared once,
+  keeps as an element, or all components; a `Teleport` (ADR-0098) holds exactly one element,
+  outside SVG, and its `to` is not empty; slots, exposed functions and models are declared once,
   a model named apart from the props; `provide` and `inject` name a key the module declares or
   imports, and a key of a ref (`InjectionKey<Ref<number>>`, ADR-0054) is provided, or injected
   with a fallback, as a `state`, `derived` or `model` binding by its name, and its injected

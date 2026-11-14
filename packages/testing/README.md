@@ -107,10 +107,20 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
 - **`mount(component, { props, clock? })`** mounts with the project's registered adapter into a
   `<div data-uf-root>` in the page's `<body>`, and returns a **`View`**: `container`, a `locator`
   (`page.getByTestId("uf-root-N")`, stable as the DOM changes), `getBy*` queries scoped to the
-  container, `html()` (the normalised DOM), `settle()`, `rerender(props)`, `user`, `clock`,
+  container and to what the view teleported, `html()` (the normalised DOM), `settle()`, `rerender(props)`, `user`, `clock`,
   `emitted(name)`, `events()` and `unmount()`. A component imported from a `.uf.tsx` is typed as its
   authored function, so `props` (and `rerender`'s) are checked against its props type; the untyped
   overload takes what is not a function only (the test stubs).
+- **What a view teleports** (ADR-0098) is the view's: each element its render appends to `<body>`
+  outside its container. It carries the view's test id, so `locator`, the `getBy*` queries and
+  `view.user` reach what it holds, as they reach what the container holds; neither the container
+  nor a teleported element itself is a query's result. `html()` and L7 write each one after the
+  container's children, in a `<uf:teleported>` marker, and L7's ARIA snapshot, L10's geometry
+  (under `uf:teleported[i]/`) and screenshot, and L11's axe cover it too. An element of its own
+  with a `data-testid` fails the test, since the stamp would replace it.
+- **The after-test check** (ADR-0098): once a test's views are unmounted, `<body>` holds no
+  element the test added, or the test fails L8, naming each one. A component removes what it
+  appends to `<body>`, a teleport's content or a toast container among it, as it unmounts.
 - **`mountScenario(component, name, { clock? })`** mounts with `case.json`'s `ssr[name].props`, so a
   browser scenario and its server twin render the same props; the test then checks it with
   `expectParity(name)`. A scenario `case.json` cannot hold (an explicit `undefined`, a rerender) is

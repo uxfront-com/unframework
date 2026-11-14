@@ -375,6 +375,8 @@ cannot infer. Where an unsupported cell is reported, the
 output still compiles: default-slot presence reads `true`, and the forwarded default slot
 re-projects `<ng-content />`.
 
+`teleport` is emulated (ADR-0098): an `<ng-template ufTeleport>` whose inline directive, `Teleport`, creates its view in its own view container once the application has rendered and moves the view's nodes into `to`. A render's teleports mount in the document's order, and a root teleport takes its parents' scope attributes off the host.
+
 Inline content on either side of a child component's host reads with a space in the accessible
 name: Chrome adds one at every `display: contents` element, so Angular reads `Build passing` where
 the other targets read `Buildpassing`. `harness/quarantine/angular.ts` lists the cells until M3's

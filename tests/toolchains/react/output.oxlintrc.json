@@ -22,7 +22,8 @@
     // P7, D11: an output imports only its framework, and (from M3) the outputs beside it, and
     // (from M4) the `virtual:` modules a styling engine's plugin registers, which it keeps as
     // written (plan §4.4, ADR-0064). A type import is erased, so a package's types are imported
-    // by name, as the source imports them (ADR-0067).
+    // by name, as the source imports them (ADR-0067). `react-dom` is React's renderer, whose
+    // `createPortal` a `<Teleport>` needs (ADR-0098).
     "no-restricted-imports": [
       "error",
       {

@@ -384,6 +384,14 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
 
 ## The rules that keep it honest
 
+- **A view's captures cover what it teleported** (ADR-0098). Each element a view's render appends
+  to `<body>` outside its container is the view's, claimed by the view or L12's client render
+  that reads it first. L7 and L9 write it after the container's children in a `<uf:teleported>`
+  marker, the ARIA snapshot after the container's, L10's geometry under `uf:teleported[i]/` and
+  its screenshot over the union of the boxes, and L11 runs axe on it. A case pins `to="body"`,
+  and marks each element it teleports `data-teleported`, which no server HTML holds.
+- **A test leaves nothing in `<body>`** (ADR-0098). Once its views are unmounted, an element the
+  test added fails L8, naming it: a component removes what it appends to `<body>`.
 - **Check mode never writes.** A missing artefact fails with the command that creates it. CI is
   always in check mode, and `pnpm test:update` refuses to run there.
 - **One expectation, written once.** In update mode only the reference target writes the shared
