@@ -1414,10 +1414,7 @@ export interface DynamicNode {
  */
 export interface TeleportNode {
   kind: "Teleport";
-  /**
-   * The CSS selector of the element the content mounts into, a static string.
-   * @minLength 1
-   */
+  /** The CSS selector of the element the content mounts into: a static string, not empty. */
   to: string;
   /** The content: exactly one element (ADR-0098). */
   children: RenderNode[];

@@ -2882,8 +2882,7 @@
         },
         "to": {
           "type": "string",
-          "description": "The CSS selector of the element the content mounts into, a static string.",
-          "minLength": 1
+          "description": "The CSS selector of the element the content mounts into: a static string, not empty."
         },
         "children": {
           "type": "array",
