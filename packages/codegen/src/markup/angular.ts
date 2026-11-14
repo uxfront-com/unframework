@@ -427,6 +427,12 @@ export function withoutTemplateLiterals(code: string, kind: CodeKind = "expressi
  * `:svg:` prefixes, is UF1002 until M3 (ADR-0040). Its lexer reads a `<title>`'s content as text,
  * blocks included, unless the tag itself names the namespace, so an SVG title is `<svg:title>`.
  */
+/**
+ * The name of the pure pipe the Angular target declares for `innerHTML`, which marks markup
+ * trusted so that Angular renders it as written (ADR-0097).
+ */
+export const TRUSTED_HTML_PIPE = "trustedHtml";
+
 export const angularDialect: MarkupDialect = {
   name: "angular",
   escapeText: (text, position) => rootEdge(position, angularText(text, position)),
@@ -569,6 +575,14 @@ export const angularDialect: MarkupDialect = {
     return [{ name, text: `${name}="${angularCode(statement, "event")}"` }];
   },
   refAttribute: ({ name }) => [{ name: `#${name}`, text: `#${name}` }],
+  // Angular sanitises a bound `innerHTML`: the target's pure pipe marks the markup trusted, so it
+  // renders as written (ADR-0097).
+  rawHtmlAttribute: (code) => [
+    {
+      name: "[innerHTML]",
+      text: `[innerHTML]="${angularCode(operand(code), "attribute")} | ${TRUSTED_HTML_PIPE}"`,
+    },
+  ],
   // A component's element is its selector (ADR-0010), and every prop a binding, so the host keeps
   // no attribute and is unwrapped (ADR-0056): `[label]="'Name'"` for a static one.
   componentTag: (name) => `uf-${kebabCase(name)}`,
@@ -961,6 +975,7 @@ const angularLiteralDialect: MarkupDialect = {
   list: () => staticOnly("a list"),
   eventAttribute: ({ attribute }) => staticOnly(`a \`${attribute.event}\` listener`),
   refAttribute: () => staticOnly("a template ref"),
+  rawHtmlAttribute: () => staticOnly("`innerHTML`"),
 };
 
 /**

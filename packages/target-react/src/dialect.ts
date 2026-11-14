@@ -160,6 +160,16 @@ export function reactDialect(
 
     eventAttribute: (attribute, element, context) => listeners.event(attribute, element, context),
 
+    // React's raw HTML prop takes an object, which marks the markup as set on purpose (ADR-0097).
+    rawHtmlAttribute: (attribute, _element, context) => [
+      js.jsxAttribute(
+        "dangerouslySetInnerHTML",
+        js.jsxExpressionContainer(
+          js.objectExpression([["__html", jsxExpression(attribute.value, context)]]),
+        ),
+      ),
+    ],
+
     // A component's `ref` holds what it exposes (ADR-0054): the ref object itself.
     refAttribute: (attribute, element, context) =>
       /^[A-Z]/.test(element.tag)

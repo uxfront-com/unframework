@@ -1513,6 +1513,7 @@ function checkComponentAttributes(
       case "Spread":
       case "Event":
       case "Model":
+      case "RawHtml":
         break;
       default:
         unreachable(attribute);
@@ -1845,7 +1846,8 @@ function checkDynamic(node: DynamicNode, place: Place, walk: Walk): void {
       attribute.kind === "Bound" ||
       attribute.kind === "Spread" ||
       attribute.kind === "Event" ||
-      attribute.kind === "Model"
+      attribute.kind === "Model" ||
+      attribute.kind === "RawHtml"
     ) {
       errors.push({
         path: `${place.path}/attributes/${index}`,
@@ -2274,10 +2276,34 @@ function checkAttributes(
         }
         checkModelValue(attribute.value, `${at}/value`, place, walk);
         break;
+      case "RawHtml": {
+        // The markup is the element's content (ADR-0097): an HTML element that holds content,
+        // with no children beside it.
+        const problem = rawHtmlProblem(tag, namespace, children.length > 0);
+        if (problem) errors.push({ path: at, message: problem });
+        claim("innerHTML", at, false);
+        checkExpression(attribute.value, `${at}/value`, place.scope, walk);
+        break;
+      }
       default:
         unreachable(attribute);
     }
   }
+}
+
+/** Why an element cannot take `innerHTML` (ADR-0097), or `undefined`. */
+function rawHtmlProblem(
+  tag: string,
+  namespace: Namespace,
+  hasChildren: boolean,
+): string | undefined {
+  if (namespace !== "html") return "must be on an HTML element: SVG content is not raw HTML";
+  if (isVoidElement(tag)) return `must not be on <${tag}>: a void element holds no content`;
+  if (TEXT_ONLY_ELEMENTS.has(tag)) {
+    return `must not be on <${tag}>: its content is text, which the targets set apart`;
+  }
+  if (hasChildren) return "must be on an element without children: the markup is its content";
+  return undefined;
 }
 
 /**

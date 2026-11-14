@@ -1537,7 +1537,8 @@ export type Attribute =
   | SpreadAttribute
   | EventAttribute
   | RefAttribute
-  | ModelAttribute;
+  | ModelAttribute
+  | RawHtmlAttribute;
 
 /**
  * An attribute on a component (ADR-0053, ADR-0054): a prop, a listener of an event the child
@@ -1654,6 +1655,18 @@ export interface RefAttribute {
   kind: "Ref";
   /** The `templateRef` binding. */
   binding: BindingId;
+  span: Span;
+}
+
+/**
+ * `innerHTML={markup}` (ADR-0097): the element's content is the markup a string holds, parsed by
+ * the browser, never escaped. Its element is an HTML element that holds content, and has no
+ * children of its own. A static `innerHTML="<b>Hi</b>"` is a string literal's expression.
+ */
+export interface RawHtmlAttribute {
+  kind: "RawHtml";
+  /** An expression whose value is a string: the markup. */
+  value: Expression;
   span: Span;
 }
 

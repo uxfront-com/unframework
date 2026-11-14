@@ -55,6 +55,7 @@ const ATTRIBUTE_CAPABILITIES: Readonly<Record<Attribute["kind"], CapabilityName>
   Event: "interactivity",
   Ref: "interactivity",
   Model: "two-way-binding",
+  RawHtml: "raw-html",
 };
 /**
  * What each kind of a component's attribute needs (ADR-0055): a prop only the component, a
@@ -440,6 +441,7 @@ function componentAttribute(
     case "Static":
     case "Bound":
     case "Spread":
+    case "RawHtml":
       use(ATTRIBUTE_CAPABILITIES[attribute.kind], attribute.span);
       break;
     case "Event":

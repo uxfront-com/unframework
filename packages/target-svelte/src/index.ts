@@ -41,6 +41,7 @@ export const svelte: Target = defineTarget({
       note: "Svelte's `style` takes a declaration list, so a style bound to an object goes through an inline helper, `styleText`, that writes its declarations (ADR-0065); declarations print as `style:` directives.",
     },
     "attribute-spread": { support: "native" },
+    "raw-html": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
     "component-event": { support: "native" },

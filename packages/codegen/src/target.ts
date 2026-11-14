@@ -82,6 +82,11 @@ export type CapabilityName =
   | "style-binding"
   /** A spread of an object whose keys its type declares (`SpreadAttribute`). */
   | "attribute-spread"
+  /**
+   * `innerHTML={markup}` (`RawHtmlAttribute`, ADR-0097): the element's content is the markup a
+   * string holds, as the browser parses it, never escaped or sanitised.
+   */
+  | "raw-html"
   /** SVG: an `<svg>` element and the SVG inside it. */
   | "svg"
   /** A component element (`ComponentNode`): an imported or a local component (ADR-0053). */
@@ -204,6 +209,7 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "class-binding",
   "style-binding",
   "attribute-spread",
+  "raw-html",
   "svg",
   "component",
   "component-event",

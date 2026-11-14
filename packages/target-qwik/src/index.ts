@@ -160,6 +160,7 @@ export const qwik: Target = defineTarget({
       note: "A style bound to a value is Qwik's own `style`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
     },
     "attribute-spread": { support: "native" },
+    "raw-html": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
     "component-event": { support: "native" },
@@ -1215,6 +1216,13 @@ function qwikDialect(
     },
     eventAttribute: (attribute, element, context) =>
       listeners.attributes(attribute, element, context),
+    // Qwik's raw HTML prop takes the string itself (ADR-0097).
+    rawHtmlAttribute: (attribute, _element, context) => [
+      js.jsxAttribute(
+        "dangerouslySetInnerHTML",
+        js.jsxExpressionContainer(jsxExpression(attribute.value, context)),
+      ),
+    ],
     attributeName: (name, element) => qwikAttributeName(name, namespaceOf(element)),
     staticAttribute(attribute, element, context) {
       // A static `class` beside a spread that carries one merges with it.

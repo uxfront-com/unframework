@@ -731,11 +731,13 @@ function hasTypedProps(element: ElementNode): boolean {
         return !isUntyped(element.tag, attribute.name);
       case "Spread":
         return attribute.keys.some((key) => !isUntyped(element.tag, key.name));
-      // `class`, `style`, a listener and `ref` are props every element's type declares.
+      // `class`, `style`, a listener, `ref` and `innerHTML` are props every element's type
+      // declares.
       case "Class":
       case "Style":
       case "Event":
       case "Ref":
+      case "RawHtml":
         return true;
       case "Model":
         return false;

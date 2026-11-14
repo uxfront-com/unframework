@@ -58,7 +58,7 @@ const FRAMEWORK_PROPS: ReadonlyMap<string, string> = new Map(
       "`children` is a framework prop, not an attribute: React renders it as the content and Solid fails to set it. Write the content as JSX children.",
     classlist: "`classList` is Solid's prop, not an attribute. Use `class`.",
     dangerouslysetinnerhtml:
-      "`dangerouslySetInnerHTML` is React's prop, not an attribute. Write the content as JSX children.",
+      "`dangerouslySetInnerHTML` is React's prop, not an attribute. Write the content as JSX children, or markup as `innerHTML={markup}`.",
     innertext:
       "`innerText` is a DOM property, not an attribute. Write the content as JSX children.",
     outerhtml: "`outerHTML` is a DOM property, not an attribute. Write the element as JSX.",
@@ -146,8 +146,11 @@ export function nameProblem(
       `A spread's \`${authored}\` key is a listener, and a spread renders attributes: an element's own listener is written on it, \`onClick={save}\`.`,
     );
   }
+  // An element's own `innerHTML` is lowered apart (`./raw-html.ts`): only a spread's key gets here.
   if (lower === "innerhtml") {
-    return unsupported(`The \`${authored}\` attribute is not supported yet.`);
+    return unsupported(
+      `A spread's \`${authored}\` key is not rendered: an element's markup is set by its own \`innerHTML={markup}\` (ADR-0097).`,
+    );
   }
   if (/^default(value|checked|selected)$/.test(lower)) {
     const advice = modelAdvice(tag);

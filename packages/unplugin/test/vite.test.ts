@@ -1522,6 +1522,7 @@ function htmlTarget() {
     "class-binding": { support: "native" },
     "style-binding": { support: "native" },
     "attribute-spread": { support: "native" },
+    "raw-html": { support: "native" },
     svg: { support: "native" },
     "event-capture": { support: "native" },
     "event-once": { support: "native" },

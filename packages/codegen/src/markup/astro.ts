@@ -217,6 +217,7 @@ export const astroDialect: MarkupDialect = {
   ],
   eventAttribute: () => [],
   refAttribute: () => [],
+  rawHtmlAttribute: (code) => [{ name: "set:html", text: `set:html={${code}}` }],
   inert: true,
   // A component's props are attributes (ADR-0053); no listener runs (`component-event`).
   propAttribute: ({ name, code, literal }) => [

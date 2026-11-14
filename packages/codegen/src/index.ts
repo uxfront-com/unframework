@@ -127,6 +127,7 @@ export {
   staticClassValue,
   svelteDialect,
   test,
+  TRUSTED_HTML_PIPE,
   vueAttributeCode,
   vueClassValue,
   vueDialect,
