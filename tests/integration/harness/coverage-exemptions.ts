@@ -87,4 +87,7 @@ export const EXEMPT_CAPABILITIES: Readonly<
   context: lanesBut("astro"),
   "reactive-context": lanesBut("astro"),
   "dynamic-component": lanesBut(),
+  // Every case runs in the hydrate projects, which check it on each target that hydrates (L12,
+  // ADR-0095): no IR kind requires it, so no case can name it.
+  hydration: "verified by the hydrate projects (L12), not required by any IR kind",
 };
