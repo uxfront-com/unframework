@@ -154,6 +154,11 @@ export interface Models {
   classNames?: string;
   /** The `styleObject` helper's name, where a style bound to a value is merged (ADR-0065). */
   styleObject?: string;
+  /**
+   * The class of the directive that puts a bound `<textarea>`'s caret after its text (ADR-0095),
+   * where the template binds one: it selects each such field by its `[value]` binding.
+   */
+  textCaret?: string;
 }
 
 /** Plans every native control's `v-model` of the component's template. */
@@ -185,6 +190,7 @@ export function planModels(plan: Plan): Models {
   const styleObject = mergesWholeStyle(plan.component) ? helper("styleObject") : undefined;
   const rules = templateRules(plan);
   let server: string | undefined;
+  let textCaret: string | undefined;
   const render = mapElements(plan.component.render, (element) => {
     const model = element.attributes.find(
       (attribute): attribute is ModelAttribute => attribute.kind === "Model",
@@ -307,6 +313,9 @@ export function planModels(plan: Plan): Models {
         children: element.children.map((child) => mapElements(child, withSelected)),
       };
     }
+    // A hydrated field keeps the server's text with the caret before it: a directive the field's
+    // `[value]` binding selects puts it after (ADR-0095).
+    if (model.control === "textarea") textCaret ??= plan.imports.claim("TextCaret");
     if (variable !== undefined) printed.unshift({ name: `#${variable}`, text: `#${variable}` });
     attributes.set(model, printed);
     return element;
@@ -320,6 +329,7 @@ export function planModels(plan: Plan): Models {
     ...(server === undefined ? {} : { server }),
     ...(classNames === undefined ? {} : { classNames }),
     ...(styleObject === undefined ? {} : { styleObject }),
+    ...(textCaret === undefined ? {} : { textCaret }),
     helpers: used.filter(([base]) => base !== "looseToNumber").map(([, each]) => each),
     support: used.filter(([base]) => base === "looseToNumber").map(([, each]) => each),
   };

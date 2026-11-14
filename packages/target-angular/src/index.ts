@@ -40,7 +40,7 @@ import {
   tokenType,
 } from "./composition.ts";
 import type { Composition } from "./composition.ts";
-import { directiveCode, scopeDirectiveCode } from "./directives.ts";
+import { directiveCode, scopeDirectiveCode, textCaretDirectiveCode } from "./directives.ts";
 import type { ScopeDirectiveNames } from "./directives.ts";
 import { planListeners } from "./listeners.ts";
 import { classMembers } from "./members.ts";
@@ -347,7 +347,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   type Entry = Parameters<typeof js.objectExpression>[0][number];
   const metadata = js.objectExpression([
     ["selector", js.stringLiteral(`uf-${kebabCase(component.name)}`)],
-    ...(composition.imports.length || directives.length || scope
+    ...(composition.imports.length || directives.length || scope || models.textCaret
       ? [
           [
             "imports",
@@ -356,6 +356,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
                 ...composition.imports,
                 ...listeners.directives.map(({ className: name }) => name),
                 ...(scope ? [scope.className] : []),
+                ...(models.textCaret === undefined ? [] : [models.textCaret]),
               ].map((name) => js.identifier(name)),
             ),
           ] satisfies Entry,
@@ -463,6 +464,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
       ),
     ),
     ...(scope ? [scopeDirectiveCode(scope, imports)] : []),
+    ...(models.textCaret === undefined ? [] : [textCaretDirectiveCode(models.textCaret, imports)]),
   ];
   if (models.helpers.some(({ code }) => code.includes("WritableSignal"))) {
     imports.add("@angular/core", "WritableSignal", { type: true });

@@ -169,7 +169,9 @@ Models, context and `<component is>` (ADR-0054) are Vue's own as well:
   `false` (ADR-0034);
 - a control's `v-model` with its modifiers (`v-model.trim`); a range input takes `.number`,
   since Vue's `vModelText` casts only a number input's value, and the contract casts both; a
-  component's `v-model:value`;
+  bound `<textarea>` also takes a local directive, `v-text-caret`, which sets its text again once
+  it is mounted, so a hydrated field's caret is after its text, as a client render leaves it
+  (ADR-0095); a component's `v-model:value`;
 - the module's injection keys in a plain `<script lang="ts">` block of its main component's
   output (the default export's), typed with Vue's `InjectionKey` (and `Ref`), which another
   component imports from that file; `provide` and `inject` as written; the template reads an

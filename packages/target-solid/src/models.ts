@@ -42,6 +42,7 @@ export class ModelHelpers {
   #modelText: string | undefined;
   #select: string | undefined;
   #selectOptions: string | undefined;
+  #textCaret: string | undefined;
 
   constructor(imports: ImportSet) {
     this.#imports = imports;
@@ -71,6 +72,11 @@ export class ModelHelpers {
     return this.#imports.add("solid-js", name);
   }
 
+  /** The `ref` callback that puts a bound `<textarea>`'s caret after its text (ADR-0095). */
+  textCaret(): string {
+    return (this.#textCaret ??= this.#imports.claim("textCaret"));
+  }
+
   toggle(): string {
     return (this.#toggle ??= this.#imports.claim("toggle"));
   }
@@ -90,6 +96,7 @@ export class ModelHelpers {
       helpers.push(modelTextHelperCode(this.#modelText, this.solid("createRenderEffect")));
     }
     if (this.#toggle) helpers.push(toggleHelperCode(this.#toggle));
+    if (this.#textCaret) helpers.push(textCaretHelperCode(this.#textCaret));
     if (this.#selectedValues) helpers.push(selectedValuesHelperCode(this.#selectedValues));
     if (this.#selectOptions) {
       helpers.push(
@@ -139,13 +146,16 @@ export function modelAttribute(
     const initial = () =>
       js.callExpression(js.identifier(helpers.solid("untrack")), [js.identifier(binding.name)]);
     // The element's own `ref` callback calls the helper's where it has one (src/listeners.ts).
+    const call = modelTextCall(attribute, binding.name, setter, helpers);
     const bound = carried
       ? []
       : [
           prop(
             "ref",
             context.placeholders.expression(
-              modelTextCall(attribute, binding.name, setter, helpers),
+              attribute.control === "textarea"
+                ? `(field) => {\n${call}(field);\n${helpers.textCaret()}(field);\n}`
+                : call,
             ),
           ),
         ];
@@ -173,7 +183,12 @@ export function modelAttribute(
     case "text":
       return [prop("value", text(value())), prop("onInput", listener(set(target("value"))))];
     case "textarea":
-      return [...textarea(value), prop("onInput", listener(set(target("value"))))];
+      return [
+        ...textarea(value),
+        prop("onInput", listener(set(target("value")))),
+        // A hydrated field keeps the server's text, with the caret before it (ADR-0095).
+        ...(carried ? [] : [prop("ref", js.identifier(helpers.textCaret()))]),
+      ];
     case "select": {
       // Each option is `selected` where it holds the state's value (src/render.ts): Solid's
       // server writes a `<select>`'s `value` as an attribute. A model of a generic component's
@@ -249,10 +264,15 @@ export function modelRef(
   const [ref] = attribute?.value.refs ?? [];
   if (!attribute || ref?.kind !== "Binding") return undefined;
   const { name } = jsxBinding(ref.binding, context);
+  const caret = attribute.control === "textarea";
   if (attribute.trim || attribute.lazy || attribute.number || attribute.control === "number") {
     const call = modelTextCall(attribute, name, code.setter(ref.binding)!, helpers);
-    return (parameter) => `${call}(${parameter});`;
+    return (parameter) =>
+      caret
+        ? `${call}(${parameter});\n${helpers.textCaret()}(${parameter});`
+        : `${call}(${parameter});`;
   }
+  if (caret) return (parameter) => `${helpers.textCaret()}(${parameter});`;
   if (
     attribute.control === "select" ||
     (attribute.control === "select-multiple" && unmarkedOptions(element.children))
@@ -260,6 +280,22 @@ export function modelRef(
     return (parameter) => `${helpers.selectOptions()}(${parameter}, ${name});`;
   }
   return undefined;
+}
+
+/**
+ * The `ref` callback that puts a bound `<textarea>`'s caret after its text (ADR-0095): once
+ * hydrated, the field keeps the server's text with the caret before it, where a client render
+ * sets the text of an empty field and leaves the caret after it. It empties the field and sets
+ * its text again, as ADR-0060 has React do, which fires no event (`setSelectionRange` would fire
+ * `select`). In a client render the field is still empty when Solid calls it.
+ */
+function textCaretHelperCode(name: string): string {
+  return `/** Puts a field's caret after its text, as setting the text of an empty field leaves it. */
+function ${name}(field: HTMLTextAreaElement) {
+  const text = field.value;
+  field.value = "";
+  field.value = text;
+}`;
 }
 
 /** `modelText(name, setName, { trim: true })`: the `ref` callback of a field's `v-model`. */
