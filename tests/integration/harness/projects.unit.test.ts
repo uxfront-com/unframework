@@ -62,7 +62,7 @@ describe("projects", () => {
     expect(FRESH_PAGE_PER_FILE.vue).toMatch(/post-flush queue/);
   });
 
-  it("names one compile and one harness project, and three projects per target", () => {
+  it("names one compile and one harness project, and four projects per target", () => {
     expect(projectNames(["react", "vue"])).toEqual([
       "compile",
       "harness",
@@ -72,6 +72,8 @@ describe("projects", () => {
       "ssr:vue",
       "browser:react",
       "browser:vue",
+      "hydrate:react",
+      "hydrate:vue",
     ]);
   });
 
@@ -250,10 +252,11 @@ describe("a case's own reference outside UF_TARGETS (ADR-0057)", () => {
   it("runs its ssr and browser projects alone, on those cases", async () => {
     const only = { react: ["semantics/listbox"] };
     const projects = harnessProjects({ harness, mode, targets: ["vue"], referencesOnly: only });
-    // compile, harness, then vue's three, then react's two.
-    expect(projects).toHaveLength(7);
+    // compile, harness, then vue's four (the hydrate project among them), then react's two: a
+    // hydrate project compares with the expectations and writes none, so the reference needs none.
+    expect(projects).toHaveLength(8);
     const [ssr, browser] = await Promise.all(
-      projects.slice(5).map((project) => (project as () => Promise<UserWorkspaceConfig>)()),
+      projects.slice(6).map((project) => (project as () => Promise<UserWorkspaceConfig>)()),
     );
     expect(ssr!.test?.name).toBe("ssr:react");
     const provided = ssr!.test?.provide as { ufOnly?: string[] } | undefined;
@@ -261,7 +264,7 @@ describe("a case's own reference outside UF_TARGETS (ADR-0057)", () => {
     expect(browser!.test?.name).toBe("browser:react");
     expect(browser!.test?.include).toEqual(["cases/semantics/listbox/listbox.test.ts"]);
     const full = harnessProjects({ harness, mode, targets: ["react", "vue"] });
-    expect(full).toHaveLength(8);
+    expect(full).toHaveLength(10);
   });
 
   it("keeps the reference to those cases in the baseline script's pass (UF_REFERENCE_PASS)", async () => {
@@ -273,7 +276,7 @@ describe("a case's own reference outside UF_TARGETS (ADR-0057)", () => {
       targets: ["react", "vue"],
       referencesOnly: only,
     });
-    expect(projects).toHaveLength(8);
+    expect(projects).toHaveLength(10);
     const browser = await (projects[6] as () => Promise<UserWorkspaceConfig>)();
     expect(browser.test?.name).toBe("browser:react");
     expect(browser.test?.include).toEqual(["cases/semantics/listbox/listbox.test.ts"]);

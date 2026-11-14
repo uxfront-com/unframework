@@ -27,6 +27,7 @@ export const CANARY_PATHS: readonly string[] = [
   // The toolchains that run L3 to L5.
   "packages/codegen/src/toolchain.ts",
   "packages/codegen/src/toolchain-node/**",
+  "packages/codegen/src/toolchain-browser/**",
   "packages/target-*/src/toolchain/**",
   "tests/toolchains/**",
   // The root script that runs them, and the versions of Vitest and Playwright.

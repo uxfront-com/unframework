@@ -145,6 +145,7 @@ const VERIFIED_BY: Record<string, readonly ProjectKind[]> = {
   L9: ["browser"],
   L10: ["browser"],
   L11: ["browser"],
+  L12: ["hydrate"],
   L13: ["ssr", "browser"],
   L14: ["compile", "ssr", "browser"],
   L15: ["bench"],
@@ -541,7 +542,10 @@ describe("canaries", () => {
       "L9-unwired-handler",
       "L9-rerender-text",
     ]);
-    expect(() => selectCanaries(["L12"])).toThrow("No canary proves L12: it is not live.");
+    expect(selectCanaries(["L12"]).map(({ id }) => id)).toEqual([
+      "L12-client-text",
+      "L12-unwired-listener",
+    ]);
     expect(() => selectCanaries(["L5-lint"])).toThrow(/Unknown canary "L5-lint"/);
   });
 
@@ -640,6 +644,7 @@ describe("canaries", () => {
         // They corrupt the maps of served modules, not the compile: tests of their own above.
         canary.servedMap === undefined &&
         canary.id !== "L9-unwired-handler" &&
+        canary.id !== "L12-unwired-listener" &&
         canary.id !== "L10-stylesheet-rule-dropped",
     ),
   )("$id changes the output of every target it corrupts, without plugin errors", async (canary) => {
@@ -1304,6 +1309,56 @@ describe("canaries", () => {
     expect(JSON.stringify(corrupted).match(/"Element"/g)).toHaveLength(4);
     // The module the compiler handed over is left as it was.
     expect(JSON.stringify(module).match(/"Event"/g)).toHaveLength(4);
+  });
+
+  it("L12's canaries corrupt the hydrate projects' page alone, on the targets that hydrate", () => {
+    const text = findCanary("L12-client-text");
+    const unwired = findCanary("L12-unwired-listener");
+    for (const canary of [text, unwired]) {
+      expect(canary.clientOnly, canary.id).toBe(true);
+      expect(Object.keys(canary.evidence), canary.id).toEqual(["hydrate"]);
+      expect(canary.targets, canary.id).toEqual(["react", "vue", "svelte", "solid", "angular"]);
+    }
+    // A diagnostics case has no spec, so no hydrate project mounts it.
+    expect(text.appliesTo!({ ...fixture(false), runs: () => false }, "react")).toBe(false);
+    expect(text.appliesTo!(fixture(false), "react")).toBe(true);
+    const acting = { ...fixture(false), interacts: () => true, listens: true };
+    expect(unwired.appliesTo!(acting, "vue")).toBe(true);
+    expect(unwired.appliesTo!({ ...acting, listens: false }, "vue")).toBe(false);
+    expect(unwired.appliesTo!({ ...acting, interacts: () => false }, "vue")).toBe(false);
+    expect(unwired.appliesTo!({ ...acting, runs: () => false }, "vue")).toBe(false);
+    // Each target is judged on the sub-checks that catch a client-only text there.
+    const check = text.evidence.hydrate!["client render"] as (target: string) => RegExp;
+    expect(check("react").test("mismatch: Hydration failed")).toBe(true);
+    expect(check("react").test("client agreement: differs")).toBe(false);
+    expect(check("solid").test("client agreement: differs")).toBe(true);
+    expect(check("solid").test("DOM: differs")).toBe(false);
+    expect(check("angular").test("DOM: differs")).toBe(true);
+    expect(check("svelte").test("interactions: failed")).toBe(false);
+  });
+
+  it("L12-unwired-listener removes every element listener", () => {
+    const span = { start: 0, end: 1 };
+    const listener = {
+      kind: "Event",
+      event: "click",
+      handler: { kind: "Function", binding: "add@3", span },
+      span,
+    };
+    const render = {
+      kind: "Element",
+      tag: "div",
+      attributes: [],
+      children: [{ kind: "Element", tag: "button", attributes: [listener], children: [], span }],
+      span,
+    };
+    const module = { components: [{ name: "C", render }] } as unknown as UfModule;
+    const plugin = findCanary("L12-unwired-listener").plugin!();
+    const corrupted = (plugin.ir as (module: UfModule) => UfModule)(module);
+    expect(JSON.stringify(corrupted)).not.toContain('"Event"');
+    expect(JSON.stringify(corrupted).match(/"Element"/g)).toHaveLength(2);
+    // The module the compiler handed over is left as it was.
+    expect(JSON.stringify(module)).toContain('"Event"');
   });
 
   it("L9's canaries apply to the cases whose tests act or rerender, on the targets they run on", () => {

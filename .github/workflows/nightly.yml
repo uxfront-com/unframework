@@ -166,6 +166,8 @@ jobs:
             shard: 1/2
           - canaries: L11
             shard: 2/2
+          - canaries: L12-client-text
+          - canaries: L12-unwired-listener
           - canaries: L13-console-warn
             shard: 1/2
           - canaries: L13-console-warn

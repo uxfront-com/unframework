@@ -33,6 +33,7 @@ const LAYERS_OF: Record<string, LayerName[]> = {
   toolchain: ["L3", "L4", "L5"],
   ssr: ["L6", "L13"],
   browser: ["L7", "L8", "L9", "L10", "L11", "L13"],
+  hydrate: ["L12"],
   bench: ["L15"],
 };
 
@@ -150,6 +151,7 @@ describe("CI's parity job", () => {
       "integration-toolchains",
       "integration-ssr",
       ...TARGETS.map((target) => `integration-browser (${target})`),
+      ...TARGETS.map((target) => `integration-hydrate (${target})`),
       "bench",
     ]);
     expect(runs.flatMap((run) => run.projects).toSorted()).toEqual(PARITY.toSorted());
@@ -259,7 +261,7 @@ describe("a run of scripts/run.ts", () => {
     expect(cell(CASES[0]!, TARGETS[0]!, "L15")).toBe("skip(not in this run)");
     expect(cell(CASES[0]!, TARGETS[0]!, "L1")).toBe("pass");
     expect(readFileSync(join(reportsDir, "parity-matrix.md"), "utf8")).toContain(
-      "Every project ran: every cell is checked.\nLayers that are not live (L12) are recorded as skip(not live yet).\nOnly `bench` records L15, and it did not run in full, so those cells are skip(not in this run).",
+      "Every project ran: every cell is checked.\nOnly `bench` records L15, and it did not run in full, so those cells are skip(not in this run).",
     );
   });
 
@@ -300,7 +302,7 @@ describe("a run of scripts/run.ts", () => {
     expect(runSummary({ CI: "1" }, run)).toBe(0);
     expect(problems).toBe("");
     expect(readFileSync(join(reportsDir, "parity-matrix.md"), "utf8")).toContain(
-      "Partial run: 16 project(s) did not run",
+      "Partial run: 23 project(s) did not run",
     );
   });
 
