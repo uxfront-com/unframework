@@ -1,0 +1,271 @@
+{
+  "irVersion": 1,
+  "file": "semantics/keyed-lists/Checklist.uf.tsx",
+  "components": [
+    {
+      "name": "Checklist",
+      "span": {
+        "start": 116,
+        "end": 469
+      },
+      "props": [
+        {
+          "name": "entries",
+          "optional": false,
+          "type": {
+            "code": "Entry[]",
+            "span": {
+              "start": 104,
+              "end": 111
+            }
+          },
+          "binding": "entries@152",
+          "span": {
+            "start": 95,
+            "end": 112
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ChecklistProps",
+          "span": {
+            "start": 163,
+            "end": 177
+          }
+        },
+        "span": {
+          "start": 150,
+          "end": 177
+        }
+      },
+      "types": [
+        "Entry",
+        "ChecklistProps"
+      ],
+      "bindings": [
+        {
+          "id": "entries@152",
+          "name": "entries",
+          "kind": "prop",
+          "span": {
+            "start": 152,
+            "end": 159
+          }
+        },
+        {
+          "id": "entry@239",
+          "name": "entry",
+          "kind": "loopVar",
+          "span": {
+            "start": 239,
+            "end": 244
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "ul",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "checklist",
+            "span": {
+              "start": 200,
+              "end": 217
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "For",
+            "source": {
+              "code": "entries",
+              "span": {
+                "start": 226,
+                "end": 233
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "entries@152",
+                  "span": {
+                    "start": 226,
+                    "end": 233
+                  }
+                }
+              ]
+            },
+            "item": "entry@239",
+            "key": {
+              "code": "entry.id",
+              "span": {
+                "start": 268,
+                "end": 276
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "entry@239",
+                  "span": {
+                    "start": 268,
+                    "end": 273
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Element",
+              "tag": "li",
+              "attributes": [],
+              "children": [
+                {
+                  "kind": "Element",
+                  "tag": "label",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "entry.label",
+                        "span": {
+                          "start": 310,
+                          "end": 321
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "entry@239",
+                            "span": {
+                              "start": 310,
+                              "end": 315
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 309,
+                        "end": 322
+                      }
+                    },
+                    {
+                      "kind": "Element",
+                      "tag": "input",
+                      "attributes": [
+                        {
+                          "kind": "Bound",
+                          "name": "name",
+                          "value": {
+                            "code": "`note-${entry.id}`",
+                            "span": {
+                              "start": 348,
+                              "end": 366
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "entry@239",
+                                "span": {
+                                  "start": 356,
+                                  "end": 361
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 342,
+                            "end": 367
+                          }
+                        },
+                        {
+                          "kind": "Bound",
+                          "name": "aria-label",
+                          "value": {
+                            "code": "`Note for ${entry.label}`",
+                            "span": {
+                              "start": 380,
+                              "end": 405
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "entry@239",
+                                "span": {
+                                  "start": 392,
+                                  "end": 397
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 368,
+                            "end": 406
+                          }
+                        }
+                      ],
+                      "children": [],
+                      "span": {
+                        "start": 335,
+                        "end": 409
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 289,
+                    "end": 428
+                  }
+                }
+              ],
+              "span": {
+                "start": 259,
+                "end": 442
+              }
+            },
+            "span": {
+              "start": 226,
+              "end": 451
+            }
+          }
+        ],
+        "span": {
+          "start": 196,
+          "end": 462
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Checklist",
+      "span": {
+        "start": 116,
+        "end": 469
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Entry",
+      "exported": true,
+      "code": "interface Entry {\n  id: string;\n  label: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 57
+      }
+    },
+    {
+      "name": "ChecklistProps",
+      "exported": true,
+      "code": "interface ChecklistProps {\n  entries: Entry[];\n}",
+      "span": {
+        "start": 66,
+        "end": 114
+      }
+    }
+  ]
+}

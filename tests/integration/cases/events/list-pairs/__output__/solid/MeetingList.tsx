@@ -1,4 +1,4 @@
-import { For, type JSX, Show, createMemo, createSignal } from "solid-js";
+import { type Accessor, For, type JSX, Show, createMemo, createSignal, untrack } from "solid-js";
 
 export interface Meeting {
   id: number;
@@ -56,40 +56,40 @@ export default function MeetingList(
       {...scopeAttributes(props)}
     >
       <ul aria-label="Upcoming">
-        <For each={upcoming()}>
+        <KeyedFor each={upcoming()} by={(event) => event.id}>
           {(event) => (
             <li>
               <button
                 type="button"
                 ref={(element) => {
-                  element.addEventListener("click", () => show(event));
-                  element.addEventListener("click", () => props.onOpened?.(event.title), {
+                  element.addEventListener("click", () => show(event()));
+                  element.addEventListener("click", () => props.onOpened?.(event().title), {
                     once: true,
                   });
                 }}
               >
-                {event.title}
+                {event().title}
               </button>
             </li>
           )}
-        </For>
+        </KeyedFor>
       </ul>
       <ul aria-label="Rooms">
-        <For each={rooms()}>
+        <KeyedFor each={rooms()} by={(room) => room}>
           {(room) => (
             <li>
               <button
                 type="button"
                 ref={(element) => {
-                  element.addEventListener("click", () => record(`pick ${room}`));
-                  element.addEventListener("click", async () => book(room), { once: true });
+                  element.addEventListener("click", () => record(`pick ${room()}`));
+                  element.addEventListener("click", async () => book(room()), { once: true });
                 }}
               >
-                {room}
+                {room()}
               </button>
             </li>
           )}
-        </For>
+        </KeyedFor>
       </ul>
       <Show when={props.organiser} fallback={<p>No organiser</p>}>
         {(organiser) => (
@@ -133,7 +133,9 @@ export default function MeetingList(
       </label>
       <p>Last key: {lastKey()}</p>
       <ol aria-label="Log">
-        <For each={log()}>{(line) => <li>{line}</li>}</For>
+        <KeyedFor each={log()} by={(line, index) => index}>
+          {(line) => <li>{line()}</li>}
+        </KeyedFor>
       </ol>
     </section>
   );
@@ -144,4 +146,28 @@ function scopeAttributes(props: object): Record<string, ""> {
   const scope: Record<string, ""> = {};
   for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
   return scope;
+}
+
+/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
+function KeyedFor<T>(props: {
+  each: readonly T[];
+  by: (item: T, index: number) => unknown;
+  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+}): JSX.Element {
+  const items = createMemo(() => {
+    const rows = new Map<unknown, T>();
+    props.each.forEach((item, index) => {
+      const key = props.by(item, index);
+      rows.set(rows.has(key) ? {} : key, item);
+    });
+    return rows;
+  });
+  return (
+    <For each={[...items().keys()]}>
+      {(key, index) => {
+        const item = createMemo(() => items().get(key) as T);
+        return untrack(() => props.children(item, index));
+      }}
+    </For>
+  );
 }

@@ -6,17 +6,18 @@ import {
   Renderer2,
   inject,
   input,
+  linkedSignal,
+  untracked,
 } from "@angular/core";
 
-export interface Contributor {
-  login: string;
-  name: string;
-  commits: number;
+export interface Track {
+  id: number;
+  title: string;
+  starred: boolean;
 }
 
-export interface ContributorTableProps {
-  caption: string;
-  contributors: Contributor[];
+export interface PlaylistProps {
+  initial: Track[];
 }
 
 /** The scope attributes taken off each host, for the roots its component renders later. */
@@ -45,40 +46,50 @@ export class ScopeAttributes implements OnInit {
 }
 
 @Component({
-  selector: "uf-contributor-table",
+  selector: "uf-playlist",
   imports: [ScopeAttributes],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
-    @let caption = this.caption();
-    @let contributors = this.contributors();
-    <table class="contributors" [class]="this.class()" [style]="this.style()" [ufScope]="this.host">
-      <caption>{{ caption }}</caption>
-      <thead>
-        <tr>
-          <th scope="col">Name</th>
-          <th scope="col">Commits</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (contributor of contributors; track contributor.login) {
-          <tr>
-            <td>
-              <a
-                [attr.href]="'https://example.com/people/' + contributor.login"
-              >{{ contributor.name }}</a>
-            </td>
-            <td>{{ contributor.commits }}</td>
-          </tr>
+    @let tracks = this.tracks();
+    <section class="playlist" [class]="this.class()" [style]="this.style()" [ufScope]="this.host">
+      <ol aria-label="Playlist">
+        @for (track of tracks; track track.id) {
+          <li>
+            <label><input type="checkbox" name="queued" [attr.value]="track.id" />{{ track.starred ? track.title + " (starred)" : track.title }}</label>
+            <button
+              type="button"
+              [attr.aria-pressed]="track.starred"
+              (click)="toggleStar(track.id)"
+            >{{ "Star " + track.title }}</button>
+          </li>
         }
-      </tbody>
-    </table>
+      </ol>
+      <button type="button" (click)="sortByTitle()">Sort by title</button>
+    </section>
   `,
 })
-export default class ContributorTable {
-  readonly caption = input.required<string>();
-  readonly contributors = input.required<Contributor[]>();
+export default class Playlist implements OnInit {
+  readonly initial = input.required<Track[]>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
+  protected readonly tracks = linkedSignal(() => untracked(() => this.initial()));
+
+  ngOnInit(): void {
+    // Read once the inputs are set: these keep the values they start with.
+    this.tracks();
+  }
+
+  protected sortByTitle() {
+    this.tracks.set(this.tracks().toSorted((a, b) => a.title.localeCompare(b.title)));
+  }
+
+  protected toggleStar(id: number) {
+    this.tracks.set(
+      this.tracks().map((track) =>
+        track.id === id ? { ...track, starred: !track.starred } : track,
+      ),
+    );
+  }
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

@@ -90,4 +90,9 @@ export const EXEMPT_CAPABILITIES: Readonly<
   // Every case runs in the hydrate projects, which check it on each target that hydrates (L12,
   // ADR-0095): no IR kind requires it, so no case can name it.
   hydration: "verified by the hydrate projects (L12), not required by any IR kind",
+  // Every keyed list asks for it, and only a reorder in the browser shows it: the specs that
+  // reorder or replace a list's items require it (semantics/keyed-lists,
+  // control-flow/keyed-reorder-focus, ADR-0096).
+  "keyed-identity":
+    "verified by the specs that require it (semantics/keyed-lists, control-flow/keyed-reorder-focus), not required by any IR kind",
 };

@@ -1,0 +1,633 @@
+{
+  "irVersion": 1,
+  "file": "control-flow/keyed-reorder-focus/Playlist.uf.tsx",
+  "components": [
+    {
+      "name": "Playlist",
+      "span": {
+        "start": 180,
+        "end": 1197
+      },
+      "props": [
+        {
+          "name": "initial",
+          "optional": false,
+          "type": {
+            "code": "Track[]",
+            "span": {
+              "start": 168,
+              "end": 175
+            }
+          },
+          "binding": "initial@215",
+          "span": {
+            "start": 159,
+            "end": 176
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "PlaylistProps",
+          "span": {
+            "start": 226,
+            "end": 239
+          }
+        },
+        "span": {
+          "start": 213,
+          "end": 239
+        }
+      },
+      "types": [
+        "Track",
+        "PlaylistProps"
+      ],
+      "bindings": [
+        {
+          "id": "initial@215",
+          "name": "initial",
+          "kind": "prop",
+          "span": {
+            "start": 215,
+            "end": 222
+          }
+        },
+        {
+          "id": "tracks@251",
+          "name": "tracks",
+          "kind": "state",
+          "span": {
+            "start": 251,
+            "end": 257
+          }
+        },
+        {
+          "id": "sortByTitle@286",
+          "name": "sortByTitle",
+          "kind": "localFn",
+          "span": {
+            "start": 286,
+            "end": 297
+          }
+        },
+        {
+          "id": "toggleStar@402",
+          "name": "toggleStar",
+          "kind": "localFn",
+          "span": {
+            "start": 402,
+            "end": 412
+          }
+        },
+        {
+          "id": "track@659",
+          "name": "track",
+          "kind": "loopVar",
+          "span": {
+            "start": 659,
+            "end": 664
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "tracks@251",
+          "initial": {
+            "code": "initial",
+            "span": {
+              "start": 264,
+              "end": 271
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "initial@215",
+                "span": {
+                  "start": 264,
+                  "end": 271
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 245,
+            "end": 273
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "sortByTitle@286",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    tracks.value = tracks.value.toSorted((a, b) => a.title.localeCompare(b.title));\n  }",
+              "span": {
+                "start": 300,
+                "end": 389
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "tracks@251",
+                  "operator": "=",
+                  "span": {
+                    "start": 306,
+                    "end": 384
+                  },
+                  "target": {
+                    "start": 306,
+                    "end": 318
+                  },
+                  "value": {
+                    "start": 321,
+                    "end": 384
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tracks@251",
+                  "span": {
+                    "start": 321,
+                    "end": 333
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 297,
+              "end": 389
+            }
+          },
+          "span": {
+            "start": 277,
+            "end": 389
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "toggleStar@402",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "id",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 417,
+                    "end": 423
+                  }
+                },
+                "span": {
+                  "start": 413,
+                  "end": 423
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    tracks.value = tracks.value.map((track) =>\n      track.id === id ? { ...track, starred: !track.starred } : track,\n    );\n  }",
+              "span": {
+                "start": 425,
+                "end": 555
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "tracks@251",
+                  "operator": "=",
+                  "span": {
+                    "start": 431,
+                    "end": 550
+                  },
+                  "target": {
+                    "start": 431,
+                    "end": 443
+                  },
+                  "value": {
+                    "start": 446,
+                    "end": 550
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tracks@251",
+                  "span": {
+                    "start": 446,
+                    "end": 458
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 412,
+              "end": 555
+            }
+          },
+          "span": {
+            "start": 393,
+            "end": 555
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "playlist",
+            "span": {
+              "start": 581,
+              "end": 597
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Playlist",
+                "span": {
+                  "start": 609,
+                  "end": 630
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "tracks.value",
+                  "span": {
+                    "start": 641,
+                    "end": 653
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tracks@251",
+                      "span": {
+                        "start": 641,
+                        "end": 653
+                      }
+                    }
+                  ]
+                },
+                "item": "track@659",
+                "key": {
+                  "code": "track.id",
+                  "span": {
+                    "start": 690,
+                    "end": 698
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "track@659",
+                      "span": {
+                        "start": 690,
+                        "end": 695
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Element",
+                      "tag": "label",
+                      "attributes": [],
+                      "children": [
+                        {
+                          "kind": "Element",
+                          "tag": "input",
+                          "attributes": [
+                            {
+                              "kind": "Static",
+                              "name": "type",
+                              "value": "checkbox",
+                              "span": {
+                                "start": 742,
+                                "end": 757
+                              }
+                            },
+                            {
+                              "kind": "Static",
+                              "name": "name",
+                              "value": "queued",
+                              "span": {
+                                "start": 758,
+                                "end": 771
+                              }
+                            },
+                            {
+                              "kind": "Bound",
+                              "name": "value",
+                              "value": {
+                                "code": "track.id",
+                                "span": {
+                                  "start": 779,
+                                  "end": 787
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "track@659",
+                                    "span": {
+                                      "start": 779,
+                                      "end": 784
+                                    }
+                                  }
+                                ]
+                              },
+                              "span": {
+                                "start": 772,
+                                "end": 788
+                              }
+                            }
+                          ],
+                          "children": [],
+                          "span": {
+                            "start": 735,
+                            "end": 791
+                          }
+                        },
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "track.starred ? `${track.title} (starred)` : track.title",
+                            "span": {
+                              "start": 807,
+                              "end": 863
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "track@659",
+                                "span": {
+                                  "start": 807,
+                                  "end": 812
+                                }
+                              },
+                              {
+                                "kind": "Binding",
+                                "binding": "track@659",
+                                "span": {
+                                  "start": 826,
+                                  "end": 831
+                                }
+                              },
+                              {
+                                "kind": "Binding",
+                                "binding": "track@659",
+                                "span": {
+                                  "start": 852,
+                                  "end": 857
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 806,
+                            "end": 864
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 713,
+                        "end": 885
+                      }
+                    },
+                    {
+                      "kind": "Element",
+                      "tag": "button",
+                      "attributes": [
+                        {
+                          "kind": "Static",
+                          "name": "type",
+                          "value": "button",
+                          "span": {
+                            "start": 906,
+                            "end": 919
+                          }
+                        },
+                        {
+                          "kind": "Bound",
+                          "name": "aria-pressed",
+                          "value": {
+                            "code": "track.starred",
+                            "span": {
+                              "start": 934,
+                              "end": 947
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "track@659",
+                                "span": {
+                                  "start": 934,
+                                  "end": 939
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 920,
+                            "end": 948
+                          }
+                        },
+                        {
+                          "kind": "Event",
+                          "event": "click",
+                          "handler": {
+                            "kind": "Inline",
+                            "function": {
+                              "parameters": [],
+                              "body": {
+                                "code": "toggleStar(track.id)",
+                                "span": {
+                                  "start": 964,
+                                  "end": 984
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "toggleStar@402",
+                                    "span": {
+                                      "start": 964,
+                                      "end": 974
+                                    },
+                                    "call": true
+                                  },
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "track@659",
+                                    "span": {
+                                      "start": 975,
+                                      "end": 980
+                                    }
+                                  }
+                                ]
+                              },
+                              "expression": true,
+                              "span": {
+                                "start": 958,
+                                "end": 984
+                              }
+                            },
+                            "span": {
+                              "start": 958,
+                              "end": 984
+                            }
+                          },
+                          "span": {
+                            "start": 949,
+                            "end": 985
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "`Star ${track.title}`",
+                            "span": {
+                              "start": 1002,
+                              "end": 1023
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "track@659",
+                                "span": {
+                                  "start": 1010,
+                                  "end": 1015
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 1001,
+                            "end": 1024
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 898,
+                        "end": 1046
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 681,
+                    "end": 1062
+                  }
+                },
+                "span": {
+                  "start": 641,
+                  "end": 1073
+                }
+              }
+            ],
+            "span": {
+              "start": 605,
+              "end": 1086
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1101,
+                  "end": 1114
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "sortByTitle@286",
+                  "span": {
+                    "start": 1124,
+                    "end": 1135
+                  }
+                },
+                "span": {
+                  "start": 1115,
+                  "end": 1136
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Sort by title",
+                "span": {
+                  "start": 1137,
+                  "end": 1166
+                }
+              }
+            ],
+            "span": {
+              "start": 1093,
+              "end": 1175
+            }
+          }
+        ],
+        "span": {
+          "start": 572,
+          "end": 1190
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Playlist",
+      "span": {
+        "start": 180,
+        "end": 1197
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Track",
+      "exported": true,
+      "code": "interface Track {\n  id: number;\n  title: string;\n  starred: boolean;\n}",
+      "span": {
+        "start": 52,
+        "end": 122
+      }
+    },
+    {
+      "name": "PlaylistProps",
+      "exported": true,
+      "code": "interface PlaylistProps {\n  initial: Track[];\n}",
+      "span": {
+        "start": 131,
+        "end": 178
+      }
+    }
+  ]
+}

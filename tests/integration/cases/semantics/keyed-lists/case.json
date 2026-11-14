@@ -1,0 +1,14 @@
+{
+  "description": "A list keyed by id, rendered from a prop: a row keeps its element, with its focus and typed text, when a rerender reorders the entries, replaces them with copies and renames one.",
+  "ssr": {
+    "initial": {
+      "props": {
+        "entries": [
+          { "id": "milk", "label": "Milk" },
+          { "id": "bread", "label": "Bread" },
+          { "id": "eggs", "label": "Eggs" }
+        ]
+      }
+    }
+  }
+}

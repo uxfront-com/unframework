@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Star Intro' })",
+      "dom": [
+        "<section class=\"playlist\">",
+        "  <ol aria-label=\"Playlist\">",
+        "    <li>",
+        "      <label>",
+        "        <input name=\"queued\" type=\"checkbox\" uf:checked=\"false\" uf:indeterminate=\"false\" value=\"1\">",
+        "        \"Verse\"",
+        "      </label>",
+        "      <button aria-pressed=\"false\" type=\"button\">",
+        "        \"Star Verse\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <label>",
+        "        <input name=\"queued\" type=\"checkbox\" uf:checked=\"false\" uf:indeterminate=\"false\" value=\"2\">",
+        "        \"Intro (starred)\"",
+        "      </label>",
+        "      <button aria-pressed=\"true\" type=\"button\" uf:focused=\"\">",
+        "        \"Star Intro\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <label>",
+        "        <input name=\"queued\" type=\"checkbox\" uf:checked=\"false\" uf:indeterminate=\"false\" value=\"3\">",
+        "        \"Chorus\"",
+        "      </label>",
+        "      <button aria-pressed=\"false\" type=\"button\">",
+        "        \"Star Chorus\"",
+        "      </button>",
+        "    </li>",
+        "  </ol>",
+        "  <button type=\"button\">",
+        "    \"Sort by title\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- list \"Playlist\":",
+        "  - listitem:",
+        "    - checkbox \"Verse\"",
+        "    - text: Verse",
+        "    - button \"Star Verse\"",
+        "  - listitem:",
+        "    - checkbox \"Intro (starred)\"",
+        "    - text: Intro (starred)",
+        "    - button \"Star Intro\" [pressed]",
+        "  - listitem:",
+        "    - checkbox \"Chorus\"",
+        "    - text: Chorus",
+        "    - button \"Star Chorus\"",
+        "- button \"Sort by title\""
+      ],
+      "events": {}
+    }
+  ]
+}
