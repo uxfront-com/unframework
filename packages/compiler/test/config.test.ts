@@ -279,8 +279,7 @@ describe("resolveConfig", () => {
       targetOptions: {},
       typeOracle: "syntactic",
       strict: false,
-      declarations: [],
-      liveFonts: "bundled",
+      liveFonts: [],
     });
   });
 
@@ -310,30 +309,23 @@ describe("resolveConfig", () => {
       targetOptions: {},
       typeOracle: "tsgo",
       strict: true,
-      declarations: [],
-      liveFonts: "bundled",
+      liveFonts: [],
     });
   });
 
-  it("keeps the project's Vite plugins as the function that makes them", async () => {
-    const vitePlugins = () => [{ name: "engine" }];
-    const { config, diagnostics } = await resolveConfig({ vitePlugins, liveFonts: "any" });
+  it("keeps the project's Vite config as the function that makes it", async () => {
+    const vite = () => ({ plugins: [{ name: "engine" }] });
+    const { config, diagnostics } = await resolveConfig({ vite });
     expect(diagnostics).toEqual([]);
-    expect(config?.vitePlugins).toBe(vitePlugins);
-    expect(config?.liveFonts).toBe("any");
+    expect(config?.vite).toBe(vite);
   });
 
-  it("resolves the declarations against the config's directory, existing or not", async () => {
-    const { config, diagnostics } = await resolveConfig(
-      { declarations: ["../types/engine.d.ts", "/abs/virtual.d.ts", ".engine/generated.d.ts"] },
-      { directory: "/project/config" },
-    );
+  it("keeps the font families a live capture may take, in their order", async () => {
+    const { config, diagnostics } = await resolveConfig({
+      liveFonts: ["Inkline Sans", "Inkline Mono"],
+    });
     expect(diagnostics).toEqual([]);
-    expect(config?.declarations).toEqual([
-      resolve("/project/types/engine.d.ts"),
-      resolve("/abs/virtual.d.ts"),
-      resolve("/project/config/.engine/generated.d.ts"),
-    ]);
+    expect(config?.liveFonts).toEqual(["Inkline Sans", "Inkline Mono"]);
   });
 
   it("resolves package.resolveFrom against the config's directory", async () => {
@@ -388,13 +380,17 @@ describe("resolveConfig", () => {
       [{ package: { resolveFrom: [] } }, "/package/resolveFrom"],
       [{ package: { resolveFrom: { vue: 1 } } }, "/package/resolveFrom/vue"],
       [{ package: { extra: 1 } }, "/package/extra"],
-      [{ vitePlugins: [{ name: "engine" }] }, "/vitePlugins"],
-      [{ vitePlugins: null }, "/vitePlugins"],
-      [{ declarations: "engine.d.ts" }, "/declarations"],
-      [{ declarations: ["a.d.ts", ""] }, "/declarations/1"],
-      [{ declarations: [1] }, "/declarations/0"],
-      [{ liveFonts: "system" }, "/liveFonts"],
+      [{ vite: {} }, "/vite"],
+      [{ vite: [{ name: "engine" }] }, "/vite"],
+      [{ vite: null }, "/vite"],
+      // The fields ADR-0104 and ADR-0105 replaced before the first release.
+      [{ vitePlugins: () => [] }, "/vitePlugins"],
+      [{ declarations: [] }, "/declarations"],
+      [{ liveFonts: "any" }, "/liveFonts"],
       [{ liveFonts: true }, "/liveFonts"],
+      [{ liveFonts: [""] }, "/liveFonts/0"],
+      [{ liveFonts: ["Inkline Sans", 1] }, "/liveFonts/1"],
+      [{ liveFonts: ["  "] }, "/liveFonts/0"],
     ])("reports %j at its JSON pointer", async (raw, pointer) => {
       const reported = await problems(raw);
       expect(reported).toHaveLength(1);

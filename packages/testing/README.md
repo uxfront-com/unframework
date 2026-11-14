@@ -76,15 +76,21 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
 | `toolchainDirs` | `package.resolveFrom`, then the root                  | Where each target's compiler stack resolves from (Angular's)                           |
 | `root`          | the working directory                                 | Where `unframework.config.ts` is: case ids are relative to it                          |
 
-- **A project's Vite plugins and declarations** (ADR-0104) come from `unframework.config.ts`:
-  each `browser:` and `ssr:` project calls `vitePlugins` for a set of its own and puts it before
-  the unplugin, and each toolchain gets `ToolchainContext.plugins` and `declarations`, so Astro's
-  render server loads the plugins and Angular's ngtsc reads the declarations.
-  `projectPlugins(vitePlugins)` turns the field into what `ToolchainContext.plugins` takes: a
-  function that makes a fresh, flattened set, and throws, naming the field and the reason, on a value with no `name`, a function that throws or a promise that rejects. The preview builds its servers with it too.
-- **A project's live fonts** (ADR-0105): `liveFonts` reaches the run's `HarnessContext`, and
-  `captureAt` skips the font audit for a live comparison when it is `any`. A comparison with
-  baselines audits every glyph whatever it says.
+- **A project's Vite config** (ADR-0104), `vite` in `unframework.config.ts`: each `browser:` and
+  `ssr:` project calls it with `{ target, mode }` and merges what it gives with
+  `withProjectVite(config, vite, context)`: the project's plugins, flattened, before the
+  unplugin, and every other key through Vite's `mergeConfig` after the toolchain's fragment. It
+  refuses the keys a server owns (`OWNED_KEYS`, `OWNED_SERVER_KEYS`) and throws, naming the field
+  and the reason, on a function that throws, a promise that rejects, a value that is no config or
+  a plugin with no `name`. `projectPlugins(vite, context)` gives `ToolchainContext.plugins`, so
+  Astro's render server loads the plugins too. The preview builds its servers with both.
+- **Pass-through declarations** (ADR-0104): `passThroughDeclarations(root)` writes
+  `node_modules/.cache/unframework/pass-through.d.ts`, with `declare module "virtual:*";` for each
+  default prefix, and every toolchain gets it as `ToolchainContext.declarations`, so Angular's
+  ngtsc takes any pass-through module with no type file from the project.
+- **A project's live fonts** (ADR-0105): `liveFonts` reaches the run's `HarnessContext`, and in
+  a live comparison `captureAt`'s font audit lets a glyph in a listed family pass, as CDP names
+  it. A comparison with baselines takes Inter alone, whatever the list says.
 
 - **A case** is a directory with one test file. Its id is its path from the root, and its main
   source is `case.json`'s `main`, relative to the case and maybe outside it, or else its only
@@ -523,6 +529,9 @@ The `stub/matchers` case proves each matcher passes and fails with its message, 
 
 `test/project-plugins.test.ts` runs the fixture projects under `test/fixtures/` with their own
 Vitest, as `unframework test` does: `project-plugins`, whose component imports
-`virtual:uf-fixture`, which only the plugin its config names serves, passes on all seven targets,
-and `no-project-plugins`, the same component with no plugin, fails to resolve the import. Their
+`virtual:uf-fixture`, which only the plugin its config's `vite` names serves, passes on all seven
+targets with no declaration file, and `no-project-plugins`, the same component with no plugin,
+fails to resolve the import. `test/project-vite.test.ts` covers the calls, the merge, the refused
+keys, the failures and the declaration file, on throwaway projects, one of them on seven targets
+under `test/fixtures/.config-*`. Their
 expectations come from `unframework test --update`, run in the fixture's directory.

@@ -146,7 +146,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0091](./0091-a-dropped-reference-fails-the-run-once.md)           | A reference that did not finish a case fails the run once                       | Accepted                                                               | §7.2, §7.4, §7.7        |
 | [0092](./0092-browser-spec-files-share-a-page.md)                  | Browser spec files share a page, but on Vue                                     | Accepted                                                               | §7.3, §7.6              |
 | [0093](./0093-slow-harness-files-run-as-shards.md)                 | The slow harness files run as shards, and Angular's ngtsc compiles in a pool    | Accepted                                                               | §7.3, §7.7, R5          |
-| [0104](./0104-a-projects-vite-plugins-and-declarations.md)         | Project Vite plugins and declarations reach `test`, `visual` and `preview`      | Accepted                                                               | §8.5, §8.6, P7          |
+| [0104](./0104-a-projects-vite-config.md)                           | A project's `vite` config reaches `test`, `visual` and `preview`                | Accepted                                                               | §8.5, §8.6, P7          |
 | [0105](./0105-live-captures-may-take-a-projects-fonts.md)          | Live captures may take a project's own fonts                                    | Accepted                                                               | §7.2, §8.6, R10         |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".

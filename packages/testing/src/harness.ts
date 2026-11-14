@@ -92,10 +92,10 @@ export interface HarnessContext {
   updateCommand?: string;
   pixels: PixelMode;
   /**
-   * Which fonts may draw text in a live capture: the bundled one alone when absent, or `any` when
-   * the project's `liveFonts` opts in (ADR-0105). A comparison with committed baselines ignores it.
+   * The font families that may draw text in a live capture besides the bundled Inter: the
+   * project's `liveFonts` (ADR-0105). A comparison with committed baselines ignores them.
    */
-  liveFonts?: "bundled" | "any";
+  liveFonts?: readonly string[];
   /** The canary installed in this run (`UF_CANARY`), or `null`. */
   canary: string | null;
   /**

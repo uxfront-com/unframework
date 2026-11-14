@@ -245,8 +245,8 @@ export interface HarnessRunOptions {
   cases: Record<string, CaseConfig>;
   /** The command a failure names to write the artefacts (`HarnessContext.updateCommand`). */
   updateCommand?: string;
-  /** Which fonts may draw text in a live capture (`HarnessContext.liveFonts`, ADR-0105). */
-  liveFonts?: "bundled" | "any";
+  /** The font families a live capture may take (`HarnessContext.liveFonts`, ADR-0105). */
+  liveFonts?: readonly string[];
 }
 
 const RUN = Symbol.for("unframework.harness.run");

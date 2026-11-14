@@ -7,7 +7,7 @@ import { realpathSync } from "node:fs";
 
 import { loadConfig, resolveConfig, TARGET_NAMES } from "@unframework.dev/compiler";
 import type { ResolvedConfig, TargetName } from "@unframework.dev/compiler";
-import { projectPlugins, toolchainDirOf } from "@unframework.dev/testing/config";
+import { toolchainDirOf } from "@unframework.dev/testing/config";
 
 import { VisualUsageError } from "../run.ts";
 import { readCatalogue } from "./catalogue.ts";
@@ -111,8 +111,7 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
 
 /**
  * What a target's server serves, from the project's configuration: the entries, where the
- * target's compiler stack resolves from, and the project's Vite plugins and declarations
- * (ADR-0104).
+ * target's compiler stack resolves from, and the project's Vite config (ADR-0104).
  */
 export function targetServerOptions(
   root: string,
@@ -126,8 +125,7 @@ export function targetServerOptions(
     target,
     toolchainDir: toolchainDirOf(target, root, toolchainDirs, config.package?.resolveFrom),
     entries,
-    plugins: projectPlugins(config.vitePlugins),
-    declarations: config.declarations,
+    ...(config.vite ? { vite: config.vite } : {}),
   };
 }
 

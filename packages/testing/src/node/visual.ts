@@ -197,12 +197,13 @@ export async function captureAt(
   });
 
   // 1. Fonts: text rendered with anything but the bundled font fails before any comparison.
-  //    Only Chromium can audit them (FONT_AUDIT_SKIP, ADR-0066). A project that opts in lets any
-  //    font draw a live capture, which every target renders on this machine in this run, but
-  //    never a baseline, which another machine compares with (ADR-0105).
-  const anyFont = harness.pixels === "live" && harness.liveFonts === "any";
+  //    Only Chromium can audit them (FONT_AUDIT_SKIP, ADR-0066). A live capture, which every
+  //    target renders on this machine in this run, may also take the families the project
+  //    lists, so a fallback when one fails to load still fails. A baseline, which another machine
+  //    compares with, takes the bundled font alone (ADR-0105).
+  const families = harness.pixels === "live" ? (harness.liveFonts ?? []) : [];
   const fontViolations =
-    harness.browser === "chromium" && !anyFont ? await fontAudit(context.page, request.marker) : [];
+    harness.browser === "chromium" ? await fontAudit(context.page, request.marker, families) : [];
   if (fontViolations.length) {
     return done({
       pass: false,
@@ -419,13 +420,18 @@ interface CdpNode {
 /**
  * Lists every font Chromium used for text under the capture container that is not an allowed
  * web font. CDP reports the font file's internal family name, so the bundled "UF Test Sans" is
- * allowed as "Inter" plus `isCustomFont`.
+ * allowed as "Inter" plus `isCustomFont`, and each of `families` by that name, a web font or a
+ * system font alike.
  *
  * It walks the pierced DOM tree, so it reaches what a selector cannot: user-agent shadow roots
  * (a `<textarea>`'s text, an `<input>`'s value and placeholder) and generated content
  * (`::before`, `::after`, a list marker).
  */
-async function fontAudit(page: Page, marker: string): Promise<string[]> {
+async function fontAudit(
+  page: Page,
+  marker: string,
+  families: readonly string[],
+): Promise<string[]> {
   let session = cdpSessions.get(page);
   if (!session) {
     session = (async () => {
@@ -482,6 +488,7 @@ async function fontAudit(page: Page, marker: string): Promise<string[]> {
     const { fonts } = await cdp.send("CSS.getPlatformFontsForNode", { nodeId });
     for (const font of fonts) {
       if (font.isCustomFont && ALLOWED_FONTS.includes(font.familyName)) continue;
+      if (families.includes(font.familyName)) continue;
       violations.add(
         `${label} rendered ${font.glyphCount} glyph(s) with "${font.familyName}"${font.isCustomFont ? "" : " (system font)"}`,
       );

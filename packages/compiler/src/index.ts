@@ -20,11 +20,14 @@ export type {
 export { loadConfig, resolveConfig } from "./config.ts";
 export type { ConfigOrigin, LoadedConfig, ResolveConfigResult, ResolvedConfig } from "./config.ts";
 export type {
-  LiveFonts,
   PackageConfig,
+  ProjectViteConfig,
   UnframeworkConfig,
+  ViteContext,
+  ViteMode,
   VitePluginOption,
 } from "./config-types.ts";
+export { DEFAULT_PASS_THROUGH } from "@unframework.dev/analyzer";
 export { builtinTargets, resolveTarget, TARGET_NAMES } from "./targets.ts";
 export type { TargetName } from "./targets.ts";
 export { checkCapabilities } from "./capabilities.ts";

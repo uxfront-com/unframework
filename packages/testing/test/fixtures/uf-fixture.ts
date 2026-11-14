@@ -5,7 +5,12 @@ import type { Plugin } from "vite";
 
 const MODULE = "virtual:uf-fixture";
 
-const CODE = `export function greeting(tone) {
+// The module imports a runtime from a package, as an engine's does (Styleframe's imports
+// `@styleframe/runtime`), so the project lists it in `optimizeDeps.include`: the browser
+// never finds it mid-run, which would reload the page.
+const CODE = `import "parse5";
+
+export function greeting(tone) {
   return tone === "warm" ? "uf-greeting uf-greeting--warm" : "uf-greeting";
 }
 `;

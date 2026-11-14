@@ -4,12 +4,14 @@
  * config types, so that type-checking it reads none either (ADR-0076).
  */
 import type {
-  LiveFonts,
+  ProjectViteConfig,
   UnframeworkConfig,
+  ViteContext,
+  ViteMode,
   VitePluginOption,
 } from "@unframework.dev/compiler/config-types";
 
-export type { LiveFonts, UnframeworkConfig, VitePluginOption };
+export type { ProjectViteConfig, UnframeworkConfig, ViteContext, ViteMode, VitePluginOption };
 
 /** Types a configuration, and returns it as it is. */
 export function defineConfig(config: UnframeworkConfig): UnframeworkConfig {

@@ -558,29 +558,45 @@ describe("ufVisualCapture's preconditions", () => {
     expect(result).toMatchObject({ pass: true, outcome: "matched", role: "follower" });
   });
 
-  it("lets any font draw a live capture when the project opts in (ADR-0105)", async () => {
+  it("lets the families the project lists draw a live capture (ADR-0105)", async () => {
     const system = [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }];
-    const web = [{ familyName: "Roboto", isCustomFont: true, glyphCount: 1 }];
-    const any = { pixels: "live", liveFonts: "any" } as const;
+    const web = [{ familyName: "Inkline Sans", isCustomFont: true, glyphCount: 1 }];
+    const listed = { pixels: "live", liveFonts: ["Hiragino Sans", "Inkline Sans"] } as const;
     const reference = await ufVisualCapture(
-      context("vue", { shots: [png(20, 10)], fonts: system }, any),
+      context("vue", { shots: [png(20, 10)], fonts: [...inter, ...system] }, listed),
       request(),
     );
     expect(reference).toMatchObject({ pass: true, outcome: "published-reference" });
     const follower = await ufVisualCapture(
-      context("react", { shots: [png(20, 10)], fonts: web }, any),
+      context("react", { shots: [png(20, 10)], fonts: web }, listed),
       request(),
     );
     expect(follower).toMatchObject({ pass: true, outcome: "matched" });
-    // The bundled font alone, without the opt-in.
+    // Without the list, the bundled font alone.
     const bundled = await ufVisualCapture(
-      context("react", { shots: [png(20, 10)], fonts: web }, { liveFonts: "bundled" }),
+      context("react", { shots: [png(20, 10)], fonts: web }, { liveFonts: [] }),
       request(),
     );
     expect(bundled).toMatchObject({ pass: false, outcome: "font-fallback" });
   });
 
-  it("keeps the bundled font alone for committed baselines, whatever the project opts into", async () => {
+  it("still fails a fallback when a listed font doesn't load, naming the font that drew", async () => {
+    const result = await ufVisualCapture(
+      context(
+        "vue",
+        {
+          shots: [png(20, 10)],
+          fonts: [{ familyName: "Helvetica", isCustomFont: false, glyphCount: 4 }],
+        },
+        { pixels: "live", liveFonts: ["Inkline Sans"] },
+      ),
+      request(),
+    );
+    expect(result).toMatchObject({ pass: false, outcome: "font-fallback" });
+    expect(result.message).toContain('rendered 4 glyph(s) with "Helvetica" (system font)');
+  });
+
+  it("keeps the bundled font alone for committed baselines, whatever the project lists", async () => {
     commit(baselines().png, png(20, 10));
     commit(baselines().geometry, `${JSON.stringify(geometry(), null, 2)}\n`);
     for (const target of ["vue", "react"]) {
@@ -591,7 +607,7 @@ describe("ufVisualCapture's preconditions", () => {
             shots: [png(20, 10)],
             fonts: [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }],
           },
-          { pixels: "baseline", liveFonts: "any" },
+          { pixels: "baseline", liveFonts: ["Hiragino Sans"] },
         ),
         request(),
       );

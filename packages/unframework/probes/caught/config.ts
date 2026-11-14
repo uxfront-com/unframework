@@ -7,11 +7,16 @@ export const unknownTarget = defineConfig({
 });
 
 export const pluginList = defineConfig({
-  // @ts-expect-error TS2322 every server takes a fresh set, so the plugins come from a function
-  vitePlugins: [{ name: "engine" }],
+  // @ts-expect-error TS2322 every server takes a fresh set of plugins, so the config comes from a function
+  vite: [{ name: "engine" }],
+});
+
+export const pluginEntry = defineConfig({
+  // @ts-expect-error TS2322 a plugin has a name
+  vite: () => ({ plugins: [42] }),
 });
 
 export const unknownFonts = defineConfig({
-  // @ts-expect-error TS2322 `system` is not a live-fonts mode
-  liveFonts: "system",
+  // @ts-expect-error TS2322 the fonts are a list of family names
+  liveFonts: "any",
 });

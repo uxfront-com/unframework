@@ -14,8 +14,8 @@ export interface PackageConfig {
 
 /**
  * One entry of Vite's `plugins`, as far as the configuration reads it: a plugin, which has a
- * name, nothing, a list of them, or a promise of one. This file imports nothing, so Vite's own `PluginOption`, which
- * every Vite plugin matches, stands here as its shape (ADR-0104).
+ * name, nothing, a list of them, or a promise of one. This file imports nothing, so Vite's own
+ * `PluginOption`, which every Vite plugin matches, stands here as its shape (ADR-0104).
  */
 export type VitePluginOption =
   | { readonly name: string }
@@ -25,11 +25,22 @@ export type VitePluginOption =
   | readonly VitePluginOption[]
   | PromiseLike<VitePluginOption>;
 
+/** The kind of Vite server a project's `vite` config is for (ADR-0104). */
+export type ViteMode = "browser" | "ssr" | "preview";
+
+/** What a project's `vite` function is called with: the server's target and its kind. */
+export interface ViteContext {
+  readonly target: TargetName;
+  readonly mode: ViteMode;
+}
+
 /**
- * Which fonts may draw text in a live capture (ADR-0105): `bundled`, the bundled Inter alone, by
- * default, or `any`, so a design system's own font passes.
+ * The partial Vite config a project's `vite` function returns, as far as this file can say
+ * without importing Vite (ADR-0076): its `plugins` are checked, and any other key Vite's
+ * `UserConfig` has passes, whether the function returns an object literal or Vite's own type
+ * (ADR-0104).
  */
-export type LiveFonts = "bundled" | "any";
+export type ProjectViteConfig = { plugins?: readonly VitePluginOption[] } & object;
 
 /** The configuration as a project writes it, with `defineConfig` from `@uxfront/unframework/config`. */
 export interface UnframeworkConfig {
@@ -47,22 +58,16 @@ export interface UnframeworkConfig {
   strict?: boolean;
   package?: PackageConfig;
   /**
-   * The Vite plugins that resolve the modules the outputs import and the project serves itself,
-   * such as a styling engine's `virtual:` modules (ADR-0064). `unframework test`, `visual` and
-   * `preview` add them, before the unframework plugin, to every Vite server they start. A
-   * function, which each server calls for a fresh set, since a plugin may hold one server's state
-   * (ADR-0104).
+   * The project's Vite config for the servers `unframework test`, `visual` and `preview` start,
+   * such as the plugin of a styling engine that serves `virtual:` modules (ADR-0064). Each server
+   * calls it with its target and kind, for a fresh set of plugins, since a plugin may hold one
+   * server's state. Its plugins go before the unframework plugin, and the other keys merge into
+   * the server's own config, which it never replaces (ADR-0104).
    */
-  vitePlugins?: () => VitePluginOption | Promise<VitePluginOption>;
+  vite?: (context: ViteContext) => ProjectViteConfig | Promise<ProjectViteConfig>;
   /**
-   * Ambient declaration files, relative to the config's directory, that type those modules, such
-   * as a styling engine's generated `.d.ts`: a checker that compiles the outputs reads them, as
-   * Angular's does (ADR-0104).
+   * The font families that may draw text when pixels compare live, besides the bundled Inter, as
+   * the `font-fallback` message names them. Committed baselines take Inter alone (ADR-0105).
    */
-  declarations?: readonly string[];
-  /**
-   * Which fonts may draw text when pixels compare live: `bundled` by default. Committed baselines
-   * always take the bundled font alone (ADR-0105).
-   */
-  liveFonts?: LiveFonts;
+  liveFonts?: readonly string[];
 }

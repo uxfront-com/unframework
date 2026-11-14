@@ -9,7 +9,14 @@ import { fileURLToPath } from "node:url";
 
 import type { Toolchain, ToolchainContext } from "@unframework.dev/codegen";
 import type { TargetName } from "@unframework.dev/compiler";
-import { loadToolchain, toolchainClientFile } from "@unframework.dev/testing/config";
+import {
+  loadToolchain,
+  passThroughDeclarations,
+  projectPlugins,
+  toolchainClientFile,
+  withProjectVite,
+} from "@unframework.dev/testing/config";
+import type { ProjectVite } from "@unframework.dev/testing/config";
 import type { InlineConfig, Plugin, ViteDevServer } from "vite";
 
 import { FRAME_PATH, RENDER_PATH } from "./protocol.ts";
@@ -44,12 +51,11 @@ export interface TargetServerOptions {
   /** Each entry's module (absolute), by id. */
   entries: Readonly<Record<string, string>>;
   /**
-   * A fresh set of the project's Vite plugins (`vitePlugins` in `unframework.config.ts`,
-   * ADR-0104), added before the unframework plugin: none by default.
+   * The project's Vite config (`vite` in `unframework.config.ts`, ADR-0104), which the server
+   * calls with its target and `mode: "preview"`: its plugins go before the unframework plugin,
+   * and its other keys merge into the server's config. None by default.
    */
-  plugins?: () => Promise<Plugin[]>;
-  /** The project's ambient declarations, absolute, which Angular's ngtsc reads (ADR-0104). */
-  declarations?: readonly string[];
+  vite?: ProjectVite;
 }
 
 /** The frame runtime's file, wherever the package is installed. */
@@ -195,13 +201,14 @@ export async function targetServerConfig(
 ): Promise<{ config: InlineConfig; toolchain: Toolchain }> {
   const { root, target } = options;
   const toolchain = await loadToolchain(target);
-  // The toolchain's Vite fragment, its compiler and a render server of its own (Astro's) read the
-  // project's plugins and declarations too (ADR-0104).
+  // Angular's compiler takes the pass-through modules through their declarations, and a render
+  // server of the toolchain's own (Astro's) loads the project's plugins too (ADR-0104).
+  const project = { target, mode: "preview" } as const;
   const context: ToolchainContext = {
     toolchainDir: options.toolchainDir,
     root,
-    ...(options.declarations ? { declarations: options.declarations } : {}),
-    ...(options.plugins ? { plugins: options.plugins } : {}),
+    declarations: passThroughDeclarations(root),
+    plugins: projectPlugins(options.vite, project),
   };
   const fragment = await toolchain.vite("browser", context);
   const commands = toolchain.browserCommands?.(context) ?? {};
@@ -226,7 +233,7 @@ export async function targetServerConfig(
   const { mergeConfig } = await import("vite");
   const { default: unframework } = await import("@unframework.dev/unplugin/vite");
   // The Vitest options a toolchain sets are no Vite server's.
-  const { test: _test, ...vite } = fragment as typeof fragment & { test?: unknown };
+  const { test: _test, ...own } = fragment as typeof fragment & { test?: unknown };
   const base: InlineConfig = {
     root,
     configFile: false,
@@ -238,9 +245,6 @@ export async function targetServerConfig(
     cacheDir: join(root, "node_modules", ".vite", `uf-preview-${target}`),
     plugins: [
       previewPlugin(options, toolchain, toolchainClientFile(toolchain), frameFile(), render),
-      // The project's plugins resolve the imports the outputs keep as written (ADR-0064,
-      // ADR-0104), before the unframework plugin, as in a browser test project.
-      ...((await options.plugins?.()) ?? []),
       ...unframework({ target }),
     ],
     // Vite's own TypeScript transform, set so it stays on: outside Vitest, Analog's Angular plugin
@@ -256,7 +260,10 @@ export async function targetServerConfig(
     },
     server: { host: PREVIEW_HOST, port: 0, strictPort: false },
   };
-  return { config: mergeConfig(base, vite), toolchain };
+  // The project's config goes in last, as in a browser test project: its plugins before the
+  // unframework plugin, the rest merged after the toolchain's fragment (ADR-0064, ADR-0104).
+  const config = await withProjectVite(mergeConfig(base, own), options.vite, project);
+  return { config, toolchain };
 }
 
 /** Starts a target's server, and resolves once it listens. */

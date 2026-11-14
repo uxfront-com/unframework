@@ -18,27 +18,30 @@ ADR-0087 left it as a known gap: "an example can't show a design system's own ty
 
 Live pixels (ADR-0029), the default for a project (ADR-0086), compare each target with the
 reference's capture from the same run, in one browser on one machine. Every target draws the same
-text with the same font there, so a project's font is no threat to what live mode compares.
+text with the same font there, so a project's font is no threat to what live mode compares. The
+audit still has a job there: when a web font fails to load, every target falls back to the same
+system font, the pixels match, and only the audit notices.
 
 ## Decision
 
-- **`liveFonts` in `unframework.config.ts`:** `"bundled"`, the default, keeps the audit as it is,
-  and `"any"` lets any font draw a live capture, a system font or a web font the project loads.
-- **Live only.** With `"any"`, the audit doesn't run when pixels compare live. A comparison with
-  committed baselines still audits every glyph and fails with `font-fallback`, whatever the
-  project sets, since the baseline came from another machine.
-- **Where it reaches.** `defineTestConfig` passes the field to the run's `HarnessContext` as
-  `liveFonts`, and the capture command reads it there, so it applies to `unframework visual` and
-  to a project's own `expectParity` captures alike. The corpus has no `unframework.config.ts` and
+- **`liveFonts` in `unframework.config.ts`:** a list of font family names, empty by default.
+  `resolveConfig` reports UF7002 for anything but a list of names that aren't empty.
+- **The audit always runs.** In live mode, a glyph passes when the bundled Inter draws it, as
+  before, or when its family is in the list, a web font or a system font alike. Any other font
+  fails with `font-fallback`, the fallback of a listed font that didn't load included.
+- **Baselines ignore the list.** A comparison with committed baselines takes Inter alone,
+  whatever the project lists, since the baseline came from another machine.
+- **The names are CDP's.** Chromium reports a font file's own family name, which can differ from
+  the CSS `@font-face` name, so a project copies each name from the `font-fallback` message.
+- **Where it reaches.** `defineTestConfig` passes the list to the run's `HarnessContext` as
+  `liveFonts`, and `captureAt` reads it there, so it applies to `unframework visual` and to a
+  project's own `expectParity` captures alike. The corpus has no `unframework.config.ts` and
   keeps the bundled font alone.
 - The determinism reset still sets the bundled family on `:root`, so text a project's CSS doesn't
   restyle keeps rendering in Inter.
 
 ```ts
-export default {
-  targets: ["react", "vue", "svelte", "solid", "angular", "qwik", "astro"],
-  liveFonts: "any",
-};
+liveFonts: ["Inkline Sans", "Inkline Mono"],
 ```
 
 ## Consequences
@@ -46,22 +49,21 @@ export default {
 **Positive:**
 
 - A design system's examples render, and compare, in its own typeface on all seven targets.
-- Baselines stay as strict as before, so a project that commits them gains nothing it can trip
-  over.
+- A web font that fails to load still fails the capture, since its fallback isn't listed.
+- Baselines stay as strict as before.
 
 **Negative:**
 
-- A live capture in a system font differs from one machine to the next, so it's only good for the
-  run that made it. That's already true of live captures, which no run keeps.
-- With `"any"`, a fallback the project didn't mean, like a missing web font, goes unnoticed in
-  live mode, since every target falls back to the same font.
+- A system font's name differs from one machine to the next, so a project that lists one lists
+  each machine's name, like the macOS and Linux ones for `system-ui`.
+- A live capture in a system font differs between machines, so it's only good for the run that
+  made it. That's already true of live captures, which no run keeps.
 
 ## Alternatives considered
 
-- **Allow a named list of families.** CDP reports a font file's internal name, which differs from
-  the CSS family and from one platform to the next, so a list would hold names nobody writes in
-  CSS. Live mode needs no list to stay sound.
+- **An opt-in, `"any"`, that skipped the audit in live mode,** the first form of this record. A
+  listed font that didn't load went unnoticed, because every target fell back to the same font.
 - **A flag on `unframework visual`.** The font is the project's, and so is the choice, so it
-  belongs in the config, beside the plugins that load the project's CSS (ADR-0104).
-- **Let baselines take any font too.** A system font renders differently on the baseline image, so
-  every baseline comparison would fail on pixels instead of on the audit's clear message.
+  belongs in the config, beside the project's Vite config (ADR-0104), and reaches `test` too.
+- **Let baselines take the listed fonts too.** A system font renders differently on the baseline
+  image, so every baseline comparison would fail on pixels instead of on the audit's message.
