@@ -42,9 +42,10 @@ a call or a read as a value, is UF1002 at the identifier. The compiler checks ho
   teleport as a list's element UF1002. A teleport inside an `<svg>` is UF1002.
 - The element is checked where the teleport is, as an element there would be: Svelte creates it
   there before it moves it, and its server build warns about an element its place does not permit,
-  so `<div>` in a `<p>` is UF3003.
+  so `<div>` in a `<p>` is UF3003, with a note at the `<Teleport>`.
 - `to` reads as JSX reads a string attribute, character references decoded, and each target writes
-  that selector its own way.
+  that selector its own way. A reference only HTML decodes is UF3011, as on an element, without
+  the fix: the character it writes can make a selector Angular's template refuses.
 - `disabled` and `defer` are left out: only Vue's lowering of them would be native.
 
 The IR node is `{ kind: "Teleport", to, children, span }`, whose invariants require one `Element`
@@ -57,8 +58,9 @@ teleport is a root of kind `other`: the root is wrapped in a fragment, a parent'
 - **Server HTML.** No target renders teleported content on the server. Comment markers and a
   framework's placeholders are allowed, since the normaliser drops them.
 - **Mounting.** The content mounts once its component has mounted, in a later render on some
-  targets. It is appended to `to`, after what `to` holds, in source order: the last element child
-  of `to`. Vue also leaves two empty text nodes around it, which hold nothing.
+  targets. It is appended to `to`, after what `to` holds: the last element child of `to`. One
+  component's teleports mount in source order. Vue also leaves two empty text nodes around it,
+  which hold nothing.
 - **Lifetime.** It unmounts with its component, or when a condition around the teleport turns
   false. Nothing is left in `to`.
 - **Place.** It stays where it mounted while the list rows or the components that teleported it
@@ -71,6 +73,11 @@ teleport is a root of kind `other`: the root is wrapped in a fragment, a parent'
     events bubble through a portal, the DOM's don't.
   - What happens when `to` matches nothing. Each target renders nothing.
   - A selector across the boundary: `.panel .dialog` no longer matches a teleported `.dialog`.
+  - The order in which the teleports of several components mount together, like a parent's and
+    its children's. Vue and Qwik mount a parent's first, since each component's teleports wait
+    for its own `mounted`, which flips in one render, where the parent renders first. React,
+    Svelte, Solid and Angular mount the children's first. A teleport that mounts later goes after
+    them on every target.
 
 ### The lowering
 
@@ -111,7 +118,10 @@ Some lowerings differ from the plan's starting points, each for a reason the cas
   gone, removed by Qwik or by itself.
 - **Qwik's helper puts back an element Qwik moves.** Qwik moves a component by moving every DOM
   node under it, so a keyed list that reorders components whose root is a teleport pulls their
-  elements back into the page. The helper puts each back where it was in `to`.
+  elements back into the page. Each element sits in `to` after an empty text of its own, which no
+  capture shows and nothing else moves, and the helper puts it back after that text. Its place
+  holds however many components move in one render, since no element's place depends on
+  another's.
 
 Svelte and Qwik move the element after a component inside it may have focused one of its
 elements, and moving a node blurs it, so both give the focus back.

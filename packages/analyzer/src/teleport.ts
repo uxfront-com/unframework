@@ -9,11 +9,11 @@ import type { TeleportNode } from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
 
 import { misplacedKey } from "./attributes.ts";
-import { reportDivergence } from "./context.ts";
+import { reportDivergence, reportHtmlOnlyReference } from "./context.ts";
 import type { RawSpan, Reporter } from "./context.ts";
 import { closest } from "./cross-component.ts";
 import { span } from "./expressions.ts";
-import { readJsxAttribute, readJsxText } from "./jsx/text.ts";
+import { htmlOnlyReferences, readJsxAttribute, readJsxText } from "./jsx/text.ts";
 import { isStaticString, valueOf } from "./literals.ts";
 import { lowerElement } from "./lower.ts";
 import type { Place } from "./lower.ts";
@@ -106,14 +106,26 @@ export function lowerTeleport(
   }
   // The element is checked where the teleport is: Svelte creates it there before it moves it, and
   // its server build warns about an element its place does not permit (`<div>` in `<p>`).
+  const checked = reporter.diagnostics.length;
   const lowered = lowerElement(first, place, render).element;
+  for (const misplaced of reporter.diagnostics.slice(checked)) {
+    if (misplaced.code !== "UF3003") continue;
+    misplaced.related = [
+      ...(misplaced.related ?? []),
+      {
+        span: span(name),
+        message: `Checked where this <${name.name}> stands, where Svelte creates the element`,
+      },
+    ];
+  }
   if (!lowered || to === undefined || reporter.hasErrorsSince(mark)) return undefined;
   return createTeleportNode(to, [lowered], span(node));
 }
 
 /**
- * The selector a `to` attribute's string reads as, as JSX decodes it: a reference only HTML
- * decodes is reported, as on any attribute.
+ * The selector a `to` attribute's string reads as, as JSX decodes it. A reference only HTML
+ * decodes is a warning (UF3011), as on any attribute, with no fix: the character it would write
+ * can make a selector Angular's template refuses, like `{{`.
  */
 function readTo(literal: AST.StringLiteral, reporter: Reporter): string {
   const reading = readJsxAttribute(literal.value);
@@ -122,6 +134,9 @@ function readTo(literal: AST.StringLiteral, reporter: Reporter): string {
     end: literal.start + 1 + range.end,
   });
   for (const divergence of reading.divergences) reportDivergence(divergence, at, reporter);
+  for (const reference of htmlOnlyReferences(literal.value)) {
+    reportHtmlOnlyReference(reference, at, false, reporter);
+  }
   return reading.value;
 }
 

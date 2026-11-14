@@ -53,6 +53,16 @@ describe("<Teleport>", () => {
     expect(teleport!.to).toBe(selector);
   });
 
+  it("warns about a reference only HTML decodes in `to` (UF3011), as on an element", () => {
+    const text = source('<div><Teleport to="#a&lbrace;b"><p /></Teleport></div>');
+    const { module, diagnostics } = run(text);
+    expect(problems(text, diagnostics)).toEqual(["UF3011 &lbrace;"]);
+    // No fix: `{{` in a selector is text Angular's template refuses (UF9001).
+    expect(diagnostics[0]!.fixes ?? []).toEqual([]);
+    const [teleport] = (only(module).render as { children: TeleportNode[] }).children;
+    expect(teleport!.to).toBe("#a&lbrace;b");
+  });
+
   it("is recognised by its import's binding, so an alias is Teleport too", () => {
     const text = `import { Teleport as Portal } from "@uxfront/unframework";
 export function A() { return <div><Portal to="body"><p /></Portal></div>; }`;
@@ -138,6 +148,18 @@ export function A() { const label = "x"; const open = ref(false); return ${jsx};
       '<table><Teleport to="body"><div>b</div></Teleport></table>',
     ])("checks the element where the teleport is: %s", (jsx) => {
       expect(reported(jsx).map((each) => each.split(" ")[0])).toContain("UF3003");
+    });
+
+    it("says so on UF3003, at the <Teleport>", () => {
+      const text = source('<p>a<Teleport to="body"><div>b</div></Teleport>c</p>');
+      const misplaced = run(text).diagnostics.find((each) => each.code === "UF3003")!;
+      expect(
+        misplaced.related?.map(
+          ({ span: at, message }) => `${text.slice(at.start, at.end)}: ${message}`,
+        ),
+      ).toContain(
+        "Teleport: Checked where this <Teleport> stands, where Svelte creates the element",
+      );
     });
 
     it("keeps the whitespace JSX drops out of the content", () => {
