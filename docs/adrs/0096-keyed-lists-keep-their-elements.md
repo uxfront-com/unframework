@@ -20,17 +20,21 @@ parent that passes the list again as new objects, or a write that maps one item 
 the row a new element, which drops its focus and its typed text. Astro renders once on the
 server, and nothing reorders a list there.
 
-The cases also show a limit no framework can lift. A browser blurs an element that is moved in
-the document, and each framework picks which elements it moves to reorder a list: for one swap,
-Vue moved the focused row where React moved the rows around it. So the focus survives a reorder
-only where the focused element keeps its place.
+The cases also show a limit. A browser blurs an element that is moved in the document, and each
+framework picks which elements it moves to reorder a list. Where the focused row moves itself,
+react-dom puts the focus back after it commits, and Vue, Svelte, Solid, Angular and Qwik leave it
+on the body.
+
+Where the rows around it move, every target keeps it. So the focus survives a
+reorder on every target only where the focused element keeps its place.
 
 ## Decision
 
 - **The guarantee.** A keyed item keeps its element while its list reorders, and while the item
   is replaced by another object of the same key. The element follows the latest item, and keeps
-  what it holds: its focus, its typed text, a ticked box. The focus stays where the focused
-  element keeps its place and the rows around it move, and where its item is replaced in place.
+  what it holds: its typed text, a ticked box and, where it keeps its place, its focus. The focus
+  stays where the focused element keeps its place and the rows around it move, and where its item
+  is replaced in place.
   An element that is moved itself keeps its typed text, and may lose its focus: that stays outside
   the contract.
 - **The capability.** `keyed-identity`, behavioural, as a static render is the same without it:
@@ -45,12 +49,14 @@ only where the focused element keeps its place.
 - **Solid's helper.** A list is `<KeyedFor each={source} by={(item, index) => key}>`, a helper
   over `<For>` printed after the component (P7). A memo maps each key to its latest item, and
   `<For>` renders the keys, which it follows by value, so a row stays while its key does. Each row
-  reads its item through a memo of that map, and its index through `<For>`'s accessor. So the row's
-  item and index are accessors, `item()` and `index()`, which the rewrite rules call, and which the
-  branch callbacks read once, as they read a state's accessor. `by` takes them as values, as the
-  source's key reads them. An item whose key an earlier item took still renders, under a key of
-  its own that no update keeps, as `<For>` would render it (keys are unique at run time,
-  ADR-0035).
+  reads its item through a memo of that map, and its index through `<For>`'s accessor. The row is
+  an object of getters named as the source's item, `item.value` and `item.index`, as a component
+  receives its props: TypeScript narrows a path through it, a discriminant included, as the
+  source's TypeScript narrows the item, where it would narrow no call (`item().note`):
+  `control-flow/narrowed-items` checks it. `by` takes
+  the item and the index as values, as the source's key reads them. An item whose key an earlier
+  item took still renders, under a key of its own that each change of the list makes again, so
+  that row is made again too (keys are unique at run time, ADR-0035).
 - **Amends ADR-0036.** Its "M1 guarantees a list's content and order only" now reads: a list
   guarantees its content and order, and with `keyed-identity` its elements. Solid writes the
   keyed helper where ADR-0036's table writes `<For>`, and its `key` is printed, as `by`.
@@ -58,7 +64,7 @@ only where the focused element keeps its place.
 ```text
 Source   {entries.map((entry) => <li key={entry.id}>{entry.label}</li>)}
 Solid    <KeyedFor each={props.entries} by={(entry) => entry.id}>
-           {(entry) => <li>{entry().label}</li>}
+           {(entry) => <li>{entry.value.label}</li>}
          </KeyedFor>
 ```
 
@@ -66,18 +72,19 @@ Solid    <KeyedFor each={props.entries} by={(entry) => entry.id}>
 
 **Positive:**
 
-- A list keeps a row's focus, typed text and state on six targets, as Vue does, so the parity
-  tests compare a list that reorders while the reader works in it.
+- A list keeps a row's element, typed text and state on six targets, as Vue does, and its focus
+  where it keeps its place, so the parity tests compare a list that reorders while the reader
+  works in it.
 - A Solid list keyed by its index now keeps its elements by position, as Vue's does, where
   `<For>` moved them with their items.
 
 **Negative:**
 
-- Every Solid list carries the helper, about twenty lines, and every row reads its item through
-  a call. A row's memo runs again for every change of the list, and notifies the row only when
+- Every Solid list carries the helper, about thirty lines, and every row reads its item through
+  a getter, `item.value`. A row's memo runs again for every change of the list, and notifies the row only when
   its own item changes.
-- The focus on an element its list moves still differs between the frameworks, and the contract
-  says so instead of guaranteeing it.
+- The focus on an element its list moves differs between the frameworks: React keeps it and the
+  others lose it. The contract says so instead of guaranteeing it.
 
 ## Alternatives considered
 
@@ -89,6 +96,10 @@ Solid    <KeyedFor each={props.entries} by={(entry) => entry.id}>
   `reconcile` writes into the objects it was given, which are the parent's.
 - **Solid's `<Index>`.** It keeps rows by position, not by key, so a reorder would keep every
   element in place and change its content, as a list keyed by its index does.
-- **Restore the focus after a move.** No framework does it, and an inline helper that watched
-  `document.activeElement` around every update would be runtime behaviour the plan keeps out
-  (P7).
+- **Restore the focus after a move, as react-dom does.** The other five targets would need an
+  inline helper around every list that saves the focused element before an update and focuses it
+  again after, code no developer of those frameworks writes (G2). The owner chose the narrower
+  guarantee on 2026-11-14.
+- **Accessors on Solid, `item()` and `index()`.** TypeScript narrows no call, so a row that
+  narrows its item (`item.note ? item.note.trim() : "-"`, a discriminant) would fail to
+  type-check, and the analyser has no portable rule that could reject it.
