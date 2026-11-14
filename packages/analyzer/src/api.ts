@@ -80,7 +80,7 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
         break;
     }
   }
-  const root = rootOf(node);
+  const root = rootOf(node, context);
   api.root = root.kind;
   if (root.tag !== undefined) api.rootTag = root.tag;
   return api;
@@ -411,8 +411,14 @@ export function inheritAttrsOption(object: AST.ObjectExpression): AST.ObjectProp
   );
 }
 
-/** What a component's returned JSX is: one element (with its tag), one component, or other. */
-function rootOf(node: ComponentFunction): {
+/**
+ * What a component's returned JSX is: one element (with its tag), one component, or other, as a
+ * `<Teleport>` is (ADR-0098).
+ */
+function rootOf(
+  node: ComponentFunction,
+  context: ApiContext,
+): {
   kind: ComponentApi["root"];
   tag?: string;
 } {
@@ -432,6 +438,13 @@ function rootOf(node: ComponentFunction): {
   if (returned?.type !== "JSXElement") return { kind: "other" };
   const name = returned.openingElement.name;
   if (name.type !== "JSXIdentifier") return { kind: "other" };
+  const resolution = context.scopes.resolve(name as unknown as AST.IdentifierReference);
+  if (
+    resolution.kind === "import" &&
+    context.authoring.get(resolution.declaration) === "Teleport"
+  ) {
+    return { kind: "other" };
+  }
   if (isComponentName(name.name)) return { kind: "component" };
   if (name.name === "component") return { kind: "other" };
   return { kind: "element", tag: name.name };
