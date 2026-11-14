@@ -34,9 +34,22 @@ export class ScopeAttributes implements OnInit {
   }
 }
 
+/** Puts a field's caret after its text, as setting the text of an empty field leaves it. */
+@Directive({ selector: "textarea[value]" })
+export class TextCaret implements OnInit {
+  private readonly element = inject<ElementRef<HTMLTextAreaElement>>(ElementRef);
+
+  ngOnInit(): void {
+    const field = this.element.nativeElement;
+    const text = field.value;
+    field.value = "";
+    field.value = text;
+  }
+}
+
 @Component({
   selector: "uf-note-editor",
-  imports: [ScopeAttributes],
+  imports: [ScopeAttributes, TextCaret],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `

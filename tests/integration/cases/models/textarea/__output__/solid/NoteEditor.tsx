@@ -11,6 +11,7 @@ export default function NoteEditor(props: { class?: string; style?: JSX.CSSPrope
         value={isServer ? undefined : note()}
         children={isServer ? note() : undefined}
         onInput={(event) => setNote(event.currentTarget.value)}
+        ref={textCaret}
       />
       <output>{note().length} characters</output>
       <button type="button" onClick={() => setNote("")}>
@@ -25,4 +26,11 @@ function scopeAttributes(props: object): Record<string, ""> {
   const scope: Record<string, ""> = {};
   for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
   return scope;
+}
+
+/** Puts a field's caret after its text, as setting the text of an empty field leaves it. */
+function textCaret(field: HTMLTextAreaElement) {
+  const text = field.value;
+  field.value = "";
+  field.value = text;
 }
