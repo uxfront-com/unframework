@@ -346,6 +346,12 @@ running mounted hooks on a page where one threw, and `sourcemaps/mounted-throws`
 `browser:*` run, `browser:vue` runs alone before the followers, so it opens two tester pages per
 CPU, and every other run keeps Vitest's default (`referencePages`).
 
+The hydrate projects share their pages on every target, Vue's included: a fresh frame for each
+spec file that a `-t` run skips stalled the tests it kept. The harness's sequencer
+(`harness/sequencer.ts`) runs `sourcemaps/mounted-throws` after every other spec file of
+`hydrate:vue`, so no file runs after it on its page. `LEAVES_PAGE_UNUSABLE` in
+`harness/projects.ts` names that one case per target, with its reason (ADR-0106).
+
 Each test records its layers in its task meta: `expectParity` records L7, L9, L10 and L11
 without throwing, so the assertions after it always run, and the setup's `afterEach` records L8
 from the test's own errors (and L9 for a step no `expectParity` compared), then fails the test

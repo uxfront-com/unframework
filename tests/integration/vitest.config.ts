@@ -28,6 +28,7 @@ import {
   referencesOnly,
 } from "./harness/projects.ts";
 import { QUARANTINE, validateQuarantine } from "./harness/quarantine.ts";
+import { harnessSequencer } from "./harness/sequencer.ts";
 import { REFERENCE, selectTargets } from "./harness/targets.ts";
 
 const mode = resolveHarnessMode({
@@ -80,6 +81,9 @@ const config: ViteUserConfig = defineConfig({
           ]
         : []),
     ],
+    // Vitest's order, but the spec file that leaves a page unusable runs last in its hydrate
+    // project, whose pages its files share (ADR-0106).
+    sequence: { sequencer: harnessSequencer(cases) },
     projects: harnessProjects({
       harness,
       mode,

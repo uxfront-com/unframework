@@ -11,6 +11,7 @@ import {
   harnessProjects,
   isolatesFiles,
   isSelected,
+  LEAVES_PAGE_UNUSABLE,
   noErrorBroadcast,
   parityProjects,
   projectEntries,
@@ -57,9 +58,28 @@ describe("projects", () => {
     expect(fileParallelism({ browser: "webkit" })).toBe(false);
   });
 
-  it("shares each page among spec files, but on Vue, with the reason (ADR-0092)", () => {
-    expect(selectTargets(undefined).filter(isolatesFiles)).toEqual(["vue"]);
+  it("shares each page among spec files, but in Vue's browser project, with the reason (ADR-0092)", () => {
+    const targets = selectTargets(undefined);
+    expect(targets.filter((target) => isolatesFiles("browser", target))).toEqual(["vue"]);
     expect(FRESH_PAGE_PER_FILE.vue).toMatch(/post-flush queue/);
+  });
+
+  it("shares each page among spec files in every hydrate project (ADR-0106)", () => {
+    const targets = selectTargets(undefined);
+    expect(targets).toHaveLength(7);
+    for (const target of targets) expect(isolatesFiles("hydrate", target)).toBe(false);
+  });
+
+  it("names, for Vue alone, the case that leaves a page unusable, with the reason (ADR-0106)", () => {
+    expect(Object.keys(LEAVES_PAGE_UNUSABLE)).toEqual(["vue"]);
+    expect(LEAVES_PAGE_UNUSABLE.vue).toEqual({
+      case: "sourcemaps/mounted-throws",
+      reason: expect.stringMatching(/post-flush queue/),
+    });
+    const corpus = listCases();
+    for (const entry of Object.values(LEAVES_PAGE_UNUSABLE)) {
+      expect(corpus.find((info) => info.id === entry.case)?.spec).toBeDefined();
+    }
   });
 
   it("names one compile and one harness project, and four projects per target", () => {

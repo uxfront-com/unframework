@@ -166,12 +166,27 @@ export function fileParallelism(mode: Pick<HarnessMode, "browser">): boolean {
 }
 
 /**
- * The targets whose spec files each get a fresh page, with the reason (ADR-0092). Every other
- * browser project runs its spec files one after another on each of its pages, which keep their
- * modules: the testing setup and the framework load once per page, not once per file.
+ * The targets whose browser project gives each spec file a fresh page, with the reason
+ * (ADR-0092). Every other browser project, and every hydrate project (ADR-0106), runs its spec
+ * files one after another on each of its pages, which keep their modules: the testing setup and
+ * the framework load once per page, not once per file.
  */
 export const FRESH_PAGE_PER_FILE: Readonly<Record<string, string>> = {
   vue: "Vue's development build rethrows an error that a lifecycle hook throws out of its post-flush queue, which then never runs again on that page. sourcemaps/mounted-throws throws there on purpose (L14), so no later spec file's mounted hooks would run.",
+};
+
+/**
+ * The one case per target whose spec file leaves that target's page unusable, with the reason.
+ * The hydrate projects share their pages (ADR-0106), so the harness's sequencer runs this file
+ * after every other file of the target's hydrate project, and no file runs after it on its page.
+ * A target takes one case at most: two could meet on one page, and a second needs another design.
+ */
+export const LEAVES_PAGE_UNUSABLE: Readonly<Record<string, { case: string; reason: string }>> = {
+  vue: {
+    case: "sourcemaps/mounted-throws",
+    reason:
+      "Its child's onMounted throws on purpose (L14). Vue's development build rethrows the error out of its post-flush queue, which then never runs again on that page, so no later spec file's mounted hooks would run.",
+  },
 };
 
 /** A project's `maxWorkers`, when it has its own page count. */
@@ -179,9 +194,14 @@ function pagesOption(pages: number | undefined): { maxWorkers?: number } {
   return pages === undefined ? {} : { maxWorkers: pages };
 }
 
-/** Whether a target's browser project gives every spec file a fresh page (`isolate`). */
-export function isolatesFiles(target: string): boolean {
-  return Object.hasOwn(FRESH_PAGE_PER_FILE, target);
+/**
+ * Whether a page project gives every spec file a fresh page (`isolate`): only a browser project
+ * of a target in `FRESH_PAGE_PER_FILE`. The hydrate projects share their pages on every target
+ * (ADR-0106): a fresh page per file reloads the testing setup and the framework for every spec
+ * file a `-t` run skips, which starved the few tests the run keeps.
+ */
+export function isolatesFiles(kind: "browser" | "hydrate", target: string): boolean {
+  return kind === "browser" && Object.hasOwn(FRESH_PAGE_PER_FILE, target);
 }
 
 /** A project of the harness, as `harnessProjects` lists it: what its group depends on. */
@@ -552,8 +572,9 @@ async function pageProject(
           ...(kind === "hydrate" ? { ufHydrate: true, ufServer: toolchain.server } : {}),
         },
         sequence: { groupOrder: projectGroup(setup, kind, target) },
-        // Spec files share a page, but where the target's runtime cannot (ADR-0092).
-        isolate: isolatesFiles(target),
+        // Spec files share a page, but in a browser project whose target's runtime cannot
+        // (ADR-0092). The hydrate projects always share theirs (ADR-0106).
+        isolate: isolatesFiles(kind, target),
         // Outside Chromium, parallel tester pages in one engine take the focus from each other.
         ...(fileParallelism(setup.mode) ? {} : { fileParallelism: false }),
         ...(kind === "browser" && target === REFERENCE
