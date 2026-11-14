@@ -92,6 +92,13 @@ A new job in `.github/workflows/ci.yml` needs a step in `scripts/test-loop.ts`, 
 its reason in that script's list of jobs left out, which this page names too. `tests/repo` fails
 otherwise.
 
+Once CI's `Design system` job uploads the visual report for a pull request,
+`.github/workflows/visual-report-comment.yml` posts a summary of it as one comment on the pull
+request, with a link to the `design-system-visual` artefact, and updates that comment on each
+push. The workflow runs from `main` only, so a change to it shows on the first pull request after
+it merges. The comment summarises the pull request's own report, which a fork can write, so CI's
+job status is the gate, not the comment.
+
 ## Shared parts from uxfront
 
 The shared configuration comes from the published `@uxfront/*` packages, not from copies:
