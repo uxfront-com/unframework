@@ -154,7 +154,7 @@ setInterval(() => count.value++, 1000)`), and its replacement is parenthesised w
   `slotOutlet` (where it renders a slot; `jsxSlotProps` gives its props), `modelAttribute` (a
   control's `v-model`), `modelBinding` (a component's `v-model:<name>`), `dynamic`
   (`<component is>`; `jsxDynamic` prints it as an element of the name a target gives it) and
-  `teleport` (`<Teleport to>`, ADR-0098; the markup printer prints its one element as a root's,
+  `teleport` (`<Teleport to>`, ADR-0098, whose one element the markup printer prints as a root's,
   outside every element around it). Text
   goes through `jsxText`, the JSX escaping contract (ADR-0030): raw only when every JSX
   transform and formatter keeps it as written, and never where a formatter could start a line

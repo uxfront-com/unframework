@@ -113,7 +113,7 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
   overload takes what is not a function only (the test stubs).
 - **What a view teleports** (ADR-0098) is the view's: each element its render appends to `<body>`
   outside its container. It carries the view's test id, so `locator`, the `getBy*` queries and
-  `view.user` reach what it holds, as they reach what the container holds; neither the container
+  `view.user` reach what it holds, as they reach what the container holds. Neither the container
   nor a teleported element itself is a query's result. `html()` and L7 write each one after the
   container's children, in a `<uf:teleported>` marker, and L7's ARIA snapshot, L10's geometry
   (under `uf:teleported[i]/`) and screenshot, and L11's axe cover it too. An element of its own

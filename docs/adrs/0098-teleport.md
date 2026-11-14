@@ -30,7 +30,7 @@ the server HTML holds.
 
 `Teleport` is an authoring API, written only as a tag: `<Teleport to="body">…</Teleport>`. The
 compiler recognises it by the binding its import declares, as every authoring API. Any other use,
-a call or a read as a value, is UF1002 at the identifier.
+a call or a read as a value, is UF1002 at the identifier. The compiler checks how it is written:
 
 - `to` is a static CSS selector, a string literal. A bound `to`, a template literal with
   expressions, an empty one or none is **UF3053** `teleport-target`, at the attribute.
@@ -101,7 +101,8 @@ elements, and moving a node blurs it, so both give the focus back.
 
 ### The harness
 
-The approved section asks L7, L9, L10, L11 and L12 to see what a scenario teleported.
+The approved section asks L7, L9, L10, L11 and L12 to see what a scenario teleported. The harness
+does it in five parts:
 
 1. **Tracking.** Whatever a view's render appends to `document.body` is the view's: each element
    child of `body` that holds no mount root and wasn't there when the test started, claimed by the
