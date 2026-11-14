@@ -5,6 +5,8 @@ import { playwright } from "@vitest/browser-playwright";
 import { configDefaults, defineConfig } from "vitest/config";
 import type { ViteUserConfig } from "vitest/config";
 
+import { hydrateParityProject } from "./test/parity/project.ts";
+
 /**
  * Astro's mount adapter renders through its toolchain's `ufAstroRender` browser command, and
  * reads what a browser project's `astroBrowserRef` plugin recorded: both are installed in the
@@ -49,6 +51,9 @@ const config: ViteUserConfig = defineConfig({
           },
         },
       },
+      // L12's sub-checks on the stub target (test/parity/cases/hydrate), with the harness context
+      // a hydrate project's mount reads.
+      hydrateParityProject(),
     ],
   },
 });
