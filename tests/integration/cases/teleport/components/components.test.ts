@@ -1,7 +1,8 @@
 // teleport/components: teleports that components hold (ADR-0098). Each tip is a component whose
-// whole render is a teleport: reversing the keyed list moves the components, and what they
-// teleported stays where it mounted, on every target (Qwik moves a component's nodes with it, and
-// its helper puts the element back). A teleport filled into a child's default slot mounts only
+// whole render is a teleport: reversing the keyed list of three moves two components at once, and
+// what they teleported stays where it mounted, before a teleport that mounted later, on every
+// target (Qwik moves a component's nodes with it, and its helper puts each element back in its
+// place). A teleport filled into a child's default slot mounts only
 // while the child renders the slot (Angular creates projected content whether or not it renders),
 // and unmounts when the slot goes.
 import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
@@ -18,7 +19,7 @@ describeTargets("teleport/components", () => {
     await view.expectParity("default");
     await expect.element(view.getByText("Alpha tip")).toBeVisible();
     await expect.element(view.getByText("Slotted")).not.toBeInTheDocument();
-    expect(tips()).toEqual(["Alpha tip", "Beta tip"]);
+    expect(tips()).toEqual(["Alpha tip", "Beta tip", "Gamma tip"]);
   });
 
   it(
@@ -26,10 +27,14 @@ describeTargets("teleport/components", () => {
     { requires: ["teleport", "interactivity", "keyed-identity"] },
     async () => {
       const view = await mountScenario(Board, "default");
+      await view.user.click(view.getByRole("button", { name: "Show late" }));
+      await view.expectParity("late");
+      await expect.element(view.getByText("Late tip")).toBeVisible();
+      expect(tips()).toEqual(["Alpha tip", "Beta tip", "Gamma tip", "Late tip"]);
       await view.user.click(view.getByRole("button", { name: "Reverse tips" }));
       await view.expectParity("reversed");
       await expect.element(view.getByText("Beta tip")).toBeVisible();
-      expect(tips()).toEqual(["Alpha tip", "Beta tip"]);
+      expect(tips()).toEqual(["Alpha tip", "Beta tip", "Gamma tip", "Late tip"]);
     },
   );
 

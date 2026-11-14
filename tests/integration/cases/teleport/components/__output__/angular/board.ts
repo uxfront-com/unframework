@@ -112,6 +112,7 @@ export class Teleport implements OnInit {
   preserveWhitespaces: false,
   template: `
     @let rows = this.rows();
+    @let late = this.late();
     <section
       class="board"
       aria-label="Board"
@@ -120,8 +121,14 @@ export class Teleport implements OnInit {
       [ufScope]="this.host"
     >
       <button type="button" (click)="onReverseTips()">Reverse tips</button>
+      <button type="button" (click)="onShowLate()">Show late</button>
       @for (row of rows; track row.id) {
         <uf-tip [label]="row.label" />
+      }
+      @if (late) {
+        <ng-template ufTeleport="body">
+          <p data-teleported="true" class="tip" role="note">Late tip</p>
+        </ng-template>
       }
       <uf-card>
         <ng-template ufTeleport="body">
@@ -137,10 +144,16 @@ export default class Board {
   protected readonly rows = signal<Row[]>([
     { id: 1, label: "Alpha" },
     { id: 2, label: "Beta" },
+    { id: 3, label: "Gamma" },
   ]);
+  protected readonly late = signal(false);
 
   protected onReverseTips() {
     this.rows.set([...this.rows()].reverse());
+  }
+
+  protected onShowLate() {
+    this.late.set(true);
   }
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

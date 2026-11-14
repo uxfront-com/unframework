@@ -6994,7 +6994,7 @@
       }
     },
     "teleport/basic": {
-      "time": 4.97,
+      "time": 4.88,
       "sizes": {
         "react": {
           "raw": 1457,
@@ -7017,8 +7017,8 @@
           "gzip": 1504
         },
         "qwik": {
-          "raw": 2270,
-          "gzip": 1421
+          "raw": 2250,
+          "gzip": 1414
         },
         "astro": {
           "raw": 541,
@@ -7027,40 +7027,40 @@
       }
     },
     "teleport/components": {
-      "time": 12.91,
+      "time": 20.16,
       "sizes": {
         "react": {
-          "raw": 3363,
-          "gzip": 1942
+          "raw": 3775,
+          "gzip": 2097
         },
         "vue": {
-          "raw": 1790,
-          "gzip": 1198
+          "raw": 2064,
+          "gzip": 1274
         },
         "svelte": {
-          "raw": 2899,
-          "gzip": 1766
+          "raw": 3301,
+          "gzip": 1871
         },
         "solid": {
-          "raw": 2780,
-          "gzip": 1646
+          "raw": 3078,
+          "gzip": 1737
         },
         "angular": {
-          "raw": 6961,
-          "gzip": 3410
+          "raw": 7460,
+          "gzip": 3547
         },
         "qwik": {
-          "raw": 4920,
-          "gzip": 3258
+          "raw": 5331,
+          "gzip": 3415
         },
         "astro": {
-          "raw": 1400,
-          "gzip": 973
+          "raw": 1461,
+          "gzip": 995
         }
       }
     },
     "teleport/dialog": {
-      "time": 17.69,
+      "time": 20.9,
       "sizes": {
         "react": {
           "raw": 3426,
@@ -7083,8 +7083,8 @@
           "gzip": 2739
         },
         "qwik": {
-          "raw": 4455,
-          "gzip": 3069
+          "raw": 4435,
+          "gzip": 3061
         },
         "astro": {
           "raw": 1345,
@@ -7093,7 +7093,7 @@
       }
     },
     "teleport/root": {
-      "time": 5.46,
+      "time": 6.98,
       "sizes": {
         "react": {
           "raw": 1935,
@@ -7116,8 +7116,8 @@
           "gzip": 2029
         },
         "qwik": {
-          "raw": 2869,
-          "gzip": 1978
+          "raw": 2849,
+          "gzip": 1972
         },
         "astro": {
           "raw": 863,
@@ -7126,7 +7126,7 @@
       }
     },
     "teleport/siblings": {
-      "time": 16.01,
+      "time": 19.46,
       "sizes": {
         "react": {
           "raw": 3806,
@@ -7149,8 +7149,8 @@
           "gzip": 2586
         },
         "qwik": {
-          "raw": 4180,
-          "gzip": 2549
+          "raw": 4160,
+          "gzip": 2545
         },
         "astro": {
           "raw": 1366,

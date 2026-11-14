@@ -18,7 +18,10 @@
   let rows = $state.raw<Row[]>([
     { id: 1, label: "Alpha" },
     { id: 2, label: "Beta" },
+    { id: 3, label: "Gamma" },
   ]);
+
+  let late = $state(false);
 
   let mounted = $state(false);
 
@@ -51,9 +54,14 @@
 
 <section class={["board", className]} aria-label="Board" {style} {...scopeAttributes(attributes)}>
   <button type="button" onclick={() => (rows = [...rows].reverse())}>Reverse tips</button
+  ><button type="button" onclick={() => (late = true)}>Show late</button
   >{#each rows as row (row.id)}
     <Tip label={row.label} />
-  {/each}<Card>
+  {/each}{#if late}
+    {#if mounted}
+      <p {@attach teleport("body")} data-teleported="true" class="tip" role="note">Late tip</p>
+    {/if}
+  {/if}<Card>
     {#if mounted}
       <div {@attach teleport("body")} data-teleported="true" class="slotted">Slotted</div>
     {/if}

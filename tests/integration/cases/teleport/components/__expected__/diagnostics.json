@@ -5,14 +5,14 @@
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "teleport/components/Board.uf.tsx",
     "start": {
-      "line": 19,
+      "line": 21,
       "column": 29,
-      "offset": 388
+      "offset": 446
     },
     "end": {
-      "line": 19,
+      "line": 21,
       "column": 85,
-      "offset": 444
+      "offset": 502
     },
     "target": "astro"
   },
@@ -22,14 +22,14 @@
     "message": "The astro target does not support teleport: A `<Teleport>` renders nothing on Astro: components render on the server only, and nothing runs in the browser.",
     "file": "teleport/components/Board.uf.tsx",
     "start": {
-      "line": 26,
+      "line": 31,
       "column": 9,
-      "offset": 594
+      "offset": 761
     },
     "end": {
-      "line": 30,
+      "line": 35,
       "column": 20,
-      "offset": 719
+      "offset": 891
     },
     "target": "astro"
   },

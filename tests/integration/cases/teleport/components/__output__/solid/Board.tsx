@@ -3,6 +3,7 @@ import Tip from "./Tip";
 import {
   For,
   type JSX,
+  Show,
   createMemo,
   createRoot,
   createSignal,
@@ -22,7 +23,9 @@ export default function Board(props: { class?: string; style?: JSX.CSSProperties
   const [rows, setRows] = createSignal<Row[]>([
     { id: 1, label: "Alpha" },
     { id: 2, label: "Beta" },
+    { id: 3, label: "Gamma" },
   ]);
+  const [late, setLate] = createSignal(false);
 
   return (
     <section
@@ -34,9 +37,19 @@ export default function Board(props: { class?: string; style?: JSX.CSSProperties
       <button type="button" onClick={() => setRows([...rows()].reverse())}>
         Reverse tips
       </button>
+      <button type="button" onClick={() => setLate(true)}>
+        Show late
+      </button>
       <KeyedFor each={rows()} by={(row) => row.id}>
         {(row) => <Tip label={row.value.label} />}
       </KeyedFor>
+      <Show when={late()}>
+        <Teleport to="body">
+          <p data-teleported="true" class="tip" role="note">
+            Late tip
+          </p>
+        </Teleport>
+      </Show>
       <Card>
         <Teleport to="body">
           <div data-teleported="true" class="slotted">

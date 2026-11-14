@@ -8,6 +8,9 @@
         "  <button type=\"button\">",
         "    \"Reverse tips\"",
         "  </button>",
+        "  <button type=\"button\">",
+        "    \"Show late\"",
+        "  </button>",
         "  <div class=\"card\">",
         "    <button type=\"button\" uf:focused=\"\">",
         "      \"Toggle card\"",
@@ -26,6 +29,11 @@
         "  </p>",
         "</uf:teleported>",
         "<uf:teleported>",
+        "  <p class=\"tip\" data-teleported=\"true\" role=\"note\">",
+        "    \"Gamma tip\"",
+        "  </p>",
+        "</uf:teleported>",
+        "<uf:teleported>",
         "  <div class=\"slotted\" data-teleported=\"true\">",
         "    \"Slotted\"",
         "  </div>",
@@ -34,9 +42,11 @@
       "aria": [
         "- region \"Board\":",
         "  - button \"Reverse tips\"",
+        "  - button \"Show late\"",
         "  - button \"Toggle card\"",
         "- note: Alpha tip",
         "- note: Beta tip",
+        "- note: Gamma tip",
         "- text: Slotted"
       ],
       "events": {}

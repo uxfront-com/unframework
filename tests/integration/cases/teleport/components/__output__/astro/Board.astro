@@ -24,6 +24,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 const rows = [
   { id: 1, label: "Alpha" },
   { id: 2, label: "Beta" },
+  { id: 3, label: "Gamma" },
 ] as Row[];
 ---
 
@@ -34,6 +35,7 @@ const rows = [
   {...scopeAttributes(Astro.props)}
 >
   <button type="button">Reverse tips</button>
+  <button type="button">Show late</button>
   {rows.map((row) => (
     <Tip label={row.label} />
   ))}

@@ -24,8 +24,11 @@ export default function Board({ className, style, ...attributes }: BoardAttribut
   const [rows, setRows] = useState<Row[]>([
     { id: 1, label: "Alpha" },
     { id: 2, label: "Beta" },
+    { id: 3, label: "Gamma" },
   ]);
   const rowsRef = useRef(rows);
+  const [late, setLate] = useState(false);
+  const lateRef = useRef(late);
   const mounted = useSyncExternalStore(
     subscribeNothing,
     () => true,
@@ -48,9 +51,28 @@ export default function Board({ className, style, ...attributes }: BoardAttribut
       >
         Reverse tips
       </button>
+      <button
+        type="button"
+        onClick={() => {
+          lateRef.current = true;
+          setLate(lateRef.current);
+        }}
+      >
+        Show late
+      </button>
       {rows.map((row) => (
         <Tip key={row.id} label={row.label} />
       ))}
+      {late
+        ? mounted
+          ? teleport(
+              <p data-teleported="true" className="tip" role="note">
+                Late tip
+              </p>,
+              "body",
+            )
+          : null
+        : null}
       <Card>
         {mounted
           ? teleport(

@@ -1,5 +1,8 @@
 - region "Board":
   - button "Reverse tips"
+  - button "Show late"
   - button "Toggle card"
 - note: Alpha tip
 - note: Beta tip
+- note: Gamma tip
+- note: Late tip

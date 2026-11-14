@@ -6,7 +6,7 @@
       "name": "Board",
       "span": {
         "start": 172,
-        "end": 755
+        "end": 1083
       },
       "props": [],
       "types": [
@@ -23,12 +23,21 @@
           }
         },
         {
-          "id": "row@506",
+          "id": "late@340",
+          "name": "late",
+          "kind": "state",
+          "span": {
+            "start": 340,
+            "end": 344
+          }
+        },
+        {
+          "id": "row@663",
           "name": "row",
           "kind": "loopVar",
           "span": {
-            "start": 506,
-            "end": 509
+            "start": 663,
+            "end": 666
           }
         }
       ],
@@ -44,16 +53,32 @@
             }
           },
           "initial": {
-            "code": "[\n    { id: 1, label: \"Alpha\" },\n    { id: 2, label: \"Beta\" },\n  ]",
+            "code": "[\n    { id: 1, label: \"Alpha\" },\n    { id: 2, label: \"Beta\" },\n    { id: 3, label: \"Gamma\" },\n  ]",
             "span": {
               "start": 232,
-              "end": 298
+              "end": 329
             },
             "refs": []
           },
           "span": {
             "start": 208,
-            "end": 300
+            "end": 331
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "late@340",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 351,
+              "end": 356
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 334,
+            "end": 358
           }
         }
       ],
@@ -66,8 +91,8 @@
             "name": "class",
             "value": "board",
             "span": {
-              "start": 326,
-              "end": 339
+              "start": 384,
+              "end": 397
             }
           },
           {
@@ -75,8 +100,8 @@
             "name": "aria-label",
             "value": "Board",
             "span": {
-              "start": 340,
-              "end": 358
+              "start": 398,
+              "end": 416
             }
           }
         ],
@@ -90,8 +115,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 374,
-                  "end": 387
+                  "start": 432,
+                  "end": 445
                 }
               },
               {
@@ -104,8 +129,8 @@
                     "body": {
                       "code": "(rows.value = [...rows.value].reverse())",
                       "span": {
-                        "start": 403,
-                        "end": 443
+                        "start": 461,
+                        "end": 501
                       },
                       "refs": [
                         {
@@ -113,16 +138,16 @@
                           "binding": "rows@214",
                           "operator": "=",
                           "span": {
-                            "start": 403,
-                            "end": 443
+                            "start": 461,
+                            "end": 501
                           },
                           "target": {
-                            "start": 404,
-                            "end": 414
+                            "start": 462,
+                            "end": 472
                           },
                           "value": {
-                            "start": 417,
-                            "end": 442
+                            "start": 475,
+                            "end": 500
                           },
                           "arrowBody": true
                         },
@@ -130,26 +155,26 @@
                           "kind": "Binding",
                           "binding": "rows@214",
                           "span": {
-                            "start": 421,
-                            "end": 431
+                            "start": 479,
+                            "end": 489
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 397,
-                      "end": 443
+                      "start": 455,
+                      "end": 501
                     }
                   },
                   "span": {
-                    "start": 397,
-                    "end": 443
+                    "start": 455,
+                    "end": 501
                   }
                 },
                 "span": {
-                  "start": 388,
-                  "end": 444
+                  "start": 446,
+                  "end": 502
                 }
               }
             ],
@@ -158,14 +183,93 @@
                 "kind": "Text",
                 "value": "Reverse tips",
                 "span": {
-                  "start": 445,
-                  "end": 473
+                  "start": 503,
+                  "end": 531
                 }
               }
             ],
             "span": {
-              "start": 366,
-              "end": 482
+              "start": 424,
+              "end": 540
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 555,
+                  "end": 568
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(late.value = true)",
+                      "span": {
+                        "start": 584,
+                        "end": 603
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "late@340",
+                          "operator": "=",
+                          "span": {
+                            "start": 584,
+                            "end": 603
+                          },
+                          "target": {
+                            "start": 585,
+                            "end": 595
+                          },
+                          "value": {
+                            "start": 598,
+                            "end": 602
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 578,
+                      "end": 603
+                    }
+                  },
+                  "span": {
+                    "start": 578,
+                    "end": 603
+                  }
+                },
+                "span": {
+                  "start": 569,
+                  "end": 604
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Show late",
+                "span": {
+                  "start": 605,
+                  "end": 630
+                }
+              }
+            ],
+            "span": {
+              "start": 547,
+              "end": 639
             }
           },
           {
@@ -173,34 +277,34 @@
             "source": {
               "code": "rows.value",
               "span": {
-                "start": 490,
-                "end": 500
+                "start": 647,
+                "end": 657
               },
               "refs": [
                 {
                   "kind": "Binding",
                   "binding": "rows@214",
                   "span": {
-                    "start": 490,
-                    "end": 500
+                    "start": 647,
+                    "end": 657
                   }
                 }
               ]
             },
-            "item": "row@506",
+            "item": "row@663",
             "key": {
               "code": "row.id",
               "span": {
-                "start": 534,
-                "end": 540
+                "start": 691,
+                "end": 697
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "row@506",
+                  "binding": "row@663",
                   "span": {
-                    "start": 534,
-                    "end": 537
+                    "start": 691,
+                    "end": 694
                   }
                 }
               ]
@@ -215,35 +319,126 @@
                   "value": {
                     "code": "row.label",
                     "span": {
-                      "start": 549,
-                      "end": 558
+                      "start": 706,
+                      "end": 715
                     },
                     "refs": [
                       {
                         "kind": "Binding",
-                        "binding": "row@506",
+                        "binding": "row@663",
                         "span": {
-                          "start": 549,
-                          "end": 552
+                          "start": 706,
+                          "end": 709
                         }
                       }
                     ]
                   },
                   "span": {
-                    "start": 542,
-                    "end": 559
+                    "start": 699,
+                    "end": 716
                   }
                 }
               ],
               "fills": [],
               "span": {
-                "start": 524,
-                "end": 562
+                "start": 681,
+                "end": 719
               }
             },
             "span": {
-              "start": 490,
-              "end": 571
+              "start": 647,
+              "end": 728
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "late.value",
+                  "span": {
+                    "start": 737,
+                    "end": 747
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "late@340",
+                      "span": {
+                        "start": 737,
+                        "end": 747
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Teleport",
+                    "to": "body",
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "p",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "data-teleported",
+                            "value": "true",
+                            "span": {
+                              "start": 795,
+                              "end": 810
+                            }
+                          },
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "tip",
+                            "span": {
+                              "start": 811,
+                              "end": 822
+                            }
+                          },
+                          {
+                            "kind": "Static",
+                            "name": "role",
+                            "value": "note",
+                            "span": {
+                              "start": 823,
+                              "end": 834
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Late tip",
+                            "span": {
+                              "start": 835,
+                              "end": 867
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 792,
+                          "end": 871
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 761,
+                      "end": 891
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 737,
+                  "end": 899
+                }
+              }
+            ],
+            "span": {
+              "start": 737,
+              "end": 899
             }
           },
           {
@@ -267,8 +462,8 @@
                             "name": "data-teleported",
                             "value": "true",
                             "span": {
-                              "start": 630,
-                              "end": 645
+                              "start": 958,
+                              "end": 973
                             }
                           },
                           {
@@ -276,8 +471,8 @@
                             "name": "class",
                             "value": "slotted",
                             "span": {
-                              "start": 646,
-                              "end": 661
+                              "start": 974,
+                              "end": 989
                             }
                           }
                         ],
@@ -286,38 +481,38 @@
                             "kind": "Text",
                             "value": "Slotted",
                             "span": {
-                              "start": 662,
-                              "end": 693
+                              "start": 990,
+                              "end": 1021
                             }
                           }
                         ],
                         "span": {
-                          "start": 625,
-                          "end": 699
+                          "start": 953,
+                          "end": 1027
                         }
                       }
                     ],
                     "span": {
-                      "start": 594,
-                      "end": 719
+                      "start": 922,
+                      "end": 1047
                     }
                   }
                 ],
                 "span": {
-                  "start": 594,
-                  "end": 719
+                  "start": 922,
+                  "end": 1047
                 }
               }
             ],
             "span": {
-              "start": 579,
-              "end": 733
+              "start": 907,
+              "end": 1061
             }
           }
         ],
         "span": {
-          "start": 317,
-          "end": 748
+          "start": 375,
+          "end": 1076
         }
       }
     }
@@ -329,7 +524,7 @@
       "local": "Board",
       "span": {
         "start": 172,
-        "end": 755
+        "end": 1083
       }
     }
   ],
