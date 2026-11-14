@@ -1,7 +1,6 @@
 {
   "name": "@unframework.dev/type-oracle",
   "version": "0.0.0",
-  "private": true,
   "description": "The TypeOracle interface and the syntactic resolver.",
   "keywords": [
     "oxc",

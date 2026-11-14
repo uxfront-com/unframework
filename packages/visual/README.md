@@ -4,7 +4,7 @@ Visual parity and the preview for a project's examples (plan §8.6, ADR-0087, AD
 file, renders each on every target in Chromium, and compares each target's geometry, computed
 styles and pixels with the reference target's, live or against baselines committed beside each
 example. Each run writes `report.json`, an image of every capture and `report.html`, a page that shows
-them. Private until its first release.
+them.
 
 `unframework preview` shows every example and component side by side on every target while you
 work (below).

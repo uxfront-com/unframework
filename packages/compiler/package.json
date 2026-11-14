@@ -1,7 +1,6 @@
 {
   "name": "@unframework.dev/compiler",
   "version": "0.0.0",
-  "private": true,
   "description": "The Unframework compiler: compile() turns one .uf.tsx source into native React, Vue, Svelte, Solid, Angular, Qwik and Astro components.",
   "keywords": [
     "angular",
