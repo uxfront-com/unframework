@@ -76,6 +76,17 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
 | `toolchainDirs` | `package.resolveFrom`, then the root                  | Where each target's compiler stack resolves from (Angular's)                           |
 | `root`          | the working directory                                 | Where `unframework.config.ts` is: case ids are relative to it                          |
 
+- **A project's Vite plugins and declarations** (ADR-0104) come from `unframework.config.ts`:
+  each `browser:` and `ssr:` project calls `vitePlugins` for a set of its own and puts it before
+  the unplugin, and each toolchain gets `ToolchainContext.plugins` and `declarations`, so Astro's
+  render server loads the plugins and Angular's ngtsc reads the declarations.
+  `projectPlugins(vitePlugins)` turns the field into what `ToolchainContext.plugins` takes: a
+  function that makes a fresh, flattened set, and throws, naming the field, on a value with no
+  `name` or a function that throws. The preview builds its servers with it too.
+- **A project's live fonts** (ADR-0105): `liveFonts` reaches the run's `HarnessContext`, and
+  `captureAt` skips the font audit for a live comparison when it is `any`. A comparison with
+  baselines audits every glyph whatever it says.
+
 - **A case** is a directory with one test file. Its id is its path from the root, and its main
   source is `case.json`'s `main`, relative to the case and maybe outside it, or else its only
   `.uf.tsx` (`discoverCases`, `src/config/cases.ts`). Two test files in one directory, no main
@@ -510,3 +521,9 @@ adapter, whose rerender needs the toolchain's render command (`vitest.config.ts`
 `UF_UPDATE=1 pnpm exec vitest run --config test/parity/vitest.config.ts` rewrites the artefacts.
 
 The `stub/matchers` case proves each matcher passes and fails with its message, and that Vitest's own `toMatchAriaInlineSnapshot` still behaves as Vitest's once the setup has run.
+
+`test/project-plugins.test.ts` runs the fixture projects under `test/fixtures/` with their own
+Vitest, as `unframework test` does: `project-plugins`, whose component imports
+`virtual:uf-fixture`, which only the plugin its config names serves, passes on all seven targets,
+and `no-project-plugins`, the same component with no plugin, fails to resolve the import. Their
+expectations come from `unframework test --update`, run in the fixture's directory.

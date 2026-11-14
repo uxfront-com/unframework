@@ -122,8 +122,11 @@ won't load. The docs page is `apps/web/content/docs/4.tooling/7.preview.md`.
 every server listens (ADR-0088):
 
 - **One Vite dev server per target** (`src/preview/servers.ts`), on `127.0.0.1` and a port the
-  system picks: the unframework plugin, the target's `vite("browser")` fragment (`loadToolchain`
-  from the testing package's `./config`) and the preview's plugin. That plugin serves the frame
+  system picks: the preview's plugin, the project's `vitePlugins` (`projectPlugins`, ADR-0104),
+  the unframework plugin and the target's `vite("browser")` fragment (`loadToolchain` from the
+  testing package's `./config`), whose toolchain also gets the project's `declarations`.
+  `targetServerOptions` reads them from the config, and `targetServerConfig` builds a server's
+  configuration without starting it. That plugin serves the frame
   page at `/__uf/frame`, its module, which mounts the selection with the target's adapter
   (`toolchainClientFile`) and loads each entry lazily, and an empty `vitest/browser`. A target
   that renders on the server (`renderCommandName`, Astro's) gets `POST /__uf/render`, which runs
@@ -156,6 +159,12 @@ renders the fixture runs under `test/fixtures/report-failed` (one failed cell on
 and `test/fixtures/report-missing` (cells that left fewer files) to `.output/<fixture>/report.html`,
 which stays on disk, and checks the grid, the overlay by keyboard, the delta table, the tab order
 and axe-core, through the testing package's `toHaveNoAxeViolations`.
+
+`project-config.test.ts` runs the fixture projects under `test/fixtures/project-plugins` and
+`test/fixtures/live-fonts*`: an example that imports a module only the project's own plugin serves
+passes on seven targets, a preview server's resolved plugins hold that plugin, and an example in
+the system's font passes on seven targets with `liveFonts: "any"` and fails `font-fallback`
+without it or against baselines.
 
 `preview.test.ts` starts the preview on `tests/e2e/design-system`, loads the shell in Chromium and checks seven
 frames from seven origins, a control that reaches all of them, and that no port listens after

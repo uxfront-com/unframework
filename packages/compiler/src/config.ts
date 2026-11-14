@@ -8,7 +8,7 @@ import { closest } from "@unframework.dev/analyzer";
 import { createDiagnostic } from "@unframework.dev/diagnostics";
 import type { Diagnostic, DiagnosticCode } from "@unframework.dev/diagnostics";
 
-import type { PackageConfig, TargetName } from "./config-types.ts";
+import type { LiveFonts, PackageConfig, TargetName, VitePluginOption } from "./config-types.ts";
 import { builtinTargets, TARGET_NAMES } from "./targets.ts";
 
 /** The configuration with its defaults applied, and its paths absolute. */
@@ -20,6 +20,12 @@ export interface ResolvedConfig {
   typeOracle: "syntactic" | "tsgo";
   strict: boolean;
   package?: PackageConfig;
+  /** The project's Vite plugins, as a function that gives a fresh set (ADR-0104). */
+  vitePlugins?: () => VitePluginOption | Promise<VitePluginOption>;
+  /** The ambient declaration files, absolute (ADR-0104). */
+  declarations: readonly string[];
+  /** Which fonts may draw text when pixels compare live (ADR-0105). */
+  liveFonts: LiveFonts;
 }
 
 /** Where a configuration came from: what {@link loadConfig} gives {@link resolveConfig}. */
@@ -56,9 +62,21 @@ const CONFIG_FILES = [
   "unframework.config.mjs",
 ];
 
-const FIELDS = ["targets", "srcDir", "outDir", "targetOptions", "typeOracle", "strict", "package"];
+const FIELDS = [
+  "targets",
+  "srcDir",
+  "outDir",
+  "targetOptions",
+  "typeOracle",
+  "strict",
+  "package",
+  "vitePlugins",
+  "declarations",
+  "liveFonts",
+];
 const PACKAGE_FIELDS = ["targets", "resolveFrom"];
 const TYPE_ORACLES = ["syntactic", "tsgo"];
+const LIVE_FONTS = ["bundled", "any"];
 
 /** A configuration has no source span to point at: the message names the file, or the field. */
 const NO_SPAN = { start: 0, end: 0 };
@@ -165,6 +183,18 @@ async function checkConfig(
   }
   const packaging =
     raw.package === undefined ? undefined : resolvePackage(raw.package, targets, directory, report);
+  // A list of plugins would be one set that every server shares (ADR-0104).
+  if (raw.vitePlugins !== undefined && typeof raw.vitePlugins !== "function") {
+    report(
+      "UF7002",
+      "/vitePlugins",
+      "must be a function that returns the Vite plugins, such as `() => [engine()]`: each Vite server calls it for a fresh set.",
+    );
+  }
+  const declarations = declarationList(raw.declarations, directory, report);
+  if (raw.liveFonts !== undefined && !LIVE_FONTS.includes(raw.liveFonts as string)) {
+    report("UF7002", "/liveFonts", `must be "bundled" or "any".`);
+  }
 
   return {
     targets: targets!,
@@ -174,7 +204,27 @@ async function checkConfig(
     typeOracle: (raw.typeOracle as ResolvedConfig["typeOracle"] | undefined) ?? "syntactic",
     strict: (raw.strict as boolean | undefined) ?? false,
     ...(packaging ? { package: packaging } : {}),
+    ...(raw.vitePlugins === undefined
+      ? {}
+      : { vitePlugins: raw.vitePlugins as NonNullable<ResolvedConfig["vitePlugins"]> }),
+    declarations,
+    liveFonts: (raw.liveFonts as LiveFonts | undefined) ?? "bundled",
   };
+}
+
+/** The declaration files, absolute. A file need not exist yet: an engine may generate it. */
+function declarationList(value: unknown, directory: string, report: Report): string[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) {
+    report("UF7002", "/declarations", "must be a list of paths to declaration files.");
+    return [];
+  }
+  const paths: string[] = [];
+  for (const [index, item] of (value as unknown[]).entries()) {
+    const path = pathField(item, `/declarations/${index}`, directory, report);
+    if (path) paths.push(path);
+  }
+  return paths;
 }
 
 /** Reports a problem with the field at a JSON pointer; `problem` finishes the sentence. */

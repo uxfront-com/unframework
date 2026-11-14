@@ -7,12 +7,12 @@ import { realpathSync } from "node:fs";
 
 import { loadConfig, resolveConfig, TARGET_NAMES } from "@unframework.dev/compiler";
 import type { ResolvedConfig, TargetName } from "@unframework.dev/compiler";
-import { toolchainDirOf } from "@unframework.dev/testing/config";
+import { projectPlugins, toolchainDirOf } from "@unframework.dev/testing/config";
 
 import { VisualUsageError } from "../run.ts";
 import { readCatalogue } from "./catalogue.ts";
 import { startTargetServer } from "./servers.ts";
-import type { TargetServer } from "./servers.ts";
+import type { TargetServer, TargetServerOptions } from "./servers.ts";
 import { shellData, shellPage, startShellServer } from "./shell.ts";
 
 /** The options of {@link startPreview}. */
@@ -78,17 +78,9 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
   try {
     const servers = await Promise.allSettled(
       targets.map((target) =>
-        startTargetServer({
-          root,
-          target,
-          toolchainDir: toolchainDirOf(
-            target,
-            root,
-            options.toolchainDirs,
-            config.package?.resolveFrom,
-          ),
-          entries,
-        }).then((server) => {
+        startTargetServer(
+          targetServerOptions(root, config, target, entries, options.toolchainDirs),
+        ).then((server) => {
           started.push(server);
           return server;
         }),
@@ -122,6 +114,28 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
     await closeAll().catch(() => undefined);
     throw error;
   }
+}
+
+/**
+ * What a target's server serves, from the project's configuration: the entries, where the
+ * target's compiler stack resolves from, and the project's Vite plugins and declarations
+ * (ADR-0104).
+ */
+export function targetServerOptions(
+  root: string,
+  config: ResolvedConfig,
+  target: TargetName,
+  entries: Readonly<Record<string, string>>,
+  toolchainDirs?: PreviewOptions["toolchainDirs"],
+): TargetServerOptions {
+  return {
+    root,
+    target,
+    toolchainDir: toolchainDirOf(target, root, toolchainDirs, config.package?.resolveFrom),
+    entries,
+    plugins: projectPlugins(config.vitePlugins),
+    declarations: config.declarations,
+  };
 }
 
 /** The targets to show: the project's, or those asked for, which must be among them. */

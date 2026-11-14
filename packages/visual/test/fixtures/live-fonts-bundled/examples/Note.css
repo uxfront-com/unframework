@@ -1,0 +1,4 @@
+/* A design system's own font, as a global preset sets it: here the system's. */
+.note {
+  font-family: system-ui, sans-serif;
+}

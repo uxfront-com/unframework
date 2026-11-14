@@ -1,0 +1,5 @@
+/* The class the plugin's module gives: a box only it can draw. */
+.uf-greeting--warm {
+  padding: 4px 8px;
+  background-color: rgb(254, 215, 170);
+}

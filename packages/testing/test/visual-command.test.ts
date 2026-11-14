@@ -558,6 +558,47 @@ describe("ufVisualCapture's preconditions", () => {
     expect(result).toMatchObject({ pass: true, outcome: "matched", role: "follower" });
   });
 
+  it("lets any font draw a live capture when the project opts in (ADR-0105)", async () => {
+    const system = [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }];
+    const web = [{ familyName: "Roboto", isCustomFont: true, glyphCount: 1 }];
+    const any = { pixels: "live", liveFonts: "any" } as const;
+    const reference = await ufVisualCapture(
+      context("vue", { shots: [png(20, 10)], fonts: system }, any),
+      request(),
+    );
+    expect(reference).toMatchObject({ pass: true, outcome: "published-reference" });
+    const follower = await ufVisualCapture(
+      context("react", { shots: [png(20, 10)], fonts: web }, any),
+      request(),
+    );
+    expect(follower).toMatchObject({ pass: true, outcome: "matched" });
+    // The bundled font alone, without the opt-in.
+    const bundled = await ufVisualCapture(
+      context("react", { shots: [png(20, 10)], fonts: web }, { liveFonts: "bundled" }),
+      request(),
+    );
+    expect(bundled).toMatchObject({ pass: false, outcome: "font-fallback" });
+  });
+
+  it("keeps the bundled font alone for committed baselines, whatever the project opts into", async () => {
+    commit(baselines().png, png(20, 10));
+    commit(baselines().geometry, `${JSON.stringify(geometry(), null, 2)}\n`);
+    for (const target of ["vue", "react"]) {
+      const result = await ufVisualCapture(
+        context(
+          target,
+          {
+            shots: [png(20, 10)],
+            fonts: [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }],
+          },
+          { pixels: "baseline", liveFonts: "any" },
+        ),
+        request(),
+      );
+      expect(result, target).toMatchObject({ pass: false, outcome: "font-fallback" });
+    }
+  });
+
   it("rejects a web font that is not the bundled one", async () => {
     const result = await ufVisualCapture(
       context("vue", {

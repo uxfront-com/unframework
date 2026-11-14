@@ -7,7 +7,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { Toolchain } from "@unframework.dev/codegen";
+import type { Toolchain, ToolchainContext } from "@unframework.dev/codegen";
 import type { TargetName } from "@unframework.dev/compiler";
 import { loadToolchain, toolchainClientFile } from "@unframework.dev/testing/config";
 import type { InlineConfig, Plugin, ViteDevServer } from "vite";
@@ -43,6 +43,13 @@ export interface TargetServerOptions {
   toolchainDir: string;
   /** Each entry's module (absolute), by id. */
   entries: Readonly<Record<string, string>>;
+  /**
+   * A fresh set of the project's Vite plugins (`vitePlugins` in `unframework.config.ts`,
+   * ADR-0104), added before the unframework plugin: none by default.
+   */
+  plugins?: () => Promise<Plugin[]>;
+  /** The project's ambient declarations, absolute, which Angular's ngtsc reads (ADR-0104). */
+  declarations?: readonly string[];
 }
 
 /** The frame runtime's file, wherever the package is installed. */
@@ -179,11 +186,23 @@ function send(response: ServerResponse, status: number, type: string, body: stri
   response.end(body);
 }
 
-/** Starts a target's server, and resolves once it listens. */
-export async function startTargetServer(options: TargetServerOptions): Promise<TargetServer> {
-  const { root, target, toolchainDir } = options;
+/**
+ * A target's server configuration, as Vite's `createServer` takes it, and its toolchain, whose
+ * `close` stops what its commands start. Building it starts nothing.
+ */
+export async function targetServerConfig(
+  options: TargetServerOptions,
+): Promise<{ config: InlineConfig; toolchain: Toolchain }> {
+  const { root, target } = options;
   const toolchain = await loadToolchain(target);
-  const context = { toolchainDir, root };
+  // The toolchain's Vite fragment, its compiler and a render server of its own (Astro's) read the
+  // project's plugins and declarations too (ADR-0104).
+  const context: ToolchainContext = {
+    toolchainDir: options.toolchainDir,
+    root,
+    ...(options.declarations ? { declarations: options.declarations } : {}),
+    ...(options.plugins ? { plugins: options.plugins } : {}),
+  };
   const fragment = await toolchain.vite("browser", context);
   const commands = toolchain.browserCommands?.(context) ?? {};
   const name = toolchain.renderCommandName;
@@ -204,7 +223,7 @@ export async function startTargetServer(options: TargetServerOptions): Promise<T
           request,
         ),
       ));
-  const { createServer, mergeConfig } = await import("vite");
+  const { mergeConfig } = await import("vite");
   const { default: unframework } = await import("@unframework.dev/unplugin/vite");
   // The Vitest options a toolchain sets are no Vite server's.
   const { test: _test, ...vite } = fragment as typeof fragment & { test?: unknown };
@@ -219,6 +238,9 @@ export async function startTargetServer(options: TargetServerOptions): Promise<T
     cacheDir: join(root, "node_modules", ".vite", `uf-preview-${target}`),
     plugins: [
       previewPlugin(options, toolchain, toolchainClientFile(toolchain), frameFile(), render),
+      // The project's plugins resolve the imports the outputs keep as written (ADR-0064,
+      // ADR-0104), before the unframework plugin, as in a browser test project.
+      ...((await options.plugins?.()) ?? []),
       ...unframework({ target }),
     ],
     // Vite's own TypeScript transform, set so it stays on: outside Vitest, Analog's Angular plugin
@@ -234,7 +256,15 @@ export async function startTargetServer(options: TargetServerOptions): Promise<T
     },
     server: { host: PREVIEW_HOST, port: 0, strictPort: false },
   };
-  const server = await createServer(mergeConfig(base, vite));
+  return { config: mergeConfig(base, vite), toolchain };
+}
+
+/** Starts a target's server, and resolves once it listens. */
+export async function startTargetServer(options: TargetServerOptions): Promise<TargetServer> {
+  const { target } = options;
+  const { config, toolchain } = await targetServerConfig(options);
+  const { createServer } = await import("vite");
+  const server = await createServer(config);
   try {
     await server.listen();
   } catch (error) {

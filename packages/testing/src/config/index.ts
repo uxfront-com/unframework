@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 
 import type { Toolchain, ToolchainContext } from "@unframework.dev/codegen";
 import { builtinTargets, loadConfig, resolveConfig, TARGET_NAMES } from "@unframework.dev/compiler";
-import type { ResolvedConfig, TargetName } from "@unframework.dev/compiler";
+import type { ResolvedConfig, TargetName, VitePluginOption } from "@unframework.dev/compiler";
 import type { UnframeworkOptions } from "@unframework.dev/unplugin/vite";
 import type { Plugin } from "vite";
 import { mergeConfig } from "vitest/config";
@@ -120,6 +120,7 @@ export async function defineTestConfig(options: TestConfigOptions = {}): Promise
     quarantine: [],
     cases: Object.fromEntries(cases.map((info) => [info.id, info.config])),
     updateCommand: "unframework test --update",
+    liveFonts: config.liveFonts,
   });
   const named = caseReferences(harness);
   checkTargets("a case's reference", named, targets);
@@ -135,6 +136,8 @@ export async function defineTestConfig(options: TestConfigOptions = {}): Promise
     targets: run,
     toolchainDir: (target) =>
       toolchainDirOf(target, root, options.toolchainDirs, config.package?.resolveFrom),
+    plugins: projectPlugins(config.vitePlugins),
+    declarations: config.declarations,
   };
   const projects = await Promise.all(
     run.flatMap((target) => [browserProject(setup, target), ssrProject(setup, target)]),
@@ -222,6 +225,61 @@ export function toolchainDirOf(
   return (typeof resolveFrom === "string" ? resolveFrom : resolveFrom?.[target]) ?? root;
 }
 
+/**
+ * The project's Vite plugins (`vitePlugins` in `unframework.config.ts`, ADR-0104), as
+ * `ToolchainContext.plugins` takes them: each call makes a fresh set, flattened, since every Vite
+ * server, and Astro's render server, needs one of its own. Throws, naming the field, when the
+ * function throws or gives something that is no plugin: a check that cannot start fails.
+ */
+export function projectPlugins(
+  factory: (() => VitePluginOption | Promise<VitePluginOption>) | undefined,
+): () => Promise<Plugin[]> {
+  return async () => {
+    if (!factory) return [];
+    let made: VitePluginOption;
+    try {
+      made = await factory();
+    } catch (error) {
+      throw new Error("[uf] vitePlugins in unframework.config.ts threw.", { cause: error });
+    }
+    return flattenPlugins(made);
+  };
+}
+
+async function flattenPlugins(option: VitePluginOption): Promise<Plugin[]> {
+  const value: unknown = await option;
+  if (value === false || value === null || value === undefined) return [];
+  if (Array.isArray(value)) {
+    return (await Promise.all(value.map((each: VitePluginOption) => flattenPlugins(each)))).flat();
+  }
+  if (typeof value !== "object" || typeof (value as { name?: unknown }).name !== "string") {
+    throw new Error(
+      `[uf] vitePlugins in unframework.config.ts gave ${describeValue(value)}, which is no Vite plugin: a plugin is an object with a name.`,
+    );
+  }
+  return [value as Plugin];
+}
+
+/** A value as a message names it, whatever it is. */
+function describeValue(value: unknown): string {
+  switch (typeof value) {
+    case "string":
+      return JSON.stringify(value);
+    case "object":
+      return "an object without a name";
+    case "function":
+      return "a function";
+    case "symbol":
+      return value.toString();
+    case "number":
+    case "bigint":
+    case "boolean":
+      return `${value}`;
+    default:
+      return "undefined";
+  }
+}
+
 /** What every project factory reads. */
 interface ProjectSetup {
   root: string;
@@ -230,6 +288,10 @@ interface ProjectSetup {
   cases: readonly ProjectCase[];
   targets: readonly TargetName[];
   toolchainDir(target: TargetName): string;
+  /** A fresh set of the project's Vite plugins (ADR-0104). */
+  plugins: () => Promise<Plugin[]>;
+  /** The project's ambient declarations, absolute (ADR-0104). */
+  declarations: readonly string[];
 }
 
 function group(setup: ProjectSetup, kind: ProjectKind, target: TargetName): number {
@@ -287,8 +349,18 @@ async function unpluginOf(target: TargetName): Promise<Plugin[]> {
   return unframework(options);
 }
 
+/**
+ * Where a target's toolchain runs the project's tests: its checkers read the project's
+ * declarations beside the outputs, Angular's ngtsc compiles with them, and a server of the
+ * toolchain's own (Astro's render server) loads the project's plugins too (ADR-0104).
+ */
 function toolchainContext(setup: ProjectSetup, target: TargetName): ToolchainContext {
-  return { toolchainDir: setup.toolchainDir(target), root: setup.root };
+  return {
+    toolchainDir: setup.toolchainDir(target),
+    root: setup.root,
+    declarations: setup.declarations,
+    plugins: setup.plugins,
+  };
 }
 
 type ProjectTest = NonNullable<UserWorkspaceConfig["test"]>;
@@ -339,7 +411,9 @@ async function browserProject(
   const config = mergeConfig(
     {
       root: setup.root,
-      plugins: [...(await unpluginOf(target)), noErrorBroadcast()],
+      // The project's plugins resolve the imports the outputs keep as written (ADR-0064,
+      // ADR-0104), before the unplugin, as in the corpus.
+      plugins: [...(await setup.plugins()), ...(await unpluginOf(target)), noErrorBroadcast()],
       // The testing API's own browser dependencies (CommonJS axe-core, parse5), listed up front:
       // one discovered mid-run reloads the page. The package itself is not pre-bundled: installed,
       // it would carry a second copy of Vitest's runner, whose suite the specs' tests never reach.
@@ -395,7 +469,10 @@ async function browserProject(
 async function ssrProject(setup: ProjectSetup, target: TargetName): Promise<UserWorkspaceConfig> {
   const toolchain = await loadToolchain(target);
   const fragment = await toolchain.vite("ssr", toolchainContext(setup, target));
-  const config = mergeConfig({ root: setup.root, plugins: await unpluginOf(target) }, fragment);
+  const config = mergeConfig(
+    { root: setup.root, plugins: [...(await setup.plugins()), ...(await unpluginOf(target))] },
+    fragment,
+  );
   const cases = setup.cases.map((info): SsrCase => ({
     id: info.id,
     dir: info.dir,

@@ -19,7 +19,9 @@ const astroBrowser = await astro.vite("browser", astroContext);
 
 /**
  * Two projects: `unit` runs `test/**\/*.test.ts` in Node, and `browser` runs
- * `test/**\/*.browser.test.ts` in headless Chromium, for code that needs a live DOM.
+ * `test/**\/*.browser.test.ts` in headless Chromium, for code that needs a live DOM. The fixture
+ * projects under `test/fixtures/` are never this package's tests: a test runs each with its own
+ * Vitest.
  */
 const config: ViteUserConfig = defineConfig({
   test: {
@@ -29,7 +31,7 @@ const config: ViteUserConfig = defineConfig({
           name: "unit",
           environment: "node",
           include: ["test/**/*.test.ts"],
-          exclude: [...configDefaults.exclude, "test/**/*.browser.test.ts"],
+          exclude: [...configDefaults.exclude, "test/fixtures/**", "test/**/*.browser.test.ts"],
         },
       },
       {

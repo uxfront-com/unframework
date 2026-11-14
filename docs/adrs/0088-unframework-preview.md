@@ -1,6 +1,6 @@
 # ADR-0088: `unframework preview` shows every example on every target, one Vite server each
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0104
 - **Date:** 2026-11-12
 - **Plan:** §5.7, §8.3, §8.6, §9 M7; ADR-0020, ADR-0053, ADR-0067, ADR-0083, ADR-0086, ADR-0087
 
