@@ -197,9 +197,12 @@ export async function captureAt(
   });
 
   // 1. Fonts: text rendered with anything but the bundled font fails before any comparison.
-  //    Only Chromium can audit them (FONT_AUDIT_SKIP, ADR-0066).
+  //    Only Chromium can audit them (FONT_AUDIT_SKIP, ADR-0066). A project that opts in lets any
+  //    font draw a live capture, which every target renders on this machine in this run, but
+  //    never a baseline, which another machine compares with (ADR-0105).
+  const anyFont = harness.pixels === "live" && harness.liveFonts === "any";
   const fontViolations =
-    harness.browser === "chromium" ? await fontAudit(context.page, request.marker) : [];
+    harness.browser === "chromium" && !anyFont ? await fontAudit(context.page, request.marker) : [];
   if (fontViolations.length) {
     return done({
       pass: false,

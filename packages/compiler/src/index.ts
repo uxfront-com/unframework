@@ -19,7 +19,12 @@ export type {
 } from "./compile.ts";
 export { loadConfig, resolveConfig } from "./config.ts";
 export type { ConfigOrigin, LoadedConfig, ResolveConfigResult, ResolvedConfig } from "./config.ts";
-export type { PackageConfig, UnframeworkConfig } from "./config-types.ts";
+export type {
+  LiveFonts,
+  PackageConfig,
+  UnframeworkConfig,
+  VitePluginOption,
+} from "./config-types.ts";
 export { builtinTargets, resolveTarget, TARGET_NAMES } from "./targets.ts";
 export type { TargetName } from "./targets.ts";
 export { checkCapabilities } from "./capabilities.ts";

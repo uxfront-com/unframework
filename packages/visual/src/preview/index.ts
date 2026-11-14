@@ -7,12 +7,12 @@ import { realpathSync } from "node:fs";
 
 import { loadConfig, resolveConfig, TARGET_NAMES } from "@unframework.dev/compiler";
 import type { ResolvedConfig, TargetName } from "@unframework.dev/compiler";
-import { toolchainDirOf } from "@unframework.dev/testing/config";
+import { projectPlugins, toolchainDirOf } from "@unframework.dev/testing/config";
 
 import { VisualUsageError } from "../run.ts";
 import { readCatalogue } from "./catalogue.ts";
 import { startTargetServer } from "./servers.ts";
-import type { TargetServer } from "./servers.ts";
+import type { TargetServer, TargetServerOptions } from "./servers.ts";
 import { shellData, shellPage, startShellServer } from "./shell.ts";
 
 /** The options of {@link startPreview}. */
@@ -78,33 +78,18 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
   try {
     const servers = await Promise.allSettled(
       targets.map((target) =>
-        startTargetServer({
-          root,
-          target,
-          toolchainDir: toolchainDirOf(
-            target,
-            root,
-            options.toolchainDirs,
-            config.package?.resolveFrom,
-          ),
-          entries,
-        }).then((server) => {
+        startTargetServer(
+          targetServerOptions(root, config, target, entries, options.toolchainDirs),
+        ).then((server) => {
           started.push(server);
           return server;
         }),
       ),
     );
-    const failed = servers.flatMap((result) =>
-      result.status === "rejected" ? [result.reason] : [],
+    const failed = servers.flatMap((result, index) =>
+      result.status === "rejected" ? [{ target: targets[index]!, reason: result.reason }] : [],
     );
-    if (failed.length) {
-      throw failed.length === 1
-        ? failed[0]
-        : new AggregateError(
-            failed,
-            `[uf:preview] ${failed.length} target servers failed to start.`,
-          );
-    }
+    if (failed.length) throw startFailure(failed);
     // In the project's order of targets, whichever started first.
     const frames = targets.map((target) => started.find((server) => server.target === target)!);
     const shell = await startShellServer(shellPage(shellData(catalogue, frames)), port);
@@ -122,6 +107,47 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
     await closeAll().catch(() => undefined);
     throw error;
   }
+}
+
+/**
+ * What a target's server serves, from the project's configuration: the entries, where the
+ * target's compiler stack resolves from, and the project's Vite plugins and declarations
+ * (ADR-0104).
+ */
+export function targetServerOptions(
+  root: string,
+  config: ResolvedConfig,
+  target: TargetName,
+  entries: Readonly<Record<string, string>>,
+  toolchainDirs?: PreviewOptions["toolchainDirs"],
+): TargetServerOptions {
+  return {
+    root,
+    target,
+    toolchainDir: toolchainDirOf(target, root, toolchainDirs, config.package?.resolveFrom),
+    entries,
+    plugins: projectPlugins(config.vitePlugins),
+    declarations: config.declarations,
+  };
+}
+
+/**
+ * The error of a start that failed: the one server's own error, or one whose message names every
+ * reason with the targets it stopped, since the CLI prints a message alone. Seven servers that
+ * fail alike, as on a project plugin that throws, give one line.
+ */
+export function startFailure(failed: readonly { target: TargetName; reason: unknown }[]): unknown {
+  if (failed.length === 1) return failed[0]!.reason;
+  const byMessage = new Map<string, TargetName[]>();
+  for (const { target, reason } of failed) {
+    const message = reason instanceof Error ? String(reason.message) : String(reason);
+    byMessage.set(message, [...(byMessage.get(message) ?? []), target]);
+  }
+  const lines = [...byMessage].map(([message, names]) => `  ${names.join(", ")}: ${message}`);
+  return new AggregateError(
+    failed.map((each) => each.reason),
+    `[uf:preview] ${failed.length} target servers failed to start:\n${lines.join("\n")}`,
+  );
 }
 
 /** The targets to show: the project's, or those asked for, which must be among them. */

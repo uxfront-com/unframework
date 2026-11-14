@@ -279,6 +279,8 @@ describe("resolveConfig", () => {
       targetOptions: {},
       typeOracle: "syntactic",
       strict: false,
+      declarations: [],
+      liveFonts: "bundled",
     });
   });
 
@@ -308,7 +310,30 @@ describe("resolveConfig", () => {
       targetOptions: {},
       typeOracle: "tsgo",
       strict: true,
+      declarations: [],
+      liveFonts: "bundled",
     });
+  });
+
+  it("keeps the project's Vite plugins as the function that makes them", async () => {
+    const vitePlugins = () => [{ name: "engine" }];
+    const { config, diagnostics } = await resolveConfig({ vitePlugins, liveFonts: "any" });
+    expect(diagnostics).toEqual([]);
+    expect(config?.vitePlugins).toBe(vitePlugins);
+    expect(config?.liveFonts).toBe("any");
+  });
+
+  it("resolves the declarations against the config's directory, existing or not", async () => {
+    const { config, diagnostics } = await resolveConfig(
+      { declarations: ["../types/engine.d.ts", "/abs/virtual.d.ts", ".engine/generated.d.ts"] },
+      { directory: "/project/config" },
+    );
+    expect(diagnostics).toEqual([]);
+    expect(config?.declarations).toEqual([
+      resolve("/project/types/engine.d.ts"),
+      resolve("/abs/virtual.d.ts"),
+      resolve("/project/config/.engine/generated.d.ts"),
+    ]);
   });
 
   it("resolves package.resolveFrom against the config's directory", async () => {
@@ -363,6 +388,13 @@ describe("resolveConfig", () => {
       [{ package: { resolveFrom: [] } }, "/package/resolveFrom"],
       [{ package: { resolveFrom: { vue: 1 } } }, "/package/resolveFrom/vue"],
       [{ package: { extra: 1 } }, "/package/extra"],
+      [{ vitePlugins: [{ name: "engine" }] }, "/vitePlugins"],
+      [{ vitePlugins: null }, "/vitePlugins"],
+      [{ declarations: "engine.d.ts" }, "/declarations"],
+      [{ declarations: ["a.d.ts", ""] }, "/declarations/1"],
+      [{ declarations: [1] }, "/declarations/0"],
+      [{ liveFonts: "system" }, "/liveFonts"],
+      [{ liveFonts: true }, "/liveFonts"],
     ])("reports %j at its JSON pointer", async (raw, pointer) => {
       const reported = await problems(raw);
       expect(reported).toHaveLength(1);

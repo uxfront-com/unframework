@@ -5,7 +5,8 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import type { Plugin, ViteDevServer } from "vite";
+import type { UnframeworkConfig } from "@unframework.dev/compiler";
+import type { Plugin, PluginOption, ViteDevServer } from "vite";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 import type { TestProjectInlineConfiguration } from "vitest/config";
 
@@ -14,6 +15,7 @@ import { NO_ERROR_BROADCAST, noErrorBroadcast } from "../src/config/broadcast.ts
 import { discoverCases } from "../src/config/cases.ts";
 import {
   defineTestConfig,
+  projectPlugins,
   runTargets,
   selectedTargets,
   TARGET_PACKAGES,
@@ -297,6 +299,148 @@ describe("defineTestConfig", () => {
         },
       ],
     });
+  });
+});
+
+describe("a project's Vite plugins and live fonts", () => {
+  /** The names of a project's plugins, in order. */
+  const names = (each: TestProjectInlineConfiguration) =>
+    (each.plugins ?? []).flat().map((plugin) => (plugin as Plugin).name);
+
+  it("go first in every browser and ssr project, a fresh set each", async () => {
+    delete process.env.UF_TARGETS;
+    const root = project({
+      "unframework.config.mjs": `let made = 0;
+export default {
+  targets: ["vue", "react"],
+  vitePlugins: () => [{ name: "engine", made: ++made }, [{ name: "engine:css" }], false],
+  declarations: ["types/engine.d.ts"],
+  liveFonts: "any",
+};
+`,
+      "test/badge/Badge.uf.tsx": COMPONENT,
+      "test/badge/badge.test.ts": SPEC,
+    });
+    const projects = await projectsOf({ root });
+    expect(projects).toHaveLength(4);
+    const made = new Set<unknown>();
+    for (const each of projects) {
+      expect(names(each).slice(0, 3), each.test?.name as string).toEqual([
+        "engine",
+        "engine:css",
+        expect.stringMatching(/^unframework/),
+      ]);
+      made.add(Reflect.get((each.plugins ?? []).flat()[0] as Plugin, "made"));
+    }
+    // Each project's server holds a set of its own: a plugin may keep one server's state.
+    expect(made.size).toBe(4);
+    expect(projects[0]!.test?.provide).toMatchObject({ ufHarness: { liveFonts: "any" } });
+  });
+
+  it("are none, and the bundled font alone draws, when the project names none", async () => {
+    delete process.env.UF_TARGETS;
+    const projects = await projectsOf({ root: twoTargets() });
+    for (const each of projects) {
+      expect(names(each)[0], each.test?.name as string).toMatch(/^unframework/);
+    }
+    expect(projects[0]!.test?.provide).toMatchObject({ ufHarness: { liveFonts: "bundled" } });
+  });
+
+  it("refuses a config whose plugins are a list, which every server would share", async () => {
+    const root = project({
+      "unframework.config.mjs": 'export default { targets: ["vue"], vitePlugins: [] };\n',
+      "test/badge/Badge.uf.tsx": COMPONENT,
+      "test/badge/badge.test.ts": SPEC,
+    });
+    await expect(defineTestConfig({ root })).rejects.toThrow(
+      /UF7002 The configuration at "\/vitePlugins" must be a function that returns the Vite plugins/,
+    );
+  });
+});
+
+describe("projectPlugins", () => {
+  it("makes a fresh set on each call, flattened, with nothing for false, null and undefined", async () => {
+    let made = 0;
+    const plugins = projectPlugins(async () => [
+      { name: `a${(made += 1)}` },
+      [Promise.resolve({ name: "b" }), [null, undefined, false]],
+      Promise.resolve([{ name: "c" }]),
+    ]);
+    expect((await plugins()).map((each) => each.name)).toEqual(["a1", "b", "c"]);
+    expect((await plugins()).map((each) => each.name)).toEqual(["a2", "b", "c"]);
+  });
+
+  it("gives none without a function, and one plugin as a set of one", async () => {
+    expect(await projectPlugins(undefined)()).toEqual([]);
+    expect(await projectPlugins(() => ({ name: "one" }))()).toEqual([{ name: "one" }]);
+  });
+
+  it("refuses what is no plugin, naming the field and what it gave", async () => {
+    const gave = async (bad: unknown) => {
+      const error = await projectPlugins(() => [bad as never])().catch((thrown: unknown) => thrown);
+      return (error as Error).message;
+    };
+    const message = (what: string) =>
+      `[uf] vitePlugins in unframework.config.ts gave ${what}, which is no Vite plugin: a plugin is an object with a name.`;
+    expect(await gave({})).toBe(message("an object without a name"));
+    expect(await gave({ name: 1 })).toBe(message("an object whose name is no string"));
+    expect(await gave("engine")).toBe(message('"engine"'));
+    expect(await gave(1)).toBe(message("1"));
+    expect(await gave(() => ({ name: "late" }))).toBe(message("a function"));
+    expect(await gave(Symbol("engine"))).toBe(message("Symbol(engine)"));
+  });
+
+  it("says why a function or a promise of the field failed, in the message the CLI prints", async () => {
+    const thrown = projectPlugins(() => {
+      throw new Error("no licence key found in styleframe.config.ts");
+    })();
+    await expect(thrown).rejects.toThrow(
+      /^\[uf\] vitePlugins in unframework\.config\.ts threw: no licence key found in styleframe\.config\.ts$/,
+    );
+    await expect(thrown).rejects.toHaveProperty(
+      "cause.message",
+      "no licence key found in styleframe.config.ts",
+    );
+    // A plugin a factory makes asynchronously, inside the list.
+    const nested = projectPlugins(() => [
+      { name: "a" },
+      Promise.reject(new Error("engine failed to start")),
+    ])();
+    await expect(nested).rejects.toThrow(
+      "[uf] vitePlugins in unframework.config.ts gave a promise that rejected: engine failed to start",
+    );
+    // A value that is no error, and an error with no message.
+    await expect(
+      projectPlugins(() => Promise.reject("offline" as unknown as Error))(),
+    ).rejects.toThrow('[uf] vitePlugins in unframework.config.ts threw: "offline"');
+    await expect(
+      projectPlugins(() => {
+        throw new Error("");
+      })(),
+    ).rejects.toThrow("[uf] vitePlugins in unframework.config.ts threw: an error with no message");
+  });
+
+  it("fails a run whose plugins throw with the reason, before any project starts", async () => {
+    const root = project({
+      "unframework.config.mjs":
+        'export default { targets: ["vue"], vitePlugins: () => { throw new Error("no licence key"); } };\n',
+      "test/badge/Badge.uf.tsx": COMPONENT,
+      "test/badge/badge.test.ts": SPEC,
+    });
+    await expect(defineTestConfig({ root })).rejects.toThrow(
+      "[uf] vitePlugins in unframework.config.ts threw: no licence key",
+    );
+  });
+
+  it("types any Vite plugin option as the config takes it", () => {
+    const plugin: Plugin = { name: "engine" };
+    const option: PluginOption = [plugin, Promise.resolve(plugin), false];
+    const config: UnframeworkConfig = {
+      vitePlugins: () => [plugin, option],
+      declarations: ["types/engine.d.ts"],
+      liveFonts: "any",
+    };
+    expect(config.vitePlugins).toBeTypeOf("function");
   });
 });
 

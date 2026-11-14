@@ -1,0 +1,10 @@
+{
+  "description": "A component whose class names come from a module only the project's own Vite plugin serves.",
+  "ssr": {
+    "warm": {
+      "props": {
+        "tone": "warm"
+      }
+    }
+  }
+}

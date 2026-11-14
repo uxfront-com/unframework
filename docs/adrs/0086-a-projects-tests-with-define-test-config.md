@@ -1,6 +1,6 @@
 # ADR-0086: A project's tests run through `defineTestConfig` and `unframework test`
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0104
 - **Date:** 2026-11-11
 - **Plan:** §7.2 (L6), §7.3, §7.6, §8.1, §8.3, §8.5, §9 M7; amends ADR-0076; ADR-0029, ADR-0057,
   ADR-0078, ADR-0085, ADR-0090
