@@ -1,7 +1,6 @@
 {
   "name": "@unframework.dev/target-react",
   "version": "0.0.0",
-  "private": true,
   "description": "The React 19 target of the Unframework compiler: emits idiomatic React components from the portable IR, declares their capabilities, and provides the toolchain the tests use.",
   "keywords": [
     "compiler",

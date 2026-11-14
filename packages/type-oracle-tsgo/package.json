@@ -1,7 +1,6 @@
 {
   "name": "@unframework.dev/type-oracle-tsgo",
   "version": "0.0.0",
-  "private": true,
   "description": "The TypeOracle adapter on tsgo's checker.",
   "keywords": [
     "tsgo",

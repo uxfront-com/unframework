@@ -91,8 +91,7 @@ in a real browser.
   umbrella's `unframework` bin, which takes both packages as optional peer dependencies, since
   `cli` sits below them in `LAYERS`. CI's `Design system` job runs the sample design system's
   tests and visual suite from packed tarballs on all seven targets (ADR-0089). Both packages
-  stay private until their first release, which is the owner's call, and property-based fuzzing
-  is left for later. Documented on unframework.dev (`4.tooling/5.testing.md`, `6.visual.md`,
+  are public from the first release, and property-based fuzzing is left for later. Documented on unframework.dev (`4.tooling/5.testing.md`, `6.visual.md`,
   `7.preview.md`). **M8, advanced features and versioned targets, is next** (plan §9).
 - Anything outside the built subset is rejected as UF1002 (`unsupported-syntax`) until its
   milestone lands. The authoring types already accept the whole language (plan §4).
@@ -432,9 +431,8 @@ These are the hard cells (plan §6). Each one has, or will have, its own `semant
   spelling (analyse, normalise, behaviour, artefact). Code identifiers keep their established
   American names (`analyzer`, `normalize`).
 - **Commits and PR titles** follow Conventional Commits, scoped where one area changes, as in
-  `feat(web): …` or `fix(analyzer): …`. PRs follow `.github/PULL_REQUEST_TEMPLATE.md`. Every
-  package is private at `0.0.0` until its first release. After that, a change to a published
-  package needs `pnpm changeset`.
+  `feat(web): …` or `fix(analyzer): …`. PRs follow `.github/PULL_REQUEST_TEMPLATE.md`. A change
+  to a published package needs `pnpm changeset`. A new package starts private at `0.0.0`.
 
   <!-- BEGIN:turborepo-agent-rules -->
 

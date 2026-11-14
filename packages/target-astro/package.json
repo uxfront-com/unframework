@@ -1,7 +1,6 @@
 {
   "name": "@unframework.dev/target-astro",
   "version": "0.0.0",
-  "private": true,
   "description": "The Astro 7 target of the Unframework compiler: emits idiomatic Astro components from the portable IR, declares their capabilities, and provides the toolchain the tests use.",
   "keywords": [
     "astro",

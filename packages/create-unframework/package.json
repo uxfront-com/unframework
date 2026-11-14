@@ -1,7 +1,6 @@
 {
   "name": "create-unframework",
   "version": "0.0.0",
-  "private": true,
   "description": "Create a new Unframework project: a `package.json`, then what `unframework init` writes.",
   "keywords": [
     "unframework"

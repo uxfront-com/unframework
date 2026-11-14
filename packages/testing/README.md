@@ -2,7 +2,7 @@
 
 The cross-target test API (plan §7.3, §8.5): one spec, written once, runs in every
 `browser:<target>` project and verifies the shared expectations layer by layer. It stays
-`private` until its first release (ADR-0085). unframework.dev documents it for users
+`private` until its first release (ADR-0085). Now published, unframework.dev documents it for users
 (`apps/web/content/docs/4.tooling/5.testing.md`).
 
 ```ts
