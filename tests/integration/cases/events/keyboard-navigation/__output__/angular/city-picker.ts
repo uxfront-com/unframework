@@ -2,6 +2,7 @@ import {
   Component,
   Directive,
   ElementRef,
+  InjectionToken,
   type OnInit,
   Renderer2,
   computed,
@@ -15,7 +16,9 @@ export interface CityPickerProps {
   cities: string[];
 }
 
-let nextId = 0;
+const idCounter = new InjectionToken<{ next: number }>("idCounter", {
+  factory: () => ({ next: 0 }),
+});
 
 /** The scope attributes taken off each host, for the roots its component renders later. */
 const scopes = new WeakMap<Element, string[]>();
@@ -106,7 +109,7 @@ export default class CityPicker {
   readonly style = input<Record<string, string | null | undefined>>();
   readonly chose = output<string>();
   readonly noted = output<string>();
-  protected readonly listId = `uf-id-city-picker-${nextId++}`;
+  protected readonly listId = `uf-id-city-picker-${inject(idCounter).next++}`;
   private readonly query = signal("");
   protected readonly open = signal(false);
   protected readonly active = signal(-1);

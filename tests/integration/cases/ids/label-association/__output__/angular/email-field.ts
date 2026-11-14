@@ -2,6 +2,7 @@ import {
   Component,
   Directive,
   ElementRef,
+  InjectionToken,
   type OnInit,
   Renderer2,
   inject,
@@ -13,7 +14,9 @@ export interface EmailFieldProps {
   hint: string;
 }
 
-let nextId = 0;
+const idCounter = new InjectionToken<{ next: number }>("idCounter", {
+  factory: () => ({ next: 0 }),
+});
 
 /** The scope attributes taken off each host, for the roots its component renders later. */
 const scopes = new WeakMap<Element, string[]>();
@@ -60,7 +63,7 @@ export default class EmailField {
   readonly hint = input.required<string>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
-  protected readonly inputId = `uf-id-email-field-${nextId++}`;
-  protected readonly hintId = `uf-id-email-field-${nextId++}`;
+  protected readonly inputId = `uf-id-email-field-${inject(idCounter).next++}`;
+  protected readonly hintId = `uf-id-email-field-${inject(idCounter).next++}`;
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }
