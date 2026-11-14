@@ -40,7 +40,7 @@ import type { Plugin } from "vite";
 import { mergeConfig } from "vitest/config";
 import type { TestProjectConfiguration, UserWorkspaceConfig, ViteUserConfig } from "vitest/config";
 
-import { canaryPlugins, canaryServePlugin, guardsGoldens } from "./canaries.ts";
+import { canaryPlugins, canaryServePlugin, findCanary, guardsGoldens } from "./canaries.ts";
 import "./context.ts";
 import { listCases } from "./cases.ts";
 import { ENGINE_DECLARATIONS, enginePlugins } from "./engines.ts";
@@ -493,7 +493,7 @@ async function pageProject(
         ...(hydrates ? [ssrExternals(fragment), hydrationRunners()] : []),
         // The engines' plugins resolve the imports every output keeps as written (ADR-0064).
         ...(await enginePlugins()),
-        ...unframework(unpluginOptions(setup, target)),
+        ...pageCompilers(kind, setup, target, unframework),
         ...servedMapCanary(setup, target),
       ],
       // The testing API's own browser dependencies (CommonJS axe-core, parse5), and the runtime
@@ -576,6 +576,37 @@ async function pageProject(
       },
     ),
   } as UserWorkspaceConfig;
+}
+
+/**
+ * The unplugin of a page project. A hydrate project under a canary that corrupts the page alone
+ * (`Canary.clientOnly`, L12) runs two: the canary's for the page's environment, and one without it
+ * for the server's, where the render command renders. Each instance keeps its own compile, so
+ * the server's HTML stays right (ADR-0095).
+ */
+function pageCompilers(
+  kind: "browser" | "hydrate",
+  setup: HarnessSetup,
+  target: string,
+  unframework: (options: UnframeworkOptions) => Plugin[],
+): Plugin[] {
+  const options = unpluginOptions(setup, target);
+  const canary = setup.mode.canary ? findCanary(setup.mode.canary) : undefined;
+  if (kind !== "hydrate" || !canary?.clientOnly) return unframework(options);
+  return [
+    ...onEnvironments(unframework(options), (name) => name === "client"),
+    ...onEnvironments(unframework({ ...options, plugins: [] }), (name) => name !== "client"),
+  ];
+}
+
+/** Plugins that apply to the environments `applies` names alone. */
+function onEnvironments(plugins: Plugin[], applies: (name: string) => boolean): Plugin[] {
+  return plugins.map((plugin) => ({
+    ...plugin,
+    applyToEnvironment: (environment) =>
+      applies(environment.name) &&
+      (plugin.applyToEnvironment ? plugin.applyToEnvironment(environment) : true),
+  }));
 }
 
 /**

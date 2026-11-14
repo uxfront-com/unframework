@@ -21,6 +21,7 @@ import { commands } from "vitest/browser";
 
 import "../commands.ts";
 import { diffLines } from "../diff.ts";
+import { formatError } from "../errors.ts";
 import { caseOfFile } from "../harness.ts";
 import { recordLayer } from "../layers.ts";
 import { captureExternalConsole } from "./console.ts";
@@ -110,9 +111,12 @@ export interface Hydrated {
 /**
  * Renders the case's main component on the server with the mount's props and hydrates that HTML
  * in `container`. A spec that mounts anything but its case's main component fails here, loudly:
- * the server renders that one, never something else.
+ * the server renders that one, never something else. A hydrate adapter that throws is a
+ * framework that could not hydrate the server's HTML (Angular's NG0500, Solid's "Hydration
+ * Mismatch", Svelte's `hydration_failed`): that is L12's `mismatch`, and the mount fails with it.
  */
 export async function hydrateInto(
+  target: string,
   hydrate: (
     component: unknown,
     container: HTMLElement,
@@ -134,10 +138,15 @@ export async function hydrateInto(
       `mount: a hydrate project hydrates the server render of ${caseId}'s main component, ${rendered.module}, and this spec mounted something else. Mount the case's main component (case.json's "main"), or move the spec's other component into a case of its own (ADR-0095).`,
     );
   }
-  return {
-    instance: await hydrate(component, container, rendered.html, options),
-    html: rendered.html,
-  };
+  try {
+    return {
+      instance: await hydrate(component, container, rendered.html, options),
+      html: rendered.html,
+    };
+  } catch (error) {
+    failHydration(target, "mismatch", `the framework could not hydrate: ${formatError(error)}`);
+    throw error;
+  }
 }
 
 /**

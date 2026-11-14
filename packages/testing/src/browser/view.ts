@@ -283,6 +283,7 @@ async function mountWith(
   try {
     if (hydrating) {
       hydrated = await hydrateInto(
+        target,
         registration.hydrate!,
         currentCase("mount"),
         component,

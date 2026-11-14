@@ -67,6 +67,7 @@ export const LIVE_LAYERS: readonly LayerName[] = [
   "L9",
   "L10",
   "L11",
+  "L12",
   "L13",
   "L14",
   "L15",
