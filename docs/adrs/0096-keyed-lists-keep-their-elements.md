@@ -34,10 +34,10 @@ only where the focused element keeps its place.
   An element that is moved itself keeps its typed text, and may lose its focus: that stays outside
   the contract.
 - **The capability.** `keyed-identity`, behavioural, as a static render is the same without it:
-  - native on React, Vue, Svelte, Angular and Qwik, whose lists already key by the source's
-    `key`;
-  - emulated on Solid, through an inline helper, `KeyedFor` (below);
-  - unsupported on Astro, for information: it renders a list once on the server.
+  - Native on React, Vue, Svelte, Angular and Qwik, whose lists already key by the source's
+    `key`.
+  - Emulated on Solid, through an inline helper, `KeyedFor` (below).
+  - Unsupported on Astro, for information: it renders a list once on the server.
 - **No IR kind requires it,** as `hydration` (ADR-0095): every list asks for it, and only a
   reorder in the browser shows it. A spec that reorders or replaces a list's items requires it, and
   is skipped on Astro. The coverage gate exempts it with that reason, and the cases that require it

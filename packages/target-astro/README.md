@@ -170,6 +170,7 @@ refs, watchers and hooks never run and state keeps its initial value; the compil
 `reactive-context` are unsupported (UF4001, warnings: `inject` gives its fallback, and a provided ref reaches no descendant). `use-id` is emulated (`uniqueId`), and so are
 `scoped-slot` (a render prop named as the slot), `child-root-scope` (`scopeAttributes`) and
 `style-binding` (`styleObject`, for a style bound to a value that a merge spreads, ADR-0065).
+
 `keyed-identity` is unsupported (UF4001, for information): a list renders once on the server, and
 nothing reorders it. No list reports it, since no IR kind requires it (ADR-0096). Every other
 capability is native.
