@@ -110,8 +110,15 @@ export function template(
             text: angularDialect.attribute(TELEPORT_ATTRIBUTE, node.to, ""),
           },
           // The root teleport, by its span: the tree printed is a copy (`models.render`).
-          ...(teleportHost !== undefined && component.render.kind === "Fragment" && component.render.children[0]?.span.start === node.span.start
-            ? [{ name: TELEPORT_HOST_INPUT, text: `[${TELEPORT_HOST_INPUT}]="this.${teleportHost}"` }]
+          ...(teleportHost !== undefined &&
+          component.render.kind === "Fragment" &&
+          component.render.children[0]?.span.start === node.span.start
+            ? [
+                {
+                  name: TELEPORT_HOST_INPUT,
+                  text: `[${TELEPORT_HOST_INPUT}]="this.${teleportHost}"`,
+                },
+              ]
             : []),
         ],
         content: { kind: "nodes", nodes: node.children, container: node },

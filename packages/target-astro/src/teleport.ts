@@ -17,7 +17,9 @@ export function withoutTeleports(component: UfComponent): UfComponent {
 }
 
 function root(render: ElementNode | FragmentNode): ElementNode | FragmentNode {
-  return render.kind === "Element" ? element(render) : { ...render, children: nodes(render.children) };
+  return render.kind === "Element"
+    ? element(render)
+    : { ...render, children: nodes(render.children) };
 }
 
 function element(node: ElementNode): ElementNode {

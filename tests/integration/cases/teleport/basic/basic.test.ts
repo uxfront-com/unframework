@@ -26,7 +26,9 @@ describeTargets("teleport/basic", () => {
       await view.user.click(view.getByRole("button", { name: "Dismiss" }));
       await view.expectParity("dismissed");
       await expect.element(view.getByText("Dismissed 1 times")).toBeVisible();
-      await expect.element(view.getByRole("status")).toHaveTextContent("Your changes are saved (1)");
+      await expect
+        .element(view.getByRole("status"))
+        .toHaveTextContent("Your changes are saved (1)");
     },
   );
 });

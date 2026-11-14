@@ -242,7 +242,7 @@ export const qwik: Target = defineTarget({
     teleport: {
       support: "emulated",
       helper: "teleport",
-      note: "Qwik has no portal, so a `<Teleport>`'s element renders once a visible task says the component has mounted, after the empty text of `{\"\"}` in a fragment, and a ref, `teleport`, moves it into `to` once Qwik has inserted it and removes it once that text leaves the document. Qwik inserts a node before the first DOM node of the one after it, which is that text, never the moved element (ADR-0098).",
+      note: 'Qwik has no portal, so a `<Teleport>`\'s element renders once a visible task says the component has mounted, after the empty text of `{""}` in a fragment, and a ref, `teleport`, moves it into `to` once Qwik has inserted it and removes it once that text leaves the document. Qwik inserts a node before the first DOM node of the one after it, which is that text, never the moved element (ADR-0098).',
     },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {

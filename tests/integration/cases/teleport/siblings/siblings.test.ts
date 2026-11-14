@@ -47,14 +47,10 @@ describeTargets("teleport/siblings", () => {
     },
   );
 
-  it(
-    "clears body when the panel goes",
-    { requires: ["teleport", "interactivity"] },
-    async () => {
-      const view = await mountScenario(Board, "default");
-      await view.user.click(view.getByRole("button", { name: "Remove panel" }));
-      await view.expectParity("removed");
-      expect(teleported()).toEqual([]);
-    },
-  );
+  it("clears body when the panel goes", { requires: ["teleport", "interactivity"] }, async () => {
+    const view = await mountScenario(Board, "default");
+    await view.user.click(view.getByRole("button", { name: "Remove panel" }));
+    await view.expectParity("removed");
+    expect(teleported()).toEqual([]);
+  });
 });

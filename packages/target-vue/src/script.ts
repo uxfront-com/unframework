@@ -296,7 +296,11 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
 /** Whether the component's whole render is a `<Teleport>` (ADR-0098). */
 function teleportRoot(component: UfComponent): boolean {
   const { render } = component;
-  return render.kind === "Fragment" && render.children.length === 1 && render.children[0]!.kind === "Teleport";
+  return (
+    render.kind === "Fragment" &&
+    render.children.length === 1 &&
+    render.children[0]!.kind === "Teleport"
+  );
 }
 
 /** Whether the template holds a `<Teleport>` (ADR-0098). */

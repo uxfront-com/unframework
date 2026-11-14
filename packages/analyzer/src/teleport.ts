@@ -8,21 +8,22 @@ import { createTeleportNode } from "@unframework.dev/ir";
 import type { TeleportNode } from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
 
+import { misplacedKey } from "./attributes.ts";
 import type { Reporter } from "./context.ts";
 import { closest } from "./cross-component.ts";
 import { span } from "./expressions.ts";
 import { readJsxText } from "./jsx/text.ts";
+import { isStaticString, valueOf } from "./literals.ts";
 import { lowerElement, ROOT } from "./lower.ts";
 import type { Place } from "./lower.ts";
-import { misplacedKey } from "./attributes.ts";
-import { isStaticString, valueOf } from "./literals.ts";
 import type { RenderContext } from "./render.ts";
 
 /** Whether a tag names the authoring API's `Teleport`, by the binding its import declares. */
 export function isTeleportTag(name: AST.JSXIdentifier, render: RenderContext): boolean {
   const resolution = render.scopes.resolve(name as unknown as AST.IdentifierReference);
   return (
-    resolution.kind === "import" && render.setup.authoring.get(resolution.declaration) === "Teleport"
+    resolution.kind === "import" &&
+    render.setup.authoring.get(resolution.declaration) === "Teleport"
   );
 }
 
@@ -42,7 +43,8 @@ export function teleportNotTag(node: AST.IdentifierReference, reporter: Reporter
 function contentOf(items: readonly AST.JSXChild[]): AST.JSXChild[] {
   return items.filter((item) => {
     if (item.type === "JSXText") return readJsxText(item.value).value !== "";
-    if (item.type === "JSXExpressionContainer") return item.expression.type !== "JSXEmptyExpression";
+    if (item.type === "JSXExpressionContainer")
+      return item.expression.type !== "JSXEmptyExpression";
     return true;
   });
 }

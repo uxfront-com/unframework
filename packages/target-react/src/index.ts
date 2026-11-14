@@ -56,10 +56,10 @@ import type { NextTickHooks } from "./helpers.ts";
 import { listenerHelpers, ReactListeners } from "./listeners.ts";
 import { moduleReads } from "./modules.ts";
 import { planComponent } from "./plan.ts";
-import { teleportCall, teleportHelpers } from "./teleport.ts";
 import type { ReactPlan } from "./plan.ts";
 import { reactCode } from "./rules.ts";
 import { printSetup, resolveUses, withEventTypes } from "./setup.ts";
+import { teleportCall, teleportHelpers } from "./teleport.ts";
 import { titleChildren } from "./title.ts";
 
 type Parameter = Parameters<typeof js.functionDeclaration>[1][number];

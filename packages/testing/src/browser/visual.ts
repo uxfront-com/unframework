@@ -43,21 +43,23 @@ export async function captureVisual(
   try {
     // Geometry and pixels of the same merged tree; the tree is restored before anything else
     // runs (L11, the spec's assertions, a rerender).
-    const result = await withMergedTextRuns([input.container, ...teleported.map(({ element }) => element)], () =>
-      send({
-        element: input.locator.serialize(),
-        ...(teleported.length
-          ? { teleported: teleported.map(({ locator }) => locator.serialize()) }
-          : {}),
-        case: input.case,
-        name: input.name,
-        geometry: captureGeometry(
-          input.container,
-          teleported.map(({ element }) => element),
-        ),
-        marker,
-        ...(input.tolerance ? { tolerance: input.tolerance } : {}),
-      }),
+    const result = await withMergedTextRuns(
+      [input.container, ...teleported.map(({ element }) => element)],
+      () =>
+        send({
+          element: input.locator.serialize(),
+          ...(teleported.length
+            ? { teleported: teleported.map(({ locator }) => locator.serialize()) }
+            : {}),
+          case: input.case,
+          name: input.name,
+          geometry: captureGeometry(
+            input.container,
+            teleported.map(({ element }) => element),
+          ),
+          marker,
+          ...(input.tolerance ? { tolerance: input.tolerance } : {}),
+        }),
     );
     if (!result.pass && result.attachments.length) {
       // The artifact shape toMatchScreenshot uses, so reporters and the UI show the images.

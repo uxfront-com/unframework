@@ -2308,7 +2308,7 @@ const entries: CatalogueEntry[] = [
       "</Teleport>",
       "```",
       "",
-      "Write the selector as a string: `to=\"body\"` or `to=\"#overlays\"`.",
+      'Write the selector as a string: `to="body"` or `to="#overlays"`.',
     ].join("\n"),
   },
   {

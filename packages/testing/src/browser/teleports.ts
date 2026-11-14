@@ -31,7 +31,9 @@ export function startTeleports(): void {
 
 /** Whether an element of `body` is a mount root, or holds one (L12's client render's `<form>`). */
 function holdsRoot(element: Element): boolean {
-  return element.hasAttribute(ROOT_ATTRIBUTE) || element.querySelector(`[${ROOT_ATTRIBUTE}]`) !== null;
+  return (
+    element.hasAttribute(ROOT_ATTRIBUTE) || element.querySelector(`[${ROOT_ATTRIBUTE}]`) !== null
+  );
 }
 
 /**

@@ -83,7 +83,7 @@ export function A() { return <div><Portal to="body"><p /></Portal></div>; }`;
 
   describe("UF3053, the target", () => {
     it.each([
-      ['<div><Teleport to={target}><p /></Teleport></div>', "UF3053 to={target}"],
+      ["<div><Teleport to={target}><p /></Teleport></div>", "UF3053 to={target}"],
       ["<div><Teleport to={`#${target}`}><p /></Teleport></div>", "UF3053 to={`#${target}`}"],
       ['<div><Teleport to=""><p /></Teleport></div>', 'UF3053 to=""'],
       ['<div><Teleport to="  "><p /></Teleport></div>', 'UF3053 to="  "'],
@@ -181,7 +181,7 @@ export function A() { const label = "x"; const open = ref(false); return ${jsx};
     });
 
     it.each([
-      ["called in the setup", "Teleport({ to: \"body\" });\n", "<div />", "UF1002 Teleport"],
+      ["called in the setup", 'Teleport({ to: "body" });\n', "<div />", "UF1002 Teleport"],
       [
         "called as a const's value",
         'const x = Teleport({ to: "body" });\n',

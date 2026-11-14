@@ -39,11 +39,11 @@ import {
 } from "./hydrate.ts";
 import type { Hydrated } from "./hydrate.ts";
 import { takePreventedNavigations } from "./navigation.ts";
-import { teleportedBy, withoutStamps } from "./teleports.ts";
 import { expectParity } from "./parity.ts";
 import type { ParityOptions } from "./parity.ts";
 import { registeredAdapter } from "./target.ts";
 import type { TargetOptions } from "./target.ts";
+import { teleportedBy, withoutStamps } from "./teleports.ts";
 import { expectThrown } from "./thrown.ts";
 import { Trace } from "./trace.ts";
 import { createUser } from "./user.ts";

@@ -628,10 +628,7 @@ export function jsxSlotProps(
 /** A composition hook a dialect that meets its construct must have (ADR-0055). */
 function hook<
   K extends "slotValue" | "slotOutlet" | "modelAttribute" | "modelBinding" | "dynamic" | "teleport",
->(
-  context: JsxContext,
-  name: K,
-): NonNullable<JsxDialect[K]> {
+>(context: JsxContext, name: K): NonNullable<JsxDialect[K]> {
   const found = context.dialect[name];
   if (!found) throw new Error(`The JSX dialect does not print composition yet (${name}).`);
   return found.bind(context.dialect) as NonNullable<JsxDialect[K]>;
