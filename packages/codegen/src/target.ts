@@ -250,6 +250,8 @@ export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<Cap
   "model-modifiers",
   "sheet-order",
   "composable-effect-order",
+  // A target that doesn't hydrate still renders the same markup on the server (ADR-0095).
+  "hydration",
 ]);
 
 /**

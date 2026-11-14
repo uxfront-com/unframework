@@ -42,7 +42,8 @@ so it cannot see an id that hydration changed.
   A `HydratedComponent` reports the mismatches its framework signalled (`takeMismatches`). A target
   with no `hydrate` module declares its `hydration` cell unsupported.
 - **L12's own sub-checks:**
-  - `mismatch`: the framework's own signal, during hydration and at every later settle.
+  - `mismatch`: the framework's own signal, during hydration and at every later settle, and an
+    error the hydrate adapter throws.
   - `ids`: the `id`, `for`, `headers`, `list` and `aria-*` id references, in document order, with
     their raw values, are the server HTML's.
   - `DOM`: in `mountScenario`, the hydrated root is the scenario's expected DOM, where a spec
@@ -87,8 +88,10 @@ so it cannot see an id that hydration changed.
     the selectedness it has already, and removing the attribute after it deselected the state's
     option.
 - **The `hydration` capability** is native on React, Vue, Svelte, Solid and Angular, and
-  unsupported, for information, on Astro, which runs nothing in the browser, and on Qwik. No IR
-  kind requires it, so the case gate exempts it: the hydrate projects check every case. A hydrate
+  unsupported, for information, on Astro, which runs nothing in the browser, and on Qwik. It is
+  behavioural (`BEHAVIOURAL_CAPABILITIES`), since a target that doesn't hydrate renders the same
+  markup. No IR kind requires it, so the case gate exempts it: the hydrate projects check every
+  case. A hydrate
   project on a target that doesn't hydrate skips every test by that capability, first, and a
   diagnostics case, which has no spec, records its L12 as `no spec`.
 - **Qwik resumes instead of hydrating, and L12 doesn't check it yet.** A spike resumed
@@ -98,8 +101,10 @@ so it cannot see an id that hydration changed.
   first DOM later than a client render does. Checking resumption is left for later.
 - **Two canaries** prove L12: `L12-client-text` changes an element's text in the client
   environment alone, so the server HTML stays right, and `L12-unwired-listener` removes every
-  element listener there. Each target is judged on the sub-check expected to catch the first:
-  `mismatch` on React and Vue, `DOM` on Svelte and Angular, and `client agreement` on Solid.
+  element listener there. Each target is judged on the sub-checks that can catch the first:
+  `mismatch` on React and Vue, `mismatch` or `client agreement` on Solid, and `mismatch`, `DOM` or
+  `client agreement` on Svelte and Angular, whose frameworks throw on some text changes and keep
+  the server's text on others. The second is caught by `interactions` or `trace`.
 
 ## Consequences
 
