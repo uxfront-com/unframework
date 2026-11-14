@@ -74,10 +74,10 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
       "<Switch",
       "<Match when=",
       // A list goes through the keyed helper, its row reading the item and index through
-      // accessors (ADR-0096).
+      // getters (ADR-0096).
       "<KeyedFor each=",
       "<For each={[...items().keys()]}>",
-      "index() + 1",
+      "{todo.index + 1}",
       "classList={{",
       "Boolean(",
       "class={cx(",
@@ -90,7 +90,7 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
       "<>",
       "stroke-width={props.count}",
       // A list's item reads through its accessor, a call: `solid/prefer-show` leaves it alone.
-      '{position() > 0 ? tag() : "first"}',
+      '{tag.index > 0 ? tag.value : "first"}',
       'fallback="Inactive"',
       'String("<b>")',
       '<stop offset="0" {...{ fill: props.colour }} />',
@@ -108,9 +108,9 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
       "<Match when={props.count === undefined ? undefined : { count: props.count }}>",
       "<Match when={props.shape.kind === `circle` ? undefined : { shape: props.shape }}>",
       "{(city) => <p>{city()}</p>}",
-      // A row's item and index are accessors, each read once as an arrow's argument, which
-      // TypeScript narrows (ADR-0096).
-      "when={((row, index) => (index > 0 && row ? { row } : undefined))(row(), index())}",
+      // A row's item and index are getters, which TypeScript narrows as it narrows a prop
+      // (ADR-0096).
+      '<Show when={row.index > 0 && row.value ? { row: row.value } : undefined} fallback="-">',
       "{(narrowed) => <s>{Math.round(narrowed().age)}</s>}",
       // A branch whose expressions narrow its value further is keyed: TypeScript narrows no call.
       "<Show keyed when={props.user || undefined}>",

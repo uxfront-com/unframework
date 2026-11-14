@@ -154,6 +154,15 @@ export class SolidCode {
         this.#reading.add(item.binding);
       }
     }
+    // Each list's index, by the name of the item whose row it is read through.
+    const rowItems = new Map<BindingId, string>();
+    walk(component.render, {
+      enter: (node) => {
+        if (node.kind === "For" && node.index !== undefined) {
+          rowItems.set(node.index, this.#binding(node.item).name);
+        }
+      },
+    });
     this.rules = {
       binding: (reference, binding, text) => {
         // A read a condition narrows, where Solid's spelling loses it (src/asserted.ts).
@@ -161,9 +170,12 @@ export class SolidCode {
         switch (binding.kind) {
           case "prop":
             return `${props.read(binding, text)}${asserted}`;
-          case "loopVar":
-            // A keyed list passes a row's item and index as accessors (src/jsx.ts, ADR-0096).
-            return `${text}()`;
+          case "loopVar": {
+            // A keyed list's row is an object of getters named as the item, which TypeScript
+            // narrows as it narrows the props (src/jsx.ts, ADR-0096).
+            const item = rowItems.get(binding.id);
+            return item === undefined ? `${text}.value` : `${item}.index`;
+          }
           // A composable returns its state and derived values as accessors (ADR-0069).
           case "state":
           case "derived":

@@ -623,14 +623,14 @@ function fallbackAttribute(children: readonly RenderNode[], context: JsxContext)
 }
 
 /**
- * A list as `<KeyedFor each={source} by={(item, index) => key}>{(item, index) => <li>…</li>}</KeyedFor>`,
+ * A list as `<KeyedFor each={source} by={(item, index) => key}>{(item) => <li>…</li>}</KeyedFor>`,
  * an inline helper over `<For>` whose rows follow the source's `key`, as a keyed list's do on
  * the other targets (`keyed-identity`, ADR-0096). `<For>` follows the items themselves, so an
  * item replaced by a copy of the same key would get a new row, and lose its focus and typed text.
- * The row's item and index are accessors, which the rewrite rules call (`item()`, `index()`): a
- * row stays while its item changes, and reads the latest one. `by` takes them as values, as the
- * source's key reads them. A parameter nothing reads is left out (L5), the item too when the
- * index is not read either.
+ * The row is an object of getters named as the source's item, which the rewrite rules read
+ * (`item.value`, `item.index`): a row stays while its item changes, and reads the latest one. `by`
+ * takes the item and the index as values, as the source's key reads them. A parameter nothing
+ * reads is left out (L5): `by`'s index, and the row where neither its item nor its index is read.
  */
 function list(
   node: ForNode,
@@ -646,6 +646,11 @@ function list(
     }
     return read(item.id) ? [js.bindingIdentifier(item.name)] : [];
   };
+  // The row, named as the source's item, which its item and its index are read through.
+  const rowParameters =
+    context.referenced.has(item.id) || (index !== undefined && context.referenced.has(index.id))
+      ? [js.bindingIdentifier(item.name)]
+      : [];
   // The key reads the row's item and index as the values `by` is called with.
   const own = new Set([node.item, ...(node.index === undefined ? [] : [node.index])]);
   const rules = context.rules!;
@@ -689,14 +694,7 @@ function list(
         ),
       ),
     ],
-    [
-      js.jsxExpressionContainer(
-        js.arrowFunction(
-          parameters((id) => context.referenced.has(id)),
-          body,
-        ),
-      ),
-    ],
+    [js.jsxExpressionContainer(js.arrowFunction(rowParameters, body))],
   );
 }
 
@@ -1038,32 +1036,28 @@ function ${name}(style: object | string | null | undefined): Record<string, stri
 }
 
 /**
- * The inline scope helper (emulated `child-root-scope`, ADR-0063), printed after the component:
- * the props' `data-uf-*` keys, each with the empty value the parent passes. It reads the names
- * alone, so it never runs a prop's getter (a slot's `children`), and passes on no prop the
- * component declares.
- */
-/**
  * The keyed list (`keyed-identity`, ADR-0096): a memo maps each key to its latest item, and
  * `<For>` renders the keys, which it follows by value, so a row stays while its key does. Each row
  * reads its item through a memo of the map, which follows a copy of the same key and notifies the
- * row only when its own item changes. `<For>` calls a row untracked, and so does the helper, as it
- * says to `solid/reactivity`. The keys are unique at run time (ADR-0035): an item whose key an
- * earlier item took still renders, under a key of its own that no update keeps, as `<For>` would
- * render it. A row never reads a key the map has dropped: Solid disposes of the row first, as
- * `<For>` reruns before the computations its rows own.
+ * row only when its own item changes. A row receives an object of getters, `row.value` and
+ * `row.index`, as a component receives its props: TypeScript narrows a path through them as the
+ * source's TypeScript narrows the item, where it would narrow no call. `<For>` calls a row
+ * untracked, and so does the helper, as it says to `solid/reactivity`. The keys are unique at run
+ * time (ADR-0035): an item whose key an earlier item took still renders, under a key of its own
+ * that each change of the list makes again, so that row is made again too. A row never reads a key
+ * the map has dropped: Solid disposes of the row first, as `<For>` reruns before the computations
+ * its rows own.
  */
 function keyedHelperCode(name: string, imports: ImportSet): string {
   const For = imports.add("solid-js", "For");
   const createMemo = imports.add("solid-js", "createMemo");
   const untrack = imports.add("solid-js", "untrack");
-  const Accessor = imports.add("solid-js", "Accessor", { type: true });
   const JSX = imports.add("solid-js", "JSX", { type: true });
   return `/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
 function ${name}<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: ${Accessor}<T>, index: ${Accessor}<number>) => ${JSX}.Element;
+  children: (row: { readonly value: T; readonly index: number }) => ${JSX}.Element;
 }): ${JSX}.Element {
   const items = ${createMemo}(() => {
     const rows = new Map<unknown, T>();
@@ -1077,13 +1071,28 @@ function ${name}<T>(props: {
     <${For} each={[...items().keys()]}>
       {(key, index) => {
         const item = ${createMemo}(() => items().get(key) as T);
-        return ${untrack}(() => props.children(item, index));
+        return ${untrack}(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </${For}>
   );
 }`;
 }
 
+/**
+ * The inline scope helper (emulated `child-root-scope`, ADR-0063), printed after the component:
+ * the props' `data-uf-*` keys, each with the empty value the parent passes. It reads the names
+ * alone, so it never runs a prop's getter (a slot's `children`), and passes on no prop the
+ * component declares.
+ */
 function scopeHelperCode(name: string): string {
   return `/** The scope attributes of the styled parents that render this component, for its root. */
 function ${name}(props: object): Record<string, ""> {

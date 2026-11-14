@@ -455,7 +455,7 @@ describe("solid props", () => {
       ),
     );
     expect(output).toContain(
-      'import { type Accessor, For as For_1, type JSX, Show, createMemo, untrack } from "solid-js";',
+      'import { For as For_1, type JSX, Show, createMemo, untrack } from "solid-js";',
     );
     expect(output).toContain("<For_1 each={[...items().keys()]}>");
   });
@@ -532,8 +532,8 @@ describe("solid control flow", () => {
       '<Show when={props.on} fallback={"-"}>\n              {greeting}\n            </Show>',
     );
     expect(component(output)).toContain("<Show when={!props.on}>{greeting}</Show>");
-    // A list's item reads through its accessor, a call, which the rule leaves alone (ADR-0096).
-    expect(component(output)).toContain('{props.on ? item() : "-"}');
+    // A list's item reads through its row, `item.value`, which the rule leaves alone (ADR-0096).
+    expect(component(output)).toContain('{props.on ? item.value : "-"}');
   });
 
   it("keeps an interpolated conditional of values as it is", async () => {
@@ -545,7 +545,7 @@ describe("solid control flow", () => {
     );
   });
 
-  it("lists through the keyed helper, keyed by the source's key, calling the item's and the index's accessors", async () => {
+  it("lists through the keyed helper, keyed by the source's key, reading the item and the index through the row", async () => {
     const output = await emitSource(
       probe(
         "steps: string[];",
@@ -553,11 +553,9 @@ describe("solid control flow", () => {
         "<ol>{steps.map((step, index) => <li key={index} data-step={index + 1}>{step}</li>)}</ol>",
       ),
     );
-    expect(output).toContain(
-      'import { type Accessor, For, type JSX, createMemo, untrack } from "solid-js";',
-    );
+    expect(output).toContain('import { For, type JSX, createMemo, untrack } from "solid-js";');
     expect(component(output)).toContain(
-      "<KeyedFor each={props.steps} by={(step, index) => index}>\n        {(step, index) => <li data-step={index() + 1}>{step()}</li>}\n      </KeyedFor>",
+      "<KeyedFor each={props.steps} by={(step, index) => index}>\n        {(step) => <li data-step={step.index + 1}>{step.value}</li>}\n      </KeyedFor>",
     );
     expect(output).not.toContain("key=");
   });
@@ -570,7 +568,9 @@ describe("solid control flow", () => {
         "<ol>{steps.map((step, index) => <li key={index}>{step}</li>)}</ol>",
       ),
     );
-    expect(keyed).toContain("by={(step, index) => index}>\n        {(step) => <li>{step()}</li>}");
+    expect(keyed).toContain(
+      "by={(step, index) => index}>\n        {(step) => <li>{step.value}</li>}",
+    );
     const unread = await emitSource(
       probe(
         "steps: string[];",
@@ -646,7 +646,7 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
         "        fallback={",
         "          <ul>",
         "            <KeyedFor each={props.tags} by={(tag) => tag}>",
-        "              {(tag) => <li>{tag()}</li>}",
+        "              {(tag) => <li>{tag.value}</li>}",
         "            </KeyedFor>",
         "          </ul>",
         "        }",
@@ -798,7 +798,7 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
       "{(narrowed) => <i>{narrowed().age.toFixed()}</i>}",
       // A list's variable taken whole keeps its own name where no client code reads it: every
       // render read of it is the accessor's.
-      "<Show when={row()}>{(row) => <>{row().name}</>}</Show>",
+      "<Show when={row.value}>{(row_1) => <>{row_1().name}</>}</Show>",
     ]) {
       expect(component(output), form).toContain(form);
     }
@@ -848,7 +848,7 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
         "            <KeyedFor each={props.items} by={(i) => i}>",
         "              {(i) => (",
         "                <li>",
-        "                  {user().name}: {i()}",
+        "                  {user().name}: {i.value}",
         "                </li>",
         "              )}",
         "            </KeyedFor>",
@@ -892,7 +892,7 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
     for (const form of [
       "<Show when={props.limit || undefined}>",
       "<Show when={props.limit || undefined} fallback={<i>none</i>}>",
-      "<Show when={row() || undefined}>",
+      "<Show when={row.value || undefined}>",
       "<Show when={props.user || undefined}>",
     ]) {
       expect(component(output), form).toContain(form);
@@ -969,7 +969,7 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
         '<div><ul>{items.map((a) => <li key={a}>{a === "x" && user && user.a && <i title={a}>{String(user.a.n)}</i>}</li>)}</ul>{attrs.class && <b class={attrs.class}>x</b>}</div>',
       ),
     );
-    expect(component(list)).toContain("? { a, a_1: props.user.a } : undefined");
+    expect(component(list)).toContain("? { a: a.value, a_1: props.user.a }");
     expect(component(list)).toContain(
       "{(narrowed) => <i title={narrowed().a}>{String(narrowed().a_1.n)}</i>}",
     );

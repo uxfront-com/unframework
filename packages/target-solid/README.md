@@ -105,7 +105,7 @@ export default function Counter(
   (`!user ? A : B`) is `<Show when={props.user} fallback={A}>`. An accessor is named after its
   binding or last property (`value` for one no target can declare), or a free name where that
   would capture a name the output prints as it is, the object form's parameter, an import or
-  helper, or another callback's around it; it takes a list item's, a state's or a derived
+  helper, or another callback's around it; it takes a state's or a derived
   value's own name only in a branch without a listener or a template ref. A handler in a branch
   that reads what its tests narrow is one call (UF3029), which runs while its element and so its
   branch are there: its arguments read through the accessor too
@@ -119,13 +119,13 @@ export default function Counter(
   one interpolation is a fragment (`{(user) => <>{user().name + props.label}</>}`), which Solid
   compiles to a memo. The rules are syntactic: a value taken where none was needed renders
   alike.
-- Lists are `<KeyedFor each={items} by={(item) => item.id}>{(item, index) => <li>…</li>}</KeyedFor>`,
+- Lists are `<KeyedFor each={items} by={(item) => item.id}>{(item) => <li>…</li>}</KeyedFor>`,
   an inline helper over `<For>` whose rows follow the source's `key`, printed as `by`
   (`keyed-identity`, emulated, ADR-0096). `<For>` follows the items themselves, so an item
-  replaced by a copy of the same key would get a new row. A row reads its item and index through
-  accessors, `item()` and `index()`, which the branch callbacks read once, as a state's. `by`
-  takes them as values, as the key reads them. A parameter neither callback reads is left out of
-  it.
+  replaced by a copy of the same key would get a new row. A row is an object of getters named as
+  the item, read as `item.value` and `item.index`, which TypeScript narrows as it narrows a prop.
+  `by` takes the item and the index as values, as the key reads them. A parameter neither
+  callback reads is left out of it.
 - HTML's attribute names as written (`class`, `for`, `tabindex`, `readonly`), which Solid's JSX
   takes; SVG's in their own case (`viewBox`, `stroke-width`). Every bindable boolean attribute
   is one Solid's compiler sets as a boolean, so none needs `bool:` (`test/attributes.test.ts`).
@@ -151,8 +151,8 @@ export default function Counter(
 
 Three rewrites keep the output what Solid's tools expect:
 
-- an interpolated conditional whose branch prints as a bare name (a list's item, `undefined`, or
-  a value a keyed callback received) is a `<Show>`, as `solid/prefer-show` asks:
+- an interpolated conditional whose branch prints as a bare name (a setup constant, `undefined`,
+  or a value a keyed callback received, never a list's item, which prints as `item.value`) is a `<Show>`, as `solid/prefer-show` asks:
   `{done ? title : "-"}` becomes `<Show when={done} fallback={"-"}>{title}</Show>`;
 - Solid compiles static content into an HTML template, where the browser drops a line feed
   right after `<pre>`. A line feed that would start a `<pre>`'s template (text after only

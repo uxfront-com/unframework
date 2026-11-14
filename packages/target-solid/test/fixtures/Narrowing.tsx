@@ -1,14 +1,4 @@
-import {
-  type Accessor,
-  For,
-  type JSX,
-  Match,
-  Show,
-  Switch,
-  createMemo,
-  mergeProps,
-  untrack,
-} from "solid-js";
+import { For, type JSX, Match, Show, Switch, createMemo, mergeProps, untrack } from "solid-js";
 
 interface Account {
   name: string;
@@ -145,26 +135,21 @@ export default function Narrowing(
             data-json={JSON.stringify({ user: user() })}
           >
             <KeyedFor each={user().tags} by={(tag) => tag}>
-              {(tag) => <span>{tag()}</span>}
+              {(tag) => <span>{tag.value}</span>}
             </KeyedFor>
           </a>
         )}
       </Show>
       <ul>
         <KeyedFor each={props.rows} by={(row, index) => index}>
-          {(row, index) => (
+          {(row) => (
             <li>
-              <Show when={row() || undefined}>{(row) => <>{row().name}</>}</Show>
-              <Show
-                when={((row, index) => (index > 0 && row ? { row } : undefined))(row(), index())}
-                fallback="-"
-              >
+              <Show when={row.value || undefined}>{(row_1) => <>{row_1().name}</>}</Show>
+              <Show when={row.index > 0 && row.value ? { row: row.value } : undefined} fallback="-">
                 {(narrowed) => <b>{narrowed().row.name}</b>}
               </Show>
               <Show
-                when={((row) => (row && row.age !== undefined ? { age: row.age } : undefined))(
-                  row(),
-                )}
+                when={row.value && row.value.age !== undefined ? { age: row.value.age } : undefined}
               >
                 {(narrowed) => <s>{Math.round(narrowed().age)}</s>}
               </Show>
@@ -229,11 +214,7 @@ export default function Narrowing(
         <KeyedFor each={props.places} by={(place) => place}>
           {(place) => (
             <li>
-              <Show
-                when={((place) => (place === "x" && props.user ? { user: props.user } : undefined))(
-                  place(),
-                )}
-              >
+              <Show when={place.value === "x" && props.user ? { user: props.user } : undefined}>
                 {(narrowed) => <i>{narrowed().user.name}</i>}
               </Show>
             </li>
@@ -262,7 +243,7 @@ export default function Narrowing(
             <KeyedFor each={props.places} by={(place) => place}>
               {(place) => (
                 <li>
-                  {user().name}: {place()}
+                  {user().name}: {place.value}
                 </li>
               )}
             </KeyedFor>
@@ -295,7 +276,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -309,7 +290,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );
