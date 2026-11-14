@@ -172,6 +172,7 @@ export const react: Target = defineTarget({
         "A composable is a custom hook, and React runs a component's effects in its own order (ADR-0048): a hook's watchers, effects and hooks cannot take their place among the caller's own, so code that relies on that order may see another (ADR-0069).",
     },
     hydration: { support: "native" },
+    "keyed-identity": { support: "native" },
   },
   // A custom hook (ADR-0069).
   emitComposable,

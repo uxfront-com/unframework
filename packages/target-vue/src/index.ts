@@ -81,6 +81,7 @@ export const vue: Target = defineTarget({
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
     hydration: { support: "native" },
+    "keyed-identity": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { block, rewrite, listeners, components, keys, textCaret } = scriptSetup(

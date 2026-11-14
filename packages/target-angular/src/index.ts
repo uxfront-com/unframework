@@ -224,6 +224,7 @@ export const angular: Target = defineTarget({
     "composable-effect-order": { support: "native" },
     // `provideClientHydration()` on both sides (ADR-0024, ADR-0095).
     hydration: { support: "native" },
+    "keyed-identity": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     return [emitComponent(component, context)];

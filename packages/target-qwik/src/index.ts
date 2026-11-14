@@ -235,6 +235,7 @@ export const qwik: Target = defineTarget({
       reason:
         "Qwik resumes a server render instead of hydrating it: it runs no render, keeps no state for a component without client code, and runs visible tasks once the loader sees them, so the resumed page can't be checked against a client render.",
     },
+    "keyed-identity": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { module } = context;

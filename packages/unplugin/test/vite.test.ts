@@ -1558,6 +1558,7 @@ function htmlTarget() {
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
     hydration: { support: "native" },
+    "keyed-identity": { support: "native" },
   };
   return defineTarget({
     name: "html",
