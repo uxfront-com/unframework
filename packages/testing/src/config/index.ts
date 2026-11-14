@@ -225,39 +225,63 @@ export function toolchainDirOf(
   return (typeof resolveFrom === "string" ? resolveFrom : resolveFrom?.[target]) ?? root;
 }
 
+/** What `ToolchainContext.plugins` takes: a function that makes a fresh set of Vite plugins. */
+export type ProjectPlugins = NonNullable<ToolchainContext["plugins"]>;
+
+/** Where every message about the field points. */
+const FIELD = "vitePlugins in unframework.config.ts";
+
 /**
  * The project's Vite plugins (`vitePlugins` in `unframework.config.ts`, ADR-0104), as
  * `ToolchainContext.plugins` takes them: each call makes a fresh set, flattened, since every Vite
- * server, and Astro's render server, needs one of its own. Throws, naming the field, when the
- * function throws or gives something that is no plugin: a check that cannot start fails.
+ * server, and Astro's render server, needs one of its own. Throws, naming the field and the
+ * reason, when the function throws, a promise it gives rejects, or it gives something that is no
+ * plugin: a check that cannot start fails, and says why.
  */
 export function projectPlugins(
   factory: (() => VitePluginOption | Promise<VitePluginOption>) | undefined,
-): () => Promise<Plugin[]> {
+): ProjectPlugins {
   return async () => {
     if (!factory) return [];
     let made: VitePluginOption;
     try {
       made = await factory();
     } catch (error) {
-      throw new Error("[uf] vitePlugins in unframework.config.ts threw.", { cause: error });
+      throw failed("threw", error);
     }
     return flattenPlugins(made);
   };
 }
 
 async function flattenPlugins(option: VitePluginOption): Promise<Plugin[]> {
-  const value: unknown = await option;
+  let value: unknown;
+  try {
+    value = await option;
+  } catch (error) {
+    throw failed("gave a promise that rejected", error);
+  }
   if (value === false || value === null || value === undefined) return [];
   if (Array.isArray(value)) {
     return (await Promise.all(value.map((each: VitePluginOption) => flattenPlugins(each)))).flat();
   }
   if (typeof value !== "object" || typeof (value as { name?: unknown }).name !== "string") {
     throw new Error(
-      `[uf] vitePlugins in unframework.config.ts gave ${describeValue(value)}, which is no Vite plugin: a plugin is an object with a name.`,
+      `[uf] ${FIELD} gave ${describeValue(value)}, which is no Vite plugin: a plugin is an object with a name.`,
     );
   }
   return [value as Plugin];
+}
+
+/**
+ * The error of a function or a promise of the field's that failed. The CLI prints a message
+ * alone, so the reason is in it, as well as in `cause`.
+ */
+function failed(what: string, error: unknown): Error {
+  const reason =
+    error instanceof Error
+      ? String(error.message) || "an error with no message"
+      : describeValue(error);
+  return new Error(`[uf] ${FIELD} ${what}: ${reason}`, { cause: error });
 }
 
 /** A value as a message names it, whatever it is. */
@@ -266,7 +290,8 @@ function describeValue(value: unknown): string {
     case "string":
       return JSON.stringify(value);
     case "object":
-      return "an object without a name";
+      if (value === null) return "null";
+      return "name" in value ? "an object whose name is no string" : "an object without a name";
     case "function":
       return "a function";
     case "symbol":
@@ -289,7 +314,7 @@ interface ProjectSetup {
   targets: readonly TargetName[];
   toolchainDir(target: TargetName): string;
   /** A fresh set of the project's Vite plugins (ADR-0104). */
-  plugins: () => Promise<Plugin[]>;
+  plugins: ProjectPlugins;
   /** The project's ambient declarations, absolute (ADR-0104). */
   declarations: readonly string[];
 }

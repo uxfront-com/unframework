@@ -81,8 +81,7 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
   the unplugin, and each toolchain gets `ToolchainContext.plugins` and `declarations`, so Astro's
   render server loads the plugins and Angular's ngtsc reads the declarations.
   `projectPlugins(vitePlugins)` turns the field into what `ToolchainContext.plugins` takes: a
-  function that makes a fresh, flattened set, and throws, naming the field, on a value with no
-  `name` or a function that throws. The preview builds its servers with it too.
+  function that makes a fresh, flattened set, and throws, naming the field and the reason, on a value with no `name`, a function that throws or a promise that rejects. The preview builds its servers with it too.
 - **A project's live fonts** (ADR-0105): `liveFonts` reaches the run's `HarnessContext`, and
   `captureAt` skips the font audit for a live comparison when it is `any`. A comparison with
   baselines audits every glyph whatever it says.

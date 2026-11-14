@@ -375,17 +375,61 @@ describe("projectPlugins", () => {
     expect(await projectPlugins(() => ({ name: "one" }))()).toEqual([{ name: "one" }]);
   });
 
-  it("refuses what is no plugin, and a function that throws, naming the field", async () => {
-    for (const bad of [{}, "engine", 1, { name: 1 }, () => ({ name: "late" }), Symbol("engine")]) {
-      await expect(projectPlugins(() => [bad as never])(), JSON.stringify(bad)).rejects.toThrow(
-        /^\[uf\] vitePlugins in unframework\.config\.ts gave .+, which is no Vite plugin/,
-      );
-    }
+  it("refuses what is no plugin, naming the field and what it gave", async () => {
+    const gave = async (bad: unknown) => {
+      const error = await projectPlugins(() => [bad as never])().catch((thrown: unknown) => thrown);
+      return (error as Error).message;
+    };
+    const message = (what: string) =>
+      `[uf] vitePlugins in unframework.config.ts gave ${what}, which is no Vite plugin: a plugin is an object with a name.`;
+    expect(await gave({})).toBe(message("an object without a name"));
+    expect(await gave({ name: 1 })).toBe(message("an object whose name is no string"));
+    expect(await gave("engine")).toBe(message('"engine"'));
+    expect(await gave(1)).toBe(message("1"));
+    expect(await gave(() => ({ name: "late" }))).toBe(message("a function"));
+    expect(await gave(Symbol("engine"))).toBe(message("Symbol(engine)"));
+  });
+
+  it("says why a function or a promise of the field failed, in the message the CLI prints", async () => {
     const thrown = projectPlugins(() => {
-      throw new Error("no licence key");
+      throw new Error("no licence key found in styleframe.config.ts");
     })();
-    await expect(thrown).rejects.toThrow("[uf] vitePlugins in unframework.config.ts threw.");
-    await expect(thrown).rejects.toHaveProperty("cause.message", "no licence key");
+    await expect(thrown).rejects.toThrow(
+      /^\[uf\] vitePlugins in unframework\.config\.ts threw: no licence key found in styleframe\.config\.ts$/,
+    );
+    await expect(thrown).rejects.toHaveProperty(
+      "cause.message",
+      "no licence key found in styleframe.config.ts",
+    );
+    // A plugin a factory makes asynchronously, inside the list.
+    const nested = projectPlugins(() => [
+      { name: "a" },
+      Promise.reject(new Error("engine failed to start")),
+    ])();
+    await expect(nested).rejects.toThrow(
+      "[uf] vitePlugins in unframework.config.ts gave a promise that rejected: engine failed to start",
+    );
+    // A value that is no error, and an error with no message.
+    await expect(
+      projectPlugins(() => Promise.reject("offline" as unknown as Error))(),
+    ).rejects.toThrow('[uf] vitePlugins in unframework.config.ts threw: "offline"');
+    await expect(
+      projectPlugins(() => {
+        throw new Error("");
+      })(),
+    ).rejects.toThrow("[uf] vitePlugins in unframework.config.ts threw: an error with no message");
+  });
+
+  it("fails a run whose plugins throw with the reason, before any project starts", async () => {
+    const root = project({
+      "unframework.config.mjs":
+        'export default { targets: ["vue"], vitePlugins: () => { throw new Error("no licence key"); } };\n',
+      "test/badge/Badge.uf.tsx": COMPONENT,
+      "test/badge/badge.test.ts": SPEC,
+    });
+    await expect(defineTestConfig({ root })).rejects.toThrow(
+      "[uf] vitePlugins in unframework.config.ts threw: no licence key",
+    );
   });
 
   it("types any Vite plugin option as the config takes it", () => {

@@ -38,8 +38,7 @@ Angular's ngtsc failed it with TS2307.
   toolchain's `ToolchainContext`. `visual` builds its projects with `defineTestConfig`, so it
   takes them too. Each preview server adds them after its own plugin and before the unplugin,
   and passes both fields to the toolchain. `projectPlugins` in `@unframework.dev/testing/config`
-  turns the function into what `ToolchainContext.plugins` takes, and throws, naming the field,
-  when it throws or gives something that has no `name`.
+  turns the function into what `ToolchainContext.plugins` takes, and throws, naming the field and the reason, when it throws, a promise it gives rejects, or it gives something that has no `name`, since the CLI prints an error's message alone. The preview, whose servers all fail alike then, says so once, with every target that failed.
 - The config's types stay in a file with no imports (ADR-0076), so `VitePluginOption` stands for
   Vite's `PluginOption` by its shape: anything with a `name`. Every Vite plugin matches it.
 

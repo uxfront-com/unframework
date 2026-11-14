@@ -9,7 +9,7 @@ import type { ResolvedConfig } from "@unframework.dev/compiler";
 import { resolveConfig as resolveViteConfig } from "vite";
 import { describe, expect, it } from "vitest";
 
-import { targetServerOptions } from "../src/preview/index.ts";
+import { startFailure, startPreview, targetServerOptions } from "../src/preview/index.ts";
 import { targetServerConfig } from "../src/preview/servers.ts";
 import { runVisual } from "../src/run.ts";
 
@@ -59,6 +59,29 @@ describe("a project's Vite plugins", () => {
         names.findIndex((name) => name.startsWith("unframework") && name !== "unframework:preview"),
       );
     }
+  });
+});
+
+describe("a preview whose servers fail to start", () => {
+  it("says why, once for the targets that failed alike, when a project's plugins throw", async () => {
+    await expect(startPreview({ root: fixture("throwing-plugins") })).rejects.toThrow(
+      "[uf:preview] 2 target servers failed to start:\n  vue, react: [uf] vitePlugins in unframework.config.ts threw: no licence key found in styleframe.config.ts",
+    );
+  });
+
+  it("gives one server's own error, and a line per reason for several", () => {
+    const own = new Error("port in use");
+    expect(startFailure([{ target: "vue", reason: own }])).toBe(own);
+    const several = startFailure([
+      { target: "vue", reason: new Error("a") },
+      { target: "react", reason: new Error("b") },
+      { target: "svelte", reason: new Error("a") },
+    ]);
+    expect(several).toBeInstanceOf(AggregateError);
+    expect((several as AggregateError).message).toBe(
+      "[uf:preview] 3 target servers failed to start:\n  vue, svelte: a\n  react: b",
+    );
+    expect((several as AggregateError).errors).toHaveLength(3);
   });
 });
 

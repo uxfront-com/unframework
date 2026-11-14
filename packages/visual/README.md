@@ -144,7 +144,7 @@ props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on 
   union of string literals, as written or resolved from an alias (`ApiMember.literals`), with
   `| undefined` read as optional. Any other prop is listed as not controllable, with its type.
 - **`close()`** stops the shell and every target's server, then what a toolchain's commands
-  started (`toolchain.close`, Astro's render servers). A start that fails closes what it started.
+  started (`toolchain.close`, Astro's render servers). A start that fails closes what it started, and its error names each reason with the targets it stopped (`startFailure`), once for the targets that failed alike.
 
 ## Tests
 

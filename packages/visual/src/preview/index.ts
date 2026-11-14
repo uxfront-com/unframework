@@ -86,17 +86,10 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
         }),
       ),
     );
-    const failed = servers.flatMap((result) =>
-      result.status === "rejected" ? [result.reason] : [],
+    const failed = servers.flatMap((result, index) =>
+      result.status === "rejected" ? [{ target: targets[index]!, reason: result.reason }] : [],
     );
-    if (failed.length) {
-      throw failed.length === 1
-        ? failed[0]
-        : new AggregateError(
-            failed,
-            `[uf:preview] ${failed.length} target servers failed to start.`,
-          );
-    }
+    if (failed.length) throw startFailure(failed);
     // In the project's order of targets, whichever started first.
     const frames = targets.map((target) => started.find((server) => server.target === target)!);
     const shell = await startShellServer(shellPage(shellData(catalogue, frames)), port);
@@ -136,6 +129,25 @@ export function targetServerOptions(
     plugins: projectPlugins(config.vitePlugins),
     declarations: config.declarations,
   };
+}
+
+/**
+ * The error of a start that failed: the one server's own error, or one whose message names every
+ * reason with the targets it stopped, since the CLI prints a message alone. Seven servers that
+ * fail alike, as on a project plugin that throws, give one line.
+ */
+export function startFailure(failed: readonly { target: TargetName; reason: unknown }[]): unknown {
+  if (failed.length === 1) return failed[0]!.reason;
+  const byMessage = new Map<string, TargetName[]>();
+  for (const { target, reason } of failed) {
+    const message = reason instanceof Error ? String(reason.message) : String(reason);
+    byMessage.set(message, [...(byMessage.get(message) ?? []), target]);
+  }
+  const lines = [...byMessage].map(([message, names]) => `  ${names.join(", ")}: ${message}`);
+  return new AggregateError(
+    failed.map((each) => each.reason),
+    `[uf:preview] ${failed.length} target servers failed to start:\n${lines.join("\n")}`,
+  );
 }
 
 /** The targets to show: the project's, or those asked for, which must be among them. */
