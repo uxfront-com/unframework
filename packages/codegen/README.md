@@ -9,7 +9,8 @@ framework-specific.
   It is optional for a third-party target: `compile()` reports UF1002 for a composable of a
   target without it. The matrix has a cell for every name in `CAPABILITY_NAMES`: one per
   IR node and attribute kind (`element`, `text`, `interpolation`, `conditional`, `list`,
-  `static-attribute`, `bound-attribute`, `class-binding`, `style-binding`, `attribute-spread`),
+  `static-attribute`, `bound-attribute`, `class-binding`, `style-binding`, `attribute-spread`,
+  `raw-html`),
   plus `props`, a root `fragment`, `svg`, `listbox`, `interactivity` (listeners, template refs,
   watchers, `watchEffect` and lifecycle hooks), a listener's options (`event-capture`,
   `event-once`, `event-passive`), DOM semantics (`event-semantics`), an event control that runs
