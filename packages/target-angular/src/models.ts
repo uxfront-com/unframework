@@ -264,7 +264,10 @@ export function planModels(plan: Plan): Models {
     } else {
       // A select's options say whether the state holds their values: Angular's server DOM has
       // no selectedness, so there each also sets `defaultSelected`, the attribute the HTML parser
-      // reads it from; in the browser it stays unset, as Vue leaves it.
+      // reads it from; in the browser it stays unset, as Vue leaves it. `defaultSelected` comes
+      // first: a hydrated option keeps the server's attribute, and Chrome does not mark an option
+      // dirty when `selected` sets the selectedness it has already, so removing the attribute
+      // after it would deselect the state's option (ADR-0095).
       const multiple = model.control === "select-multiple";
       const name = field();
       // The chosen option's value is one of the options, which a generic component's consumer
@@ -292,8 +295,8 @@ export function planModels(plan: Plan): Models {
         const selected = multiple ? `${signal}().includes(${value})` : `${signal}() === ${value}`;
         options.set(
           added,
-          `[selected]="${angularCode(selected, "attribute")}" [defaultSelected]="${angularCode(
-            `${server} && ${selected}`,
+          `[defaultSelected]="${angularCode(`${server} && ${selected}`, "attribute")}" [selected]="${angularCode(
+            selected,
             "attribute",
           )}"`,
         );
