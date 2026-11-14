@@ -1,0 +1,14 @@
+{
+  "description": "`innerHTML` bound to a computed value replaces the element's markup each time the value changes, after hydration as on a first render.",
+  "ssr": {
+    "first": {
+      "props": {
+        "terms": ["Hoisting", "Closure"],
+        "definitions": [
+          "<p>Declarations move to the <em>top</em> of their scope.</p>",
+          "<p>A function keeps the <strong>variables</strong> it was made with.</p><p class=\"aside\">See also: scope.</p>"
+        ]
+      }
+    }
+  }
+}
