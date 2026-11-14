@@ -55,13 +55,13 @@ export class ScopeAttributes implements OnInit {
         (change)="this.toppings.set(selectedValues(toppingsField))"
       ><option
         value="cheese"
-        [selected]="this.toppings().includes('cheese')" [defaultSelected]="onServer && this.toppings().includes('cheese')"
+        [defaultSelected]="onServer && this.toppings().includes('cheese')" [selected]="this.toppings().includes('cheese')"
       >Cheese</option><option
         value="olives"
-        [selected]="this.toppings().includes('olives')" [defaultSelected]="onServer && this.toppings().includes('olives')"
+        [defaultSelected]="onServer && this.toppings().includes('olives')" [selected]="this.toppings().includes('olives')"
       >Olives</option><option
         value="basil"
-        [selected]="this.toppings().includes('basil')" [defaultSelected]="onServer && this.toppings().includes('basil')"
+        [defaultSelected]="onServer && this.toppings().includes('basil')" [selected]="this.toppings().includes('basil')"
       >Basil</option></select></label>
       <output>On top: {{ toppings.join(", ") || "nothing" }}</output>
       <button type="button" (click)="onGreen()">Green</button>

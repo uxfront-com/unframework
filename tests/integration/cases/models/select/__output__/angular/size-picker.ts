@@ -49,13 +49,13 @@ export class ScopeAttributes implements OnInit {
         (change)="this.size.set(sizeField.value)"
       ><option
         value="s"
-        [selected]="this.size() === 's'" [defaultSelected]="onServer && this.size() === 's'"
+        [defaultSelected]="onServer && this.size() === 's'" [selected]="this.size() === 's'"
       >Small</option><option
         value="m"
-        [selected]="this.size() === 'm'" [defaultSelected]="onServer && this.size() === 'm'"
+        [defaultSelected]="onServer && this.size() === 'm'" [selected]="this.size() === 'm'"
       >Medium</option><option
         value="l"
-        [selected]="this.size() === 'l'" [defaultSelected]="onServer && this.size() === 'l'"
+        [defaultSelected]="onServer && this.size() === 'l'" [selected]="this.size() === 'l'"
       >Large</option></select></label>
       <output>Chosen: {{ size }}</output>
       <button type="button" (click)="onLargest()">Largest</button>
