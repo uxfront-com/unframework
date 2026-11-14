@@ -1,6 +1,6 @@
 {
   "name": "@unframework.dev/codegen",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The Unframework target kit: defineTarget, the JS, JSX and markup printers with each syntax's escaping, the import manager and the oxfmt formatting step.",
   "keywords": [
     "codegen",
