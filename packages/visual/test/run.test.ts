@@ -1,7 +1,7 @@
 // The visual run end to end, in Chromium: a fixture example that renders differently on one
 // target fails the run, and the report says where and how.
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -52,6 +52,9 @@ describe("runVisual", () => {
     expect(html).toBe(renderReport(report));
     expect(html).toContain('src="examples/Box/react/diff.png"');
     expect(printed).toContain("✗ examples/Box: failed on react (geometry-mismatch)");
+    // The page's path follows the report's, so a CI log names both.
+    const path = (file: string) => relative(process.cwd(), join(out, file));
+    expect(printed).toContain(`report: ${path("report.json")}\npage: ${path("report.html")}\n`);
   });
 
   it(

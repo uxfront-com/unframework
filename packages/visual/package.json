@@ -1,7 +1,6 @@
 {
   "name": "@unframework.dev/visual",
   "version": "0.0.0",
-  "private": true,
   "description": "Visual parity and the preview for a project's examples: discovers *.example.uf.tsx files, renders each on every target and compares geometry and pixels, live or against committed baselines, writes the run's report, and shows every example and component side by side on every target. Private until its first release.",
   "keywords": [
     "unframework"

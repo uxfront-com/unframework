@@ -4,7 +4,7 @@ Visual parity and the preview for a project's examples (plan §8.6, ADR-0087, AD
 file, renders each on every target in Chromium, and compares each target's geometry, computed
 styles and pixels with the reference target's, live or against baselines committed beside each
 example. Each run writes `report.json`, an image of every capture and `report.html`, a page that shows
-them. Private until its first release.
+them.
 
 `unframework preview` shows every example and component side by side on every target while you
 work (below).
@@ -57,7 +57,8 @@ directory.
    the last report.
 7. Runs them with Vitest in this process, so the command's captures reach the report. Then it
    writes `<out>/report.json`, from the captures and each test's result, and `report.html`
-   beside it (`renderReport`), and prints a line per example and the report's path.
+   beside it (`renderReport`), and prints a line per example, then the paths of `report.json`
+   (`report:`) and `report.html` (`page:`).
 
 `./browser`'s `captureExample(id, caseId, component)` declares one test, which mounts the example,
 settles it and captures it with the testing package's `captureVisual`, sent to `ufExampleCapture`.

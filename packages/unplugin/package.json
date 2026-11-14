@@ -1,7 +1,6 @@
 {
   "name": "@unframework.dev/unplugin",
   "version": "0.0.0",
-  "private": true,
   "description": "The Unframework bundler plugin: imports of .uf.tsx files compile to the selected framework, and that framework's own plugin finishes the job.",
   "keywords": [
     "astro",

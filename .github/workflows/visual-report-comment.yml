@@ -1,0 +1,287 @@
+name: Visual report comment
+
+# Posts the sample design system's visual report as one comment on the pull request, and updates
+# it on each push. It runs after CI in the base repository's context, so it can comment on a PR
+# from a fork, and it never checks out or runs the PR's code: it reads `report.json` out of the
+# `design-system-visual` artefact as untrusted data. It matches three names in ci.yml: the
+# workflow's `name: CI`, its path `.github/workflows/ci.yml` and the artefact
+# `design-system-visual`. Renaming any of them stops the comment.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  comment:
+    name: Comment
+    if: ${{ github.event.workflow_run.event == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read # the run and its artefact
+      pull-requests: write # find the PR, read and write its comments
+    # One key per head, so two runs for one PR never both create a comment.
+    concurrency:
+      group: visual-report-comment-${{ github.event.workflow_run.head_repository.id }}-${{ github.event.workflow_run.head_branch }}
+      cancel-in-progress: false
+    steps:
+      - name: Find the pull request and the artefact
+        id: resolve
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const { owner, repo } = context.repo;
+            const fullName = `${owner}/${repo}`;
+            const skip = (reason) => core.notice(`No visual report comment: ${reason}.`);
+
+            if (run.event !== "pull_request") return skip(`the run's event is ${run.event}`);
+            if (run.path !== ".github/workflows/ci.yml") return skip(`the run's workflow is ${run.path}`);
+            if (run.repository?.full_name !== fullName) return skip("the run belongs to another repository");
+            if (!run.head_repository) return skip("the run's head repository no longer exists");
+
+            // Find the PR by its head, not by run.pull_requests, which is empty for a fork. Only an
+            // open PR whose head is still this run's commit gets the report, so a late run for an
+            // older commit never overwrites the newer one.
+            const pulls = await github.paginate(github.rest.pulls.list, {
+              owner,
+              repo,
+              state: "open",
+              head: `${run.head_repository.owner.login}:${run.head_branch}`,
+              per_page: 100,
+            });
+            const prs = pulls
+              .filter((pr) => pr.head.sha === run.head_sha && pr.base.repo.full_name === fullName)
+              .map((pr) => pr.number);
+            if (prs.length === 0) return skip(`no open pull request has head ${run.head_sha}`);
+
+            const { data } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner,
+              repo,
+              run_id: run.id,
+              name: "design-system-visual",
+              per_page: 100,
+            });
+            const artifact = data.artifacts
+              .filter((a) => a.name === "design-system-visual" && !a.expired)
+              .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0];
+            if (!artifact) return skip("the run has no design-system-visual artefact");
+
+            core.setOutput("prs", JSON.stringify(prs));
+            core.setOutput("artifact-id", String(artifact.id));
+            core.setOutput("artifact-size", String(artifact.size_in_bytes));
+            core.setOutput("post", "true");
+
+      # Reads only `report.json`, through a byte cap, and extracts nothing else from the zip. It
+      # never fails on a bad artefact: it hands the reason to the next step, which says so on the
+      # PR. A download that fails is not the artefact's fault, so that does fail the step.
+      - name: Fetch report.json
+        id: fetch
+        if: ${{ steps.resolve.outputs.post == 'true' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.resolve.outputs.artifact-id }}
+          ARTIFACT_SIZE: ${{ steps.resolve.outputs.artifact-size }}
+        run: |
+          zip="$RUNNER_TEMP/visual.zip"
+          report="$RUNNER_TEMP/report.json"
+          rm -f "$report"
+          if [ "$ARTIFACT_SIZE" -gt 268435456 ]; then
+            echo "unreadable=too-large" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$zip"
+          unzip -Z1 "$zip" > "$RUNNER_TEMP/entries.txt"
+          if ! grep -qxF report.json "$RUNNER_TEMP/entries.txt"; then
+            echo "unreadable=no-report" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # The cap closes the pipe early on a large entry, so unzip's exit status can't count.
+          set +o pipefail
+          unzip -p "$zip" report.json | head -c 1048577 > "$report"
+          set -o pipefail
+          if [ "$(wc -c < "$report")" -gt 1048576 ]; then
+            echo "unreadable=over-1mib" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post the comment
+        if: ${{ steps.resolve.outputs.post == 'true' }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PRS: ${{ steps.resolve.outputs.prs }}
+          ARTIFACT_ID: ${{ steps.resolve.outputs.artifact-id }}
+          UNREADABLE: ${{ steps.fetch.outputs.unreadable }}
+        with:
+          script: |
+            const fs = require("node:fs");
+            const path = require("node:path");
+
+            const MARKER = "<!-- unframework-visual-report -->";
+            const MAX_BODY = 60000;
+            const MAX_ROWS = 50;
+            const MAX_FAILURES = 50;
+            const MAX_TARGETS = 20;
+            const run = context.payload.workflow_run;
+            const { owner, repo } = context.repo;
+            const prs = JSON.parse(process.env.PRS);
+            const artifactId = Number(process.env.ARTIFACT_ID);
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${run.id}`;
+            const artifactUrl = `${runUrl}/artifacts/${artifactId}`;
+            const sha = /^[0-9a-f]{40}$/.test(run.head_sha) ? run.head_sha.slice(0, 7) : "unknown";
+
+            const REASONS = {
+              "too-large": "The artefact is over 256 MiB, so this workflow did not download it.",
+              "no-report": "The artefact has no `report.json` at its root.",
+              "over-1mib": "Its `report.json` is over 1 MiB.",
+              "bad-shape": "Its `report.json` is not a version 1 visual report.",
+            };
+
+            // Every string from report.json comes from the PR's code. Inside <code>, with Markdown,
+            // table and mention characters as entities, it can't format, link, mention or break
+            // out of a table cell.
+            const ENTITIES = /[&<>|`\\@[\]*_~#!$:]/g;
+            const CONTROLS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩]/g;
+            const code = (value) => {
+              let chars = Array.from(String(value).replace(/[\r\n\t]/g, " ").replace(CONTROLS, ""));
+              if (chars.length > 200) chars = [...chars.slice(0, 199), "…"];
+              return `<code>${chars.join("").replace(ENTITIES, (c) => `&#${c.charCodeAt(0)};`)}</code>`;
+            };
+
+            const isString = (v) => typeof v === "string";
+            const valid = (r) =>
+              r !== null &&
+              typeof r === "object" &&
+              r.version === 1 &&
+              (r.pixels === "live" || r.pixels === "baseline") &&
+              isString(r.reference) &&
+              Array.isArray(r.targets) &&
+              r.targets.length <= MAX_TARGETS &&
+              r.targets.every(isString) &&
+              typeof r.passed === "boolean" &&
+              Array.isArray(r.examples) &&
+              r.examples.every(
+                (e) =>
+                  e !== null &&
+                  typeof e === "object" &&
+                  isString(e.id) &&
+                  isString(e.file) &&
+                  Array.isArray(e.cells) &&
+                  e.cells.every(
+                    (c) =>
+                      c !== null &&
+                      typeof c === "object" &&
+                      isString(c.target) &&
+                      (c.status === "passed" || c.status === "failed") &&
+                      isString(c.outcome) &&
+                      isString(c.message) &&
+                      (c.diffPixels === null || (Number.isSafeInteger(c.diffPixels) && c.diffPixels >= 0)),
+                  ),
+              );
+
+            const links =
+              `[The run](${runUrl}) uploaded the full report as the ` +
+              `[\`design-system-visual\` artefact](${artifactUrl}), kept for 7 days. ` +
+              "Download it, unzip it and open `report.html`.";
+
+            const unreadableBody = (reason) =>
+              [MARKER, "## Visual report: could not be read", "", `${REASONS[reason]} Commit \`${sha}\`.`, "", links].join("\n");
+
+            const more = (n) => `and ${n} more: see \`report.html\``;
+
+            const render = (r) => {
+              const mode =
+                r.pixels === "live"
+                  ? "`live`, compared with the reference's capture in this run"
+                  : "`baseline`, compared with the committed baselines";
+              const summary =
+                `${r.examples.length} ${r.examples.length === 1 ? "example" : "examples"} on ` +
+                `${r.targets.length} ${r.targets.length === 1 ? "target" : "targets"}. ` +
+                `Pixels: ${mode}. Reference: ${code(r.reference)}. Commit \`${sha}\`.`;
+              const header = [
+                "Example",
+                ...r.targets.map((t) => (t === r.reference ? `${code(t)} (reference)` : code(t))),
+              ];
+              const cell = (c) =>
+                !c ? "" : `${c.status === "passed" ? "✓" : "✗"} ${code(c.outcome)}${c.diffPixels === null ? "" : `, ${c.diffPixels} px`}`;
+              const rows = r.examples.map((e) => [
+                code(e.id),
+                ...r.targets.map((t) => cell(e.cells.find((c) => c.target === t))),
+              ]);
+              const failures = r.examples.flatMap((e) =>
+                e.cells
+                  .filter((c) => c.status === "failed")
+                  .map((c) => `- ${code(e.id)} on ${code(c.target)}: ${code(c.outcome)}${c.message ? `, ${code(c.message)}` : ""}`),
+              );
+              const line = (cells) => `| ${cells.join(" | ")} |`;
+
+              let shownRows = Math.min(rows.length, MAX_ROWS);
+              let shownFailures = Math.min(failures.length, MAX_FAILURES);
+              const build = () => {
+                const out = [MARKER, `## Visual report: ${r.passed ? "✓ passed" : "✗ failed"}`, "", summary, ""];
+                out.push(line(header), line(header.map(() => "---")), ...rows.slice(0, shownRows).map(line));
+                if (shownRows < rows.length) out.push("", more(rows.length - shownRows));
+                if (failures.length > 0) {
+                  out.push("", "### Failing cells", "", ...failures.slice(0, shownFailures));
+                  if (shownFailures < failures.length) out.push(`- ${more(failures.length - shownFailures)}`);
+                }
+                out.push("", links);
+                return out.join("\n");
+              };
+              let body = build();
+              while (body.length > MAX_BODY && (shownFailures > 0 || shownRows > 0)) {
+                if (shownFailures > 0) shownFailures--;
+                else shownRows--;
+                body = build();
+              }
+              return body;
+            };
+
+            let reason = process.env.UNREADABLE || "";
+            let body;
+            if (!reason) {
+              let report;
+              try {
+                report = JSON.parse(fs.readFileSync(path.join(process.env.RUNNER_TEMP, "report.json"), "utf8"));
+              } catch {
+                report = null;
+              }
+              if (valid(report)) body = render(report);
+              else reason = "bad-shape";
+            }
+            if (reason) body = unreadableBody(reason in REASONS ? reason : "bad-shape");
+            if (body.length > MAX_BODY) {
+              reason = "bad-shape";
+              body = unreadableBody(reason);
+            }
+
+            for (const issue_number of prs) {
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number,
+                per_page: 100,
+              });
+              // Anyone can write the marker: edit only the comment this workflow wrote.
+              const existing = comments.find(
+                (c) => c.user?.login === "github-actions[bot]" && c.user?.type === "Bot" && c.body?.startsWith(MARKER),
+              );
+              try {
+                if (existing) {
+                  await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+                  core.info(`Updated the visual report comment on #${issue_number}.`);
+                } else {
+                  await github.rest.issues.createComment({ owner, repo, issue_number, body });
+                  core.info(`Posted the visual report comment on #${issue_number}.`);
+                }
+              } catch (error) {
+                // A token GitHub limits for a reason this workflow didn't foresee leaves it green.
+                // A secondary rate limit is also a 403, and that one still fails.
+                if (error.status !== 403 || /rate limit/i.test(error.message ?? "")) throw error;
+                core.notice(`The token can't write to #${issue_number}, so it has no visual report comment: ${error.message}`);
+              }
+            }
+
+            if (reason) core.setFailed(`The visual report could not be read: ${REASONS[reason]}`);
