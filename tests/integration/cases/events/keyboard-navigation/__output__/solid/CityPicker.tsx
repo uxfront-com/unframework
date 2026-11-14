@@ -1,4 +1,13 @@
-import { For, type JSX, Show, createMemo, createSignal, createUniqueId } from "solid-js";
+import {
+  type Accessor,
+  For,
+  type JSX,
+  Show,
+  createMemo,
+  createSignal,
+  createUniqueId,
+  untrack,
+} from "solid-js";
 
 export interface CityPickerProps {
   cities: string[];
@@ -93,7 +102,7 @@ export default function CityPicker(
         </label>
         <Show when={open()}>
           <div id={listId} role="listbox" aria-label="Cities">
-            <For each={matches()}>
+            <KeyedFor each={matches()} by={(city) => city}>
               {(city, index) => (
                 <button
                   type="button"
@@ -102,12 +111,12 @@ export default function CityPicker(
                   tabindex="-1"
                   aria-selected={index() === active()}
                   onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => choose(city)}
+                  onClick={() => choose(city())}
                 >
-                  {city}
+                  {city()}
                 </button>
               )}
-            </For>
+            </KeyedFor>
           </div>
         </Show>
         <button type="submit">Search</button>
@@ -118,7 +127,9 @@ export default function CityPicker(
         <textarea name="note" onKeyDown={onNoteKeydown} />
       </label>
       <ul aria-label="Notes">
-        <For each={notes()}>{(note) => <li>{note}</li>}</For>
+        <KeyedFor each={notes()} by={(note, index) => index}>
+          {(note) => <li>{note()}</li>}
+        </KeyedFor>
       </ul>
     </section>
   );
@@ -129,4 +140,28 @@ function scopeAttributes(props: object): Record<string, ""> {
   const scope: Record<string, ""> = {};
   for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
   return scope;
+}
+
+/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
+function KeyedFor<T>(props: {
+  each: readonly T[];
+  by: (item: T, index: number) => unknown;
+  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+}): JSX.Element {
+  const items = createMemo(() => {
+    const rows = new Map<unknown, T>();
+    props.each.forEach((item, index) => {
+      const key = props.by(item, index);
+      rows.set(rows.has(key) ? {} : key, item);
+    });
+    return rows;
+  });
+  return (
+    <For each={[...items().keys()]}>
+      {(key, index) => {
+        const item = createMemo(() => items().get(key) as T);
+        return untrack(() => props.children(item, index));
+      }}
+    </For>
+  );
 }

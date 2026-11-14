@@ -131,6 +131,7 @@ describe("react target", () => {
       "hydration",
       "interactivity",
       "interpolation",
+      "keyed-identity",
       "late-prop",
       "list",
       "listbox",

@@ -1,0 +1,39 @@
+---
+export interface Track {
+  id: number;
+  title: string;
+  starred: boolean;
+}
+
+export interface PlaylistProps {
+  initial: Track[];
+}
+
+interface Props extends PlaylistProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { initial, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const tracks = initial;
+---
+
+<section class:list={["playlist", className]} style={style} {...scopeAttributes(Astro.props)}>
+  <ol aria-label="Playlist">
+    {tracks.map((track) => (
+      <li>
+        <label><input type="checkbox" name="queued" value={track.id} />{track.starred ? `${track.title} (starred)` : track.title}</label>
+        <button type="button" aria-pressed={track.starred}>{`Star ${track.title}`}</button>
+      </li>
+    ))}
+  </ol>
+  <button type="button">Sort by title</button>
+</section>

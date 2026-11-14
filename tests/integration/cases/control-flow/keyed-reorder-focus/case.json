@@ -1,0 +1,14 @@
+{
+  "description": "A keyed list in a ref: a row's star button keeps the focus while its item is replaced with a starred copy, and each row keeps its element, so its ticked box, when the list is sorted.",
+  "ssr": {
+    "initial": {
+      "props": {
+        "initial": [
+          { "id": 1, "title": "Verse", "starred": false },
+          { "id": 2, "title": "Intro", "starred": false },
+          { "id": 3, "title": "Chorus", "starred": false }
+        ]
+      }
+    }
+  }
+}

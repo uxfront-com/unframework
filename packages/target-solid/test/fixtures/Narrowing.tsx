@@ -1,4 +1,14 @@
-import { For, type JSX, Match, Show, Switch, mergeProps } from "solid-js";
+import {
+  type Accessor,
+  For,
+  type JSX,
+  Match,
+  Show,
+  Switch,
+  createMemo,
+  mergeProps,
+  untrack,
+} from "solid-js";
 
 interface Account {
   name: string;
@@ -134,24 +144,33 @@ export default function Narrowing(
             lang={user().link?.lang}
             data-json={JSON.stringify({ user: user() })}
           >
-            <For each={user().tags}>{(tag) => <span>{tag}</span>}</For>
+            <KeyedFor each={user().tags} by={(tag) => tag}>
+              {(tag) => <span>{tag()}</span>}
+            </KeyedFor>
           </a>
         )}
       </Show>
       <ul>
-        <For each={props.rows}>
+        <KeyedFor each={props.rows} by={(row, index) => index}>
           {(row, index) => (
             <li>
-              <Show when={row || undefined}>{(row) => <>{row().name}</>}</Show>
-              <Show when={index() > 0 && row ? { row } : undefined} fallback="-">
+              <Show when={row() || undefined}>{(row) => <>{row().name}</>}</Show>
+              <Show
+                when={((row, index) => (index > 0 && row ? { row } : undefined))(row(), index())}
+                fallback="-"
+              >
                 {(narrowed) => <b>{narrowed().row.name}</b>}
               </Show>
-              <Show when={row && row.age !== undefined ? { age: row.age } : undefined}>
+              <Show
+                when={((row) => (row && row.age !== undefined ? { age: row.age } : undefined))(
+                  row(),
+                )}
+              >
                 {(narrowed) => <s>{Math.round(narrowed().age)}</s>}
               </Show>
             </li>
           )}
-        </For>
+        </KeyedFor>
       </ul>
       <Show when={props.count !== undefined ? { count: props.count } : undefined}>
         {(narrowed) => <b title={String(narrowed().count)}>{Math.round(narrowed().count)}</b>}
@@ -207,15 +226,19 @@ export default function Narrowing(
         {(narrowed) => <b>{narrowed().separator.repeat(2)}</b>}
       </Show>
       <ul>
-        <For each={props.places}>
+        <KeyedFor each={props.places} by={(place) => place}>
           {(place) => (
             <li>
-              <Show when={place === "x" && props.user ? { user: props.user } : undefined}>
+              <Show
+                when={((place) => (place === "x" && props.user ? { user: props.user } : undefined))(
+                  place(),
+                )}
+              >
                 {(narrowed) => <i>{narrowed().user.name}</i>}
               </Show>
             </li>
           )}
-        </For>
+        </KeyedFor>
       </ul>
       <Show when={props.user || undefined} fallback="<anonymous>">
         {(user) => <p>{user().name}</p>}
@@ -236,13 +259,13 @@ export default function Narrowing(
       <Show when={props.user || undefined}>
         {(user) => (
           <ul>
-            <For each={props.places}>
+            <KeyedFor each={props.places} by={(place) => place}>
               {(place) => (
                 <li>
-                  {user().name}: {place}
+                  {user().name}: {place()}
                 </li>
               )}
-            </For>
+            </KeyedFor>
           </ul>
         )}
       </Show>
@@ -266,4 +289,28 @@ function scopeAttributes(props: object): Record<string, ""> {
   const scope: Record<string, ""> = {};
   for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
   return scope;
+}
+
+/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
+function KeyedFor<T>(props: {
+  each: readonly T[];
+  by: (item: T, index: number) => unknown;
+  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+}): JSX.Element {
+  const items = createMemo(() => {
+    const rows = new Map<unknown, T>();
+    props.each.forEach((item, index) => {
+      const key = props.by(item, index);
+      rows.set(rows.has(key) ? {} : key, item);
+    });
+    return rows;
+  });
+  return (
+    <For each={[...items().keys()]}>
+      {(key, index) => {
+        const item = createMemo(() => items().get(key) as T);
+        return untrack(() => props.children(item, index));
+      }}
+    </For>
+  );
 }

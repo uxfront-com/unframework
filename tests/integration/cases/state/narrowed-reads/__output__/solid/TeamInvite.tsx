@@ -1,4 +1,14 @@
-import { For, type JSX, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import {
+  type Accessor,
+  For,
+  type JSX,
+  Show,
+  createMemo,
+  createSignal,
+  onCleanup,
+  onMount,
+  untrack,
+} from "solid-js";
 
 export interface Member {
   id: number;
@@ -101,19 +111,19 @@ export default function TeamInvite(
     >
       <h2>{greeting()}</h2>
       <ul aria-label="Members">
-        <For each={visible()}>
+        <KeyedFor each={visible()} by={(member) => member.id}>
           {(member) => (
             <li>
               <button
                 type="button"
-                aria-pressed={selected() !== null && selected()!.id === member.id}
-                onClick={() => pick(member)}
+                aria-pressed={selected() !== null && selected()!.id === member().id}
+                onClick={() => pick(member())}
               >
-                {member.name}
+                {member().name}
               </button>
             </li>
           )}
-        </For>
+        </KeyedFor>
       </ul>
       <div class="pager" role="group" aria-label="Pages">
         <Show when={page() > 1}>
@@ -197,4 +207,28 @@ function scopeAttributes(props: object): Record<string, ""> {
   const scope: Record<string, ""> = {};
   for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
   return scope;
+}
+
+/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
+function KeyedFor<T>(props: {
+  each: readonly T[];
+  by: (item: T, index: number) => unknown;
+  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+}): JSX.Element {
+  const items = createMemo(() => {
+    const rows = new Map<unknown, T>();
+    props.each.forEach((item, index) => {
+      const key = props.by(item, index);
+      rows.set(rows.has(key) ? {} : key, item);
+    });
+    return rows;
+  });
+  return (
+    <For each={[...items().keys()]}>
+      {(key, index) => {
+        const item = createMemo(() => items().get(key) as T);
+        return untrack(() => props.children(item, index));
+      }}
+    </For>
+  );
 }

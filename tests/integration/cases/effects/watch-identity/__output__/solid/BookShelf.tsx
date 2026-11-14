@@ -1,4 +1,14 @@
-import { For, type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import {
+  type Accessor,
+  For,
+  type JSX,
+  createMemo,
+  createReaction,
+  createSignal,
+  onCleanup,
+  onMount,
+  untrack,
+} from "solid-js";
 
 export interface Book {
   id: number;
@@ -91,16 +101,16 @@ export default function BookShelf(
       {...scopeAttributes(props)}
     >
       <ul aria-label="Shelf">
-        <For each={props.books}>
+        <KeyedFor each={props.books} by={(book) => book.id}>
           {(book) => (
             <li>
-              <span>{book.title}</span>
-              <button type="button" onClick={() => focus(book)}>{`Focus ${book.title}`}</button>
-              <button type="button" onClick={() => peek(book)}>{`Peek ${book.title}`}</button>
-              <button type="button" onClick={() => read(book)}>{`Read ${book.title}`}</button>
+              <span>{book().title}</span>
+              <button type="button" onClick={() => focus(book())}>{`Focus ${book().title}`}</button>
+              <button type="button" onClick={() => peek(book())}>{`Peek ${book().title}`}</button>
+              <button type="button" onClick={() => read(book())}>{`Read ${book().title}`}</button>
             </li>
           )}
-        </For>
+        </KeyedFor>
       </ul>
       <p>Focused: {focused()?.title ?? "none"}</p>
       <p>Books read: {reads().size}</p>
@@ -131,6 +141,30 @@ function scopeAttributes(props: object): Record<string, ""> {
   const scope: Record<string, ""> = {};
   for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
   return scope;
+}
+
+/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
+function KeyedFor<T>(props: {
+  each: readonly T[];
+  by: (item: T, index: number) => unknown;
+  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+}): JSX.Element {
+  const items = createMemo(() => {
+    const rows = new Map<unknown, T>();
+    props.each.forEach((item, index) => {
+      const key = props.by(item, index);
+      rows.set(rows.has(key) ? {} : key, item);
+    });
+    return rows;
+  });
+  return (
+    <For each={[...items().keys()]}>
+      {(key, index) => {
+        const item = createMemo(() => items().get(key) as T);
+        return untrack(() => props.children(item, index));
+      }}
+    </For>
+  );
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

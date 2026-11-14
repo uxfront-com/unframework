@@ -1,0 +1,10 @@
+- list:
+  - listitem:
+    - text: Milk
+    - textbox "Note for Milk"
+  - listitem:
+    - text: Rye bread
+    - textbox "Note for Rye bread": wholemeal
+  - listitem:
+    - text: Tea
+    - textbox "Note for Tea"
