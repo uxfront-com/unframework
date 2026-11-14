@@ -26,17 +26,19 @@ locator had resolved. The same cases passed when run by path, and in a full run.
 A `-t` run still loads every spec file to collect its tests, and skips the ones that don't match.
 On a page that keeps its modules, a skipped file costs one import. On `hydrate:vue`, each skipped
 file is a fresh frame that loads the testing setup, the hydrate adapter, Vue and the case again.
+
 With `DEBUG=vite:time`, a `-t 'events/'` run of `hydrate:vue` serves 23,019 module requests to its
 227 frames, 74 of them per frame from the testing package's sources, which Vite serves one by one.
 Vitest's main process serves them while the 18 files the filter keeps run on the same 12 pages.
 
 The stall is load, not one slow call. Each step of an L12 test is many short round trips: the page,
 a Vitest command, Playwright, Chromium and back. Timed inside `harness/hydrate.ts`, the server
-render took a median 1 ms and 98 ms at most. Only 2 of 5,109 Playwright calls took over 0.8 s,
-Vitest's event loop never stalled for over 1.2 s, and the machine was half idle. The round trips
-fell behind while the main process handled about 24 s of module requests in a 13 s run, until
-one step passed 5 s. The test that failed first takes 1.5 s when nothing stalls, and took up to
-19.8 s in a filtered run.
+render took a median 1 ms and 98 ms at most.
+
+Only 2 of 5,109 Playwright calls took over 0.8 s, Vitest's event loop never stalled for over 1.2 s,
+and the machine was half idle. The round trips fell behind while the main process handled about 24 s
+of module requests in a 13 s run, until one step passed 5 s. The test that failed first takes 1.5 s
+when nothing stalls, and took up to 19.8 s in a filtered run.
 
 It depends on how the frames overlap the kept tests, so a page count doesn't fix it. With 1, 3, 6
 or 28 pages the same run passed, and with Vitest's default of 12 it failed. A count that works here
