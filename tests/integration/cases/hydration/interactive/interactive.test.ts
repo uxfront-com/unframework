@@ -12,11 +12,15 @@ describeTargets("hydration/interactive", () => {
     await expect.element(view.getByRole("status")).toHaveTextContent("4");
   });
 
-  it("counts the first click and emits the new count", { requires: ["interactivity"] }, async () => {
-    const view = await mountScenario(Stepper, "from-four");
-    await view.user.click(view.getByRole("button", { name: "Add one" }));
-    await view.expectParity("after-click");
-    await expect.element(view.getByRole("status")).toHaveTextContent("5");
-    expect(view.emitted("change")).toEqual([[5]]);
-  });
+  it(
+    "counts the first click and emits the new count",
+    { requires: ["interactivity"] },
+    async () => {
+      const view = await mountScenario(Stepper, "from-four");
+      await view.user.click(view.getByRole("button", { name: "Add one" }));
+      await view.expectParity("after-click");
+      await expect.element(view.getByRole("status")).toHaveTextContent("5");
+      expect(view.emitted("change")).toEqual([[5]]);
+    },
+  );
 });

@@ -55,7 +55,9 @@ it("reports an attribute that differs from the server's, through console.error",
     props: { text: "Monthly", title: "Billing" },
   });
   expect(hydrated.takeMismatches()).toEqual([
-    expect.stringMatching(/^A tree hydrated but some attributes of the server rendered HTML didn't match/),
+    expect.stringMatching(
+      /^A tree hydrated but some attributes of the server rendered HTML didn't match/,
+    ),
   ]);
   // React keeps the server's attribute: only the report says it differs.
   expect(container.querySelector("p")?.title).toBe("Plan");
