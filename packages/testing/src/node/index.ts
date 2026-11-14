@@ -18,11 +18,23 @@ export type {
   FocusCommandContext,
   InputCommandContext,
 } from "./commands.ts";
-export type { MapStackRequest, MapStackResult, SpecFinishedRequest } from "../commands.ts";
+export type {
+  HydrationRenderRequest,
+  HydrationRenderResult,
+  MapStackRequest,
+  MapStackResult,
+  SpecFinishedRequest,
+} from "../commands.ts";
 export { compiledEvents, eventsOfModule, recordCompiledModule } from "./events.ts";
 export { specFinished, ufSpecFinished } from "./finished.ts";
 export type { CompiledModule } from "./events.ts";
-export { caseDirectory, displayRoot, projectHarness, sharedArtefactContext } from "./context.ts";
+export {
+  caseDirectory,
+  caseMainSource,
+  displayRoot,
+  projectHarness,
+  sharedArtefactContext,
+} from "./context.ts";
 export type { CommandProject } from "./context.ts";
 export {
   buildCells,

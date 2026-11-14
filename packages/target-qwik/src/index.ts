@@ -227,6 +227,8 @@ export const qwik: Target = defineTarget({
     "generic-slot-props": { support: "native" },
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
+    // Qwik resumes: no hydrate call runs, and the client renders only what changes (ADR-0095).
+    hydration: { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { module } = context;

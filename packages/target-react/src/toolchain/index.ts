@@ -14,6 +14,7 @@ export const toolchain: Toolchain = {
   name: "react",
   client: "@unframework.dev/target-react/toolchain/client",
   server: "@unframework.dev/target-react/toolchain/server",
+  hydrate: "@unframework.dev/target-react/toolchain/hydrate",
 
   async vite(mode): Promise<UserConfig> {
     // Loaded here, not at the top: the harness imports every toolchain to build its config.
@@ -24,7 +25,12 @@ export const toolchain: Toolchain = {
       resolve: { dedupe: ["react", "react-dom"] },
       // Vite's dependency scanner never sees compiled modules (the unplugin hides them from
       // it), so name their runtime imports, or a cold run reloads the page mid-test.
-      ...(mode === "browser" ? { optimizeDeps: { include: BROWSER_RUNTIME } } : {}),
+      ...(mode === "ssr" ? {} : { optimizeDeps: { include: BROWSER_RUNTIME } }),
+      // A hydrate project renders in its browser server's SSR environment, which inlines every
+      // dependency (ADR-0095): React's packages are CommonJS, and run only from Node.
+      ...(mode === "hydrate"
+        ? { environments: { ssr: { resolve: { external: ["react", "react-dom"] } } } }
+        : {}),
     };
   },
 

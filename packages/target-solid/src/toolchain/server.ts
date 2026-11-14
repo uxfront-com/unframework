@@ -1,5 +1,5 @@
 // The Solid SSR renderer (Node, inside the `ssr:solid` project).
-import type { SsrRenderer } from "@unframework.dev/codegen";
+import type { HydrationRenderer, SsrRenderer } from "@unframework.dev/codegen";
 import { createComponent, renderToStringAsync } from "solid-js/web";
 
 import { asComponent } from "./component.ts";
@@ -23,3 +23,11 @@ export const renderToString: SsrRenderer = async (component, options) => {
   }
   return html;
 };
+
+/**
+ * Renders the server HTML the hydrate adapter hydrates (L12, ADR-0095): the same render, which
+ * the toolchain's `hydrate` configuration compiles hydratable, so every element carries the
+ * `data-hk` key `hydrate` reads. The hydration script is left out: the adapter puts its record on
+ * the page itself.
+ */
+export const renderForHydration: HydrationRenderer = renderToString;

@@ -483,6 +483,7 @@ function testTarget(emit: Target["emit"], unsupported?: CapabilityName): Target 
       "generic-slot-props": cell("generic-slot-props"),
       composables: cell("composables"),
       "composable-effect-order": cell("composable-effect-order"),
+      hydration: cell("hydration"),
     },
     emit,
   });

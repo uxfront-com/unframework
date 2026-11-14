@@ -6,6 +6,7 @@ const config: UserConfig = defineConfig({
     "src/index.ts",
     "src/toolchain/index.ts",
     "src/toolchain/client.ts",
+    "src/toolchain/hydrate.ts",
     "src/toolchain/server.ts",
     // Started by URL from ngtsc-virtual, so nothing imports it for the build to follow.
     "src/toolchain/ngtsc-worker.ts",

@@ -142,8 +142,16 @@ declare module "vitest" {
      * of those cases, which it renders alone. Absent everywhere else.
      */
     ufOnly?: string[];
-    /** SSR projects: the module specifier of the target's renderer (`toolchain.server`). */
+    /**
+     * SSR and hydrate projects: the module specifier of the target's renderer
+     * (`toolchain.server`).
+     */
     ufServer?: string;
+    /**
+     * Hydrate projects (L12, ADR-0095): `mount` renders on the server and hydrates, and every
+     * check a spec runs is recorded as L12. Absent everywhere else.
+     */
+    ufHydrate?: boolean;
     /**
      * SSR projects: the cases the server render spec renders (`@unframework.dev/testing/ssr`,
      * ADR-0086), in order, each with its main source by absolute path. The spec imports each

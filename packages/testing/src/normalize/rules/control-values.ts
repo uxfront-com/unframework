@@ -78,6 +78,39 @@ export function removeReactDefaultStates(root: TreeParent, target?: NormalizeTar
   });
 }
 
+/**
+ * Rule 4f: in a hydrated tree only (L12, ADR-0095), removes the markup of a form control's state
+ * wherever its live state, a `uf:*` pseudo-attribute, is there, whatever either says: an
+ * `<input>`'s `value` and `checked`, an `<option>`'s `selected` and a `<textarea>`'s text. The
+ * server writes a bound control's first state as markup, which hydration keeps and no client
+ * updates, where a client render of the same component writes only the property (Vue's
+ * `v-model`): after the person types, the markup shows a state that is gone. The live state
+ * compares in `uf:*`, and the markup is checked where it is written: in the server's HTML (L6)
+ * and in the client render's DOM (L7).
+ */
+export function removeServerControlStates(root: TreeParent, hydrated?: boolean): void {
+  if (!hydrated) return;
+  forEachElement(root, (element) => {
+    if (element.namespaceURI !== HTML_NAMESPACE) return;
+    switch (element.tagName) {
+      case "input":
+        if (getAttribute(element, "uf:value") !== undefined) removeAttribute(element, "value");
+        if (getAttribute(element, "uf:checked") !== undefined) removeAttribute(element, "checked");
+        return;
+      case "option":
+        if (getAttribute(element, "uf:selected") !== undefined) {
+          removeAttribute(element, "selected");
+        }
+        return;
+      case "textarea":
+        if (getAttribute(element, "uf:value") !== undefined) replaceChildren(element, []);
+        return;
+      default:
+        return;
+    }
+  });
+}
+
 function removeAttribute(element: TreeElement, name: string): void {
   element.attrs = element.attrs.filter((attribute) => attributeName(attribute) !== name);
 }

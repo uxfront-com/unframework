@@ -5,9 +5,10 @@
 // `ufAstroRender` Vitest browser command otherwise, which the test projects register. A host outside
 // Vitest serves its own module for `vitest/browser`, which throws when it loads anywhere else.
 import type { MountAdapter } from "@unframework.dev/codegen";
+import { assertSerialisableProps } from "@unframework.dev/codegen/toolchain-browser";
 import { commands } from "vitest/browser";
 
-import { assertSerialisableProps, isAstroComponentRef } from "./protocol.ts";
+import { isAstroComponentRef } from "./protocol.ts";
 import type { AstroRenderRequest, AstroRenderResult } from "./protocol.ts";
 
 declare module "vitest/browser" {
@@ -36,7 +37,7 @@ export const mount: MountAdapter = async (component, container, options) => {
   const renderCommand = options.renderCommand ?? ((request) => commands.ufAstroRender(request));
   const render = async (props: Readonly<Record<string, unknown>>) => {
     const copy = { ...props };
-    assertSerialisableProps(copy);
+    assertSerialisableProps(copy, "Astro renders on the server");
     return renderCommand({ id: component.id, props: copy });
   };
   const rendered = await render(options.props ?? {});

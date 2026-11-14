@@ -177,7 +177,14 @@ function flag(
 }
 
 /** The kinds of project the harness runs (plan §7.3). */
-export type ProjectKind = "compile" | "harness" | "toolchain" | "ssr" | "browser" | "bench";
+export type ProjectKind =
+  | "compile"
+  | "harness"
+  | "toolchain"
+  | "ssr"
+  | "browser"
+  | "hydrate"
+  | "bench";
 
 /**
  * A project's `sequence.groupOrder`. Groups run one after another, so a project that reads what
@@ -195,7 +202,10 @@ export type ProjectKind = "compile" | "harness" | "toolchain" | "ssr" | "browser
  *   Each of those projects also runs one file at a time (`fileParallelism: false`), so the
  *   reference is not at 0: Vitest moves a project at 0 that runs one file at a time after every
  *   other group, and refuses one there beside projects with another worker count;
- * - check with baselines (CI): everything 0, in parallel.
+ * - check with baselines (CI): everything 0, in parallel;
+ * - the hydrate projects (L12, ADR-0095) compare the hydrated DOM with the shared expectations
+ *   and write nothing, so they run in the last group of an update run, after every writer, and
+ *   of a check with live pixels, where the reference's browser project keeps its group alone.
  */
 export function groupOrder(
   kind: ProjectKind,
@@ -211,8 +221,13 @@ export function groupOrder(
   const namedByCase = target !== undefined && caseReferences.includes(target);
   if (mode.update) {
     if (kind === "compile" || kind === "harness" || kind === "bench") return 0;
+    if (kind === "hydrate") return 2 + named;
     if (kind === "toolchain" || isReference) return 1;
     return namedByCase ? 2 : 2 + named;
+  }
+  if (mode.pixels === "live" && kind === "hydrate") {
+    const alone = mode.browser !== undefined && mode.browser !== "chromium";
+    return alone ? 1 + new Set([reference, ...caseReferences, ...targets]).size : 1 + named;
   }
   if (mode.pixels === "live" && kind === "browser") {
     if (mode.browser !== undefined && mode.browser !== "chromium") {

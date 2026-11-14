@@ -2,7 +2,7 @@
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import type { ToolchainContext } from "@unframework.dev/codegen";
+import type { ToolchainContext, ToolchainMode } from "@unframework.dev/codegen";
 import type { Plugin } from "vite";
 // Vite's config, with the `test` options Vitest declares on it.
 import type { ViteUserConfig } from "vitest/config";
@@ -23,7 +23,7 @@ const RUNTIME = ["@angular/core", "@angular/common", "@angular/platform-browser"
  * module graph and link them there.
  */
 export async function viteConfig(
-  mode: "browser" | "ssr",
+  mode: ToolchainMode,
   context: ToolchainContext,
 ): Promise<ViteUserConfig> {
   const [compiler, tools] = await Promise.all([
@@ -44,6 +44,22 @@ export async function viteConfig(
       .analog({ tsconfig: analogTsconfig(context.toolchainDir), jit: false })
       .map(sourcemapPluginOnFileNames),
   ];
+  if (mode === "hydrate") {
+    // A hydrate project (L12, ADR-0095) mounts in the page as a browser project does, and renders
+    // in its server's SSR environment, which inlines every dependency: the SSR linker links the
+    // packages there, and only there, since the page's are pre-bundled and linked already.
+    return {
+      plugins: [...plugins, { ...angularSsrLinker(tools), applyToEnvironment: isServer }],
+      resolve: { dedupe: [...RUNTIME, "@angular/platform-server"] },
+      // RxJS resolves to its CommonJS build on the server, which runs only from Node; it needs no
+      // linking.
+      environments: { ssr: { resolve: { external: ["rxjs"] } } },
+      optimizeDeps: {
+        include: ["@angular/core", "@angular/common", "@angular/platform-browser"],
+        rolldownOptions: { plugins: [angularLinker(tools)] },
+      },
+    };
+  }
   if (mode === "browser") {
     return {
       plugins,
@@ -65,6 +81,11 @@ export async function viteConfig(
     // Analog switches a Node project to `vmThreads` unless a pool is set, which breaks isolation.
     test: { pool: "forks" },
   };
+}
+
+/** Whether an environment runs on the server: every environment but the page's. */
+function isServer(environment: { name: string; config: { consumer: string } }): boolean {
+  return environment.config.consumer === "server";
 }
 
 /** Analog's plugin that compiles, under Vitest, the `.ts` modules Angular did not. */

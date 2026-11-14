@@ -1,7 +1,7 @@
 // The per-project mount adapter seam. A browser project's second setup file
 // (`@unframework.dev/testing/<target>`) registers its target's adapter; the shared specs only call
 // `mount()`, which dispatches here.
-import type { MountAdapter, MountEvent } from "@unframework.dev/codegen";
+import type { HydrateAdapter, MountAdapter, MountEvent } from "@unframework.dev/codegen";
 import { inject } from "vitest";
 
 /** What a registration may add to its adapter. */
@@ -17,6 +17,8 @@ export interface TargetOptions {
 interface Registration extends TargetOptions {
   target: string;
   mount: MountAdapter;
+  /** A hydrate project's hydrate adapter (L12, ADR-0095), which `mount` then goes through. */
+  hydrate?: HydrateAdapter;
 }
 
 let registration: Registration | undefined;
@@ -32,7 +34,31 @@ export function registerTarget(
       `registerTarget("${target}"): this project already registered "${registration.target}". A browser project verifies one target.`,
     );
   }
-  registration = { ...options, target, mount };
+  registration = {
+    ...options,
+    target,
+    mount,
+    ...(registration?.hydrate ? { hydrate: registration.hydrate } : {}),
+  };
+}
+
+/**
+ * Registers a hydrate project's hydrate adapter (L12, ADR-0095), beside the mount adapter its
+ * target's registration gives: `mount` then renders on the server and hydrates, and the mount
+ * adapter renders the client render the hydrated DOM must agree with.
+ */
+export function registerHydrateAdapter(target: string, hydrate: HydrateAdapter): void {
+  if (registration && registration.target !== target) {
+    throw new Error(
+      `registerHydrateAdapter("${target}"): this project already registered "${registration.target}". A browser project verifies one target.`,
+    );
+  }
+  if (!registration) {
+    throw new Error(
+      `registerHydrateAdapter("${target}"): register the target's mount adapter first (@unframework.dev/testing/${target}).`,
+    );
+  }
+  registration.hydrate = hydrate;
 }
 
 /** The target this project verifies (`test.provide.target`). */

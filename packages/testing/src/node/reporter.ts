@@ -126,13 +126,18 @@ export class ParityReporter {
         // leaves out shows in no cell, so the summary compares each target's with the reference's,
         // test by test, by a name every target gives the test alike.
         const meta = test.meta().uf;
-        const record = meta && { ...meta, test: testKey(test.fullName, meta.target) };
-        if (record) {
+        const key = meta && testKey(test.fullName, meta.target);
+        // A hydrate project runs the browser project's tests again (L12, ADR-0095): their
+        // scenarios are judged there, so its records feed the cells alone, and never replace
+        // the browser project's test records, a skip by the hydration capability included.
+        const record =
+          meta && (isHydrateProject(test.project.name) ? { ...meta } : { ...meta, test: key });
+        if (record && key !== undefined) {
           records.push({ project: test.project.name, record });
-          const identity = JSON.stringify([test.project.name, record.case, record.test]);
+          const identity = JSON.stringify([test.project.name, record.case, key]);
           if (named.has(identity)) {
             problems.push(
-              `${test.project.name}: two tests of ${record.case} are named "${record.test}". Each test of a case has a name of its own: the summary compares each target's tests with the reference's by name.`,
+              `${test.project.name}: two tests of ${record.case} are named "${key}". Each test of a case has a name of its own: the summary compares each target's tests with the reference's by name.`,
             );
           }
           named.add(identity);
@@ -398,4 +403,9 @@ function supersede(
     }
   }
   return done;
+}
+
+/** Whether a project is a hydrate project (`hydrate:<target>`, L12, ADR-0095). */
+export function isHydrateProject(name: string): boolean {
+  return name.startsWith("hydrate:");
 }

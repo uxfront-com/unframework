@@ -43,6 +43,7 @@ import {
 } from "./browser/console.ts";
 import { prepareSpecFile } from "./browser/determinism.ts";
 import { boundElementTimeout } from "./browser/element-timeout.ts";
+import { isHydrateProject } from "./browser/hydrate.ts";
 import { installMatchers } from "./browser/matchers.ts";
 import { installNavigationGuard, takePreventedNavigations } from "./browser/navigation.ts";
 import { currentTarget } from "./browser/target.ts";
@@ -51,8 +52,12 @@ import { releaseKeys } from "./browser/user.ts";
 import { cleanup } from "./browser/view.ts";
 import { caseOfFile } from "./harness.ts";
 import type { ColorScheme } from "./harness.ts";
-import { BROWSER_LAYERS, recordLayer, recordStandIn } from "./layers.ts";
+import { BROWSER_LAYERS, recordEveryLayerAs, recordLayer, recordStandIn } from "./layers.ts";
 import type { LayerSubject } from "./layers.ts";
+
+/** A hydrate project (L12, ADR-0095): every check a spec runs is recorded as L12. */
+const hydrating = isHydrateProject();
+if (hydrating) recordEveryLayerAs("L12");
 
 installConsoleCapture();
 beginSpecFileConsole();
@@ -67,6 +72,8 @@ installNavigationGuard();
 // oxlint-disable-next-line no-empty-pattern
 aroundAll(async (runSuite, {}, suite) => {
   await runSuite();
+  // A hydrate project captures no pixels, so no follower waits on it.
+  if (hydrating) return;
   await commands.ufSpecFinished({ case: caseOfFile(suite.file.filepath, inject("ufHarness")) });
 });
 
@@ -96,7 +103,9 @@ beforeEach(({ task, skip }) => {
   // A case the target has no output for has a stand-in for its component, which renders
   // nothing: each of its tests is skipped there, whatever it requires, with the errors the case
   // expects.
-  const reason = noOutputReason(subject.case) ?? (requires ? requiredSkip(requires) : undefined);
+  // A hydrate project skips every test where the target does not hydrate (ADR-0095).
+  const needs = hydrating ? ["hydration", ...(requires ?? [])] : requires;
+  const reason = noOutputReason(subject.case) ?? (needs ? requiredSkip(needs) : undefined);
   if (reason === undefined) {
     // A case the target cannot compile yet has a stand-in for its component too, which throws
     // when the spec mounts it, before `expectParity` records L7, L9, L10 or L11: every browser

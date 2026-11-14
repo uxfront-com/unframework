@@ -2,7 +2,7 @@ import { defineConfig } from "tsdown";
 import type { UserConfig } from "tsdown";
 
 const config: UserConfig = defineConfig({
-  entry: ["src/index.ts", "src/toolchain-node/index.ts"],
+  entry: ["src/index.ts", "src/toolchain-node/index.ts", "src/toolchain-browser/index.ts"],
   unbundle: true,
   platform: "node",
   dts: true,

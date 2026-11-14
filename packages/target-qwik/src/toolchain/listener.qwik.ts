@@ -14,3 +14,20 @@ export function listenerQrl(listener: MountListener): QRL<MountListener> {
   const local = noSerialize(listener);
   return $((...args: unknown[]) => local?.(...args));
 }
+
+/** Where a resumed component's listeners find the test's (L12): resumed view, then event name. */
+export const RESUMED_LISTENERS = "__ufQwikResumedListeners";
+
+/**
+ * A QRL the server renders for one of the test's listeners (L12, ADR-0095): a function never
+ * crosses from the server to the page, so it captures the view and the event's names only, and
+ * calls the listener the page registered under them.
+ */
+export function resumedListenerQrl(view: string, name: string): QRL<MountListener> {
+  return $((...args: unknown[]) => {
+    const registry = (globalThis as Record<string, unknown>)[RESUMED_LISTENERS] as
+      | Record<string, Record<string, MountListener> | undefined>
+      | undefined;
+    registry?.[view]?.[name]?.(...args);
+  });
+}

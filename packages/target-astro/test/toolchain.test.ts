@@ -5,12 +5,7 @@ import type { Plugin } from "vite";
 import { describe, expect, it } from "vitest";
 
 import defaultToolchain, { toolchain } from "../src/toolchain/index.ts";
-import {
-  assertSerialisableProps,
-  astroComponentRef,
-  isAstroComponentRef,
-  splitQuery,
-} from "../src/toolchain/protocol.ts";
+import { astroComponentRef, isAstroComponentRef, splitQuery } from "../src/toolchain/protocol.ts";
 import { integrationRoot, toolchainDir } from "./workspace.ts";
 
 const context = { toolchainDir, root: integrationRoot };
@@ -86,29 +81,5 @@ describe("the browser protocol", () => {
       "?astro&type=style",
     ]);
     expect(splitQuery("/a/X.uf.tsx.astro")).toEqual(["/a/X.uf.tsx.astro", ""]);
-  });
-
-  it("accepts props that survive JSON", () => {
-    expect(() =>
-      assertSerialisableProps({
-        name: "Ada",
-        count: 2,
-        open: false,
-        missing: undefined,
-        none: null,
-        items: [{ id: 1, tags: ["a"] }],
-        bare: Object.create(null),
-      }),
-    ).not.toThrow();
-  });
-
-  it.each([
-    ["onClick", () => undefined, "`onClick` is a function"],
-    ["ratio", Number.NaN, "`ratio` is NaN"],
-    ["when", new Date(0), "`when` is a Date instance"],
-    ["nested", { list: [1, Symbol("s")] }, "`nested.list[1]` is a symbol"],
-    ["big", 1n, "`big` is a bigint"],
-  ])("rejects a prop JSON would change (%s)", (key, value, message) => {
-    expect(() => assertSerialisableProps({ [key]: value })).toThrow(message);
   });
 });

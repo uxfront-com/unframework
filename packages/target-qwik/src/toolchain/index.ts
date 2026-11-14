@@ -13,6 +13,7 @@ export const toolchain: Toolchain = {
   name: "qwik",
   client: "@unframework.dev/target-qwik/toolchain/client",
   server: "@unframework.dev/target-qwik/toolchain/server",
+  hydrate: "@unframework.dev/target-qwik/toolchain/hydrate",
 
   async vite(mode, { root }): Promise<UserConfig> {
     // Loaded here, not at the top: the harness imports every toolchain to build its config.
@@ -20,13 +21,13 @@ export const toolchain: Toolchain = {
     return {
       plugins: [
         // The mount adapter waits for lazily loaded segments (./loads.ts).
-        ...(mode === "browser" ? [segmentLoads()] : []),
+        ...(mode === "ssr" ? [] : [segmentLoads()]),
         qwikVite({
           // Browser projects render on the client only. SSR projects render through a dev
           // server, whose modules the plugin builds as its `client` target: that target needs no
           // entry here (the tests import what they render), and without an empty one a Vite
           // server outside Vitest fails to start, looking for `<srcDir>/root`.
-          ...(mode === "browser" ? { csr: true as const } : { client: { input: [] } }),
+          ...(mode === "ssr" ? { client: { input: [] } } : { csr: true as const }),
           // The default, `<root>/src`, must exist or the plugin throws at build start.
           srcDir: root,
           devTools: {

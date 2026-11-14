@@ -32,7 +32,7 @@ export const mount: MountAdapter = async (component, container, { props, on }) =
 };
 
 /** Svelte's callback props for the test's listeners: `onchange` for `change`, `onvaluechange` for `valueChange`. */
-function listenerProps(
+export function listenerProps(
   on: Readonly<Record<string, MountListener>> = {},
 ): Record<string, MountListener> {
   return Object.fromEntries(

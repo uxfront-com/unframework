@@ -222,6 +222,8 @@ export const angular: Target = defineTarget({
     },
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
+    // `provideClientHydration()` on both sides (ADR-0024, ADR-0095).
+    hydration: { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     return [emitComponent(component, context)];

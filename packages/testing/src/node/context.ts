@@ -11,7 +11,7 @@ import type { ArtefactContext } from "./policy.ts";
 export interface CommandProject {
   project: {
     name: string;
-    getProvidedContext(): { target?: string; ufHarness?: HarnessContext };
+    getProvidedContext(): { target?: string; ufHarness?: HarnessContext; ufHydrate?: boolean };
   };
 }
 

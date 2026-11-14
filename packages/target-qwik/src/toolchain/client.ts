@@ -16,7 +16,7 @@ import { listenerQrl } from "./listener.qwik.ts";
 import { nextTask, SegmentLoads } from "./loads.ts";
 
 /** The segments loading in the page, which the toolchain's browser build reports (./loads.ts). */
-const loads = new SegmentLoads();
+export const loads: SegmentLoads = new SegmentLoads();
 loads.install();
 
 /**

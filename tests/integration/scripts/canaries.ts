@@ -33,6 +33,7 @@ const PROJECTS: Record<ProjectKind, string> = {
   toolchain: "toolchain:*",
   ssr: "ssr:*",
   browser: "browser:*",
+  hydrate: "hydrate:*",
   bench: "bench",
 };
 

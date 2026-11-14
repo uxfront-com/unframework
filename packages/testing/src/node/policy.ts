@@ -210,6 +210,14 @@ function recordInLedger(path: string, context: ArtefactContext): void {
   writeFileSync(entry, "");
 }
 
+/**
+ * Whether a follower has a shared artefact to compare with: in update mode, one the reference
+ * wrote earlier in this run (a file left from before is stale), and otherwise the committed file.
+ */
+export function artefactExists(path: string, context: ArtefactContext): boolean {
+  return context.update ? ledgerHas(path, context) : existsSync(path);
+}
+
 function ledgerHas(path: string, context: ArtefactContext): boolean {
   return existsSync(ledgerEntry(path, context));
 }

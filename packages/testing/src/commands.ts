@@ -1,6 +1,6 @@
 // The browser commands the parity layers call (`@unframework.dev/testing/node` implements them).
 // Types only: the browser side imports them through the `vitest/browser` augmentation.
-import type { MountEvent } from "@unframework.dev/codegen";
+import type { CapturedConsoleMessage, MountEvent } from "@unframework.dev/codegen";
 
 import type { ColorScheme } from "./harness.ts";
 import type { CaptureRequest, CaptureResult } from "./visual-types.ts";
@@ -15,12 +15,17 @@ export interface ArtefactRequest {
    * file must then not exist, and the reference deletes it in update mode.
    */
   contents: string | null;
+  /**
+   * Hydrate projects only (L12): compare only where the file exists, and pass as `absent` where
+   * it does not, since no spec checks that scenario.
+   */
+  optional?: boolean;
 }
 
 /** How an artefact was settled. */
 export interface ArtefactResult {
   pass: boolean;
-  /** `matched`, `written`, `missing`, `missing-reference` or `mismatch`. */
+  /** `matched`, `written`, `missing`, `missing-reference`, `mismatch` or `absent`. */
   status: string;
   /** Why it failed, with a diff; empty when it passed. */
   message: string;
@@ -79,6 +84,21 @@ export interface MapStackResult {
   message?: string;
 }
 
+/** What `ufHydrationRender` renders: the calling case's main component, with these props (L12). */
+export interface HydrationRenderRequest {
+  case: string;
+  props: Record<string, unknown>;
+}
+
+/** The server HTML a hydrate project's page hydrates, and what rendering it logged. */
+export interface HydrationRenderResult {
+  /** The target's `renderForHydration`: every marker and script its client needs. */
+  html: string;
+  console: CapturedConsoleMessage[];
+  /** The URL the page imports the rendered component from: the spec must mount that one. */
+  module: string;
+}
+
 /** What an input did: a character the keyboard layout lacks is inserted as text, with no key. */
 export interface InputResult {
   inserted: boolean;
@@ -104,6 +124,11 @@ declare module "vitest/browser" {
     ufComponentEvents: (request: ComponentEventsRequest) => Promise<ComponentEventsResult>;
     /** Records that this project finished a case's spec file, which L10's followers read. */
     ufSpecFinished: (request: SpecFinishedRequest) => Promise<void>;
+    /**
+     * Hydrate projects (L12): the server HTML of the case's main component, rendered in the SSR
+     * environment of the project's own browser server (ADR-0095).
+     */
+    ufHydrationRender: (request: HydrationRenderRequest) => Promise<HydrationRenderResult>;
     /** Maps a thrown error's stack through the project's module graph and checks its top frame. */
     ufMapStack: (request: MapStackRequest) => Promise<MapStackResult>;
   }

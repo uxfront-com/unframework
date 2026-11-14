@@ -80,6 +80,7 @@ export const vue: Target = defineTarget({
     "generic-slot-props": { support: "native" },
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
+    hydration: { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { block, rewrite, listeners, components, keys } = scriptSetup(component, context.module);

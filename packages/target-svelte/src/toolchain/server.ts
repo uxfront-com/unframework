@@ -1,4 +1,4 @@
-import type { SsrRenderer } from "@unframework.dev/codegen";
+import type { HydrationRenderer, SsrRenderer } from "@unframework.dev/codegen";
 import type { Component } from "svelte";
 import { render } from "svelte/server";
 
@@ -12,3 +12,9 @@ export const renderToString: SsrRenderer = async (component, { props }) => {
   });
   return body;
 };
+
+/**
+ * Renders the server HTML the hydrate adapter hydrates (L12, ADR-0095): the body, with the
+ * hydration markers Svelte writes (`<!--[-->`, `<!--$s1-->`), which `hydrate` reads.
+ */
+export const renderForHydration: HydrationRenderer = renderToString;

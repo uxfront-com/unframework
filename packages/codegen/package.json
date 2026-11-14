@@ -25,6 +25,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./toolchain-node": "./src/toolchain-node/index.ts",
+    "./toolchain-browser": "./src/toolchain-browser/index.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -36,6 +37,10 @@
       "./toolchain-node": {
         "types": "./dist/toolchain-node/index.d.ts",
         "default": "./dist/toolchain-node/index.js"
+      },
+      "./toolchain-browser": {
+        "types": "./dist/toolchain-browser/index.d.ts",
+        "default": "./dist/toolchain-browser/index.js"
       },
       "./package.json": "./package.json"
     },
