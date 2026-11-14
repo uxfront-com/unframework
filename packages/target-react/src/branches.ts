@@ -140,6 +140,9 @@ function holdsState(node: RenderNode): boolean {
       return node.branches.some((branch) => branch.children.some(holdsState));
     case "For":
       return holdsState(node.body);
+    // A portal's element is React's to keep or remount as its branch is (ADR-0098).
+    case "Teleport":
+      return node.children.some(holdsState);
     case "Text":
     case "Interpolation":
       return false;
@@ -216,6 +219,8 @@ function topTags(nodes: readonly RenderNode[]): Set<string> {
       case "Component":
       case "SlotOutlet":
       case "Dynamic":
+      // A portal renders nothing in place (ADR-0098).
+      case "Teleport":
         break;
       default:
         node satisfies never;

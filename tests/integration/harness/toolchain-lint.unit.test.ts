@@ -23,7 +23,8 @@ import { loadToolchain, selectTargets } from "./targets.ts";
 
 /** What an output may import, besides its siblings (M3): its framework only (P7, D11). */
 const ALLOWED_IMPORTS: Record<string, readonly string[]> = {
-  react: ["react", "react/*"],
+  // `createPortal` lives in react-dom, React's renderer, which a `<Teleport>` needs (ADR-0098).
+  react: ["react", "react/*", "react-dom"],
   vue: ["vue", "vue/*"],
   svelte: ["svelte", "svelte/*"],
   solid: ["solid-js", "solid-js/*"],

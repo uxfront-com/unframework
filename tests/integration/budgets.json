@@ -6993,6 +6993,171 @@
         }
       }
     },
+    "teleport/basic": {
+      "time": 4.88,
+      "sizes": {
+        "react": {
+          "raw": 1457,
+          "gzip": 809
+        },
+        "vue": {
+          "raw": 697,
+          "gzip": 454
+        },
+        "svelte": {
+          "raw": 1337,
+          "gzip": 773
+        },
+        "solid": {
+          "raw": 1150,
+          "gzip": 669
+        },
+        "angular": {
+          "raw": 3364,
+          "gzip": 1504
+        },
+        "qwik": {
+          "raw": 2250,
+          "gzip": 1414
+        },
+        "astro": {
+          "raw": 541,
+          "gzip": 380
+        }
+      }
+    },
+    "teleport/components": {
+      "time": 20.16,
+      "sizes": {
+        "react": {
+          "raw": 3775,
+          "gzip": 2097
+        },
+        "vue": {
+          "raw": 2064,
+          "gzip": 1274
+        },
+        "svelte": {
+          "raw": 3301,
+          "gzip": 1871
+        },
+        "solid": {
+          "raw": 3078,
+          "gzip": 1737
+        },
+        "angular": {
+          "raw": 7460,
+          "gzip": 3547
+        },
+        "qwik": {
+          "raw": 5331,
+          "gzip": 3415
+        },
+        "astro": {
+          "raw": 1461,
+          "gzip": 995
+        }
+      }
+    },
+    "teleport/dialog": {
+      "time": 20.9,
+      "sizes": {
+        "react": {
+          "raw": 3426,
+          "gzip": 1877
+        },
+        "vue": {
+          "raw": 1629,
+          "gzip": 1026
+        },
+        "svelte": {
+          "raw": 2652,
+          "gzip": 1515
+        },
+        "solid": {
+          "raw": 2189,
+          "gzip": 1300
+        },
+        "angular": {
+          "raw": 6156,
+          "gzip": 2739
+        },
+        "qwik": {
+          "raw": 4435,
+          "gzip": 3061
+        },
+        "astro": {
+          "raw": 1345,
+          "gzip": 883
+        }
+      }
+    },
+    "teleport/root": {
+      "time": 6.98,
+      "sizes": {
+        "react": {
+          "raw": 1935,
+          "gzip": 1145
+        },
+        "vue": {
+          "raw": 1034,
+          "gzip": 718
+        },
+        "svelte": {
+          "raw": 1515,
+          "gzip": 966
+        },
+        "solid": {
+          "raw": 1227,
+          "gzip": 818
+        },
+        "angular": {
+          "raw": 3918,
+          "gzip": 2029
+        },
+        "qwik": {
+          "raw": 2849,
+          "gzip": 1972
+        },
+        "astro": {
+          "raw": 863,
+          "gzip": 604
+        }
+      }
+    },
+    "teleport/siblings": {
+      "time": 19.46,
+      "sizes": {
+        "react": {
+          "raw": 3806,
+          "gzip": 1925
+        },
+        "vue": {
+          "raw": 1814,
+          "gzip": 986
+        },
+        "svelte": {
+          "raw": 3051,
+          "gzip": 1532
+        },
+        "solid": {
+          "raw": 2929,
+          "gzip": 1486
+        },
+        "angular": {
+          "raw": 6136,
+          "gzip": 2586
+        },
+        "qwik": {
+          "raw": 4160,
+          "gzip": 2545
+        },
+        "astro": {
+          "raw": 1366,
+          "gzip": 879
+        }
+      }
+    },
     "theming/dark-theme": {
       "time": 1.84,
       "sizes": {

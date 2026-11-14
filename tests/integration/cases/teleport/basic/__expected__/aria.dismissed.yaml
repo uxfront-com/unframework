@@ -1,0 +1,4 @@
+- region "Inbox":
+  - paragraph: Dismissed 1 times
+- status: Your changes are saved (1)
+- button "Dismiss"

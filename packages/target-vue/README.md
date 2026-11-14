@@ -134,6 +134,10 @@ first option, where HTML and the other targets select none (ADR-0033). Every oth
 native: the listeners' options and DOM semantics, `useId` and `nextTick` are Vue's own, and so is
 all of composition, composables and their effect order included.
 
+A `<Teleport>` is Vue's own, behind a `mounted` ref set in `onMounted`, so neither the server nor the
+hydrating client renders its content, and a component whose whole render is a teleport sets
+`inheritAttrs: false`, so Vue doesn't warn about a parent's scope attribute (ADR-0098).
+
 ## Composables
 
 A `.uf.ts` module's composable is its own module, `useToggle.ts` (ADR-0069, `src/composable.ts`):

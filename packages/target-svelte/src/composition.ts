@@ -244,6 +244,8 @@ export function composedRender(
         const name = dynamic.get(node);
         return name === undefined ? chosenComponent(node, candidate) : candidate(name);
       }
+      case "Teleport":
+        return { ...node, children: rewrite(node.children) };
       case "Text":
       case "Interpolation":
         return node;

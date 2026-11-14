@@ -55,6 +55,11 @@ export interface PixelTolerance {
 export interface CaptureRequest {
   /** The serialised locator of the capture container. */
   element: { selector: string; locator: string };
+  /**
+   * The serialised locator of each element the view teleported (ADR-0098): the screenshot clips
+   * the union of their boxes and the container's.
+   */
+  teleported?: readonly { selector: string; locator: string }[];
   case: string;
   /** The scenario, such as `"initial"`. */
   name: string;

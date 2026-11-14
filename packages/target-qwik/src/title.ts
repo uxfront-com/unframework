@@ -104,6 +104,8 @@ export function qwikTitles(
             ? { fills: node.fills.map((fill) => ({ ...fill, children: fill.children.map(child) })) }
             : {}),
         };
+      case "Teleport":
+        return { ...node, children: node.children.map(child) };
       default:
         return node satisfies never;
     }
@@ -211,6 +213,7 @@ function templatePart(
       );
     case "Element":
     case "For":
+    case "Teleport":
       throw new Error(
         `An SVG <title> holds only text, and the IR's invariants rule out an ${node.kind} in one.`,
       );

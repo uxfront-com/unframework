@@ -79,6 +79,8 @@ function hasSelectableOption(parent: ElementNode, children: readonly RenderNode[
         return hasSelectableOption(parent, [child.body]);
       case "Text":
       case "Interpolation":
+      // A teleport's content mounts into another element, never into the list box (ADR-0098).
+      case "Teleport":
         return false;
       // What a component or a slot renders is the run time's: taken to be an option.
       case "Component":

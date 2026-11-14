@@ -10,7 +10,7 @@ import type {
 import { inject, TestRunner } from "vitest";
 import type { RunnerTestCase } from "vitest";
 import { commands, page } from "vitest/browser";
-import type { Locator } from "vitest/browser";
+import type { Locator, LocatorSelectors } from "vitest/browser";
 
 import "../commands.ts";
 import { normalizeDomWithIds } from "../dom/serialize.ts";
@@ -43,6 +43,7 @@ import { expectParity } from "./parity.ts";
 import type { ParityOptions } from "./parity.ts";
 import { registeredAdapter } from "./target.ts";
 import type { TargetOptions } from "./target.ts";
+import { teleportedBy, teleportedTestId, withoutStamps } from "./teleports.ts";
 import { expectThrown } from "./thrown.ts";
 import { Trace } from "./trace.ts";
 import { createUser } from "./user.ts";
@@ -51,7 +52,10 @@ import type { Input, ViewUser } from "./user.ts";
 /** Props as an adapter takes them. */
 export type Props = Readonly<Record<string, unknown>>;
 
-/** A mounted component. Queries are scoped to its container. */
+/**
+ * A mounted component. Queries are scoped to its container and to what it teleported: the
+ * elements its render appended to `<body>` (ADR-0098).
+ */
 export interface View<P = Props> {
   readonly target: string;
   /**
@@ -300,7 +304,25 @@ async function mountWith(
   }
   report(instance);
 
+  // The container, and what the view teleported (ADR-0098), which carries a test id of its own.
   const locator = page.getByTestId(testId);
+  const containerLocator = locator;
+  const teleportId = teleportedTestId(testId);
+  const teleportedRoots = page.getByTestId(teleportId);
+  const owner = {};
+  const teleported = () => teleportedBy(owner, teleportId);
+  const teleportedLocators = () =>
+    teleported().map((element, index) => ({ element, locator: teleportedRoots.nth(index) }));
+  /**
+   * A query of the view: what the container holds, what a teleported element holds, or a
+   * teleported element itself, which a query chained from it never matches.
+   */
+  const query =
+    <A extends unknown[]>(find: (root: LocatorSelectors, ...args: A) => Locator) =>
+    (...args: A): Locator =>
+      find(locator, ...args)
+        .or(find(teleportedRoots, ...args))
+        .or(find(page, ...args).and(teleportedRoots));
   // The engine too: Firefox serialises some prefixed properties under its own alias (ADR-0081).
   // Outside the harness (this package's own tests) nothing provides it.
   const engine = (inject("ufHarness") as HarnessContext | undefined)?.browser;
@@ -311,15 +333,26 @@ async function mountWith(
     ...(hydrating ? { hydrated: true } : {}),
   };
   // A target the normaliser does not know (a test stub) has no framework noise to remove.
-  const dom = () => normalizeDomWithIds(container, normalizeOptions);
+  const dom = () => {
+    const elements = teleported();
+    return withoutStamps(elements, teleportId, () =>
+      normalizeDomWithIds(container, normalizeOptions, elements),
+    );
+  };
   const html = () => dom().html;
   const aria = async () => {
     // Angular's hosts are inline for the snapshot alone, so they add no space (ADR-0060).
-    const restore = inlineHosts(container, isNormalizeTarget(target) ? target : undefined);
+    const hostTarget = isNormalizeTarget(target) ? target : undefined;
+    const roots = [{ element: container, locator: containerLocator }, ...teleportedLocators()];
+    const restores = roots.map(({ element }) => inlineHosts(element, hostTarget));
     try {
-      return await commands.ufAriaSnapshot(locator.serialize());
+      const snapshots: string[] = [];
+      for (const root of roots) {
+        snapshots.push((await commands.ufAriaSnapshot(root.locator.serialize())).trimEnd());
+      }
+      return snapshots.filter(Boolean).join("\n");
     } finally {
-      restore();
+      for (const restore of restores) restore();
     }
   };
   /** Fails with what the page or the payloads refused since the last settle. */
@@ -396,13 +429,23 @@ async function mountWith(
     target,
     container,
     locator,
-    getByRole: (...args) => locator.getByRole(...args),
-    getByText: (...args) => locator.getByText(...args),
-    getByLabelText: (...args) => locator.getByLabelText(...args),
-    getByPlaceholder: (...args) => locator.getByPlaceholder(...args),
-    getByAltText: (...args) => locator.getByAltText(...args),
-    getByTitle: (...args) => locator.getByTitle(...args),
-    getByTestId: (...args) => locator.getByTestId(...args),
+    getByRole: query((root, ...args: Parameters<Locator["getByRole"]>) => root.getByRole(...args)),
+    getByText: query((root, ...args: Parameters<Locator["getByText"]>) => root.getByText(...args)),
+    getByLabelText: query((root, ...args: Parameters<Locator["getByLabelText"]>) =>
+      root.getByLabelText(...args),
+    ),
+    getByPlaceholder: query((root, ...args: Parameters<Locator["getByPlaceholder"]>) =>
+      root.getByPlaceholder(...args),
+    ),
+    getByAltText: query((root, ...args: Parameters<Locator["getByAltText"]>) =>
+      root.getByAltText(...args),
+    ),
+    getByTitle: query((root, ...args: Parameters<Locator["getByTitle"]>) =>
+      root.getByTitle(...args),
+    ),
+    getByTestId: query((root, ...args: Parameters<Locator["getByTestId"]>) =>
+      root.getByTestId(...args),
+    ),
     user: createUser({ testId, perform }),
     clock: {
       async tick(ms) {
@@ -461,7 +504,11 @@ async function mountWith(
     },
     events: () => emittedArgs("view.events").map((event) => [event.name, ...event.args]),
     expectParity: (name, parityOptions) =>
-      expectParity({ ...view, trace, dom, aria }, name, parityOptions),
+      expectParity(
+        { ...view, containerLocator, teleported: teleportedLocators, trace, dom, aria },
+        name,
+        parityOptions,
+      ),
     expectThrown: (action) =>
       expectThrown(
         {
@@ -502,7 +549,7 @@ async function mountWith(
           component,
           initial,
           declared,
-          (root) => normalizeDomWithIds(root, normalizeOptions).html,
+          (root, elements) => normalizeDomWithIds(root, normalizeOptions, elements).html,
         ),
     });
   }

@@ -144,6 +144,8 @@ prop a parent's spread adds after the mount; `test/behaviour.browser.test.ts` pi
 `child-root-scope` (emulated: `scopeAttributes`, Scoped styles below) and `sheet-order`
 (unsupported, for information, UF4002: sheets load in render order).
 
+`teleport` is emulated (ADR-0098): the element renders once a visible task says the component has mounted, after the empty text of `{""}` in a fragment, and a ref, `teleport`, moves it into `to`, makes it stand in for its Qwik container there, and removes it once the element that held it leaves the document.
+
 ## Composition (M3)
 
 Composition follows ADR-0053 to ADR-0055 (`src/composition.ts`, `src/index.ts`).

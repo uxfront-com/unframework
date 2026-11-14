@@ -94,6 +94,7 @@ import type {
   SlotDeclaration,
   SlotFill,
   SlotOutletNode,
+  TeleportNode,
   SlotReference,
   Slots,
   Span,
@@ -990,6 +991,11 @@ export function createDynamicNode(
     ...(fills ? { fills } : {}),
     span: at,
   };
+}
+
+/** Builds `<Teleport to>` (ADR-0098). */
+export function createTeleportNode(to: string, children: RenderNode[], at: Span): TeleportNode {
+  return { kind: "Teleport", to, children, span: at };
 }
 
 /** What a fill is besides its slot and children: each set only when given. */

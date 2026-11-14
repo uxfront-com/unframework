@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Reverse tips' })",
+      "dom": [
+        "<section aria-label=\"Board\" class=\"board\">",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Reverse tips\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Show late\"",
+        "  </button>",
+        "  <div class=\"card\">",
+        "    <button type=\"button\">",
+        "      \"Toggle card\"",
+        "    </button>",
+        "  </div>",
+        "</section>",
+        "<uf:teleported>",
+        "  <p class=\"tip\" data-teleported=\"true\" role=\"note\">",
+        "    \"Alpha tip\"",
+        "  </p>",
+        "</uf:teleported>",
+        "<uf:teleported>",
+        "  <p class=\"tip\" data-teleported=\"true\" role=\"note\">",
+        "    \"Beta tip\"",
+        "  </p>",
+        "</uf:teleported>",
+        "<uf:teleported>",
+        "  <p class=\"tip\" data-teleported=\"true\" role=\"note\">",
+        "    \"Gamma tip\"",
+        "  </p>",
+        "</uf:teleported>",
+        "<uf:teleported>",
+        "  <p class=\"tip\" data-teleported=\"true\" role=\"note\">",
+        "    \"Late tip\"",
+        "  </p>",
+        "</uf:teleported>"
+      ],
+      "aria": [
+        "- region \"Board\":",
+        "  - button \"Reverse tips\"",
+        "  - button \"Show late\"",
+        "  - button \"Toggle card\"",
+        "- note: Alpha tip",
+        "- note: Beta tip",
+        "- note: Gamma tip",
+        "- note: Late tip"
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -24,8 +24,10 @@ export type { NormalizeTarget } from "./targets.ts";
  *
  * 1. comments are removed (`removeComments`);
  * 2. attributes the target's framework adds are removed (`removeFrameworkAttributes`), and so
- *    are Qwik's `q:template` elements (2b, `removeQwikTemplates`) and its `<style q:style>`
- *    elements (2c, `removeQwikStyles`, which runs first: it finds them by that attribute);
+ *    are Qwik's `q:template` elements and the empty `<script hidden>` that holds a visible task
+ *    of a component with no element of its own (2b, `removeQwikTemplates`, ADR-0098), and its
+ *    `<style q:style>` elements (2c, `removeQwikStyles`, which runs first: it finds them by that
+ *    attribute);
  * 3. Angular's `uf-*` host elements with `display: contents` are unwrapped
  *    (`unwrapAngularHosts`), and with an `engine`, the properties that engine serialises under
  *    its own alias take Chromium's name (3b, `renameEngineAliases`: Firefox's

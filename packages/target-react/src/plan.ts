@@ -198,6 +198,11 @@ export interface ReactPlan {
     refObject?: string;
     toggle?: string;
     modelText?: string;
+    /**
+     * The portal helper, the store subscription it passes `useSyncExternalStore`, and the local
+     * that says the component has mounted, where the template holds a `<Teleport>` (ADR-0098).
+     */
+    teleport?: TeleportNames;
   };
   /** Children, slots, models, fallthrough, expose, context and `<component is>` (ADR-0054). */
   readonly composition: CompositionPlan;
@@ -684,6 +689,19 @@ export function planComponent(
   }
 
   if (nextTick) helpers.nextTick = names.claim("useNextTick");
+  let teleports = false;
+  walk(component.render, {
+    enter(node) {
+      if (node.kind === "Teleport") teleports = true;
+    },
+  });
+  if (teleports) {
+    helpers.teleport = {
+      helper: names.claim("teleport"),
+      subscribe: names.claim("subscribeNothing"),
+      mounted: names.claim("mounted"),
+    };
+  }
 
   return {
     owner: component,
@@ -761,6 +779,16 @@ export function liveReaderNames(
     readers.set(name, reader);
   }
   return readers;
+}
+
+/** The names a `<Teleport>` needs (ADR-0098), as the target claims them. */
+export interface TeleportNames {
+  /** The inline helper that portals an element into the element a selector matches. */
+  helper: string;
+  /** The subscription `useSyncExternalStore` takes, to a store that never changes. */
+  subscribe: string;
+  /** The local that is true once the component has mounted, or hydrated. */
+  mounted: string;
 }
 
 /** The inline helpers' names, as the target claims them. */

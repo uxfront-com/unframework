@@ -172,6 +172,8 @@ export function forSolid(
               ...(node.fills ? { fills: fills(node.fills) } : {}),
             },
           ];
+        case "Teleport":
+          return [{ ...node, children: children(node.children) }];
         default:
           return node satisfies never;
       }

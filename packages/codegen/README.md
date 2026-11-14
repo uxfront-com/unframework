@@ -152,8 +152,10 @@ setInterval(() => count.value++, 1000)`), and its replacement is parenthesised w
   differ entirely there is no default, and a dialect that meets the construct without its hook
   throws: `slotValue` (a component's own slot as a value, which a forwarded fill passes on),
   `slotOutlet` (where it renders a slot; `jsxSlotProps` gives its props), `modelAttribute` (a
-  control's `v-model`), `modelBinding` (a component's `v-model:<name>`) and `dynamic`
-  (`<component is>`; `jsxDynamic` prints it as an element of the name a target gives it). Text
+  control's `v-model`), `modelBinding` (a component's `v-model:<name>`), `dynamic`
+  (`<component is>`; `jsxDynamic` prints it as an element of the name a target gives it) and
+  `teleport` (`<Teleport to>`, ADR-0098, whose one element the markup printer prints as a root's,
+  outside every element around it). Text
   goes through `jsxText`, the JSX escaping contract (ADR-0030): raw only when every JSX
   transform and formatter keeps it as written, and never where a formatter could start a line
   with `//` or `/*`.

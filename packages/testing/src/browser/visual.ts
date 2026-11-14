@@ -28,24 +28,38 @@ export async function captureVisual(
     name: string;
     container: HTMLElement;
     locator: Locator;
+    /** What the view teleported (ADR-0098), and the locator of each, in `body` order. */
+    teleported?: readonly { element: Element; locator: Locator }[];
     tolerance?: PixelTolerance;
   },
   send: CaptureCommand = (request) => commands.ufVisualCapture(request),
 ): Promise<CaptureResult> {
   const marker = `${Date.now().toString(36)}-${(markers += 1)}`;
-  input.container.setAttribute("data-uf-capture", marker);
+  const teleported = input.teleported ?? [];
+  // The font audit reads every element that carries the marker, and what it holds.
+  for (const element of [input.container, ...teleported.map(({ element }) => element)]) {
+    element.setAttribute("data-uf-capture", marker);
+  }
   try {
     // Geometry and pixels of the same merged tree; the tree is restored before anything else
     // runs (L11, the spec's assertions, a rerender).
-    const result = await withMergedTextRuns(input.container, () =>
-      send({
-        element: input.locator.serialize(),
-        case: input.case,
-        name: input.name,
-        geometry: captureGeometry(input.container),
-        marker,
-        ...(input.tolerance ? { tolerance: input.tolerance } : {}),
-      }),
+    const result = await withMergedTextRuns(
+      [input.container, ...teleported.map(({ element }) => element)],
+      () =>
+        send({
+          element: input.locator.serialize(),
+          ...(teleported.length
+            ? { teleported: teleported.map(({ locator }) => locator.serialize()) }
+            : {}),
+          case: input.case,
+          name: input.name,
+          geometry: captureGeometry(
+            input.container,
+            teleported.map(({ element }) => element),
+          ),
+          marker,
+          ...(input.tolerance ? { tolerance: input.tolerance } : {}),
+        }),
     );
     if (!result.pass && result.attachments.length) {
       // The artifact shape toMatchScreenshot uses, so reporters and the UI show the images.
@@ -58,6 +72,8 @@ export async function captureVisual(
     }
     return result;
   } finally {
-    input.container.removeAttribute("data-uf-capture");
+    for (const element of [input.container, ...teleported.map(({ element }) => element)]) {
+      element.removeAttribute("data-uf-capture");
+    }
   }
 }

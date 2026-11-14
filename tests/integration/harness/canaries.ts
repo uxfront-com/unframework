@@ -1255,6 +1255,8 @@ function elementsOf(nodes: readonly (RenderNode | FragmentNode)[]): ElementNode[
       case "Component":
       case "SlotOutlet":
       case "Dynamic":
+      // A teleport's element (ADR-0098).
+      case "Teleport":
         return elementsOf(childrenOf(node));
       case "Text":
       case "Interpolation":
@@ -1383,6 +1385,18 @@ function markText(render: ElementNode | FragmentNode): boolean {
                 )
               : [],
         );
+  // A root teleport's element renders in `to` once mounted (ADR-0098): the DOM, the ARIA tree and
+  // the client's render show its text, and a parent's server HTML its own. An element in place
+  // comes first, which the server HTML shows too.
+  if (render.kind === "Fragment") {
+    for (const node of render.children) {
+      if (node.kind === "Teleport") {
+        always.push(
+          ...node.children.filter((child): child is ElementNode => child.kind === "Element"),
+        );
+      }
+    }
+  }
   for (const root of always) {
     const holder = textHolder(root, "html");
     if (holder) {
@@ -1504,6 +1518,8 @@ function topElements(nodes: readonly RenderNode[]): ElementNode[] {
       case "Component":
       case "SlotOutlet":
       case "Dynamic":
+      // A teleport's element mounts in `to`, not among the roots (ADR-0098).
+      case "Teleport":
         return [];
       default:
         return unreachable(node);

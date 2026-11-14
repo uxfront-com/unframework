@@ -1002,8 +1002,8 @@ describe("summarise: skips on live layers", () => {
         /^basics\/hello › vue › L7: skipped \(flaky on CI\), which names no capability its target lacks/,
       ),
     ]);
-    expect(skipped("requires teleport: no portal", ["interactivity"])).toEqual([
-      'basics/hello › vue › L7: skipped for "teleport", which is not a capability.',
+    expect(skipped("requires time-travel: no clock", ["interactivity"])).toEqual([
+      'basics/hello › vue › L7: skipped for "time-travel", which is not a capability.',
     ]);
     // A layer that is not live is the summary's own skip.
     expect(

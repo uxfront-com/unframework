@@ -1,0 +1,239 @@
+{
+  "irVersion": 1,
+  "file": "teleport/siblings/Board.uf.tsx",
+  "components": [
+    {
+      "name": "Board",
+      "span": {
+        "start": 82,
+        "end": 335
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "shown@124",
+          "name": "shown",
+          "kind": "state",
+          "span": {
+            "start": 124,
+            "end": 129
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "shown@124",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 136,
+              "end": 140
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 118,
+            "end": 142
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "main",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "board",
+            "span": {
+              "start": 165,
+              "end": 178
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 194,
+                  "end": 207
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(shown.value = false)",
+                      "span": {
+                        "start": 223,
+                        "end": 244
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "shown@124",
+                          "operator": "=",
+                          "span": {
+                            "start": 223,
+                            "end": 244
+                          },
+                          "target": {
+                            "start": 224,
+                            "end": 235
+                          },
+                          "value": {
+                            "start": 238,
+                            "end": 243
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 217,
+                      "end": 244
+                    }
+                  },
+                  "span": {
+                    "start": 217,
+                    "end": 244
+                  }
+                },
+                "span": {
+                  "start": 208,
+                  "end": 245
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Remove panel",
+                "span": {
+                  "start": 246,
+                  "end": 274
+                }
+              }
+            ],
+            "span": {
+              "start": 186,
+              "end": 283
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "shown.value",
+                  "span": {
+                    "start": 291,
+                    "end": 302
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "shown@124",
+                      "span": {
+                        "start": 291,
+                        "end": 302
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Component",
+                    "component": "Panel",
+                    "attributes": [],
+                    "fills": [],
+                    "span": {
+                      "start": 306,
+                      "end": 315
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 291,
+                  "end": 315
+                }
+              }
+            ],
+            "span": {
+              "start": 291,
+              "end": 315
+            }
+          }
+        ],
+        "span": {
+          "start": 159,
+          "end": 328
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Board",
+      "span": {
+        "start": 82,
+        "end": 335
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Panel.uf.tsx",
+      "file": "Panel.uf.tsx",
+      "api": {
+        "file": "Panel.uf.tsx",
+        "components": [
+          {
+            "name": "Panel",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "section"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Panel",
+          "span": {
+            "start": 52,
+            "end": 57
+          }
+        }
+      ],
+      "span": {
+        "start": 45,
+        "end": 80
+      }
+    }
+  ]
+}

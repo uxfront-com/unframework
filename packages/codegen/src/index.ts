@@ -149,6 +149,7 @@ export type {
   PrintedAttribute,
   PrintedEvent,
   PrintedRef,
+  PrintedTeleport,
   StylePart,
 } from "./markup.ts";
 export {

@@ -1,0 +1,12 @@
+{
+  "description": "A component whose whole render is a `<Teleport>`, with its own sheet, rendered by a styled parent: the teleported element takes the child's scoped styles and none of the parent's, and no target warns about the scope attributes the parent passes.",
+  "requires": "Every test reads what the component teleports, which mounts in the browser once the component has mounted: Astro, which runs nothing there, renders none of it (ADR-0098).",
+  "main": "Page.uf.tsx",
+  "ssr": {
+    "default": {
+      "props": {
+        "message": "Draft saved"
+      }
+    }
+  }
+}

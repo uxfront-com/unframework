@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Dismiss' })",
+      "dom": [
+        "<section aria-label=\"Inbox\" class=\"inbox\">",
+        "  <p>",
+        "    \"Dismissed 1 times\"",
+        "  </p>",
+        "</section>",
+        "<uf:teleported>",
+        "  <div class=\"notice\" data-teleported=\"true\">",
+        "    <p role=\"status\">",
+        "      \"Your changes are saved (1)\"",
+        "    </p>",
+        "    <button type=\"button\" uf:focused=\"\">",
+        "      \"Dismiss\"",
+        "    </button>",
+        "  </div>",
+        "</uf:teleported>"
+      ],
+      "aria": [
+        "- region \"Inbox\":",
+        "  - paragraph: Dismissed 1 times",
+        "- status: Your changes are saved (1)",
+        "- button \"Dismiss\""
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import * as runtime from "../src/jsx-runtime.ts";
 
 /** The runtime surface of `@uxfront/unframework`: plan §4.2, nothing more (everything else is a type). */
 const AUTHORING_API = [
+  "Teleport",
   "computed",
   "defineEmits",
   "defineExpose",

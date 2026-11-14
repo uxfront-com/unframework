@@ -1997,10 +1997,11 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     }
     root = children.length ? createFragment(children, spanOf(returned)) : undefined;
   } else {
-    // A component, or `<component is>`, at the root renders as the root's one child (ADR-0053).
+    // A component, `<component is>` or `<Teleport>` at the root renders as the root's one child
+    // (ADR-0053, ADR-0098).
     const element = lowerElement(returned, ROOT, render).element;
     root =
-      element?.kind === "Component" || element?.kind === "Dynamic"
+      element?.kind === "Component" || element?.kind === "Dynamic" || element?.kind === "Teleport"
         ? createFragment([element], spanOf(returned))
         : element;
   }

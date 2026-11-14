@@ -132,7 +132,9 @@ every comment, which frameworks use as anchors; the attributes its framework add
 `_ngcontent-*`, `q:*`, `data-hk` and `data-astro-cid-*`; Angular's `uf-*` host elements with
 `display: contents`; Qwik's `q:template` elements, where its server render keeps a slot's
 unclaimed fallback (ADR-0058); and Qwik's `<style q:style>` elements, where its server render
-writes a component's `useStyles$` sheet, which its client writes in `<head>` (ADR-0063). For every target, the reference included, it also writes one form of what
+writes a component's `useStyles$` sheet, which its client writes in `<head>` (ADR-0063); and
+Qwik's empty `<script hidden>` with only its own attributes, where its server render writes the
+visible task of a component that renders no element of its own, a teleport root's (ADR-0098). For every target, the reference included, it also writes one form of what
 renders alike however it is written:
 
 - attributes sorted by name, and a `class`'s tokens sorted, one space apart;
@@ -384,6 +386,14 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
 
 ## The rules that keep it honest
 
+- **A view's captures cover what it teleported** (ADR-0098). Each element a view's render appends
+  to `<body>` outside its container is the view's, claimed by the view or L12's client render
+  that reads it first. L7 and L9 write it after the container's children in a `<uf:teleported>`
+  marker, the ARIA snapshot after the container's, L10's geometry under `uf:teleported[i]/` and
+  its screenshot over the union of the boxes, and L11 runs axe on it. A case pins `to="body"`,
+  and marks each element it teleports `data-teleported`, which no server HTML holds.
+- **A test leaves nothing in `<body>`** (ADR-0098). Once its views are unmounted, an element the
+  test added fails L8, naming it: a component removes what it appends to `<body>`.
 - **Check mode never writes.** A missing artefact fails with the command that creates it. CI is
   always in check mode, and `pnpm test:update` refuses to run there.
 - **One expectation, written once.** In update mode only the reference target writes the shared

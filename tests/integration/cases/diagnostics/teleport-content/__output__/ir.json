@@ -1,0 +1,38 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/teleport-content/Tooltip.uf.tsx",
+  "components": [
+    {
+      "name": "Hint",
+      "span": {
+        "start": 204,
+        "end": 245
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Hint",
+            "span": {
+              "start": 234,
+              "end": 238
+            }
+          }
+        ],
+        "span": {
+          "start": 231,
+          "end": 242
+        }
+      }
+    }
+  ],
+  "exports": [],
+  "types": []
+}

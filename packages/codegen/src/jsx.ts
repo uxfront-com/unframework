@@ -34,6 +34,7 @@ import type {
   SpreadKey,
   StaticAttribute,
   StyleAttribute,
+  TeleportNode,
   UfComponent,
   UfModule,
 } from "@unframework.dev/ir";
@@ -193,6 +194,12 @@ export interface JsxDialect {
    */
   dynamic?(node: DynamicNode, context: JsxContext): AST.Expression;
   /**
+   * `<Teleport to>` (ADR-0098): its one element, mounted into `to` once the component has
+   * mounted. No default: React portals it, Solid and Qwik move it with inline helpers.
+   * {@link jsxElement} prints the element.
+   */
+  teleport?(node: TeleportNode, context: JsxContext): AST.Expression;
+  /**
    * What an element, a component's tag or a `<component is>` carries after its scope attributes:
    * the JSX targets spread, on the component's root nodes (`scopeRoots`), the scope attributes
    * the styled parents that render it pass (the child-root rule, ADR-0063). The node is the
@@ -317,6 +324,8 @@ export function jsxNode(node: RenderNode | FragmentNode, context: JsxContext): A
       return hook(context, "slotOutlet")(node, context);
     case "Dynamic":
       return hook(context, "dynamic")(node, context);
+    case "Teleport":
+      return hook(context, "teleport")(node, context);
     default:
       return unreachable(node);
   }
@@ -339,7 +348,8 @@ export function jsxChildren(nodes: readonly RenderNode[], context: JsxContext): 
       case "If":
       case "For":
       case "SlotOutlet":
-      case "Dynamic": {
+      case "Dynamic":
+      case "Teleport": {
         const expression = jsxNode(node, context);
         return expression.type === "JSXElement" || expression.type === "JSXFragment"
           ? expression
@@ -616,10 +626,9 @@ export function jsxSlotProps(
 }
 
 /** A composition hook a dialect that meets its construct must have (ADR-0055). */
-function hook<K extends "slotValue" | "slotOutlet" | "modelAttribute" | "modelBinding" | "dynamic">(
-  context: JsxContext,
-  name: K,
-): NonNullable<JsxDialect[K]> {
+function hook<
+  K extends "slotValue" | "slotOutlet" | "modelAttribute" | "modelBinding" | "dynamic" | "teleport",
+>(context: JsxContext, name: K): NonNullable<JsxDialect[K]> {
   const found = context.dialect[name];
   if (!found) throw new Error(`The JSX dialect does not print composition yet (${name}).`);
   return found.bind(context.dialect) as NonNullable<JsxDialect[K]>;

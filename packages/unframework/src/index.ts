@@ -9,7 +9,7 @@
  * named-tuple `defineEmits`, getter-only `computed`, a key-less `useTemplateRef`, typed injection
  * keys. Type parameters of the macros default to `never`, so an un-parameterised macro is unusable.
  */
-import type { JSX, TemplateRef } from "./jsx-runtime.ts";
+import type { Children, JSX, TemplateRef } from "./jsx-runtime.ts";
 
 export type {
   Child,
@@ -224,6 +224,17 @@ export function inject<T>(key: InjectionKey<T>): T | undefined;
 export function inject<T>(key: InjectionKey<T>, fallback: T): T;
 export function inject(_key: InjectionKey<unknown>, _fallback?: unknown): unknown {
   return compileTimeOnly("inject");
+}
+
+// Rendering elsewhere
+
+/**
+ * Mounts its content, one element, into the element `to` selects once the component has mounted:
+ * `<Teleport to="body"><div class="dialog">…</div></Teleport>`. The server renders none of it, and
+ * it unmounts with the component (ADR-0098). `to` is a string literal.
+ */
+export function Teleport(_props: { to: string; children?: Children }): JSX.Element {
+  return compileTimeOnly("Teleport");
 }
 
 /** `JSX.Element` without a second import, for slot types: `defineSlots<{ default?(): Element }>()`. */

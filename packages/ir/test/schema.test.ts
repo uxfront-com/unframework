@@ -244,7 +244,7 @@ describe("validateModule", () => {
       {
         path: "/components/0/render/children/2",
         message:
-          "must match one of ElementNode, TextNode, InterpolationNode, IfNode, ForNode, ComponentNode, SlotOutletNode, DynamicNode",
+          "must match one of ElementNode, TextNode, InterpolationNode, IfNode, ForNode, ComponentNode, SlotOutletNode, DynamicNode, TeleportNode",
       },
     ]);
   });
@@ -524,7 +524,7 @@ describe("validateModule", () => {
     const errors = validateModule(module);
     expect(errors).toHaveLength(1);
     expect(errors[0]!.message).toBe(
-      "must match one of ElementNode, TextNode, InterpolationNode, IfNode, ForNode, ComponentNode, SlotOutletNode, DynamicNode",
+      "must match one of ElementNode, TextNode, InterpolationNode, IfNode, ForNode, ComponentNode, SlotOutletNode, DynamicNode, TeleportNode",
     );
   });
 

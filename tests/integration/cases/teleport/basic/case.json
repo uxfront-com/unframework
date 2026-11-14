@@ -1,0 +1,11 @@
+{
+  "description": "`<Teleport to=\"body\">` mounts its one element at the end of `body` once the component has mounted: the server renders none of it, its text follows the component's state, and a click inside it updates what the component shows in place.",
+  "requires": "Every test reads what the component teleports, which mounts in the browser once the component has mounted: Astro, which runs nothing there, renders none of it (ADR-0098).",
+  "ssr": {
+    "default": {
+      "props": {
+        "message": "Your changes are saved"
+      }
+    }
+  }
+}

@@ -1,0 +1,565 @@
+{
+  "irVersion": 1,
+  "file": "teleport/dialog/ConfirmDialog.uf.tsx",
+  "components": [
+    {
+      "name": "ConfirmDialog",
+      "span": {
+        "start": 145,
+        "end": 1013
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 134,
+              "end": 140
+            }
+          },
+          "binding": "title@185",
+          "span": {
+            "start": 127,
+            "end": 141
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ConfirmDialogProps",
+          "span": {
+            "start": 194,
+            "end": 212
+          }
+        },
+        "span": {
+          "start": 183,
+          "end": 212
+        }
+      },
+      "types": [
+        "ConfirmDialogProps"
+      ],
+      "emits": {
+        "binding": "emit@224",
+        "type": {
+          "code": "{ confirm: []; close: [] }",
+          "span": {
+            "start": 243,
+            "end": 269
+          }
+        },
+        "events": [
+          {
+            "name": "confirm",
+            "parameters": [],
+            "span": {
+              "start": 245,
+              "end": 256
+            }
+          },
+          {
+            "name": "close",
+            "parameters": [],
+            "span": {
+              "start": 258,
+              "end": 267
+            }
+          }
+        ],
+        "span": {
+          "start": 218,
+          "end": 273
+        }
+      },
+      "bindings": [
+        {
+          "id": "title@185",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 185,
+            "end": 190
+          }
+        },
+        {
+          "id": "emit@224",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 224,
+            "end": 228
+          }
+        },
+        {
+          "id": "titleId@282",
+          "name": "titleId",
+          "kind": "localConst",
+          "span": {
+            "start": 282,
+            "end": 289
+          }
+        },
+        {
+          "id": "cancel@309",
+          "name": "cancel",
+          "kind": "templateRef",
+          "span": {
+            "start": 309,
+            "end": 315
+          }
+        },
+        {
+          "id": "onKeydown@508",
+          "name": "onKeydown",
+          "kind": "localFn",
+          "span": {
+            "start": 508,
+            "end": 517
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Id",
+          "binding": "titleId@282",
+          "span": {
+            "start": 276,
+            "end": 300
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "cancel@309",
+          "type": {
+            "code": "HTMLButtonElement",
+            "span": {
+              "start": 333,
+              "end": 350
+            }
+          },
+          "span": {
+            "start": 303,
+            "end": 354
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    cancel.value?.focus();\n  }",
+              "span": {
+                "start": 461,
+                "end": 493
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "cancel@309",
+                  "span": {
+                    "start": 467,
+                    "end": 479
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 455,
+              "end": 493
+            }
+          },
+          "span": {
+            "start": 445,
+            "end": 495
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "onKeydown@508",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 525,
+                    "end": 538
+                  }
+                },
+                "event": "KeyboardEvent",
+                "span": {
+                  "start": 518,
+                  "end": 538
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (event.key === \"Escape\") emit(\"close\");\n  }",
+              "span": {
+                "start": 540,
+                "end": 592
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 550,
+                    "end": 559
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@224",
+                  "event": "close",
+                  "span": {
+                    "start": 574,
+                    "end": 587
+                  },
+                  "arguments": []
+                }
+              ]
+            },
+            "span": {
+              "start": 517,
+              "end": 592
+            }
+          },
+          "span": {
+            "start": 499,
+            "end": 592
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "role",
+            "value": "dialog",
+            "span": {
+              "start": 620,
+              "end": 633
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-modal",
+            "value": "true",
+            "span": {
+              "start": 640,
+              "end": 657
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-labelledby",
+            "value": {
+              "code": "titleId",
+              "span": {
+                "start": 681,
+                "end": 688
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "titleId@282",
+                  "span": {
+                    "start": 681,
+                    "end": 688
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 664,
+              "end": 689
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "tabindex",
+            "value": "-1",
+            "span": {
+              "start": 696,
+              "end": 709
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "dialog",
+            "span": {
+              "start": 716,
+              "end": 730
+            }
+          },
+          {
+            "kind": "Event",
+            "event": "keydown",
+            "handler": {
+              "kind": "Function",
+              "binding": "onKeydown@508",
+              "span": {
+                "start": 748,
+                "end": 757
+              }
+            },
+            "span": {
+              "start": 737,
+              "end": 758
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "id",
+                "value": {
+                  "code": "titleId",
+                  "span": {
+                    "start": 779,
+                    "end": 786
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "titleId@282",
+                      "span": {
+                        "start": 779,
+                        "end": 786
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 775,
+                  "end": 787
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "title",
+                  "span": {
+                    "start": 789,
+                    "end": 794
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "title@185",
+                      "span": {
+                        "start": 789,
+                        "end": 794
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 788,
+                  "end": 795
+                }
+              }
+            ],
+            "span": {
+              "start": 771,
+              "end": 800
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 815,
+                  "end": 828
+                }
+              },
+              {
+                "kind": "Ref",
+                "binding": "cancel@309",
+                "span": {
+                  "start": 829,
+                  "end": 841
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "emit(\"close\")",
+                      "span": {
+                        "start": 857,
+                        "end": 870
+                      },
+                      "refs": [
+                        {
+                          "kind": "Emit",
+                          "binding": "emit@224",
+                          "event": "close",
+                          "span": {
+                            "start": 857,
+                            "end": 870
+                          },
+                          "arguments": []
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 851,
+                      "end": 870
+                    }
+                  },
+                  "span": {
+                    "start": 851,
+                    "end": 870
+                  }
+                },
+                "span": {
+                  "start": 842,
+                  "end": 871
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Cancel",
+                "span": {
+                  "start": 872,
+                  "end": 894
+                }
+              }
+            ],
+            "span": {
+              "start": 807,
+              "end": 903
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 918,
+                  "end": 931
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "emit(\"confirm\")",
+                      "span": {
+                        "start": 947,
+                        "end": 962
+                      },
+                      "refs": [
+                        {
+                          "kind": "Emit",
+                          "binding": "emit@224",
+                          "event": "confirm",
+                          "span": {
+                            "start": 947,
+                            "end": 962
+                          },
+                          "arguments": []
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 941,
+                      "end": 962
+                    }
+                  },
+                  "span": {
+                    "start": 941,
+                    "end": 962
+                  }
+                },
+                "span": {
+                  "start": 932,
+                  "end": 963
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Delete",
+                "span": {
+                  "start": 964,
+                  "end": 986
+                }
+              }
+            ],
+            "span": {
+              "start": 910,
+              "end": 995
+            }
+          }
+        ],
+        "span": {
+          "start": 609,
+          "end": 1006
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ConfirmDialog",
+      "span": {
+        "start": 145,
+        "end": 1013
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ConfirmDialogProps",
+      "exported": true,
+      "code": "interface ConfirmDialogProps {\n  title: string;\n}",
+      "span": {
+        "start": 94,
+        "end": 143
+      }
+    }
+  ]
+}

@@ -31,8 +31,8 @@ describe("requiredSkip", () => {
       "requires interactivity: components render on the server only",
     );
     expect(requiredSkip(["use-id", "interactivity"], vue)).toBeUndefined();
-    expect(() => requiredSkip(["teleport"], vue)).toThrow(
-      '"teleport" is not a capability: the capabilities are element, use-id, interactivity.',
+    expect(() => requiredSkip(["time-travel"], vue)).toThrow(
+      '"time-travel" is not a capability: the capabilities are element, use-id, interactivity.',
     );
     expect(capabilityCell("use-id", vue)).toEqual({ support: "emulated", helper: "useId" });
   });

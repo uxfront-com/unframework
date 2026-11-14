@@ -111,6 +111,7 @@ import { isStatic } from "./props.ts";
 import type { EventParameter, PropBinding, RenderContext, SetupBinding } from "./render.ts";
 import { setupBindingOf } from "./render.ts";
 import type { SharedValue } from "./shared.ts";
+import { teleportNotTag } from "./teleport.ts";
 import {
   arrayOf,
   BOOLEAN,
@@ -1257,6 +1258,10 @@ class Walk {
     }
     const api = authoring.get(declaration);
     if (api === undefined) return UNKNOWN;
+    if (api === "Teleport") {
+      teleportNotTag(node, this.#context.reporter);
+      return UNKNOWN;
+    }
     if (api === "nextTick" && this.#mode === "client") {
       // Only a call reaches the targets (`#call` reads one, wrapped or not): each writes its
       // own call in place of `nextTick()`, which it cannot do for a function passed or stored.
@@ -2660,7 +2665,8 @@ class Walk {
         const api = context.setup.authoring.get(resolution.declaration);
         // A call the import reports, or a macro in the wrong place, whose arguments would say
         // nothing more.
-        if (api !== undefined) this.#misplaced(callee, api, true);
+        if (api === "Teleport") teleportNotTag(callee, context.reporter);
+        else if (api !== undefined) this.#misplaced(callee, api, true);
         this.#skip(node.arguments);
         return UNKNOWN;
       }

@@ -219,6 +219,27 @@ describe("rule 2b: removeQwikTemplates", () => {
     const template = "<section><template><p>t</p></template><q:slot>s</q:slot></section>";
     expect(apply(template, (root) => removeQwikTemplates(root, "qwik"))).toBe(apply(template));
   });
+
+  // The visible task's placeholder of a component that renders no element (ADR-0098).
+  it("removes Qwik's empty script placeholder, on Qwik alone", () => {
+    const placeholder =
+      '<section><p>Saving</p><script hidden="" q:key="a" q-d:qinit="b"></script></section>';
+    expect(normalizeHtml(placeholder, { target: "qwik" })).toBe(
+      normalizeHtml("<section><p>Saving</p></section>", { target: "qwik" }),
+    );
+    expect(normalizeHtml(placeholder, { target: "vue" })).toContain("<script");
+  });
+
+  it.each([
+    ['<section><script hidden="" q:key="a">x</script></section>', "content"],
+    ['<section><script q:key="a"></script></section>', "no hidden"],
+    [
+      '<section><script hidden="" type="module" q:key="a"></script></section>',
+      "an attribute of its own",
+    ],
+  ])("keeps a script that is no placeholder: %s (%s)", (html) => {
+    expect(apply(html, (root) => removeQwikTemplates(root, "qwik"))).toBe(apply(html));
+  });
 });
 
 describe("rule 2c: removeQwikStyles", () => {

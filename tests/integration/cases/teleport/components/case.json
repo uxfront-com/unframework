@@ -1,0 +1,8 @@
+{
+  "description": "Teleports that components hold: a keyed list of components whose whole render is a teleport, which reverses, and a teleport filled into a child's default slot that the child renders only while it is open.",
+  "requires": "Every test reads what the components teleport, which mounts in the browser once the component has mounted: Astro, which runs nothing there, renders none of it (ADR-0098).",
+  "main": "Board.uf.tsx",
+  "ssr": {
+    "default": {}
+  }
+}

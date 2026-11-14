@@ -1,0 +1,17 @@
+error[UF3053]: `to` is bound: each target selects the element from the selector as written, so it is a string literal.
+  --> diagnostics/teleport-target/Overlay.uf.tsx:12:17
+   |
+12 |       <Teleport to={target}>
+   |                 ^^^^^^^^^^^
+   |
+   = help: Write the selector as a string: `to="body"`.
+   = see: https://unframework.dev/diagnostics/UF3053
+
+error[UF3053]: `to` is empty: it is the selector of an element.
+  --> diagnostics/teleport-target/Overlay.uf.tsx:15:17
+   |
+15 |       <Teleport to="">
+   |                 ^^^^^
+   |
+   = help: Write the selector as a string: `to="body"`.
+   = see: https://unframework.dev/diagnostics/UF3053

@@ -63,14 +63,20 @@ export interface VisualCommandContext extends CommandProject {
   iframe: { locator(selector: string): PlaywrightLocatorLike };
 }
 
+/** Playwright's screenshot options, as every capture takes them. */
+interface ScreenshotOptions {
+  animations: "disabled";
+  caret: "hide";
+  scale: "css";
+  type: "png";
+  timeout: number;
+}
+
 interface PlaywrightLocatorLike {
-  screenshot(options: {
-    animations: "disabled";
-    caret: "hide";
-    scale: "css";
-    type: "png";
+  screenshot(options: ScreenshotOptions): Promise<Buffer>;
+  boundingBox(options: {
     timeout: number;
-  }): Promise<Buffer>;
+  }): Promise<{ x: number; y: number; width: number; height: number } | null>;
 }
 
 interface ReferenceCapture {
@@ -382,14 +388,17 @@ async function stableCapture(
   request: CaptureRequest,
 ): Promise<Buffer | undefined> {
   const locator = context.iframe.locator(request.element.selector);
+  const options: ScreenshotOptions = {
+    animations: "disabled",
+    caret: "hide",
+    scale: "css",
+    type: "png",
+    timeout: 5_000,
+  };
+  // The union of the container's box and those of what it teleported (ADR-0098).
+  const clip = request.teleported?.length ? await unionClip(context, request) : undefined;
   const shoot = () =>
-    locator.screenshot({
-      animations: "disabled",
-      caret: "hide",
-      scale: "css",
-      type: "png",
-      timeout: 5_000,
-    });
+    clip ? context.page.screenshot({ ...options, clip }) : locator.screenshot(options);
   let previous = await shoot();
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const next = await shoot();
@@ -397,6 +406,24 @@ async function stableCapture(
     previous = next;
   }
   return undefined;
+}
+
+/** The box around the container and every element it teleported, in the page's pixels. */
+async function unionClip(
+  context: VisualCommandContext,
+  request: CaptureRequest,
+): Promise<{ x: number; y: number; width: number; height: number }> {
+  const boxes = [];
+  for (const { selector } of [request.element, ...(request.teleported ?? [])]) {
+    const box = await context.iframe.locator(selector).boundingBox({ timeout: 5_000 });
+    if (!box) throw new Error(`[uf:visual] ${selector} has no box to capture.`);
+    boxes.push(box);
+  }
+  const left = Math.min(...boxes.map(({ x }) => x));
+  const top = Math.min(...boxes.map(({ y }) => y));
+  const right = Math.max(...boxes.map(({ x, width }) => x + width));
+  const bottom = Math.max(...boxes.map(({ y, height }) => y + height));
+  return { x: left, y: top, width: right - left, height: bottom - top };
 }
 
 /** The part of a CDP `DOM.Node` the font audit reads. */

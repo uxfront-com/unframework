@@ -1,0 +1,261 @@
+{
+  "irVersion": 1,
+  "file": "teleport/components/Card.uf.tsx",
+  "components": [
+    {
+      "name": "Card",
+      "span": {
+        "start": 72,
+        "end": 414
+      },
+      "props": [],
+      "types": [],
+      "slots": {
+        "binding": "slots@113",
+        "type": {
+          "code": "{ default?(): Element }",
+          "span": {
+            "start": 133,
+            "end": 156
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 135,
+              "end": 154
+            }
+          }
+        ],
+        "span": {
+          "start": 107,
+          "end": 160
+        }
+      },
+      "bindings": [
+        {
+          "id": "slots@113",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 113,
+            "end": 118
+          }
+        },
+        {
+          "id": "open@169",
+          "name": "open",
+          "kind": "state",
+          "span": {
+            "start": 169,
+            "end": 173
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "open@169",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 180,
+              "end": 185
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 163,
+            "end": 187
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "card",
+            "span": {
+              "start": 209,
+              "end": 221
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 237,
+                  "end": 250
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(open.value = !open.value)",
+                      "span": {
+                        "start": 266,
+                        "end": 292
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "open@169",
+                          "operator": "=",
+                          "span": {
+                            "start": 266,
+                            "end": 292
+                          },
+                          "target": {
+                            "start": 267,
+                            "end": 277
+                          },
+                          "value": {
+                            "start": 280,
+                            "end": 291
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "open@169",
+                          "span": {
+                            "start": 281,
+                            "end": 291
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 260,
+                      "end": 292
+                    }
+                  },
+                  "span": {
+                    "start": 260,
+                    "end": 292
+                  }
+                },
+                "span": {
+                  "start": 251,
+                  "end": 293
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Toggle card",
+                "span": {
+                  "start": 294,
+                  "end": 321
+                }
+              }
+            ],
+            "span": {
+              "start": 229,
+              "end": 330
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 338,
+                    "end": 348
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@169",
+                      "span": {
+                        "start": 338,
+                        "end": 348
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "div",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "body",
+                        "span": {
+                          "start": 357,
+                          "end": 369
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "SlotOutlet",
+                        "slot": "default",
+                        "fallback": [],
+                        "span": {
+                          "start": 370,
+                          "end": 389
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 352,
+                      "end": 395
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 338,
+                  "end": 395
+                }
+              }
+            ],
+            "span": {
+              "start": 338,
+              "end": 395
+            }
+          }
+        ],
+        "span": {
+          "start": 204,
+          "end": 407
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Card",
+      "span": {
+        "start": 72,
+        "end": 414
+      }
+    }
+  ],
+  "types": []
+}

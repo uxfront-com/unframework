@@ -59,11 +59,12 @@ describeTargets("stub/behaviour", () => {
     const l8 = (name: string) =>
       task.suite?.tasks.find((sibling) => sibling.name === name)?.meta.uf?.layers.L8;
     // What a canary that empties the render makes of every spec (ADR-0043): plain text, with
-    // what the container held instead, and without the page's HTML.
+    // what the container held instead, and without the page's HTML. A view's query also looks at
+    // what the view teleported (ADR-0098).
     expect(l8("fails L8 with the test's own failed assertion")).toEqual({
       status: "fail",
       message: expect.stringMatching(
-        /^VitestBrowserElementError: Cannot find element with locator: getByTestId\('uf-root-\d+'\)\.getByText\('Goodbye'\)\n\nARIA tree:\n- paragraph: Hello$/,
+        /^VitestBrowserElementError: Cannot find element with locator: getByTestId\('uf-root-(\d+)'\)\.getByText\('Goodbye'\)\.or\(getByTestId\('uf-root-\1-teleported'\)\.getByText\('Goodbye'\)\)\.or\(getByText\('Goodbye'\)\.and\(getByTestId\('uf-root-\1-teleported'\)\)\)\n\nARIA tree:\n- paragraph: Hello$/,
       ),
     });
     // What a canary that empties the render makes of a spec whose first statement after its
@@ -71,7 +72,7 @@ describeTargets("stub/behaviour", () => {
     expect(l8("fails L8 with an action on an element that is not there")).toEqual({
       status: "fail",
       message: expect.stringMatching(
-        /^TimeoutError: locator\.hover: Timeout 5000ms exceeded\.\nCall log:\n {2}- waiting for .*getByTestId\('uf-root-\d+'\)\.getByRole\('button', \{ name: 'Goodbye', exact: true \}\)\n?$/,
+        /^TimeoutError: locator\.hover: Timeout 5000ms exceeded\.\nCall log:\n {2}- waiting for .*getByTestId\('uf-root-(\d+)'\)\.getByRole\('button', \{ name: 'Goodbye', exact: true \}\)\.or\(.*getByTestId\('uf-root-\1-teleported'\)\.getByRole\('button', \{ name: 'Goodbye', exact: true \}\)\)\.or\(.*getByRole\('button', \{ name: 'Goodbye', exact: true \}\)\.and\(.*getByTestId\('uf-root-\1-teleported'\)\)\)\n?$/,
       ),
     });
     expect(l8("fails L8 when the test asserts nothing")).toEqual({

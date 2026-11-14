@@ -1,0 +1,4 @@
+- region "Page":
+  - paragraph: Saving…
+- alert:
+  - paragraph: Draft saved

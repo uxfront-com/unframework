@@ -1,0 +1,854 @@
+{
+  "irVersion": 1,
+  "file": "teleport/siblings/Panel.uf.tsx",
+  "components": [
+    {
+      "name": "Panel",
+      "span": {
+        "start": 105,
+        "end": 1453
+      },
+      "props": [],
+      "types": [
+        "Row"
+      ],
+      "bindings": [
+        {
+          "id": "note@147",
+          "name": "note",
+          "kind": "state",
+          "span": {
+            "start": 147,
+            "end": 151
+          }
+        },
+        {
+          "id": "extras@174",
+          "name": "extras",
+          "kind": "state",
+          "span": {
+            "start": 174,
+            "end": 180
+          }
+        },
+        {
+          "id": "rows@210",
+          "name": "rows",
+          "kind": "state",
+          "span": {
+            "start": 210,
+            "end": 214
+          }
+        },
+        {
+          "id": "addExtra@309",
+          "name": "addExtra",
+          "kind": "localFn",
+          "span": {
+            "start": 309,
+            "end": 317
+          }
+        },
+        {
+          "id": "extra@835",
+          "name": "extra",
+          "kind": "loopVar",
+          "span": {
+            "start": 835,
+            "end": 840
+          }
+        },
+        {
+          "id": "row@1176",
+          "name": "row",
+          "kind": "loopVar",
+          "span": {
+            "start": 1176,
+            "end": 1179
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "note@147",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 158,
+              "end": 163
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 141,
+            "end": 165
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "extras@174",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 187,
+              "end": 195
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 197,
+              "end": 199
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 168,
+            "end": 201
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "rows@210",
+          "type": {
+            "code": "Row[]",
+            "span": {
+              "start": 221,
+              "end": 226
+            }
+          },
+          "initial": {
+            "code": "[\n    { id: 1, label: \"Alpha\" },\n    { id: 2, label: \"Beta\" },\n  ]",
+            "span": {
+              "start": 228,
+              "end": 294
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 204,
+            "end": 296
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "addExtra@309",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    extras.value = [...extras.value, `Extra ${extras.value.length + 1}`];\n  }",
+              "span": {
+                "start": 320,
+                "end": 399
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "extras@174",
+                  "operator": "=",
+                  "span": {
+                    "start": 326,
+                    "end": 394
+                  },
+                  "target": {
+                    "start": 326,
+                    "end": 338
+                  },
+                  "value": {
+                    "start": 341,
+                    "end": 394
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "extras@174",
+                  "span": {
+                    "start": 345,
+                    "end": 357
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "extras@174",
+                  "span": {
+                    "start": 368,
+                    "end": 380
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 317,
+              "end": 399
+            }
+          },
+          "span": {
+            "start": 300,
+            "end": 399
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "panel",
+            "span": {
+              "start": 425,
+              "end": 438
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Panel",
+            "span": {
+              "start": 439,
+              "end": 457
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 473,
+                  "end": 486
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(note.value = true)",
+                      "span": {
+                        "start": 502,
+                        "end": 521
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "note@147",
+                          "operator": "=",
+                          "span": {
+                            "start": 502,
+                            "end": 521
+                          },
+                          "target": {
+                            "start": 503,
+                            "end": 513
+                          },
+                          "value": {
+                            "start": 516,
+                            "end": 520
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 496,
+                      "end": 521
+                    }
+                  },
+                  "span": {
+                    "start": 496,
+                    "end": 521
+                  }
+                },
+                "span": {
+                  "start": 487,
+                  "end": 522
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Show note",
+                "span": {
+                  "start": 523,
+                  "end": 548
+                }
+              }
+            ],
+            "span": {
+              "start": 465,
+              "end": 557
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 572,
+                  "end": 585
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "addExtra@309",
+                  "span": {
+                    "start": 595,
+                    "end": 603
+                  }
+                },
+                "span": {
+                  "start": 586,
+                  "end": 604
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add extra",
+                "span": {
+                  "start": 605,
+                  "end": 630
+                }
+              }
+            ],
+            "span": {
+              "start": 564,
+              "end": 639
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 654,
+                  "end": 667
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(rows.value = [...rows.value].reverse())",
+                      "span": {
+                        "start": 683,
+                        "end": 723
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "rows@210",
+                          "operator": "=",
+                          "span": {
+                            "start": 683,
+                            "end": 723
+                          },
+                          "target": {
+                            "start": 684,
+                            "end": 694
+                          },
+                          "value": {
+                            "start": 697,
+                            "end": 722
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "rows@210",
+                          "span": {
+                            "start": 701,
+                            "end": 711
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 677,
+                      "end": 723
+                    }
+                  },
+                  "span": {
+                    "start": 677,
+                    "end": 723
+                  }
+                },
+                "span": {
+                  "start": 668,
+                  "end": 724
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Reverse rows",
+                "span": {
+                  "start": 725,
+                  "end": 753
+                }
+              }
+            ],
+            "span": {
+              "start": 646,
+              "end": 762
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "note.value",
+                  "span": {
+                    "start": 770,
+                    "end": 780
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "note@147",
+                      "span": {
+                        "start": 770,
+                        "end": 780
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "note",
+                        "span": {
+                          "start": 787,
+                          "end": 799
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Note",
+                        "span": {
+                          "start": 800,
+                          "end": 804
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 784,
+                      "end": 808
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 770,
+                  "end": 808
+                }
+              }
+            ],
+            "span": {
+              "start": 770,
+              "end": 808
+            }
+          },
+          {
+            "kind": "For",
+            "source": {
+              "code": "extras.value",
+              "span": {
+                "start": 817,
+                "end": 829
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "extras@174",
+                  "span": {
+                    "start": 817,
+                    "end": 829
+                  }
+                }
+              ]
+            },
+            "item": "extra@835",
+            "key": {
+              "code": "extra",
+              "span": {
+                "start": 866,
+                "end": 871
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "extra@835",
+                  "span": {
+                    "start": 866,
+                    "end": 871
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Element",
+              "tag": "span",
+              "attributes": [],
+              "children": [
+                {
+                  "kind": "Interpolation",
+                  "value": {
+                    "code": "extra",
+                    "span": {
+                      "start": 874,
+                      "end": 879
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "extra@835",
+                        "span": {
+                          "start": 874,
+                          "end": 879
+                        }
+                      }
+                    ]
+                  },
+                  "span": {
+                    "start": 873,
+                    "end": 880
+                  }
+                }
+              ],
+              "span": {
+                "start": 855,
+                "end": 887
+              }
+            },
+            "span": {
+              "start": 817,
+              "end": 896
+            }
+          },
+          {
+            "kind": "Teleport",
+            "to": "body",
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "div",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "data-teleported",
+                    "value": "true",
+                    "span": {
+                      "start": 938,
+                      "end": 953
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "class",
+                    "value": "first",
+                    "span": {
+                      "start": 954,
+                      "end": 967
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "First",
+                    "span": {
+                      "start": 968,
+                      "end": 993
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 933,
+                  "end": 999
+                }
+              }
+            ],
+            "span": {
+              "start": 904,
+              "end": 1017
+            }
+          },
+          {
+            "kind": "Teleport",
+            "to": "body",
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "div",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "data-teleported",
+                    "value": "true",
+                    "span": {
+                      "start": 1058,
+                      "end": 1073
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "class",
+                    "value": "second",
+                    "span": {
+                      "start": 1074,
+                      "end": 1088
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Second",
+                    "span": {
+                      "start": 1089,
+                      "end": 1115
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1053,
+                  "end": 1121
+                }
+              }
+            ],
+            "span": {
+              "start": 1024,
+              "end": 1139
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "rows.value",
+                  "span": {
+                    "start": 1160,
+                    "end": 1170
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "rows@210",
+                      "span": {
+                        "start": 1160,
+                        "end": 1170
+                      }
+                    }
+                  ]
+                },
+                "item": "row@1176",
+                "key": {
+                  "code": "row.id",
+                  "span": {
+                    "start": 1205,
+                    "end": 1211
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "row@1176",
+                      "span": {
+                        "start": 1205,
+                        "end": 1208
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "row.label",
+                        "span": {
+                          "start": 1227,
+                          "end": 1236
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "row@1176",
+                            "span": {
+                              "start": 1227,
+                              "end": 1230
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 1226,
+                        "end": 1237
+                      }
+                    },
+                    {
+                      "kind": "Teleport",
+                      "to": "body",
+                      "children": [
+                        {
+                          "kind": "Element",
+                          "tag": "p",
+                          "attributes": [
+                            {
+                              "kind": "Static",
+                              "name": "data-teleported",
+                              "value": "true",
+                              "span": {
+                                "start": 1288,
+                                "end": 1303
+                              }
+                            },
+                            {
+                              "kind": "Static",
+                              "name": "class",
+                              "value": "tip",
+                              "span": {
+                                "start": 1304,
+                                "end": 1315
+                              }
+                            }
+                          ],
+                          "children": [
+                            {
+                              "kind": "Interpolation",
+                              "value": {
+                                "code": "row.label",
+                                "span": {
+                                  "start": 1334,
+                                  "end": 1343
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "row@1176",
+                                    "span": {
+                                      "start": 1334,
+                                      "end": 1337
+                                    }
+                                  }
+                                ]
+                              },
+                              "span": {
+                                "start": 1333,
+                                "end": 1344
+                              }
+                            },
+                            {
+                              "kind": "Text",
+                              "value": " tip",
+                              "span": {
+                                "start": 1344,
+                                "end": 1363
+                              }
+                            }
+                          ],
+                          "span": {
+                            "start": 1285,
+                            "end": 1367
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 1250,
+                        "end": 1391
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 1196,
+                    "end": 1407
+                  }
+                },
+                "span": {
+                  "start": 1160,
+                  "end": 1418
+                }
+              }
+            ],
+            "span": {
+              "start": 1146,
+              "end": 1431
+            }
+          }
+        ],
+        "span": {
+          "start": 416,
+          "end": 1446
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Panel",
+      "span": {
+        "start": 105,
+        "end": 1453
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Row",
+      "exported": false,
+      "code": "interface Row {\n  id: number;\n  label: string;\n}",
+      "span": {
+        "start": 55,
+        "end": 103
+      }
+    }
+  ]
+}

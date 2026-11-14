@@ -1,0 +1,70 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "teleport/components/Board.uf.tsx",
+    "start": {
+      "line": 21,
+      "column": 29,
+      "offset": 446
+    },
+    "end": {
+      "line": 21,
+      "column": 85,
+      "offset": 502
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support teleport: A `<Teleport>` renders nothing on Astro: components render on the server only, and nothing runs in the browser.",
+    "file": "teleport/components/Board.uf.tsx",
+    "start": {
+      "line": 31,
+      "column": 9,
+      "offset": 761
+    },
+    "end": {
+      "line": 35,
+      "column": 20,
+      "offset": 891
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "teleport/components/Card.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 29,
+      "offset": 251
+    },
+    "end": {
+      "line": 9,
+      "column": 71,
+      "offset": 293
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support teleport: A `<Teleport>` renders nothing on Astro: components render on the server only, and nothing runs in the browser.",
+    "file": "teleport/components/Tip.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 5,
+      "offset": 164
+    },
+    "end": {
+      "line": 13,
+      "column": 16,
+      "offset": 281
+    },
+    "target": "astro"
+  }
+]

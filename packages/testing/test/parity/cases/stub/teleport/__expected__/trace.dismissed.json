@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Dismiss' })",
+      "dom": [
+        "<p>",
+        "  \"In place\"",
+        "</p>"
+      ],
+      "aria": [
+        "- paragraph: In place"
+      ],
+      "events": {}
+    }
+  ]
+}

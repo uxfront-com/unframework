@@ -87,6 +87,7 @@ import type {
 import { setupBindingOf } from "./render.ts";
 import type { Scopes } from "./scope.ts";
 import type { Shapes } from "./shapes.ts";
+import { teleportNotTag } from "./teleport.ts";
 import { TypeTable } from "./types/from-type.ts";
 import {
   FUNCTION,
@@ -391,7 +392,9 @@ export function declareSetup(context: SetupContext): Setup {
         else if (api === "defineOptions") defineOptions(call);
         else if (api === "provide") provide(statement, call);
         else if (BOUND_MACROS.has(api)) unbound(call, api, "statement");
-        else misplacedNextTick(call.callee as AST.IdentifierReference);
+        else if (api === "Teleport") {
+          teleportNotTag(call.callee as AST.IdentifierReference, reporter);
+        } else misplacedNextTick(call.callee as AST.IdentifierReference);
         continue;
       }
       case "VariableDeclaration":
@@ -769,6 +772,9 @@ export function declareSetup(context: SetupContext): Setup {
         return;
       case "nextTick":
         misplacedNextTick(call.callee as AST.IdentifierReference);
+        return;
+      case "Teleport":
+        teleportNotTag(call.callee as AST.IdentifierReference, reporter);
         return;
       default:
         unreachable(api);

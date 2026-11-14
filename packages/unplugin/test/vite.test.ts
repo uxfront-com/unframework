@@ -1560,6 +1560,7 @@ function htmlTarget() {
     "composable-effect-order": { support: "native" },
     hydration: { support: "native" },
     "keyed-identity": { support: "native" },
+    teleport: { support: "native" },
   };
   return defineTarget({
     name: "html",

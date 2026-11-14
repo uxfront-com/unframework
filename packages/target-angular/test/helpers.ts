@@ -75,6 +75,7 @@ export function corpusSources(): { name: string; file: string; source: string }[
         !STYLED_COMPOSITION.test(name) &&
         !BINDING_COMPOSITION.test(name) &&
         !HYDRATION_COMPOSITION.test(name) &&
+        !TELEPORT_COMPOSITION.test(name) &&
         !THROWN_COMPOSITION.test(name) &&
         !TYPE_MODULES.test(name) &&
         !COMPOSABLE_MODULES.test(name),
@@ -102,6 +103,13 @@ const BINDING_COMPOSITION = /^bindings\/(?:style-expression|style-spread)$/;
  * Angular outputs.
  */
 const HYDRATION_COMPOSITION = /^hydration\/use-id$/;
+
+/**
+ * The teleport cases whose main source renders a child (ADR-0098): they resolve the child as
+ * `compile()` does, which `lower` has not. The corpus's toolchain project checks their Angular
+ * outputs.
+ */
+const TELEPORT_COMPOSITION = /^teleport\/(?:components|dialog|root|siblings)$/;
 
 /**
  * The thrown-error case whose main source renders a child that throws once mounted (ADR-0078):

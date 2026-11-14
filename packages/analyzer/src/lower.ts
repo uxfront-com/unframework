@@ -31,6 +31,7 @@ import type {
   Namespace,
   RenderNode,
   Span,
+  TeleportNode,
   TextNode,
 } from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
@@ -49,6 +50,7 @@ import { lowerList } from "./lists.ts";
 import { isStaticString, reportCharacters, valueOf } from "./literals.ts";
 import { referencePath } from "./narrowing.ts";
 import type { RenderContext } from "./render.ts";
+import { isTeleportTag, lowerTeleport } from "./teleport.ts";
 import { describe, has, mayBeNullish, outside } from "./types/kinds.ts";
 import type { Kinds } from "./types/kinds.ts";
 
@@ -71,8 +73,11 @@ export const ROOT: Place = { ancestors: [], namespace: "html" };
 
 /** An element lowered, and the `key` a list lifts off it. */
 export interface LoweredElement {
-  /** The element, a component element (ADR-0053), or `<component is>` (ADR-0054). */
-  element: ElementNode | ComponentNode | DynamicNode | undefined;
+  /**
+   * The element, a component element (ADR-0053), `<component is>` (ADR-0054), or `<Teleport>`
+   * (ADR-0098).
+   */
+  element: ElementNode | ComponentNode | DynamicNode | TeleportNode | undefined;
   key: AST.JSXAttribute | undefined;
   /**
    * Whether the element or anything inside it binds (a binding, an expression, a conditional,
@@ -120,6 +125,13 @@ export function lowerElement(
         : "Member-expression components are not supported yet.",
     );
     return { element: undefined, key: undefined, binds: true };
+  }
+  if (isTeleportTag(name, render)) {
+    return {
+      element: lowerTeleport(node, name, place, render, listBody),
+      key: undefined,
+      binds: true,
+    };
   }
   if (/^[A-Z]/.test(name.name)) {
     const lowered = lowerComponent(node, name, place, render, listBody);

@@ -129,6 +129,8 @@ unsupported (UF4005, info): a composable is a custom hook, whose effects keep Re
 than the caller's (ADR-0069); `generic-components`, `generic-slot-props` and `composables` are
 native.
 
+`teleport` is emulated (ADR-0098): a `<Teleport>` is `createPortal` from react-dom, through an inline helper, `teleport`, once `useSyncExternalStore` says the component has mounted, so neither the server nor the hydrating client renders it. The output imports `react-dom`, React's renderer, and a React package peers on it.
+
 Every name the output introduces (`cx`, `setCount`, `countRef`, `CounterEvents`, `listen`,
 `CSSProperties`, `_props`) is claimed around the source's own names, so none captures another.
 The target reports nothing: what React cannot render as the other targets do is the analyser's

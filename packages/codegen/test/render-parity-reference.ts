@@ -159,6 +159,9 @@ class Evaluator {
           }
           return;
         }
+        // A static render holds none of a teleport's content, on every target (ADR-0098).
+        case "Teleport":
+          return;
         // Composition (ADR-0055) renders through its lanes in M3, not here yet.
         case "Component":
         case "SlotOutlet":

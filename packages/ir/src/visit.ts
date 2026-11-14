@@ -36,6 +36,7 @@ const renderNodeKinds = {
   Component: true,
   SlotOutlet: true,
   Dynamic: true,
+  Teleport: true,
 } satisfies Record<RenderNode["kind"], true>;
 const attributeKinds = {
   Static: true,
@@ -162,13 +163,14 @@ export interface Visitor {
 /**
  * The child nodes of a node, in document order: an element's or a fragment's children, every
  * branch's children of an `If` in order, a `For`'s body, every fill's children of a component in
- * order, a slot outlet's fallback, a `Dynamic` node's children then its fills', and nothing for
- * text.
+ * order, a slot outlet's fallback, a `Dynamic` node's children then its fills', a `Teleport`'s
+ * content, and nothing for text.
  */
 export function childrenOf(node: VisitedNode): readonly RenderNode[] {
   switch (node.kind) {
     case "Element":
     case "Fragment":
+    case "Teleport":
       return node.children;
     case "If":
       return node.branches.flatMap((branch) => branch.children);
@@ -263,6 +265,7 @@ function attributesOf(node: VisitedNode): readonly AnyAttribute[] {
     case "Dynamic":
       return node.attributes;
     case "Fragment":
+    case "Teleport":
     case "Text":
     case "Interpolation":
     case "If":
@@ -339,6 +342,7 @@ export function expressionsOf(component: UfComponent, base = ""): LocatedExpress
         fills(node.fills ?? [], `${path}/fills`);
         return;
       case "Fragment":
+      case "Teleport":
         for (const [index, child] of node.children.entries()) {
           visit(child, `${path}/children/${index}`);
         }
@@ -582,6 +586,7 @@ function walkHandlers(
       fills(node.fills ?? []);
       return;
     case "Fragment":
+    case "Teleport":
       for (const [index, child] of node.children.entries()) {
         walkHandlers(child, `${path}/children/${index}`, visit);
       }
@@ -955,6 +960,7 @@ function walkSpans(node: VisitedNode, path: string, add: AddSpan) {
       fillSpans(node.fills ?? [], `${path}/fills`, add);
       return;
     case "Fragment":
+    case "Teleport":
       for (const [index, child] of node.children.entries()) {
         walkSpans(child, `${path}/children/${index}`, add);
       }

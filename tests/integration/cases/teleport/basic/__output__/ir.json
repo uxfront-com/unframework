@@ -1,0 +1,389 @@
+{
+  "irVersion": 1,
+  "file": "teleport/basic/Notice.uf.tsx",
+  "components": [
+    {
+      "name": "Notice",
+      "span": {
+        "start": 108,
+        "end": 619
+      },
+      "props": [
+        {
+          "name": "message",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 97,
+              "end": 103
+            }
+          },
+          "binding": "message@141",
+          "span": {
+            "start": 88,
+            "end": 104
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "NoticeProps",
+          "span": {
+            "start": 152,
+            "end": 163
+          }
+        },
+        "span": {
+          "start": 139,
+          "end": 163
+        }
+      },
+      "types": [
+        "NoticeProps"
+      ],
+      "bindings": [
+        {
+          "id": "message@141",
+          "name": "message",
+          "kind": "prop",
+          "span": {
+            "start": 141,
+            "end": 148
+          }
+        },
+        {
+          "id": "dismissed@175",
+          "name": "dismissed",
+          "kind": "state",
+          "span": {
+            "start": 175,
+            "end": 184
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "dismissed@175",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 191,
+              "end": 192
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 169,
+            "end": 194
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "inbox",
+            "span": {
+              "start": 220,
+              "end": 233
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Inbox",
+            "span": {
+              "start": 234,
+              "end": 252
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Dismissed ",
+                "span": {
+                  "start": 263,
+                  "end": 273
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "dismissed.value",
+                  "span": {
+                    "start": 274,
+                    "end": 289
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "dismissed@175",
+                      "span": {
+                        "start": 274,
+                        "end": 289
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 273,
+                  "end": 290
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " times",
+                "span": {
+                  "start": 290,
+                  "end": 296
+                }
+              }
+            ],
+            "span": {
+              "start": 260,
+              "end": 300
+            }
+          },
+          {
+            "kind": "Teleport",
+            "to": "body",
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "div",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "data-teleported",
+                    "value": "true",
+                    "span": {
+                      "start": 341,
+                      "end": 356
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "class",
+                    "value": "notice",
+                    "span": {
+                      "start": 357,
+                      "end": 371
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "role",
+                        "value": "status",
+                        "span": {
+                          "start": 386,
+                          "end": 399
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "message",
+                          "span": {
+                            "start": 414,
+                            "end": 421
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "message@141",
+                              "span": {
+                                "start": 414,
+                                "end": 421
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 413,
+                          "end": 422
+                        }
+                      },
+                      {
+                        "kind": "Text",
+                        "value": " (",
+                        "span": {
+                          "start": 422,
+                          "end": 424
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "dismissed.value",
+                          "span": {
+                            "start": 425,
+                            "end": 440
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "dismissed@175",
+                              "span": {
+                                "start": 425,
+                                "end": 440
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 424,
+                          "end": 441
+                        }
+                      },
+                      {
+                        "kind": "Text",
+                        "value": ")",
+                        "span": {
+                          "start": 441,
+                          "end": 453
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 383,
+                      "end": 457
+                    }
+                  },
+                  {
+                    "kind": "Element",
+                    "tag": "button",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "type",
+                        "value": "button",
+                        "span": {
+                          "start": 476,
+                          "end": 489
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "click",
+                        "handler": {
+                          "kind": "Inline",
+                          "function": {
+                            "parameters": [],
+                            "body": {
+                              "code": "dismissed.value++",
+                              "span": {
+                                "start": 505,
+                                "end": 522
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Write",
+                                  "binding": "dismissed@175",
+                                  "operator": "++",
+                                  "span": {
+                                    "start": 505,
+                                    "end": 522
+                                  },
+                                  "target": {
+                                    "start": 505,
+                                    "end": 520
+                                  },
+                                  "arrowBody": true
+                                }
+                              ]
+                            },
+                            "expression": true,
+                            "span": {
+                              "start": 499,
+                              "end": 522
+                            }
+                          },
+                          "span": {
+                            "start": 499,
+                            "end": 522
+                          }
+                        },
+                        "span": {
+                          "start": 490,
+                          "end": 523
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Dismiss",
+                        "span": {
+                          "start": 524,
+                          "end": 555
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 468,
+                      "end": 564
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 336,
+                  "end": 579
+                }
+              }
+            ],
+            "span": {
+              "start": 307,
+              "end": 597
+            }
+          }
+        ],
+        "span": {
+          "start": 211,
+          "end": 612
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Notice",
+      "span": {
+        "start": 108,
+        "end": 619
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "NoticeProps",
+      "exported": true,
+      "code": "interface NoticeProps {\n  message: string;\n}",
+      "span": {
+        "start": 62,
+        "end": 106
+      }
+    }
+  ]
+}

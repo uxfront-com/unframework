@@ -1,0 +1,3 @@
+- region "Files":
+  - paragraph: notes.txt
+  - button "Delete notes.txt"

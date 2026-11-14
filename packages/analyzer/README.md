@@ -361,6 +361,14 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   lists (UF3027). An element's
   listeners are judged by Svelte 5.57.1's five handler-dependent accessibility rules (`a11y.ts`,
   UF3030), on the source's listeners, its tables Svelte's own.
+- **Teleport** (`teleport.ts`, ADR-0098): `<Teleport to>`, the authoring API written only as a
+  tag, recognised by its import's binding, lowered to a `Teleport` node around its one element,
+  which is checked where the teleport is (UF3003 for an element its place does not permit), and
+  `to` decoded as JSX decodes an attribute. `to` is a static selector (UF3053), and the content
+  exactly one element (UF3054). Another attribute is UF3035, `key` UF3014, `ref` UF3046, a spread,
+  a list's element, a teleport inside an `<svg>` and `Teleport` used as anything but a tag
+  UF1002. A component whose whole render is a teleport is a root of kind `other`, wrapped in a
+  fragment.
 - **Raw HTML** (`raw-html.ts`, ADR-0097): `innerHTML={markup}` lowered to a `RawHtml` attribute,
   with its warning (UF3051), on an HTML element that holds content and has no children (UF3052),
   from a string only (UF3018). A static string reads alike in JSX and in JavaScript, as a static
