@@ -1,0 +1,6 @@
+{
+  "description": "A count that the first click after hydration changes, and the event it emits: a hydrated page is interactive.",
+  "ssr": {
+    "from-four": { "props": { "start": 4 } }
+  }
+}

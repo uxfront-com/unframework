@@ -1,0 +1,9 @@
+- form "Sign up":
+  - paragraph:
+    - text: Name
+    - textbox "Name"
+    - text: As it appears on your card.
+  - paragraph:
+    - text: Email
+    - textbox "Email"
+    - text: We send the receipt here.

@@ -1,0 +1,39 @@
+---
+export interface PlanProps {
+  name: string;
+  price: number;
+  href: string;
+  featured?: boolean;
+  note?: string;
+}
+
+interface Props extends PlanProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { name, price, href, featured = false, note, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+---
+
+<article
+  class:list={[featured ? "plan featured" : "plan", className]}
+  aria-label={name}
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
+  <h2>{name}</h2>
+  <p>{price} EUR a month</p>
+  {note ? (
+    <p class="note">{note}</p>
+  ) : (
+    <p class="note">No commitment.</p>
+  )}
+  <a href={href}>Choose {name}</a>
+</article>

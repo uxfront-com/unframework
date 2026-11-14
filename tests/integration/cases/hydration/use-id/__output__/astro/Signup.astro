@@ -1,0 +1,32 @@
+---
+import Field from "./Field.astro";
+
+export interface SignupProps {
+  name: string;
+  email: string;
+}
+
+interface Props extends SignupProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { name, email, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+---
+
+<form
+  class:list={["signup", className]}
+  aria-label="Sign up"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
+  <Field label={name} hint="As it appears on your card." />
+  <Field label={email} hint="We send the receipt here." />
+</form>

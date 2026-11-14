@@ -1,0 +1,8 @@
+{
+  "description": "Ids from useId in two instances of one child, which a hydrated page keeps as the server wrote them: each label names its field, and each field its hint.",
+  "main": "Signup.uf.tsx",
+  "ssr": {
+    "default": { "props": { "name": "Name", "email": "Email" } },
+    "again": { "props": { "name": "Name", "email": "Email" } }
+  }
+}

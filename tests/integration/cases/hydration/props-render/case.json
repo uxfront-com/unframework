@@ -1,0 +1,15 @@
+{
+  "description": "Text, a bound attribute, a class and a conditional branch from the props, in two scenarios: a hydrated page shows what the server rendered with each.",
+  "ssr": {
+    "basic": { "props": { "name": "Basic", "price": 5, "href": "/plans/basic" } },
+    "featured": {
+      "props": {
+        "name": "Team",
+        "price": 20,
+        "href": "/plans/team",
+        "featured": true,
+        "note": "Five seats included."
+      }
+    }
+  }
+}

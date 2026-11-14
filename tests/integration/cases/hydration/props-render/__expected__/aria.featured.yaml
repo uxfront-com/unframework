@@ -1,0 +1,6 @@
+- article "Team":
+  - heading "Team" [level=2]
+  - paragraph: 20 EUR a month
+  - paragraph: Five seats included.
+  - link "Choose Team":
+    - /url: /plans/team

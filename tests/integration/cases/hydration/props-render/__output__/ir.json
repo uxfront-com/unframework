@@ -1,0 +1,523 @@
+{
+  "irVersion": 1,
+  "file": "hydration/props-render/Plan.uf.tsx",
+  "components": [
+    {
+      "name": "Plan",
+      "span": {
+        "start": 216,
+        "end": 586
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 37,
+              "end": 43
+            }
+          },
+          "binding": "name@247",
+          "span": {
+            "start": 31,
+            "end": 44
+          }
+        },
+        {
+          "name": "price",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 54,
+              "end": 60
+            }
+          },
+          "binding": "price@253",
+          "span": {
+            "start": 47,
+            "end": 61
+          }
+        },
+        {
+          "name": "href",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 70,
+              "end": 76
+            }
+          },
+          "binding": "href@260",
+          "span": {
+            "start": 64,
+            "end": 77
+          }
+        },
+        {
+          "name": "featured",
+          "optional": true,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 91,
+              "end": 98
+            }
+          },
+          "default": {
+            "code": "false",
+            "span": {
+              "start": 277,
+              "end": 282
+            },
+            "refs": []
+          },
+          "binding": "featured@266",
+          "span": {
+            "start": 80,
+            "end": 99
+          }
+        },
+        {
+          "name": "note",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 109,
+              "end": 115
+            }
+          },
+          "binding": "note@284",
+          "span": {
+            "start": 102,
+            "end": 116
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "PlanProps",
+          "span": {
+            "start": 292,
+            "end": 301
+          }
+        },
+        "span": {
+          "start": 245,
+          "end": 301
+        }
+      },
+      "types": [
+        "PlanProps"
+      ],
+      "bindings": [
+        {
+          "id": "name@247",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 247,
+            "end": 251
+          }
+        },
+        {
+          "id": "price@253",
+          "name": "price",
+          "kind": "prop",
+          "span": {
+            "start": 253,
+            "end": 258
+          }
+        },
+        {
+          "id": "href@260",
+          "name": "href",
+          "kind": "prop",
+          "span": {
+            "start": 260,
+            "end": 264
+          }
+        },
+        {
+          "id": "featured@266",
+          "name": "featured",
+          "kind": "prop",
+          "span": {
+            "start": 266,
+            "end": 274
+          }
+        },
+        {
+          "id": "note@284",
+          "name": "note",
+          "kind": "prop",
+          "span": {
+            "start": 284,
+            "end": 288
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "article",
+        "attributes": [
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "featured ? \"plan featured\" : \"plan\"",
+                  "span": {
+                    "start": 336,
+                    "end": 371
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "featured@266",
+                      "span": {
+                        "start": 336,
+                        "end": 344
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 336,
+                  "end": 371
+                }
+              }
+            ],
+            "span": {
+              "start": 329,
+              "end": 372
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "name",
+              "span": {
+                "start": 385,
+                "end": 389
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "name@247",
+                  "span": {
+                    "start": 385,
+                    "end": 389
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 373,
+              "end": 390
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "name",
+                  "span": {
+                    "start": 403,
+                    "end": 407
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@247",
+                      "span": {
+                        "start": 403,
+                        "end": 407
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 402,
+                  "end": 408
+                }
+              }
+            ],
+            "span": {
+              "start": 398,
+              "end": 413
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "price",
+                  "span": {
+                    "start": 424,
+                    "end": 429
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "price@253",
+                      "span": {
+                        "start": 424,
+                        "end": 429
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 423,
+                  "end": 430
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " EUR a month",
+                "span": {
+                  "start": 430,
+                  "end": 442
+                }
+              }
+            ],
+            "span": {
+              "start": 420,
+              "end": 446
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "note",
+                  "span": {
+                    "start": 454,
+                    "end": 458
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "note@284",
+                      "span": {
+                        "start": 454,
+                        "end": 458
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "note",
+                        "span": {
+                          "start": 464,
+                          "end": 476
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "note",
+                          "span": {
+                            "start": 478,
+                            "end": 482
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "note@284",
+                              "span": {
+                                "start": 478,
+                                "end": 482
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 477,
+                          "end": 483
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 461,
+                      "end": 487
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 454,
+                  "end": 487
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "note",
+                        "span": {
+                          "start": 493,
+                          "end": 505
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "No commitment.",
+                        "span": {
+                          "start": 506,
+                          "end": 520
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 490,
+                      "end": 524
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 490,
+                  "end": 524
+                }
+              }
+            ],
+            "span": {
+              "start": 454,
+              "end": 524
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "a",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "href",
+                "value": {
+                  "code": "href",
+                  "span": {
+                    "start": 541,
+                    "end": 545
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "href@260",
+                      "span": {
+                        "start": 541,
+                        "end": 545
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 535,
+                  "end": 546
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Choose ",
+                "span": {
+                  "start": 547,
+                  "end": 554
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "name",
+                  "span": {
+                    "start": 555,
+                    "end": 559
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@247",
+                      "span": {
+                        "start": 555,
+                        "end": 559
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 554,
+                  "end": 560
+                }
+              }
+            ],
+            "span": {
+              "start": 532,
+              "end": 564
+            }
+          }
+        ],
+        "span": {
+          "start": 320,
+          "end": 579
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Plan",
+      "span": {
+        "start": 216,
+        "end": 586
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "PlanProps",
+      "exported": true,
+      "code": "interface PlanProps {\n  name: string;\n  price: number;\n  href: string;\n  featured?: boolean;\n  note?: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 118
+      }
+    }
+  ]
+}
