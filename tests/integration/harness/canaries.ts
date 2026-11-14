@@ -690,7 +690,7 @@ export const CANARIES: readonly Canary[] = [
     id: "L12-client-text",
     layer: "L12",
     description:
-      "Appends a marker to the text of an element every render of every component shows, in the hydrate projects' page alone: the server's HTML stays right, and only the client's render differs from it (ADR-0095).",
+      "Appends a marker to the text of an element every render of every component shows, in the hydrate projects' page alone: the server's HTML stays right, and only the client's render differs from it (ADR-0095). React and Vue must report it as a `mismatch`. Solid may report a `mismatch` or a `client agreement` failure, and Svelte and Angular a `mismatch`, `DOM` or `client agreement` one, since those frameworks throw on some changes and keep the server's text on others.",
     evidence: {
       hydrate: {
         "client render": (target) => CLIENT_TEXT_CHECK[target] ?? /^client agreement: /m,
@@ -706,7 +706,7 @@ export const CANARIES: readonly Canary[] = [
     id: "L12-unwired-listener",
     layer: "L12",
     description:
-      "Removes every element listener from every component in the hydrate projects' page alone, on the cases whose specs act: the hydrated page looks right, and no action does anything (ADR-0095).",
+      "Removes every element listener from every component in the hydrate projects' page alone, on the cases whose specs act: the hydrated page looks right, and no action does anything (ADR-0095). A spec's `interactions` or `trace` check must fail: a spec compares each step's trace before it asserts what the step changed.",
     evidence: {
       // A spec compares each step (the trace) and then asserts what it changed: either fails.
       hydrate: { interactions: /^(?:interactions|trace): /m },
