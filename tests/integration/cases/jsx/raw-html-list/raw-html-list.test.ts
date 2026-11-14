@@ -12,9 +12,8 @@ describeTargets("jsx/raw-html-list", () => {
     await expect.element(items.nth(0)).toHaveTextContent("Added raw HTML");
     await expect.element(view.getByText("Added", { exact: true })).toBeVisible();
     await expect.element(view.getByText("key", { exact: true })).toBeVisible();
-    await expect.element(view.getByRole("link", { name: "with a link" })).toHaveAttribute(
-      "href",
-      "#notes",
-    );
+    await expect
+      .element(view.getByRole("link", { name: "with a link" }))
+      .toHaveAttribute("href", "#notes");
   });
 });
