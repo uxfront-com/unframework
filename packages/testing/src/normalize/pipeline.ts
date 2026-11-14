@@ -14,7 +14,6 @@ import { renameEngineAliases } from "./rules/engine-aliases.ts";
 import { removeFrameworkAttributes } from "./rules/framework-attributes.ts";
 import { canonicalizeGeneratedIds } from "./rules/generated-ids.ts";
 import { canonicalizeClasses, sortAttributes } from "./rules/ordering.ts";
-import { unwrapQwikContainers } from "./rules/qwik-containers.ts";
 import { removeQwikStyles } from "./rules/qwik-styles.ts";
 import { removeQwikTemplates } from "./rules/qwik-templates.ts";
 import { canonicalizeBooleanAttributes, canonicalizeStyles } from "./rules/values.ts";
@@ -71,8 +70,6 @@ export function normalizeTree(
   const { target, engine } = options;
   removeComments(root);
   removeQwikStyles(root, target);
-  // Before the attributes go: a container's scripts are told apart by theirs.
-  unwrapQwikContainers(root, target);
   removeFrameworkAttributes(root, target);
   removeQwikTemplates(root, target);
   unwrapAngularHosts(root, target);

@@ -103,9 +103,12 @@ beforeEach(({ task, skip }) => {
   // A case the target has no output for has a stand-in for its component, which renders
   // nothing: each of its tests is skipped there, whatever it requires, with the errors the case
   // expects.
-  // A hydrate project skips every test where the target does not hydrate (ADR-0095).
-  const needs = hydrating ? ["hydration", ...(requires ?? [])] : requires;
-  const reason = noOutputReason(subject.case) ?? (needs ? requiredSkip(needs) : undefined);
+  // A hydrate project skips every test where the target does not hydrate, whatever else would
+  // skip it there, so every L12 cell of such a target says why (ADR-0095).
+  const reason =
+    (hydrating ? requiredSkip(["hydration"]) : undefined) ??
+    noOutputReason(subject.case) ??
+    (requires ? requiredSkip(requires) : undefined);
   if (reason === undefined) {
     // A case the target cannot compile yet has a stand-in for its component too, which throws
     // when the spec mounts it, before `expectParity` records L7, L9, L10 or L11: every browser
