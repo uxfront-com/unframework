@@ -240,7 +240,9 @@ interface FrameworkRule {
  */
 const FRAMEWORK_RULES: Readonly<Record<TargetName, FrameworkRule>> = {
   react: { attribute: 'class="uf-canary"', rule: "react/no-unknown-property" },
-  vue: { attribute: "v-html=\"'uf-canary'\"", rule: "vue/no-v-html" },
+  // A modifier `v-bind` does not have, which Vue's compiler ignores. `v-html` is an output's
+  // own idiom since ADR-0097, which turned `vue/no-v-html` off.
+  vue: { attribute: ":title.uf=\"'uf-canary'\"", rule: "vue/valid-v-bind" },
   svelte: {
     attribute: 'style:uf-canary="1"',
     rule: "svelte/no-unknown-style-directive-property",
@@ -251,7 +253,8 @@ const FRAMEWORK_RULES: Readonly<Record<TargetName, FrameworkRule>> = {
     rule: "@angular-eslint/template/prefer-control-flow",
   },
   qwik: { attribute: 'className="uf-canary"', rule: "qwik/no-react-props" },
-  astro: { attribute: 'set:html="uf-canary"', rule: "astro/no-set-html-directive" },
+  // `set:html` is an output's own idiom since ADR-0097, which turned its rule off.
+  astro: { attribute: 'set:text="uf-canary"', rule: "astro/no-set-text-directive" },
 };
 
 /** The case L15-slow-compile slows down. */
@@ -495,7 +498,7 @@ export const CANARIES: readonly Canary[] = [
     id: "L5-framework-rule",
     layer: "L5",
     description:
-      "Writes on every output's root element an idiom its framework's lint plugin forbids: `class` in React, `className` in Solid and Qwik, `v-html`, a style directive for no property, `*ngIf`, `set:html`.",
+      "Writes on every output's root element an idiom its framework's lint plugin forbids: `class` in React, `className` in Solid and Qwik, a `v-bind` modifier Vue does not have, a style directive for no property, `*ngIf`, `set:text`.",
     evidence: {
       toolchain: {
         "framework rules": (target) =>

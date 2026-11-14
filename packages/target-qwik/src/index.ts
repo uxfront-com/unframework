@@ -1216,13 +1216,22 @@ function qwikDialect(
     },
     eventAttribute: (attribute, element, context) =>
       listeners.attributes(attribute, element, context),
-    // Qwik's raw HTML prop takes the string itself (ADR-0097).
-    rawHtmlAttribute: (attribute, _element, context) => [
-      js.jsxAttribute(
-        "dangerouslySetInnerHTML",
-        js.jsxExpressionContainer(jsxExpression(attribute.value, context)),
-      ),
-    ],
+    // Qwik's raw HTML prop takes the string itself (ADR-0097). Its server renders an empty
+    // string as a `dangerouslysetinnerhtml=""` attribute, where it renders `undefined` as nothing
+    // and its client empties the element for both: markup that may be empty is passed as
+    // `markup || undefined`.
+    rawHtmlAttribute: (attribute, _element, context) => {
+      // A non-empty string literal is never empty.
+      const literal = /^(?:"(?:[^"\\\n]|\\.)+"|'(?:[^'\\\n]|\\.)+')$/.test(attribute.value.code);
+      const value = literal
+        ? jsxExpression(attribute.value, context)
+        : js.logicalExpression(
+            "||",
+            jsxExpression(attribute.value, context, "operand"),
+            js.identifier("undefined"),
+          );
+      return [js.jsxAttribute("dangerouslySetInnerHTML", js.jsxExpressionContainer(value))];
+    },
     attributeName: (name, element) => qwikAttributeName(name, namespaceOf(element)),
     staticAttribute(attribute, element, context) {
       // A static `class` beside a spread that carries one merges with it.

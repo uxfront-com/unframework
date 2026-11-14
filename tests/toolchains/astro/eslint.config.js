@@ -31,7 +31,10 @@ export default [
         "error",
         { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
       ],
-      "astro/no-set-html-directive": "error",
+      // Judges the author's choice to render markup unescaped: `innerHTML={markup}` in the
+      // source, which the analyser reports as a warning (UF3051), and every target renders as
+      // markup (ADR-0097).
+      "astro/no-set-html-directive": "off",
       "astro/no-set-text-directive": "error",
       "astro/no-unsafe-inline-scripts": "error",
       "astro/no-unused-css-selector": "error",

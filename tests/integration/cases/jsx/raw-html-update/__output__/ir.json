@@ -1,0 +1,412 @@
+{
+  "irVersion": 1,
+  "file": "jsx/raw-html-update/Glossary.uf.tsx",
+  "components": [
+    {
+      "name": "Glossary",
+      "span": {
+        "start": 135,
+        "end": 641
+      },
+      "props": [
+        {
+          "name": "terms",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 97,
+              "end": 105
+            }
+          },
+          "binding": "terms@170",
+          "span": {
+            "start": 90,
+            "end": 106
+          }
+        },
+        {
+          "name": "definitions",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 122,
+              "end": 130
+            }
+          },
+          "binding": "definitions@177",
+          "span": {
+            "start": 109,
+            "end": 131
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "GlossaryProps",
+          "span": {
+            "start": 192,
+            "end": 205
+          }
+        },
+        "span": {
+          "start": 168,
+          "end": 205
+        }
+      },
+      "types": [
+        "GlossaryProps"
+      ],
+      "bindings": [
+        {
+          "id": "terms@170",
+          "name": "terms",
+          "kind": "prop",
+          "span": {
+            "start": 170,
+            "end": 175
+          }
+        },
+        {
+          "id": "definitions@177",
+          "name": "definitions",
+          "kind": "prop",
+          "span": {
+            "start": 177,
+            "end": 188
+          }
+        },
+        {
+          "id": "index@217",
+          "name": "index",
+          "kind": "state",
+          "span": {
+            "start": 217,
+            "end": 222
+          }
+        },
+        {
+          "id": "definition@241",
+          "name": "definition",
+          "kind": "derived",
+          "span": {
+            "start": 241,
+            "end": 251
+          }
+        },
+        {
+          "id": "next@314",
+          "name": "next",
+          "kind": "localFn",
+          "span": {
+            "start": 314,
+            "end": 318
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "index@217",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 229,
+              "end": 230
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 211,
+            "end": 232
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "definition@241",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "definitions[index.value] ?? \"\"",
+              "span": {
+                "start": 269,
+                "end": 299
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "definitions@177",
+                  "span": {
+                    "start": 269,
+                    "end": 280
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "index@217",
+                  "span": {
+                    "start": 281,
+                    "end": 292
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 263,
+              "end": 299
+            }
+          },
+          "span": {
+            "start": 235,
+            "end": 301
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "next@314",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    index.value = (index.value + 1) % terms.length;\n  }",
+              "span": {
+                "start": 321,
+                "end": 378
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "index@217",
+                  "operator": "=",
+                  "span": {
+                    "start": 327,
+                    "end": 373
+                  },
+                  "target": {
+                    "start": 327,
+                    "end": 338
+                  },
+                  "value": {
+                    "start": 341,
+                    "end": 373
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "index@217",
+                  "span": {
+                    "start": 342,
+                    "end": 353
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "terms@170",
+                  "span": {
+                    "start": 361,
+                    "end": 366
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 318,
+              "end": 378
+            }
+          },
+          "span": {
+            "start": 305,
+            "end": 378
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "glossary",
+            "span": {
+              "start": 404,
+              "end": 420
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Glossary",
+            "span": {
+              "start": 421,
+              "end": 442
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "terms[index.value]",
+                  "span": {
+                    "start": 455,
+                    "end": 473
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "terms@170",
+                      "span": {
+                        "start": 455,
+                        "end": 460
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "index@217",
+                      "span": {
+                        "start": 461,
+                        "end": 472
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 454,
+                  "end": 474
+                }
+              }
+            ],
+            "span": {
+              "start": 450,
+              "end": 479
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "definition",
+                "span": {
+                  "start": 491,
+                  "end": 509
+                }
+              },
+              {
+                "kind": "RawHtml",
+                "value": {
+                  "code": "definition.value",
+                  "span": {
+                    "start": 521,
+                    "end": 537
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "definition@241",
+                      "span": {
+                        "start": 521,
+                        "end": 537
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 510,
+                  "end": 538
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 486,
+              "end": 541
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 556,
+                  "end": 569
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "next@314",
+                  "span": {
+                    "start": 579,
+                    "end": 583
+                  }
+                },
+                "span": {
+                  "start": 570,
+                  "end": 584
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Next term",
+                "span": {
+                  "start": 585,
+                  "end": 610
+                }
+              }
+            ],
+            "span": {
+              "start": 548,
+              "end": 619
+            }
+          }
+        ],
+        "span": {
+          "start": 395,
+          "end": 634
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Glossary",
+      "span": {
+        "start": 135,
+        "end": 641
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "GlossaryProps",
+      "exported": true,
+      "code": "interface GlossaryProps {\n  terms: string[];\n  definitions: string[];\n}",
+      "span": {
+        "start": 62,
+        "end": 133
+      }
+    }
+  ]
+}

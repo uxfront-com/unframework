@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Next term' })",
+      "dom": [
+        "<section aria-label=\"Glossary\" class=\"glossary\">",
+        "  <h2>",
+        "    \"Closure\"",
+        "  </h2>",
+        "  <div class=\"definition\">",
+        "    <p>",
+        "      \"A function keeps the \"",
+        "      <strong>",
+        "        \"variables\"",
+        "      </strong>",
+        "      \" it was made with.\"",
+        "    </p>",
+        "    <p class=\"aside\">",
+        "      \"See also: scope.\"",
+        "    </p>",
+        "  </div>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Next term\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Glossary\":",
+        "  - heading \"Closure\" [level=2]",
+        "  - paragraph:",
+        "    - text: A function keeps the",
+        "    - strong: variables",
+        "    - text: it was made with.",
+        "  - paragraph: \"See also: scope.\"",
+        "  - button \"Next term\""
+      ],
+      "events": {}
+    }
+  ]
+}

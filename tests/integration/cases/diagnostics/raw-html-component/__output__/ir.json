@@ -1,0 +1,116 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/raw-html-component/Page.uf.tsx",
+  "components": [
+    {
+      "name": "Card",
+      "span": {
+        "start": 184,
+        "end": 318
+      },
+      "props": [
+        {
+          "name": "heading",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 222,
+              "end": 228
+            }
+          },
+          "binding": "heading@200",
+          "span": {
+            "start": 213,
+            "end": 228
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ heading: string }",
+          "span": {
+            "start": 211,
+            "end": 230
+          }
+        },
+        "span": {
+          "start": 198,
+          "end": 230
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "heading@200",
+          "name": "heading",
+          "kind": "prop",
+          "span": {
+            "start": 200,
+            "end": 207
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "card",
+            "span": {
+              "start": 258,
+              "end": 270
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "heading",
+                  "span": {
+                    "start": 283,
+                    "end": 290
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "heading@200",
+                      "span": {
+                        "start": 283,
+                        "end": 290
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 282,
+                  "end": 291
+                }
+              }
+            ],
+            "span": {
+              "start": 278,
+              "end": 296
+            }
+          }
+        ],
+        "span": {
+          "start": 249,
+          "end": 311
+        }
+      }
+    }
+  ],
+  "exports": [],
+  "types": []
+}

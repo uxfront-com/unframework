@@ -1,0 +1,30 @@
+---
+export interface Entry {
+  id: number;
+  html: string;
+}
+
+export interface ChangelogProps {
+  entries: Entry[];
+}
+
+interface Props extends ChangelogProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { entries, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+---
+
+<ul class:list={["changelog", className]} style={style} {...scopeAttributes(Astro.props)}>
+  {entries.map((entry) => (
+    <li set:html={entry.html}></li>
+  ))}
+</ul>

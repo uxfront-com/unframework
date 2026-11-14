@@ -1,0 +1,7 @@
+- region "Glossary":
+  - heading "Hoisting" [level=2]
+  - paragraph:
+    - text: Declarations move to the
+    - emphasis: top
+    - text: of their scope.
+  - button "Next term"

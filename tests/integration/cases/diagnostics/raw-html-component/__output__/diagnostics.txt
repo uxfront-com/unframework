@@ -1,0 +1,8 @@
+error[UF3035]: Card declares no prop `innerHTML`: a component takes its props, `class`, `style`, `key`, `ref`, its events' listeners and its slots.
+  --> diagnostics/raw-html-component/Page.uf.tsx:16:34
+   |
+16 |   return <Card heading="Welcome" innerHTML={intro} />;
+   |                                  ^^^^^^^^^
+   |
+   = help: Pass a prop Card declares, or declare `innerHTML` in its props.
+   = see: https://unframework.dev/diagnostics/UF3035

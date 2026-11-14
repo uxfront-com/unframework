@@ -1,0 +1,26 @@
+error[UF3052]: `innerHTML` replaces the content of this <p>, which has children too.
+  --> diagnostics/raw-html-content/Notice.uf.tsx:10:10
+   |
+10 |       <p innerHTML={message}>Loading…</p>
+   |          ^^^^^^^^^
+   |
+   = help: Remove the children, or put the markup in an element of its own beside them: `<div innerHTML={markup} />`.
+   = see: https://unframework.dev/diagnostics/UF3052
+
+error[UF3052]: <hr> is a void element: it holds no content for `innerHTML` to set.
+  --> diagnostics/raw-html-content/Notice.uf.tsx:11:11
+   |
+11 |       <hr innerHTML={message} />
+   |           ^^^^^^^^^
+   |
+   = help: Put the markup in an element that holds content, such as a <div> or a <span>.
+   = see: https://unframework.dev/diagnostics/UF3052
+
+error[UF3052]: The content of <textarea> is text, which the targets set apart from `innerHTML`.
+  --> diagnostics/raw-html-content/Notice.uf.tsx:12:17
+   |
+12 |       <textarea innerHTML={message} />
+   |                 ^^^^^^^^^
+   |
+   = help: Write the text as children.
+   = see: https://unframework.dev/diagnostics/UF3052

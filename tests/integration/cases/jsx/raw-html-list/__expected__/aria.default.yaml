@@ -1,0 +1,13 @@
+- list:
+  - listitem:
+    - strong: Added
+    - text: raw HTML
+  - listitem:
+    - emphasis: Fixed
+    - text: a
+    - code: key
+    - text: warning
+  - listitem:
+    - text: Plain text,
+    - link "with a link":
+      - /url: "#notes"

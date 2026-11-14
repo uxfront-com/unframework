@@ -10,7 +10,8 @@ describeTargets("jsx/raw-html", () => {
   it("renders a prop's markup and a static string as HTML", async () => {
     const view = await mountScenario(Article, "default");
     await view.expectParity("default");
-    const lead = view.getByText("Version 2 is");
+    const lead = view.getByRole("paragraph");
+    await expect.element(lead).toHaveTextContent("Version 2 is out.");
     await expect.element(lead).toHaveAttribute("id", "lead");
     await expect.element(lead).toHaveAttribute("data-kind", "intro");
     await expect.element(lead).toHaveStyle({ color: "rgb(0, 0, 128)" });

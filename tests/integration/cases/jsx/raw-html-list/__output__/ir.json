@@ -1,0 +1,199 @@
+{
+  "irVersion": 1,
+  "file": "jsx/raw-html-list/Changelog.uf.tsx",
+  "components": [
+    {
+      "name": "Changelog",
+      "span": {
+        "start": 115,
+        "end": 329
+      },
+      "props": [
+        {
+          "name": "entries",
+          "optional": false,
+          "type": {
+            "code": "Entry[]",
+            "span": {
+              "start": 103,
+              "end": 110
+            }
+          },
+          "binding": "entries@151",
+          "span": {
+            "start": 94,
+            "end": 111
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ChangelogProps",
+          "span": {
+            "start": 162,
+            "end": 176
+          }
+        },
+        "span": {
+          "start": 149,
+          "end": 176
+        }
+      },
+      "types": [
+        "Entry",
+        "ChangelogProps"
+      ],
+      "bindings": [
+        {
+          "id": "entries@151",
+          "name": "entries",
+          "kind": "prop",
+          "span": {
+            "start": 151,
+            "end": 158
+          }
+        },
+        {
+          "id": "entry@238",
+          "name": "entry",
+          "kind": "loopVar",
+          "span": {
+            "start": 238,
+            "end": 243
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "ul",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "changelog",
+            "span": {
+              "start": 199,
+              "end": 216
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "For",
+            "source": {
+              "code": "entries",
+              "span": {
+                "start": 225,
+                "end": 232
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "entries@151",
+                  "span": {
+                    "start": 225,
+                    "end": 232
+                  }
+                }
+              ]
+            },
+            "item": "entry@238",
+            "key": {
+              "code": "entry.id",
+              "span": {
+                "start": 267,
+                "end": 275
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "entry@238",
+                  "span": {
+                    "start": 267,
+                    "end": 272
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Element",
+              "tag": "li",
+              "attributes": [
+                {
+                  "kind": "RawHtml",
+                  "value": {
+                    "code": "entry.html",
+                    "span": {
+                      "start": 288,
+                      "end": 298
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "entry@238",
+                        "span": {
+                          "start": 288,
+                          "end": 293
+                        }
+                      }
+                    ]
+                  },
+                  "span": {
+                    "start": 277,
+                    "end": 299
+                  }
+                }
+              ],
+              "children": [],
+              "span": {
+                "start": 258,
+                "end": 302
+              }
+            },
+            "span": {
+              "start": 225,
+              "end": 311
+            }
+          }
+        ],
+        "span": {
+          "start": 195,
+          "end": 322
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Changelog",
+      "span": {
+        "start": 115,
+        "end": 329
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Entry",
+      "exported": true,
+      "code": "interface Entry {\n  id: number;\n  html: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 56
+      }
+    },
+    {
+      "name": "ChangelogProps",
+      "exported": true,
+      "code": "interface ChangelogProps {\n  entries: Entry[];\n}",
+      "span": {
+        "start": 65,
+        "end": 113
+      }
+    }
+  ]
+}
