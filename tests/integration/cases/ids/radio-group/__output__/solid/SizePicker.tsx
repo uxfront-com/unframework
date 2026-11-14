@@ -1,12 +1,4 @@
-import {
-  type Accessor,
-  For,
-  type JSX,
-  createMemo,
-  createSignal,
-  createUniqueId,
-  untrack,
-} from "solid-js";
+import { For, type JSX, createMemo, createSignal, createUniqueId, untrack } from "solid-js";
 
 export interface SizePickerProps {
   legend: string;
@@ -34,16 +26,16 @@ export default function SizePicker(
       <legend>{props.legend}</legend>
       <p id={hintId}>Pick one size.</p>
       <KeyedFor each={props.sizes} by={(size) => size}>
-        {(size, index) => (
+        {(size) => (
           <div class="size">
             <input
               type="radio"
-              id={`${group}-${index()}`}
+              id={`${group}-${size.index}`}
               name={group}
-              value={size()}
-              onChange={() => choose(size())}
+              value={size.value}
+              onChange={() => choose(size.value)}
             />
-            <label for={`${group}-${index()}`}>{size()}</label>
+            <label for={`${group}-${size.index}`}>{size.value}</label>
           </div>
         )}
       </KeyedFor>
@@ -63,7 +55,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -77,7 +69,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );

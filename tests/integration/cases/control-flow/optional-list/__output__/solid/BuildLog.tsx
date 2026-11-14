@@ -1,4 +1,4 @@
-import { type Accessor, For, type JSX, Show, createMemo, untrack } from "solid-js";
+import { For, type JSX, Show, createMemo, untrack } from "solid-js";
 
 interface LogLine {
   id: string;
@@ -31,7 +31,7 @@ export default function BuildLog(
         <KeyedFor each={props.lines ?? []} by={(line) => line.id}>
           {(line) => (
             <code>
-              {line().text}
+              {line.value.text}
               {"\n"}
             </code>
           )}
@@ -39,7 +39,7 @@ export default function BuildLog(
       </pre>
       <ul aria-label="Warnings">
         <KeyedFor each={props.warnings ?? []} by={(warning) => warning}>
-          {(warning) => <li>{warning()}</li>}
+          {(warning) => <li>{warning.value}</li>}
         </KeyedFor>
       </ul>
     </section>
@@ -57,7 +57,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -71,7 +71,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );

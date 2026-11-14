@@ -1,4 +1,4 @@
-import { type Accessor, For, type JSX, createMemo, createSignal, untrack } from "solid-js";
+import { For, type JSX, createMemo, createSignal, untrack } from "solid-js";
 
 export interface StarRatingEvents {
   onPreview?: (stars: number) => void;
@@ -42,10 +42,10 @@ export default function StarRating(
             <li>
               <button
                 type="button"
-                aria-pressed={stars() >= choice()}
-                onClick={() => choose(choice())}
+                aria-pressed={stars() >= choice.value}
+                onClick={() => choose(choice.value)}
               >
-                {choice()} {choice() === 1 ? "star" : "stars"}
+                {choice.value} {choice.value === 1 ? "star" : "stars"}
               </button>
             </li>
           )}
@@ -70,7 +70,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -84,7 +84,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );

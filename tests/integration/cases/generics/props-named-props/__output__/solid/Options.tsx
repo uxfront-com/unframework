@@ -1,4 +1,4 @@
-import { type Accessor, For, type JSX, createMemo, untrack } from "solid-js";
+import { For, type JSX, createMemo, untrack } from "solid-js";
 
 interface Props<T> {
   heading: string;
@@ -13,8 +13,8 @@ export default function Options<T>(props: Props<T>) {
       <ul aria-label={props.heading}>
         <KeyedFor each={props.options} by={(option, index) => index}>
           {(option) => (
-            <li aria-current={option() === props.selected ? "true" : undefined}>
-              {String(option())}
+            <li aria-current={option.value === props.selected ? "true" : undefined}>
+              {String(option.value)}
             </li>
           )}
         </KeyedFor>
@@ -27,7 +27,7 @@ export default function Options<T>(props: Props<T>) {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -41,7 +41,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );

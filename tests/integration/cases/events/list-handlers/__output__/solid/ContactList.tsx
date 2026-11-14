@@ -1,4 +1,4 @@
-import { type Accessor, For, type JSX, createMemo, createSignal, untrack } from "solid-js";
+import { For, type JSX, createMemo, createSignal, untrack } from "solid-js";
 
 export interface Contact {
   id: string;
@@ -39,19 +39,19 @@ export default function ContactList(
     >
       <ul>
         <KeyedFor each={contacts()} by={(contact) => contact.id}>
-          {(contact, index) => (
+          {(contact) => (
             <li>
               <button
                 type="button"
-                aria-pressed={chosen() === contact().id}
-                onClick={() => pick(contact(), index())}
+                aria-pressed={chosen() === contact.value.id}
+                onClick={() => pick(contact.value, contact.index)}
               >
-                {contact().name}
+                {contact.value.name}
               </button>
               <button
                 type="button"
-                aria-label={`Remove ${contact().name}`}
-                onClick={() => drop(contact())}
+                aria-label={`Remove ${contact.value.name}`}
+                onClick={() => drop(contact.value)}
               >
                 Remove
               </button>
@@ -75,7 +75,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -89,7 +89,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );

@@ -1,5 +1,4 @@
 import {
-  type Accessor,
   For,
   type JSX,
   createMemo,
@@ -104,10 +103,19 @@ export default function BookShelf(
         <KeyedFor each={props.books} by={(book) => book.id}>
           {(book) => (
             <li>
-              <span>{book().title}</span>
-              <button type="button" onClick={() => focus(book())}>{`Focus ${book().title}`}</button>
-              <button type="button" onClick={() => peek(book())}>{`Peek ${book().title}`}</button>
-              <button type="button" onClick={() => read(book())}>{`Read ${book().title}`}</button>
+              <span>{book.value.title}</span>
+              <button
+                type="button"
+                onClick={() => focus(book.value)}
+              >{`Focus ${book.value.title}`}</button>
+              <button
+                type="button"
+                onClick={() => peek(book.value)}
+              >{`Peek ${book.value.title}`}</button>
+              <button
+                type="button"
+                onClick={() => read(book.value)}
+              >{`Read ${book.value.title}`}</button>
             </li>
           )}
         </KeyedFor>
@@ -147,7 +155,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -161,7 +169,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );

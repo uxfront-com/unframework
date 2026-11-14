@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Open The HTML standard' })",
+      "dom": [
+        "<ul aria-label=\"Reading list\" class=\"reading\">",
+        "  <li title=\"https://html.spec.whatwg.org/\">",
+        "    \"1. The HTML standard\"",
+        "    <button type=\"button\" uf:focused=\"\">",
+        "      \"Open The HTML standard\"",
+        "    </button>",
+        "  </li>",
+        "  <li title=\"SICP\">",
+        "    \"2. SICP (chapter 3)\"",
+        "  </li>",
+        "  <li title=\"TAOCP\">",
+        "    \"3. TAOCP\"",
+        "  </li>",
+        "</ul>"
+      ],
+      "aria": [
+        "- list \"Reading list\":",
+        "  - listitem \"https://html.spec.whatwg.org/\":",
+        "    - text: 1. The HTML standard",
+        "    - button \"Open The HTML standard\"",
+        "  - listitem \"SICP\": 2. SICP (chapter 3)",
+        "  - listitem \"TAOCP\": 3. TAOCP"
+      ],
+      "events": {
+        "open": [
+          [
+            "https://html.spec.whatwg.org/"
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,12 +1,4 @@
-import {
-  type Accessor,
-  For,
-  type JSX,
-  createMemo,
-  createSignal,
-  onCleanup,
-  untrack,
-} from "solid-js";
+import { For, type JSX, createMemo, createSignal, onCleanup, untrack } from "solid-js";
 
 export interface Task {
   id: number;
@@ -120,12 +112,12 @@ export default function TaskBoard(
       <ol aria-label="Open">
         <KeyedFor each={open()} by={(task) => task.id}>
           {(task) => (
-            <li classList={{ first: task().rank === 1 }}>
-              {task().title}
+            <li classList={{ first: task.value.rank === 1 }}>
+              {task.value.title}
               <button
                 type="button"
-                onClick={() => finish(task().id)}
-              >{`Finish ${task().title}`}</button>
+                onClick={() => finish(task.value.id)}
+              >{`Finish ${task.value.title}`}</button>
             </li>
           )}
         </KeyedFor>
@@ -142,7 +134,7 @@ export default function TaskBoard(
       <p>Newest first: {newestFirst().join(", ")}</p>
       <ul aria-label="Kinds">
         <KeyedFor each={kinds()} by={(line) => line}>
-          {(line) => <li>{line()}</li>}
+          {(line) => <li>{line.value}</li>}
         </KeyedFor>
       </ul>
       <p>Task 2: {byId()[2]?.title}</p>
@@ -189,7 +181,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -203,7 +195,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );

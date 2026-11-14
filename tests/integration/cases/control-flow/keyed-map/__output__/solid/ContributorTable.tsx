@@ -1,4 +1,4 @@
-import { type Accessor, For, type JSX, createMemo, untrack } from "solid-js";
+import { For, type JSX, createMemo, untrack } from "solid-js";
 
 export interface Contributor {
   login: string;
@@ -32,11 +32,11 @@ export default function ContributorTable(
           {(contributor) => (
             <tr>
               <td>
-                <a href={`https://example.com/people/${contributor().login}`}>
-                  {contributor().name}
+                <a href={`https://example.com/people/${contributor.value.login}`}>
+                  {contributor.value.name}
                 </a>
               </td>
-              <td>{contributor().commits}</td>
+              <td>{contributor.value.commits}</td>
             </tr>
           )}
         </KeyedFor>
@@ -56,7 +56,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -70,7 +70,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );

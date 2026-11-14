@@ -1,4 +1,4 @@
-import { type Accessor, For, type JSX, Show, createMemo, createSignal, untrack } from "solid-js";
+import { For, type JSX, Show, createMemo, createSignal, untrack } from "solid-js";
 
 export interface Meeting {
   id: number;
@@ -62,13 +62,13 @@ export default function MeetingList(
               <button
                 type="button"
                 ref={(element) => {
-                  element.addEventListener("click", () => show(event()));
-                  element.addEventListener("click", () => props.onOpened?.(event().title), {
+                  element.addEventListener("click", () => show(event.value));
+                  element.addEventListener("click", () => props.onOpened?.(event.value.title), {
                     once: true,
                   });
                 }}
               >
-                {event().title}
+                {event.value.title}
               </button>
             </li>
           )}
@@ -81,11 +81,11 @@ export default function MeetingList(
               <button
                 type="button"
                 ref={(element) => {
-                  element.addEventListener("click", () => record(`pick ${room()}`));
-                  element.addEventListener("click", async () => book(room()), { once: true });
+                  element.addEventListener("click", () => record(`pick ${room.value}`));
+                  element.addEventListener("click", async () => book(room.value), { once: true });
                 }}
               >
-                {room()}
+                {room.value}
               </button>
             </li>
           )}
@@ -134,7 +134,7 @@ export default function MeetingList(
       <p>Last key: {lastKey()}</p>
       <ol aria-label="Log">
         <KeyedFor each={log()} by={(line, index) => index}>
-          {(line) => <li>{line()}</li>}
+          {(line) => <li>{line.value}</li>}
         </KeyedFor>
       </ol>
     </section>
@@ -152,7 +152,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -166,7 +166,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );

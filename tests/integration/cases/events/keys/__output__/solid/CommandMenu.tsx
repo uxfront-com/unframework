@@ -1,12 +1,4 @@
-import {
-  type Accessor,
-  For,
-  type JSX,
-  createMemo,
-  createSignal,
-  onCleanup,
-  untrack,
-} from "solid-js";
+import { For, type JSX, createMemo, createSignal, onCleanup, untrack } from "solid-js";
 
 export interface CommandMenuProps {
   commands: string[];
@@ -62,8 +54,8 @@ export default function CommandMenu(
       </form>
       <ul aria-label="Suggestions">
         <KeyedFor each={props.commands} by={(command) => command}>
-          {(command, index) => (
-            <li aria-current={index() === active() ? "true" : undefined}>{command()}</li>
+          {(command) => (
+            <li aria-current={command.index === active() ? "true" : undefined}>{command.value}</li>
           )}
         </KeyedFor>
       </ul>
@@ -95,7 +87,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -109,7 +101,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );

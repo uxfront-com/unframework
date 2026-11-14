@@ -1,4 +1,4 @@
-import { type Accessor, For, type JSX, createMemo, untrack } from "solid-js";
+import { For, type JSX, createMemo, untrack } from "solid-js";
 
 export interface LegendSlots {
   swatch?: (props: { item: string }) => JSX.Element;
@@ -21,8 +21,8 @@ export default function Legend(
       <KeyedFor each={props.items} by={(item) => item}>
         {(item) => (
           <li>
-            <span>{props.swatch?.({ item: item() })}</span>{" "}
-            <span>{props.caption?.({ item: item() })}</span>
+            <span>{props.swatch?.({ item: item.value })}</span>{" "}
+            <span>{props.caption?.({ item: item.value })}</span>
           </li>
         )}
       </KeyedFor>
@@ -41,7 +41,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -55,7 +55,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );

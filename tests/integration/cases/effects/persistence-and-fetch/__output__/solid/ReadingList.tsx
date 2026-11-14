@@ -1,5 +1,4 @@
 import {
-  type Accessor,
   For,
   type JSX,
   createMemo,
@@ -116,7 +115,7 @@ export default function ReadingList(
       </p>
       <ul aria-label="Books">
         <KeyedFor each={books()} by={(book) => book}>
-          {(book) => <li>{book()}</li>}
+          {(book) => <li>{book.value}</li>}
         </KeyedFor>
       </ul>
       <div role="group" aria-label="Shelf">
@@ -142,7 +141,7 @@ export default function ReadingList(
         <KeyedFor each={props.shelves} by={(name) => name}>
           {(name) => (
             <li>
-              {name()}: {counts()[name()] ?? "not counted"}
+              {name.value}: {counts()[name.value] ?? "not counted"}
             </li>
           )}
         </KeyedFor>
@@ -163,7 +162,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -177,7 +176,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );

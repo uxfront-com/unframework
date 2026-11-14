@@ -1,4 +1,4 @@
-import { type Accessor, For, type JSX, createMemo, createSignal, untrack } from "solid-js";
+import { For, type JSX, createMemo, createSignal, untrack } from "solid-js";
 
 export interface Fruit {
   name: string;
@@ -44,10 +44,10 @@ export default function FruitPicker(
             <li>
               <button
                 type="button"
-                aria-pressed={fruit() === selected()}
-                onClick={() => pick(fruit())}
+                aria-pressed={fruit.value === selected()}
+                onClick={() => pick(fruit.value)}
               >
-                {fruit().name}
+                {fruit.value.name}
               </button>
             </li>
           )}
@@ -58,7 +58,7 @@ export default function FruitPicker(
       </button>
       <ol aria-label="Basket">
         <KeyedFor each={basket()} by={(fruit, index) => index}>
-          {(fruit) => <li>{`${fruit().name} (${fruit().colour})`}</li>}
+          {(fruit) => <li>{`${fruit.value.name} (${fruit.value.colour})`}</li>}
         </KeyedFor>
       </ol>
     </section>
@@ -76,7 +76,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -90,7 +90,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );

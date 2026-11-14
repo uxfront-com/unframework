@@ -1,4 +1,4 @@
-import { type Accessor, For, type JSX, Show, createMemo, untrack } from "solid-js";
+import { For, type JSX, Show, createMemo, untrack } from "solid-js";
 
 export interface MenuDish {
   id: string;
@@ -32,14 +32,14 @@ export default function MenuBoard(
         fallback={
           <KeyedFor each={props.courses} by={(course) => course.id}>
             {(course) => (
-              <section aria-label={course().title}>
-                <h2>{course().title}</h2>
+              <section aria-label={course.value.title}>
+                <h2>{course.value.title}</h2>
                 <ul>
-                  <KeyedFor each={course().dishes} by={(dish) => dish.id}>
+                  <KeyedFor each={course.value.dishes} by={(dish) => dish.id}>
                     {(dish) => (
                       <li>
-                        {dish().name}, {dish().price.toFixed(2)}
-                        <Show when={dish().vegetarian}>
+                        {dish.value.name}, {dish.value.price.toFixed(2)}
+                        <Show when={dish.value.vegetarian}>
                           <span> (vegetarian)</span>
                         </Show>
                       </li>
@@ -68,7 +68,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -82,7 +82,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );

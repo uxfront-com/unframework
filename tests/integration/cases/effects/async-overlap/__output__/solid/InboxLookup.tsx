@@ -1,5 +1,4 @@
 import {
-  type Accessor,
   For,
   type JSX,
   createMemo,
@@ -143,7 +142,7 @@ export default function InboxLookup(
       </button>
       <ol aria-label="Answers">
         <KeyedFor each={answers()} by={(line, index) => index}>
-          {(line) => <li>{line()}</li>}
+          {(line) => <li>{line.value}</li>}
         </KeyedFor>
       </ol>
       <button type="button" onClick={() => setOrder(order() === "newest" ? "oldest" : "newest")}>
@@ -188,7 +187,7 @@ function scopeAttributes(props: object): Record<string, ""> {
 function KeyedFor<T>(props: {
   each: readonly T[];
   by: (item: T, index: number) => unknown;
-  children: (item: Accessor<T>, index: Accessor<number>) => JSX.Element;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
 }): JSX.Element {
   const items = createMemo(() => {
     const rows = new Map<unknown, T>();
@@ -202,7 +201,16 @@ function KeyedFor<T>(props: {
     <For each={[...items().keys()]}>
       {(key, index) => {
         const item = createMemo(() => items().get(key) as T);
-        return untrack(() => props.children(item, index));
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
       }}
     </For>
   );
