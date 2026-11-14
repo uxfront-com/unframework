@@ -1,5 +1,5 @@
 // The React SSR renderer (Node, inside the `ssr:react` project).
-import type { SsrRenderer } from "@unframework.dev/codegen";
+import type { HydrationRenderer, SsrRenderer } from "@unframework.dev/codegen";
 import { createElement } from "react";
 import { prerender } from "react-dom/static";
 
@@ -31,4 +31,22 @@ export const renderToString: SsrRenderer = async (component, options) => {
   const body = DOCUMENT.exec(document);
   if (!body) throw new Error(`React's prerender produced an unexpected document:\n${document}`);
   return body[1] ?? "";
+};
+
+/**
+ * Renders the server HTML the hydrate adapter hydrates (L12, ADR-0095): the component alone, as
+ * the root of the tree. `hydrateRoot` hydrates it as the root of a container, so the tree has the
+ * same shape on both sides, and `useId` gives the same ids: inside `renderToString`'s `<html>`
+ * shell the component sits after `<head>`, a fork that changes every id it generates. What React
+ * hoists (a `<link rel="preload">` for an `<img>`) then comes first.
+ */
+export const renderForHydration: HydrationRenderer = async (component, options) => {
+  const errors: unknown[] = [];
+  const { prelude } = await prerender(createElement(asComponent(component), { ...options.props }), {
+    onError: (error) => void errors.push(error),
+  });
+  if (errors.length > 0) {
+    throw errors.length === 1 ? errors[0] : new AggregateError(errors, "React SSR failed.");
+  }
+  return new Response(prelude).text();
 };

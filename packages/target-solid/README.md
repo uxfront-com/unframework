@@ -401,7 +401,7 @@ Everything a parent passes is a prop, read through the props object (`src/compos
 | Control                                 | Solid                                                                                                  |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | a text-like `<input>`                   | `value={text()}` and `onInput`                                                                         |
-| a `<textarea>`                          | `value` in the browser and its text on the server (`isServer`), and `onInput`                          |
+| a `<textarea>`                          | `value` in the browser and its text on the server (`isServer`), `onInput`, and `ref={textCaret}`       |
 | a `<select>`                            | each option `selected={size() === "m"}`, and `onChange`                                                |
 | a checkbox, a radio                     | `checked={agreed()}`, `checked={plan() === "monthly"}`, and `onChange`                                 |
 | checkboxes into an array                | `checked={drinks().includes("tea")}`, and `onChange` writes `toggle(drinks(), "tea", checked)`         |
@@ -424,6 +424,8 @@ Everything a parent passes is a prop, read through the props object (`src/compos
   root's declaration, as Vue's merge does. A root's static class merges with a conditional
   rather than `cx`, so two components of one module, which the unplugin joins into one file,
   declare no helper twice; a root's class from parts or from a spread merges through `cx`.
+- A bound `<textarea>`'s `ref` callback, `textCaret`, sets its text again, so a hydrated field's
+  caret is after its text, as a client render leaves it (ADR-0095).
 - Solid's server writes a `<select>`'s and a `<textarea>`'s `value` as an attribute, so a
   `<select>` marks its options, in groups, lists and conditionals alike, an option without a
   `value` by its text (collapsed as the DOM collapses it), and a `<textarea>` holds its text
@@ -475,6 +477,10 @@ The tests and tooling build, check and run Solid output through three entries:
   proxy with a signal per key, which `mergeProps` reads as reactive props, holding the values the
   test passed (never a store's proxies), and rerenders by replacing each prop, removing those
   left out.
+- `@unframework.dev/target-solid/toolchain/hydrate` (browser, L12, ADR-0095): hydrates with
+  `hydrate`, from a fresh `_$HY` and an unfinished `sharedConfig`, both compiled hydratable
+  (`vite("hydrate")` sets `ssr: true`). Solid throws for what it cannot hydrate, and checks no
+  text or attribute. `renderForHydration` is `renderToString`.
 - `@unframework.dev/target-solid/toolchain/server` (Node): renders with `renderToStringAsync`.
 
 `test/output.test.ts` runs L3, L4 and L5 over what the emitter writes for sources that reach

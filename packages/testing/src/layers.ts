@@ -97,6 +97,37 @@ export const NO_OUTPUT_SKIP = "compile errors: no output";
  */
 export const NO_SPEC_SKIP = "no spec: a diagnostics case renders in no browser";
 
+/**
+ * The L12 sub-check each browser layer's check is in a hydrate project (ADR-0095), which records
+ * every check a spec runs as L12: a failure's message opens with it. L12's own sub-checks are
+ * `mismatch`, `ids`, `DOM` and `client agreement`, which the hydrate mount records.
+ */
+export const HYDRATION_SUB_CHECKS: Readonly<Partial<Record<LayerName, string>>> = {
+  L7: "DOM",
+  L8: "interactions",
+  L9: "trace",
+  L11: "axe",
+  L13: "console",
+  L14: "source map",
+};
+
+/** The layer a hydrate project records every check as, or none (see `recordEveryLayerAs`). */
+let recordedAs: LayerName | undefined;
+
+/**
+ * Records every later check as `layer`, naming its own layer's sub-check in a failure
+ * (`HYDRATION_SUB_CHECKS`): a hydrate project's setup calls it with `"L12"` (ADR-0095), and
+ * `undefined` records each layer as itself again.
+ */
+export function recordEveryLayerAs(layer: LayerName | undefined): void {
+  recordedAs = layer;
+}
+
+/** The layer every check is recorded as, when a hydrate project's setup set one. */
+export function recordedLayer(): LayerName | undefined {
+  return recordedAs;
+}
+
 /** L13's skip in the server render of a component that did not render: L6 failed instead. */
 export const NOT_RENDERED_SKIP = "the component did not render (L6)";
 
@@ -258,7 +289,8 @@ export function settleOutcome(outcome: LayerOutcome, entry?: QuarantineEntry): L
  * covers is recorded as quarantined and does not fail the test. A pass or a skip is recorded as
  * it is, even under an entry: one test cannot tell a stale entry from one another test of the
  * cell still needs, so the run decides (see `settleOutcome`). Several records for the same layer
- * merge (fail beats pass); a task records one case and target only.
+ * merge (fail beats pass); a task records one case and target only. In a hydrate project every
+ * layer is recorded as L12 (`recordEveryLayerAs`).
  */
 export function recordLayer(
   task: LayerTask,
@@ -270,6 +302,15 @@ export function recordLayer(
     throw new TypeError(
       `${subject.case} › ${subject.target} › ${layer}: a skip needs a reason, not ${JSON.stringify(outcome.reason)}.`,
     );
+  }
+  if (recordedAs !== undefined && layer !== recordedAs) {
+    if (outcome.status === "fail") {
+      outcome = {
+        status: "fail",
+        message: `${HYDRATION_SUB_CHECKS[layer] ?? layer}: ${outcome.message}`,
+      };
+    }
+    layer = recordedAs;
   }
   const entry = quarantineFor(subject.quarantine, subject, layer);
   const settled: LayerOutcome =

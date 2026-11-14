@@ -40,7 +40,7 @@ import {
   tokenType,
 } from "./composition.ts";
 import type { Composition } from "./composition.ts";
-import { directiveCode, scopeDirectiveCode } from "./directives.ts";
+import { directiveCode, scopeDirectiveCode, textCaretDirectiveCode } from "./directives.ts";
 import type { ScopeDirectiveNames } from "./directives.ts";
 import { planListeners } from "./listeners.ts";
 import { classMembers } from "./members.ts";
@@ -100,8 +100,8 @@ export const angular: Target = defineTarget({
     "conditional-event-control": { support: "native" },
     "use-id": {
       support: "emulated",
-      helper: "nextId",
-      note: "Angular has no id API: a module counter makes each instance's ids, `uf-id-<component>-<n>`, as Angular Material makes its own.",
+      helper: "idCounter",
+      note: "Angular has no id API: a counter makes each instance's ids, `uf-id-<component>-<n>`, as Angular Material makes its own. It is one per application, an injection token's, so a server render and the client that hydrates it count the same ids (ADR-0095).",
     },
     "next-tick": {
       support: "emulated",
@@ -222,6 +222,8 @@ export const angular: Target = defineTarget({
     },
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
+    // `provideClientHydration()` on both sides (ADR-0024, ADR-0095).
+    hydration: { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     return [emitComponent(component, context)];
@@ -311,7 +313,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const refObject = usesRefObject ? imports.claim("refObject") : undefined;
   const provided = providers(plan, rules, composition, className, refObject);
   const nextId = component.setup.some((item) => item.kind === "Id")
-    ? imports.claim("nextId")
+    ? imports.claim("idCounter")
     : undefined;
   const directives = listeners.directives.map((spec) => directiveCode(spec, imports, placeholders));
   // The child-root rule (ADR-0063): each root node binds the directive that gives it the scope
@@ -345,7 +347,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   type Entry = Parameters<typeof js.objectExpression>[0][number];
   const metadata = js.objectExpression([
     ["selector", js.stringLiteral(`uf-${kebabCase(component.name)}`)],
-    ...(composition.imports.length || directives.length || scope
+    ...(composition.imports.length || directives.length || scope || models.textCaret
       ? [
           [
             "imports",
@@ -354,6 +356,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
                 ...composition.imports,
                 ...listeners.directives.map(({ className: name }) => name),
                 ...(scope ? [scope.className] : []),
+                ...(models.textCaret === undefined ? [] : [models.textCaret]),
               ].map((name) => js.identifier(name)),
             ),
           ] satisfies Entry,
@@ -461,6 +464,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
       ),
     ),
     ...(scope ? [scopeDirectiveCode(scope, imports)] : []),
+    ...(models.textCaret === undefined ? [] : [textCaretDirectiveCode(models.textCaret, imports)]),
   ];
   if (models.helpers.some(({ code }) => code.includes("WritableSignal"))) {
     imports.add("@angular/core", "WritableSignal", { type: true });
@@ -479,12 +483,18 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     })),
     ...typeExportsCode(component, module, kebabCase),
   ].toSorted((a, b) => a.span.start - b.span.start);
+  // One id counter per application, so a server render and the client that hydrates it count
+  // alike (ADR-0095). Claimed before the imports are printed.
+  const idCounter =
+    nextId === undefined
+      ? undefined
+      : `const ${nextId} = new ${imports.add("@angular/core", "InjectionToken")}<{ next: number }>("${nextId}", {\n  factory: () => ({ next: 0 }),\n});\n`;
   const contents = placeholders.print(() =>
     [
       printProgram(js.program(imports.toDeclarations())),
       ...typeCode.map(({ code }) => `${code}\n`),
       ...(constants.constants.length ? [`${constants.constants.join("\n")}\n`] : []),
-      ...(nextId === undefined ? [] : [`let ${nextId} = 0;\n`]),
+      ...(idCounter === undefined ? [] : [idCounter]),
       ...declarations,
       ...directives.map(
         ({ decorator: written, statements: declared }) =>

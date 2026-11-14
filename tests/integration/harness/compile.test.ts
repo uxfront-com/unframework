@@ -184,6 +184,12 @@ describe("compile", () => {
             // Only a diagnostics case: a feature case without a spec stays a missing cell.
             for (const layer of NO_SPEC_LAYERS) checks[layer] = () => ({ skip: NO_SPEC_SKIP });
           }
+          // No hydrate project runs a diagnostics case, which has no spec: its L12 says so, with
+          // compile errors or without, as the targets that do not hydrate say why they skip
+          // every other case (ADR-0095).
+          if (!info.spec && info.id.startsWith("diagnostics/")) {
+            checks.L12 = () => ({ skip: NO_SPEC_SKIP });
+          }
           await checkLayers(
             task,
             { case: info.id, target, quarantine: harness.quarantine },

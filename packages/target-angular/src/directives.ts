@@ -118,3 +118,31 @@ export function scopeDirectiveCode(names: ScopeDirectiveNames, imports: ImportSe
     "",
   ].join("\n");
 }
+
+/**
+ * The directive that puts a bound `<textarea>`'s caret after its text once it is rendered
+ * (ADR-0095): once hydrated, the field keeps the server's text with the caret before it, where a
+ * client render sets the text of an empty field and leaves the caret after it. It empties the
+ * field and sets its text again, as ADR-0060 has React do, which fires no event
+ * (`setSelectionRange` would fire `select`). Angular runs a node's `ngOnInit` after its bindings,
+ * so in a client render the field already holds its text, and setting it again moves only the
+ * caret. It selects a field by that binding, which
+ * Angular matches as it does an attribute, so it adds no attribute to the DOM, and only the
+ * components that bind a `<textarea>` import it.
+ */
+export function textCaretDirectiveCode(className: string, imports: ImportSet): string {
+  const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
+  return `/** Puts a field's caret after its text, as setting the text of an empty field leaves it. */
+@${core("Directive")}({ selector: "textarea[value]" })
+export class ${className} implements ${core("OnInit", true)} {
+  private readonly element = ${core("inject")}<${core("ElementRef", true)}<HTMLTextAreaElement>>(${core("ElementRef")});
+
+  ngOnInit(): void {
+    const field = this.element.nativeElement;
+    const text = field.value;
+    field.value = "";
+    field.value = text;
+  }
+}
+`;
+}

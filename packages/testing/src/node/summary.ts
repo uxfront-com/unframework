@@ -532,6 +532,7 @@ export function renderMarkdown(
         : `${projects.length} project(s) ran only in part (${filter}: ${projects.join(", ")})`,
     ),
   ];
+  const notLive = LAYERS.filter((layer) => !layers.includes(layer));
   const lines = [
     browser === "chromium"
       ? "## Unframework parity matrix"
@@ -551,7 +552,12 @@ export function renderMarkdown(
       : matrix.runs.length > 1
         ? `Every project has records, from ${matrix.runs.length} runs: every cell is checked, each layer against the newest run that recorded it.`
         : "Every project ran: every cell is checked.",
-    `Layers that are not live (${LAYERS.filter((layer) => !layers.includes(layer)).join(", ")}) are recorded as skip(${expected.notLiveReason}).`,
+    // Once every layer is live (M8, ADR-0095), no line names none.
+    ...(notLive.length
+      ? [
+          `Layers that are not live (${notLive.join(", ")}) are recorded as skip(${expected.notLiveReason}).`,
+        ]
+      : []),
     ...Object.entries(expected.recordedOnlyBy ?? {})
       .filter(([, project]) => !status.requireComplete && !ranInFull(matrix, project))
       .map(

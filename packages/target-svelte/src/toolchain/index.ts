@@ -27,7 +27,7 @@ export const toolchain: Toolchain = {
       // The dependency scanner never sees compiled output: list the runtime entries it imports
       // (`svelte/events` for the listeners written as attachments), or the first run discovers
       // them late and reloads mid-test.
-      ...(mode === "browser"
+      ...(mode !== "ssr"
         ? {
             optimizeDeps: {
               include: [
@@ -43,6 +43,7 @@ export const toolchain: Toolchain = {
   },
   client: "@unframework.dev/target-svelte/toolchain/client",
   server: "@unframework.dev/target-svelte/toolchain/server",
+  hydrate: "@unframework.dev/target-svelte/toolchain/hydrate",
   frameworkCompile,
   frameworkEmit,
   typecheck,

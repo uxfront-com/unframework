@@ -59,7 +59,7 @@ export const mount: MountAdapter = async (component, container, options) => {
  * an input cannot be unset, and the emitted input's transform turns `undefined` into its
  * default (ADR-0043). For a name that is not an input, Angular logs NG0303, which fails L13.
  */
-function setInputs(
+export function setInputs(
   ref: ComponentRef<unknown>,
   set: Set<string>,
   props: Readonly<Record<string, unknown>>,
@@ -81,7 +81,7 @@ function setInputs(
  * the value for one required member, and the tuple of the arguments otherwise; the listener gets
  * the arguments back, exactly as many as the component passed.
  */
-function outputBindings(
+export function outputBindings(
   on: Readonly<Record<string, MountListener>> = {},
   events: readonly MountEvent[] = [],
 ): Binding[] {

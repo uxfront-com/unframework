@@ -58,7 +58,7 @@ export class ScopeAttributes implements OnInit {
       (change)="this.value.set($any(valueField.value))"
     >@for (option of options; track option) {<option
       [attr.value]="option"
-      [selected]="this.value() === option" [defaultSelected]="onServer && this.value() === option"
+      [defaultSelected]="onServer && this.value() === option" [selected]="this.value() === option"
     >{{ option }}</option>}</select></label>
   `,
 })

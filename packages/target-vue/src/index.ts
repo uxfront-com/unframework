@@ -80,11 +80,26 @@ export const vue: Target = defineTarget({
     "generic-slot-props": { support: "native" },
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
+    hydration: { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    const { block, rewrite, listeners, components, keys } = scriptSetup(component, context.module);
+    const { block, rewrite, listeners, components, keys, textCaret } = scriptSetup(
+      component,
+      context.module,
+    );
+    // A bound `<textarea>` takes the directive that puts its caret after its text (ADR-0095).
+    const dialect: typeof vueDialect =
+      textCaret === undefined
+        ? vueDialect
+        : {
+            ...vueDialect,
+            modelAttribute: (model, context) => [
+              ...vueDialect.modelAttribute!(model, context),
+              ...(model.attribute.control === "textarea" ? [directiveAttribute(textCaret)] : []),
+            ],
+          };
     // The component resolves the names of loop variables.
-    const template = printMarkup(component.render, vueDialect, {
+    const template = printMarkup(component.render, dialect, {
       level: 1,
       component,
       module: context.module,
@@ -111,3 +126,12 @@ export const vue: Target = defineTarget({
 });
 
 export default vue;
+
+/** A local directive's attribute, `v-text-caret` for `vTextCaret`. */
+function directiveAttribute(name: string): { name: string; text: string } {
+  const attribute = `v-${name
+    .slice(1)
+    .replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)
+    .replace(/^-/, "")}`;
+  return { name: attribute, text: attribute };
+}

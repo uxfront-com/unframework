@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add one' })",
+      "dom": [
+        "<div class=\"stepper\">",
+        "  <output>",
+        "    \"5\"",
+        "  </output>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add one\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- status: \"5\"",
+        "- button \"Add one\""
+      ],
+      "events": {
+        "change": [
+          [
+            5
+          ]
+        ]
+      }
+    }
+  ]
+}

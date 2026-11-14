@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "fill getByRole('textbox', { name: 'Message' }) \"  See you at noon  \"",
+      "dom": [
+        "<form aria-label=\"Reply\">",
+        "  <textarea aria-label=\"Message\" uf:focused=\"\" uf:value=\"  See you at noon  \"></textarea>",
+        "  <textarea aria-label=\"Signature\" uf:value=\"Ada\"></textarea>",
+        "  <output>",
+        "    \"[See you at noon] from Ada\"",
+        "  </output>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Reply\":",
+        "  - textbox \"Message\": See you at noon",
+        "  - textbox \"Signature\": Ada",
+        "  - status: \"[See you at noon] from Ada\""
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -20,6 +20,7 @@ import { renameGeneratedIds } from "../normalize/rules/generated-ids.ts";
 import { LIVE_REFERENCE_SKIP, referenceNotRunSkip } from "../visual-types.ts";
 import type { PixelTolerance } from "../visual-types.ts";
 import { compareAxe } from "./axe.ts";
+import { isHydrateProject } from "./hydrate.ts";
 import { traceFile } from "./trace.ts";
 import type { TraceStep } from "./trace.ts";
 import { captureVisual } from "./visual.ts";
@@ -85,6 +86,8 @@ export async function expectParity(
   await view.settle();
   const steps = view.trace.take();
 
+  // A hydrate project records every check as L12 and captures no pixels (ADR-0095).
+  const pixels = !isHydrateProject();
   await recordLayerChecks(test, subject, {
     async L7() {
       const failures: string[] = [];
@@ -115,24 +118,32 @@ export async function expectParity(
       if (!trace.pass) throw new Error(trace.message);
       return steps.length ? undefined : { skip: NO_INTERACTION_SKIP };
     },
-    async L10() {
-      const result = await captureVisual(test, {
-        case: caseId,
-        name,
-        container: view.container,
-        locator: view.locator,
-        ...(options.tolerance ? { tolerance: options.tolerance } : {}),
-      });
-      // Nothing to compare with: the summary fails the run once, naming the reference's
-      // project and Vitest's error, rather than every follower here (ADR-0091).
-      if (result.outcome === "reference-not-run" && result.referenceProject !== undefined) {
-        return { skip: referenceNotRunSkip(result.referenceProject) };
-      }
-      if (!result.pass) {
-        throw new Error(`${result.outcome} (${result.mode}, ${result.role}): ${result.message}`);
-      }
-      return result.outcome === "published-reference" ? { skip: LIVE_REFERENCE_SKIP } : undefined;
-    },
+    ...(pixels
+      ? {
+          async L10() {
+            const result = await captureVisual(test, {
+              case: caseId,
+              name,
+              container: view.container,
+              locator: view.locator,
+              ...(options.tolerance ? { tolerance: options.tolerance } : {}),
+            });
+            // Nothing to compare with: the summary fails the run once, naming the reference's
+            // project and Vitest's error, rather than every follower here (ADR-0091).
+            if (result.outcome === "reference-not-run" && result.referenceProject !== undefined) {
+              return { skip: referenceNotRunSkip(result.referenceProject) };
+            }
+            if (!result.pass) {
+              throw new Error(
+                `${result.outcome} (${result.mode}, ${result.role}): ${result.message}`,
+              );
+            }
+            return result.outcome === "published-reference"
+              ? { skip: LIVE_REFERENCE_SKIP }
+              : undefined;
+          },
+        }
+      : {}),
     async L11() {
       const { pass, unexpected, missing } = await compareAxe(view.container, declaredAxe);
       if (pass) return;

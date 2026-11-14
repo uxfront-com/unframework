@@ -230,7 +230,7 @@ describe("template refs and ids", () => {
     expect(document.activeElement).toBe(view.get("button"));
   });
 
-  it("gives each instance its own ids, which the label and the hint refer to", async () => {
+  it("gives each instance ids the label and the hint refer to, counted per application", async () => {
     const first = await render(EmailField, [], { label: "Work email", hint: "We never share it" });
     const second = await render(EmailField, [], { label: "Home email", hint: "Optional" });
     const ids = [first, second].map((view) => {
@@ -240,7 +240,11 @@ describe("template refs and ids", () => {
       return [input.id, view.get("p").id];
     });
     expect(ids.flat().every((id) => id.startsWith("uf-id-"))).toBe(true);
-    expect(new Set(ids.flat()).size).toBe(4);
+    // Each mount is an application of its own, and each application counts from the same start,
+    // as a server render and the client that hydrates it must (ADR-0095), and as Vue's and
+    // React's roots count their `useId`s. Two ids of one application never repeat.
+    expect(new Set(ids[0]).size).toBe(2);
+    expect(ids[1]).toEqual(ids[0]);
   });
 });
 

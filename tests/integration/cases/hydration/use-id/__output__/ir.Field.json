@@ -1,0 +1,355 @@
+{
+  "irVersion": 1,
+  "file": "hydration/use-id/Field.uf.tsx",
+  "components": [
+    {
+      "name": "Field",
+      "span": {
+        "start": 197,
+        "end": 510
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 86,
+              "end": 92
+            }
+          },
+          "binding": "label@229",
+          "span": {
+            "start": 79,
+            "end": 93
+          }
+        },
+        {
+          "name": "hint",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 102,
+              "end": 108
+            }
+          },
+          "binding": "hint@236",
+          "span": {
+            "start": 96,
+            "end": 109
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "FieldProps",
+          "span": {
+            "start": 244,
+            "end": 254
+          }
+        },
+        "span": {
+          "start": 227,
+          "end": 254
+        }
+      },
+      "types": [
+        "FieldProps"
+      ],
+      "bindings": [
+        {
+          "id": "label@229",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 229,
+            "end": 234
+          }
+        },
+        {
+          "id": "hint@236",
+          "name": "hint",
+          "kind": "prop",
+          "span": {
+            "start": 236,
+            "end": 240
+          }
+        },
+        {
+          "id": "inputId@266",
+          "name": "inputId",
+          "kind": "localConst",
+          "span": {
+            "start": 266,
+            "end": 273
+          }
+        },
+        {
+          "id": "hintId@293",
+          "name": "hintId",
+          "kind": "localConst",
+          "span": {
+            "start": 293,
+            "end": 299
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Id",
+          "binding": "inputId@266",
+          "span": {
+            "start": 260,
+            "end": 284
+          }
+        },
+        {
+          "kind": "Id",
+          "binding": "hintId@293",
+          "span": {
+            "start": 287,
+            "end": 310
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "field",
+            "span": {
+              "start": 330,
+              "end": 343
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "for",
+                "value": {
+                  "code": "inputId",
+                  "span": {
+                    "start": 363,
+                    "end": 370
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "inputId@266",
+                      "span": {
+                        "start": 363,
+                        "end": 370
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 358,
+                  "end": 371
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "label",
+                  "span": {
+                    "start": 373,
+                    "end": 378
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@229",
+                      "span": {
+                        "start": 373,
+                        "end": 378
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 372,
+                  "end": 379
+                }
+              }
+            ],
+            "span": {
+              "start": 351,
+              "end": 387
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "input",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "id",
+                "value": {
+                  "code": "inputId",
+                  "span": {
+                    "start": 405,
+                    "end": 412
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "inputId@266",
+                      "span": {
+                        "start": 405,
+                        "end": 412
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 401,
+                  "end": 413
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "text",
+                "span": {
+                  "start": 414,
+                  "end": 425
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-describedby",
+                "value": {
+                  "code": "hintId",
+                  "span": {
+                    "start": 444,
+                    "end": 450
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "hintId@293",
+                      "span": {
+                        "start": 444,
+                        "end": 450
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 426,
+                  "end": 451
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 394,
+              "end": 454
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "small",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "id",
+                "value": {
+                  "code": "hintId",
+                  "span": {
+                    "start": 472,
+                    "end": 478
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "hintId@293",
+                      "span": {
+                        "start": 472,
+                        "end": 478
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 468,
+                  "end": 479
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "hint",
+                  "span": {
+                    "start": 481,
+                    "end": 485
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "hint@236",
+                      "span": {
+                        "start": 481,
+                        "end": 485
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 480,
+                  "end": 486
+                }
+              }
+            ],
+            "span": {
+              "start": 461,
+              "end": 494
+            }
+          }
+        ],
+        "span": {
+          "start": 327,
+          "end": 503
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Field",
+      "span": {
+        "start": 197,
+        "end": 510
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "FieldProps",
+      "exported": true,
+      "code": "interface FieldProps {\n  label: string;\n  hint: string;\n}",
+      "span": {
+        "start": 54,
+        "end": 111
+      }
+    }
+  ]
+}

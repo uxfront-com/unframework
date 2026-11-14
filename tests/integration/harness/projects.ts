@@ -7,6 +7,8 @@
 //   ssr:<target>        node     L6 L13    the target's server renderer, through the unplugin
 //   browser:<target>    chromium L7 L8 L9 L10 L11 L13  the shared specs, through the unplugin
 //                       (or UF_BROWSER's engine)
+//   hydrate:<target>    chromium L12      the shared specs again, each mount the server's HTML
+//                                         hydrated (ADR-0095); every check recorded as L12
 //   bench               node     L15       the budgets, only when `--project bench` names it
 //
 // Every project sets `extends: false`: inheriting the root config merges its plugins into each
@@ -38,11 +40,12 @@ import type { Plugin } from "vite";
 import { mergeConfig } from "vitest/config";
 import type { TestProjectConfiguration, UserWorkspaceConfig, ViteUserConfig } from "vitest/config";
 
-import { canaryPlugins, canaryServePlugin, guardsGoldens } from "./canaries.ts";
+import { canaryPlugins, canaryServePlugin, findCanary, guardsGoldens } from "./canaries.ts";
 import "./context.ts";
 import { listCases } from "./cases.ts";
 import { ENGINE_DECLARATIONS, enginePlugins } from "./engines.ts";
 import { goldenGuard } from "./guard.ts";
+import { hydrationRunners, ufHydrationRender } from "./hydrate.ts";
 import { noOutputCases, noOutputPlugin, standInCases, standInReasons } from "./no-output.ts";
 import { FAILURE_SCREENSHOTS_DIR, ROOT, toolchainDir } from "./paths.ts";
 import { SSR_SHARDS, shardFiles } from "./shards.ts";
@@ -87,9 +90,10 @@ export function referencesOnly(
 const NODE_TEST = { environment: "node", pool: "forks", testTimeout: 60_000 } as const;
 
 /** The layers each kind of project records, which an unavailable project fails. */
-const LAYERS_OF: Record<"ssr" | "browser", LayerName[]> = {
+const LAYERS_OF: Record<"ssr" | "browser" | "hydrate", LayerName[]> = {
   ssr: ["L6", "L13"],
   browser: ["L7", "L8", "L9", "L10", "L11", "L13", "L14"],
+  hydrate: ["L12"],
 };
 
 /** The budgets' project: left out of a run that does not name it, so `pnpm test` stays short. */
@@ -103,6 +107,7 @@ export function projectNames(targets: readonly string[]): string[] {
     ...targets.map((target) => `toolchain:${target}`),
     ...targets.map((target) => `ssr:${target}`),
     ...targets.map((target) => `browser:${target}`),
+    ...targets.map((target) => `hydrate:${target}`),
   ];
 }
 
@@ -140,6 +145,7 @@ export function harnessProjects(setup: HarnessSetup): TestProjectConfiguration[]
     ),
     ...setup.targets.map((target) => lazyProject(setup, "ssr", target, ssrProject)),
     ...setup.targets.map((target) => lazyProject(setup, "browser", target, browserProject)),
+    ...setup.targets.map((target) => lazyProject(setup, "hydrate", target, hydrateProject)),
     ...Object.keys(setup.referencesOnly ?? {})
       .filter((target) => !setup.targets.includes(target))
       .flatMap((target) => [
@@ -205,6 +211,11 @@ export function projectEntries(setup: HarnessSetup): ProjectEntry[] {
     ...setup.targets.map((target) => ({
       name: `browser:${target}`,
       kind: "browser" as const,
+      target,
+    })),
+    ...setup.targets.map((target) => ({
+      name: `hydrate:${target}`,
+      kind: "hydrate" as const,
       target,
     })),
     ...extra.flatMap((target) => [
@@ -312,7 +323,7 @@ type ProjectFactory = (
  */
 function lazyProject(
   setup: HarnessSetup,
-  kind: "ssr" | "browser",
+  kind: "ssr" | "browser" | "hydrate",
   target: string,
   factory: ProjectFactory,
 ): () => Promise<UserWorkspaceConfig> {
@@ -441,10 +452,32 @@ const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework)
   } as UserWorkspaceConfig;
 };
 
-const browserProject: ProjectFactory = async (setup, target, toolchain, unframework) => {
-  const name = `browser:${target}`;
+const browserProject: ProjectFactory = (setup, target, toolchain, unframework) =>
+  pageProject("browser", setup, target, toolchain, unframework);
+
+/**
+ * A hydrate project (L12, ADR-0095): the browser project's specs and pages, built from the
+ * toolchain's `hydrate` Vite configuration, with the render command and the target's hydrate
+ * adapter, whose `mount` renders the case's main component on the server and hydrates it. It
+ * compares with the shared expectations and writes nothing, and captures no pixels. A target
+ * without a hydrate adapter declares `hydration` unsupported: its project loads the specs as its
+ * browser project does, and skips every test by that capability.
+ */
+const hydrateProject: ProjectFactory = (setup, target, toolchain, unframework) =>
+  pageProject("hydrate", setup, target, toolchain, unframework);
+
+/** A project whose specs run in a page: a browser or a hydrate project. */
+async function pageProject(
+  kind: "browser" | "hydrate",
+  setup: HarnessSetup,
+  target: string,
+  toolchain: Toolchain,
+  unframework: (options: UnframeworkOptions) => Plugin[],
+): Promise<UserWorkspaceConfig> {
+  const name = `${kind}:${target}`;
   const context = toolchainContext(target);
-  const fragment = await toolchain.vite("browser", context);
+  const hydrates = kind === "hydrate" && toolchain.hydrate !== undefined;
+  const fragment = await toolchain.vite(hydrates ? "hydrate" : "browser", context);
   // The cases this target has no output for, or cannot compile yet: their specs load against a
   // stand-in, so each test is skipped with the expected errors, or fails every browser layer
   // with the stand-in's cause (harness/no-output.ts).
@@ -457,9 +490,10 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
       plugins: [
         noOutputPlugin(cases, standInReasons(noOutput, standIns)),
         noErrorBroadcast(),
+        ...(hydrates ? [ssrExternals(fragment), hydrationRunners()] : []),
         // The engines' plugins resolve the imports every output keeps as written (ADR-0064).
         ...(await enginePlugins()),
-        ...unframework(unpluginOptions(setup, target)),
+        ...pageCompilers(kind, setup, target, unframework),
         ...servedMapCanary(setup, target),
       ],
       // The testing API's own browser dependencies (CommonJS axe-core, parse5), and the runtime
@@ -503,6 +537,8 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
         setupFiles: [
           resolveModule("@unframework.dev/testing/setup"),
           resolveModule(`@unframework.dev/testing/${target}`),
+          // After the mount adapter's registration, which the hydrate adapter joins.
+          ...(hydrates ? [hydrateSetup(target)] : []),
         ],
         // The target's capability matrix as plain data: the browser skips a test that requires
         // a capability the target lacks, and imports no target (ADR-0050). A test of a case the
@@ -513,17 +549,24 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
           ufCapabilities: builtinTargets[target as TargetName].capabilities,
           ufNoOutput: noOutput,
           ufStandIn: standIns,
+          ...(kind === "hydrate" ? { ufHydrate: true, ufServer: toolchain.server } : {}),
         },
-        sequence: { groupOrder: projectGroup(setup, "browser", target) },
+        sequence: { groupOrder: projectGroup(setup, kind, target) },
         // Spec files share a page, but where the target's runtime cannot (ADR-0092).
         isolate: isolatesFiles(target),
         // Outside Chromium, parallel tester pages in one engine take the focus from each other.
         ...(fileParallelism(setup.mode) ? {} : { fileParallelism: false }),
-        ...(target === REFERENCE ? pagesOption(referencePages(setup, availableParallelism())) : {}),
+        ...(kind === "browser" && target === REFERENCE
+          ? pagesOption(referencePages(setup, availableParallelism()))
+          : {}),
         browser: {
           ...parityBrowser({
             name,
-            commands: { ...toolchain.browserCommands?.(context), ufMapStack },
+            commands: {
+              ...toolchain.browserCommands?.(context),
+              ufMapStack,
+              ...(hydrates ? { ufHydrationRender } : {}),
+            },
             browser: setup.mode.browser ?? "chromium",
           }),
           // Vitest's failure screenshots go next to the spec by default, among the committed
@@ -533,7 +576,73 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
       },
     ),
   } as UserWorkspaceConfig;
-};
+}
+
+/**
+ * The unplugin of a page project. A hydrate project under a canary that corrupts the page alone
+ * (`Canary.clientOnly`, L12) runs two: the canary's for the page's environment, and one without it
+ * for the server's, where the render command renders. Each instance keeps its own compile, so
+ * the server's HTML stays right (ADR-0095).
+ */
+function pageCompilers(
+  kind: "browser" | "hydrate",
+  setup: HarnessSetup,
+  target: string,
+  unframework: (options: UnframeworkOptions) => Plugin[],
+): Plugin[] {
+  const options = unpluginOptions(setup, target);
+  const canary = setup.mode.canary ? findCanary(setup.mode.canary) : undefined;
+  if (kind !== "hydrate" || !canary?.clientOnly) return unframework(options);
+  return [
+    ...onEnvironments(unframework(options), (name) => name === "client"),
+    ...onEnvironments(unframework({ ...options, plugins: [] }), (name) => name !== "client"),
+  ];
+}
+
+/** Plugins that apply to the environments `applies` names alone. */
+function onEnvironments(plugins: Plugin[], applies: (name: string) => boolean): Plugin[] {
+  return plugins.map((plugin) => ({
+    ...plugin,
+    applyToEnvironment: (environment) =>
+      applies(environment.name) &&
+      (plugin.applyToEnvironment ? plugin.applyToEnvironment(environment) : true),
+  }));
+}
+
+/**
+ * The setup file that registers a target's hydrate adapter in its hydrate project, beside this
+ * file: the hydrate projects are the harness's own, so their registrations are too.
+ */
+function hydrateSetup(target: string): string {
+  return fileURLToPath(new URL(`./hydrate-setup/${target}.ts`, import.meta.url));
+}
+
+/**
+ * Keeps the dependencies a toolchain's `hydrate` configuration externalises in its SSR
+ * environment (`environments.ssr.resolve.external`) external there, where the hydrate render
+ * command renders (ADR-0095). Vitest's own plugin sets that environment's `noExternal` to `true`
+ * and its `external` to Node's built-ins after every project plugin's configuration, so every
+ * dependency is inlined: Qwik needs that (one copy of its runtime on the server), but a CommonJS
+ * package such as react-dom cannot run inlined. An explicit `external` list still wins over
+ * `noExternal: true`, so this adds the toolchain's list back, after Vitest's hook.
+ */
+export function ssrExternals(fragment: ViteUserConfig): Plugin {
+  const external = fragment.environments?.ssr?.resolve?.external;
+  const names = Array.isArray(external) ? external : [];
+  return {
+    name: "uf-harness:hydrate-ssr-externals",
+    enforce: "post",
+    configEnvironment: {
+      order: "post",
+      handler(name, config) {
+        if (name !== "ssr" || !names.length) return;
+        const current = config.resolve?.external;
+        config.resolve ??= {};
+        config.resolve.external = [...(Array.isArray(current) ? current : []), ...names];
+      },
+    },
+  };
+}
 
 /**
  * Keeps a module that fails to compile from failing the specs after it. Its import fails its own

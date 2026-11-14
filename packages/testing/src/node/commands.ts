@@ -20,7 +20,7 @@ import { sharedArtefactContext } from "./context.ts";
 import { compiledEvents } from "./events.ts";
 import { ufSpecFinished } from "./finished.ts";
 import { KEBAB_CASE } from "./names.ts";
-import { settleArtefact } from "./policy.ts";
+import { artefactExists, settleArtefact } from "./policy.ts";
 import { VIEWPORT } from "./viewport.ts";
 import { ufVisualCapture } from "./visual.ts";
 
@@ -39,10 +39,17 @@ function isBrowserArtefact(file: string): boolean {
 
 /**
  * `ufArtefact`: settles a shared expectation the browser computed (L7, L9). Contents of `null`
- * say the scenario has no such file: only a trace may be absent, when no step led to it.
+ * say the scenario has no such file: only a trace may be absent, when no step led to it. A
+ * hydrate project (L12, ADR-0095) only ever compares, the reference's included: its DOM is the
+ * hydrated one, which never writes what the client render wrote. Its `optional` request passes
+ * as `absent` where no spec checks the scenario, so there is no file to compare with.
  */
 export function ufArtefact(context: CommandProject, request: ArtefactRequest): ArtefactResult {
   const { target, harness } = projectHarness(context);
+  const hydrate = context.project.getProvidedContext().ufHydrate === true;
+  if (request.optional && !hydrate) {
+    throw new Error(`[uf] Only a hydrate project compares "${request.file}" where it exists.`);
+  }
   if (!isBrowserArtefact(request.file)) {
     throw new Error(
       `[uf] "${request.file}" is not a browser artefact (dom.<name>.html, aria.<name>.yaml, trace.<name>.json).`,
@@ -52,11 +59,12 @@ export function ufArtefact(context: CommandProject, request: ArtefactRequest): A
     throw new Error(`[uf] "${request.file}" always has contents: only a trace may be absent.`);
   }
   const path = join(caseDirectory(harness, request.case), "__expected__", request.file);
-  const outcome = settleArtefact(
-    path,
-    request.contents ?? undefined,
-    sharedArtefactContext(harness, target, request.case),
-  );
+  const shared = sharedArtefactContext(harness, target, request.case);
+  const artefact = hydrate ? { ...shared, role: "follower" as const } : shared;
+  if (request.optional && !artefactExists(path, artefact)) {
+    return { pass: true, status: "absent", message: "" };
+  }
+  const outcome = settleArtefact(path, request.contents ?? undefined, artefact);
   return { pass: outcome.pass, status: outcome.status, message: outcome.message };
 }
 

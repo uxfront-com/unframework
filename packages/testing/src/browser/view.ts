@@ -27,6 +27,17 @@ import { captureExternalConsole } from "./console.ts";
 import { installDeterminism, ROOT_ATTRIBUTE, settleFrame } from "./determinism.ts";
 import { copyPayload, renumberIds } from "./events.ts";
 import type { EmittedEvent } from "./events.ts";
+import {
+  clientRender,
+  compareClientRender,
+  compareIds,
+  failHydration,
+  hydrateInto,
+  idsOf,
+  idsOfHtml,
+  isHydrateProject,
+} from "./hydrate.ts";
+import type { Hydrated } from "./hydrate.ts";
 import { takePreventedNavigations } from "./navigation.ts";
 import { expectParity } from "./parity.ts";
 import type { ParityOptions } from "./parity.ts";
@@ -190,7 +201,12 @@ export async function mountScenario(
   }
   // A copy: the provided context is shared by every test of the file.
   const props = scenarios[name]?.props;
-  return mountWith(component, props === undefined ? undefined : structuredClone(props), options);
+  return mountWith(
+    component,
+    props === undefined ? undefined : structuredClone(props),
+    options,
+    name,
+  );
 }
 
 /** The current test's case. */
@@ -213,13 +229,25 @@ async function declaredEvents(
   return events;
 }
 
+/**
+ * Mounts with the project's adapter: a client render, or in a hydrate project (L12, ADR-0095) the
+ * server's HTML of the case's main component, hydrated; `scenario` is the SSR scenario whose
+ * props `mountScenario` mounts with.
+ */
 async function mountWith(
   component: unknown,
   props: unknown,
   { clock = false }: ViewOptions,
+  scenario?: string,
 ): Promise<View<never>> {
   const registration = registeredAdapter();
   const { target, mount: adapter } = registration;
+  const hydrating = isHydrateProject();
+  if (hydrating && !registration.hydrate) {
+    throw new Error(
+      `mount: this hydrate project has no hydrate adapter for ${target}: a target without one declares its hydration capability unsupported, which skips every test here.`,
+    );
+  }
   const initial = checkProps("mount", props);
   await installDeterminism();
   const declared = await declaredEvents(registration, component);
@@ -250,12 +278,22 @@ async function mountWith(
   document.body.append(container);
 
   let instance: MountedComponent;
+  let hydrated: Hydrated | undefined;
+  const mountOptions = { ...(initial ? { props: initial } : {}), on, events: declared };
   try {
-    instance = await adapter(component, container, {
-      ...(initial ? { props: initial } : {}),
-      on,
-      events: declared,
-    });
+    if (hydrating) {
+      hydrated = await hydrateInto(
+        target,
+        registration.hydrate!,
+        currentCase("mount"),
+        component,
+        container,
+        mountOptions,
+      );
+      instance = hydrated.instance;
+    } else {
+      instance = await adapter(component, container, mountOptions);
+    }
   } catch (error) {
     container.remove();
     throw error;
@@ -269,6 +307,8 @@ async function mountWith(
   const normalizeOptions = {
     ...(isNormalizeTarget(target) ? { target } : {}),
     ...(engine ? { engine } : {}),
+    // The server's markup of each control's first state, which hydration keeps (rule 4f).
+    ...(hydrating ? { hydrated: true } : {}),
   };
   // A target the normaliser does not know (a test stub) has no framework noise to remove.
   const dom = () => normalizeDomWithIds(container, normalizeOptions);
@@ -287,8 +327,15 @@ async function mountWith(
     const problems = [...takePreventedNavigations(), ...refused.splice(0)];
     if (problems.length) throw new Error(problems.join("\n"));
   };
+  /** L12's `mismatch`: what the framework reported since the last settle, in a hydrate project. */
+  const takeMismatches = () => {
+    for (const message of hydrated?.instance.takeMismatches() ?? []) {
+      failHydration(target, "mismatch", message);
+    }
+  };
   const settle = async () => {
     await settleFrame(() => instance.settle());
+    takeMismatches();
     raise();
   };
   /**
@@ -441,7 +488,67 @@ async function mountWith(
       `mount: the component did not settle: its DOM or its events still changed after ${SETTLE_ROUNDS} rounds. A component that keeps changing on its own (a timer) starts from an action, after the first expectParity (ADR-0050).`,
     );
   }
+  if (hydrated) {
+    await checkHydrated({
+      target,
+      caseId: currentCase("mount"),
+      scenario,
+      container,
+      serverHtml: hydrated.html,
+      html: html(),
+      client: () =>
+        clientRender(
+          adapter,
+          component,
+          initial,
+          declared,
+          (root) => normalizeDomWithIds(root, normalizeOptions).html,
+        ),
+    });
+  }
   return view;
+}
+
+/** What the sub-checks right after a hydration read. */
+interface HydratedState {
+  target: string;
+  caseId: string;
+  /** The SSR scenario `mountScenario` mounted, whose expected DOM the `DOM` sub-check reads. */
+  scenario: string | undefined;
+  container: HTMLElement;
+  /** The server HTML the page hydrated. */
+  serverHtml: string;
+  /** The hydrated root, normalised as L7 normalises it. */
+  html: string;
+  /** The same target's client render of the props, normalised the same way. */
+  client(): Promise<string>;
+}
+
+/**
+ * L12's sub-checks right after hydration has settled, before any step (ADR-0095): the raw ids
+ * are the server's (`ids`), the root is the scenario's expected DOM (`DOM`, for `mountScenario`,
+ * where a spec checks that scenario) and the target's own client render (`client agreement`).
+ * Each records its failure as L12, and the test goes on, as `expectParity` does.
+ */
+async function checkHydrated(state: HydratedState): Promise<void> {
+  const { target } = state;
+  const ids = compareIds(idsOfHtml(state.serverHtml), idsOf(state.container));
+  if (ids) failHydration(target, "ids", ids);
+  if (state.scenario !== undefined) {
+    const dom = await commands.ufArtefact({
+      case: state.caseId,
+      file: `dom.${state.scenario}.html`,
+      contents: `${state.html.replace(/\n+$/, "")}\n`,
+      optional: true,
+    });
+    if (!dom.pass) failHydration(target, "DOM", dom.message);
+  }
+  try {
+    const agreement = compareClientRender(state.html, await state.client());
+    if (agreement) failHydration(target, "client agreement", agreement);
+  } catch (error) {
+    failHydration(target, "client agreement", formatError(error));
+  }
 }
 
 /** Records an L9 failure on the current test: a step that never settled cannot be compared. */

@@ -2,6 +2,7 @@ import {
   Component,
   Directive,
   ElementRef,
+  InjectionToken,
   type OnInit,
   Renderer2,
   inject,
@@ -14,7 +15,9 @@ export interface SizePickerProps {
   sizes: string[];
 }
 
-let nextId = 0;
+const idCounter = new InjectionToken<{ next: number }>("idCounter", {
+  factory: () => ({ next: 0 }),
+});
 
 /** The scope attributes taken off each host, for the roots its component renders later. */
 const scopes = new WeakMap<Element, string[]>();
@@ -80,8 +83,8 @@ export default class SizePicker {
   readonly sizes = input.required<string[]>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
-  protected readonly group = `uf-id-size-picker-${nextId++}`;
-  protected readonly hintId = `uf-id-size-picker-${nextId++}`;
+  protected readonly group = `uf-id-size-picker-${inject(idCounter).next++}`;
+  protected readonly hintId = `uf-id-size-picker-${inject(idCounter).next++}`;
   protected readonly picked = signal("");
 
   protected choose(size: string) {

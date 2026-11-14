@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "tab",
+      "dom": [
+        "<form aria-label=\"Reply\">",
+        "  <textarea aria-label=\"Message\" uf:value=\"Thanks, see you soon\"></textarea>",
+        "  <textarea aria-label=\"Signature\" uf:value=\"Grace\"></textarea>",
+        "  <output>",
+        "    \"[Thanks, see you soon] from Grace\"",
+        "  </output>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Reply\":",
+        "  - textbox \"Message\": Thanks, see you soon",
+        "  - textbox \"Signature\": Grace",
+        "  - status: \"[Thanks, see you soon] from Grace\""
+      ],
+      "events": {}
+    }
+  ]
+}

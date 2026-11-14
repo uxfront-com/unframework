@@ -68,6 +68,11 @@ export interface ScriptSetup {
    * (ADR-0054), which a `<script setup>` cannot export: absent elsewhere.
    */
   keys?: string;
+  /**
+   * The local directive that puts a bound `<textarea>`'s caret after its text (`vTextCaret`),
+   * when the template binds one: the template writes it beside the field's `v-model`.
+   */
+  textCaret?: string;
 }
 
 /**
@@ -232,6 +237,13 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     });
     statements.push({ code: `defineExpose({ ${exposed.join(", ")} });`, layout: "block" });
   }
+  // A bound `<textarea>` holds its text as the server wrote it once hydrated, with the caret
+  // before it, where a client render's `vModelText` sets the text of an empty field and leaves the
+  // caret after it: a local directive sets the text again, as ADR-0060 has React do (ADR-0095).
+  const textCaret = bindsTextarea(component) ? names.scope.claim("vTextCaret") : undefined;
+  if (textCaret !== undefined) {
+    statements.push({ code: textCaretDirective(textCaret), layout: "block" });
+  }
   // The module's type exports, which consumers import by name (ADR-0068), exported from
   // `<script setup>` as its own exported types are.
   const types = keys ? [] : moduleTypes(component, module, reads, names);
@@ -256,7 +268,36 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     listeners,
     components,
     ...(keys ? { keys } : {}),
+    ...(textCaret === undefined ? {} : { textCaret }),
   };
+}
+
+/** Whether the template binds a `<textarea>` with `v-model`. */
+function bindsTextarea(component: UfComponent): boolean {
+  let found = false;
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Element" || node.tag !== "textarea") return;
+      if (node.attributes.some((attribute) => attribute.kind === "Model")) found = true;
+    },
+  });
+  return found;
+}
+
+/**
+ * The directive that puts a field's caret after its text once it is mounted: it empties the
+ * field and sets its text again, which fires no event (`setSelectionRange` would fire `select`).
+ */
+function textCaretDirective(name: string): string {
+  return [
+    `const ${name} = {`,
+    "  mounted(element: HTMLTextAreaElement) {",
+    "    const text = element.value;",
+    '    element.value = "";',
+    "    element.value = text;",
+    "  },",
+    "};",
+  ].join("\n");
 }
 
 /** The authoring types of a ref a key may hold, which are Vue's own (ADR-0054). */

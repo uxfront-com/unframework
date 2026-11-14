@@ -1,0 +1,291 @@
+{
+  "irVersion": 1,
+  "file": "hydration/use-id/Signup.uf.tsx",
+  "components": [
+    {
+      "name": "Signup",
+      "span": {
+        "start": 191,
+        "end": 457
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 76,
+              "end": 82
+            }
+          },
+          "binding": "name@224",
+          "span": {
+            "start": 70,
+            "end": 83
+          }
+        },
+        {
+          "name": "email",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 93,
+              "end": 99
+            }
+          },
+          "binding": "email@230",
+          "span": {
+            "start": 86,
+            "end": 100
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "SignupProps",
+          "span": {
+            "start": 239,
+            "end": 250
+          }
+        },
+        "span": {
+          "start": 222,
+          "end": 250
+        }
+      },
+      "types": [
+        "SignupProps"
+      ],
+      "bindings": [
+        {
+          "id": "name@224",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 224,
+            "end": 228
+          }
+        },
+        {
+          "id": "email@230",
+          "name": "email",
+          "kind": "prop",
+          "span": {
+            "start": 230,
+            "end": 235
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "form",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "signup",
+            "span": {
+              "start": 275,
+              "end": 289
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Sign up",
+            "span": {
+              "start": 290,
+              "end": 310
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Field",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "name",
+                  "span": {
+                    "start": 332,
+                    "end": 336
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@224",
+                      "span": {
+                        "start": 332,
+                        "end": 336
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 325,
+                  "end": 337
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "hint",
+                "value": {
+                  "code": "\"As it appears on your card.\"",
+                  "span": {
+                    "start": 343,
+                    "end": 372
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 338,
+                  "end": 372
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 318,
+              "end": 375
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Field",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "email",
+                  "span": {
+                    "start": 396,
+                    "end": 401
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "email@230",
+                      "span": {
+                        "start": 396,
+                        "end": 401
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 389,
+                  "end": 402
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "hint",
+                "value": {
+                  "code": "\"We send the receipt here.\"",
+                  "span": {
+                    "start": 408,
+                    "end": 435
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 403,
+                  "end": 435
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 382,
+              "end": 438
+            }
+          }
+        ],
+        "span": {
+          "start": 269,
+          "end": 450
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Signup",
+      "span": {
+        "start": 191,
+        "end": 457
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "SignupProps",
+      "exported": true,
+      "code": "interface SignupProps {\n  name: string;\n  email: string;\n}",
+      "span": {
+        "start": 44,
+        "end": 102
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./Field.uf.tsx",
+      "file": "Field.uf.tsx",
+      "api": {
+        "file": "Field.uf.tsx",
+        "components": [
+          {
+            "name": "Field",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              },
+              {
+                "name": "hint",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "p"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Field",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 35
+      }
+    }
+  ]
+}

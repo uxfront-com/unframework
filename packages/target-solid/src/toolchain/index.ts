@@ -14,6 +14,7 @@ export const toolchain: Toolchain = {
   name: "solid",
   client: "@unframework.dev/target-solid/toolchain/client",
   server: "@unframework.dev/target-solid/toolchain/server",
+  hydrate: "@unframework.dev/target-solid/toolchain/hydrate",
 
   async vite(mode): Promise<UserConfig> {
     // Loaded here, not at the top: the harness imports every toolchain to build its config.
@@ -23,8 +24,9 @@ export const toolchain: Toolchain = {
         solid({
           // Without `ssr`, the plugin compiles DOM code on the server too, and Solid's
           // renderToStringAsync then returns undefined instead of failing. With it, server
-          // output is hydratable, so hydration tests can reuse the same compile.
-          ssr: mode === "ssr",
+          // output is hydratable, and in a hydrate project (L12, ADR-0095) the client's too, so
+          // `hydrate` finds the server's nodes; a browser project keeps the plain DOM compile.
+          ssr: mode !== "browser",
           // solid-refresh would wrap the code under test in HMR proxies.
           hot: false,
         }),
@@ -32,7 +34,7 @@ export const toolchain: Toolchain = {
       resolve: { dedupe: ["solid-js"] },
       // Vite's dependency scanner never sees compiled modules (the unplugin hides them from
       // it), so name their runtime imports, or a cold run reloads the page mid-test.
-      ...(mode === "browser" ? { optimizeDeps: { include: BROWSER_RUNTIME } } : {}),
+      ...(mode === "ssr" ? {} : { optimizeDeps: { include: BROWSER_RUNTIME } }),
     };
   },
 

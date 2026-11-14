@@ -36,7 +36,7 @@ framework-specific.
   compiler's capability check and the render-parity tests read it. `BEHAVIOURAL_CAPABILITIES`
   change what code does in the browser, or the cascade (`sheet-order`), not the markup that
   renders, so the render-parity tests compare a case that uses one its target leaves unsupported
-  as any other (ADR-0033, as amended by ADR-0047, ADR-0063 and ADR-0069);
+  as any other (ADR-0033, as amended by ADR-0047, ADR-0063, ADR-0069 and ADR-0095);
   `CAPABILITY_PREREQUISITES` names what each refines (`interactivity`), which the compiler reports
   alone where the target lacks it.
 - **The scoper** (`scopeStylesheet(file, source, scopeId)`, ADR-0063): a component's sheet,
@@ -282,6 +282,16 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   whole: a prop the new props lack takes its default (Angular, whose inputs cannot be unset, sets
   it to `undefined`, which the emitted input's transform turns into the default). Like the
   mount, it resolves once the framework has settled (ADR-0043).
+- **The hydrate adapter** (`HydrateAdapter`, L12, ADR-0095): a target that hydrates ships
+  `…/toolchain/hydrate`, and its `…/toolchain/server` also exports `renderForHydration`, the
+  server HTML with every marker and script its client needs. The adapter puts that HTML in the
+  container and hydrates it, and returns a `HydratedComponent`: a mounted component whose
+  `takeMismatches()` gives the mismatches its framework reported. Its toolchain's `vite` takes a
+  third mode, `hydrate`, for a framework whose client compile differs when it hydrates
+  (Solid's). A target without one declares its `hydration` cell unsupported.
+- **`@unframework.dev/codegen/toolchain-browser`**: what a target's browser adapter and the
+  testing package share at run time, with no imports, so it loads in a page:
+  `assertSerialisableProps`, which rejects a prop that would not cross to a server render as JSON.
 - **`@unframework.dev/codegen/toolchain-node`** (Node only, never imported by the main entry): what
   the targets' toolchains share, since targets cannot import each other. `resolveInstalled` and
   `resolveToolBin` find tools in a toolchain directory without NODE_PATH; `runChecker` runs a

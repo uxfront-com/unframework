@@ -165,7 +165,13 @@ export type CapabilityName =
    * watchers, effects and hooks run in order with the caller's own (ADR-0069). Refines
    * `interactivity`.
    */
-  | "composable-effect-order";
+  | "composable-effect-order"
+  /**
+   * A server render that a client hydrates, or resumes, into the DOM the client renders, with
+   * the server's ids, and interactive after (L12, ADR-0095). No IR kind requires it: every case
+   * runs in the hydrate projects, which skip a target that leaves it unsupported.
+   */
+  | "hydration";
 
 /** Every capability name, in a stable order. */
 export const CAPABILITY_NAMES: readonly CapabilityName[] = [
@@ -218,6 +224,7 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "generic-slot-props",
   "composables",
   "composable-effect-order",
+  "hydration",
 ];
 
 /**
@@ -243,6 +250,8 @@ export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<Cap
   "model-modifiers",
   "sheet-order",
   "composable-effect-order",
+  // A target that doesn't hydrate still renders the same markup on the server (ADR-0095).
+  "hydration",
 ]);
 
 /**

@@ -498,6 +498,8 @@ class ScriptWriter {
   readonly #slotLocals = new Map<string, string>();
   /** The name the markup writes a child under, where the script imports it under another. */
   readonly #componentTags = new Map<string, string>();
+  /** The attributes each `modelText` field's first value is read into (`#fieldInitials`). */
+  readonly #initials = new Map<ModelAttribute, string>();
   /** What the component reaches of its module, and the names its output declares them by. */
   readonly #reach: ModuleReach;
   readonly #moduleLocals: ReadonlyMap<string, string>;
@@ -650,6 +652,7 @@ class ScriptWriter {
     ];
     // The module's constants it reads, before the props, whose defaults may read them (ADR-0070).
     const constants = constantsCode(this.#module, this.#reach, this.#moduleLocals);
+    const initials = untrack ? this.#fieldInitials(fields, untrack) : [];
     const pieces = [
       ...(imports.length ? [imports.map((line) => `${INDENT}${line}`).join("\n")] : []),
       ...(moduleScript ? [] : types.map((each) => indent(each, INDENT))),
@@ -664,7 +667,9 @@ class ScriptWriter {
             ),
           ]
         : []),
-      ...[...props, ...setup, ...dynamic, ...helpers].map((piece) => reindent(piece, INDENT)),
+      ...[...props, ...setup, ...dynamic, ...initials, ...helpers].map((piece) =>
+        reindent(piece, INDENT),
+      ),
     ];
     const roots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
     const composed = composedRender(
@@ -953,6 +958,7 @@ class ScriptWriter {
    */
   #modelField(attribute: ModelAttribute, modelText: string, untrack: string): string {
     const value = rewriteExpression(attribute.value, this.#component, this.rules, "render");
+    const initial = this.#initials.get(attribute);
     const options = [
       ...(attribute.trim ? ["trim: true"] : []),
       ...(attribute.lazy ? ["lazy: true"] : []),
@@ -960,7 +966,33 @@ class ScriptWriter {
     ];
     const args = [`() => ${value}`, `(value) => (${value} = value)`];
     if (options.length) args.push(`{ ${options.join(", ")} }`);
-    return `value={${untrack}(() => ${value})} {@attach ${modelText}(${args.join(", ")})}`;
+    const first = initial === undefined ? `value={${untrack}(() => ${value})}` : `{...${initial}}`;
+    return `${first} {@attach ${modelText}(${args.join(", ")})}`;
+  }
+
+  /**
+   * The first value of each field `modelText` binds to a variable of the component, read once into
+   * attributes of the script that the field spreads, `const nameField = { value: untrack(() => name)
+   * };` (ADR-0095). Written as `value={…}`, it would join the template's one render effect, which
+   * reruns as the other bindings change: once hydrated, Svelte has dropped the value it remembers
+   * the attribute by (`remove_input_defaults`), so a rerun writes the first value back over what
+   * the person typed. A spread of attributes that read no state is an effect of its own, which
+   * never reruns. A field bound to something a block declares (a list's row) keeps its read in
+   * the template. So does a `<textarea>`: the server renders a spread `value` as an attribute,
+   * which a textarea doesn't show, and Svelte never drops a textarea's remembered value.
+   */
+  #fieldInitials(fields: readonly ModelAttribute[], untrack: string): string[] {
+    const declarations: string[] = [];
+    for (const attribute of fields) {
+      if (attribute.control === "textarea") continue;
+      // The template's spelling: a variable reads the same in the script.
+      const value = rewriteExpression(attribute.value, this.#component, this.rules, "render");
+      if (!/^[A-Za-z_$][\w$]*$/.test(value)) continue;
+      const name = this.#names.claim(`${value}Field`);
+      this.#initials.set(attribute, name);
+      declarations.push(`const ${name} = { value: ${untrack}(() => ${value}) };`);
+    }
+    return declarations.length ? [declarations.join("\n")] : [];
   }
 
   /**

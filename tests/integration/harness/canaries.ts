@@ -187,7 +187,34 @@ export interface Canary {
    * project corrupts, and the verdict judges, only those.
    */
   appliesTo?(info: CanaryCase, target: string): boolean;
+  /**
+   * `true`: the plugin corrupts the compile of a hydrate project's page alone (L12, ADR-0095), and
+   * the server render stays right. A compiler plugin does not know its environment, and one
+   * unplugin shares its compile between them, so the hydrate project runs a second unplugin,
+   * without the canary, for its server (`tests/integration/harness/projects.ts`). Only the hydrate
+   * projects.
+   */
+  clientOnly?: true;
 }
+
+/** The targets that hydrate (ADR-0095): Qwik resumes instead, and Astro runs nothing in a page. */
+const HYDRATING: readonly TargetName[] = ["react", "vue", "svelte", "solid", "angular"];
+
+/**
+ * The L12 sub-checks that catch a client render's text that differs from the server's, on each
+ * target (ADR-0095), every case judged on one of its target's. React and Vue report the mismatch.
+ * Solid keeps a text the server wrote, which only the client render shows, and throws for a
+ * structure the marker changed. Angular and Svelte throw for such a structure too, and elsewhere
+ * write the client's text over the server's, which the expected DOM shows, or keep the server's.
+ * `ids` and `client agreement` each fail on their own in the testing package's tests.
+ */
+const CLIENT_TEXT_CHECK: Readonly<Record<string, RegExp>> = {
+  react: /^mismatch: /m,
+  vue: /^mismatch: /m,
+  solid: /^(?:mismatch|client agreement): /m,
+  angular: /^(?:mismatch|DOM|client agreement): /m,
+  svelte: /^(?:mismatch|DOM|client agreement): /m,
+};
 
 const MARKER = "[uf canary]";
 
@@ -657,6 +684,43 @@ export const CANARIES: readonly Canary[] = [
         mapRoots(module, (root) => {
           setAttribute(root, createStaticAttribute("role", "uf-canary", root.span));
         }),
+    }),
+  },
+  {
+    id: "L12-client-text",
+    layer: "L12",
+    description:
+      "Appends a marker to the text of an element every render of every component shows, in the hydrate projects' page alone: the server's HTML stays right, and only the client's render differs from it (ADR-0095). React and Vue must report it as a `mismatch`. Solid may report a `mismatch` or a `client agreement` failure, and Svelte and Angular a `mismatch`, `DOM` or `client agreement` one, since those frameworks throw on some changes and keep the server's text on others.",
+    evidence: {
+      hydrate: {
+        "client render": (target) => CLIENT_TEXT_CHECK[target] ?? /^client agreement: /m,
+      },
+    },
+    targets: HYDRATING,
+    clientOnly: true,
+    // A diagnostics case has no spec, so no hydrate project mounts it.
+    appliesTo: (info, target) => info.runs(target),
+    plugin: wrongText,
+  },
+  {
+    id: "L12-unwired-listener",
+    layer: "L12",
+    description:
+      "Removes every element listener from every component in the hydrate projects' page alone, on the cases whose specs act: the hydrated page looks right, and no action does anything (ADR-0095). A spec's `interactions` or `trace` check must fail: a spec compares each step's trace before it asserts what the step changed.",
+    evidence: {
+      // A spec compares each step (the trace) and then asserts what it changed: either fails.
+      hydrate: { interactions: /^(?:interactions|trace): /m },
+    },
+    targets: HYDRATING,
+    clientOnly: true,
+    appliesTo: (info, target) => info.runs(target) && info.interacts(target) && info.listens,
+    plugin: () => ({
+      name: "uf-canary-L12-unwired",
+      ir: (module) => {
+        const copy = structuredClone(module);
+        for (const { render } of copy.components) unwire(render);
+        return copy;
+      },
     }),
   },
   {

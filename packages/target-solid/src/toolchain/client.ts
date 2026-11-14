@@ -37,7 +37,7 @@ export const mount: MountAdapter = async (component, container, options) => {
  * Props whose keys and values are signals, one per key: a proxy Solid's `mergeProps` reads as
  * one (`$PROXY`), so it resolves each key, present or not, when it is read.
  */
-function reactiveProps(initial: Record<string, unknown>): {
+export function reactiveProps(initial: Record<string, unknown>): {
   value: Record<string, unknown>;
   assign(next: Record<string, unknown>): void;
 } {
@@ -79,7 +79,7 @@ function reactiveProps(initial: Record<string, unknown>): {
 }
 
 /** Solid's props for the test's listeners: `onChange` for `change`. */
-function listenerProps(
+export function listenerProps(
   on: Readonly<Record<string, MountListener>> = {},
 ): Record<string, MountListener> {
   return Object.fromEntries(

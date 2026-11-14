@@ -227,6 +227,14 @@ export const qwik: Target = defineTarget({
     "generic-slot-props": { support: "native" },
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
+    // L12 checks a hydrated page against a client render, and resumption is neither (ADR-0095).
+    hydration: {
+      support: "unsupported",
+      code: "UF4001",
+      severity: "info",
+      reason:
+        "Qwik resumes a server render instead of hydrating it: it runs no render, keeps no state for a component without client code, and runs visible tasks once the loader sees them, so the resumed page can't be checked against a client render.",
+    },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { module } = context;

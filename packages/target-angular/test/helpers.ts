@@ -74,6 +74,7 @@ export function corpusSources(): { name: string; file: string; source: string }[
         !COMPOSITION.test(name) &&
         !STYLED_COMPOSITION.test(name) &&
         !BINDING_COMPOSITION.test(name) &&
+        !HYDRATION_COMPOSITION.test(name) &&
         !THROWN_COMPOSITION.test(name) &&
         !TYPE_MODULES.test(name) &&
         !COMPOSABLE_MODULES.test(name),
@@ -94,6 +95,13 @@ const STYLED_COMPOSITION =
  * toolchain project checks their Angular outputs.
  */
 const BINDING_COMPOSITION = /^bindings\/(?:style-expression|style-spread)$/;
+
+/**
+ * The hydration case whose main source renders two instances of a child (ADR-0095): it resolves
+ * the child as `compile()` does, which `lower` has not. The corpus's toolchain project checks its
+ * Angular outputs.
+ */
+const HYDRATION_COMPOSITION = /^hydration\/use-id$/;
 
 /**
  * The thrown-error case whose main source renders a child that throws once mounted (ADR-0078):

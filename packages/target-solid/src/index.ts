@@ -151,6 +151,7 @@ export const solid: Target = defineTarget({
       reason:
         "A composable's watchers coalesce in its own module's queue (`createWatcher`), apart from the caller's, so its watchers, effects and hooks cannot take their place among the caller's own, and code that relies on that order may see another (ADR-0069).",
     },
+    hydration: { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     // Every name the source declares or reads is taken before the output claims its own

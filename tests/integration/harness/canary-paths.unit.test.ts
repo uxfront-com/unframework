@@ -35,6 +35,7 @@ const ON_THE_LIST: readonly (readonly [string, string])[] = [
   ["packages/unplugin/**", "packages/unplugin/src/index.ts"],
   ["packages/codegen/src/toolchain.ts", "packages/codegen/src/toolchain.ts"],
   ["packages/codegen/src/toolchain-node/**", "packages/codegen/src/toolchain-node/index.ts"],
+  ["packages/codegen/src/toolchain-browser/**", "packages/codegen/src/toolchain-browser/index.ts"],
   ["packages/target-*/src/toolchain/**", "packages/target-vue/src/toolchain/index.ts"],
   ["tests/toolchains/**", "tests/toolchains/vue/tsconfig.json"],
   ["package.json", "package.json"],

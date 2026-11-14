@@ -28,11 +28,15 @@ export const toolchain: Toolchain = {
       resolve: { dedupe: ["vue"] },
       // The dependency scanner never sees compiled output, and plugin-vue adds nothing to the
       // optimizer: without this, the first run discovers `vue` late and reloads mid-test.
-      ...(mode === "browser" ? { optimizeDeps: { include: ["vue"] } } : {}),
+      ...(mode === "ssr" ? {} : { optimizeDeps: { include: ["vue"] } }),
+      // A hydrate project renders in its browser server's SSR environment, which inlines every
+      // dependency (ADR-0095): Vue's server renderer is CommonJS, and runs only from Node.
+      ...(mode === "hydrate" ? { environments: { ssr: { resolve: { external: ["vue"] } } } } : {}),
     };
   },
   client: "@unframework.dev/target-vue/toolchain/client",
   server: "@unframework.dev/target-vue/toolchain/server",
+  hydrate: "@unframework.dev/target-vue/toolchain/hydrate",
   frameworkCompile,
   frameworkEmit,
   typecheck,

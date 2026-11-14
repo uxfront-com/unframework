@@ -12,6 +12,9 @@
   let count = $state(2);
   let volume = $state(5);
 
+  const countField = { value: untrack(() => count) };
+  const volumeField = { value: untrack(() => volume) };
+
   function modelText<T>(
     get: () => T,
     set: (value: T) => void,
@@ -57,13 +60,13 @@
     type="number"
     aria-label="Count"
     min="0"
-    value={untrack(() => count)} {@attach modelText(() => count, (value) => (count = value), { number: true })}
+    {...countField} {@attach modelText(() => count, (value) => (count = value), { number: true })}
   /><input
     type="range"
     aria-label="Volume"
     min="0"
     max="10"
-    value={untrack(() => volume)} {@attach modelText(() => volume, (value) => (volume = value), { number: true })}
+    {...volumeField} {@attach modelText(() => volume, (value) => (volume = value), { number: true })}
   /><output>Next: {count + 1}, volume {volume + 1}</output
   ><button type="button" onclick={() => (count = 10)}>Ten</button>
 </section>

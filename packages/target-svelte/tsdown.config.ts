@@ -6,6 +6,7 @@ const config: UserConfig = defineConfig({
     "src/index.ts",
     "src/toolchain/index.ts",
     "src/toolchain/client.ts",
+    "src/toolchain/hydrate.ts",
     "src/toolchain/server.ts",
   ],
   unbundle: true,

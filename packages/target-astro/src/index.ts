@@ -121,6 +121,7 @@ export const astro: Target = defineTarget({
     "generic-slot-props": { support: "native" },
     composables: { support: "native" },
     "composable-effect-order": inert("A composable's watchers, effects and hooks never run"),
+    hydration: { support: "unsupported", code: "UF4001", severity: "info", reason: STATIC },
   },
   /**
    * One `.astro` file: the frontmatter at the very top (where Astro reads it, and where the

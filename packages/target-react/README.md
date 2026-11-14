@@ -272,6 +272,10 @@ The tests and tooling build, check and run React output through three entries:
   `act`, rerenders with new props through `root.render`, passes the test's listeners as event
   props (`onChange` for `change`), and runs a user's action inside `act`, with
   `IS_REACT_ACT_ENVIRONMENT` set only during its own `act` calls.
+- `@unframework.dev/target-react/toolchain/hydrate` (browser, L12, ADR-0095): hydrates with
+  `hydrateRoot` inside `act`, and reports a mismatch from `onRecoverableError` and from React's
+  console line for an attribute. `renderForHydration` renders the component as the root of the
+  server's tree, with no `<html>` shell, so `useId` makes the ids `hydrateRoot` does.
 - `@unframework.dev/target-react/toolchain/server` (Node): renders with `prerender` and returns
   the component's HTML only.
 

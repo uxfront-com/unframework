@@ -13,6 +13,10 @@
   let city = $state("Lisbon");
   let weight = $state(0);
 
+  const nameField = { value: untrack(() => name) };
+  const cityField = { value: untrack(() => city) };
+  const weightField = { value: untrack(() => weight) };
+
   function modelText<T>(
     get: () => T,
     set: (value: T) => void,
@@ -55,13 +59,13 @@
 
 <form aria-label="Profile" class={className} {style} {...scopeAttributes(attributes)}>
   <label>Name <input
-    value={untrack(() => name)} {@attach modelText(() => name, (value) => (name = value), { trim: true })}
+    {...nameField} {@attach modelText(() => name, (value) => (name = value), { trim: true })}
   /></label
   ><label>City <input
-    value={untrack(() => city)} {@attach modelText(() => city, (value) => (city = value), { lazy: true })}
+    {...cityField} {@attach modelText(() => city, (value) => (city = value), { lazy: true })}
   /></label
   ><label>Weight <input
-    value={untrack(() => weight)} {@attach modelText(() => weight, (value) => (weight = value), { number: true })}
+    {...weightField} {@attach modelText(() => weight, (value) => (weight = value), { number: true })}
   /></label
   ><output>[{name}] from {city}, {weight + 1}</output>
 </form>

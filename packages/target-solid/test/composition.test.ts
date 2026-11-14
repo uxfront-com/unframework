@@ -101,7 +101,10 @@ describe("solid models", () => {
   it("writes a <textarea>'s text on the server, a modifier's too", async () => {
     const output = await emitSource(SOURCES.NullableFields!);
     expect(output).toContain("children={isServer ? memo() : undefined}");
-    expect(output).toContain("ref={modelText(memo, setMemo, { trim: true })}");
+    // Its `ref` also puts a hydrated field's caret after its text (ADR-0095).
+    expect(output).toContain("modelText(memo, setMemo, { trim: true })(field);");
+    expect(output).toContain("textCaret(field);");
+    expect(output).toContain("function textCaret(field: HTMLTextAreaElement)");
   });
 
   it("selects a <select>'s options in a conditional and by their text", async () => {

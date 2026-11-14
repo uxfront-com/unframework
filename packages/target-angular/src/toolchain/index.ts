@@ -17,6 +17,7 @@ export const toolchain: Toolchain = {
   vite: viteConfig,
   client: "@unframework.dev/target-angular/toolchain/client",
   server: "@unframework.dev/target-angular/toolchain/server",
+  hydrate: "@unframework.dev/target-angular/toolchain/hydrate",
   frameworkCompile,
   frameworkEmit,
   typecheck,

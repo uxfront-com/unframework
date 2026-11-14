@@ -125,11 +125,23 @@ function styleObject(parts: readonly StylePart[]): string {
     .join(", ")} }`;
 }
 
+/** Vue's own directives, which `vue/attributes-order` places in groups of their own. */
+const BUILT_IN_DIRECTIVES = new Set([
+  "v-show",
+  "v-cloak",
+  "v-once",
+  "v-pre",
+  "v-text",
+  "v-html",
+  "v-slot",
+  "v-bind",
+]);
+
 /**
  * The order `vue/attributes-order` (in `plugin:vue/recommended`) wants: `:is`, `v-for`, then the
  * conditionals, then `id`, then `key` and `ref` (its unique attributes, in any order between
- * them), then `v-model`, then the other attributes, then the listeners (`@click`), each group in
- * any order.
+ * them), then `v-model`, then a component's own directives (`v-text-caret`), then the other
+ * attributes, then the listeners (`@click`), each group in any order.
  */
 function vueRank({ name }: PrintedAttribute): number {
   if (name === ":is") return -1;
@@ -138,6 +150,9 @@ function vueRank({ name }: PrintedAttribute): number {
   if (name === "id") return 2;
   if (name === "key" || name === "ref") return 3;
   if (name === "v-model" || name.startsWith("v-model:")) return 3.5;
+  if (/^v-[a-z]/.test(name) && !BUILT_IN_DIRECTIVES.has(name) && !name.startsWith("v-on:")) {
+    return 3.75;
+  }
   if (name.startsWith("@") || name.startsWith("v-on:")) return 5;
   return 4;
 }

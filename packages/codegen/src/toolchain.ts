@@ -1,7 +1,8 @@
 // The toolchain contract (plan §5.7): what tests and tooling need to build, check and run a
 // target's output. A target ships it as `@unframework.dev/<target>/toolchain` (Node),
-// `…/toolchain/client` (the browser mount adapter) and `…/toolchain/server` (the SSR
-// renderer). Types only: nothing here runs, and the target's main entry never imports it.
+// `…/toolchain/client` (the browser mount adapter), `…/toolchain/server` (the SSR renderer) and,
+// where its framework hydrates, `…/toolchain/hydrate` (the browser hydrate adapter, L12,
+// ADR-0095). Types only: nothing here runs, and the target's main entry never imports it.
 import type { Plugin, UserConfig } from "vite";
 
 /**
@@ -55,6 +56,9 @@ export interface ToolchainContext {
   plugins?: () => Promise<Plugin[]>;
 }
 
+/** The kinds of project a toolchain configures Vite for (see {@link Toolchain.vite}). */
+export type ToolchainMode = "browser" | "ssr" | "hydrate";
+
 /** A Vitest browser command: runs in Node, called from the browser. */
 export type ToolchainCommand = (context: unknown, ...args: never[]) => unknown;
 
@@ -65,9 +69,12 @@ export interface Toolchain {
   /**
    * The Vite configuration of a test project for this target, merged after the unframework
    * plugin: the framework's own plugins, `optimizeDeps`, `resolve.dedupe` and so on. `ssr`
-   * projects render on the server in Node; `browser` projects mount in Chromium.
+   * projects render on the server in Node; `browser` projects mount in Chromium; `hydrate`
+   * projects (L12) render in the SSR environment of their own browser server and hydrate in
+   * Chromium, so a framework whose client compile differs when it hydrates (Solid's
+   * `hydratable`) compiles both sides for it there.
    */
-  vite(mode: "browser" | "ssr", context: ToolchainContext): UserConfig | Promise<UserConfig>;
+  vite(mode: ToolchainMode, context: ToolchainContext): UserConfig | Promise<UserConfig>;
   /** Browser commands the mount adapter calls, such as Astro's server-side render. */
   browserCommands?(context: ToolchainContext): Record<string, ToolchainCommand>;
   /**
@@ -83,8 +90,17 @@ export interface Toolchain {
   close?(): Promise<void>;
   /** The module specifier of the browser mount adapter, which exports `mount: MountAdapter`. */
   readonly client: string;
-  /** The module specifier of the SSR renderer, which exports `renderToString: SsrRenderer`. */
+  /**
+   * The module specifier of the SSR renderer, which exports `renderToString: SsrRenderer`, and,
+   * for a toolchain with a `hydrate` module, `renderForHydration: HydrationRenderer`.
+   */
   readonly server: string;
+  /**
+   * L12 (ADR-0095): the module specifier of the browser hydrate adapter, which exports
+   * `hydrate: HydrateAdapter`. Absent: the target does not hydrate, and its `hydration`
+   * capability cell is unsupported.
+   */
+  readonly hydrate?: string;
   /**
    * L3: runs the framework's own compiler over output files and collects errors and warnings,
    * by file path. Clean output yields `{ errors: [], warnings: [] }` for every file.
@@ -232,3 +248,32 @@ export type MountAdapter = (
  * document shell, container or framework scripts.
  */
 export type SsrRenderer = (component: unknown, options: MountOptions) => Promise<string>;
+
+/**
+ * Renders a compiled component on the server for a client to hydrate or resume (L12): every
+ * marker, attribute and script the framework's client needs, nothing stripped. Unlike
+ * {@link SsrRenderer}, a framework that keeps its state or its hydration data beside the
+ * component (Angular's `ng-state`, Qwik's container) returns it too.
+ */
+export type HydrationRenderer = (component: unknown, options: MountOptions) => Promise<string>;
+
+/** A component hydrated, or resumed, from its server HTML. */
+export interface HydratedComponent extends MountedComponent {
+  /**
+   * The mismatches the framework reported through its own signal since the last call, each as
+   * its message: React's recoverable errors, Vue's and Svelte's hydration warnings, Solid's and
+   * Angular's thrown errors, Qwik's `qerror` events. L12 fails on any.
+   */
+  takeMismatches(): string[];
+}
+
+/**
+ * Puts a component's server HTML (from {@link HydrationRenderer}) in the container, where and how
+ * its framework needs it, then hydrates or resumes it, and resolves once that has settled.
+ */
+export type HydrateAdapter = (
+  component: unknown,
+  container: HTMLElement,
+  html: string,
+  options: MountOptions,
+) => Promise<HydratedComponent>;

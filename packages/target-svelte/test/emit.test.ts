@@ -101,6 +101,7 @@ describe("svelte target", () => {
       "fragment",
       "generic-components",
       "generic-slot-props",
+      "hydration",
       "interactivity",
       "interpolation",
       "late-prop",
@@ -898,7 +899,18 @@ describe("svelte composition", () => {
     expect(profile).toContain(
       "{@attach modelText(() => name, (value) => (name = value), { trim: true })}",
     );
-    expect(profile).toContain("value={untrack(() => name)}");
+    // The first value is read once into attributes the field spreads, out of the template's
+    // render effect, which would write it back once hydrated (ADR-0095).
+    expect(profile).toContain("const nameField = { value: untrack(() => name) };");
+    expect(profile).toContain("{...nameField} {@attach modelText(");
+    expect(profile).not.toContain("value={untrack(() => name)}");
+    // A textarea keeps the read in the template: the server renders a spread `value` as an
+    // attribute, which a textarea doesn't show.
+    const reply = (await caseOutputs("models/textarea-modifiers"))["Reply.svelte"]!;
+    expect(reply).toContain(
+      "value={untrack(() => message)} {@attach modelText(() => message, (value) => (message = value), { trim: true })}",
+    );
+    expect(reply).not.toContain("messageField");
   });
 
   it("declares a module's keys in <script module>, provides and injects them", async () => {

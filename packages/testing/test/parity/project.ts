@@ -119,3 +119,46 @@ export function parityProject(
     },
   };
 }
+
+/**
+ * The stub's `ufHydrationRender` (L12, ADR-0095): the server's HTML is the `server` prop the spec
+ * mounts with, and the main component is the case's `component.ts`, which the spec imports.
+ */
+function stubHydrationRender(
+  _context: unknown,
+  request: { case: string; props: Record<string, unknown> },
+): { html: string; console: []; module: string } {
+  const html = request.props.server;
+  if (typeof html !== "string")
+    throw new Error("A hydrate fixture passes its server HTML as `server`.");
+  return { html, console: [], module: `/test/parity/cases/${request.case}/component.ts` };
+}
+
+/**
+ * The `parity-hydrate` project: the stub target as a hydrate project (L12), whose `mount` renders
+ * on the "server" (`stubHydrationRender`) and hydrates with the stub's hydrate adapter. It runs the
+ * `*.hydrate.spec.ts` specs, which check that each of L12's own sub-checks fails on its own.
+ */
+export function hydrateParityProject(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): TestProjectInlineConfiguration {
+  return {
+    extends: false,
+    test: {
+      name: "parity-hydrate",
+      root: packageRoot,
+      include: ["test/parity/cases/hydrate/**/*.hydrate.spec.ts"],
+      provide: {
+        target: "dom",
+        ufHarness: fixtureHarness(env),
+        ufCapabilities: STUB_CAPABILITIES,
+        ufHydrate: true,
+      },
+      expect: { requireAssertions: true, poll: { timeout: 5_000 } },
+      browser: parityBrowser({
+        name: "parity-hydrate",
+        commands: { ufHydrationRender: stubHydrationRender },
+      }),
+    },
+  };
+}

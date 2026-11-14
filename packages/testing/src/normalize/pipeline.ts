@@ -5,7 +5,11 @@ import type { BrowserEngine } from "../harness.ts";
 import { printTree } from "./print.ts";
 import { unwrapAngularHosts } from "./rules/angular-hosts.ts";
 import { removeComments } from "./rules/comments.ts";
-import { removeReactDefaultStates, removeSettledValues } from "./rules/control-values.ts";
+import {
+  removeReactDefaultStates,
+  removeServerControlStates,
+  removeSettledValues,
+} from "./rules/control-values.ts";
 import { renameEngineAliases } from "./rules/engine-aliases.ts";
 import { removeFrameworkAttributes } from "./rules/framework-attributes.ts";
 import { canonicalizeGeneratedIds } from "./rules/generated-ids.ts";
@@ -31,12 +35,22 @@ export interface NormalizeOptions {
    * engine, or in Chromium, no property is renamed.
    */
   engine?: BrowserEngine;
+  /**
+   * The DOM is a hydrated server render (L12, ADR-0095): the markup the server wrote for each
+   * form control's first state is removed wherever its live state is serialised (rule 4f).
+   */
+  hydrated?: boolean;
 }
 
 /** Refuses a target the normaliser does not know, from an untyped caller. */
 export function checkOptions(options: NormalizeOptions): void {
   if (options.target !== undefined && !isNormalizeTarget(options.target)) {
     throw new TypeError(`normalizeHtml: unknown target ${JSON.stringify(options.target)}`);
+  }
+  if (options.hydrated !== undefined && typeof options.hydrated !== "boolean") {
+    throw new TypeError(
+      `normalizeHtml: hydrated is a boolean, not ${JSON.stringify(options.hydrated)}`,
+    );
   }
   if (options.engine !== undefined && !BROWSER_ENGINES.includes(options.engine)) {
     throw new TypeError(`normalizeHtml: unknown engine ${JSON.stringify(options.engine)}`);
@@ -65,6 +79,7 @@ export function normalizeTree(
   canonicalizeClasses(root);
   removeSettledValues(root);
   removeReactDefaultStates(root, target);
+  removeServerControlStates(root, options.hydrated);
   sortAttributes(root);
   collapseWhitespace(root);
   canonicalizeGeneratedIds(root, ids);
