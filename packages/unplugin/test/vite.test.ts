@@ -1557,6 +1557,7 @@ function htmlTarget() {
     "generic-slot-props": { support: "native" },
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
+    hydration: { support: "native" },
   };
   return defineTarget({
     name: "html",

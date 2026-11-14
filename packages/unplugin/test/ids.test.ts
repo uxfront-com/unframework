@@ -67,6 +67,7 @@ const html = defineTarget({
     "generic-slot-props": { support: "native" },
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
+    hydration: { support: "native" },
   },
   emit: (component) => [{ path: `${component.name}.html`, contents: "<p></p>\n" }],
 });
