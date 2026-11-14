@@ -45,6 +45,11 @@ describe("build --package: React", () => {
       types: "./react/index.d.ts",
       default: "./react/index.js",
     });
+    // React's renderer too, whose `createPortal` a `<Teleport>` needs (ADR-0098).
+    expect(JSON.parse(files["package.json"] ?? "").peerDependencies).toEqual({
+      react: "^19.2.0",
+      "react-dom": "^19.2.0",
+    });
     // Conditions match in order: `default` before `types` would hide the declarations.
     expect(Object.keys(JSON.parse(files["package.json"] ?? "").exports["./react"])).toEqual([
       "types",
