@@ -101,6 +101,7 @@ describe("svelte target", () => {
       "fragment",
       "generic-components",
       "generic-slot-props",
+      "hydration",
       "interactivity",
       "interpolation",
       "late-prop",
@@ -898,7 +899,11 @@ describe("svelte composition", () => {
     expect(profile).toContain(
       "{@attach modelText(() => name, (value) => (name = value), { trim: true })}",
     );
-    expect(profile).toContain("value={untrack(() => name)}");
+    // The first value is read once into attributes the field spreads, out of the template's
+    // render effect, which would write it back once hydrated (ADR-0095).
+    expect(profile).toContain("const nameField = { value: untrack(() => name) };");
+    expect(profile).toContain("{...nameField} {@attach modelText(");
+    expect(profile).not.toContain("value={untrack(() => name)}");
   });
 
   it("declares a module's keys in <script module>, provides and injects them", async () => {

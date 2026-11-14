@@ -304,17 +304,25 @@ describe("effects and lifecycle (ADR-0048)", () => {
 });
 
 describe("ids and functions as values (ADR-0049, ADR-0045)", () => {
-  it("makes ids from a module counter, and keeps `this` in a function passed as a value", async () => {
+  it("makes ids from a counter per application, and keeps `this` in a function passed as a value", async () => {
     const contents = await output("Ids.uf.tsx");
-    expect(contents).toContain("let nextId = 0;");
+    // One per application, so a server render and the client hydrating it count alike (ADR-0095).
+    expect(contents).toContain(
+      lines(
+        'const idCounter = new InjectionToken<{ next: number }>("idCounter", {',
+        "  factory: () => ({ next: 0 }),",
+        "});",
+      ),
+    );
+    expect(contents).not.toContain("let nextId");
     expect(contents).toContain(
       lines(
         "  private readonly tick = () => {",
         "    this.ticks += 1;",
         "    this.ticked.emit(this.ticks);",
         "  };",
-        "  protected readonly fieldId = `uf-id-ids-${nextId++}`;",
-        "  protected readonly hintId = `uf-id-ids-${nextId++}`;",
+        "  protected readonly fieldId = `uf-id-ids-${inject(idCounter).next++}`;",
+        "  protected readonly hintId = `uf-id-ids-${inject(idCounter).next++}`;",
         "  private ticks = 0;",
       ),
     );

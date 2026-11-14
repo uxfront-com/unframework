@@ -128,6 +128,7 @@ describe("react target", () => {
       "fragment",
       "generic-components",
       "generic-slot-props",
+      "hydration",
       "interactivity",
       "interpolation",
       "late-prop",

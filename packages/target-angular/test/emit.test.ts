@@ -128,7 +128,7 @@ describe("angular target", () => {
       ["event-capture", "emulated", "uf<Event>Capture"],
       ["event-once", "emulated", "uf<Event>Once"],
       ["event-passive", "emulated", "uf<Event>Passive"],
-      ["use-id", "emulated", "nextId"],
+      ["use-id", "emulated", "idCounter"],
       ["next-tick", "emulated", "nextTick"],
       ["class-binding", "emulated", "classNames"],
       ["style-binding", "emulated", "styleObject"],
