@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Next term' })",
+      "dom": [
+        "<section aria-label=\"Glossary\" class=\"glossary\">",
+        "  <h2>",
+        "    \"Shadowing\"",
+        "  </h2>",
+        "  <div class=\"definition\">",
+        "    <p>",
+        "      \"An inner name \"",
+        "      <em>",
+        "        \"hides\"",
+        "      </em>",
+        "      \" an outer one.\"",
+        "    </p>",
+        "  </div>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Next term\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Glossary\":",
+        "  - heading \"Shadowing\" [level=2]",
+        "  - paragraph:",
+        "    - text: An inner name",
+        "    - emphasis: hides",
+        "    - text: an outer one.",
+        "  - button \"Next term\""
+      ],
+      "events": {}
+    }
+  ]
+}

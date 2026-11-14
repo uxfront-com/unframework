@@ -36,7 +36,9 @@ not silence its linter (ADR-0042).
 - **The element.** It holds content and has no children: children beside `innerHTML`, a void
   element and a text-only element (`<textarea>`, `<option>`, …) are `raw-html-content`
   (UF3052). An SVG element, a spread's `innerHTML` key and `innerHTML` on a component stay
-  rejected (UF1002, UF3035). A template ref's write of `innerHTML` stays UF3028 (ADR-0049).
+  rejected (UF1002, UF3035). So does `innerHTML` on `<component is>` (UF1002), which Vue writes
+  as a component, where `vue/no-v-text-v-html-on-component` rejects `v-html`: each tag is written
+  in a conditional instead. A template ref's write of `innerHTML` stays UF3028 (ADR-0049).
 - **The IR.** A new attribute kind, `RawHtml`, with the markup's expression.
 - **The capability.** `raw-html`, native on six targets and emulated on Angular:
 
@@ -64,7 +66,10 @@ not silence its linter (ADR-0042).
   `astro/no-set-html-directive` judge the author's choice, which the source makes explicitly and
   the analyser reports. They are off, each with this reason. The `L5-framework-rule` canary writes
   a `v-bind` modifier Vue does not have (`vue/valid-v-bind`) and `set:text` on Astro
-  (`astro/no-set-text-directive`) instead.
+  (`astro/no-set-text-directive`) instead. ADR-0054 relied on `astro/no-set-html-directive` to keep
+  `set:html` out of the Astro emitter's slots, so a slot's content is no longer linted for it.
+  The rule is off for every output, and the emitter writes `set:html` for `innerHTML` alone:
+  `jsx/raw-html` and the slot cases' golden outputs pin both.
 - **Amends ADR-0037.** `innerHTML` leaves its list of attributes that keep their M0 diagnostics.
 
 ```text
@@ -83,8 +88,8 @@ Angular  <div class="body" [innerHTML]="body | trustedHtml"></div>
 
 **Negative:**
 
-- Angular skips its sanitiser. The author's warning says so, and the markup must be trusted on
-  every target alike.
+- Angular skips its sanitiser. UF3051's description and the docs page say so, and the markup
+  must be trusted on every target alike.
 - Qwik's output reads `markup || undefined`, which a Qwik developer would not write for its own
   sake.
 - L5 no longer reports raw HTML in an output. The IR's invariants and the analyser reject

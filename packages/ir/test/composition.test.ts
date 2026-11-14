@@ -22,6 +22,7 @@ import {
   createModelAttribute,
   createParameter,
   createPropAttribute,
+  createRawHtmlAttribute,
   createSlotFill,
   createSlotReference,
   createStaticAttribute,
@@ -362,6 +363,17 @@ describe("checkInvariants on `<component is>`", () => {
       ),
       `${at}/attributes/0`,
       "must be an element attribute for tag candidates",
+    );
+  });
+
+  it("reports raw HTML, which Vue would write on a component (ADR-0097)", () => {
+    reports(
+      withDynamic(
+        [{ kind: "Tag", tag: "h2" }],
+        [createRawHtmlAttribute(labelRead(), find("label={label}"))],
+      ),
+      `${at}/attributes/0`,
+      "must not be on a `<component is>`",
     );
   });
 

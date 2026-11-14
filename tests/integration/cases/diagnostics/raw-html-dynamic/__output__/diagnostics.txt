@@ -1,0 +1,8 @@
+error[UF1002]: `innerHTML` on `<component is>` is not supported: Vue writes it on a component, whose content is its own.
+ --> diagnostics/raw-html-dynamic/Section.uf.tsx:9:61
+  |
+9 |   return <component is={nested ? "h3" : "h2"} class="title" innerHTML={title} />;
+  |                                                             ^^^^^^^^^
+  |
+  = help: Write each tag in a conditional, `nested ? <h3 innerHTML={title} /> : <h2 innerHTML={title} />`.
+  = see: https://unframework.dev/diagnostics/UF1002

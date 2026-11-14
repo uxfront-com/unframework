@@ -147,7 +147,7 @@ the constructs of later milestones are rejected as not supported yet (UF1002).
 | A macro or reactive API inside a condition or a nested function                                                                       | the compiler (UF2005)                                                 |
 | Non-deterministic rendering (`Math.random()`, `toLocaleString()`)                                                                     | the compiler, UF3019 (plan §4.5)                                      |
 | A number on a CSS length (`marginTop: 2`), a kebab-case style key, a boolean on a `data-*` attribute, SVG's `xlinkHref`               | the compiler (UF3018, UF3004), with a fix for the key and `xlinkHref` |
-| `innerHTML`; `{true}`, a BigInt or an array as a child                                                                                | the compiler (UF1002, UF3016, UF3012)                                 |
+| `innerHTML`, which renders its markup unescaped; `{true}`, a BigInt or an array as a child                                            | the compiler (a UF3051 warning, UF3016, UF3012)                       |
 | A list without a `key`, a `key` outside a list, a fragment as a list's item                                                           | the compiler (UF3013, UF3014, UF3015), with a fix for the first two   |
 | `??` on a value that is never nullish; sorting a prop in place (`items.sort()`)                                                       | the compiler (UF3023, UF3021), with fixes                             |
 | A conditional root (`return show ? <p /> : null`)                                                                                     | the compiler (UF1102), with a fix that wraps it in a fragment         |

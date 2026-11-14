@@ -89,6 +89,15 @@ describe("raw HTML", () => {
     expect(reported(jsx)).toEqual([expected]);
   });
 
+  it("rejects it on `<component is>`, which Vue writes as a component", () => {
+    expect(
+      reported(
+        '<component is={nested ? "h3" : "h2"} innerHTML={body} />',
+        "nested: boolean; body: string",
+      ),
+    ).toEqual(["UF1002 innerHTML"]);
+  });
+
   it("rejects it on an SVG element", () => {
     expect(reported("<svg><g innerHTML={body} /></svg>", "body: string")).toEqual([
       "UF1002 innerHTML",

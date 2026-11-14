@@ -1,6 +1,6 @@
 # ADR-0037: A bound value must render the same on every target, or the analyzer rejects it
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0097
 - **Date:** 2026-10-05
 - **Plan:** §4.3, §5.3, §6, §7.5, §9 M1; G2, P2, P3, P4; R5; ADR-0017, ADR-0026, ADR-0030,
   ADR-0033, ADR-0035; amends ADR-0032

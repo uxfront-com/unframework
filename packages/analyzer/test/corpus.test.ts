@@ -56,6 +56,8 @@ const NAMED_OTHERWISE: Readonly<Record<string, string>> = {
   "nullable-bound-value": "UF1002",
   // `innerHTML` on a component is a prop it does not declare (ADR-0097).
   "raw-html-component": "UF3035",
+  // `innerHTML` on `<component is>`, which Vue writes as a component (ADR-0097).
+  "raw-html-dynamic": "UF1002",
 };
 
 /**

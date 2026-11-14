@@ -1730,7 +1730,15 @@ function checkSlotOutlet(node: SlotOutletNode, place: Place, walk: Walk): void {
  */
 function checkTagCandidates(node: DynamicNode, place: Place, walk: Walk): void {
   const attributes: Attribute[] = [];
-  for (const attribute of node.attributes) {
+  for (const [index, attribute] of node.attributes.entries()) {
+    // Vue writes `<component is>` as a component, which takes no `v-html` (ADR-0097).
+    if (attribute.kind === "RawHtml") {
+      walk.errors.push({
+        path: `${place.path}/attributes/${index}`,
+        message: "must not be on a `<component is>`: Vue writes it as a component",
+      });
+      continue;
+    }
     // A component's attribute is reported already, and the paths are by index.
     if (
       attribute.kind === "Prop" ||
