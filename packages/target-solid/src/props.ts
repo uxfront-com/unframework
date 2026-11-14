@@ -6,8 +6,8 @@
 // absent or `undefined`, as JavaScript's destructuring does (`null` stays a value).
 import { js, parseExpression, referencedBindings } from "@unframework.dev/codegen";
 import type { ImportSet, Placeholders } from "@unframework.dev/codegen";
-import { codeOf, walk } from "@unframework.dev/ir";
-import type { Binding, BindingId, Prop, TypeDeclaration, UfComponent } from "@unframework.dev/ir";
+import { codeOf } from "@unframework.dev/ir";
+import type { Binding, Prop, TypeDeclaration, UfComponent } from "@unframework.dev/ir";
 
 import { generatedInterface } from "./generics.ts";
 import type { GeneratedInterface } from "./generics.ts";
@@ -214,15 +214,4 @@ function holdsContainer(node: unknown): boolean {
   const { type } = node as { type?: unknown };
   if (type === "ObjectExpression" || type === "ArrayExpression") return true;
   return Object.entries(node).some(([key, value]) => key !== "type" && holdsContainer(value));
-}
-
-/** The ids of the lists' index parameters, which Solid's `<For>` passes as accessors. */
-export function listIndexes(component: UfComponent): Set<BindingId> {
-  const indexes = new Set<BindingId>();
-  walk(component.render, {
-    enter(node) {
-      if (node.kind === "For" && node.index !== undefined) indexes.add(node.index);
-    },
-  });
-  return indexes;
 }

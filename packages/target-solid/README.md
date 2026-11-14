@@ -119,10 +119,13 @@ export default function Counter(
   one interpolation is a fragment (`{(user) => <>{user().name + props.label}</>}`), which Solid
   compiles to a memo. The rules are syntactic: a value taken where none was needed renders
   alike.
-- Lists are `<For each={items}>{(item, index) => <li>…</li>}</For>`. `<For>` keys rows by the
-  items themselves, so the source's `key` is not printed (M1 guarantees a list's content and
-  order, not its DOM identity); the index is an accessor, `index()`. A parameter nothing reads
-  is left out, the key not counting.
+- Lists are `<KeyedFor each={items} by={(item) => item.id}>{(item, index) => <li>…</li>}</KeyedFor>`,
+  an inline helper over `<For>` whose rows follow the source's `key`, printed as `by`
+  (`keyed-identity`, emulated, ADR-0096). `<For>` follows the items themselves, so an item
+  replaced by a copy of the same key would get a new row. A row reads its item and index through
+  accessors, `item()` and `index()`, which the branch callbacks read once, as a state's. `by`
+  takes them as values, as the key reads them. A parameter neither callback reads is left out of
+  it.
 - HTML's attribute names as written (`class`, `for`, `tabindex`, `readonly`), which Solid's JSX
   takes; SVG's in their own case (`viewBox`, `stroke-width`). Every bindable boolean attribute
   is one Solid's compiler sets as a boolean, so none needs `bool:` (`test/attributes.test.ts`).
@@ -346,7 +349,7 @@ export function useToggle(initial: boolean) {
 
 Every name the output introduces (`props`, `rawProps`, `_props`, `defaults`, `cx`, setters,
 `createWatcher`, `createWatchEffect`, the scheduler's `queuedWatchers`, `queueWatcher` and
-`flushQueued`, `nextTick`, `narrowed`, the events' interface, the `solid-js` imports) is
+`flushQueued`, `nextTick`, `KeyedFor`, `narrowed`, the events' interface, the `solid-js` imports) is
 claimed around the source's own names, so none captures another. The target reports one
 difference, `composable-effect-order` (UF4005, info); what else Solid cannot render as the other
 targets do is the analyser's to reject (ADR-0033).
@@ -364,6 +367,7 @@ targets do is the analyser's to reject (ADR-0033).
 | `model-array`                                  | emulated: `toggle`, and `selectedValues` for a multiple select                                               |
 | `model-modifiers`                              | emulated: `modelText`                                                                                        |
 | `reactive-context`                             | emulated: `refObject`, an object whose `value` getter reads the signal                                       |
+| `keyed-identity`                               | emulated: `KeyedFor`, a list whose rows follow the source's `key` (ADR-0096)                                 |
 | `composable-effect-order`                      | unsupported (UF4005, info): a composable's watchers keep its own module's queue (ADR-0069)                   |
 | everything else                                | native                                                                                                       |
 
@@ -376,7 +380,7 @@ Everything a parent passes is a prop, read through the props object (`src/compos
 | `import Field from "./Field.uf.tsx"`        | `import Field from "./Field"`; a component that renders itself calls its own function                         |
 | `<Field label="Name" tone={tone.value} />`  | `<Field label="Name" tone={tone()} />`                                                                        |
 | `onClear={clear}` on a component            | `onClear={clear}`, the handler taking the event's payload                                                     |
-| a component as a `.map` root                | `<For>`, as an element                                                                                        |
+| a component as a `.map` root                | `<KeyedFor>`, as an element                                                                                   |
 | `defineSlots<{ … }>()`                      | an interface of props: `children?: JSX.Element`, `title?: JSX.Element`, `item?: (props: P) => JSX.Element`    |
 | `{slots.default?.()}`, `{slots.title?.()}`  | `{props.children}`, `{props.title}`; `{props.item?.({ item })}` for a scoped slot                             |
 | `{slots.title?.() ?? <em>None</em>}`        | `{props.title ?? <em>None</em>}`                                                                              |

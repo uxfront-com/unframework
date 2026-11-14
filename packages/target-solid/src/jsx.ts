@@ -28,6 +28,7 @@ import {
 import type { ImportSet, JsxContext, JsxDialect } from "@unframework.dev/codegen";
 import { walk } from "@unframework.dev/ir";
 import type {
+  BindingId,
   ClassAttribute,
   ElementNode,
   Expression,
@@ -72,6 +73,12 @@ export const SCOPE_HELPER = "scopeAttributes";
 /** The style helper's name, before the name scope makes it unique (ADR-0065). */
 export const STYLE_HELPER = "styleProperties";
 
+/**
+ * The keyed list's name, before the name scope makes it unique (`keyed-identity`, emulated;
+ * ADR-0096).
+ */
+export const KEYED_HELPER = "KeyedFor";
+
 /** The Solid dialect of one output file, and the helpers its JSX ended up calling. */
 export interface SolidJsx {
   dialect: JsxDialect;
@@ -106,7 +113,9 @@ export function solidJsx(
   let collections = false;
   let scopeHelper: string | undefined;
   let styleHelper: string | undefined;
+  let keyedHelper: string | undefined;
   const classHelper = () => (helper ??= imports.claim(CLASS_HELPER));
+  const keyedFor = () => (keyedHelper ??= imports.claim(KEYED_HELPER));
   /** `styleProperties(value)`: a style bound to a value, an object or a declaration list. */
   const styleValue = (value: AstExpression): AstExpression =>
     js.callExpression(js.identifier((styleHelper ??= imports.claim(STYLE_HELPER))), [value]);
@@ -140,7 +149,7 @@ export function solidJsx(
   const dialect: JsxDialect = {
     expression: (expression, context) => flow.narrowings.code(expression, context),
     conditional: (node, context) => conditional(node, context, flow),
-    list: (node, context) => list(node, context, imports, compose),
+    list: (node, context) => list(node, context, keyedFor, compose),
     staticAttribute(attribute, element, context) {
       if (attribute.name === "class" && typeof attribute.value === "string") {
         const reads = spreadClassReads(element, context);
@@ -285,6 +294,7 @@ export function solidJsx(
       ...(helper ? [classHelperCode(helper, collections)] : []),
       ...(styleHelper ? [styleHelperCode(styleHelper)] : []),
       ...(scopeHelper ? [scopeHelperCode(scopeHelper)] : []),
+      ...(keyedHelper ? [keyedHelperCode(keyedHelper, imports)] : []),
       ...models.helpers(),
     ],
   };
@@ -613,26 +623,43 @@ function fallbackAttribute(children: readonly RenderNode[], context: JsxContext)
 }
 
 /**
- * A list as `<For each={source}>{(item, index) => <li>…</li>}</For>`. `<For>` keys its rows
- * by the items themselves, so the source's `key` is not printed (Solid's elements take no
- * `key`; ADR-0036 guarantees content and order only), and the index is an accessor, which
- * the rewrite rules call (`index()`). A parameter nothing reads is left out (L5), the item too
- * when the index is not read either.
+ * A list as `<KeyedFor each={source} by={(item, index) => key}>{(item, index) => <li>…</li>}</KeyedFor>`,
+ * an inline helper over `<For>` whose rows follow the source's `key`, as a keyed list's do on
+ * the other targets (`keyed-identity`, ADR-0096). `<For>` follows the items themselves, so an
+ * item replaced by a copy of the same key would get a new row, and lose its focus and typed text.
+ * The row's item and index are accessors, which the rewrite rules call (`item()`, `index()`): a
+ * row stays while its item changes, and reads the latest one. `by` takes them as values, as the
+ * source's key reads them. A parameter nothing reads is left out (L5), the item too when the
+ * index is not read either.
  */
 function list(
   node: ForNode,
   context: JsxContext,
-  imports: ImportSet,
+  keyedFor: () => string,
   { composition, object }: SolidCompose,
 ): AstExpression {
   const item = jsxBinding(node.item, context);
   const index = node.index === undefined ? undefined : jsxBinding(node.index, context);
-  const parameters = [];
-  if (index && context.referenced.has(index.id)) {
-    parameters.push(js.bindingIdentifier(item.name), js.bindingIdentifier(index.name));
-  } else if (context.referenced.has(item.id)) {
-    parameters.push(js.bindingIdentifier(item.name));
-  }
+  const parameters = (read: (id: BindingId) => boolean) => {
+    if (index && read(index.id)) {
+      return [js.bindingIdentifier(item.name), js.bindingIdentifier(index.name)];
+    }
+    return read(item.id) ? [js.bindingIdentifier(item.name)] : [];
+  };
+  // The key reads the row's item and index as the values `by` is called with.
+  const own = new Set([node.item, ...(node.index === undefined ? [] : [node.index])]);
+  const rules = context.rules!;
+  const keyContext: JsxContext = {
+    ...context,
+    rules: {
+      ...rules,
+      binding: (reference, binding, written, site) =>
+        own.has(binding.id) ? written : rules.binding(reference, binding, written, site),
+    },
+  };
+  const keyReads = new Set(
+    node.key.refs.flatMap((ref) => (ref.kind === "Binding" ? [ref.binding] : [])),
+  );
   // The slots each row tests and renders, resolved in the row: one content per row.
   const slots = composition.rowSlots(node.body);
   const row = composition.withinRow(slots, () =>
@@ -649,9 +676,27 @@ function list(
       ]
     : row;
   return js.jsxElement(
-    imports.add("solid-js", "For"),
-    [js.jsxAttribute("each", js.jsxExpressionContainer(jsxExpression(node.source, context)))],
-    [js.jsxExpressionContainer(js.arrowFunction(parameters, body))],
+    keyedFor(),
+    [
+      js.jsxAttribute("each", js.jsxExpressionContainer(jsxExpression(node.source, context))),
+      js.jsxAttribute(
+        "by",
+        js.jsxExpressionContainer(
+          js.arrowFunction(
+            parameters((id) => keyReads.has(id)),
+            jsxExpression(node.key, keyContext),
+          ),
+        ),
+      ),
+    ],
+    [
+      js.jsxExpressionContainer(
+        js.arrowFunction(
+          parameters((id) => context.referenced.has(id)),
+          body,
+        ),
+      ),
+    ],
   );
 }
 
@@ -998,6 +1043,47 @@ function ${name}(style: object | string | null | undefined): Record<string, stri
  * alone, so it never runs a prop's getter (a slot's `children`), and passes on no prop the
  * component declares.
  */
+/**
+ * The keyed list (`keyed-identity`, ADR-0096): a memo maps each key to its latest item, and
+ * `<For>` renders the keys, which it follows by value, so a row stays while its key does. Each row
+ * reads its item through a memo of the map, which follows a copy of the same key and notifies the
+ * row only when its own item changes. `<For>` calls a row untracked, and so does the helper, as it
+ * says to `solid/reactivity`. The keys are unique at run time (ADR-0035): an item whose key an
+ * earlier item took still renders, under a key of its own that no update keeps, as `<For>` would
+ * render it. A row never reads a key the map has dropped: Solid disposes of the row first, as
+ * `<For>` reruns before the computations its rows own.
+ */
+function keyedHelperCode(name: string, imports: ImportSet): string {
+  const For = imports.add("solid-js", "For");
+  const createMemo = imports.add("solid-js", "createMemo");
+  const untrack = imports.add("solid-js", "untrack");
+  const Accessor = imports.add("solid-js", "Accessor", { type: true });
+  const JSX = imports.add("solid-js", "JSX", { type: true });
+  return `/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
+function ${name}<T>(props: {
+  each: readonly T[];
+  by: (item: T, index: number) => unknown;
+  children: (item: ${Accessor}<T>, index: ${Accessor}<number>) => ${JSX}.Element;
+}): ${JSX}.Element {
+  const items = ${createMemo}(() => {
+    const rows = new Map<unknown, T>();
+    props.each.forEach((item, index) => {
+      const key = props.by(item, index);
+      rows.set(rows.has(key) ? {} : key, item);
+    });
+    return rows;
+  });
+  return (
+    <${For} each={[...items().keys()]}>
+      {(key, index) => {
+        const item = ${createMemo}(() => items().get(key) as T);
+        return ${untrack}(() => props.children(item, index));
+      }}
+    </${For}>
+  );
+}`;
+}
+
 function scopeHelperCode(name: string): string {
   return `/** The scope attributes of the styled parents that render this component, for its root. */
 function ${name}(props: object): Record<string, ""> {

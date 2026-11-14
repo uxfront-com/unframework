@@ -32,10 +32,11 @@ export function assertsIn(kind: Binding["kind"], scope: NarrowedPath["scope"]): 
     case "derived":
     case "usedState":
     case "usedDerived":
+    // A keyed list's row reads its item through an accessor (ADR-0096).
+    case "loopVar":
       return scope !== "template";
     case "prop":
       return scope === "closure";
-    case "loopVar":
     case "templateRef":
     case "localConst":
     case "localFn":

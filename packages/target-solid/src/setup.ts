@@ -57,7 +57,7 @@ import {
   watcherHelperCode,
 } from "./helpers.ts";
 import type { WatcherUses } from "./helpers.ts";
-import { eventProp, listIndexes } from "./props.ts";
+import { eventProp } from "./props.ts";
 import type { SolidProps } from "./props.ts";
 import { edited, untrackEdits } from "./untracked.ts";
 
@@ -154,7 +154,6 @@ export class SolidCode {
         this.#reading.add(item.binding);
       }
     }
-    const indexes = listIndexes(component);
     this.rules = {
       binding: (reference, binding, text) => {
         // A read a condition narrows, where Solid's spelling loses it (src/asserted.ts).
@@ -163,8 +162,8 @@ export class SolidCode {
           case "prop":
             return `${props.read(binding, text)}${asserted}`;
           case "loopVar":
-            // `<For>` passes the index as an accessor.
-            return indexes.has(binding.id) ? `${text}()` : text;
+            // A keyed list passes a row's item and index as accessors (src/jsx.ts, ADR-0096).
+            return `${text}()`;
           // A composable returns its state and derived values as accessors (ADR-0069).
           case "state":
           case "derived":

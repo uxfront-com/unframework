@@ -1015,14 +1015,10 @@ export class Narrowings {
       const enclosing = this.#frames.some((frame) =>
         frame.names.some((entry) => entry.name === preferred && !samePath(entry.path, path)),
       );
-      // Keyed, a list's variable taken whole is every read of it inside, so its own name
-      // captures nothing (UF3024 rejects a parameter that would shadow it); an accessor may take
-      // the name of a binding that prints as it (a list's variable, a state's or a derived
-      // value's accessor) where no client code inside would read it.
+      // An accessor may take the name of a binding that prints as it (a list's item or index,
+      // a state's or a derived value's accessor) where no client code inside would read it.
       const printed = printedAsName(jsxBinding(path.binding, context).kind);
-      const shadows =
-        key === undefined &&
-        (mode === "keyed" ? printed === "loopVar" : mode === "accessor-only" && Boolean(printed));
+      const shadows = key === undefined && mode === "accessor-only" && Boolean(printed);
       if (
         (this.#bare.has(preferred) && !shadows) ||
         claimed ||
@@ -1306,13 +1302,13 @@ function replaced(
 
 /**
  * How a binding of a kind prints in a template, where a branch's callback might take its name: a
- * list's variable as its name, a state's or a derived value's as its accessor's (`count()`); a
- * prop never as its name alone (`props.count`), and nothing else reaches a template.
+ * list's item or index, a state's or a derived value's as its accessor's (`count()`, `item()`,
+ * ADR-0096); a prop never as its name alone (`props.count`), and nothing else reaches a template.
  */
-function printedAsName(kind: BindingKind): "loopVar" | "accessor" | undefined {
+function printedAsName(kind: BindingKind): "accessor" | undefined {
   switch (kind) {
+    // A keyed list's row reads its item and index through accessors (ADR-0096).
     case "loopVar":
-      return "loopVar";
     case "state":
     case "derived":
     case "usedState":

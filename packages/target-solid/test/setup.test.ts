@@ -295,7 +295,7 @@ describe("solid narrowed reads (src/asserted.ts, ADR-0046)", () => {
       "      props.onOwned?.(props.owner!.name);",
       // A template's expressions.
       '<p>{draft().email ? draft().email!.trim() : "no email"}</p>',
-      "aria-pressed={selected() !== null && selected()!.id === member.id}",
+      "aria-pressed={selected() !== null && selected()!.id === member().id}",
     ]) {
       expect(output, form).toContain(form);
     }

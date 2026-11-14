@@ -1515,6 +1515,23 @@ export default function RowSlots({ items }: { items: string[] }) {
   );
 }
 `,
+  KeyedRows: `export interface Row {
+  id: number;
+  label: string;
+}
+
+export default function KeyedRows({ rows }: { rows: Row[] }) {
+  return (
+    <ul>
+      {rows.map((row, index) => (
+        <li key={row.id} data-index={index}>
+          {row.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+`,
   ForwardedSlot: `import { defineSlots } from "@uxfront/unframework";
 import type { Element } from "@uxfront/unframework";
 
