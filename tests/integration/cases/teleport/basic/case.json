@@ -1,0 +1,8 @@
+{
+  "description": "`<Teleport to=\"body\">` mounts its one element at the end of `body` once the component has mounted: the server renders none of it, its text follows the component's state, and a click inside it updates what the component shows in place.",
+  "ssr": {
+    "default": {
+      "props": { "message": "Your changes are saved" }
+    }
+  }
+}
