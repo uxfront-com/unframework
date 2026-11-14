@@ -31,6 +31,7 @@ import type {
   SlotOutletNode,
   SlotReference,
   StyleAttribute,
+  TeleportNode,
   UfComponent,
   UfModule,
 } from "@unframework.dev/ir";
@@ -46,9 +47,16 @@ import type { CodeToken } from "./escape.ts";
 
 /**
  * What holds a child list: an element, a branch of an `If`, a `For` (its body), the root, a
- * fill of a child's slot, or a slot outlet (its fallback).
+ * fill of a child's slot, a slot outlet (its fallback), or a teleport (its one element).
  */
-export type Container = ElementNode | FragmentNode | IfBranch | ForNode | SlotFill | SlotOutletNode;
+export type Container =
+  | ElementNode
+  | FragmentNode
+  | IfBranch
+  | ForNode
+  | SlotFill
+  | SlotOutletNode
+  | TeleportNode;
 
 /** Where a text or an interpolation sits, for the compilers that treat edges differently. */
 export interface TextPosition {
@@ -187,6 +195,15 @@ export interface PrintedModelBinding {
 export interface PrintedDynamic {
   node: DynamicNode;
   is: string;
+}
+
+/**
+ * `<Teleport to>` (ADR-0098): the dialect writes what mounts the content into `to` once the
+ * component has mounted, with a `nodes` piece of the node's children for its one element, which
+ * the printer prints as a root's, outside every element around the teleport.
+ */
+export interface PrintedTeleport {
+  node: TeleportNode;
 }
 
 /** A slot outlet, with its props as code, and key by key when they are an object literal. */
@@ -379,6 +396,8 @@ export interface MarkupDialect {
    * `component` piece's name as the dialect gives them, with the node's attributes.
    */
   dynamic?(dynamic: PrintedDynamic): MarkupPiece[];
+  /** Writes `<Teleport to>` (ADR-0098): see {@link PrintedTeleport}. */
+  teleport?(teleport: PrintedTeleport): MarkupPiece[];
   /**
    * Writes the scope attributes a component's tag carries (ADR-0063), where the language checks
    * them against the child's props (Svelte): `name=""` each, as on an element, without it.
@@ -783,6 +802,15 @@ export function printMarkup(
             candidates: node.candidates.flatMap((each) =>
               each.kind === "Component" ? [each.component] : [],
             ),
+          });
+        case "Teleport":
+          // The content's parent is `to`'s element: no element, `<pre>` or root is around it.
+          return piecesItems(hook(at.dialect, "teleport")({ node }), {
+            ...at,
+            element: undefined,
+            namespace: "html",
+            preformatted: false,
+            top: false,
           });
         default:
           return unreachable(node);
@@ -1533,6 +1561,7 @@ function hook<
     | "modelAttribute"
     | "modelBinding"
     | "dynamic"
+    | "teleport"
     | "rawHtmlAttribute",
 >(dialect: MarkupDialect, name: K): NonNullable<MarkupDialect[K]> {
   const found = dialect[name];

@@ -132,6 +132,12 @@ export type CapabilityName =
   /** `<component is>` over a statically known set (`DynamicNode`). */
   | "dynamic-component"
   /**
+   * `<Teleport to>` (`TeleportNode`, ADR-0098): content that mounts into the element `to`
+   * selects once its component has mounted, last in source order, and that the server never
+   * renders.
+   */
+  | "teleport"
+  /**
    * A component that imports a stylesheet (`UfComponent.styles`), which the compiler scopes
    * once and the target attaches its own way (ADR-0063).
    */
@@ -229,6 +235,7 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "context",
   "reactive-context",
   "dynamic-component",
+  "teleport",
   "scoped-styles",
   "child-root-scope",
   "slotted-styles",
@@ -269,6 +276,9 @@ export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<Cap
   // A list renders the same markup in order on a target whose rows follow the item's reference
   // (ADR-0096): only a reorder in the browser shows what an element kept.
   "keyed-identity",
+  // No target renders a teleport's content on the server, so a static render's markup is the
+  // same without it (ADR-0098): only a mounted component shows it, in `to`.
+  "teleport",
 ]);
 
 /**

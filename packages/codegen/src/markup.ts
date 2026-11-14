@@ -27,6 +27,7 @@ export type {
   PrintedAttribute,
   PrintedEvent,
   PrintedRef,
+  PrintedTeleport,
   StylePart,
   TextPosition,
 } from "./markup/printer.ts";

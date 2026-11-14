@@ -43,6 +43,7 @@ const NODE_CAPABILITIES: Readonly<
   Fragment: "fragment",
   Component: "component",
   Dynamic: "dynamic-component",
+  Teleport: "teleport",
 };
 const ATTRIBUTE_CAPABILITIES: Readonly<Record<Attribute["kind"], CapabilityName>> = {
   Static: "static-attribute",
