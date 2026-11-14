@@ -9,8 +9,8 @@ One `<kebab-name>.ts` file per component (plan §6), in this order: the imports 
 `@angular/core` and `@angular/common`, of the children's output files, of the composables'
 (`./use-toggle`, ADR-0069) and of the values the source imports from `.ts` modules, each under a
 name no source name takes; the type declarations; the module's constants the component reads, and
-those they read, as written (`const GAP = sizes.sm * 2;`, ADR-0070); `let nextId = 0;` when the
-component makes ids; the
+those they read, as written (`const GAP = sizes.sm * 2;`, ADR-0070); the application's id
+counter, an injection token (`idCounter`, ADR-0095), when the component makes ids; the
 injection tokens of the module's keys; the inline helpers (`refObject`, the native controls'
 `modelText`, `toggle`, `selectedValues`, `optionText`); the slot directives; the directives its listeners'
 options need; the component.
@@ -103,7 +103,7 @@ the template itself, which reads through `@let`, and a template statement's inpu
 | `let timer: T`                            | a field: `private timer: T \| undefined;`, `private refreshes = 0;`                                                            |
 | `let remaining = limit` (an input)        | `private remaining!: number;`, assigned in `ngOnInit` (below)                                                                  |
 | `const input = useTemplateRef<T>()`       | `viewChild<ElementRef<T>>("input")`, with `#input` on the element                                                              |
-| `const id = useId()`                      | `` `uf-id-<component>-${nextId++}` ``: a module counter (emulated, `use-id`)                                                   |
+| `const id = useId()`                      | `` `uf-id-<component>-${inject(idCounter).next++}` ``: a counter per application (emulated, `use-id`)                          |
 | `function save()`, arrow `const`          | a method; one passed as a value (`setTimeout(tick, 100)`) an arrow field, which keeps `this`, declared before the other fields |
 | `const { on, toggle } = useToggle(false)` | `protected readonly toggle_1 = useToggle(false)`, read as `this.toggle_1.on()` and `@let on = this.toggle_1.on();` (below)     |
 | `emit("change", value)`                   | `this.change.emit(value)`, by the payload rule                                                                                 |
@@ -358,7 +358,7 @@ reported at a component's first stylesheet import.
 ### Capabilities
 
 Native: everything but `event-capture`, `event-once` and `event-passive` (emulated, the directives
-above, helper `uf<Event><Option>`), `use-id` (emulated, `nextId`), `next-tick` (emulated,
+above, helper `uf<Event><Option>`), `use-id` (emulated, `idCounter`), `next-tick` (emulated,
 `nextTick`), `class-binding` (emulated, `classNames`, for a class part that may be an array or an
 object), `style-binding` (emulated, `styleObject`, for a style bound to a value that a merge
 spreads; ADR-0065) and composition's cells that ADR-0056 decides: `named-slot`, `scoped-slot` and

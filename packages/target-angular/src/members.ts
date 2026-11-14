@@ -66,7 +66,7 @@ export interface MemberContext {
   once?: string;
   /** The `nextTick` helper's name, when code calls `nextTick()`. */
   nextTick?: string;
-  /** The module-level counter ids are made from, when the component declares one. */
+  /** The injection token of the application's id counter, when the component declares an id. */
   nextId?: string;
   /** The component's own slot directives, whose templates it queries (./composition.ts). */
   slots: readonly SlotDirective[];
@@ -331,9 +331,9 @@ export function classMembers(context: MemberContext): {
       case "Id": {
         const { name } = bindingById(plan, item.binding);
         if (context.nextId === undefined) throw new Error("An id is declared without a counter.");
-        // Angular has no id API: a module counter, as Angular Material writes its ids. The
-        // component's name keeps two components' ids apart.
-        const id = `\`uf-id-${kebabCase(component.name)}-\${${context.nextId}++}\``;
+        // Angular has no id API: a counter, as Angular Material writes its ids, one per
+        // application (ADR-0095). The component's name keeps two components' ids apart.
+        const id = `\`uf-id-${kebabCase(component.name)}-\${${core("inject")}(${context.nextId}).next++}\``;
         fields.push(
           js.propertyDefinition(name, expression(id), {
             accessibility: visibility(name),
