@@ -322,8 +322,10 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
   unmounts) before the next.
 - A DOM read that feeds state or an emit reads what layout does not decide (`textContent`,
   attributes, `value`, `document.activeElement`), never geometry.
-- No spec reorders a list, or replaces a row's item, while the focus is inside the list: keyed
-  identity on reorder is not guaranteed yet.
+- A spec asserts the focus inside a list only where the focused row keeps its place: a browser
+  blurs a moved element, and only React puts the focus back (ADR-0096). A reorder or a replaced
+  item keeps a row's element and typed text everywhere, so a spec that checks them requires
+  `keyed-identity`.
 - Specs never branch on the target (`currentTarget()`): every target runs the same checks.
 - Test names and scenario names are unique in the case; scenario names are kebab-case string
   literals; a scenario with an SSR twin mounts with `mountScenario`. The summary fails a target

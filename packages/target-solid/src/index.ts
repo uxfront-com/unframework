@@ -28,7 +28,7 @@ import {
 import { SolidComposition } from "./composition.ts";
 import { typeParameterDeclaration } from "./generics.ts";
 import { NEXT_TICK_HELPER, WATCHER_HELPER } from "./helpers.ts";
-import { CLASS_HELPER, SCOPE_HELPER, solidJsx, STYLE_HELPER } from "./jsx.ts";
+import { CLASS_HELPER, KEYED_HELPER, SCOPE_HELPER, solidJsx, STYLE_HELPER } from "./jsx.ts";
 import { solidListeners } from "./listeners.ts";
 import { ModelHelpers, modelRef } from "./models.ts";
 import { BindingTypes, Narrowings } from "./narrowing.ts";
@@ -152,6 +152,13 @@ export const solid: Target = defineTarget({
         "A composable's watchers coalesce in its own module's queue (`createWatcher`), apart from the caller's, so its watchers, effects and hooks cannot take their place among the caller's own, and code that relies on that order may see another (ADR-0069).",
     },
     hydration: { support: "native" },
+    // `<For>` follows the items themselves, so a list goes through an inline helper whose rows
+    // follow the source's key (ADR-0096).
+    "keyed-identity": {
+      support: "emulated",
+      helper: KEYED_HELPER,
+      note: "Solid's <For> follows the items themselves, so an item replaced by a copy gets a new row. A list goes through an inline helper over <For> whose rows follow the source's key, and a row reads its item and index through accessors.",
+    },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     // Every name the source declares or reads is taken before the output claims its own
@@ -161,15 +168,15 @@ export const solid: Target = defineTarget({
     for (const name of freeNames(component, names)) names.delete(name);
     for (const name of moduleValueNames(context.module)) names.add(name);
     // A source's components are joined into one module where it is loaded (ADR-0053): each claims
-    // the class and scope helpers from bases of its own (`cx_1`), past the names any other
-    // component declares.
+    // the class, scope, style and keyed list helpers from bases of its own (`cx_1`), past the
+    // names any other component declares.
     const index = context.module.components.findIndex((each) => each.name === component.name);
     const reserved = context.module.components.map((each) => {
       const taken = sourceNames(each, context.module);
       for (const name of freeNames(each, taken)) taken.delete(name);
       return taken;
     });
-    const bases = [CLASS_HELPER, SCOPE_HELPER, STYLE_HELPER].map((helper) => {
+    const bases = [CLASS_HELPER, SCOPE_HELPER, STYLE_HELPER, KEYED_HELPER].map((helper) => {
       const { base, others } = moduleHelperName(helper, reserved, index);
       for (const name of others) names.add(name);
       return [helper, base] as const;

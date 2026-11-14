@@ -240,7 +240,10 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
    - A DOM read that feeds state or an emit reads what layout does not decide (`textContent`,
      attributes, `value`, `document.activeElement`), never geometry: the expectations are
      written on macOS and compared on Linux.
-   - No spec reorders a list, or replaces a row's item, while the focus is inside the list.
+   - A spec asserts the focus inside a list only where the focused row keeps its place: a browser
+     blurs a moved element, and only React puts the focus back (semantics contract, keyed
+     lists, ADR-0096). A reorder or a replaced item keeps a row's element and typed text
+     everywhere, so a spec asserts those freely, and requires `keyed-identity`.
    - A spec never branches on the target: one expectation, verified seven times.
    - Each test names its own scenario: unique in the case, with a string literal; and each test
      has a name of its own in the case, by which the summary compares the targets' tests.

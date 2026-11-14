@@ -1,0 +1,14 @@
+- list "Playlist":
+  - listitem:
+    - checkbox "Chorus (starred)"
+    - text: Chorus (starred)
+    - button "Star Chorus" [pressed]
+  - listitem:
+    - checkbox "Intro"
+    - text: Intro
+    - button "Star Intro"
+  - listitem:
+    - checkbox "Verse" [checked]
+    - text: Verse
+    - button "Star Verse"
+- button "Sort by title"

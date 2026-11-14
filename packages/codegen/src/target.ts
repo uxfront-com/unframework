@@ -171,7 +171,14 @@ export type CapabilityName =
    * the server's ids, and interactive after (L12, ADR-0095). No IR kind requires it: every case
    * runs in the hydrate projects, which skip a target that leaves it unsupported.
    */
-  | "hydration";
+  | "hydration"
+  /**
+   * A keyed list's item keeps its element, and so its focus, its typed text and its state, while
+   * the list reorders and while the item is replaced by another object of the same key
+   * (ADR-0096). No IR kind requires it: every list's key asks for it, and the specs that reorder
+   * or replace a list while its rows hold the focus or typed text require it.
+   */
+  | "keyed-identity";
 
 /** Every capability name, in a stable order. */
 export const CAPABILITY_NAMES: readonly CapabilityName[] = [
@@ -225,6 +232,7 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "composables",
   "composable-effect-order",
   "hydration",
+  "keyed-identity",
 ];
 
 /**
@@ -252,6 +260,9 @@ export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<Cap
   "composable-effect-order",
   // A target that doesn't hydrate still renders the same markup on the server (ADR-0095).
   "hydration",
+  // A list renders the same markup in order on a target whose rows follow the item's reference
+  // (ADR-0096): only a reorder in the browser shows what an element kept.
+  "keyed-identity",
 ]);
 
 /**

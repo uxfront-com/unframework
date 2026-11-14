@@ -88,6 +88,7 @@ export const svelte: Target = defineTarget({
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
     hydration: { support: "native" },
+    "keyed-identity": { support: "native" },
     // A capture listener is an attribute, `onclickcapture` (ADR-0047).
     "event-capture": { support: "native" },
     // `once` and `passive` listen through `on` from `svelte/events`, in an attachment (`events.ts`):

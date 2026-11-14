@@ -1,4 +1,14 @@
-import { For, type JSX, Show, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import {
+  For,
+  type JSX,
+  Show,
+  createMemo,
+  createReaction,
+  createSignal,
+  onCleanup,
+  onMount,
+  untrack,
+} from "solid-js";
 
 export interface DraftPanelEvents {
   onSave?: (count: number) => void;
@@ -109,7 +119,9 @@ export default function DraftPanel(
         {open() ? "Options open" : "Options closed"}, {status()}
       </p>
       <ol aria-label="Log">
-        <For each={log()}>{(line) => <li>{line}</li>}</For>
+        <KeyedFor each={log()} by={(line, index) => index}>
+          {(line) => <li>{line.value}</li>}
+        </KeyedFor>
       </ol>
     </section>
   );
@@ -120,6 +132,39 @@ function scopeAttributes(props: object): Record<string, ""> {
   const scope: Record<string, ""> = {};
   for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
   return scope;
+}
+
+/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
+function KeyedFor<T>(props: {
+  each: readonly T[];
+  by: (item: T, index: number) => unknown;
+  children: (row: { readonly value: T; readonly index: number }) => JSX.Element;
+}): JSX.Element {
+  const items = createMemo(() => {
+    const rows = new Map<unknown, T>();
+    props.each.forEach((item, index) => {
+      const key = props.by(item, index);
+      rows.set(rows.has(key) ? {} : key, item);
+    });
+    return rows;
+  });
+  return (
+    <For each={[...items().keys()]}>
+      {(key, index) => {
+        const item = createMemo(() => items().get(key) as T);
+        return untrack(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
+      }}
+    </For>
+  );
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

@@ -1,0 +1,32 @@
+---
+export interface Entry {
+  id: string;
+  label: string;
+}
+
+export interface ChecklistProps {
+  entries: Entry[];
+}
+
+interface Props extends ChecklistProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { entries, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+---
+
+<ul class:list={["checklist", className]} style={style} {...scopeAttributes(Astro.props)}>
+  {entries.map((entry) => (
+    <li>
+      <label>{entry.label}<input name={`note-${entry.id}`} aria-label={`Note for ${entry.label}`} /></label>
+    </li>
+  ))}
+</ul>

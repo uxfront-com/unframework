@@ -105,7 +105,7 @@ export default function Counter(
   (`!user ? A : B`) is `<Show when={props.user} fallback={A}>`. An accessor is named after its
   binding or last property (`value` for one no target can declare), or a free name where that
   would capture a name the output prints as it is, the object form's parameter, an import or
-  helper, or another callback's around it; it takes a list item's, a state's or a derived
+  helper, or another callback's around it; it takes a state's or a derived
   value's own name only in a branch without a listener or a template ref. A handler in a branch
   that reads what its tests narrow is one call (UF3029), which runs while its element and so its
   branch are there: its arguments read through the accessor too
@@ -119,10 +119,13 @@ export default function Counter(
   one interpolation is a fragment (`{(user) => <>{user().name + props.label}</>}`), which Solid
   compiles to a memo. The rules are syntactic: a value taken where none was needed renders
   alike.
-- Lists are `<For each={items}>{(item, index) => <li>…</li>}</For>`. `<For>` keys rows by the
-  items themselves, so the source's `key` is not printed (M1 guarantees a list's content and
-  order, not its DOM identity); the index is an accessor, `index()`. A parameter nothing reads
-  is left out, the key not counting.
+- Lists are `<KeyedFor each={items} by={(item) => item.id}>{(item) => <li>…</li>}</KeyedFor>`,
+  an inline helper over `<For>` whose rows follow the source's `key`, printed as `by`
+  (`keyed-identity`, emulated, ADR-0096). `<For>` follows the items themselves, so an item
+  replaced by a copy of the same key would get a new row. A row is an object of getters named as
+  the item, read as `item.value` and `item.index`, which TypeScript narrows as it narrows a prop.
+  `by` takes the item and the index as values, as the key reads them. A parameter neither
+  callback reads is left out of it.
 - HTML's attribute names as written (`class`, `for`, `tabindex`, `readonly`), which Solid's JSX
   takes; SVG's in their own case (`viewBox`, `stroke-width`). Every bindable boolean attribute
   is one Solid's compiler sets as a boolean, so none needs `bool:` (`test/attributes.test.ts`).
@@ -148,8 +151,8 @@ export default function Counter(
 
 Three rewrites keep the output what Solid's tools expect:
 
-- an interpolated conditional whose branch prints as a bare name (a list's item, `undefined`, or
-  a value a keyed callback received) is a `<Show>`, as `solid/prefer-show` asks:
+- an interpolated conditional whose branch prints as a bare name (a setup constant, `undefined`,
+  or a value a keyed callback received, never a list's item, which prints as `item.value`) is a `<Show>`, as `solid/prefer-show` asks:
   `{done ? title : "-"}` becomes `<Show when={done} fallback={"-"}>{title}</Show>`;
 - Solid compiles static content into an HTML template, where the browser drops a line feed
   right after `<pre>`. A line feed that would start a `<pre>`'s template (text after only
@@ -346,7 +349,7 @@ export function useToggle(initial: boolean) {
 
 Every name the output introduces (`props`, `rawProps`, `_props`, `defaults`, `cx`, setters,
 `createWatcher`, `createWatchEffect`, the scheduler's `queuedWatchers`, `queueWatcher` and
-`flushQueued`, `nextTick`, `narrowed`, the events' interface, the `solid-js` imports) is
+`flushQueued`, `nextTick`, `KeyedFor`, `narrowed`, the events' interface, the `solid-js` imports) is
 claimed around the source's own names, so none captures another. The target reports one
 difference, `composable-effect-order` (UF4005, info); what else Solid cannot render as the other
 targets do is the analyser's to reject (ADR-0033).
@@ -364,6 +367,7 @@ targets do is the analyser's to reject (ADR-0033).
 | `model-array`                                  | emulated: `toggle`, and `selectedValues` for a multiple select                                               |
 | `model-modifiers`                              | emulated: `modelText`                                                                                        |
 | `reactive-context`                             | emulated: `refObject`, an object whose `value` getter reads the signal                                       |
+| `keyed-identity`                               | emulated: `KeyedFor`, a list whose rows follow the source's `key` (ADR-0096)                                 |
 | `composable-effect-order`                      | unsupported (UF4005, info): a composable's watchers keep its own module's queue (ADR-0069)                   |
 | everything else                                | native                                                                                                       |
 
@@ -376,7 +380,7 @@ Everything a parent passes is a prop, read through the props object (`src/compos
 | `import Field from "./Field.uf.tsx"`        | `import Field from "./Field"`; a component that renders itself calls its own function                         |
 | `<Field label="Name" tone={tone.value} />`  | `<Field label="Name" tone={tone()} />`                                                                        |
 | `onClear={clear}` on a component            | `onClear={clear}`, the handler taking the event's payload                                                     |
-| a component as a `.map` root                | `<For>`, as an element                                                                                        |
+| a component as a `.map` root                | `<KeyedFor>`, as an element                                                                                   |
 | `defineSlots<{ … }>()`                      | an interface of props: `children?: JSX.Element`, `title?: JSX.Element`, `item?: (props: P) => JSX.Element`    |
 | `{slots.default?.()}`, `{slots.title?.()}`  | `{props.children}`, `{props.title}`; `{props.item?.({ item })}` for a scoped slot                             |
 | `{slots.title?.() ?? <em>None</em>}`        | `{props.title ?? <em>None</em>}`                                                                              |

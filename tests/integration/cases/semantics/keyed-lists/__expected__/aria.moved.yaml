@@ -1,0 +1,10 @@
+- list:
+  - listitem:
+    - text: Bread
+    - textbox "Note for Bread"
+  - listitem:
+    - text: Milk
+    - textbox "Note for Milk": oat
+  - listitem:
+    - text: Eggs
+    - textbox "Note for Eggs": free range

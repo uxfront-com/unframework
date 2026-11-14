@@ -1800,7 +1800,13 @@ function templateRange(path: string, contents: string): { start: number; end: nu
     const returned = /\breturn\s*(?:\(\s*)?(?=<[A-Za-z>])/g;
     returned.lastIndex = body;
     const start = endOf(returned.exec(contents));
-    return start === undefined ? undefined : { start, end };
+    if (start === undefined) return undefined;
+    // An inline component the output declares after its own, Solid's keyed list (ADR-0096),
+    // holds JSX that is no template's: the range ends where it starts. The output hook sees the
+    // code before oxfmt, so indentation can't tell where the component ends.
+    const helper = /\nfunction [A-Z]/g;
+    helper.lastIndex = start;
+    return { start, end: helper.exec(contents)?.index ?? end };
   }
   if (path.endsWith(".ts")) {
     const start = endOf(/\btemplate:\s*`/.exec(contents));

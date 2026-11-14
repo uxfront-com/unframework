@@ -1,0 +1,38 @@
+---
+export type Source =
+  | { kind: "link"; id: string; title: string; href: string }
+  | { kind: "book"; id: string; title: string; note?: string };
+
+export interface ReadingProps {
+  sources: Source[];
+}
+
+interface Props extends ReadingProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { sources, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+---
+
+<ul
+  class:list={["reading", className]}
+  aria-label="Reading list"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
+  {sources.map((source, index) => (
+    <li
+      title={source.kind === "link" ? source.href : source.title}
+    >{index + 1}. {source.title}{source.kind === "book" && source.note ? ` (${source.note.trim()})` : ""}{source.kind === "link" ? <button
+      type="button"
+    >{`Open ${source.title}`}</button> : null}</li>
+  ))}
+</ul>

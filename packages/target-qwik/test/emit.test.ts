@@ -90,6 +90,7 @@ describe("qwik target", () => {
       "hydration",
       "interactivity",
       "interpolation",
+      "keyed-identity",
       "late-prop",
       "list",
       "listbox",

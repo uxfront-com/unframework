@@ -1,0 +1,514 @@
+{
+  "irVersion": 1,
+  "file": "control-flow/narrowed-items/Reading.uf.tsx",
+  "components": [
+    {
+      "name": "Reading",
+      "span": {
+        "start": 257,
+        "end": 918
+      },
+      "props": [
+        {
+          "name": "sources",
+          "optional": false,
+          "type": {
+            "code": "Source[]",
+            "span": {
+              "start": 244,
+              "end": 252
+            }
+          },
+          "binding": "sources@291",
+          "span": {
+            "start": 235,
+            "end": 253
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ReadingProps",
+          "span": {
+            "start": 302,
+            "end": 314
+          }
+        },
+        "span": {
+          "start": 289,
+          "end": 314
+        }
+      },
+      "types": [
+        "Source",
+        "ReadingProps"
+      ],
+      "emits": {
+        "binding": "emit@326",
+        "type": {
+          "code": "{ open: [href: string] }",
+          "span": {
+            "start": 345,
+            "end": 369
+          }
+        },
+        "events": [
+          {
+            "name": "open",
+            "parameters": [
+              {
+                "name": "href",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 360,
+                    "end": 366
+                  }
+                },
+                "span": {
+                  "start": 354,
+                  "end": 366
+                }
+              }
+            ],
+            "span": {
+              "start": 347,
+              "end": 367
+            }
+          }
+        ],
+        "span": {
+          "start": 320,
+          "end": 373
+        }
+      },
+      "bindings": [
+        {
+          "id": "sources@291",
+          "name": "sources",
+          "kind": "prop",
+          "span": {
+            "start": 291,
+            "end": 298
+          }
+        },
+        {
+          "id": "emit@326",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 326,
+            "end": 330
+          }
+        },
+        {
+          "id": "source@457",
+          "name": "source",
+          "kind": "loopVar",
+          "span": {
+            "start": 457,
+            "end": 463
+          }
+        },
+        {
+          "id": "index@465",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 465,
+            "end": 470
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "ul",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "reading",
+            "span": {
+              "start": 394,
+              "end": 409
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Reading list",
+            "span": {
+              "start": 410,
+              "end": 435
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "For",
+            "source": {
+              "code": "sources",
+              "span": {
+                "start": 444,
+                "end": 451
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "sources@291",
+                  "span": {
+                    "start": 444,
+                    "end": 451
+                  }
+                }
+              ]
+            },
+            "item": "source@457",
+            "index": "index@465",
+            "key": {
+              "code": "source.id",
+              "span": {
+                "start": 494,
+                "end": 503
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "source@457",
+                  "span": {
+                    "start": 494,
+                    "end": 500
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Element",
+              "tag": "li",
+              "attributes": [
+                {
+                  "kind": "Bound",
+                  "name": "title",
+                  "value": {
+                    "code": "source.kind === \"link\" ? source.href : source.title",
+                    "span": {
+                      "start": 512,
+                      "end": 563
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "source@457",
+                        "span": {
+                          "start": 512,
+                          "end": 518
+                        }
+                      },
+                      {
+                        "kind": "Binding",
+                        "binding": "source@457",
+                        "span": {
+                          "start": 537,
+                          "end": 543
+                        }
+                      },
+                      {
+                        "kind": "Binding",
+                        "binding": "source@457",
+                        "span": {
+                          "start": 551,
+                          "end": 557
+                        }
+                      }
+                    ]
+                  },
+                  "span": {
+                    "start": 505,
+                    "end": 564
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "kind": "Interpolation",
+                  "value": {
+                    "code": "index + 1",
+                    "span": {
+                      "start": 577,
+                      "end": 586
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "index@465",
+                        "span": {
+                          "start": 577,
+                          "end": 582
+                        }
+                      }
+                    ]
+                  },
+                  "span": {
+                    "start": 576,
+                    "end": 587
+                  }
+                },
+                {
+                  "kind": "Text",
+                  "value": ". ",
+                  "span": {
+                    "start": 587,
+                    "end": 589
+                  }
+                },
+                {
+                  "kind": "Interpolation",
+                  "value": {
+                    "code": "source.title",
+                    "span": {
+                      "start": 590,
+                      "end": 602
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "source@457",
+                        "span": {
+                          "start": 590,
+                          "end": 596
+                        }
+                      }
+                    ]
+                  },
+                  "span": {
+                    "start": 589,
+                    "end": 603
+                  }
+                },
+                {
+                  "kind": "Interpolation",
+                  "value": {
+                    "code": "source.kind === \"book\" && source.note ? ` (${source.note.trim()})` : \"\"",
+                    "span": {
+                      "start": 615,
+                      "end": 686
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "source@457",
+                        "span": {
+                          "start": 615,
+                          "end": 621
+                        }
+                      },
+                      {
+                        "kind": "Binding",
+                        "binding": "source@457",
+                        "span": {
+                          "start": 641,
+                          "end": 647
+                        }
+                      },
+                      {
+                        "kind": "Binding",
+                        "binding": "source@457",
+                        "span": {
+                          "start": 660,
+                          "end": 666
+                        }
+                      }
+                    ]
+                  },
+                  "span": {
+                    "start": 614,
+                    "end": 687
+                  }
+                },
+                {
+                  "kind": "If",
+                  "branches": [
+                    {
+                      "condition": {
+                        "code": "source.kind === \"link\"",
+                        "span": {
+                          "start": 699,
+                          "end": 721
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "source@457",
+                            "span": {
+                              "start": 699,
+                              "end": 705
+                            }
+                          }
+                        ]
+                      },
+                      "children": [
+                        {
+                          "kind": "Element",
+                          "tag": "button",
+                          "attributes": [
+                            {
+                              "kind": "Static",
+                              "name": "type",
+                              "value": "button",
+                              "span": {
+                                "start": 747,
+                                "end": 760
+                              }
+                            },
+                            {
+                              "kind": "Event",
+                              "event": "click",
+                              "handler": {
+                                "kind": "Inline",
+                                "function": {
+                                  "parameters": [],
+                                  "body": {
+                                    "code": "emit(\"open\", source.href)",
+                                    "span": {
+                                      "start": 776,
+                                      "end": 801
+                                    },
+                                    "refs": [
+                                      {
+                                        "kind": "Emit",
+                                        "binding": "emit@326",
+                                        "event": "open",
+                                        "span": {
+                                          "start": 776,
+                                          "end": 801
+                                        },
+                                        "arguments": [
+                                          {
+                                            "start": 789,
+                                            "end": 800
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "kind": "Binding",
+                                        "binding": "source@457",
+                                        "span": {
+                                          "start": 789,
+                                          "end": 795
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "expression": true,
+                                  "span": {
+                                    "start": 770,
+                                    "end": 801
+                                  }
+                                },
+                                "span": {
+                                  "start": 770,
+                                  "end": 801
+                                }
+                              },
+                              "span": {
+                                "start": 761,
+                                "end": 802
+                              }
+                            }
+                          ],
+                          "children": [
+                            {
+                              "kind": "Interpolation",
+                              "value": {
+                                "code": "`Open ${source.title}`",
+                                "span": {
+                                  "start": 819,
+                                  "end": 841
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "source@457",
+                                    "span": {
+                                      "start": 827,
+                                      "end": 833
+                                    }
+                                  }
+                                ]
+                              },
+                              "span": {
+                                "start": 818,
+                                "end": 842
+                              }
+                            }
+                          ],
+                          "span": {
+                            "start": 739,
+                            "end": 864
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 699,
+                        "end": 876
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 699,
+                    "end": 876
+                  }
+                }
+              ],
+              "span": {
+                "start": 485,
+                "end": 891
+              }
+            },
+            "span": {
+              "start": 444,
+              "end": 900
+            }
+          }
+        ],
+        "span": {
+          "start": 390,
+          "end": 911
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Reading",
+      "span": {
+        "start": 257,
+        "end": 918
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Source",
+      "exported": true,
+      "code": "type Source =\n  | { kind: \"link\"; id: string; title: string; href: string }\n  | { kind: \"book\"; id: string; title: string; note?: string };",
+      "span": {
+        "start": 60,
+        "end": 199
+      }
+    },
+    {
+      "name": "ReadingProps",
+      "exported": true,
+      "code": "interface ReadingProps {\n  sources: Source[];\n}",
+      "span": {
+        "start": 208,
+        "end": 255
+      }
+    }
+  ]
+}

@@ -1,9 +1,9 @@
 // The IR as Solid's JSX needs it printed, where that differs from the IR's own shape:
 //
 // - An interpolated conditional whose branch prints as a bare name (`{done ? title : "-"}`,
-//   with `title` a list's item, a setup constant, a value a keyed branch's callback received, or a
-//   global such as `undefined`; a prop prints as `props.title`, state as `count()` and a value an
-//   accessor reads as `user()`) is a case of `<Show>` to eslint-plugin-solid
+//   with `title` a setup constant, a value a keyed branch's callback received, or a global such as
+//   `undefined`; a prop prints as `props.title`, a list's item as `title.value`, state as
+//   `count()` and a value an accessor reads as `user()`) is a case of `<Show>` to eslint-plugin-solid
 //   (`solid/prefer-show`, which L5 runs, ADR-0042): it reads it as content shown under a
 //   condition, and so does the output, which keeps the same text.
 // - Solid compiles an element's static content into an HTML template, which the browser

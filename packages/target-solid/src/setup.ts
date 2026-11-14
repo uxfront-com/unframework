@@ -57,7 +57,7 @@ import {
   watcherHelperCode,
 } from "./helpers.ts";
 import type { WatcherUses } from "./helpers.ts";
-import { eventProp, listIndexes } from "./props.ts";
+import { eventProp } from "./props.ts";
 import type { SolidProps } from "./props.ts";
 import { edited, untrackEdits } from "./untracked.ts";
 
@@ -154,7 +154,15 @@ export class SolidCode {
         this.#reading.add(item.binding);
       }
     }
-    const indexes = listIndexes(component);
+    // Each list's index, by the name of the item whose row it is read through.
+    const rowItems = new Map<BindingId, string>();
+    walk(component.render, {
+      enter: (node) => {
+        if (node.kind === "For" && node.index !== undefined) {
+          rowItems.set(node.index, this.#binding(node.item).name);
+        }
+      },
+    });
     this.rules = {
       binding: (reference, binding, text) => {
         // A read a condition narrows, where Solid's spelling loses it (src/asserted.ts).
@@ -162,9 +170,12 @@ export class SolidCode {
         switch (binding.kind) {
           case "prop":
             return `${props.read(binding, text)}${asserted}`;
-          case "loopVar":
-            // `<For>` passes the index as an accessor.
-            return indexes.has(binding.id) ? `${text}()` : text;
+          case "loopVar": {
+            // A keyed list's row is an object of getters named as the item, which TypeScript
+            // narrows as it narrows the props (src/jsx.ts, ADR-0096).
+            const item = rowItems.get(binding.id);
+            return item === undefined ? `${text}.value` : `${item}.index`;
+          }
           // A composable returns its state and derived values as accessors (ADR-0069).
           case "state":
           case "derived":

@@ -987,9 +987,8 @@ export class Narrowings {
    * an arrow's parameter, a global, the object form's parameter), an import or a helper the
    * output claimed, a name a callback around it gives another path, or a name this callback
    * gives another path. Then a free name is claimed from the file's name scope, and a name kept
-   * is reserved there, so nothing claimed later takes it. A keyed callback's value takes a list's
-   * item's name, as every read of it inside is the narrowed value. An accessor takes the name of
-   * a binding it narrows whole (a list's item, a state) only in a branch without client code
+   * is reserved there, so nothing claimed later takes it. An accessor takes the name of a
+   * binding it narrows whole (a state) only in a branch without client code
    * (`accessor-only`): a handler inside would read the accessor, which throws once the branch's
    * test fails, where the source reads the binding; every render read of the binding goes
    * through the accessor anyway.
@@ -1015,14 +1014,10 @@ export class Narrowings {
       const enclosing = this.#frames.some((frame) =>
         frame.names.some((entry) => entry.name === preferred && !samePath(entry.path, path)),
       );
-      // Keyed, a list's variable taken whole is every read of it inside, so its own name
-      // captures nothing (UF3024 rejects a parameter that would shadow it); an accessor may take
-      // the name of a binding that prints as it (a list's variable, a state's or a derived
+      // An accessor may take the name of a binding that prints as it (a state's or a derived
       // value's accessor) where no client code inside would read it.
       const printed = printedAsName(jsxBinding(path.binding, context).kind);
-      const shadows =
-        key === undefined &&
-        (mode === "keyed" ? printed === "loopVar" : mode === "accessor-only" && Boolean(printed));
+      const shadows = key === undefined && mode === "accessor-only" && Boolean(printed);
       if (
         (this.#bare.has(preferred) && !shadows) ||
         claimed ||
@@ -1306,18 +1301,18 @@ function replaced(
 
 /**
  * How a binding of a kind prints in a template, where a branch's callback might take its name: a
- * list's variable as its name, a state's or a derived value's as its accessor's (`count()`); a
- * prop never as its name alone (`props.count`), and nothing else reaches a template.
+ * state's or a derived value's as its accessor's (`count()`); a prop or a list's item never as its
+ * name alone (`props.count`, `item.value`, ADR-0096), and nothing else reaches a template.
  */
-function printedAsName(kind: BindingKind): "loopVar" | "accessor" | undefined {
+function printedAsName(kind: BindingKind): "accessor" | undefined {
   switch (kind) {
-    case "loopVar":
-      return "loopVar";
     case "state":
     case "derived":
     case "usedState":
     case "usedDerived":
       return "accessor";
+    // A keyed list's row reads its item and index as getters (ADR-0096), as a prop.
+    case "loopVar":
     case "prop":
     case "templateRef":
     case "localConst":

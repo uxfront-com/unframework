@@ -122,6 +122,13 @@ export const astro: Target = defineTarget({
     composables: { support: "native" },
     "composable-effect-order": inert("A composable's watchers, effects and hooks never run"),
     hydration: { support: "unsupported", code: "UF4001", severity: "info", reason: STATIC },
+    // No list requires it: the specs that reorder or replace a list's items do (ADR-0096).
+    "keyed-identity": {
+      support: "unsupported",
+      code: "UF4001",
+      severity: "info",
+      reason: "Astro renders a list once on the server, so nothing reorders it in the page.",
+    },
   },
   /**
    * One `.astro` file: the frontmatter at the very top (where Astro reads it, and where the

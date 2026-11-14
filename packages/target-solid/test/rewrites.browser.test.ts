@@ -177,3 +177,30 @@ it("updates the branches that narrow, as their references come and go", async ()
   vi.restoreAllMocks();
   expect(logged).toEqual([]);
 });
+
+// The keyed list (ADR-0096): a row follows its key, so it keeps its element when its item is
+// replaced by a copy and when the list reorders, and reads the latest item and index.
+it("keeps a keyed row's element across copies and reorders, and renders a duplicate key's rows", async () => {
+  document.body.append(container);
+  const rows = (...entries: [number, string][]) => entries.map(([id, label]) => ({ id, label }));
+  const mounted = await mount(await fixture("KeyedRows"), container, {
+    props: { rows: rows([1, "Ada"], [2, "Grace"], [3, "Alan"]) },
+  });
+  const items = () => [...container.querySelectorAll("li")];
+  const [ada, grace, alan] = items();
+  await mounted.rerender?.({ rows: rows([3, "Alan Turing"], [1, "Ada"], [2, "Grace"]) });
+  expect(items()).toEqual([alan, ada, grace]);
+  expect(items().map((item) => [item.textContent, item.dataset.index])).toEqual([
+    ["Alan Turing", "0"],
+    ["Ada", "1"],
+    ["Grace", "2"],
+  ]);
+  // Keys are unique at run time (ADR-0035); a key used twice still renders each of its items.
+  await mounted.rerender?.({ rows: rows([1, "Ada"], [1, "Ada again"], [2, "Grace"]) });
+  expect(items().map((item) => item.textContent)).toEqual(["Ada", "Ada again", "Grace"]);
+  expect(items()[0]).toBe(ada);
+  expect(items()[2]).toBe(grace);
+  await mounted.rerender?.({ rows: [] });
+  expect(items()).toEqual([]);
+  await mounted.unmount();
+});

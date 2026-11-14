@@ -68,6 +68,7 @@ const html = defineTarget({
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
     hydration: { support: "native" },
+    "keyed-identity": { support: "native" },
   },
   emit: (component) => [{ path: `${component.name}.html`, contents: "<p></p>\n" }],
 });
