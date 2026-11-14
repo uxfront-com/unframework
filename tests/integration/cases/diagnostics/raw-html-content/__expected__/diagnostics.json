@@ -48,6 +48,6 @@
       "column": 26,
       "offset": 426
     },
-    "help": "Write the text as children."
+    "help": "A <textarea>'s text is its value: bind it with `v-model`."
   }
 ]

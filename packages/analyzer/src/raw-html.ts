@@ -61,9 +61,12 @@ export function lowerRawHtml(
         ? `<${tag}> is a void element: it holds no content for \`${RAW_HTML}\` to set.`
         : `The content of <${tag}> is text, which the targets set apart from \`${RAW_HTML}\`.`,
       {
-        help: TEXT_ONLY_ELEMENTS.has(tag)
-          ? "Write the text as children."
-          : "Put the markup in an element that holds content, such as a <div> or a <span>.",
+        help:
+          tag === "textarea"
+            ? "A <textarea>'s text is its value: bind it with `v-model`."
+            : TEXT_ONLY_ELEMENTS.has(tag)
+              ? "Write the text as children."
+              : "Put the markup in an element that holds content, such as a <div> or a <span>.",
       },
     );
   } else if (hasChildren) {
