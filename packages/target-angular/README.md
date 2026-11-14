@@ -6,15 +6,15 @@ templates, whose host element has `display: contents` (decision D6, ADR-0010).
 ## Output
 
 One `<kebab-name>.ts` file per component (plan §6), in this order: the imports from
-`@angular/core` and `@angular/common`, of the children's output files, of the composables'
+`@angular/core`, `@angular/common` and `@angular/platform-browser`, of the children's output files, of the composables'
 (`./use-toggle`, ADR-0069) and of the values the source imports from `.ts` modules, each under a
 name no source name takes; the type declarations; the module's constants the component reads, and
 those they read, as written (`const GAP = sizes.sm * 2;`, ADR-0070); the application's id
 counter, an injection token (`idCounter`, ADR-0095), when the component makes ids; the
 injection tokens of the module's keys; the inline helpers (`refObject`, the native controls'
-`modelText`, `toggle`, `selectedValues`, `optionText`); the slot directives; the directives its listeners'
-options need; the pipe `innerHTML` reads its markup through (`TrustedHtmlPipe`, ADR-0097); the
-component.
+`modelText`, `toggle`, `selectedValues`, `optionText`); the slot directives; the pipe `innerHTML`
+reads its markup through (`TrustedHtmlPipe`, ADR-0097); the directives its listeners'
+options need; the component.
 
 - **Types.** The source's type declarations the output reads (its inputs' and outputs' types, the
   setup's annotations and code) and every exported one, copied as written and exported as the
