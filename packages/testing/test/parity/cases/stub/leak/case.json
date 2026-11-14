@@ -1,0 +1,3 @@
+{
+  "description": "A stub that appends a toast to `body` and never removes it: the after-test check fails L8 (ADR-0098)."
+}

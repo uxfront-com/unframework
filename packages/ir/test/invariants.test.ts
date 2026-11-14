@@ -51,6 +51,7 @@ import {
   createParameter,
   createParameterPattern,
   createRawHtmlAttribute,
+  createTeleportNode,
   createRefAttribute,
   createRefSource,
   createWriteReference,
@@ -390,6 +391,8 @@ describe("checkInvariants on M1's IR", () => {
 
   it.each<[string, ElementNode | FragmentNode]>([
     ["raw HTML on an element without children", node("div", [createRawHtmlAttribute(label(), at)])],
+    // A teleport around one element (ADR-0098).
+    ["a teleport", node("div", [], [createTeleportNode("body", [node("p", [], [text("a")])], at)])],
     [
       "a bound attribute of each kind",
       node("button", [
@@ -703,6 +706,31 @@ describe("checkInvariants on M1's IR", () => {
       'must set "title" once',
     ],
     ["two styles", node("p", [style(), style()]), "/attributes/1", 'must set "style" once'],
+    // Teleports (ADR-0098).
+    [
+      "a teleport to an empty selector",
+      node("div", [], [createTeleportNode(" ", [node("p")], at)]),
+      "/children/0/to",
+      "must be a CSS selector",
+    ],
+    [
+      "a teleport around text",
+      node("div", [], [createTeleportNode("body", [text("a")], at)]),
+      "/children/0/children",
+      "must hold exactly one element",
+    ],
+    [
+      "a teleport around two elements",
+      node("div", [], [createTeleportNode("body", [node("p"), node("p")], at)]),
+      "/children/0/children",
+      "must hold exactly one element",
+    ],
+    [
+      "a teleport in SVG",
+      svg(createTeleportNode("body", [node("p")], at)),
+      "/children/0",
+      "must not be inside SVG",
+    ],
     // Raw HTML (ADR-0097).
     [
       "raw HTML beside children",

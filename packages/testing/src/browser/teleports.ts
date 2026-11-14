@@ -18,6 +18,9 @@ export type TeleportOwner = object;
 /** The owner of each claimed element. */
 const owners = new WeakMap<Element, TeleportOwner>();
 
+/** The test id each claimed element carries for its view, which no capture shows. */
+const stamps = new WeakMap<Element, string>();
+
 /** The elements in `body` when the test started, which nothing in it teleported. */
 let baseline = new WeakSet<Element>(document.body.children);
 
@@ -48,6 +51,7 @@ export function teleportedBy(owner: TeleportOwner, stamp?: string): Element[] {
           );
         }
         element.setAttribute("data-testid", stamp);
+        stamps.set(element, stamp);
       }
       owners.set(element, owner);
     }
@@ -80,6 +84,7 @@ export function leftInBody(): string[] {
     .filter((element) => !baseline.has(element) && !holdsRoot(element))
     .map((element) => {
       const attributes = [...element.attributes]
+        .filter(({ name, value }) => name !== "data-testid" || stamps.get(element) !== value)
         .map(({ name, value }) => (value === "" ? ` ${name}` : ` ${name}="${value}"`))
         .join("");
       return `<${element.localName}${attributes}>`;
