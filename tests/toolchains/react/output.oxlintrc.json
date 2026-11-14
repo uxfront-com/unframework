@@ -28,7 +28,7 @@
       {
         "patterns": [
           {
-            "group": ["*", "!react", "!react/*", "!virtual:*", "!./**", "!../**"],
+            "group": ["*", "!react", "!react/*", "!react-dom", "!virtual:*", "!./**", "!../**"],
             "message": "An output imports only its framework (P7).",
             "allowTypeImports": true
           }

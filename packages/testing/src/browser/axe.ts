@@ -34,8 +34,13 @@ export interface AxeComparison {
 export async function compareAxe(
   element: Element,
   expected: readonly string[],
+  teleported: readonly Element[] = [],
 ): Promise<AxeComparison> {
-  const results = await axe.run(element, AXE_OPTIONS);
+  // What the view teleported is checked with it (ADR-0098).
+  const results = await axe.run(
+    teleported.length ? { include: [element, ...teleported] } : element,
+    AXE_OPTIONS,
+  );
   const actual = [...new Set(results.violations.map((violation) => violation.id))].toSorted();
   const wanted = [...new Set(expected)].toSorted();
   if (actual.join("\n") === wanted.join("\n")) return { pass: true, unexpected: [], missing: [] };

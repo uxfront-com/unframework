@@ -162,13 +162,14 @@ export const TELEPORT_ATTRIBUTE = "ufTeleport";
  * container, which keeps the view in its component's change detection, and moves the view's
  * nodes into `to`, as the CDK's `DomPortalOutlet` does. The container holds that one view, so
  * Angular never inserts a node before one it moved, and it removes a node from wherever it is.
- * Destroying a view removes none of its nodes, so it removes them with the component.
+ * Destroying a view removes none of its nodes, so it removes them with the component. It is
+ * exported, as ngtsc's type-check imports every directive a template uses.
  */
 export function teleportDirectiveCode(className: string, imports: ImportSet): string {
   const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
   return `/** Mounts its template's content into the element \`${TELEPORT_ATTRIBUTE}\` selects once rendered, and removes it on destroy. */
 @${core("Directive")}({ selector: "ng-template[${TELEPORT_ATTRIBUTE}]" })
-class ${className} {
+export class ${className} {
   readonly ${TELEPORT_ATTRIBUTE} = ${core("input")}.required<string>();
 
   constructor() {

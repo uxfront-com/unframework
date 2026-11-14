@@ -39,6 +39,7 @@ import {
 } from "./hydrate.ts";
 import type { Hydrated } from "./hydrate.ts";
 import { takePreventedNavigations } from "./navigation.ts";
+import { teleportedBy, withoutStamps } from "./teleports.ts";
 import { expectParity } from "./parity.ts";
 import type { ParityOptions } from "./parity.ts";
 import { registeredAdapter } from "./target.ts";
@@ -300,7 +301,14 @@ async function mountWith(
   }
   report(instance);
 
+  // The container, and what the view teleported (ADR-0098), which carries its test id: the
+  // container is first in `body`, since it is there before the component mounts.
   const locator = page.getByTestId(testId);
+  const containerLocator = locator.first();
+  const owner = {};
+  const teleported = () => teleportedBy(owner, testId);
+  const teleportedLocators = () =>
+    teleported().map((element, index) => ({ element, locator: locator.nth(index + 1) }));
   // The engine too: Firefox serialises some prefixed properties under its own alias (ADR-0081).
   // Outside the harness (this package's own tests) nothing provides it.
   const engine = (inject("ufHarness") as HarnessContext | undefined)?.browser;
@@ -311,15 +319,26 @@ async function mountWith(
     ...(hydrating ? { hydrated: true } : {}),
   };
   // A target the normaliser does not know (a test stub) has no framework noise to remove.
-  const dom = () => normalizeDomWithIds(container, normalizeOptions);
+  const dom = () => {
+    const elements = teleported();
+    return withoutStamps(elements, testId, () =>
+      normalizeDomWithIds(container, normalizeOptions, elements),
+    );
+  };
   const html = () => dom().html;
   const aria = async () => {
     // Angular's hosts are inline for the snapshot alone, so they add no space (ADR-0060).
-    const restore = inlineHosts(container, isNormalizeTarget(target) ? target : undefined);
+    const hostTarget = isNormalizeTarget(target) ? target : undefined;
+    const roots = [{ element: container, locator: containerLocator }, ...teleportedLocators()];
+    const restores = roots.map(({ element }) => inlineHosts(element, hostTarget));
     try {
-      return await commands.ufAriaSnapshot(locator.serialize());
+      const snapshots: string[] = [];
+      for (const root of roots) {
+        snapshots.push((await commands.ufAriaSnapshot(root.locator.serialize())).trimEnd());
+      }
+      return snapshots.filter(Boolean).join("\n");
     } finally {
-      restore();
+      for (const restore of restores) restore();
     }
   };
   /** Fails with what the page or the payloads refused since the last settle. */
@@ -461,7 +480,11 @@ async function mountWith(
     },
     events: () => emittedArgs("view.events").map((event) => [event.name, ...event.args]),
     expectParity: (name, parityOptions) =>
-      expectParity({ ...view, trace, dom, aria }, name, parityOptions),
+      expectParity(
+        { ...view, containerLocator, teleported: teleportedLocators, trace, dom, aria },
+        name,
+        parityOptions,
+      ),
     expectThrown: (action) =>
       expectThrown(
         {
@@ -502,7 +525,7 @@ async function mountWith(
           component,
           initial,
           declared,
-          (root) => normalizeDomWithIds(root, normalizeOptions).html,
+          (root, elements) => normalizeDomWithIds(root, normalizeOptions, elements).html,
         ),
     });
   }

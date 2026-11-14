@@ -35,7 +35,10 @@ export interface ParityOptions {
 export interface ParityView {
   target: string;
   container: HTMLElement;
-  locator: Locator;
+  /** The container alone: `locator` matches what the view teleported too (ADR-0098). */
+  containerLocator: Locator;
+  /** What the view teleported, each with its own locator, in `body` order (ADR-0098). */
+  teleported(): { element: Element; locator: Locator }[];
   /** Playwright's ARIA snapshot of the root, without Angular's host spaces (ADR-0060). */
   aria(): Promise<string>;
   /** The normalised DOM, and the renaming of the generated ids it found. */
@@ -125,7 +128,8 @@ export async function expectParity(
               case: caseId,
               name,
               container: view.container,
-              locator: view.locator,
+              locator: view.containerLocator,
+              teleported: view.teleported(),
               ...(options.tolerance ? { tolerance: options.tolerance } : {}),
             });
             // Nothing to compare with: the summary fails the run once, naming the reference's
@@ -145,7 +149,11 @@ export async function expectParity(
         }
       : {}),
     async L11() {
-      const { pass, unexpected, missing } = await compareAxe(view.container, declaredAxe);
+      const { pass, unexpected, missing } = await compareAxe(
+        view.container,
+        declaredAxe,
+        view.teleported().map(({ element }) => element),
+      );
       if (pass) return;
       const lines = [...unexpected];
       if (missing.length) {

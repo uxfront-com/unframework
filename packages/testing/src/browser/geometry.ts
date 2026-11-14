@@ -102,19 +102,27 @@ const toBox = (rect: DOMRect, origin: DOMRect): GeometryBox => [
   rect.height,
 ];
 
-/** Snapshots the boxes and computed styles of every element and text node under a container. */
-export function captureGeometry(container: Element): GeometrySnapshot {
+/**
+ * Snapshots the boxes and computed styles of every element and text node under a container, then
+ * of each element the view teleported (ADR-0098), measured from the container's origin under
+ * `uf:teleported[i]/`.
+ */
+export function captureGeometry(
+  container: Element,
+  teleported: readonly Element[] = [],
+): GeometrySnapshot {
   const origin = container.getBoundingClientRect();
   const nodes: Record<string, GeometryNode> = {};
 
-  const visit = (parent: Node, prefix: string) => {
+  const visit = (parent: Node, prefix: string) => visitNodes(flatten(parent), prefix);
+  const visitNodes = (children: readonly Node[], prefix: string) => {
     const counters = new Map<string, number>();
     const next = (key: string) => {
       const index = counters.get(key) ?? 0;
       counters.set(key, index + 1);
       return `${prefix}${key}[${index}]`;
     };
-    for (const child of flatten(parent)) {
+    for (const child of children) {
       if (child.nodeType === Node.TEXT_NODE) {
         if (!child.textContent?.trim()) continue;
         const range = document.createRange();
@@ -140,6 +148,9 @@ export function captureGeometry(container: Element): GeometrySnapshot {
     }
   };
   visit(container, "");
+  for (const [index, element] of teleported.entries()) {
+    visitNodes([element], `uf:teleported[${index}]/`);
+  }
   return { version: 1, nodes };
 }
 

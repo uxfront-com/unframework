@@ -20,7 +20,23 @@ import {
   isText as isTreeText,
   parseHtml,
 } from "../normalize/tree.ts";
-import type { TreeElement, TreeParent } from "../normalize/tree.ts";
+import type { TreeChild, TreeElement, TreeParent } from "../normalize/tree.ts";
+
+/**
+ * The element that holds each element a view teleported, after the root's children in the DOM
+ * capture (ADR-0098): it shows which nodes left the component, as the `uf:` pseudo-attributes
+ * show state the markup does not.
+ */
+export const TELEPORTED = "uf:teleported";
+
+/** The layout the normaliser reads for a marker: a block, as an element of `body` is. */
+const TELEPORTED_LAYOUT = {
+  display: "block",
+  position: "static",
+  float: "none",
+  unicodeBidi: "isolate",
+  whiteSpaceCollapse: "collapse",
+};
 
 const HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
 const XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/";
@@ -199,15 +215,33 @@ export function normalizeDom(root: Element, options: NormalizeOptions = {}): str
 
 /**
  * {@link normalizeDom}, with the renaming of the generated ids it found, from each original id
- * to its `uf-id-N`: a trace renames the ids a step's emitted payloads carry with it.
+ * to its `uf-id-N`: a trace renames the ids a step's emitted payloads carry with it. Each element
+ * in `teleported` follows the root's children, in a `<uf:teleported>` marker (ADR-0098).
  */
 export function normalizeDomWithIds(
   root: Element,
   options: NormalizeOptions = {},
+  teleported: readonly Element[] = [],
 ): { html: string; ids: Map<string, string> } {
   checkOptions(options);
-  const parsed = parseHtml(serializeDom(root));
-  const mismatch = compareTrees(holderOf(root), parsed, "");
+  const markup = teleported
+    .map((element) => `<${TELEPORTED}>${serializeElement(element)}</${TELEPORTED}>`)
+    .join("");
+  const parsed = parseHtml(serializeDom(root) + markup);
+  const children = childrenOf(parsed);
+  const own = children.slice(0, children.length - teleported.length);
+  const markers = children.slice(own.length);
+  if (!markers.every((marker) => isTreeElement(marker) && marker.tagName === TELEPORTED)) {
+    throw new Error(
+      `normalizeDom: the teleported elements do not parse as the ${TELEPORTED} markers after the root's children: their HTML closes something it did not open.`,
+    );
+  }
+  let mismatch = compareItems(holderOf(root).childNodes, own, "");
+  for (const [index, marker] of (markers as TreeElement[]).entries()) {
+    // A box of its own in `body`, as the teleported element is.
+    recordComputedLayout(marker, TELEPORTED_LAYOUT);
+    mismatch ??= compareItems([teleported[index]!], childrenOf(marker), TELEPORTED);
+  }
   if (mismatch) {
     throw new Error(
       `normalizeDom: the live DOM has a structure HTML cannot express, so the HTML parser would rebuild it differently: ${mismatch}`,
@@ -244,12 +278,21 @@ function itemsOf<N, E extends N>(
  * attribute values differ, or that only one tree has, and text that reads back changed.
  */
 function compareTrees(live: Node, parsed: TreeParent, path: string): string | undefined {
-  const liveItems = itemsOf(live.childNodes, (node): Item<Element> => {
+  return compareItems(live.childNodes, childrenOf(parsed), path);
+}
+
+/** {@link compareTrees} over two lists of children. */
+function compareItems(
+  live: Iterable<Node>,
+  parsed: Iterable<TreeChild>,
+  path: string,
+): string | undefined {
+  const liveItems = itemsOf(live, (node): Item<Element> => {
     if (isElement(node)) return { element: node };
     if (isText(node)) return { text: node.data };
     return { other: node.nodeName };
   });
-  const parsedItems = itemsOf(childrenOf(parsed), (node): Item<TreeElement> => {
+  const parsedItems = itemsOf(parsed, (node): Item<TreeElement> => {
     if (isTreeElement(node)) return { element: node };
     if (isTreeText(node)) return { text: node.value };
     return { other: node.nodeName };

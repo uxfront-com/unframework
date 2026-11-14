@@ -5,7 +5,11 @@
 // moved: the element follows the empty text Qwik renders for `{""}`, in a fragment, so the
 // fragment's first DOM node is that text, which stays where Qwik put it. Qwik removes a node with
 // `remove()`, wherever it is, and the helper removes the element once the text leaves the
-// document, as it does when a branch or an element around the teleport goes.
+// document, as it does when a branch or an element around the teleport goes. Qwik also finds a
+// handler's container up from its element (`getDomContainer`), so an element moved out of its
+// container carries the container's `q:container` and its `qContainer`, and stands in for it: its
+// handlers then run in the component's container, as they do where `to` is inside it (an SSR
+// page, whose container is `<html>`).
 import { js, jsxElement } from "@unframework.dev/codegen";
 import type { JsxDialect } from "@unframework.dev/codegen";
 import { walk } from "@unframework.dev/ir";
@@ -21,6 +25,8 @@ export interface TeleportNames {
   helper: string;
   /** The elements the helper has taken, which a later render's ref leaves alone. */
   taken: string;
+  /** The selector of a Qwik container's element. */
+  container: string;
 }
 
 /** The names a component's teleports need, claimed where its template holds one. */
@@ -39,6 +45,7 @@ export function teleportNames(
         mounted: names.fresh("mounted"),
         helper: names.once("teleport"),
         taken: names.once("teleported"),
+        container: names.once("QWIK_CONTAINER"),
       }
     : undefined;
 }
@@ -75,13 +82,17 @@ export function teleportJsx(teleport: TeleportNames): NonNullable<JsxDialect["te
  * The inline helper, after the component. Qwik calls a ref again when its value changes, and each
  * render makes a new one, so the helper takes an element once.
  */
-export function teleportHelper({ helper: name, taken }: TeleportNames): string {
+export function teleportHelper({ helper: name, taken, container }: TeleportNames): string {
   return `/** The elements \`${name}\` has taken. */
 const ${taken} = new WeakSet<Element>();
 
+/** The element of a Qwik container, as Qwik selects it. */
+const ${container} = "[q\\\\:container]:not([q\\\\:container=html]):not([q\\\\:container=text])";
+
 /**
  * A ref that moves its element into the element \`to\` selects once Qwik has inserted it, after the
- * empty text before it, and removes it once that text leaves the document.
+ * empty text before it, and removes it once that text leaves the document. Moved out of its Qwik
+ * container, it stands in for it, so its handlers still find their container.
  */
 function ${name}(to: string): (element: Element) => void {
   return (element) => {
@@ -94,6 +105,13 @@ function ${name}(to: string): (element: Element) => void {
         anchor = element.previousSibling;
         const target = document.querySelector(to);
         if (target && anchor) {
+          // Qwik finds a handler's container up from its element (\`getDomContainer\`): outside it,
+          // the element stands in for it.
+          const container = element.closest(${container});
+          if (container && target.closest(${container}) !== container) {
+            element.setAttribute("q:container", container.getAttribute("q:container") ?? "");
+            Object.assign(element, { qContainer: Reflect.get(container, "qContainer") });
+          }
           target.append(element);
           return;
         }

@@ -53,12 +53,16 @@ export function mergeTextRuns(root: Element): () => void {
 }
 
 /** Runs `capture` with the text runs under `root` merged, and restores them afterwards. */
-export async function withMergedTextRuns<T>(root: Element, capture: () => Promise<T>): Promise<T> {
-  const restore = mergeTextRuns(root);
+export async function withMergedTextRuns<T>(
+  roots: Element | readonly Element[],
+  capture: () => Promise<T>,
+): Promise<T> {
+  // A view's container, and what it teleported (ADR-0098).
+  const restores = (Array.isArray(roots) ? roots : [roots]).map((root) => mergeTextRuns(root));
   try {
     return await capture();
   } finally {
-    restore();
+    for (const restore of restores.toReversed()) restore();
   }
 }
 

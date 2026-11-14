@@ -26,6 +26,7 @@ import { caseOfFile } from "../harness.ts";
 import { recordLayer } from "../layers.ts";
 import { captureExternalConsole } from "./console.ts";
 import { ROOT_ATTRIBUTE, settleFrame } from "./determinism.ts";
+import { teleportedBy } from "./teleports.ts";
 
 /** Whether this project hydrates (`test.provide.ufHydrate`). */
 export function isHydrateProject(): boolean {
@@ -174,8 +175,10 @@ export async function clientRender(
   component: unknown,
   props: Readonly<Record<string, unknown>> | undefined,
   events: readonly MountEvent[],
-  normalize: (root: HTMLElement) => string,
+  normalize: (root: HTMLElement, teleported: readonly Element[]) => string,
 ): Promise<string> {
+  // What it teleports is its own, not the hydrated view's (ADR-0098).
+  const owner = {};
   const form = document.createElement("form");
   const root = document.createElement("div");
   root.setAttribute(ROOT_ATTRIBUTE, "");
@@ -189,7 +192,7 @@ export async function clientRender(
       let previous: string | undefined;
       for (let round = 0; round < CLIENT_SETTLE_ROUNDS; round += 1) {
         await settleFrame(() => instance.settle());
-        const html = normalize(root);
+        const html = normalize(root, teleportedBy(owner));
         if (html === previous) return html;
         previous = html;
       }
