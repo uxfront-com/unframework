@@ -34,7 +34,7 @@
       }
     },
     "basics/nested-and-void": {
-      "time": 2.28,
+      "time": 2.65,
       "sizes": {
         "react": {
           "raw": 1677,
@@ -67,7 +67,7 @@
       }
     },
     "bindings/assigned-values": {
-      "time": 4.37,
+      "time": 5.3,
       "sizes": {
         "react": {
           "raw": 1477,
@@ -82,8 +82,8 @@
           "gzip": 634
         },
         "solid": {
-          "raw": 895,
-          "gzip": 524
+          "raw": 1184,
+          "gzip": 654
         },
         "angular": {
           "raw": 2230,
@@ -100,7 +100,7 @@
       }
     },
     "bindings/class-array": {
-      "time": 4.76,
+      "time": 4.81,
       "sizes": {
         "react": {
           "raw": 1050,
@@ -133,7 +133,7 @@
       }
     },
     "bindings/class-merge": {
-      "time": 4.78,
+      "time": 5.14,
       "sizes": {
         "react": {
           "raw": 1256,
@@ -166,7 +166,7 @@
       }
     },
     "bindings/class-object": {
-      "time": 4.16,
+      "time": 4.78,
       "sizes": {
         "react": {
           "raw": 1041,
@@ -199,7 +199,7 @@
       }
     },
     "bindings/class-runtime-collections": {
-      "time": 7.08,
+      "time": 7.89,
       "sizes": {
         "react": {
           "raw": 1677,
@@ -232,7 +232,7 @@
       }
     },
     "bindings/class-string": {
-      "time": 3.2,
+      "time": 3.83,
       "sizes": {
         "react": {
           "raw": 1289,
@@ -265,7 +265,7 @@
       }
     },
     "bindings/everyday-values": {
-      "time": 2.78,
+      "time": 3.81,
       "sizes": {
         "react": {
           "raw": 1161,
@@ -298,7 +298,7 @@
       }
     },
     "bindings/nullable-spreads": {
-      "time": 10.07,
+      "time": 10.48,
       "sizes": {
         "react": {
           "raw": 2353,
@@ -313,8 +313,8 @@
           "gzip": 864
         },
         "solid": {
-          "raw": 2059,
-          "gzip": 874
+          "raw": 2356,
+          "gzip": 1003
         },
         "angular": {
           "raw": 3533,
@@ -331,7 +331,7 @@
       }
     },
     "bindings/spreads": {
-      "time": 5.03,
+      "time": 5.79,
       "sizes": {
         "react": {
           "raw": 1665,
@@ -364,7 +364,7 @@
       }
     },
     "bindings/style-expression": {
-      "time": 16.45,
+      "time": 18.93,
       "sizes": {
         "react": {
           "raw": 4370,
@@ -397,7 +397,7 @@
       }
     },
     "bindings/style-merge": {
-      "time": 3.61,
+      "time": 4.77,
       "sizes": {
         "react": {
           "raw": 887,
@@ -430,7 +430,7 @@
       }
     },
     "bindings/style-object": {
-      "time": 5.15,
+      "time": 6.38,
       "sizes": {
         "react": {
           "raw": 2002,
@@ -463,7 +463,7 @@
       }
     },
     "bindings/style-spread": {
-      "time": 9.48,
+      "time": 10.78,
       "sizes": {
         "react": {
           "raw": 3045,
@@ -496,7 +496,7 @@
       }
     },
     "bindings/style-string": {
-      "time": 3.23,
+      "time": 4.45,
       "sizes": {
         "react": {
           "raw": 1412,
@@ -529,7 +529,7 @@
       }
     },
     "bindings/table-display": {
-      "time": 4.23,
+      "time": 5.29,
       "sizes": {
         "react": {
           "raw": 2118,
@@ -562,7 +562,7 @@
       }
     },
     "bindings/vendor-prefixes": {
-      "time": 3.06,
+      "time": 4.05,
       "sizes": {
         "react": {
           "raw": 1416,
@@ -595,7 +595,7 @@
       }
     },
     "components/acronym-names": {
-      "time": 8.17,
+      "time": 9.72,
       "sizes": {
         "react": {
           "raw": 1305,
@@ -628,7 +628,7 @@
       }
     },
     "components/branch-content": {
-      "time": 7.83,
+      "time": 9.07,
       "sizes": {
         "react": {
           "raw": 1913,
@@ -661,7 +661,7 @@
       }
     },
     "components/framework-names": {
-      "time": 7.96,
+      "time": 10.06,
       "sizes": {
         "react": {
           "raw": 3304,
@@ -694,7 +694,7 @@
       }
     },
     "components/list-item-root": {
-      "time": 3.75,
+      "time": 5.36,
       "sizes": {
         "react": {
           "raw": 1483,
@@ -709,8 +709,8 @@
           "gzip": 784
         },
         "solid": {
-          "raw": 938,
-          "gzip": 658
+          "raw": 1243,
+          "gzip": 788
         },
         "qwik": {
           "raw": 1178,
@@ -723,7 +723,7 @@
       }
     },
     "components/list-rows": {
-      "time": 13.31,
+      "time": 15.7,
       "sizes": {
         "react": {
           "raw": 2298,
@@ -738,8 +738,8 @@
           "gzip": 1067
         },
         "solid": {
-          "raw": 1568,
-          "gzip": 976
+          "raw": 1851,
+          "gzip": 1099
         },
         "angular": {
           "raw": 3708,
@@ -756,7 +756,7 @@
       }
     },
     "components/local-sibling": {
-      "time": 3.82,
+      "time": 4.36,
       "sizes": {
         "react": {
           "raw": 1926,
@@ -789,7 +789,7 @@
       }
     },
     "components/named-import": {
-      "time": 4.99,
+      "time": 7.1,
       "sizes": {
         "react": {
           "raw": 2523,
@@ -822,7 +822,7 @@
       }
     },
     "components/props-and-events": {
-      "time": 10.54,
+      "time": 13.14,
       "sizes": {
         "react": {
           "raw": 2254,
@@ -855,7 +855,7 @@
       }
     },
     "components/recursion": {
-      "time": 2.3,
+      "time": 3.14,
       "sizes": {
         "react": {
           "raw": 977,
@@ -888,7 +888,7 @@
       }
     },
     "components/three-levels": {
-      "time": 6.59,
+      "time": 8.29,
       "sizes": {
         "react": {
           "raw": 2654,
@@ -921,7 +921,7 @@
       }
     },
     "composables/callback-argument": {
-      "time": 13.27,
+      "time": 13.56,
       "sizes": {
         "react": {
           "raw": 2234,
@@ -954,7 +954,7 @@
       }
     },
     "composables/getter-argument": {
-      "time": 10.03,
+      "time": 9.73,
       "sizes": {
         "react": {
           "raw": 1949,
@@ -987,7 +987,7 @@
       }
     },
     "composables/use-controllable-state": {
-      "time": 12.87,
+      "time": 12.09,
       "sizes": {
         "react": {
           "raw": 2007,
@@ -1020,7 +1020,7 @@
       }
     },
     "composables/use-media-query": {
-      "time": 9.3,
+      "time": 9.54,
       "sizes": {
         "react": {
           "raw": 2111,
@@ -1053,7 +1053,7 @@
       }
     },
     "composables/use-toggle": {
-      "time": 8.06,
+      "time": 8.41,
       "sizes": {
         "react": {
           "raw": 1882,
@@ -1086,7 +1086,7 @@
       }
     },
     "context/fallback": {
-      "time": 9.82,
+      "time": 11.25,
       "sizes": {
         "react": {
           "raw": 2101,
@@ -1119,7 +1119,7 @@
       }
     },
     "context/nested": {
-      "time": 8.08,
+      "time": 7.78,
       "sizes": {
         "react": {
           "raw": 1698,
@@ -1152,7 +1152,7 @@
       }
     },
     "context/reactive": {
-      "time": 9.94,
+      "time": 9.52,
       "sizes": {
         "react": {
           "raw": 1595,
@@ -1185,7 +1185,7 @@
       }
     },
     "context/static": {
-      "time": 8.5,
+      "time": 7.93,
       "sizes": {
         "react": {
           "raw": 1640,
@@ -1218,7 +1218,7 @@
       }
     },
     "control-flow/conditional-text": {
-      "time": 5.45,
+      "time": 4.16,
       "sizes": {
         "react": {
           "raw": 1188,
@@ -1251,7 +1251,7 @@
       }
     },
     "control-flow/empty-lists": {
-      "time": 8.17,
+      "time": 7.5,
       "sizes": {
         "react": {
           "raw": 2032,
@@ -1266,8 +1266,8 @@
           "gzip": 718
         },
         "solid": {
-          "raw": 1433,
-          "gzip": 661
+          "raw": 1740,
+          "gzip": 788
         },
         "angular": {
           "raw": 3067,
@@ -1284,7 +1284,7 @@
       }
     },
     "control-flow/indexed-map": {
-      "time": 4.05,
+      "time": 3.99,
       "sizes": {
         "react": {
           "raw": 981,
@@ -1299,8 +1299,8 @@
           "gzip": 480
         },
         "solid": {
-          "raw": 749,
-          "gzip": 460
+          "raw": 1042,
+          "gzip": 590
         },
         "angular": {
           "raw": 1724,
@@ -1317,7 +1317,7 @@
       }
     },
     "control-flow/keyed-map": {
-      "time": 5.4,
+      "time": 5.07,
       "sizes": {
         "react": {
           "raw": 1552,
@@ -1332,8 +1332,8 @@
           "gzip": 617
         },
         "solid": {
-          "raw": 938,
-          "gzip": 542
+          "raw": 1239,
+          "gzip": 675
         },
         "angular": {
           "raw": 2212,
@@ -1349,8 +1349,41 @@
         }
       }
     },
+    "control-flow/keyed-reorder-focus": {
+      "time": 13.54,
+      "sizes": {
+        "react": {
+          "raw": 1582,
+          "gzip": 836
+        },
+        "vue": {
+          "raw": 941,
+          "gzip": 550
+        },
+        "svelte": {
+          "raw": 1499,
+          "gzip": 781
+        },
+        "solid": {
+          "raw": 1535,
+          "gzip": 815
+        },
+        "angular": {
+          "raw": 2578,
+          "gzip": 1166
+        },
+        "qwik": {
+          "raw": 1814,
+          "gzip": 1274
+        },
+        "astro": {
+          "raw": 812,
+          "gzip": 496
+        }
+      }
+    },
     "control-flow/logical-and": {
-      "time": 6.42,
+      "time": 6.47,
       "sizes": {
         "react": {
           "raw": 1711,
@@ -1383,7 +1416,7 @@
       }
     },
     "control-flow/narrowing": {
-      "time": 15.95,
+      "time": 14.09,
       "sizes": {
         "react": {
           "raw": 2722,
@@ -1398,8 +1431,8 @@
           "gzip": 1112
         },
         "solid": {
-          "raw": 3246,
-          "gzip": 1015
+          "raw": 3555,
+          "gzip": 1141
         },
         "angular": {
           "raw": 5570,
@@ -1416,7 +1449,7 @@
       }
     },
     "control-flow/nested": {
-      "time": 7.01,
+      "time": 7.29,
       "sizes": {
         "react": {
           "raw": 1282,
@@ -1431,8 +1464,8 @@
           "gzip": 718
         },
         "solid": {
-          "raw": 1139,
-          "gzip": 597
+          "raw": 1454,
+          "gzip": 733
         },
         "angular": {
           "raw": 2521,
@@ -1449,7 +1482,7 @@
       }
     },
     "control-flow/optional-list": {
-      "time": 5.14,
+      "time": 5.63,
       "sizes": {
         "react": {
           "raw": 1644,
@@ -1464,8 +1497,8 @@
           "gzip": 667
         },
         "solid": {
-          "raw": 1024,
-          "gzip": 548
+          "raw": 1326,
+          "gzip": 677
         },
         "angular": {
           "raw": 2486,
@@ -1482,7 +1515,7 @@
       }
     },
     "control-flow/ternary-chains": {
-      "time": 5.3,
+      "time": 5.05,
       "sizes": {
         "react": {
           "raw": 1229,
@@ -1515,7 +1548,7 @@
       }
     },
     "control-flow/union-props": {
-      "time": 6.62,
+      "time": 5.59,
       "sizes": {
         "react": {
           "raw": 1515,
@@ -1548,7 +1581,7 @@
       }
     },
     "diagnostics/composable-effect-order": {
-      "time": 7.12,
+      "time": 6.57,
       "sizes": {
         "react": {
           "raw": 1733,
@@ -1581,7 +1614,7 @@
       }
     },
     "diagnostics/generic-slot-props": {
-      "time": 3.34,
+      "time": 4.51,
       "sizes": {
         "react": {
           "raw": 760,
@@ -1596,8 +1629,8 @@
           "gzip": 431
         },
         "solid": {
-          "raw": 549,
-          "gzip": 350
+          "raw": 846,
+          "gzip": 483
         },
         "angular": {
           "raw": 2534,
@@ -1614,7 +1647,7 @@
       }
     },
     "dynamic/components": {
-      "time": 9.1,
+      "time": 9.38,
       "sizes": {
         "react": {
           "raw": 2520,
@@ -1647,7 +1680,7 @@
       }
     },
     "dynamic/forwarding": {
-      "time": 16.23,
+      "time": 13.96,
       "sizes": {
         "react": {
           "raw": 3511,
@@ -1680,7 +1713,7 @@
       }
     },
     "dynamic/prop-union": {
-      "time": 6.79,
+      "time": 5.23,
       "sizes": {
         "react": {
           "raw": 1308,
@@ -1713,7 +1746,7 @@
       }
     },
     "dynamic/tags": {
-      "time": 6.17,
+      "time": 4.97,
       "sizes": {
         "react": {
           "raw": 879,
@@ -1746,7 +1779,7 @@
       }
     },
     "effects/async-callbacks": {
-      "time": 33.04,
+      "time": 26.97,
       "sizes": {
         "react": {
           "raw": 6238,
@@ -1779,7 +1812,7 @@
       }
     },
     "effects/async-loop": {
-      "time": 9.46,
+      "time": 9.59,
       "sizes": {
         "react": {
           "raw": 2753,
@@ -1812,7 +1845,7 @@
       }
     },
     "effects/async-overlap": {
-      "time": 49.4,
+      "time": 45.76,
       "sizes": {
         "react": {
           "raw": 8458,
@@ -1827,8 +1860,8 @@
           "gzip": 1549
         },
         "solid": {
-          "raw": 3651,
-          "gzip": 1646
+          "raw": 3944,
+          "gzip": 1751
         },
         "angular": {
           "raw": 6142,
@@ -1845,7 +1878,7 @@
       }
     },
     "effects/async-watchers": {
-      "time": 90.42,
+      "time": 82.34,
       "sizes": {
         "react": {
           "raw": 12284,
@@ -1878,7 +1911,7 @@
       }
     },
     "effects/flush-post": {
-      "time": 9.17,
+      "time": 7.46,
       "sizes": {
         "react": {
           "raw": 1680,
@@ -1893,8 +1926,8 @@
           "gzip": 681
         },
         "solid": {
-          "raw": 1374,
-          "gzip": 788
+          "raw": 1663,
+          "gzip": 903
         },
         "angular": {
           "raw": 2369,
@@ -1911,7 +1944,7 @@
       }
     },
     "effects/persistence-and-fetch": {
-      "time": 44.02,
+      "time": 41.11,
       "sizes": {
         "react": {
           "raw": 3803,
@@ -1926,8 +1959,8 @@
           "gzip": 1595
         },
         "solid": {
-          "raw": 3720,
-          "gzip": 1766
+          "raw": 4006,
+          "gzip": 1872
         },
         "angular": {
           "raw": 5799,
@@ -1944,7 +1977,7 @@
       }
     },
     "effects/pre-and-post": {
-      "time": 19.56,
+      "time": 19.99,
       "sizes": {
         "react": {
           "raw": 4590,
@@ -1959,8 +1992,8 @@
           "gzip": 992
         },
         "solid": {
-          "raw": 2065,
-          "gzip": 1108
+          "raw": 2354,
+          "gzip": 1225
         },
         "angular": {
           "raw": 3668,
@@ -1977,7 +2010,7 @@
       }
     },
     "effects/watch-cleanup": {
-      "time": 8.57,
+      "time": 8.69,
       "sizes": {
         "react": {
           "raw": 1763,
@@ -2010,7 +2043,7 @@
       }
     },
     "effects/watch-effect": {
-      "time": 8.11,
+      "time": 8.9,
       "sizes": {
         "react": {
           "raw": 1718,
@@ -2043,7 +2076,7 @@
       }
     },
     "effects/watch-identity": {
-      "time": 45.14,
+      "time": 42.75,
       "sizes": {
         "react": {
           "raw": 5105,
@@ -2058,8 +2091,8 @@
           "gzip": 1328
         },
         "solid": {
-          "raw": 2904,
-          "gzip": 1385
+          "raw": 3210,
+          "gzip": 1499
         },
         "angular": {
           "raw": 5449,
@@ -2076,7 +2109,7 @@
       }
     },
     "effects/watch-immediate": {
-      "time": 6.14,
+      "time": 5.77,
       "sizes": {
         "react": {
           "raw": 1184,
@@ -2109,7 +2142,7 @@
       }
     },
     "effects/watch-previous": {
-      "time": 8.81,
+      "time": 8.72,
       "sizes": {
         "react": {
           "raw": 2039,
@@ -2124,8 +2157,8 @@
           "gzip": 722
         },
         "solid": {
-          "raw": 1493,
-          "gzip": 799
+          "raw": 1786,
+          "gzip": 915
         },
         "angular": {
           "raw": 2563,
@@ -2142,7 +2175,7 @@
       }
     },
     "effects/watch-sources": {
-      "time": 12.98,
+      "time": 13.51,
       "sizes": {
         "react": {
           "raw": 2292,
@@ -2175,7 +2208,7 @@
       }
     },
     "engines/fixture-engine": {
-      "time": 2.37,
+      "time": 1.98,
       "sizes": {
         "react": {
           "raw": 860,
@@ -2208,7 +2241,7 @@
       }
     },
     "events/async-handlers": {
-      "time": 8.1,
+      "time": 7.82,
       "sizes": {
         "react": {
           "raw": 2341,
@@ -2241,7 +2274,7 @@
       }
     },
     "events/conditional-controls": {
-      "time": 12.63,
+      "time": 12.67,
       "sizes": {
         "react": {
           "raw": 2164,
@@ -2270,7 +2303,7 @@
       }
     },
     "events/control-only-listeners": {
-      "time": 11.59,
+      "time": 10.97,
       "sizes": {
         "react": {
           "raw": 1993,
@@ -2303,7 +2336,7 @@
       }
     },
     "events/custom-controls": {
-      "time": 20.25,
+      "time": 19.36,
       "sizes": {
         "react": {
           "raw": 1985,
@@ -2336,7 +2369,7 @@
       }
     },
     "events/emit-payloads": {
-      "time": 12.51,
+      "time": 12.52,
       "sizes": {
         "react": {
           "raw": 2311,
@@ -2369,7 +2402,7 @@
       }
     },
     "events/event-options": {
-      "time": 19.94,
+      "time": 19.36,
       "sizes": {
         "react": {
           "raw": 3134,
@@ -2384,8 +2417,8 @@
           "gzip": 926
         },
         "solid": {
-          "raw": 1604,
-          "gzip": 795
+          "raw": 1897,
+          "gzip": 923
         },
         "angular": {
           "raw": 4264,
@@ -2402,7 +2435,7 @@
       }
     },
     "events/focus-and-change": {
-      "time": 28.3,
+      "time": 27.23,
       "sizes": {
         "react": {
           "raw": 4374,
@@ -2417,8 +2450,8 @@
           "gzip": 1159
         },
         "solid": {
-          "raw": 2224,
-          "gzip": 997
+          "raw": 2517,
+          "gzip": 1128
         },
         "angular": {
           "raw": 4454,
@@ -2435,7 +2468,7 @@
       }
     },
     "events/form-events": {
-      "time": 21.64,
+      "time": 21.27,
       "sizes": {
         "react": {
           "raw": 3114,
@@ -2468,7 +2501,7 @@
       }
     },
     "events/function-handlers": {
-      "time": 25.58,
+      "time": 24.2,
       "sizes": {
         "react": {
           "raw": 2799,
@@ -2501,7 +2534,7 @@
       }
     },
     "events/guard-controls": {
-      "time": 80.96,
+      "time": 76.92,
       "sizes": {
         "react": {
           "raw": 6263,
@@ -2516,8 +2549,8 @@
           "gzip": 1718
         },
         "solid": {
-          "raw": 3615,
-          "gzip": 1477
+          "raw": 3916,
+          "gzip": 1609
         },
         "angular": {
           "raw": 7287,
@@ -2534,7 +2567,7 @@
       }
     },
     "events/helper-controls": {
-      "time": 35.27,
+      "time": 34.26,
       "sizes": {
         "react": {
           "raw": 3645,
@@ -2549,8 +2582,8 @@
           "gzip": 1206
         },
         "solid": {
-          "raw": 2081,
-          "gzip": 1010
+          "raw": 2407,
+          "gzip": 1152
         },
         "angular": {
           "raw": 4674,
@@ -2567,7 +2600,7 @@
       }
     },
     "events/inline-handlers": {
-      "time": 15.54,
+      "time": 15.6,
       "sizes": {
         "react": {
           "raw": 2676,
@@ -2600,7 +2633,7 @@
       }
     },
     "events/keyboard-navigation": {
-      "time": 51.37,
+      "time": 48.79,
       "sizes": {
         "react": {
           "raw": 4180,
@@ -2615,8 +2648,8 @@
           "gzip": 1389
         },
         "solid": {
-          "raw": 2740,
-          "gzip": 1330
+          "raw": 3027,
+          "gzip": 1456
         },
         "angular": {
           "raw": 5207,
@@ -2629,7 +2662,7 @@
       }
     },
     "events/keys": {
-      "time": 23.42,
+      "time": 20.93,
       "sizes": {
         "react": {
           "raw": 2196,
@@ -2644,8 +2677,8 @@
           "gzip": 863
         },
         "solid": {
-          "raw": 1498,
-          "gzip": 806
+          "raw": 1787,
+          "gzip": 932
         },
         "angular": {
           "raw": 3241,
@@ -2662,7 +2695,7 @@
       }
     },
     "events/list-handlers": {
-      "time": 16.79,
+      "time": 14.31,
       "sizes": {
         "react": {
           "raw": 1480,
@@ -2677,8 +2710,8 @@
           "gzip": 763
         },
         "solid": {
-          "raw": 1237,
-          "gzip": 707
+          "raw": 1526,
+          "gzip": 832
         },
         "angular": {
           "raw": 2795,
@@ -2695,7 +2728,7 @@
       }
     },
     "events/list-pairs": {
-      "time": 40.31,
+      "time": 35.73,
       "sizes": {
         "react": {
           "raw": 3146,
@@ -2710,8 +2743,8 @@
           "gzip": 1230
         },
         "solid": {
-          "raw": 2325,
-          "gzip": 1029
+          "raw": 2631,
+          "gzip": 1165
         },
         "angular": {
           "raw": 5010,
@@ -2728,7 +2761,7 @@
       }
     },
     "events/listener-order": {
-      "time": 27.23,
+      "time": 24.14,
       "sizes": {
         "react": {
           "raw": 4196,
@@ -2743,8 +2776,8 @@
           "gzip": 1049
         },
         "solid": {
-          "raw": 2283,
-          "gzip": 918
+          "raw": 2576,
+          "gzip": 1043
         },
         "angular": {
           "raw": 5346,
@@ -2761,7 +2794,7 @@
       }
     },
     "events/listener-pairs": {
-      "time": 35.76,
+      "time": 31.64,
       "sizes": {
         "react": {
           "raw": 4495,
@@ -2776,8 +2809,8 @@
           "gzip": 1131
         },
         "solid": {
-          "raw": 2588,
-          "gzip": 1187
+          "raw": 2881,
+          "gzip": 1304
         },
         "angular": {
           "raw": 4573,
@@ -2794,7 +2827,7 @@
       }
     },
     "expose/focus": {
-      "time": 8.61,
+      "time": 7.87,
       "sizes": {
         "react": {
           "raw": 2057,
@@ -2827,7 +2860,7 @@
       }
     },
     "expose/several": {
-      "time": 11.34,
+      "time": 10.12,
       "sizes": {
         "react": {
           "raw": 2170,
@@ -2860,7 +2893,7 @@
       }
     },
     "fallthrough/class-and-style": {
-      "time": 7.62,
+      "time": 8.45,
       "sizes": {
         "react": {
           "raw": 2140,
@@ -2893,7 +2926,7 @@
       }
     },
     "fallthrough/inherit-attrs-false": {
-      "time": 3.27,
+      "time": 3.76,
       "sizes": {
         "react": {
           "raw": 1172,
@@ -2926,7 +2959,7 @@
       }
     },
     "fallthrough/to-component-root": {
-      "time": 5.89,
+      "time": 5.91,
       "sizes": {
         "react": {
           "raw": 2386,
@@ -2959,7 +2992,7 @@
       }
     },
     "generics/constrained": {
-      "time": 3.52,
+      "time": 3.62,
       "sizes": {
         "react": {
           "raw": 983,
@@ -2974,8 +3007,8 @@
           "gzip": 530
         },
         "solid": {
-          "raw": 678,
-          "gzip": 421
+          "raw": 974,
+          "gzip": 552
         },
         "angular": {
           "raw": 1875,
@@ -2992,7 +3025,7 @@
       }
     },
     "generics/list": {
-      "time": 3.28,
+      "time": 4.02,
       "sizes": {
         "react": {
           "raw": 845,
@@ -3007,8 +3040,8 @@
           "gzip": 489
         },
         "solid": {
-          "raw": 654,
-          "gzip": 412
+          "raw": 951,
+          "gzip": 548
         },
         "angular": {
           "raw": 1869,
@@ -3025,7 +3058,7 @@
       }
     },
     "generics/props-named-props": {
-      "time": 3.02,
+      "time": 3.85,
       "sizes": {
         "react": {
           "raw": 683,
@@ -3040,8 +3073,8 @@
           "gzip": 365
         },
         "solid": {
-          "raw": 528,
-          "gzip": 326
+          "raw": 825,
+          "gzip": 461
         },
         "angular": {
           "raw": 1144,
@@ -3058,7 +3091,7 @@
       }
     },
     "generics/scoped-slot": {
-      "time": 7.19,
+      "time": 7.66,
       "sizes": {
         "react": {
           "raw": 1469,
@@ -3073,8 +3106,8 @@
           "gzip": 893
         },
         "solid": {
-          "raw": 1040,
-          "gzip": 692
+          "raw": 1335,
+          "gzip": 824
         },
         "angular": {
           "raw": 4133,
@@ -3091,7 +3124,7 @@
       }
     },
     "generics/select": {
-      "time": 9.28,
+      "time": 9.9,
       "sizes": {
         "react": {
           "raw": 1762,
@@ -3106,8 +3139,8 @@
           "gzip": 1052
         },
         "solid": {
-          "raw": 1750,
-          "gzip": 1075
+          "raw": 2050,
+          "gzip": 1199
         },
         "angular": {
           "raw": 4085,
@@ -3124,7 +3157,7 @@
       }
     },
     "hydration/interactive": {
-      "time": 4.95,
+      "time": 5.57,
       "sizes": {
         "react": {
           "raw": 1072,
@@ -3157,7 +3190,7 @@
       }
     },
     "hydration/props-render": {
-      "time": 4.48,
+      "time": 4.56,
       "sizes": {
         "react": {
           "raw": 1507,
@@ -3190,7 +3223,7 @@
       }
     },
     "hydration/use-id": {
-      "time": 6.65,
+      "time": 6.96,
       "sizes": {
         "react": {
           "raw": 2248,
@@ -3223,7 +3256,7 @@
       }
     },
     "ids/label-association": {
-      "time": 3.35,
+      "time": 4.07,
       "sizes": {
         "react": {
           "raw": 1139,
@@ -3256,7 +3289,7 @@
       }
     },
     "ids/radio-group": {
-      "time": 7.73,
+      "time": 8.12,
       "sizes": {
         "react": {
           "raw": 1536,
@@ -3271,8 +3304,8 @@
           "gzip": 722
         },
         "solid": {
-          "raw": 1155,
-          "gzip": 683
+          "raw": 1455,
+          "gzip": 818
         },
         "angular": {
           "raw": 2647,
@@ -3289,7 +3322,7 @@
       }
     },
     "jsx/attribute-names": {
-      "time": 5.62,
+      "time": 5.64,
       "sizes": {
         "react": {
           "raw": 3208,
@@ -3322,7 +3355,7 @@
       }
     },
     "jsx/boolean-and-aria": {
-      "time": 6.32,
+      "time": 6.76,
       "sizes": {
         "react": {
           "raw": 2598,
@@ -3355,7 +3388,7 @@
       }
     },
     "jsx/escaping": {
-      "time": 3.84,
+      "time": 4.18,
       "sizes": {
         "react": {
           "raw": 2079,
@@ -3388,7 +3421,7 @@
       }
     },
     "jsx/expressions": {
-      "time": 6.53,
+      "time": 6.4,
       "sizes": {
         "react": {
           "raw": 2449,
@@ -3421,7 +3454,7 @@
       }
     },
     "jsx/fragments": {
-      "time": 3.3,
+      "time": 3.8,
       "sizes": {
         "react": {
           "raw": 1059,
@@ -3454,7 +3487,7 @@
       }
     },
     "jsx/quoted-strings": {
-      "time": 3.82,
+      "time": 3.72,
       "sizes": {
         "react": {
           "raw": 1580,
@@ -3487,7 +3520,7 @@
       }
     },
     "jsx/svg": {
-      "time": 3.53,
+      "time": 3.77,
       "sizes": {
         "react": {
           "raw": 1945,
@@ -3520,7 +3553,7 @@
       }
     },
     "jsx/svg-titles": {
-      "time": 4.17,
+      "time": 4,
       "sizes": {
         "react": {
           "raw": 1804,
@@ -3553,7 +3586,7 @@
       }
     },
     "jsx/whitespace": {
-      "time": 4.1,
+      "time": 4.01,
       "sizes": {
         "react": {
           "raw": 2322,
@@ -3586,7 +3619,7 @@
       }
     },
     "lifecycle/click-outside": {
-      "time": 10.52,
+      "time": 10.86,
       "sizes": {
         "react": {
           "raw": 2335,
@@ -3619,7 +3652,7 @@
       }
     },
     "lifecycle/document-listener": {
-      "time": 15.02,
+      "time": 14.92,
       "sizes": {
         "react": {
           "raw": 2706,
@@ -3652,7 +3685,7 @@
       }
     },
     "lifecycle/mounted-dom": {
-      "time": 7.21,
+      "time": 7.84,
       "sizes": {
         "react": {
           "raw": 1494,
@@ -3685,7 +3718,7 @@
       }
     },
     "lifecycle/next-tick": {
-      "time": 6.01,
+      "time": 6.37,
       "sizes": {
         "react": {
           "raw": 2410,
@@ -3718,7 +3751,7 @@
       }
     },
     "lifecycle/save-shortcut": {
-      "time": 7.34,
+      "time": 8.69,
       "sizes": {
         "react": {
           "raw": 1816,
@@ -3747,7 +3780,7 @@
       }
     },
     "lifecycle/teardown-order": {
-      "time": 22.64,
+      "time": 20.7,
       "sizes": {
         "react": {
           "raw": 4589,
@@ -3762,8 +3795,8 @@
           "gzip": 944
         },
         "solid": {
-          "raw": 2195,
-          "gzip": 1115
+          "raw": 2484,
+          "gzip": 1228
         },
         "angular": {
           "raw": 3445,
@@ -3780,7 +3813,7 @@
       }
     },
     "lifecycle/unmount-timers": {
-      "time": 11.27,
+      "time": 9.79,
       "sizes": {
         "react": {
           "raw": 1798,
@@ -3813,7 +3846,7 @@
       }
     },
     "models/checkbox": {
-      "time": 4.6,
+      "time": 3.7,
       "sizes": {
         "react": {
           "raw": 1091,
@@ -3846,7 +3879,7 @@
       }
     },
     "models/checkbox-group": {
-      "time": 6.51,
+      "time": 5.88,
       "sizes": {
         "react": {
           "raw": 2304,
@@ -3879,7 +3912,7 @@
       }
     },
     "models/component": {
-      "time": 11.59,
+      "time": 10.33,
       "sizes": {
         "react": {
           "raw": 2669,
@@ -3912,7 +3945,7 @@
       }
     },
     "models/modifiers": {
-      "time": 4.95,
+      "time": 4.77,
       "sizes": {
         "react": {
           "raw": 2354,
@@ -3945,7 +3978,7 @@
       }
     },
     "models/number": {
-      "time": 4.92,
+      "time": 5.22,
       "sizes": {
         "react": {
           "raw": 2338,
@@ -3978,7 +4011,7 @@
       }
     },
     "models/radio": {
-      "time": 3.81,
+      "time": 4.05,
       "sizes": {
         "react": {
           "raw": 1544,
@@ -4011,7 +4044,7 @@
       }
     },
     "models/select": {
-      "time": 3.61,
+      "time": 3.91,
       "sizes": {
         "react": {
           "raw": 1354,
@@ -4044,7 +4077,7 @@
       }
     },
     "models/select-multiple": {
-      "time": 4.36,
+      "time": 5.4,
       "sizes": {
         "react": {
           "raw": 1601,
@@ -4077,7 +4110,7 @@
       }
     },
     "models/several": {
-      "time": 11.22,
+      "time": 11.49,
       "sizes": {
         "react": {
           "raw": 2587,
@@ -4110,7 +4143,7 @@
       }
     },
     "models/text-field": {
-      "time": 4.33,
+      "time": 4.45,
       "sizes": {
         "react": {
           "raw": 1366,
@@ -4143,7 +4176,7 @@
       }
     },
     "models/textarea": {
-      "time": 3.5,
+      "time": 4.21,
       "sizes": {
         "react": {
           "raw": 1144,
@@ -4176,7 +4209,7 @@
       }
     },
     "models/textarea-modifiers": {
-      "time": 4,
+      "time": 4.41,
       "sizes": {
         "react": {
           "raw": 2225,
@@ -4209,7 +4242,7 @@
       }
     },
     "modules/module-constants": {
-      "time": 7.73,
+      "time": 7.57,
       "sizes": {
         "react": {
           "raw": 1267,
@@ -4224,8 +4257,8 @@
           "gzip": 642
         },
         "solid": {
-          "raw": 911,
-          "gzip": 581
+          "raw": 1202,
+          "gzip": 715
         },
         "angular": {
           "raw": 2103,
@@ -4242,7 +4275,7 @@
       }
     },
     "modules/nested-modules": {
-      "time": 5.38,
+      "time": 6.06,
       "sizes": {
         "react": {
           "raw": 1318,
@@ -4275,7 +4308,7 @@
       }
     },
     "modules/shared-constants": {
-      "time": 6.66,
+      "time": 7.22,
       "sizes": {
         "react": {
           "raw": 1459,
@@ -4290,8 +4323,8 @@
           "gzip": 794
         },
         "solid": {
-          "raw": 1104,
-          "gzip": 737
+          "raw": 1399,
+          "gzip": 873
         },
         "angular": {
           "raw": 2418,
@@ -4308,7 +4341,7 @@
       }
     },
     "modules/shared-helpers": {
-      "time": 7.54,
+      "time": 7.94,
       "sizes": {
         "react": {
           "raw": 1859,
@@ -4341,7 +4374,7 @@
       }
     },
     "props/destructured-defaults": {
-      "time": 5.49,
+      "time": 5.73,
       "sizes": {
         "react": {
           "raw": 1903,
@@ -4374,7 +4407,7 @@
       }
     },
     "props/literal-unions": {
-      "time": 4.13,
+      "time": 4.11,
       "sizes": {
         "react": {
           "raw": 1054,
@@ -4407,7 +4440,7 @@
       }
     },
     "props/local-types": {
-      "time": 6.49,
+      "time": 5.83,
       "sizes": {
         "react": {
           "raw": 1891,
@@ -4422,8 +4455,8 @@
           "gzip": 657
         },
         "solid": {
-          "raw": 1052,
-          "gzip": 569
+          "raw": 1349,
+          "gzip": 702
         },
         "angular": {
           "raw": 2335,
@@ -4440,7 +4473,7 @@
       }
     },
     "props/null-and-absent": {
-      "time": 3.47,
+      "time": 4.29,
       "sizes": {
         "react": {
           "raw": 1228,
@@ -4473,7 +4506,7 @@
       }
     },
     "props/optional": {
-      "time": 3.49,
+      "time": 4.11,
       "sizes": {
         "react": {
           "raw": 1331,
@@ -4506,7 +4539,7 @@
       }
     },
     "props/primitives": {
-      "time": 3.9,
+      "time": 4.11,
       "sizes": {
         "react": {
           "raw": 1597,
@@ -4539,7 +4572,7 @@
       }
     },
     "props/props-parameter": {
-      "time": 3.13,
+      "time": 3.61,
       "sizes": {
         "react": {
           "raw": 1120,
@@ -4572,7 +4605,7 @@
       }
     },
     "props/unread-props": {
-      "time": 3.82,
+      "time": 3.94,
       "sizes": {
         "react": {
           "raw": 1242,
@@ -4605,7 +4638,7 @@
       }
     },
     "props/unread-props-object": {
-      "time": 1.84,
+      "time": 1.66,
       "sizes": {
         "react": {
           "raw": 880,
@@ -4638,7 +4671,7 @@
       }
     },
     "refs/focus": {
-      "time": 5.95,
+      "time": 6.39,
       "sizes": {
         "react": {
           "raw": 1237,
@@ -4671,7 +4704,7 @@
       }
     },
     "semantics/composable-effect-order": {
-      "time": 13.23,
+      "time": 13.34,
       "sizes": {
         "react": {
           "raw": 3374,
@@ -4686,8 +4719,8 @@
           "gzip": 969
         },
         "solid": {
-          "raw": 2139,
-          "gzip": 1212
+          "raw": 2432,
+          "gzip": 1329
         },
         "angular": {
           "raw": 2938,
@@ -4704,7 +4737,7 @@
       }
     },
     "semantics/composable-read-after-write": {
-      "time": 10,
+      "time": 9.62,
       "sizes": {
         "react": {
           "raw": 2183,
@@ -4737,7 +4770,7 @@
       }
     },
     "semantics/composable-unmount-order": {
-      "time": 15.59,
+      "time": 15.39,
       "sizes": {
         "react": {
           "raw": 3410,
@@ -4770,7 +4803,7 @@
       }
     },
     "semantics/deferred-reads": {
-      "time": 10.86,
+      "time": 9.92,
       "sizes": {
         "react": {
           "raw": 1929,
@@ -4803,7 +4836,7 @@
       }
     },
     "semantics/derived-consistency": {
-      "time": 10.86,
+      "time": 10.66,
       "sizes": {
         "react": {
           "raw": 1784,
@@ -4836,7 +4869,7 @@
       }
     },
     "semantics/derived-from-props": {
-      "time": 6.94,
+      "time": 7.17,
       "sizes": {
         "react": {
           "raw": 1448,
@@ -4869,7 +4902,7 @@
       }
     },
     "semantics/effects-client-only": {
-      "time": 5.22,
+      "time": 4.91,
       "sizes": {
         "react": {
           "raw": 1432,
@@ -4902,7 +4935,7 @@
       }
     },
     "semantics/emit": {
-      "time": 12.15,
+      "time": 11.82,
       "sizes": {
         "react": {
           "raw": 1481,
@@ -4917,8 +4950,8 @@
           "gzip": 733
         },
         "solid": {
-          "raw": 1125,
-          "gzip": 661
+          "raw": 1424,
+          "gzip": 795
         },
         "angular": {
           "raw": 2605,
@@ -4935,7 +4968,7 @@
       }
     },
     "semantics/helper-order": {
-      "time": 19.38,
+      "time": 17.98,
       "sizes": {
         "react": {
           "raw": 3016,
@@ -4967,8 +5000,41 @@
         }
       }
     },
+    "semantics/keyed-lists": {
+      "time": 3.33,
+      "sizes": {
+        "react": {
+          "raw": 1015,
+          "gzip": 598
+        },
+        "vue": {
+          "raw": 526,
+          "gzip": 357
+        },
+        "svelte": {
+          "raw": 827,
+          "gzip": 511
+        },
+        "solid": {
+          "raw": 1106,
+          "gzip": 626
+        },
+        "angular": {
+          "raw": 1716,
+          "gzip": 859
+        },
+        "qwik": {
+          "raw": 778,
+          "gzip": 569
+        },
+        "astro": {
+          "raw": 626,
+          "gzip": 417
+        }
+      }
+    },
     "semantics/late-optional-prop": {
-      "time": 5.9,
+      "time": 5.85,
       "sizes": {
         "react": {
           "raw": 1273,
@@ -5001,7 +5067,7 @@
       }
     },
     "semantics/listbox": {
-      "time": 3.65,
+      "time": 3.63,
       "sizes": {
         "react": {
           "raw": 1154,
@@ -5030,7 +5096,7 @@
       }
     },
     "semantics/models": {
-      "time": 9.17,
+      "time": 9.27,
       "sizes": {
         "react": {
           "raw": 2561,
@@ -5063,7 +5129,7 @@
       }
     },
     "semantics/nested-branches": {
-      "time": 13.36,
+      "time": 13.42,
       "sizes": {
         "react": {
           "raw": 2010,
@@ -5096,7 +5162,7 @@
       }
     },
     "semantics/nested-call-bubbling": {
-      "time": 19.51,
+      "time": 18.54,
       "sizes": {
         "react": {
           "raw": 3694,
@@ -5111,8 +5177,8 @@
           "gzip": 849
         },
         "solid": {
-          "raw": 1379,
-          "gzip": 754
+          "raw": 1672,
+          "gzip": 881
         },
         "angular": {
           "raw": 2958,
@@ -5129,7 +5195,7 @@
       }
     },
     "semantics/prevent-default": {
-      "time": 23.73,
+      "time": 22.4,
       "sizes": {
         "react": {
           "raw": 2315,
@@ -5144,8 +5210,8 @@
           "gzip": 887
         },
         "solid": {
-          "raw": 1452,
-          "gzip": 834
+          "raw": 1741,
+          "gzip": 957
         },
         "angular": {
           "raw": 3106,
@@ -5162,7 +5228,7 @@
       }
     },
     "semantics/props-seed-let": {
-      "time": 23.79,
+      "time": 22.02,
       "sizes": {
         "react": {
           "raw": 2713,
@@ -5177,8 +5243,8 @@
           "gzip": 991
         },
         "solid": {
-          "raw": 2345,
-          "gzip": 1198
+          "raw": 2623,
+          "gzip": 1300
         },
         "angular": {
           "raw": 3565,
@@ -5195,7 +5261,7 @@
       }
     },
     "semantics/props-seed-state": {
-      "time": 4.01,
+      "time": 4.3,
       "sizes": {
         "react": {
           "raw": 1135,
@@ -5228,7 +5294,7 @@
       }
     },
     "semantics/reactive-props": {
-      "time": 6.95,
+      "time": 7.28,
       "sizes": {
         "react": {
           "raw": 1939,
@@ -5243,8 +5309,8 @@
           "gzip": 1070
         },
         "solid": {
-          "raw": 1579,
-          "gzip": 814
+          "raw": 1873,
+          "gzip": 941
         },
         "angular": {
           "raw": 3026,
@@ -5261,7 +5327,7 @@
       }
     },
     "semantics/read-after-write": {
-      "time": 17.34,
+      "time": 16.67,
       "sizes": {
         "react": {
           "raw": 2708,
@@ -5294,7 +5360,7 @@
       }
     },
     "semantics/setup-once": {
-      "time": 3.62,
+      "time": 3.47,
       "sizes": {
         "react": {
           "raw": 1179,
@@ -5309,8 +5375,8 @@
           "gzip": 602
         },
         "solid": {
-          "raw": 815,
-          "gzip": 510
+          "raw": 1091,
+          "gzip": 636
         },
         "angular": {
           "raw": 2022,
@@ -5327,7 +5393,7 @@
       }
     },
     "semantics/watch-timing": {
-      "time": 17.11,
+      "time": 16.16,
       "sizes": {
         "react": {
           "raw": 2754,
@@ -5360,7 +5426,7 @@
       }
     },
     "slots/default": {
-      "time": 4.88,
+      "time": 4.84,
       "sizes": {
         "react": {
           "raw": 1911,
@@ -5393,7 +5459,7 @@
       }
     },
     "slots/fallback": {
-      "time": 5.64,
+      "time": 5.56,
       "sizes": {
         "react": {
           "raw": 2184,
@@ -5426,7 +5492,7 @@
       }
     },
     "slots/forwarding": {
-      "time": 7.85,
+      "time": 7.93,
       "sizes": {
         "react": {
           "raw": 2768,
@@ -5451,7 +5517,7 @@
       }
     },
     "slots/in-list": {
-      "time": 4.91,
+      "time": 5.35,
       "sizes": {
         "react": {
           "raw": 1747,
@@ -5466,8 +5532,8 @@
           "gzip": 910
         },
         "solid": {
-          "raw": 1118,
-          "gzip": 731
+          "raw": 1407,
+          "gzip": 856
         },
         "angular": {
           "raw": 4016,
@@ -5484,7 +5550,7 @@
       }
     },
     "slots/named": {
-      "time": 4.62,
+      "time": 4.99,
       "sizes": {
         "react": {
           "raw": 2119,
@@ -5517,7 +5583,7 @@
       }
     },
     "slots/presence": {
-      "time": 5.83,
+      "time": 5.82,
       "sizes": {
         "react": {
           "raw": 2178,
@@ -5542,7 +5608,7 @@
       }
     },
     "slots/prop-names": {
-      "time": 7.86,
+      "time": 7.65,
       "sizes": {
         "react": {
           "raw": 1582,
@@ -5557,8 +5623,8 @@
           "gzip": 944
         },
         "solid": {
-          "raw": 1165,
-          "gzip": 762
+          "raw": 1461,
+          "gzip": 891
         },
         "angular": {
           "raw": 4243,
@@ -5575,7 +5641,7 @@
       }
     },
     "slots/scoped": {
-      "time": 7.34,
+      "time": 7.91,
       "sizes": {
         "react": {
           "raw": 1803,
@@ -5590,8 +5656,8 @@
           "gzip": 1050
         },
         "solid": {
-          "raw": 1342,
-          "gzip": 818
+          "raw": 1633,
+          "gzip": 948
         },
         "angular": {
           "raw": 4714,
@@ -5608,7 +5674,7 @@
       }
     },
     "slots/scoped-default": {
-      "time": 5.7,
+      "time": 5.72,
       "sizes": {
         "react": {
           "raw": 1512,
@@ -5623,8 +5689,8 @@
           "gzip": 891
         },
         "solid": {
-          "raw": 1026,
-          "gzip": 687
+          "raw": 1317,
+          "gzip": 812
         },
         "angular": {
           "raw": 4152,
@@ -5641,7 +5707,7 @@
       }
     },
     "slots/shared-names": {
-      "time": 8.49,
+      "time": 8.32,
       "sizes": {
         "react": {
           "raw": 2037,
@@ -5656,8 +5722,8 @@
           "gzip": 1080
         },
         "solid": {
-          "raw": 1481,
-          "gzip": 837
+          "raw": 1774,
+          "gzip": 965
         },
         "angular": {
           "raw": 5589,
@@ -5674,7 +5740,7 @@
       }
     },
     "sourcemaps/computed-throws": {
-      "time": 5.42,
+      "time": 5.43,
       "sizes": {
         "react": {
           "raw": 929,
@@ -5707,7 +5773,7 @@
       }
     },
     "sourcemaps/handler-throws": {
-      "time": 1.77,
+      "time": 2,
       "sizes": {
         "react": {
           "raw": 654,
@@ -5740,7 +5806,7 @@
       }
     },
     "sourcemaps/mounted-throws": {
-      "time": 5.03,
+      "time": 5.98,
       "sizes": {
         "react": {
           "raw": 1527,
@@ -5773,7 +5839,7 @@
       }
     },
     "state/array-replacement": {
-      "time": 19.83,
+      "time": 20.02,
       "sizes": {
         "react": {
           "raw": 1963,
@@ -5788,8 +5854,8 @@
           "gzip": 888
         },
         "solid": {
-          "raw": 1571,
-          "gzip": 842
+          "raw": 1860,
+          "gzip": 958
         },
         "angular": {
           "raw": 3370,
@@ -5806,7 +5872,7 @@
       }
     },
     "state/computed-chain": {
-      "time": 9.04,
+      "time": 9.46,
       "sizes": {
         "react": {
           "raw": 1960,
@@ -5839,7 +5905,7 @@
       }
     },
     "state/counter": {
-      "time": 6.36,
+      "time": 6.64,
       "sizes": {
         "react": {
           "raw": 1262,
@@ -5872,7 +5938,7 @@
       }
     },
     "state/derived-arrays": {
-      "time": 48,
+      "time": 44.15,
       "sizes": {
         "react": {
           "raw": 5377,
@@ -5887,8 +5953,8 @@
           "gzip": 1672
         },
         "solid": {
-          "raw": 3365,
-          "gzip": 1513
+          "raw": 3644,
+          "gzip": 1613
         },
         "angular": {
           "raw": 5969,
@@ -5905,7 +5971,7 @@
       }
     },
     "state/helpers-after-use": {
-      "time": 13.65,
+      "time": 13.53,
       "sizes": {
         "react": {
           "raw": 2397,
@@ -5938,7 +6004,7 @@
       }
     },
     "state/identity-and-clone": {
-      "time": 11.97,
+      "time": 12,
       "sizes": {
         "react": {
           "raw": 1688,
@@ -5953,8 +6019,8 @@
           "gzip": 755
         },
         "solid": {
-          "raw": 1222,
-          "gzip": 674
+          "raw": 1538,
+          "gzip": 806
         },
         "angular": {
           "raw": 2779,
@@ -5971,7 +6037,7 @@
       }
     },
     "state/local-functions": {
-      "time": 12.94,
+      "time": 12.03,
       "sizes": {
         "react": {
           "raw": 2011,
@@ -6004,7 +6070,7 @@
       }
     },
     "state/narrowed-reads": {
-      "time": 46.5,
+      "time": 42.94,
       "sizes": {
         "react": {
           "raw": 5701,
@@ -6019,8 +6085,8 @@
           "gzip": 1649
         },
         "solid": {
-          "raw": 3333,
-          "gzip": 1493
+          "raw": 3615,
+          "gzip": 1615
         },
         "angular": {
           "raw": 6746,
@@ -6037,7 +6103,7 @@
       }
     },
     "state/object-replacement": {
-      "time": 8.95,
+      "time": 8.39,
       "sizes": {
         "react": {
           "raw": 1783,
@@ -6070,7 +6136,7 @@
       }
     },
     "state/react-compiler-shapes": {
-      "time": 27.2,
+      "time": 27.18,
       "sizes": {
         "react": {
           "raw": 2211,
@@ -6103,7 +6169,7 @@
       }
     },
     "state/toggle-in-branch": {
-      "time": 17.04,
+      "time": 16.6,
       "sizes": {
         "react": {
           "raw": 2476,
@@ -6136,7 +6202,7 @@
       }
     },
     "styleframe/recipe": {
-      "time": 1.82,
+      "time": 1.65,
       "sizes": {
         "react": {
           "raw": 826,
@@ -6169,7 +6235,7 @@
       }
     },
     "styleframe/recipe-and-scoped": {
-      "time": 2.47,
+      "time": 2.29,
       "sizes": {
         "react": {
           "raw": 1073,
@@ -6202,7 +6268,7 @@
       }
     },
     "styleframe/recipe-variants": {
-      "time": 2.37,
+      "time": 2.16,
       "sizes": {
         "react": {
           "raw": 951,
@@ -6235,7 +6301,7 @@
       }
     },
     "styleframe/tokens": {
-      "time": 1.89,
+      "time": 1.85,
       "sizes": {
         "react": {
           "raw": 998,
@@ -6268,7 +6334,7 @@
       }
     },
     "styleframe/utilities": {
-      "time": 1.5,
+      "time": 1.42,
       "sizes": {
         "react": {
           "raw": 858,
@@ -6301,7 +6367,7 @@
       }
     },
     "styles/child-root": {
-      "time": 4,
+      "time": 4.18,
       "sizes": {
         "react": {
           "raw": 2151,
@@ -6334,7 +6400,7 @@
       }
     },
     "styles/child-root-branches": {
-      "time": 7.77,
+      "time": 7.79,
       "sizes": {
         "react": {
           "raw": 2316,
@@ -6367,7 +6433,7 @@
       }
     },
     "styles/custom-properties": {
-      "time": 2.87,
+      "time": 2.84,
       "sizes": {
         "react": {
           "raw": 1296,
@@ -6400,7 +6466,7 @@
       }
     },
     "styles/data-attribute-variants": {
-      "time": 3.43,
+      "time": 3.65,
       "sizes": {
         "react": {
           "raw": 1164,
@@ -6433,7 +6499,7 @@
       }
     },
     "styles/deep": {
-      "time": 4.23,
+      "time": 4.61,
       "sizes": {
         "react": {
           "raw": 2011,
@@ -6466,7 +6532,7 @@
       }
     },
     "styles/focus-visible": {
-      "time": 1.8,
+      "time": 1.78,
       "sizes": {
         "react": {
           "raw": 908,
@@ -6499,7 +6565,7 @@
       }
     },
     "styles/global": {
-      "time": 3.95,
+      "time": 3.77,
       "sizes": {
         "react": {
           "raw": 1845,
@@ -6532,7 +6598,7 @@
       }
     },
     "styles/hover-state": {
-      "time": 1.74,
+      "time": 1.96,
       "sizes": {
         "react": {
           "raw": 904,
@@ -6565,7 +6631,7 @@
       }
     },
     "styles/keyframes": {
-      "time": 1.97,
+      "time": 1.95,
       "sizes": {
         "react": {
           "raw": 1109,
@@ -6598,7 +6664,7 @@
       }
     },
     "styles/layers": {
-      "time": 1.79,
+      "time": 1.88,
       "sizes": {
         "react": {
           "raw": 968,
@@ -6631,7 +6697,7 @@
       }
     },
     "styles/media-queries": {
-      "time": 2.01,
+      "time": 1.8,
       "sizes": {
         "react": {
           "raw": 965,
@@ -6664,7 +6730,7 @@
       }
     },
     "styles/pseudo-elements": {
-      "time": 1.83,
+      "time": 1.69,
       "sizes": {
         "react": {
           "raw": 841,
@@ -6697,7 +6763,7 @@
       }
     },
     "styles/scoped-basics": {
-      "time": 2.26,
+      "time": 2.18,
       "sizes": {
         "react": {
           "raw": 1155,
@@ -6730,7 +6796,7 @@
       }
     },
     "styles/slotted": {
-      "time": 9.01,
+      "time": 9.47,
       "sizes": {
         "react": {
           "raw": 3247,
@@ -6763,7 +6829,7 @@
       }
     },
     "styles/slotted-order": {
-      "time": 8.35,
+      "time": 8.69,
       "sizes": {
         "react": {
           "raw": 2966,
@@ -6778,8 +6844,8 @@
           "gzip": 1485
         },
         "solid": {
-          "raw": 1958,
-          "gzip": 1199
+          "raw": 2257,
+          "gzip": 1332
         },
         "angular": {
           "raw": 5642,
@@ -6796,7 +6862,7 @@
       }
     },
     "theming/dark-theme": {
-      "time": 1.44,
+      "time": 1.41,
       "sizes": {
         "react": {
           "raw": 827,
@@ -6829,7 +6895,7 @@
       }
     },
     "theming/data-theme": {
-      "time": 2.04,
+      "time": 1.89,
       "sizes": {
         "react": {
           "raw": 923,
@@ -6862,7 +6928,7 @@
       }
     },
     "types/child-type-import": {
-      "time": 4.74,
+      "time": 4.71,
       "sizes": {
         "react": {
           "raw": 1443,
@@ -6895,7 +6961,7 @@
       }
     },
     "types/exported-types": {
-      "time": 2.5,
+      "time": 2.44,
       "sizes": {
         "react": {
           "raw": 889,
@@ -6928,7 +6994,7 @@
       }
     },
     "types/extends-chain": {
-      "time": 2.61,
+      "time": 2.77,
       "sizes": {
         "react": {
           "raw": 729,
@@ -6961,7 +7027,7 @@
       }
     },
     "types/imported-interface": {
-      "time": 2.39,
+      "time": 2.31,
       "sizes": {
         "react": {
           "raw": 819,
@@ -6994,7 +7060,7 @@
       }
     },
     "types/intersection-props": {
-      "time": 3.26,
+      "time": 3.16,
       "sizes": {
         "react": {
           "raw": 837,
@@ -7027,7 +7093,7 @@
       }
     },
     "types/package-types": {
-      "time": 4.03,
+      "time": 4.04,
       "sizes": {
         "react": {
           "raw": 664,
@@ -7060,7 +7126,7 @@
       }
     },
     "types/re-export-only": {
-      "time": 1.65,
+      "time": 1.39,
       "sizes": {
         "react": {
           "raw": 756,
@@ -7093,7 +7159,7 @@
       }
     },
     "types/shared-type": {
-      "time": 5.04,
+      "time": 5.39,
       "sizes": {
         "react": {
           "raw": 1652,
