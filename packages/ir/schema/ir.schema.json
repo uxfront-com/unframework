@@ -2399,6 +2399,9 @@
         },
         {
           "$ref": "#/definitions/DynamicNode"
+        },
+        {
+          "$ref": "#/definitions/TeleportNode"
         }
       ],
       "description": "A node of the render tree."
@@ -2869,6 +2872,38 @@
       ],
       "additionalProperties": false,
       "description": "A component `<component is>` may render: a `component` binding's component."
+    },
+    "TeleportNode": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Teleport"
+        },
+        "to": {
+          "type": "string",
+          "description": "The CSS selector of the element the content mounts into, a static string.",
+          "minLength": 1
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RenderNode"
+          },
+          "description": "The content: exactly one element (ADR-0098)."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "to",
+        "children",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`<Teleport to=\"body\">` (ADR-0098): content that mounts into another element of the document, once its component has mounted. The server renders none of it."
     },
     "FragmentNode": {
       "type": "object",

@@ -1356,7 +1356,8 @@ export type RenderNode =
   | ForNode
   | ComponentNode
   | SlotOutletNode
-  | DynamicNode;
+  | DynamicNode
+  | TeleportNode;
 
 /**
  * A component element, `<Field label="Name" onClear={reset} />` (ADR-0053): an imported
@@ -1404,6 +1405,22 @@ export interface DynamicNode {
   children: RenderNode[];
   /** The fills of component candidates. */
   fills?: SlotFill[];
+  span: Span;
+}
+
+/**
+ * `<Teleport to="body">` (ADR-0098): content that mounts into another element of the document,
+ * once its component has mounted. The server renders none of it.
+ */
+export interface TeleportNode {
+  kind: "Teleport";
+  /**
+   * The CSS selector of the element the content mounts into, a static string.
+   * @minLength 1
+   */
+  to: string;
+  /** The content: exactly one element (ADR-0098). */
+  children: RenderNode[];
   span: Span;
 }
 

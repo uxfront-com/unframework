@@ -90,6 +90,7 @@ import type {
   ComposableMemberApi,
   ComposableParameterKind,
   DynamicNode,
+  TeleportNode,
   ElementNode,
   Emits,
   EventAttribute,
@@ -1438,9 +1439,42 @@ function checkNode(node: RenderNode, place: Place, walk: Walk): void {
     case "Dynamic":
       checkDynamic(node, place, walk);
       return;
+    case "Teleport":
+      checkTeleport(node, place, walk);
+      return;
     default:
       unreachable(node);
   }
+}
+
+/**
+ * Checks a teleport (ADR-0098): a non-empty selector, outside SVG, around exactly one element,
+ * whose parent in the DOM is `to`'s element, not the teleport's.
+ */
+function checkTeleport(node: TeleportNode, place: Place, walk: Walk): void {
+  const { errors } = walk;
+  if (!node.to.trim()) {
+    errors.push({ path: `${place.path}/to`, message: "must be a CSS selector, not empty" });
+  }
+  if (place.namespace !== "html") {
+    errors.push({ path: place.path, message: "must not be inside SVG or MathML" });
+  }
+  const [content] = node.children;
+  if (node.children.length !== 1 || content?.kind !== "Element") {
+    errors.push({ path: `${place.path}/children`, message: "must hold exactly one element" });
+  }
+  checkChildren(
+    node.children,
+    {
+      ...place,
+      path: `${place.path}/children`,
+      element: undefined,
+      namespace: "html",
+      inSvgText: false,
+      controlled: false,
+    },
+    walk,
+  );
 }
 
 /**
