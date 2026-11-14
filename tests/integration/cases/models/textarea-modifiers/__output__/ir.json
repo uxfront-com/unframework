@@ -1,0 +1,269 @@
+{
+  "irVersion": 1,
+  "file": "models/textarea-modifiers/Reply.uf.tsx",
+  "components": [
+    {
+      "name": "Reply",
+      "span": {
+        "start": 45,
+        "end": 439
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "message@87",
+          "name": "message",
+          "kind": "state",
+          "span": {
+            "start": 87,
+            "end": 94
+          }
+        },
+        {
+          "id": "signature@134",
+          "name": "signature",
+          "kind": "state",
+          "span": {
+            "start": 134,
+            "end": 143
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "message@87",
+          "initial": {
+            "code": "\"Thanks, see you soon\"",
+            "span": {
+              "start": 101,
+              "end": 123
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 81,
+            "end": 125
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "signature@134",
+          "initial": {
+            "code": "\"Ada\"",
+            "span": {
+              "start": 150,
+              "end": 155
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 128,
+            "end": 157
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "form",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Reply",
+            "span": {
+              "start": 179,
+              "end": 197
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "textarea",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Message",
+                "span": {
+                  "start": 215,
+                  "end": 235
+                }
+              },
+              {
+                "kind": "Model",
+                "value": {
+                  "code": "message.value",
+                  "span": {
+                    "start": 250,
+                    "end": 263
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "message@87",
+                      "span": {
+                        "start": 250,
+                        "end": 263
+                      }
+                    }
+                  ]
+                },
+                "control": "textarea",
+                "trim": true,
+                "span": {
+                  "start": 236,
+                  "end": 264
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 205,
+              "end": 267
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "textarea",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Signature",
+                "span": {
+                  "start": 284,
+                  "end": 306
+                }
+              },
+              {
+                "kind": "Model",
+                "value": {
+                  "code": "signature.value",
+                  "span": {
+                    "start": 321,
+                    "end": 336
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "signature@134",
+                      "span": {
+                        "start": 321,
+                        "end": 336
+                      }
+                    }
+                  ]
+                },
+                "control": "textarea",
+                "lazy": true,
+                "span": {
+                  "start": 307,
+                  "end": 337
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 274,
+              "end": 340
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "[",
+                "span": {
+                  "start": 355,
+                  "end": 365
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "message.value",
+                  "span": {
+                    "start": 366,
+                    "end": 379
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "message@87",
+                      "span": {
+                        "start": 366,
+                        "end": 379
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 365,
+                  "end": 380
+                }
+              },
+              {
+                "kind": "Text",
+                "value": "] from ",
+                "span": {
+                  "start": 380,
+                  "end": 387
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "signature.value",
+                  "span": {
+                    "start": 388,
+                    "end": 403
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "signature@134",
+                      "span": {
+                        "start": 388,
+                        "end": 403
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 387,
+                  "end": 404
+                }
+              }
+            ],
+            "span": {
+              "start": 347,
+              "end": 420
+            }
+          }
+        ],
+        "span": {
+          "start": 173,
+          "end": 432
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Reply",
+      "span": {
+        "start": 45,
+        "end": 439
+      }
+    }
+  ],
+  "types": []
+}

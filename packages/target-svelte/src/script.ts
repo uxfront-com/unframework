@@ -978,11 +978,13 @@ class ScriptWriter {
    * the attribute by (`remove_input_defaults`), so a rerun writes the first value back over what
    * the person typed. A spread of attributes that read no state is an effect of its own, which
    * never reruns. A field bound to something a block declares (a list's row) keeps its read in
-   * the template.
+   * the template. So does a `<textarea>`: the server renders a spread `value` as an attribute,
+   * which a textarea doesn't show, and Svelte never drops a textarea's remembered value.
    */
   #fieldInitials(fields: readonly ModelAttribute[], untrack: string): string[] {
     const declarations: string[] = [];
     for (const attribute of fields) {
+      if (attribute.control === "textarea") continue;
       // The template's spelling: a variable reads the same in the script.
       const value = rewriteExpression(attribute.value, this.#component, this.rules, "render");
       if (!/^[A-Za-z_$][\w$]*$/.test(value)) continue;

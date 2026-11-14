@@ -1,0 +1,4 @@
+- form "Reply":
+  - textbox "Message": See you at noon
+  - textbox "Signature": Ada
+  - status: "[See you at noon] from Ada"

@@ -79,10 +79,12 @@ so it cannot see an id that hydration changed.
     callback, `textCaret`, and Angular's a directive, `TextCaret`, which its `[value]` binding
     selects. Each empties the field and sets its text again, which fires no event. This amends
     ADR-0060.
-  - Svelte reads a `modelText` field's first value into attributes it spreads, `{...nameField}`.
+  - Svelte reads a `modelText` input's first value into attributes it spreads, `{...nameField}`.
     Written as `value={…}`, the read joined the template's render effect, and once hydrated Svelte
     has dropped the value it remembers the attribute by (`remove_input_defaults`), so the effect's
-    next run wrote the first value back over what the person typed.
+    next run wrote the first value back over what the person typed. A textarea keeps
+    `value={…}`: Svelte's server writes a spread `value` as an attribute, which a textarea doesn't
+    show, and Svelte never drops a textarea's remembered value.
   - Angular binds an option's `[defaultSelected]` before its `[selected]`. A hydrated option keeps
     the server's `selected` attribute, Chrome does not mark an option dirty when `selected` sets
     the selectedness it has already, and removing the attribute after it deselected the state's
