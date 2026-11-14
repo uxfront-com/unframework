@@ -1,6 +1,6 @@
 {
   "name": "@unframework.dev/target-angular",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The Angular 22 target of the Unframework compiler: emits idiomatic Angular components from the portable IR, declares their capabilities, and provides the toolchain the tests use.",
   "keywords": [
     "angular",

@@ -1,6 +1,6 @@
 {
   "name": "@uxfront/unframework",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Write a component once, get native React, Vue, Svelte, Solid, Angular, Qwik and Astro: the authoring API and JSX types for .uf.tsx components.",
   "keywords": [
     "angular",

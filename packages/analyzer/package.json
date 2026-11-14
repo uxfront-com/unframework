@@ -1,6 +1,6 @@
 {
   "name": "@unframework.dev/analyzer",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The Unframework analyser: scopes, macros and semantic checks over the parsed source, and lowering of the returned JSX into the portable IR.",
   "keywords": [
     "analyzer",
