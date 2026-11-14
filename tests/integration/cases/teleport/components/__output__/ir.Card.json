@@ -5,18 +5,18 @@
     {
       "name": "Card",
       "span": {
-        "start": 58,
-        "end": 400
+        "start": 72,
+        "end": 414
       },
       "props": [],
       "types": [],
       "slots": {
-        "binding": "slots@99",
+        "binding": "slots@113",
         "type": {
-          "code": "{ default?(): unknown }",
+          "code": "{ default?(): Element }",
           "span": {
-            "start": 119,
-            "end": 142
+            "start": 133,
+            "end": 156
           }
         },
         "slots": [
@@ -24,51 +24,51 @@
             "name": "default",
             "optional": true,
             "span": {
-              "start": 121,
-              "end": 140
+              "start": 135,
+              "end": 154
             }
           }
         ],
         "span": {
-          "start": 93,
-          "end": 146
+          "start": 107,
+          "end": 160
         }
       },
       "bindings": [
         {
-          "id": "slots@99",
+          "id": "slots@113",
           "name": "slots",
           "kind": "slots",
           "span": {
-            "start": 99,
-            "end": 104
+            "start": 113,
+            "end": 118
           }
         },
         {
-          "id": "open@155",
+          "id": "open@169",
           "name": "open",
           "kind": "state",
           "span": {
-            "start": 155,
-            "end": 159
+            "start": 169,
+            "end": 173
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "open@155",
+          "binding": "open@169",
           "initial": {
             "code": "false",
             "span": {
-              "start": 166,
-              "end": 171
+              "start": 180,
+              "end": 185
             },
             "refs": []
           },
           "span": {
-            "start": 149,
-            "end": 173
+            "start": 163,
+            "end": 187
           }
         }
       ],
@@ -81,8 +81,8 @@
             "name": "class",
             "value": "card",
             "span": {
-              "start": 195,
-              "end": 207
+              "start": 209,
+              "end": 221
             }
           }
         ],
@@ -96,8 +96,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 223,
-                  "end": 236
+                  "start": 237,
+                  "end": 250
                 }
               },
               {
@@ -110,52 +110,52 @@
                     "body": {
                       "code": "(open.value = !open.value)",
                       "span": {
-                        "start": 252,
-                        "end": 278
+                        "start": 266,
+                        "end": 292
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "open@155",
+                          "binding": "open@169",
                           "operator": "=",
                           "span": {
-                            "start": 252,
-                            "end": 278
+                            "start": 266,
+                            "end": 292
                           },
                           "target": {
-                            "start": 253,
-                            "end": 263
+                            "start": 267,
+                            "end": 277
                           },
                           "value": {
-                            "start": 266,
-                            "end": 277
+                            "start": 280,
+                            "end": 291
                           },
                           "arrowBody": true
                         },
                         {
                           "kind": "Binding",
-                          "binding": "open@155",
+                          "binding": "open@169",
                           "span": {
-                            "start": 267,
-                            "end": 277
+                            "start": 281,
+                            "end": 291
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 246,
-                      "end": 278
+                      "start": 260,
+                      "end": 292
                     }
                   },
                   "span": {
-                    "start": 246,
-                    "end": 278
+                    "start": 260,
+                    "end": 292
                   }
                 },
                 "span": {
-                  "start": 237,
-                  "end": 279
+                  "start": 251,
+                  "end": 293
                 }
               }
             ],
@@ -164,14 +164,14 @@
                 "kind": "Text",
                 "value": "Toggle card",
                 "span": {
-                  "start": 280,
-                  "end": 307
+                  "start": 294,
+                  "end": 321
                 }
               }
             ],
             "span": {
-              "start": 215,
-              "end": 316
+              "start": 229,
+              "end": 330
             }
           },
           {
@@ -181,16 +181,16 @@
                 "condition": {
                   "code": "open.value",
                   "span": {
-                    "start": 324,
-                    "end": 334
+                    "start": 338,
+                    "end": 348
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "open@155",
+                      "binding": "open@169",
                       "span": {
-                        "start": 324,
-                        "end": 334
+                        "start": 338,
+                        "end": 348
                       }
                     }
                   ]
@@ -205,8 +205,8 @@
                         "name": "class",
                         "value": "body",
                         "span": {
-                          "start": 343,
-                          "end": 355
+                          "start": 357,
+                          "end": 369
                         }
                       }
                     ],
@@ -216,32 +216,32 @@
                         "slot": "default",
                         "fallback": [],
                         "span": {
-                          "start": 356,
-                          "end": 375
+                          "start": 370,
+                          "end": 389
                         }
                       }
                     ],
                     "span": {
-                      "start": 338,
-                      "end": 381
+                      "start": 352,
+                      "end": 395
                     }
                   }
                 ],
                 "span": {
-                  "start": 324,
-                  "end": 381
+                  "start": 338,
+                  "end": 395
                 }
               }
             ],
             "span": {
-              "start": 324,
-              "end": 381
+              "start": 338,
+              "end": 395
             }
           }
         ],
         "span": {
-          "start": 190,
-          "end": 393
+          "start": 204,
+          "end": 407
         }
       }
     }
@@ -252,8 +252,8 @@
       "name": "default",
       "local": "Card",
       "span": {
-        "start": 58,
-        "end": 400
+        "start": 72,
+        "end": 414
       }
     }
   ],

@@ -1,7 +1,7 @@
-import { defineSlots, ref } from "@uxfront/unframework";
+import { defineSlots, ref, type Element } from "@uxfront/unframework";
 
 export default function Card() {
-  const slots = defineSlots<{ default?(): unknown }>();
+  const slots = defineSlots<{ default?(): Element }>();
   const open = ref(false);
 
   return (

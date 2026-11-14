@@ -109,7 +109,7 @@ const HYDRATION_COMPOSITION = /^hydration\/use-id$/;
  * `compile()` does, which `lower` has not. The corpus's toolchain project checks their Angular
  * outputs.
  */
-const TELEPORT_COMPOSITION = /^teleport\/(?:dialog|root|siblings)$/;
+const TELEPORT_COMPOSITION = /^teleport\/(?:components|dialog|root|siblings)$/;
 
 /**
  * The thrown-error case whose main source renders a child that throws once mounted (ADR-0078):
