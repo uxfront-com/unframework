@@ -114,6 +114,7 @@ describe("svelte target", () => {
       "named-slot",
       "next-tick",
       "props",
+      "raw-html",
       "reactive-context",
       "scoped-slot",
       "scoped-styles",

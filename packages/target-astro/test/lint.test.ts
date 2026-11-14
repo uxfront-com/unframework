@@ -1,6 +1,6 @@
 // L5 for Astro (ADR-0042): oxlint with the shared baseline over the frontmatter, and ESLint with
 // eslint-plugin-astro over the whole file (tests/toolchains/astro). It accepts every committed
-// golden and the shapes M1 emits, rejects what its rules exist for, accepts the class
+// golden and the shapes M1 emits, rejects what its rules exist for, accepts the class and raw HTML
 // expressions the author writes, and refuses a run it cannot trust.
 import { globSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -92,11 +92,6 @@ describe("astro lint (L5)", { timeout: 60_000 }, () => {
       rule: "astro/prefer-class-list-directive",
     },
     {
-      what: "raw HTML",
-      markup: "<p set:html={label} data-on={on} title={size} />",
-      rule: "astro/no-set-html-directive",
-    },
-    {
       what: "text through a directive",
       markup: "<p set:text={label} data-on={on} title={size} />",
       rule: "astro/no-set-text-directive",
@@ -141,6 +136,9 @@ describe("astro lint (L5)", { timeout: 60_000 }, () => {
       what: "a class template with a space",
       markup: "<p class:list={[`btn btn-${size}`]} data-on={on}>{label}</p>",
     },
+    // `astro/no-set-html-directive` is off: `innerHTML` in the source is the author's choice,
+    // which the analyser reports (UF3051, ADR-0097).
+    { what: "raw HTML", markup: "<p set:html={label} data-on={on} title={size} />" },
   ])("accepts $what, which is the author's expression", async ({ markup }) => {
     expect(await lintCodes(component(markup))).toEqual([]);
   });

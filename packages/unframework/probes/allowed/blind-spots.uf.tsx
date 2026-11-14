@@ -85,7 +85,7 @@ export function M1BlindSpots({
       <svg>
         <use xlinkHref="#icon" />
       </svg>
-      {/* Markup set as a property. Caught by: compiler (UF1002). */}
+      {/* Markup rendered unescaped (ADR-0097). Caught by: compiler (UF3051, a warning). */}
       <div innerHTML="<b>x</b>" />
       {/* Children JSX renders as nothing and templates as text. Caught by: compiler (UF3016, UF1002). */}
       <p>

@@ -25,6 +25,7 @@ import type {
   ModelAttribute,
   ModelBindingAttribute,
   PropAttribute,
+  RawHtmlAttribute,
   RefAttribute,
   RenderNode,
   SlotFill,
@@ -109,6 +110,16 @@ export interface JsxDialect {
    */
   eventAttribute?(
     attribute: EventAttribute,
+    element: ElementNode,
+    context: JsxContext,
+  ): AST.JSXAttributeItem[];
+  /**
+   * `innerHTML={markup}` (ADR-0097): the element's content is the markup, parsed, not escaped.
+   * By default `innerHTML={markup}`, Solid's spelling: React writes
+   * `dangerouslySetInnerHTML={{ __html: markup }}`, and Qwik `dangerouslySetInnerHTML={markup}`.
+   */
+  rawHtmlAttribute?(
+    attribute: RawHtmlAttribute,
     element: ElementNode,
     context: JsxContext,
   ): AST.JSXAttributeItem[];
@@ -652,6 +663,15 @@ export function jsxAttributes(node: ElementNode, context: JsxContext): AST.JSXAt
           : refJsxAttribute(attribute, node, context);
       case "Model":
         return hook(context, "modelAttribute")(attribute, node, context);
+      case "RawHtml":
+        return dialect.rawHtmlAttribute
+          ? dialect.rawHtmlAttribute(attribute, node, context)
+          : [
+              js.jsxAttribute(
+                "innerHTML",
+                js.jsxExpressionContainer(jsxExpression(attribute.value, context)),
+              ),
+            ];
       default:
         return unreachable(attribute);
     }

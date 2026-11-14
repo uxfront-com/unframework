@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3035",
+    "severity": "error",
+    "message": "Card declares no prop `innerHTML`: a component takes its props, `class`, `style`, `key`, `ref`, its events' listeners and its slots.",
+    "file": "diagnostics/raw-html-component/Page.uf.tsx",
+    "start": {
+      "line": 16,
+      "column": 34,
+      "offset": 455
+    },
+    "end": {
+      "line": 16,
+      "column": 43,
+      "offset": 464
+    },
+    "help": "Pass a prop Card declares, or declare `innerHTML` in its props."
+  }
+]

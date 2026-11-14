@@ -1,0 +1,7 @@
+- region "Glossary":
+  - heading "Shadowing" [level=2]
+  - paragraph:
+    - text: An inner name
+    - emphasis: hides
+    - text: an outer one.
+  - button "Next term"

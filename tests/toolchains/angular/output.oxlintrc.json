@@ -28,7 +28,15 @@
       {
         "patterns": [
           {
-            "group": ["*", "!@angular/core", "!@angular/common", "!virtual:*", "!./**", "!../**"],
+            "group": [
+              "*",
+              "!@angular/core",
+              "!@angular/common",
+              "!@angular/platform-browser",
+              "!virtual:*",
+              "!./**",
+              "!../**"
+            ],
             "message": "An output imports only its framework (P7).",
             "allowTypeImports": true
           }

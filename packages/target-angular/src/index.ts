@@ -40,7 +40,12 @@ import {
   tokenType,
 } from "./composition.ts";
 import type { Composition } from "./composition.ts";
-import { directiveCode, scopeDirectiveCode, textCaretDirectiveCode } from "./directives.ts";
+import {
+  directiveCode,
+  scopeDirectiveCode,
+  textCaretDirectiveCode,
+  trustedHtmlPipeCode,
+} from "./directives.ts";
 import type { ScopeDirectiveNames } from "./directives.ts";
 import { planListeners } from "./listeners.ts";
 import { classMembers } from "./members.ts";
@@ -127,6 +132,13 @@ export const angular: Target = defineTarget({
       note: "A style bound to a value is Angular's own `[style]`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
     },
     "attribute-spread": { support: "native" },
+    // Angular sanitises a bound `innerHTML`: it drops `id`, `data-*` and `style` attributes, form
+    // controls and SVG. A pure pipe marks the markup trusted, so it renders as written (ADR-0097).
+    "raw-html": {
+      support: "emulated",
+      helper: "TrustedHtmlPipe",
+      note: "A pure pipe passes the markup through `DomSanitizer.bypassSecurityTrustHtml`, so Angular renders it as written instead of sanitising it.",
+    },
     svg: { support: "native" },
     component: { support: "native" },
     "component-event": { support: "native" },
@@ -317,6 +329,8 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ? imports.claim("idCounter")
     : undefined;
   const directives = listeners.directives.map((spec) => directiveCode(spec, imports, placeholders));
+  // `innerHTML` reads its markup through a pure pipe that marks it trusted (ADR-0097).
+  const trustedHtml = rendersRawHtml(component) ? imports.claim("TrustedHtmlPipe") : undefined;
   // The child-root rule (ADR-0063): each root node binds the directive that gives it the scope
   // attributes the component's styled parents put on its host.
   const roots = scopedRoots(component);
@@ -348,7 +362,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   type Entry = Parameters<typeof js.objectExpression>[0][number];
   const metadata = js.objectExpression([
     ["selector", js.stringLiteral(`uf-${kebabCase(component.name)}`)],
-    ...(composition.imports.length || directives.length || scope || models.textCaret
+    ...(composition.imports.length || directives.length || scope || models.textCaret || trustedHtml
       ? [
           [
             "imports",
@@ -358,6 +372,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
                 ...listeners.directives.map(({ className: name }) => name),
                 ...(scope ? [scope.className] : []),
                 ...(models.textCaret === undefined ? [] : [models.textCaret]),
+                ...(trustedHtml === undefined ? [] : [trustedHtml]),
               ].map((name) => js.identifier(name)),
             ),
           ] satisfies Entry,
@@ -466,6 +481,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ),
     ...(scope ? [scopeDirectiveCode(scope, imports)] : []),
     ...(models.textCaret === undefined ? [] : [textCaretDirectiveCode(models.textCaret, imports)]),
+    ...(trustedHtml === undefined ? [] : [trustedHtmlPipeCode(trustedHtml, imports)]),
   ];
   if (models.helpers.some(({ code }) => code.includes("WritableSignal"))) {
     imports.add("@angular/core", "WritableSignal", { type: true });
@@ -506,6 +522,20 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ].join("\n"),
   );
   return { path: `${kebabCase(component.name)}.ts`, contents };
+}
+
+/** Whether an element of the component's template sets `innerHTML` (ADR-0097). */
+function rendersRawHtml(component: UfComponent): boolean {
+  let found = false;
+  walk(component.render, {
+    enter: (node) => {
+      if (node.kind === "Element" && node.attributes.some(({ kind }) => kind === "RawHtml")) {
+        found = true;
+      }
+      return found ? false : undefined;
+    },
+  });
+  return found;
 }
 
 /** A span's key in a set of root nodes. */

@@ -1,0 +1,11 @@
+- article:
+  - heading "Release notes" [level=2]
+  - paragraph:
+    - text: Version 2 is
+    - strong: out
+    - text: .
+  - list:
+    - listitem: Faster builds
+    - listitem: Fewer warnings
+  - text: Filed under
+  - emphasis: News

@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "`innerHTML` on `<component is>` is not supported: Vue writes it on a component, whose content is its own.",
+    "file": "diagnostics/raw-html-dynamic/Section.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 61,
+      "offset": 378
+    },
+    "end": {
+      "line": 9,
+      "column": 70,
+      "offset": 387
+    },
+    "help": "Write each tag in a conditional, `nested ? <h3 innerHTML={title} /> : <h2 innerHTML={title} />`."
+  }
+]

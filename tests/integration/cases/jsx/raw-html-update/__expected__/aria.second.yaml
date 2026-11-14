@@ -1,0 +1,8 @@
+- region "Glossary":
+  - heading "Closure" [level=2]
+  - paragraph:
+    - text: A function keeps the
+    - strong: variables
+    - text: it was made with.
+  - paragraph: "See also: scope."
+  - button "Next term"

@@ -361,6 +361,10 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   lists (UF3027). An element's
   listeners are judged by Svelte 5.57.1's five handler-dependent accessibility rules (`a11y.ts`,
   UF3030), on the source's listeners, its tables Svelte's own.
+- **Raw HTML** (`raw-html.ts`, ADR-0097): `innerHTML={markup}` lowered to a `RawHtml` attribute,
+  with its warning (UF3051), on an HTML element that holds content and has no children (UF3052),
+  from a string only (UF3018). A static string reads alike in JSX and in JavaScript, as a static
+  prop's does.
 - **Attributes** (`attribute-names.ts`, `attributes.ts`, `enumerated.ts`, `class.ts`, `style.ts`,
   `aria.ts`): name checks first, whatever the value; then static values, literals in braces (written
   statically, UF3004), bindings whose kinds must fit the attribute and whose values every typed

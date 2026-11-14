@@ -121,6 +121,8 @@ const hasSpread = (element: ElementNode) =>
       case "Ref":
       // Not printed yet (ADR-0055): each target's `emit` reports UF1002 for it.
       case "Model":
+      // Content, `{@html markup}`, never an attribute (ADR-0097).
+      case "RawHtml":
         return false;
       default:
         return unreachable(attribute);
@@ -332,6 +334,7 @@ export const svelteDialect: MarkupDialect = {
     return [{ name, text: shorthand(name, code) ? `{${name}}` : `${name}={${code}}` }];
   },
   refAttribute: ({ name }) => [{ name: "bind:this", text: `bind:this={${name}}` }],
+  rawHtmlContent: (code) => `{@html ${code}}`,
   // A child's props and events (ADR-0053): `label="Name"`, `{tone}`, and its events' callback
   // props, `onclear` for `clear` (ADR-0012).
   propAttribute: ({ name, code, literal }) => [

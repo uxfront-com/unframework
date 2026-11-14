@@ -231,6 +231,10 @@ class Evaluator {
           break;
         case "Model":
           throw new Error("a v-model is not rendered yet (ADR-0055)");
+        // Markup the browser parses, which static IR cannot hold (ADR-0097): the corpus's
+        // server HTML and DOM layers check it.
+        case "RawHtml":
+          throw new Error("raw HTML is not rendered by the reference (ADR-0097)");
         default:
           throw new Error(`unknown attribute ${(attribute satisfies never as Attribute).kind}`);
       }

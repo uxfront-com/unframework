@@ -86,6 +86,8 @@ function describeAttribute(attribute: Attribute): string {
       return `ref:${attribute.binding}`;
     case "Model":
       return `v-model:${attribute.control}={${attribute.value.code}}`;
+    case "RawHtml":
+      return `innerHTML={${attribute.value.code}}`;
   }
 }
 

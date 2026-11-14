@@ -23,6 +23,7 @@ const SPOTS = [
   },
   { line: 37, code: "UF3037", mark: "v-model:opne", spot: "an unknown model" },
   { line: 39, code: "UF3038", mark: "footer:", spot: "an undeclared slot key" },
+  { line: 89, code: "UF3051", mark: "innerHTML=", spot: "markup rendered unescaped" },
 ];
 
 const readFixture = (path: string) => readFile(path, "utf8").catch(() => undefined);

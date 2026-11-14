@@ -6,13 +6,14 @@ templates, whose host element has `display: contents` (decision D6, ADR-0010).
 ## Output
 
 One `<kebab-name>.ts` file per component (plan §6), in this order: the imports from
-`@angular/core` and `@angular/common`, of the children's output files, of the composables'
+`@angular/core`, `@angular/common` and `@angular/platform-browser`, of the children's output files, of the composables'
 (`./use-toggle`, ADR-0069) and of the values the source imports from `.ts` modules, each under a
 name no source name takes; the type declarations; the module's constants the component reads, and
 those they read, as written (`const GAP = sizes.sm * 2;`, ADR-0070); the application's id
 counter, an injection token (`idCounter`, ADR-0095), when the component makes ids; the
 injection tokens of the module's keys; the inline helpers (`refObject`, the native controls'
-`modelText`, `toggle`, `selectedValues`, `optionText`); the slot directives; the directives its listeners'
+`modelText`, `toggle`, `selectedValues`, `optionText`); the slot directives; the pipe `innerHTML`
+reads its markup through (`TrustedHtmlPipe`, ADR-0097); the directives its listeners'
 options need; the component.
 
 - **Types.** The source's type declarations the output reads (its inputs' and outputs' types, the
@@ -361,7 +362,8 @@ Native: everything but `event-capture`, `event-once` and `event-passive` (emulat
 above, helper `uf<Event><Option>`), `use-id` (emulated, `idCounter`), `next-tick` (emulated,
 `nextTick`), `class-binding` (emulated, `classNames`, for a class part that may be an array or an
 object), `style-binding` (emulated, `styleObject`, for a style bound to a value that a merge
-spreads; ADR-0065) and composition's cells that ADR-0056 decides: `named-slot`, `scoped-slot` and
+spreads; ADR-0065), `raw-html` (emulated, `TrustedHtmlPipe`, a pure pipe that marks `innerHTML`'s
+markup trusted, so Angular's sanitiser keeps it as written; ADR-0097) and composition's cells that ADR-0056 decides: `named-slot`, `scoped-slot` and
 `slot-forwarding` (emulated, the slot directives `uf<Component><Slot>`), `model-array`
 (`toggle`), `model-modifiers` (`modelText`), `fallthrough` (`fallthrough`), `reactive-context`
 (`refObject`) and `dynamic-component` (`@switch`), all emulated, `default-slot-presence` and

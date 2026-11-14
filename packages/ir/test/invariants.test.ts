@@ -50,6 +50,7 @@ import {
   createNarrowedPath,
   createParameter,
   createParameterPattern,
+  createRawHtmlAttribute,
   createRefAttribute,
   createRefSource,
   createWriteReference,
@@ -388,6 +389,7 @@ describe("checkInvariants on M1's IR", () => {
   });
 
   it.each<[string, ElementNode | FragmentNode]>([
+    ["raw HTML on an element without children", node("div", [createRawHtmlAttribute(label(), at)])],
     [
       "a bound attribute of each kind",
       node("button", [
@@ -701,6 +703,31 @@ describe("checkInvariants on M1's IR", () => {
       'must set "title" once',
     ],
     ["two styles", node("p", [style(), style()]), "/attributes/1", 'must set "style" once'],
+    // Raw HTML (ADR-0097).
+    [
+      "raw HTML beside children",
+      node("div", [createRawHtmlAttribute(label(), at)], [interpolation()]),
+      "/attributes/0",
+      "without children",
+    ],
+    [
+      "raw HTML on a void element",
+      node("br", [createRawHtmlAttribute(label(), at)]),
+      "/attributes/0",
+      "a void element",
+    ],
+    [
+      "raw HTML on a textarea",
+      node("textarea", [createRawHtmlAttribute(label(), at)]),
+      "/attributes/0",
+      "its content is text",
+    ],
+    [
+      "raw HTML twice",
+      node("div", [createRawHtmlAttribute(label(), at), createRawHtmlAttribute(label(), at)]),
+      "/attributes/1",
+      'must set "innerHTML" once',
+    ],
     // Class parts.
     [
       "static class names that are not canonical",

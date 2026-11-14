@@ -84,6 +84,7 @@ import type {
   PropAttribute,
   PropsParameter,
   ProvideItem,
+  RawHtmlAttribute,
   RefAttribute,
   RefType,
   Reference,
@@ -1051,6 +1052,11 @@ export function createStaticAttribute(
 /** Builds a bound attribute. */
 export function createBoundAttribute(name: string, value: Expression, at: Span): BoundAttribute {
   return { kind: "Bound", name, value, span: at };
+}
+
+/** Builds `innerHTML={markup}` (ADR-0097). */
+export function createRawHtmlAttribute(value: Expression, at: Span): RawHtmlAttribute {
+  return { kind: "RawHtml", value, span: at };
 }
 
 /** Builds a `class` from its parts. */

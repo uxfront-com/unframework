@@ -70,6 +70,7 @@ export const astro: Target = defineTarget({
       note: "A style bound to a value is Astro's own `style`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
     },
     "attribute-spread": { support: "native" },
+    "raw-html": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
     "component-event": inert("A component's listener is inert"),

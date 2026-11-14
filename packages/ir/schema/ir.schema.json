@@ -1837,6 +1837,9 @@
         },
         {
           "$ref": "#/definitions/ModelAttribute"
+        },
+        {
+          "$ref": "#/definitions/RawHtmlAttribute"
         }
       ],
       "description": "An attribute on an element."
@@ -2347,6 +2350,29 @@
       ],
       "additionalProperties": false,
       "description": "`v-model={text.value}` on a form control (ADR-0054): binds the control's value, or its checked state, two ways."
+    },
+    "RawHtmlAttribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "RawHtml"
+        },
+        "value": {
+          "$ref": "#/definitions/Expression",
+          "description": "An expression whose value is a string: the markup."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`innerHTML={markup}` (ADR-0097): the element's content is the markup a string holds, parsed by the browser, never escaped. Its element is an HTML element that holds content, and has no children of its own. A static `innerHTML=\"<b>Hi</b>\"` is a string literal's expression."
     },
     "RenderNode": {
       "anyOf": [

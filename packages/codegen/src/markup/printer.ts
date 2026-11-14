@@ -330,6 +330,14 @@ export interface MarkupDialect {
   /** Writes a template ref (ADR-0049): the element is the ref's value while it is rendered. */
   refAttribute(ref: PrintedRef, context: AttributeContext): PrintedAttribute[];
   /**
+   * Writes `innerHTML={markup}` (ADR-0097) as an attribute: the element's content is the markup
+   * the code's string holds, parsed, never escaped (Vue's `v-html`, Angular's `[innerHTML]`,
+   * Astro's `set:html`). A language that writes it as content implements `rawHtmlContent`.
+   */
+  rawHtmlAttribute?(code: string, context: AttributeContext): PrintedAttribute[];
+  /** Writes `innerHTML={markup}` as the element's content instead (Svelte's `{@html markup}`). */
+  rawHtmlContent?(code: string): string;
+  /**
    * Whether the language runs no code in the browser (Astro): it writes no listener and no
    * template ref, so a list's index that only a handler reads is left out too.
    */
@@ -1081,7 +1089,12 @@ export function printMarkup(
       candidates: undefined,
       top: false,
     };
-    const children = itemsOf(element.children, element, inner);
+    const raw = element.attributes.find((attribute) => attribute.kind === "RawHtml");
+    // The markup is the element's content, which has no children beside it (ADR-0097).
+    const children =
+      raw && inner.dialect.rawHtmlContent
+        ? [inline(inner.dialect.rawHtmlContent(code(raw.value)))]
+        : itemsOf(element.children, element, inner);
     const isVoid = namespace === "html" && isVoidElement(element.tag);
     // A childless SVG element closes itself (ADR-0040): the HTML parser honours `/>` in foreign
     // content, and every template compiler reads it, though one may warn (`selfClosingSvg`).
@@ -1222,6 +1235,12 @@ export function printMarkup(
           printed.push(
             ...hook(of, "modelAttribute")({ attribute, value: code(attribute.value) }, context),
           );
+          break;
+        case "RawHtml":
+          // A language that writes the markup as content wrote it with the children.
+          if (!of.rawHtmlContent) {
+            printed.push(...hook(of, "rawHtmlAttribute")(code(attribute.value), context));
+          }
           break;
         default:
           unreachable(attribute);
@@ -1513,7 +1532,8 @@ function hook<
     | "slotOutlet"
     | "modelAttribute"
     | "modelBinding"
-    | "dynamic",
+    | "dynamic"
+    | "rawHtmlAttribute",
 >(dialect: MarkupDialect, name: K): NonNullable<MarkupDialect[K]> {
   const found = dialect[name];
   if (!found) {
@@ -1619,6 +1639,9 @@ function attributeName(attribute: Attribute): string {
       return "ref";
     case "Model":
       return "v-model";
+    // Orders as Vue's `v-html`, which `vue/attributes-order` puts last, as content.
+    case "RawHtml":
+      return "v-html";
     default:
       return unreachable(attribute);
   }

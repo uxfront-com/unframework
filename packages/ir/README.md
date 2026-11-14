@@ -7,8 +7,8 @@ plain, versioned, schema-validated JSON (plan §5.3).
   events and setup use), `UfComponent` (props, the props parameter, the events `defineEmits`
   declares, bindings, the setup and a render root that is an element or a root `Fragment`), the
   render nodes (`Element`, `Text`, `Interpolation`, `If`, `For`) and the attribute kinds
-  (`Static`, `Bound`, `Class`, `Style`, `Spread`, and the listeners and template refs, `Event` and
-  `Ref`). A binding is a prop, a loop variable, a `ref` (`state`), a `computed` (`derived`), a
+  (`Static`, `Bound`, `Class`, `Style`, `Spread`, the listeners and template refs, `Event` and
+  `Ref`, and an element's markup, `RawHtml`, ADR-0097). A binding is a prop, a loop variable, a `ref` (`state`), a `computed` (`derived`), a
   template ref, a setup `const`, function or `let`, or `emit`, by its `name@offset` id. The setup
   is a list of items in source order (`State`, `Derived`, `TemplateRef`, `Id`, `Const`,
   `Variable`, `Function`, `Watch`, `WatchEffect`, `Lifecycle`, ADR-0045). An `Expression` is a

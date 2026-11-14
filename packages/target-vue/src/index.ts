@@ -52,6 +52,7 @@ export const vue: Target = defineTarget({
     "class-binding": { support: "native" },
     "style-binding": { support: "native" },
     "attribute-spread": { support: "native" },
+    "raw-html": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
     "component-event": { support: "native" },

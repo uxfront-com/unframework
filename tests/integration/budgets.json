@@ -3552,6 +3552,105 @@
         }
       }
     },
+    "jsx/raw-html": {
+      "time": 2.39,
+      "sizes": {
+        "react": {
+          "raw": 1209,
+          "gzip": 715
+        },
+        "vue": {
+          "raw": 456,
+          "gzip": 332
+        },
+        "svelte": {
+          "raw": 766,
+          "gzip": 491
+        },
+        "solid": {
+          "raw": 610,
+          "gzip": 421
+        },
+        "angular": {
+          "raw": 2096,
+          "gzip": 981
+        },
+        "qwik": {
+          "raw": 842,
+          "gzip": 598
+        },
+        "astro": {
+          "raw": 640,
+          "gzip": 435
+        }
+      }
+    },
+    "jsx/raw-html-list": {
+      "time": 2.64,
+      "sizes": {
+        "react": {
+          "raw": 904,
+          "gzip": 563
+        },
+        "vue": {
+          "raw": 365,
+          "gzip": 277
+        },
+        "svelte": {
+          "raw": 616,
+          "gzip": 413
+        },
+        "solid": {
+          "raw": 955,
+          "gzip": 544
+        },
+        "angular": {
+          "raw": 1895,
+          "gzip": 935
+        },
+        "qwik": {
+          "raw": 677,
+          "gzip": 547
+        },
+        "astro": {
+          "raw": 557,
+          "gzip": 391
+        }
+      }
+    },
+    "jsx/raw-html-update": {
+      "time": 5.36,
+      "sizes": {
+        "react": {
+          "raw": 1276,
+          "gzip": 748
+        },
+        "vue": {
+          "raw": 591,
+          "gzip": 397
+        },
+        "svelte": {
+          "raw": 944,
+          "gzip": 586
+        },
+        "solid": {
+          "raw": 792,
+          "gzip": 514
+        },
+        "angular": {
+          "raw": 2261,
+          "gzip": 1072
+        },
+        "qwik": {
+          "raw": 1388,
+          "gzip": 1043
+        },
+        "astro": {
+          "raw": 670,
+          "gzip": 458
+        }
+      }
+    },
     "jsx/svg": {
       "time": 3.26,
       "sizes": {

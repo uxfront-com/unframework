@@ -4,7 +4,12 @@
 // event through an output of its selector's name: `<div (ufClickCapture)="record()">`. Being a
 // directive, it listens on every element it matches, inside `@if` and `@for` blocks too, and
 // stops listening when its element goes.
-import { exportDeclaration, js, printExpression } from "@unframework.dev/codegen";
+import {
+  exportDeclaration,
+  js,
+  printExpression,
+  TRUSTED_HTML_PIPE,
+} from "@unframework.dev/codegen";
 import type { ImportSet, Placeholders } from "@unframework.dev/codegen";
 
 /** A directive that listens to one event with one option. */
@@ -142,6 +147,28 @@ export class ${className} implements ${core("OnInit", true)} {
     const text = field.value;
     field.value = "";
     field.value = text;
+  }
+}
+`;
+}
+
+/**
+ * The pure pipe `[innerHTML]` reads its markup through (ADR-0097). Angular sanitises a bound
+ * `innerHTML`, dropping `id`, `data-*` and `style` attributes, form controls and SVG, and marking
+ * the markup trusted renders it as written, as the other targets do. A pure pipe runs again only
+ * when the markup changes, so change detection sees one trusted value per string.
+ */
+export function trustedHtmlPipeCode(className: string, imports: ImportSet): string {
+  const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
+  const browser = (name: string, type = false) =>
+    imports.add("@angular/platform-browser", name, { type });
+  return `/** Marks markup trusted, so that \`[innerHTML]\` renders it as written. */
+@${core("Pipe")}({ name: "${TRUSTED_HTML_PIPE}" })
+class ${className} implements ${core("PipeTransform", true)} {
+  private readonly sanitizer = ${core("inject")}(${browser("DomSanitizer")});
+
+  transform(html: string): ${browser("SafeHtml", true)} {
+    return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 }
 `;

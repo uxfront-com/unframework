@@ -35,6 +35,6 @@ export type { CodeMap, CodeToken } from "./markup/escape.ts";
 export { htmlDialect } from "./markup/html.ts";
 export { vueAttributeCode, vueClassValue, vueDialect, vueInterpolationCode } from "./markup/vue.ts";
 export { svelteDialect } from "./markup/svelte.ts";
-export { angularCode, angularDialect } from "./markup/angular.ts";
+export { angularCode, angularDialect, TRUSTED_HTML_PIPE } from "./markup/angular.ts";
 export type { AngularContext } from "./markup/angular.ts";
 export { astroDialect } from "./markup/astro.ts";

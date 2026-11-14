@@ -1,0 +1,233 @@
+{
+  "irVersion": 1,
+  "file": "jsx/raw-html/Article.uf.tsx",
+  "components": [
+    {
+      "name": "Article",
+      "span": {
+        "start": 68,
+        "end": 332
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 41,
+              "end": 47
+            }
+          },
+          "binding": "title@102",
+          "span": {
+            "start": 34,
+            "end": 48
+          }
+        },
+        {
+          "name": "body",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 57,
+              "end": 63
+            }
+          },
+          "binding": "body@109",
+          "span": {
+            "start": 51,
+            "end": 64
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ArticleProps",
+          "span": {
+            "start": 117,
+            "end": 129
+          }
+        },
+        "span": {
+          "start": 100,
+          "end": 129
+        }
+      },
+      "types": [
+        "ArticleProps"
+      ],
+      "bindings": [
+        {
+          "id": "title@102",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 102,
+            "end": 107
+          }
+        },
+        {
+          "id": "body@109",
+          "name": "body",
+          "kind": "prop",
+          "span": {
+            "start": 109,
+            "end": 113
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "article",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "article",
+            "span": {
+              "start": 157,
+              "end": 172
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "title",
+                  "span": {
+                    "start": 185,
+                    "end": 190
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "title@102",
+                      "span": {
+                        "start": 185,
+                        "end": 190
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 184,
+                  "end": 191
+                }
+              }
+            ],
+            "span": {
+              "start": 180,
+              "end": 196
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "body",
+                "span": {
+                  "start": 208,
+                  "end": 220
+                }
+              },
+              {
+                "kind": "RawHtml",
+                "value": {
+                  "code": "body",
+                  "span": {
+                    "start": 232,
+                    "end": 236
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "body@109",
+                      "span": {
+                        "start": 232,
+                        "end": 236
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 221,
+                  "end": 237
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 203,
+              "end": 240
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "footer",
+            "attributes": [
+              {
+                "kind": "RawHtml",
+                "value": {
+                  "code": "\"<small>Filed under <em>News</em></small>\"",
+                  "span": {
+                    "start": 265,
+                    "end": 307
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 255,
+                  "end": 307
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 247,
+              "end": 310
+            }
+          }
+        ],
+        "span": {
+          "start": 148,
+          "end": 325
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Article",
+      "span": {
+        "start": 68,
+        "end": 332
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ArticleProps",
+      "exported": true,
+      "code": "interface ArticleProps {\n  title: string;\n  body: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 66
+      }
+    }
+  ]
+}

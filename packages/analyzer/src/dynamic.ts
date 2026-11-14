@@ -325,10 +325,27 @@ function lowerTags(
       { help: "Write the control itself, as `<input v-model={text.value} />`." },
     );
   }
+  // Vue writes a `<component is>` as a component, which `v-html` may not be on, and Angular
+  // writes each tag in an `@case` of its own (ADR-0097).
+  const rawHtml = node.openingElement.attributes.find(
+    (item): item is AST.JSXAttribute =>
+      item.type === "JSXAttribute" &&
+      item.name.type === "JSXIdentifier" &&
+      item.name.name.toLowerCase() === "innerhtml",
+  );
+  if (rawHtml) {
+    render.reporter.unsupported(
+      rawHtml.name,
+      "`innerHTML` on `<component is>` is not supported: Vue writes it on a component, whose content is its own.",
+      {
+        help: "Write each tag in a conditional, `nested ? <h3 innerHTML={title} /> : <h2 innerHTML={title} />`.",
+      },
+    );
+  }
   const opening = {
     ...node.openingElement,
     attributes: node.openingElement.attributes.filter(
-      (item) => item !== isAttribute && item !== model,
+      (item) => item !== isAttribute && item !== model && item !== rawHtml,
     ),
   };
   const content = hasContent(node.children);

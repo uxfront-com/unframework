@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF3051",
+    "severity": "warning",
+    "message": "`innerHTML` renders its markup as HTML, unescaped: markup from a user or another site can run script in the page.",
+    "file": "jsx/raw-html/Article.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 25,
+      "offset": 221
+    },
+    "end": {
+      "line": 10,
+      "column": 41,
+      "offset": 237
+    },
+    "help": "Render only markup you trust, or that a sanitiser such as DOMPurify has cleaned. Text is safer as children, which every target escapes."
+  },
+  {
+    "code": "UF3051",
+    "severity": "warning",
+    "message": "`innerHTML` renders its markup as HTML, unescaped: markup from a user or another site can run script in the page.",
+    "file": "jsx/raw-html/Article.uf.tsx",
+    "start": {
+      "line": 11,
+      "column": 15,
+      "offset": 255
+    },
+    "end": {
+      "line": 11,
+      "column": 67,
+      "offset": 307
+    },
+    "help": "Render only markup you trust, or that a sanitiser such as DOMPurify has cleaned. Text is safer as children, which every target escapes."
+  }
+]

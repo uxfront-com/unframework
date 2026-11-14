@@ -58,6 +58,10 @@ export default [
       "svelte/no-navigation-without-resolve": "off",
       // Judges the author's props type: a declared prop the component never reads is the author's.
       "svelte/no-unused-props": "off",
+      // Judges the author's choice to render markup unescaped: `innerHTML={markup}` in the
+      // source, which the analyser reports as a warning (UF3051), and every target renders as
+      // markup (ADR-0097).
+      "svelte/no-at-html-tags": "off",
     },
   },
 ];

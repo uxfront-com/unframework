@@ -168,6 +168,7 @@ function statefulElement(element: ElementNode): boolean {
         case "Class":
         case "Style":
         case "Spread":
+        case "RawHtml":
           return false;
         default:
           return attribute satisfies never;

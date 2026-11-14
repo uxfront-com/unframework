@@ -90,11 +90,6 @@ describe("svelte lint (L5)", { timeout: 60_000 }, () => {
       rule: "svelte/require-each-key",
     },
     {
-      what: "raw HTML",
-      markup: "<p>{@html label}{items.length}</p>",
-      rule: "svelte/no-at-html-tags",
-    },
-    {
       what: "a script in another language",
       markup: "<p>{label}{items.length}</p>",
       lang: "",
@@ -124,14 +119,17 @@ describe("svelte lint (L5)", { timeout: 60_000 }, () => {
   it("is not silenced by a comment in the markup", async () => {
     // ESLint's `noInlineConfig` does not reach eslint-plugin-svelte's own
     // `<!-- eslint-disable -->`.
-    const markup = "<!-- eslint-disable -->\n<p>{@html label}{items.length}</p>";
-    expect(await lintCodes(component(markup))).toEqual(["svelte/no-at-html-tags"]);
+    const markup = "<!-- eslint-disable -->\n{#each items as item}<p>{item}{label}</p>{/each}";
+    expect(await lintCodes(component(markup))).toEqual(["svelte/require-each-key"]);
   });
 
   it.each([
     // The printer's spelling of whitespace Svelte would otherwise trim (ADR-0026).
     { what: "whitespace as a string-literal mustache", markup: '<p>{label}{" "}<b>!</b></p>' },
     { what: "a link to a path", markup: '<a href="/about">{label}</a>' },
+    // `svelte/no-at-html-tags` is off: `innerHTML` in the source is the author's choice, which the
+    // analyser reports (UF3051, ADR-0097).
+    { what: "raw HTML", markup: "<p>{@html label}{items.length}</p>" },
     {
       what: "a prop the component never reads",
       markup: "<p>{label}</p>",

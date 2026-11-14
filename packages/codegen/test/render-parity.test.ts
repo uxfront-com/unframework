@@ -456,6 +456,7 @@ function testTarget(emit: Target["emit"], unsupported?: CapabilityName): Target 
       "class-binding": cell("class-binding"),
       "style-binding": cell("style-binding"),
       "attribute-spread": cell("attribute-spread"),
+      "raw-html": cell("raw-html"),
       svg: cell("svg"),
       component: cell("component"),
       "component-event": cell("component-event"),

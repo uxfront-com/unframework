@@ -98,6 +98,7 @@ export const solid: Target = defineTarget({
       note: "Solid's style takes kebab-case keys, so a style bound to a value goes through an inline helper that writes an object's camel-case keys in kebab case and splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
     },
     "attribute-spread": { support: "native" },
+    "raw-html": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
     "component-event": { support: "native" },

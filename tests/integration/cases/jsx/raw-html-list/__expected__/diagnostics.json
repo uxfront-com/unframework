@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3051",
+    "severity": "warning",
+    "message": "`innerHTML` renders its markup as HTML, unescaped: markup from a user or another site can run script in the page.",
+    "file": "jsx/raw-html-list/Changelog.uf.tsx",
+    "start": {
+      "line": 14,
+      "column": 28,
+      "offset": 277
+    },
+    "end": {
+      "line": 14,
+      "column": 50,
+      "offset": 299
+    },
+    "help": "Render only markup you trust, or that a sanitiser such as DOMPurify has cleaned. Text is safer as children, which every target escapes."
+  }
+]
