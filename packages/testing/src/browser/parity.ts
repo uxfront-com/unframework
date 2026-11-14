@@ -35,7 +35,7 @@ export interface ParityOptions {
 export interface ParityView {
   target: string;
   container: HTMLElement;
-  /** The container alone: `locator` matches what the view teleported too (ADR-0098). */
+  /** The container's locator, which matches nothing the view teleported (ADR-0098). */
   containerLocator: Locator;
   /** What the view teleported, each with its own locator, in `body` order (ADR-0098). */
   teleported(): { element: Element; locator: Locator }[];
