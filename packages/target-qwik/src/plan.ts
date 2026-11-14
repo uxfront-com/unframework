@@ -795,6 +795,9 @@ function planListeners(component: UfComponent): ListenerPlan {
         );
         for (const fill of node.fills ?? []) for (const child of fill.children) visit(child, path);
         return;
+      case "Teleport":
+        for (const child of node.children) visit(child, path);
+        return;
       default:
         unreachable(node);
     }
@@ -1731,6 +1734,10 @@ function refsInConditionals(component: UfComponent): Set<BindingId> {
       case "Dynamic":
         for (const child of node.children) visit(child, conditional);
         for (const fill of node.fills ?? []) for (const child of fill.children) visit(child, true);
+        return;
+      // A teleport renders once the component has mounted (ADR-0098).
+      case "Teleport":
+        for (const child of node.children) visit(child, true);
         return;
       default:
         unreachable(node);

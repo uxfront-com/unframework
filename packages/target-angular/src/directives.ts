@@ -152,6 +152,46 @@ export class ${className} implements ${core("OnInit", true)} {
 `;
 }
 
+/** The attribute that selects the teleport directive (ADR-0098). */
+export const TELEPORT_ATTRIBUTE = "ufTeleport";
+
+/**
+ * The directive that mounts a `<Teleport>`'s content into the element `to` selects (ADR-0098):
+ * `<ng-template ufTeleport="body">`. Once the application has rendered, so that the server and
+ * the hydrating client render none of it, it creates the template's view in its own view
+ * container, which keeps the view in its component's change detection, and moves the view's
+ * nodes into `to`, as the CDK's `DomPortalOutlet` does. The container holds that one view, so
+ * Angular never inserts a node before one it moved, and it removes a node from wherever it is.
+ * Destroying a view removes none of its nodes, so it removes them with the component.
+ */
+export function teleportDirectiveCode(className: string, imports: ImportSet): string {
+  const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
+  return `/** Mounts its template's content into the element \`${TELEPORT_ATTRIBUTE}\` selects once rendered, and removes it on destroy. */
+@${core("Directive")}({ selector: "ng-template[${TELEPORT_ATTRIBUTE}]" })
+class ${className} {
+  readonly ${TELEPORT_ATTRIBUTE} = ${core("input")}.required<string>();
+
+  constructor() {
+    const template = ${core("inject")}<${core("TemplateRef", true)}<unknown>>(${core("TemplateRef")});
+    const container = ${core("inject")}(${core("ViewContainerRef")});
+    const document = ${core("inject")}(${core("DOCUMENT")});
+    let nodes: Node[] = [];
+    ${core("afterNextRender")}(() => {
+      const target = document.querySelector(this.${TELEPORT_ATTRIBUTE}());
+      if (!target) return;
+      const view = container.createEmbeddedView(template);
+      view.detectChanges();
+      nodes = view.rootNodes;
+      target.append(...nodes);
+    });
+    ${core("inject")}(${core("DestroyRef")}).onDestroy(() => {
+      for (const node of nodes) node.parentNode?.removeChild(node);
+    });
+  }
+}
+`;
+}
+
 /**
  * The pure pipe `[innerHTML]` reads its markup through (ADR-0097). Angular sanitises a bound
  * `innerHTML`, dropping `id`, `data-*` and `style` attributes, form controls and SVG, and marking

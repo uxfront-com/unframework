@@ -219,6 +219,9 @@ function expressionsIn(nodes: readonly RenderNode[]): (Expression | Code)[] {
       case "SlotOutlet":
       case "Dynamic":
         return;
+      case "Teleport":
+        node.children.forEach(visit);
+        return;
       default:
         node satisfies never;
     }

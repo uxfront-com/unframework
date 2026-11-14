@@ -25,6 +25,7 @@ import type {
 
 import { selectorOf } from "./composition.ts";
 import type { Composition } from "./composition.ts";
+import { TELEPORT_ATTRIBUTE } from "./directives.ts";
 import type { Listeners } from "./listeners.ts";
 import type { Models } from "./models.ts";
 import { outputName } from "./outputs.ts";
@@ -97,6 +98,20 @@ export function template(
   }
   const dialect: MarkupDialect = {
     ...angularDialect,
+    // `<ng-template ufTeleport="body">`, whose directive mounts it into `to` (ADR-0098).
+    teleport: ({ node }) => [
+      {
+        kind: "wrapper",
+        tag: "ng-template",
+        attributes: [
+          {
+            name: TELEPORT_ATTRIBUTE,
+            text: angularDialect.attribute(TELEPORT_ATTRIBUTE, node.to, ""),
+          },
+        ],
+        content: { kind: "nodes", nodes: node.children, container: node },
+      },
+    ],
     componentTag: (name) => composition.tags.get(name) ?? selectorOf(name),
     // A child's output's listener runs the statement ./listeners.ts plans for it.
     componentEvent: ({ attribute }) => {

@@ -70,6 +70,7 @@ const html = defineTarget({
     "composable-effect-order": { support: "native" },
     hydration: { support: "native" },
     "keyed-identity": { support: "native" },
+    teleport: { support: "native" },
   },
   emit: (component) => [{ path: `${component.name}.html`, contents: "<p></p>\n" }],
 });

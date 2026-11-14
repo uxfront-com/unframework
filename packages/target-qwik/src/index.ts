@@ -94,6 +94,7 @@ import { moduleReads } from "./modules.ts";
 import { OutputNames, planSetup, selfReadingArguments, usedFunctionRenderCalls } from "./plan.ts";
 import type { SetupPlan } from "./plan.ts";
 import { exposeStatement, fillFunction, printSetup } from "./setup.ts";
+import { teleportHelper, teleportJsx, teleportNames, teleportSetup } from "./teleport.ts";
 import { qwikTitles } from "./title.ts";
 import { isPrimitiveValue } from "./values.ts";
 
@@ -237,6 +238,12 @@ export const qwik: Target = defineTarget({
         "Qwik resumes a server render instead of hydrating it: it runs no render, keeps no state for a component without client code, and runs visible tasks once the loader sees them, so the resumed page can't be checked against a client render.",
     },
     "keyed-identity": { support: "native" },
+    // Qwik has no portal (ADR-0098).
+    teleport: {
+      support: "emulated",
+      helper: "teleport",
+      note: "Qwik has no portal, so a `<Teleport>`'s element renders once a visible task says the component has mounted, after the empty text of `{\"\"}` in a fragment, and a ref, `teleport`, moves it into `to` once Qwik has inserted it and removes it once that text leaves the document. Qwik inserts a node before the first DOM node of the one after it, which is that text, never the moved element (ADR-0098).",
+    },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { module } = context;
@@ -325,20 +332,25 @@ export const qwik: Target = defineTarget({
     // What the render reads before it returns: `<component is>`'s `const`, the values of the
     // form controls a `v-model` binds (./composition.ts).
     const locals = new RenderLocals(plan);
+    // A teleport mounts once the component has (ADR-0098).
+    const teleport = teleportNames(component, names);
     const jsx = jsxContext({
       component,
       module,
-      dialect: qwikDialect(
-        component,
-        module,
-        namespaces,
-        options,
-        followed,
-        listeners,
-        plan,
-        locals,
-        scope,
-      ),
+      dialect: {
+        ...qwikDialect(
+          component,
+          module,
+          namespaces,
+          options,
+          followed,
+          listeners,
+          plan,
+          locals,
+          scope,
+        ),
+        ...(teleport ? { teleport: teleportJsx(teleport) } : {}),
+      },
       rules: plan.rules(),
     });
     const render = qwikTitles(component.render, jsx, module);
@@ -369,6 +381,7 @@ export const qwik: Target = defineTarget({
     const body = [
       sheet ? `${names.core("useStyles$")}(${sheet.local});` : "",
       setup.body,
+      teleport ? teleportSetup(teleport, names) : "",
       exposeStatement(plan),
       locals.statements.join("\n"),
     ]
@@ -422,6 +435,7 @@ export const qwik: Target = defineTarget({
     // A component that renders itself refers to its own `const` (ADR-0053).
     const helperCode = helpers(plan, listeners);
     if (scope) helperCode.push(scopeAttributesHelper(scope.helper));
+    if (teleport) helperCode.push(teleportHelper(teleport));
     // The sheet's import comes after the other imports, as on the other targets: an `?inline`
     // import loads nothing, and `useStyles$` attaches the sheet as the component first renders
     // (`sheet-order`). Collected last: the types and the helpers import what they name.

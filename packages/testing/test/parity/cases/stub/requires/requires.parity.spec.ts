@@ -65,8 +65,8 @@ describeTargets("stub/requires", () => {
     expect(() => it("refused", { requires: [] }, fn)).toThrow(
       'it("refused"): requires names one or more capabilities.',
     );
-    expect(() => it("refused", { requires: ["teleport" as never] }, fn)).toThrow(
-      /^"teleport" is not a capability: the capabilities are element, /,
+    expect(() => it("refused", { requires: ["time-travel" as never] }, fn)).toThrow(
+      /^"time-travel" is not a capability: the capabilities are element, /,
     );
   });
 });

@@ -73,6 +73,12 @@ export interface ScriptSetup {
    * when the template binds one: the template writes it beside the field's `v-model`.
    */
   textCaret?: string;
+  /**
+   * The ref that turns true once the component has mounted, when its template holds a
+   * `<Teleport>` (ADR-0098): each teleport is `v-if` on it, so neither the server nor the
+   * hydrating client renders its content.
+   */
+  mounted?: string;
 }
 
 /**
@@ -244,6 +250,19 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   if (textCaret !== undefined) {
     statements.push({ code: textCaretDirective(textCaret), layout: "block" });
   }
+  // A plain `<Teleport>` renders its content on the server, into a buffer no server render here
+  // reads, and Vue then mismatches as it hydrates (`runtime-core`'s `hydrateTeleport`): each
+  // teleport waits for a ref the component sets once mounted (ADR-0098).
+  const mounted = holdsTeleport(component) ? names.scope.claim("mounted") : undefined;
+  if (mounted !== undefined) {
+    const ref = imports.add("vue", "ref");
+    const onMounted = imports.add("vue", "onMounted");
+    statements.push({ code: `const ${mounted} = ${ref}(false);`, layout: "line" });
+    statements.push({
+      code: `${onMounted}(() => {\n  ${mounted}.value = true;\n});`,
+      layout: "block",
+    });
+  }
   // The module's type exports, which consumers import by name (ADR-0068), exported from
   // `<script setup>` as its own exported types are.
   const types = keys ? [] : moduleTypes(component, module, reads, names);
@@ -269,7 +288,19 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     components,
     ...(keys ? { keys } : {}),
     ...(textCaret === undefined ? {} : { textCaret }),
+    ...(mounted === undefined ? {} : { mounted }),
   };
+}
+
+/** Whether the template holds a `<Teleport>` (ADR-0098). */
+function holdsTeleport(component: UfComponent): boolean {
+  let found = false;
+  walk(component.render, {
+    enter(node) {
+      if (node.kind === "Teleport") found = true;
+    },
+  });
+  return found;
 }
 
 /** Whether the template binds a `<textarea>` with `v-model`. */

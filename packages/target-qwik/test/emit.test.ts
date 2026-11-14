@@ -111,6 +111,7 @@ describe("qwik target", () => {
       "static-attribute",
       "style-binding",
       "svg",
+      "teleport",
       "text",
       "two-way-binding",
       "use-id",

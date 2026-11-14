@@ -189,6 +189,9 @@ export function elementNamespaces(root: ElementNode | FragmentNode): Map<Element
           for (const child of fill.children) visit(child, "html");
         }
         return;
+      case "Teleport":
+        for (const child of node.children) visit(child, "html");
+        return;
       default:
         return node satisfies never;
     }

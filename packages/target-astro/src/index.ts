@@ -15,6 +15,7 @@ import { childTags, frontmatterOf } from "./frontmatter.ts";
 import { printComponentMarkup } from "./markup.ts";
 import { UNIQUE_ID } from "./setup.ts";
 import { spellingOf } from "./spelling.ts";
+import { withoutTeleports } from "./teleport.ts";
 
 /**
  * Why nothing runs in the browser (ADR-0045, ADR-0047): Astro renders each component once, on
@@ -130,6 +131,8 @@ export const astro: Target = defineTarget({
       severity: "info",
       reason: "Astro renders a list once on the server, so nothing reorders it in the page.",
     },
+    // A teleport mounts once its component has, in the browser (ADR-0098).
+    teleport: inert("A `<Teleport>` renders nothing"),
   },
   /**
    * One `.astro` file: the frontmatter at the very top (where Astro reads it, and where the
@@ -139,8 +142,10 @@ export const astro: Target = defineTarget({
    * (`./composition.ts`, ADR-0054): the markup is printed first, since whether it names `Astro`
    * decides how the frontmatter declares `Props`.
    */
-  emit(component: UfComponent, context): OutputFile[] {
+  emit(source: UfComponent, context): OutputFile[] {
     const { module } = context;
+    // A teleport prints nothing (ADR-0098).
+    const component = withoutTeleports(source);
     const spelling = spellingOf(component, module);
     const imports = new ImportSet(spelling.scope);
     // The imports that pass through, which the markup reads as written (ADR-0064).

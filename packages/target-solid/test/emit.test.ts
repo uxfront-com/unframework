@@ -90,6 +90,7 @@ describe("solid target", () => {
       "static-attribute",
       "style-binding",
       "svg",
+      "teleport",
       "text",
       "two-way-binding",
       "use-id",
@@ -115,6 +116,8 @@ describe("solid target", () => {
       ["composable-effect-order", expect.objectContaining({ code: "UF4005", severity: "info" })],
       // `<For>` follows the items themselves (ADR-0096).
       ["keyed-identity", expect.objectContaining({ helper: "KeyedFor" })],
+      // `<Portal>` wraps its content in a `<div>` (ADR-0098).
+      ["teleport", expect.objectContaining({ helper: "Teleport" })],
     ]);
   });
 

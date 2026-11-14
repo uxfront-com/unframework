@@ -43,6 +43,7 @@ import type { Composition } from "./composition.ts";
 import {
   directiveCode,
   scopeDirectiveCode,
+  teleportDirectiveCode,
   textCaretDirectiveCode,
   trustedHtmlPipeCode,
 } from "./directives.ts";
@@ -237,6 +238,12 @@ export const angular: Target = defineTarget({
     // `provideClientHydration()` on both sides (ADR-0024, ADR-0095).
     hydration: { support: "native" },
     "keyed-identity": { support: "native" },
+    // Angular's CDK portal is no framework import (P7), so an inline directive moves the view.
+    teleport: {
+      support: "emulated",
+      helper: "Teleport",
+      note: "A `<Teleport>` is an `<ng-template>` whose inline directive, once the application has rendered, creates its view in its own view container and moves the view's nodes into `to`, as the CDK's `DomPortalOutlet` does, and removes them with the component (ADR-0098).",
+    },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     return [emitComponent(component, context)];
@@ -331,6 +338,8 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const directives = listeners.directives.map((spec) => directiveCode(spec, imports, placeholders));
   // `innerHTML` reads its markup through a pure pipe that marks it trusted (ADR-0097).
   const trustedHtml = rendersRawHtml(component) ? imports.claim("TrustedHtmlPipe") : undefined;
+  // A teleport mounts its view through an inline directive (ADR-0098).
+  const teleport = holdsTeleport(component) ? imports.claim("Teleport") : undefined;
   // The child-root rule (ADR-0063): each root node binds the directive that gives it the scope
   // attributes the component's styled parents put on its host.
   const roots = scopedRoots(component);
@@ -362,7 +371,12 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   type Entry = Parameters<typeof js.objectExpression>[0][number];
   const metadata = js.objectExpression([
     ["selector", js.stringLiteral(`uf-${kebabCase(component.name)}`)],
-    ...(composition.imports.length || directives.length || scope || models.textCaret || trustedHtml
+    ...(composition.imports.length ||
+    directives.length ||
+    scope ||
+    models.textCaret ||
+    trustedHtml ||
+    teleport
       ? [
           [
             "imports",
@@ -373,6 +387,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
                 ...(scope ? [scope.className] : []),
                 ...(models.textCaret === undefined ? [] : [models.textCaret]),
                 ...(trustedHtml === undefined ? [] : [trustedHtml]),
+                ...(teleport === undefined ? [] : [teleport]),
               ].map((name) => js.identifier(name)),
             ),
           ] satisfies Entry,
@@ -482,6 +497,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ...(scope ? [scopeDirectiveCode(scope, imports)] : []),
     ...(models.textCaret === undefined ? [] : [textCaretDirectiveCode(models.textCaret, imports)]),
     ...(trustedHtml === undefined ? [] : [trustedHtmlPipeCode(trustedHtml, imports)]),
+    ...(teleport === undefined ? [] : [teleportDirectiveCode(teleport, imports)]),
   ];
   if (models.helpers.some(({ code }) => code.includes("WritableSignal"))) {
     imports.add("@angular/core", "WritableSignal", { type: true });
@@ -532,6 +548,18 @@ function rendersRawHtml(component: UfComponent): boolean {
       if (node.kind === "Element" && node.attributes.some(({ kind }) => kind === "RawHtml")) {
         found = true;
       }
+      return found ? false : undefined;
+    },
+  });
+  return found;
+}
+
+/** Whether the template holds a `<Teleport>` (ADR-0098). */
+function holdsTeleport(component: UfComponent): boolean {
+  let found = false;
+  walk(component.render, {
+    enter: (node) => {
+      if (node.kind === "Teleport") found = true;
       return found ? false : undefined;
     },
   });

@@ -114,6 +114,12 @@ export interface InstanceScript {
   render: ElementNode | FragmentNode;
   /** The `styleText` helper's name, where a style is bound to one value (ADR-0065). */
   styleText?: string;
+  /**
+   * Where the markup holds a `<Teleport>` (ADR-0098): the state that turns true once the
+   * component has mounted, which each teleport's `{#if}` reads, and the attachment helper that
+   * moves its element into `to`.
+   */
+  teleport?: { mounted: string; helper: string };
 }
 
 /** The modules a script imports from, in the order it prints them. */
@@ -581,6 +587,10 @@ class ScriptWriter {
       ? this.#names.claim("styleText")
       : undefined;
     const untrack = fields.length ? this.#names.import("svelte", "untrack") : undefined;
+    const teleport = holdsTeleport(component)
+      ? { mounted: this.#names.claim("mounted"), helper: this.#names.claim("teleport") }
+      : undefined;
+    const onMount = teleport ? this.#names.import("svelte", "onMount") : undefined;
 
     const props = this.#props();
     const setup = this.#setup();
@@ -639,7 +649,16 @@ class ScriptWriter {
       ...(this.#fallthrough?.mergeStyle ? [mergeStyleHelper(this.#fallthrough.mergeStyle)] : []),
       ...(styleText ? [styleTextHelper(styleText)] : []),
       ...(this.#scope ? [scopeAttributesHelper(this.#scope.helper)] : []),
+      ...(teleport ? [teleportHelper(teleport.helper)] : []),
     ];
+    // A teleport's content waits for the component to mount, so the server and the hydrating
+    // client render none of it (ADR-0098).
+    const gate = teleport
+      ? [
+          `let ${teleport.mounted} = $state(false);`,
+          block(`${onMount!}(() => {`, [`${teleport.mounted} = true;`], "});"),
+        ]
+      : [];
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
     // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
     // component's style after its script.
@@ -667,7 +686,7 @@ class ScriptWriter {
             ),
           ]
         : []),
-      ...[...props, ...setup, ...dynamic, ...initials, ...helpers].map((piece) =>
+      ...[...props, ...setup, ...dynamic, ...initials, ...gate, ...helpers].map((piece) =>
         reindent(piece, INDENT),
       ),
     ];
@@ -723,6 +742,7 @@ class ScriptWriter {
       markup,
       render: composed.render,
       ...(styleText ? { styleText } : {}),
+      ...(teleport ? { teleport } : {}),
     });
     if (!pieces.length) {
       // Svelte parses the markup's code as TypeScript only in a component whose script is: a
@@ -1940,6 +1960,43 @@ function onceHelper(name: string): string {
     ],
     "}",
   );
+}
+
+/** Whether the markup holds a `<Teleport>` (ADR-0098). */
+function holdsTeleport(component: UfComponent): boolean {
+  let found = false;
+  walk(component.render, {
+    enter(node) {
+      if (node.kind === "Teleport") found = true;
+    },
+  });
+  return found;
+}
+
+/**
+ * The attachment that moves a teleport's element into the element `to` selects (`teleport`,
+ * emulated, ADR-0098), and removes it on teardown, or removes it at once where nothing matches.
+ * The element is its branch's only node, so the branch's start and end are the element, and
+ * Svelte removes it where it is. A delegated event still reaches it: `mount()` listens on
+ * `document` too, for portals like this one.
+ */
+function teleportHelper(name: string): string {
+  return `/** Moves the element into the element \`to\` selects, and removes it on teardown. */\n${block(
+    `function ${name}(to: string): (element: HTMLElement) => () => void {`,
+    [
+      block(
+        "return (element) => {",
+        [
+          "const target = document.querySelector(to);",
+          "if (target) target.append(element);",
+          "else element.remove();",
+          "return () => element.remove();",
+        ],
+        "};",
+      ),
+    ],
+    "}",
+  )}`;
 }
 
 /** The type of the value a key holds, read from the key (`#moduleScript`). */

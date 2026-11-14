@@ -78,6 +78,8 @@ export const STYLE_HELPER = "styleProperties";
  * ADR-0096).
  */
 export const KEYED_HELPER = "KeyedFor";
+/** The inline helper that mounts a `<Teleport>`'s element into `to` (ADR-0098). */
+export const TELEPORT_HELPER = "Teleport";
 
 /** The Solid dialect of one output file, and the helpers its JSX ended up calling. */
 export interface SolidJsx {
@@ -114,6 +116,7 @@ export function solidJsx(
   let scopeHelper: string | undefined;
   let styleHelper: string | undefined;
   let keyedHelper: string | undefined;
+  let teleportHelper: string | undefined;
   const classHelper = () => (helper ??= imports.claim(CLASS_HELPER));
   const keyedFor = () => (keyedHelper ??= imports.claim(KEYED_HELPER));
   /** `styleProperties(value)`: a style bound to a value, an object or a declaration list. */
@@ -150,6 +153,13 @@ export function solidJsx(
     expression: (expression, context) => flow.narrowings.code(expression, context),
     conditional: (node, context) => conditional(node, context, flow),
     list: (node, context) => list(node, context, keyedFor, compose),
+    // `<Teleport to="body"><div …/></Teleport>`, Solid's `<Portal>` without its wrapper (ADR-0098).
+    teleport: (node, context) =>
+      js.jsxElement(
+        (teleportHelper ??= imports.claim(TELEPORT_HELPER)),
+        [js.jsxAttribute("to", js.stringLiteral(node.to))],
+        jsxChildren(node.children, context),
+      ),
     staticAttribute(attribute, element, context) {
       if (attribute.name === "class" && typeof attribute.value === "string") {
         const reads = spreadClassReads(element, context);
@@ -295,6 +305,7 @@ export function solidJsx(
       ...(styleHelper ? [styleHelperCode(styleHelper)] : []),
       ...(scopeHelper ? [scopeHelperCode(scopeHelper)] : []),
       ...(keyedHelper ? [keyedHelperCode(keyedHelper, imports)] : []),
+      ...(teleportHelper ? [teleportHelperCode(teleportHelper, imports)] : []),
       ...models.helpers(),
     ],
   };
@@ -1086,6 +1097,39 @@ function ${name}<T>(props: {
       }}
     </${For}>
   );
+}`;
+}
+
+/**
+ * The inline teleport helper (emulated `teleport`, ADR-0098), printed after the component: the
+ * no-wrapper branch of Solid's `<Portal>`, which wraps its content in a `<div>` everywhere but in
+ * `<head>`. Once the component has mounted, so that the server and the hydrating client render
+ * none of it, it inserts the children into the element `to` selects, in a root its owner owns, so
+ * they read its context. On cleanup, a signal empties the insertion before the root is disposed,
+ * since disposing a root removes no node. It renders nothing in place.
+ */
+function teleportHelperCode(name: string, imports: ImportSet): string {
+  const createRoot = imports.add("solid-js", "createRoot");
+  const createSignal = imports.add("solid-js", "createSignal");
+  const getOwner = imports.add("solid-js", "getOwner");
+  const onCleanup = imports.add("solid-js", "onCleanup");
+  const onMount = imports.add("solid-js", "onMount");
+  const insert = imports.add("solid-js/web", "insert");
+  const JSX = imports.add("solid-js", "JSX", { type: true });
+  return `/** Mounts \`children\` into the element \`to\` selects once the component has mounted, and removes them with it. */
+function ${name}(props: { to: string; children: ${JSX}.Element }): ${JSX}.Element {
+  const owner = ${getOwner}();
+  ${onMount}(() => {
+    const target = document.querySelector(props.to);
+    if (!target) return;
+    const [removed, remove] = ${createSignal}(false);
+    ${createRoot}(
+      (dispose) => ${insert}(target, () => (removed() ? dispose() : props.children), null),
+      owner,
+    );
+    ${onCleanup}(() => remove(true));
+  });
+  return null;
 }`;
 }
 

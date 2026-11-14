@@ -56,6 +56,7 @@ import type { NextTickHooks } from "./helpers.ts";
 import { listenerHelpers, ReactListeners } from "./listeners.ts";
 import { moduleReads } from "./modules.ts";
 import { planComponent } from "./plan.ts";
+import { teleportCall, teleportHelpers } from "./teleport.ts";
 import type { ReactPlan } from "./plan.ts";
 import { reactCode } from "./rules.ts";
 import { printSetup, resolveUses, withEventTypes } from "./setup.ts";
@@ -174,6 +175,13 @@ export const react: Target = defineTarget({
     },
     hydration: { support: "native" },
     "keyed-identity": { support: "native" },
+    // React 19's server render cannot portal, so the element is portalled once the component
+    // has mounted (ADR-0098).
+    teleport: {
+      support: "emulated",
+      helper: "teleport",
+      note: "A `<Teleport>` is `createPortal` from react-dom through an inline helper, `teleport`, once `useSyncExternalStore` says the component has mounted: Fizz throws on a portal, so neither the server nor the hydrating client renders it (ADR-0098).",
+    },
   },
   // A custom hook (ADR-0069).
   emitComposable,
@@ -198,7 +206,7 @@ export const react: Target = defineTarget({
     const jsx = jsxContext({
       component,
       module,
-      dialect: reactDialect(names, listeners, composer),
+      dialect: { ...reactDialect(names, listeners, composer), teleport: teleportCall(plan) },
       rules: code.rules,
     });
     importChildren(plan);
@@ -280,6 +288,7 @@ export const react: Target = defineTarget({
         ? [nextTickHelper(plan.helpers.nextTick, nextTickHooks(plan))]
         : []),
       ...compositionHelpers(plan),
+      ...(plan.helpers.teleport ? teleportHelpers(plan.helpers.teleport, plan.names) : []),
     ];
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
     // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
@@ -617,7 +626,17 @@ function compositionHelpers(plan: ReactPlan): string[] {
 
 /** The hooks the listeners call, after the setup's: one guard per listener that runs once. */
 function hookCalls(plan: ReactPlan): string[] {
-  return [...plan.onceGuards.values()].map((guard) => `const ${guard} = ${plan.helpers.once!}();`);
+  const { teleport } = plan.helpers;
+  return [
+    ...[...plan.onceGuards.values()].map((guard) => `const ${guard} = ${plan.helpers.once!}();`),
+    // False on the server and while the client hydrates, true after (ADR-0098): Fizz cannot
+    // render a portal, and an effect that sets state fails L5 (`react(set-state-in-effect)`).
+    ...(teleport
+      ? [
+          `const ${teleport.mounted} = ${plan.names.add("react", "useSyncExternalStore")}(${teleport.subscribe}, () => true, () => false);`,
+        ]
+      : []),
+  ];
 }
 
 /**
@@ -890,6 +909,8 @@ function childForReact(node: RenderNode, context: JsxContext, plan: ReactPlan): 
           ? { fills: node.fills.map((fill) => fillForReact(fill, node, context, plan, children)) }
           : {}),
       };
+    case "Teleport":
+      return { ...node, children: children(node.children) };
     case "Text":
     case "Interpolation":
       return node;

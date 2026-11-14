@@ -919,6 +919,9 @@ function inlineHandlers(component: UfComponent): FunctionCode[] {
       case "SlotOutlet":
         node.fallback.forEach(visit);
         return;
+      case "Teleport":
+        node.children.forEach(visit);
+        return;
       default:
         unreachable(node);
     }

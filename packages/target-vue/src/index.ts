@@ -83,23 +83,43 @@ export const vue: Target = defineTarget({
     "composable-effect-order": { support: "native" },
     hydration: { support: "native" },
     "keyed-identity": { support: "native" },
+    // Vue's own `<Teleport>`, behind a ref set once mounted, so the server renders none of it
+    // (ADR-0098).
+    teleport: { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    const { block, rewrite, listeners, components, keys, textCaret } = scriptSetup(
+    const { block, rewrite, listeners, components, keys, textCaret, mounted } = scriptSetup(
       component,
       context.module,
     );
-    // A bound `<textarea>` takes the directive that puts its caret after its text (ADR-0095).
-    const dialect: typeof vueDialect =
-      textCaret === undefined
-        ? vueDialect
+    const dialect: typeof vueDialect = {
+      ...vueDialect,
+      // A bound `<textarea>` takes the directive that puts its caret after its text (ADR-0095).
+      ...(textCaret === undefined
+        ? {}
         : {
-            ...vueDialect,
             modelAttribute: (model, context) => [
               ...vueDialect.modelAttribute!(model, context),
               ...(model.attribute.control === "textarea" ? [directiveAttribute(textCaret)] : []),
             ],
-          };
+          }),
+      // A teleport mounts its content once the component has mounted (ADR-0098).
+      ...(mounted === undefined
+        ? {}
+        : {
+            teleport: ({ node }) => [
+              {
+                kind: "tag",
+                tag: "Teleport",
+                attributes: [
+                  { name: "v-if", text: `v-if="${mounted}"` },
+                  { name: "to", text: vueDialect.attribute("to", node.to, "") },
+                ],
+                content: [{ kind: "nodes", nodes: node.children, container: node }],
+              },
+            ],
+          }),
+    };
     // The component resolves the names of loop variables.
     const template = printMarkup(component.render, dialect, {
       level: 1,

@@ -1,7 +1,7 @@
 import { defineTarget, printMarkup, svelteDialect } from "@unframework.dev/codegen";
 import type { MarkupDialect } from "@unframework.dev/codegen";
 import type { EmitContext, OutputFile, Target } from "@unframework.dev/codegen";
-import type { UfComponent, UfComposable } from "@unframework.dev/ir";
+import type { ElementNode, UfComponent, UfComposable } from "@unframework.dev/ir";
 
 import { composableModule, instanceScript } from "./script.ts";
 
@@ -90,6 +90,12 @@ export const svelte: Target = defineTarget({
     "composable-effect-order": { support: "native" },
     hydration: { support: "native" },
     "keyed-identity": { support: "native" },
+    // Svelte has no portal (ADR-0098).
+    teleport: {
+      support: "emulated",
+      helper: "teleport",
+      note: "Svelte has no portal, so a `<Teleport>`'s element renders once the component has mounted, in an `{#if}` of its own, and an attachment, `teleport`, moves it into `to` and removes it on teardown (ADR-0098).",
+    },
     // A capture listener is an attribute, `onclickcapture` (ADR-0047).
     "event-capture": { support: "native" },
     // `once` and `passive` listen through `on` from `svelte/events`, in an attachment (`events.ts`):
@@ -116,17 +122,45 @@ export const svelte: Target = defineTarget({
     const script = instanceScript(component, context.module);
     const { module, block, markup: options, render } = script;
     // The component resolves the names of loop variables and setup bindings.
-    const { styleText } = script;
-    // A style bound to one value is the declaration list `styleText` writes (ADR-0065).
-    const dialect: MarkupDialect = styleText
-      ? {
-          ...svelteDialect,
-          styleAttribute: (parts, attributeContext) =>
-            parts[0]?.property === ""
-              ? [{ name: "style", text: `style={${styleText}(${parts[0].value})}` }]
-              : svelteDialect.styleAttribute(parts, attributeContext),
-        }
-      : svelteDialect;
+    const { styleText, teleport } = script;
+    const dialect: MarkupDialect = {
+      ...svelteDialect,
+      // A style bound to one value is the declaration list `styleText` writes (ADR-0065).
+      ...(styleText
+        ? {
+            styleAttribute: (parts, attributeContext) =>
+              parts[0]?.property === ""
+                ? [{ name: "style", text: `style={${styleText}(${parts[0].value})}` }]
+                : svelteDialect.styleAttribute(parts, attributeContext),
+          }
+        : {}),
+      // `{#if mounted}<div {@attach teleport("body")}>…</div>{/if}` (ADR-0098).
+      ...(teleport
+        ? {
+            teleport: ({ node }) => [
+              {
+                kind: "block",
+                segments: [
+                  {
+                    open: `{#if ${teleport.mounted}}`,
+                    content: {
+                      kind: "element",
+                      element: node.children[0] as ElementNode,
+                      directives: [
+                        {
+                          name: "@attach",
+                          text: `{@attach ${teleport.helper}(${JSON.stringify(node.to)})}`,
+                        },
+                      ],
+                    },
+                  },
+                ],
+                close: "{/if}",
+              },
+            ],
+          }
+        : {}),
+    };
     const markup = printMarkup(render, dialect, {
       component: script.component,
       module: context.module,

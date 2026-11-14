@@ -162,6 +162,8 @@ export function astroRender(
     switch (each.kind) {
       case "Text":
       case "Interpolation":
+      // `withoutTeleports` has taken every teleport out (ADR-0098).
+      case "Teleport":
         return each;
       case "Element":
         return element(each);

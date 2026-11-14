@@ -1255,6 +1255,8 @@ function elementsOf(nodes: readonly (RenderNode | FragmentNode)[]): ElementNode[
       case "Component":
       case "SlotOutlet":
       case "Dynamic":
+      // A teleport's element (ADR-0098).
+      case "Teleport":
         return elementsOf(childrenOf(node));
       case "Text":
       case "Interpolation":
@@ -1504,6 +1506,8 @@ function topElements(nodes: readonly RenderNode[]): ElementNode[] {
       case "Component":
       case "SlotOutlet":
       case "Dynamic":
+      // A teleport's element mounts in `to`, not among the roots (ADR-0098).
+      case "Teleport":
         return [];
       default:
         return unreachable(node);

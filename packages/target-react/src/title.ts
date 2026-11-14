@@ -87,6 +87,7 @@ function part(
       return conditional(node, context, placeholders);
     case "Element":
     case "For":
+    case "Teleport":
       throw new Error(
         `An SVG <title> holds only text, and the IR's invariants rule out an ${node.kind} in one.`,
       );
