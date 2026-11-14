@@ -35,7 +35,7 @@ so it cannot see an id that hydration changed.
   which loaded a second copy of a framework. Vitest also sets `noExternal: true` there, after
   every project plugin, so a harness plugin adds back the externals a toolchain names
   (`environments.ssr.resolve.external`), for packages that run only from Node: `react` and
-  `react-dom`, `vue`, and Angular's `rxjs`. Renders run at once. Angular's renderer queues its own,
+  `react-dom`, `vue` and Angular's `rxjs`. Renders run at once. Angular's renderer queues its own,
   since two overlapping `renderApplication` calls lose a render's transfer state.
 - **The toolchain contract** gains `vite("hydrate")`, an optional `hydrate` module that exports
   `hydrate: HydrateAdapter`, and `renderForHydration: HydrationRenderer` beside `renderToString`.
@@ -69,7 +69,7 @@ so it cannot see an id that hydration changed.
 - **The ids now match across the boundary on every target that hydrates.** React's server renders
   the component as the root, as `hydrateRoot` does: inside an `<html>` shell it sits after
   `<head>`, a fork that changes every id `useId` makes. Angular counts ids per application, with
-  an injection token (`idCounter`), so the server and the client each start at 0; this amends
+  an injection token (`idCounter`), so the server and the client each start at 0. This amends
   ADR-0049. Solid needs no fix: under hydration `createUniqueId` returns the hydration context's
   id, the server's, and the `cl-` ids appear only in a client render, which corrects ADR-0049.
 - **Fixes in the outputs that L12 found:**

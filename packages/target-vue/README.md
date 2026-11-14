@@ -203,6 +203,9 @@ For tests and tooling (the target's main entry never loads it):
   props (`onChange` for an event `change`), only for the events the component declares, so a
   rerender never removes them. `rerender` replaces the props whole: an absent key is deleted, so
   the prop takes its default again. `nextTick` settles: watchers and post-flush effects have run.
+- **`…/toolchain/hydrate`** (L12, ADR-0095): hydrates with `createSSRApp`, its root rendering the
+  component as the mount adapter's does, and reports Vue's `Hydration` warnings as mismatches.
+  `renderForHydration` renders the same root, so `useId` makes the same ids on both sides.
 - **`…/toolchain/server`**: renders with `createSSRApp` and `vue/server-renderer`. Vue runs an
   immediate watcher's first callback during the server's setup, and nothing else of the effects.
 

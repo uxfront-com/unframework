@@ -280,6 +280,7 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
 | L9    | `browser:<target>`                                               | After every action and rerender, the normalised DOM, the ARIA tree and the events emitted equal the steps of `trace.<name>.json`.                                                                                                                                                                                        |
 | L10   | `browser:<target>`                                               | Geometry and computed styles first, then pixels, with zero tolerance by default.                                                                                                                                                                                                                                         |
 | L11   | `browser:<target>`                                               | axe-core reports no violations, or exactly the case's `axe` list.                                                                                                                                                                                                                                                        |
+| L12   | `hydrate:<target>`                                               | Every spec again, each mount the case's server render hydrated: the framework reports no mismatch, the ids are the server's, the DOM is the expected one and the target's own client render, nothing logs, and the spec's steps and assertions pass (ADR-0095).                                                          |
 | L13   | `ssr:` and `browser:`                                            | No `console.warn` or `console.error` during render or mount.                                                                                                                                                                                                                                                             |
 | L14   | `compile`, and the `sourcemaps/*` cases in `ssr:` and `browser:` | Each output's source map decodes and names its source with that source's content, and each segment without a name maps to the same text in both files. A shared module's copy names itself, and a scoped sheet's map has no segments. A thrown error's top frame in the case maps to the case's `throw` line (ADR-0078). |
 | L15   | `bench`                                                          | Each case's compile time, as a ratio of `basics/hello`'s, stays within twice its budget, and each target's bundled output size within its budget plus 5%.                                                                                                                                                                |
@@ -319,6 +320,20 @@ still runs for every spec file, and resets what a test leaves on the page: the m
 mouse, the keys, the focus, the clock and the colour scheme. A console message logged after a
 file's last test, once its `afterAll` hooks have run, is judged with the next file's first test and
 names the case it came after.
+
+A hydrate project (`hydrate:<target>`, L12, ADR-0095) runs every spec again, with each `mount` and
+`mountScenario` rendering the case's main component on the server, through the `ufHydrationRender`
+browser command, in the SSR environment of the project's own browser server, then hydrating that
+HTML with the target's hydrate adapter (`toolchain/hydrate`). It records every check as L12, and
+none as L7 to L11, L13 or L14: a failure names its sub-check, `mismatch` (the framework's own
+signal, or a hydration it could not finish), `ids` (the raw ids of the server's HTML), `DOM`,
+`client agreement` (the target's own client render of the same props, in a second root), `console`,
+`trace` or `interactions`.
+
+A hydrate project captures no pixels and writes nothing: it compares with the shared
+expectations, Vue's included, so an update run runs it last. A spec must mount its case's main
+component, which the server renders. Qwik resumes instead of hydrating and Astro runs nothing in a
+page, so their `hydration` cells are unsupported and their hydrate projects skip every test.
 
 `browser:vue` keeps a fresh frame for each spec file, because Vue's development build stops
 running mounted hooks on a page where one threw, and `sourcemaps/mounted-throws` throws on purpose.
@@ -409,7 +424,8 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   output, a mismatched closing tag, a type error, a `debugger` statement, an idiom the
   framework's lint rules forbid, wrong text, a render of nothing, element listeners removed on
   the cases whose specs act, wrong text on the cases whose specs rerender, a hidden root,
-  inverted colours, an invalid ARIA role, a console warning), with a fix that fixes nothing (corrupted by
+  inverted colours, an invalid ARIA role, a console warning, and in the hydrate projects' page alone
+  wrong text and element listeners removed, so the server's HTML stays right), with a fix that fixes nothing (corrupted by
   the harness, on the cases whose diagnostics have a fix), with a shifted segment of a compiled source map
   (corrupted by the harness, since the `output` hook runs before a map exists), with the map of
   every module the `ssr` and `browser` projects serve for the `sourcemaps/*` cases moved down a

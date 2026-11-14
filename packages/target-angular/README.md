@@ -405,6 +405,11 @@ Tests and tooling build, check and run the Angular output through three subpaths
   since Angular cannot unset an input (ADR-0043). The test's listeners are bound to the outputs
   of their events (`outputBinding`, `ufChange` for `change`), and each payload is given back by
   its event's shape.
+- `@unframework.dev/target-angular/toolchain/hydrate`: the hydrate adapter (L12, ADR-0095), which
+  moves the hydration marker and the `ng-state` script into `<body>`, then creates the component on
+  the server's host with `provideClientHydration()`, and reports NG05xx as mismatches.
+  `renderForHydration` adds `provideClientHydration()` and `provideServerRendering()`, and renders
+  one at a time.
 - `@unframework.dev/target-angular/toolchain/server`: the SSR renderer (`renderApplication`), which
   returns the component's HTML only. It runs on the `ssr` Vite configuration, which links
   Angular's packages as they load.

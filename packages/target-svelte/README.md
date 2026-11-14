@@ -198,4 +198,6 @@ Its toolchain, for tests and tooling (the target's main entry never loads it):
   key's same value would hand an effect's teardown Svelte's value from before the flush,
   `undefined`. The test's listeners are
   callback props in it, `onchange` for an event `change`, kept across a rerender (ADR-0050).
+- **`…/toolchain/hydrate`** (L12, ADR-0095): hydrates with `hydrate` and `recover: false`, and
+  reports `[svelte] hydration_*` warnings as mismatches. `renderForHydration` is `renderToString`.
 - **`…/toolchain/server`**: renders with `svelte/server` and returns the `body`.

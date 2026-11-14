@@ -124,6 +124,7 @@ export const FULL_STEPS: readonly Step[] = [
       "integration-toolchains",
       "integration-ssr",
       "integration-browser",
+      "integration-hydrate",
     ],
   },
   {
