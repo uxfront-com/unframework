@@ -120,7 +120,7 @@ describe("angular target", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual(CAPABILITY_NAMES.toSorted());
   });
 
-  it("emulates the listener options, ids, nextTick, class and style bindings and composition's cells, declares the child root, the sheet order and generic slot props, and supports the rest natively", () => {
+  it("emulates the listener options, ids, nextTick, class and style bindings, raw HTML and composition's cells, declares the child root, the sheet order and generic slot props, and supports the rest natively", () => {
     const emulated = Object.entries(target.capabilities)
       .filter(([, cell]) => cell.support !== "native")
       .map(([name, cell]) => [name, cell.support, "helper" in cell ? cell.helper : undefined]);
@@ -132,6 +132,7 @@ describe("angular target", () => {
       ["next-tick", "emulated", "nextTick"],
       ["class-binding", "emulated", "classNames"],
       ["style-binding", "emulated", "styleObject"],
+      ["raw-html", "emulated", "TrustedHtmlPipe"],
       ["named-slot", "emulated", "uf<Component><Slot>"],
       ["scoped-slot", "emulated", "uf<Component><Slot>"],
       ["default-slot-presence", "unsupported", undefined],

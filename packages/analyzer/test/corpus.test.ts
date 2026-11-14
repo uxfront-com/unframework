@@ -54,6 +54,8 @@ const NAMED_OTHERWISE: Readonly<Record<string, string>> = {
   "framework-import-rejected": "UF1201",
   "non-canonical-event": "UF3004",
   "nullable-bound-value": "UF1002",
+  // `innerHTML` on a component is a prop it does not declare (ADR-0097).
+  "raw-html-component": "UF3035",
 };
 
 /**
@@ -71,6 +73,10 @@ const AFTER_ANALYSIS: ReadonlySet<string> = new Set([
 /** The warnings the corpus's feature cases hold on purpose. */
 const WARNINGS: Readonly<Record<string, readonly string[]>> = {
   "jsx/escaping/TemplateTip.uf.tsx": ["UF3011"],
+  // Raw HTML warns at every use (ADR-0097).
+  "jsx/raw-html/Article.uf.tsx": ["UF3051", "UF3051"],
+  "jsx/raw-html-list/Changelog.uf.tsx": ["UF3051"],
+  "jsx/raw-html-update/Glossary.uf.tsx": ["UF3051"],
   "semantics/setup-once/WelcomeBanner.uf.tsx": ["UF2007"],
 };
 
