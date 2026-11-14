@@ -155,6 +155,9 @@ export class ${className} implements ${core("OnInit", true)} {
 /** The attribute that selects the teleport directive (ADR-0098). */
 export const TELEPORT_ATTRIBUTE = "ufTeleport";
 
+/** The input that hands the teleport directive its component's host, where it is the root. */
+export const TELEPORT_HOST_INPUT = "ufTeleportHost";
+
 /**
  * The directive that mounts a `<Teleport>`'s content into the element `to` selects (ADR-0098):
  * `<ng-template ufTeleport="body">`. Once the application has rendered, so that the server and
@@ -162,28 +165,55 @@ export const TELEPORT_ATTRIBUTE = "ufTeleport";
  * container, which keeps the view in its component's change detection, and moves the view's
  * nodes into `to`, as the CDK's `DomPortalOutlet` does. The container holds that one view, so
  * Angular never inserts a node before one it moved, and it removes a node from wherever it is.
- * Destroying a view removes none of its nodes, so it removes them with the component. It is
- * exported, as ngtsc's type-check imports every directive a template uses.
+ * Destroying a view removes none of its nodes, so it removes them with the component. At the
+ * root of its component, it takes the host's scope attributes off, which its styled parents put
+ * there and a teleport root takes nowhere, as Vue drops them. It is exported, as ngtsc's
+ * type-check imports every directive a template uses.
  */
 export function teleportDirectiveCode(className: string, imports: ImportSet): string {
   const core = (name: string, type = false) => imports.add("@angular/core", name, { type });
-  return `/** Mounts its template's content into the element \`${TELEPORT_ATTRIBUTE}\` selects once rendered, and removes it on destroy. */
+  return `/** The teleports a render created, which mount in the document's order. */
+const ${className}Queue: { anchor: Node; mount: () => void }[] = [];
+
+/** Mounts its template's content into the element \`${TELEPORT_ATTRIBUTE}\` selects once rendered, and removes it on destroy. */
 @${core("Directive")}({ selector: "ng-template[${TELEPORT_ATTRIBUTE}]" })
-export class ${className} {
+export class ${className} implements ${core("OnInit", true)} {
   readonly ${TELEPORT_ATTRIBUTE} = ${core("input")}.required<string>();
+  readonly ${TELEPORT_HOST_INPUT} = ${core("input")}<HTMLElement>();
+  private readonly renderer = ${core("inject")}(${core("Renderer2")});
+
+  ngOnInit(): void {
+    const host = this.${TELEPORT_HOST_INPUT}();
+    for (const name of host?.getAttributeNames() ?? []) {
+      if (name.startsWith("data-uf-")) this.renderer.removeAttribute(host, name);
+    }
+  }
 
   constructor() {
     const template = ${core("inject")}<${core("TemplateRef", true)}<unknown>>(${core("TemplateRef")});
     const container = ${core("inject")}(${core("ViewContainerRef")});
     const document = ${core("inject")}(${core("DOCUMENT")});
     let nodes: Node[] = [];
-    ${core("afterNextRender")}(() => {
+    const mount = () => {
       const target = document.querySelector(this.${TELEPORT_ATTRIBUTE}());
       if (!target) return;
       const view = container.createEmbeddedView(template);
       view.detectChanges();
       nodes = view.rootNodes;
       target.append(...nodes);
+    };
+    // Angular runs a render's callbacks in no source order: each teleport queues itself, and the
+    // first to write mounts them all in the order of their anchors.
+    ${core("afterNextRender")}({
+      earlyRead: () => {
+        ${className}Queue.push({ anchor: container.element.nativeElement as Node, mount });
+      },
+      write: () => {
+        const due = ${className}Queue.splice(0).sort((a, b) =>
+          a.anchor.compareDocumentPosition(b.anchor) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
+        );
+        for (const each of due) each.mount();
+      },
     });
     ${core("inject")}(${core("DestroyRef")}).onDestroy(() => {
       for (const node of nodes) node.parentNode?.removeChild(node);

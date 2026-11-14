@@ -1,0 +1,8 @@
+.page {
+  padding: 8px;
+}
+
+.page div,
+.toast {
+  color: rgb(160 0 0);
+}

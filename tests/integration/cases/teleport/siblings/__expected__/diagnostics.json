@@ -1,0 +1,53 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "teleport/siblings/Board.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 29,
+      "offset": 208
+    },
+    "end": {
+      "line": 10,
+      "column": 66,
+      "offset": 245
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "teleport/siblings/Panel.uf.tsx",
+    "start": {
+      "line": 22,
+      "column": 29,
+      "offset": 487
+    },
+    "end": {
+      "line": 22,
+      "column": 64,
+      "offset": 522
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support teleport: A `<Teleport>` renders nothing on Astro: components render on the server only, and nothing runs in the browser.",
+    "file": "teleport/siblings/Panel.uf.tsx",
+    "start": {
+      "line": 35,
+      "column": 7,
+      "offset": 904
+    },
+    "end": {
+      "line": 39,
+      "column": 18,
+      "offset": 1017
+    },
+    "target": "astro"
+  }
+]

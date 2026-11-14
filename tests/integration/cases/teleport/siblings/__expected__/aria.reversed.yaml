@@ -1,0 +1,13 @@
+- main:
+  - button "Remove panel"
+  - region "Panel":
+    - button "Show note"
+    - button "Add extra"
+    - button "Reverse rows"
+    - list:
+      - listitem: Beta
+      - listitem: Alpha
+- text: First
+- text: Second
+- paragraph: Alpha tip
+- paragraph: Beta tip

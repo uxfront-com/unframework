@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF3053",
+    "severity": "error",
+    "message": "`to` is bound: each target selects the element from the selector as written, so it is a string literal.",
+    "file": "diagnostics/teleport-target/Overlay.uf.tsx",
+    "start": {
+      "line": 12,
+      "column": 17,
+      "offset": 343
+    },
+    "end": {
+      "line": 12,
+      "column": 28,
+      "offset": 354
+    },
+    "help": "Write the selector as a string: `to=\"body\"`."
+  },
+  {
+    "code": "UF3053",
+    "severity": "error",
+    "message": "`to` is empty: it is the selector of an element.",
+    "file": "diagnostics/teleport-target/Overlay.uf.tsx",
+    "start": {
+      "line": 15,
+      "column": 17,
+      "offset": 431
+    },
+    "end": {
+      "line": 15,
+      "column": 22,
+      "offset": 436
+    },
+    "help": "Write the selector as a string: `to=\"body\"`."
+  }
+]

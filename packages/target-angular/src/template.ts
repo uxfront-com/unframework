@@ -25,7 +25,7 @@ import type {
 
 import { selectorOf } from "./composition.ts";
 import type { Composition } from "./composition.ts";
-import { TELEPORT_ATTRIBUTE } from "./directives.ts";
+import { TELEPORT_ATTRIBUTE, TELEPORT_HOST_INPUT } from "./directives.ts";
 import type { Listeners } from "./listeners.ts";
 import type { Models } from "./models.ts";
 import { outputName } from "./outputs.ts";
@@ -79,6 +79,7 @@ export function template(
   models: Models,
   fallthrough: boolean,
   scope?: { roots: ReadonlySet<string>; host: string },
+  teleportHost?: string,
 ): string {
   const { component } = plan;
   const pad = INDENT.repeat(LEVEL);
@@ -108,6 +109,10 @@ export function template(
             name: TELEPORT_ATTRIBUTE,
             text: angularDialect.attribute(TELEPORT_ATTRIBUTE, node.to, ""),
           },
+          // The root teleport, by its span: the tree printed is a copy (`models.render`).
+          ...(teleportHost !== undefined && component.render.kind === "Fragment" && component.render.children[0]?.span.start === node.span.start
+            ? [{ name: TELEPORT_HOST_INPUT, text: `[${TELEPORT_HOST_INPUT}]="this.${teleportHost}"` }]
+            : []),
         ],
         content: { kind: "nodes", nodes: node.children, container: node },
       },

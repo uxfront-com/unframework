@@ -1,0 +1,7 @@
+- region "Files":
+  - paragraph: notes.txt
+  - button "Delete notes.txt"
+- dialog "Delete notes.txt?":
+  - heading "Delete notes.txt?" [level=2]
+  - button "Cancel"
+  - button "Delete"

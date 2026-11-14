@@ -1,0 +1,226 @@
+{
+  "irVersion": 1,
+  "file": "teleport/root/Page.uf.tsx",
+  "components": [
+    {
+      "name": "Page",
+      "span": {
+        "start": 110,
+        "end": 297
+      },
+      "props": [
+        {
+          "name": "message",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 99,
+              "end": 105
+            }
+          },
+          "binding": "message@141",
+          "span": {
+            "start": 90,
+            "end": 106
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "PageProps",
+          "span": {
+            "start": 152,
+            "end": 161
+          }
+        },
+        "span": {
+          "start": 139,
+          "end": 161
+        }
+      },
+      "types": [
+        "PageProps"
+      ],
+      "bindings": [
+        {
+          "id": "message@141",
+          "name": "message",
+          "kind": "prop",
+          "span": {
+            "start": 141,
+            "end": 148
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "page",
+            "span": {
+              "start": 189,
+              "end": 201
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Page",
+            "span": {
+              "start": 202,
+              "end": 219
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Saving…",
+                "span": {
+                  "start": 230,
+                  "end": 237
+                }
+              }
+            ],
+            "span": {
+              "start": 227,
+              "end": 241
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Toast",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "message",
+                "value": {
+                  "code": "message",
+                  "span": {
+                    "start": 264,
+                    "end": 271
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "message@141",
+                      "span": {
+                        "start": 264,
+                        "end": 271
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 255,
+                  "end": 272
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 248,
+              "end": 275
+            }
+          }
+        ],
+        "span": {
+          "start": 180,
+          "end": 290
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Page.css",
+          "source": ".page {\n  padding: 8px;\n}\n\n.page div,\n.toast {\n  color: rgb(160 0 0);\n}\n",
+          "span": {
+            "start": 37,
+            "end": 57
+          }
+        }
+      ],
+      "scopeId": "5a3bed67"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Page",
+      "span": {
+        "start": 110,
+        "end": 297
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "PageProps",
+      "exported": true,
+      "code": "interface PageProps {\n  message: string;\n}",
+      "span": {
+        "start": 66,
+        "end": 108
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./Toast.uf.tsx",
+      "file": "Toast.uf.tsx",
+      "api": {
+        "file": "Toast.uf.tsx",
+        "components": [
+          {
+            "name": "Toast",
+            "export": "default",
+            "props": [
+              {
+                "name": "message",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "other",
+            "styles": {
+              "scopeId": "416dbabb",
+              "slotted": false
+            }
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Toast",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 35
+      }
+    }
+  ]
+}

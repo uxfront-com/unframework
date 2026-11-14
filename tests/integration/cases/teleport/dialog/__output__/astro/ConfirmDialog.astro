@@ -1,0 +1,41 @@
+---
+export interface ConfirmDialogProps {
+  title: string;
+}
+
+interface Props extends ConfirmDialogProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { title, class: className, style } = Astro.props;
+
+function uniqueId(): string {
+  const locals = Astro.locals as { ufIdCount?: number };
+  locals.ufIdCount = (locals.ufIdCount ?? 0) + 1;
+  return `uf-id-${locals.ufIdCount}`;
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const titleId = uniqueId();
+---
+
+<div
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby={titleId}
+  tabindex="-1"
+  class:list={["dialog", className]}
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
+  <h2 id={titleId}>{title}</h2>
+  <button type="button">Cancel</button>
+  <button type="button">Delete</button>
+</div>

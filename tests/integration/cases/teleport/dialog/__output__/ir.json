@@ -1,0 +1,628 @@
+{
+  "irVersion": 1,
+  "file": "teleport/dialog/Files.uf.tsx",
+  "components": [
+    {
+      "name": "Files",
+      "span": {
+        "start": 170,
+        "end": 904
+      },
+      "props": [
+        {
+          "name": "file",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 159,
+              "end": 165
+            }
+          },
+          "binding": "file@202",
+          "span": {
+            "start": 153,
+            "end": 166
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "FilesProps",
+          "span": {
+            "start": 210,
+            "end": 220
+          }
+        },
+        "span": {
+          "start": 200,
+          "end": 220
+        }
+      },
+      "types": [
+        "FilesProps"
+      ],
+      "emits": {
+        "binding": "emit@232",
+        "type": {
+          "code": "{ delete: [file: string] }",
+          "span": {
+            "start": 251,
+            "end": 277
+          }
+        },
+        "events": [
+          {
+            "name": "delete",
+            "parameters": [
+              {
+                "name": "file",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 268,
+                    "end": 274
+                  }
+                },
+                "span": {
+                  "start": 262,
+                  "end": 274
+                }
+              }
+            ],
+            "span": {
+              "start": 253,
+              "end": 275
+            }
+          }
+        ],
+        "span": {
+          "start": 226,
+          "end": 281
+        }
+      },
+      "bindings": [
+        {
+          "id": "file@202",
+          "name": "file",
+          "kind": "prop",
+          "span": {
+            "start": 202,
+            "end": 206
+          }
+        },
+        {
+          "id": "emit@232",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 232,
+            "end": 236
+          }
+        },
+        {
+          "id": "open@290",
+          "name": "open",
+          "kind": "state",
+          "span": {
+            "start": 290,
+            "end": 294
+          }
+        },
+        {
+          "id": "confirm@321",
+          "name": "confirm",
+          "kind": "localFn",
+          "span": {
+            "start": 321,
+            "end": 328
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "open@290",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 301,
+              "end": 306
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 284,
+            "end": 308
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "confirm@321",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    open.value = false;\n    emit(\"delete\", file);\n  }",
+              "span": {
+                "start": 331,
+                "end": 386
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "open@290",
+                  "operator": "=",
+                  "span": {
+                    "start": 337,
+                    "end": 355
+                  },
+                  "target": {
+                    "start": 337,
+                    "end": 347
+                  },
+                  "value": {
+                    "start": 350,
+                    "end": 355
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@232",
+                  "event": "delete",
+                  "span": {
+                    "start": 361,
+                    "end": 381
+                  },
+                  "arguments": [
+                    {
+                      "start": 376,
+                      "end": 380
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "file@202",
+                  "span": {
+                    "start": 376,
+                    "end": 380
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 328,
+              "end": 386
+            }
+          },
+          "span": {
+            "start": 312,
+            "end": 386
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "files",
+            "span": {
+              "start": 412,
+              "end": 425
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Files",
+            "span": {
+              "start": 426,
+              "end": 444
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "file",
+                  "span": {
+                    "start": 456,
+                    "end": 460
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "file@202",
+                      "span": {
+                        "start": 456,
+                        "end": 460
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 455,
+                  "end": 461
+                }
+              }
+            ],
+            "span": {
+              "start": 452,
+              "end": 465
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 480,
+                  "end": 493
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(open.value = true)",
+                      "span": {
+                        "start": 509,
+                        "end": 528
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "open@290",
+                          "operator": "=",
+                          "span": {
+                            "start": 509,
+                            "end": 528
+                          },
+                          "target": {
+                            "start": 510,
+                            "end": 520
+                          },
+                          "value": {
+                            "start": 523,
+                            "end": 527
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 503,
+                      "end": 528
+                    }
+                  },
+                  "span": {
+                    "start": 503,
+                    "end": 528
+                  }
+                },
+                "span": {
+                  "start": 494,
+                  "end": 529
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Delete ",
+                "span": {
+                  "start": 530,
+                  "end": 546
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "file",
+                  "span": {
+                    "start": 547,
+                    "end": 551
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "file@202",
+                      "span": {
+                        "start": 547,
+                        "end": 551
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 546,
+                  "end": 552
+                }
+              }
+            ],
+            "span": {
+              "start": 472,
+              "end": 568
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 576,
+                    "end": 586
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@290",
+                      "span": {
+                        "start": 576,
+                        "end": 586
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Teleport",
+                    "to": "body",
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "div",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "data-teleported",
+                            "value": "true",
+                            "span": {
+                              "start": 636,
+                              "end": 651
+                            }
+                          },
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "backdrop",
+                            "span": {
+                              "start": 652,
+                              "end": 668
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Component",
+                            "component": "ConfirmDialog",
+                            "attributes": [
+                              {
+                                "kind": "Prop",
+                                "name": "title",
+                                "value": {
+                                  "code": "`Delete ${file}?`",
+                                  "span": {
+                                    "start": 718,
+                                    "end": 735
+                                  },
+                                  "refs": [
+                                    {
+                                      "kind": "Binding",
+                                      "binding": "file@202",
+                                      "span": {
+                                        "start": 728,
+                                        "end": 732
+                                      }
+                                    }
+                                  ]
+                                },
+                                "span": {
+                                  "start": 711,
+                                  "end": 736
+                                }
+                              },
+                              {
+                                "kind": "Listener",
+                                "event": "confirm",
+                                "handler": {
+                                  "kind": "Function",
+                                  "binding": "confirm@321",
+                                  "span": {
+                                    "start": 762,
+                                    "end": 769
+                                  }
+                                },
+                                "span": {
+                                  "start": 751,
+                                  "end": 770
+                                }
+                              },
+                              {
+                                "kind": "Listener",
+                                "event": "close",
+                                "handler": {
+                                  "kind": "Inline",
+                                  "function": {
+                                    "parameters": [],
+                                    "body": {
+                                      "code": "(open.value = false)",
+                                      "span": {
+                                        "start": 800,
+                                        "end": 820
+                                      },
+                                      "refs": [
+                                        {
+                                          "kind": "Write",
+                                          "binding": "open@290",
+                                          "operator": "=",
+                                          "span": {
+                                            "start": 800,
+                                            "end": 820
+                                          },
+                                          "target": {
+                                            "start": 801,
+                                            "end": 811
+                                          },
+                                          "value": {
+                                            "start": 814,
+                                            "end": 819
+                                          },
+                                          "arrowBody": true
+                                        }
+                                      ]
+                                    },
+                                    "expression": true,
+                                    "span": {
+                                      "start": 794,
+                                      "end": 820
+                                    }
+                                  },
+                                  "span": {
+                                    "start": 794,
+                                    "end": 820
+                                  }
+                                },
+                                "span": {
+                                  "start": 785,
+                                  "end": 821
+                                }
+                              }
+                            ],
+                            "fills": [],
+                            "span": {
+                              "start": 682,
+                              "end": 836
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 631,
+                          "end": 853
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 600,
+                      "end": 873
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 576,
+                  "end": 881
+                }
+              }
+            ],
+            "span": {
+              "start": 576,
+              "end": 881
+            }
+          }
+        ],
+        "span": {
+          "start": 403,
+          "end": 897
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Files",
+      "span": {
+        "start": 170,
+        "end": 904
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "FilesProps",
+      "exported": true,
+      "code": "interface FilesProps {\n  file: string;\n}",
+      "span": {
+        "start": 128,
+        "end": 168
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./ConfirmDialog.uf.tsx",
+      "file": "ConfirmDialog.uf.tsx",
+      "api": {
+        "file": "ConfirmDialog.uf.tsx",
+        "components": [
+          {
+            "name": "ConfirmDialog",
+            "export": "default",
+            "props": [
+              {
+                "name": "title",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [
+              {
+                "name": "confirm",
+                "parameters": []
+              },
+              {
+                "name": "close",
+                "parameters": []
+              }
+            ],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "ConfirmDialog",
+          "span": {
+            "start": 75,
+            "end": 88
+          }
+        }
+      ],
+      "span": {
+        "start": 68,
+        "end": 119
+      }
+    }
+  ]
+}

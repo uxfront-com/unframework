@@ -1,0 +1,26 @@
+error[UF3054]: <Teleport> holds exactly one element, and this is text: Svelte, Angular and Qwik move one element into `to`, and remove it on unmount.
+  --> diagnostics/teleport-content/Tooltip.uf.tsx:12:27
+   |
+12 |       <Teleport to="body">Saved</Teleport>
+   |                           ^^^^^
+   |
+   = help: Wrap the content in one element, and put a condition around the <Teleport>, not inside it.
+   = see: https://unframework.dev/diagnostics/UF3054
+
+error[UF3054]: <Teleport> holds exactly one element, and this is a second node: Svelte, Angular and Qwik move one element into `to`, and remove it on unmount.
+  --> diagnostics/teleport-content/Tooltip.uf.tsx:15:9
+   |
+15 |         <p>Second</p>
+   |         ^^^^^^^^^^^^^
+   |
+   = help: Wrap the content in one element, and put a condition around the <Teleport>, not inside it.
+   = see: https://unframework.dev/diagnostics/UF3054
+
+error[UF3054]: <Teleport> holds exactly one element, and this is a component: Svelte, Angular and Qwik move one element into `to`, and remove it on unmount.
+  --> diagnostics/teleport-content/Tooltip.uf.tsx:18:9
+   |
+18 |         <Hint />
+   |         ^^^^^^^^
+   |
+   = help: Wrap the content in one element, and put a condition around the <Teleport>, not inside it.
+   = see: https://unframework.dev/diagnostics/UF3054

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Remove panel' })",
+      "dom": [
+        "<main class=\"board\">",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Remove panel\"",
+        "  </button>",
+        "</main>"
+      ],
+      "aria": [
+        "- main:",
+        "  - button \"Remove panel\""
+      ],
+      "events": {}
+    }
+  ]
+}

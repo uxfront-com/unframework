@@ -222,7 +222,8 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   }
   const options = [
     ...(recursive ? [`name: ${JSON.stringify(recursive)}`] : []),
-    ...(component.inheritAttrs === false ? ["inheritAttrs: false"] : []),
+    // A teleport root takes no attribute, which Vue would warn about (ADR-0098).
+    ...(component.inheritAttrs === false || teleportRoot(component) ? ["inheritAttrs: false"] : []),
   ];
   if (options.length) {
     statements.push({ code: `defineOptions({ ${options.join(", ")} });`, layout: "macro" });
@@ -290,6 +291,12 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     ...(textCaret === undefined ? {} : { textCaret }),
     ...(mounted === undefined ? {} : { mounted }),
   };
+}
+
+/** Whether the component's whole render is a `<Teleport>` (ADR-0098). */
+function teleportRoot(component: UfComponent): boolean {
+  const { render } = component;
+  return render.kind === "Fragment" && render.children.length === 1 && render.children[0]!.kind === "Teleport";
 }
 
 /** Whether the template holds a `<Teleport>` (ADR-0098). */

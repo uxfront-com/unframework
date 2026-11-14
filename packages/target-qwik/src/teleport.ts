@@ -4,8 +4,9 @@
 // node of the vnode that follows it (`vnode_findInsertBefore`), which throws where that node has
 // moved: the element follows the empty text Qwik renders for `{""}`, in a fragment, so the
 // fragment's first DOM node is that text, which stays where Qwik put it. Qwik removes a node with
-// `remove()`, wherever it is, and the helper removes the element once the text leaves the
-// document, as it does when a branch or an element around the teleport goes. Qwik also finds a
+// `remove()`, wherever it is, and removes the element itself with its branch; where Qwik removes
+// an element around the teleport, or the component, the helper removes it once the element that
+// held it leaves the document. Qwik also finds a
 // handler's container up from its element (`getDomContainer`), so an element moved out of its
 // container carries the container's `q:container` and its `qContainer`, and stands in for it: its
 // handlers then run in the component's container, as they do where `to` is inside it (an SSR
@@ -91,20 +92,22 @@ const ${container} = "[q\\\\:container]:not([q\\\\:container=html]):not([q\\\\:c
 
 /**
  * A ref that moves its element into the element \`to\` selects once Qwik has inserted it, after the
- * empty text before it, and removes it once that text leaves the document. Moved out of its Qwik
- * container, it stands in for it, so its handlers still find their container.
+ * empty text before it, and removes it once the element that held it leaves the document: Qwik
+ * removes the element itself with its branch, and only the outermost node of an element it
+ * removes. Moved out of its Qwik container, it stands in for it, so its handlers still find their
+ * container.
  */
 function ${name}(to: string): (element: Element) => void {
   return (element) => {
     if (${taken}.has(element)) return;
     ${taken}.add(element);
-    let anchor: Node | null = null;
+    let holder: Node | null = null;
     const observer = new MutationObserver(() => {
-      if (anchor === null) {
+      if (holder === null) {
         if (!element.isConnected) return;
-        anchor = element.previousSibling;
+        holder = element.parentNode;
         const target = document.querySelector(to);
-        if (target && anchor) {
+        if (target && holder && element.previousSibling) {
           // Qwik finds a handler's container up from its element (\`getDomContainer\`): outside it,
           // the element stands in for it.
           const container = element.closest(${container});
@@ -112,10 +115,13 @@ function ${name}(to: string): (element: Element) => void {
             element.setAttribute("q:container", container.getAttribute("q:container") ?? "");
             Object.assign(element, { qContainer: Reflect.get(container, "qContainer") });
           }
+          const active = document.activeElement;
           target.append(element);
+          // Moving a node blurs what it holds, which a component inside it may have focused.
+          if (active instanceof HTMLElement && element.contains(active)) active.focus();
           return;
         }
-      } else if (anchor.isConnected) {
+      } else if (holder.isConnected) {
         return;
       }
       element.remove();

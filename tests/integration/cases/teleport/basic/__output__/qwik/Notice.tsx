@@ -65,20 +65,22 @@ const QWIK_CONTAINER = "[q\\:container]:not([q\\:container=html]):not([q\\:conta
 
 /**
  * A ref that moves its element into the element `to` selects once Qwik has inserted it, after the
- * empty text before it, and removes it once that text leaves the document. Moved out of its Qwik
- * container, it stands in for it, so its handlers still find their container.
+ * empty text before it, and removes it once the element that held it leaves the document: Qwik
+ * removes the element itself with its branch, and only the outermost node of an element it
+ * removes. Moved out of its Qwik container, it stands in for it, so its handlers still find their
+ * container.
  */
 function teleport(to: string): (element: Element) => void {
   return (element) => {
     if (teleported.has(element)) return;
     teleported.add(element);
-    let anchor: Node | null = null;
+    let holder: Node | null = null;
     const observer = new MutationObserver(() => {
-      if (anchor === null) {
+      if (holder === null) {
         if (!element.isConnected) return;
-        anchor = element.previousSibling;
+        holder = element.parentNode;
         const target = document.querySelector(to);
-        if (target && anchor) {
+        if (target && holder && element.previousSibling) {
           // Qwik finds a handler's container up from its element (`getDomContainer`): outside it,
           // the element stands in for it.
           const container = element.closest(QWIK_CONTAINER);
@@ -86,10 +88,13 @@ function teleport(to: string): (element: Element) => void {
             element.setAttribute("q:container", container.getAttribute("q:container") ?? "");
             Object.assign(element, { qContainer: Reflect.get(container, "qContainer") });
           }
+          const active = document.activeElement;
           target.append(element);
+          // Moving a node blurs what it holds, which a component inside it may have focused.
+          if (active instanceof HTMLElement && element.contains(active)) active.focus();
           return;
         }
-      } else if (anchor.isConnected) {
+      } else if (holder.isConnected) {
         return;
       }
       element.remove();

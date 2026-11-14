@@ -1,0 +1,7 @@
+{
+  "description": "Several teleports in one component: two side by side, in source order; nodes inserted before them, a conditional and a growing list; one in each row of a keyed list that reverses; and removing the component that holds them, which clears `body`.",
+  "main": "Board.uf.tsx",
+  "ssr": {
+    "default": {}
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "irVersion": 1,
+  "file": "teleport/root/Toast.uf.tsx",
+  "components": [
+    {
+      "name": "Toast",
+      "span": {
+        "start": 125,
+        "end": 333
+      },
+      "props": [
+        {
+          "name": "message",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 114,
+              "end": 120
+            }
+          },
+          "binding": "message@157",
+          "span": {
+            "start": 105,
+            "end": 121
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ToastProps",
+          "span": {
+            "start": 168,
+            "end": 178
+          }
+        },
+        "span": {
+          "start": 155,
+          "end": 178
+        }
+      },
+      "types": [
+        "ToastProps"
+      ],
+      "bindings": [
+        {
+          "id": "message@157",
+          "name": "message",
+          "kind": "prop",
+          "span": {
+            "start": 157,
+            "end": 164
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Teleport",
+            "to": "body",
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "div",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "data-teleported",
+                    "value": "true",
+                    "span": {
+                      "start": 229,
+                      "end": 244
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "class",
+                    "value": "toast",
+                    "span": {
+                      "start": 245,
+                      "end": 258
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "role",
+                    "value": "alert",
+                    "span": {
+                      "start": 259,
+                      "end": 271
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "message",
+                          "span": {
+                            "start": 285,
+                            "end": 292
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "message@157",
+                              "span": {
+                                "start": 285,
+                                "end": 292
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 284,
+                          "end": 293
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 281,
+                      "end": 297
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 224,
+                  "end": 310
+                }
+              }
+            ],
+            "span": {
+              "start": 197,
+              "end": 326
+            }
+          }
+        ],
+        "span": {
+          "start": 197,
+          "end": 326
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Toast.css",
+          "source": ".toast {\n  border: 2px solid rgb(0 96 64);\n  padding: 4px 8px;\n  width: 200px;\n}\n",
+          "span": {
+            "start": 50,
+            "end": 71
+          }
+        }
+      ],
+      "scopeId": "416dbabb"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Toast",
+      "span": {
+        "start": 125,
+        "end": 333
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ToastProps",
+      "exported": true,
+      "code": "interface ToastProps {\n  message: string;\n}",
+      "span": {
+        "start": 80,
+        "end": 123
+      }
+    }
+  ]
+}

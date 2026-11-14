@@ -346,6 +346,15 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const scope = roots.size
     ? { ...scopeNames(component, module, imports), host: plan.members.claim("host") }
     : undefined;
+  // A teleport root takes its parents' scope attributes off the host (ADR-0098).
+  const { render } = component;
+  const teleportHost =
+    teleport !== undefined &&
+    render.kind === "Fragment" &&
+    render.children.length === 1 &&
+    render.children[0]!.kind === "Teleport"
+      ? (scope?.host ?? plan.members.claim("host"))
+      : undefined;
   const { members, implements: interfaces } = classMembers({
     plan,
     placeholders,
@@ -414,7 +423,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     [
       "template",
       js.templateLiteral(
-        `\n${template(plan, listeners, reads, composition, models, fallthrough, scope && { roots, host: scope.host })}\n  `,
+        `\n${template(plan, listeners, reads, composition, models, fallthrough, scope && { roots, host: scope.host }, teleportHost)}\n  `,
       ),
     ],
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063): Angular's own
@@ -440,16 +449,17 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const decorator = () =>
     `@${printExpression(js.callExpression(js.identifier(decoratorName), [metadata]))}`;
   // The host the root nodes' scope directive reads (`<button [ufScope]="this.host">`).
-  const hostMember = scope && [
+  const hostName = scope?.host ?? teleportHost;
+  const hostMember = hostName !== undefined && [
     js.propertyDefinition(
-      scope.host,
+      hostName,
       placeholders.expression(
         `${imports.add("@angular/core", "inject")}<${imports.add("@angular/core", "ElementRef")}<HTMLElement>>(${imports.add("@angular/core", "ElementRef")}).nativeElement`,
       ),
       { accessibility: "protected", readonly: true },
     ),
   ];
-  const declaration = js.classDeclaration(className, [], [...members, ...(hostMember ?? [])], {
+  const declaration = js.classDeclaration(className, [], [...members, ...(hostMember || [])], {
     implements: interfaces,
   });
   declaration.typeParameters = typeParameters(component, placeholders);

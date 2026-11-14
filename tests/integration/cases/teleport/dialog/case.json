@@ -1,0 +1,9 @@
+{
+  "description": "A confirmation dialog teleported to `body` while it is open: its own `onMounted` focuses its first button once its element is in the document, Escape and its buttons close it, and closing it removes it from `body`.",
+  "main": "Files.uf.tsx",
+  "ssr": {
+    "closed": {
+      "props": { "file": "notes.txt" }
+    }
+  }
+}
