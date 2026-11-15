@@ -19,11 +19,12 @@ import {
   js,
   rewriteCode,
 } from "@unframework.dev/codegen";
-import type { EmitContext, OutputFile } from "@unframework.dev/codegen";
+import type { EmitContext, JsxContext, OutputFile } from "@unframework.dev/codegen";
 import { childrenOf, walk } from "@unframework.dev/ir";
 import type {
   DirectiveAttribute,
   ElementNode,
+  RefAttribute,
   RenderNode,
   UfComponent,
   UfDirective,
@@ -52,17 +53,23 @@ export function emitDirective(directive: UfDirective, context: EmitContext): Out
   return [{ path: `${directive.name}.ts`, contents: `${code}\n` }];
 }
 
-/** The signal refs and visible tasks of a component's directives, and their helpers. */
+/** The element lists and visible tasks of a component's directives, and their helpers. */
 export class QwikDirectives {
   readonly #component: UfComponent;
   readonly #plan: SetupPlan;
-  /** The signal each element that applies a directive is held in, by element. */
-  readonly #signals = new Map<ElementNode, { name: string; own: boolean; type: string }>();
   /**
-   * The signal each element's first directive prints as its `ref`, where it has no template ref:
-   * the printer's element may be a copy (`qwikTitles`), whose attributes are the same.
+   * The signal of the elements each element node's directives run on, by the node: one use may
+   * render several, as a slot a child renders in a list (ADR-0099), and the template ref the
+   * node's `ref` also fills, where it has one.
    */
-  readonly #refs = new Map<DirectiveAttribute, string>();
+  readonly #lists = new Map<ElementNode, { name: string; type: string; templateRef?: string }>();
+  /**
+   * The list each node's first directive collects into with its `ref`, by the directive: the
+   * printer's element may be a copy (`qwikTitles`), whose attributes are the same.
+   */
+  readonly #refs = new Map<DirectiveAttribute, { list: string; templateRef?: string }>();
+  /** The template refs that a directive's `ref` fills instead of a `ref` of their own. */
+  readonly #templateRefs = new Set<RefAttribute>();
   /** The elements in a conditional's branch, whose value the task reads only while they're in. */
   readonly #branched = new Set<ElementNode>();
   readonly #helper:
@@ -74,7 +81,8 @@ export class QwikDirectives {
         values: string;
         watch: string;
         watches: string;
-        /** `waitForDocument`, where a narrowed value waits for its element (ADR-0099). */
+        collect: string;
+        /** `waitForDocument`, where a value in a branch waits for its element (ADR-0099). */
         wait?: string;
       }
     | undefined;
@@ -89,25 +97,21 @@ export class QwikDirectives {
           (attribute): attribute is DirectiveAttribute => attribute.kind === "Directive",
         );
         if (!first) return;
-        const ref = node.attributes.find((attribute) => attribute.kind === "Ref");
-        // The element's type the directive's own hooks take, which its module names.
-        const type = `DirectiveElement<typeof ${first.name}>`;
-        const own = ref?.kind !== "Ref";
-        this.#signals.set(
-          node,
-          ref?.kind === "Ref"
-            ? {
-                name: component.bindings.find(({ id }) => id === ref.binding)!.name,
-                own: false,
-                type,
-              }
-            : {
-                name: names.fresh(`${first.name[1]!.toLowerCase()}${first.name.slice(2)}Element`),
-                own: true,
-                type,
-              },
+        const ref = node.attributes.find(
+          (attribute): attribute is RefAttribute => attribute.kind === "Ref",
         );
-        if (own) this.#refs.set(first, this.#signals.get(node)!.name);
+        if (ref) this.#templateRefs.add(ref);
+        const templateRef = ref
+          ? component.bindings.find(({ id }) => id === ref.binding)!.name
+          : undefined;
+        const list = names.fresh(`${first.name[1]!.toLowerCase()}${first.name.slice(2)}Elements`);
+        // The element's type the directive's own hooks take, which its module names.
+        this.#lists.set(node, {
+          name: list,
+          type: `DirectiveElement<typeof ${first.name}>`,
+          ...(templateRef ? { templateRef } : {}),
+        });
+        this.#refs.set(first, { list, ...(templateRef ? { templateRef } : {}) });
       },
     });
     // The elements in a conditional's branch whose directive reads a value.
@@ -131,7 +135,7 @@ export class QwikDirectives {
     };
     for (const child of childrenOf(component.render)) branched(child, false);
     const waits = this.#branched.size > 0;
-    this.#helper = this.#signals.size
+    this.#helper = this.#lists.size
       ? {
           run: names.fresh(DIRECTIVE_HELPER),
           hooks: names.fresh("DirectiveHooks"),
@@ -140,34 +144,52 @@ export class QwikDirectives {
           values: names.fresh("directiveStates"),
           watch: names.fresh("watchDocument"),
           watches: names.fresh("documentWatches"),
+          collect: names.fresh("collectElement"),
           ...(waits ? { wait: names.fresh("waitForDocument") } : {}),
         }
       : undefined;
   }
 
-  /** The element's `ref`, at its first directive, where it has no template ref of its own. */
-  attribute(attribute: DirectiveAttribute): ReturnType<typeof js.jsxAttribute>[] {
-    const signal = this.#refs.get(attribute);
-    if (signal === undefined) return [];
-    return [js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(signal)))];
+  /**
+   * The element's `ref`, at its first directive: a function that adds each element it receives
+   * to the directive's list, and fills the element's template ref too where it has one.
+   */
+  attribute(
+    attribute: DirectiveAttribute,
+    context: JsxContext,
+  ): ReturnType<typeof js.jsxAttribute>[] {
+    const ref = this.#refs.get(attribute);
+    const helper = this.#helper;
+    if (ref === undefined || !helper) return [];
+    const collect = `${helper.collect}(${ref.list}, element)`;
+    const code = ref.templateRef
+      ? `(element) => {\n  ${ref.templateRef}.value = element;\n  ${collect};\n}`
+      : `(element) => ${collect}`;
+    return [
+      js.jsxAttribute("ref", js.jsxExpressionContainer(context.placeholders.expression(code))),
+    ];
   }
 
-  /** The statements of the component's body: the signals, then a task for each directive. */
+  /** Whether a template ref is filled by its element's directive `ref`, so prints none itself. */
+  fillsTemplateRef(attribute: RefAttribute): boolean {
+    return this.#templateRefs.has(attribute);
+  }
+
+  /** The statements of the component's body: the element lists, then a task per directive. */
   setup(names: OutputNames): string {
     const helper = this.#helper;
     if (!helper) return "";
     const statements: string[] = [];
-    for (const [element, signal] of this.#signals) {
-      if (signal.own) {
-        const type = signal.type.replace("DirectiveElement", helper.element);
-        statements.push(`const ${signal.name} = ${names.core("useSignal")}<${type}>();`);
-      }
+    for (const [element, list] of this.#lists) {
+      const type = list.type.replace("DirectiveElement", helper.element);
+      statements.push(`const ${list.name} = ${names.core("useSignal")}<${type}[]>([]);`);
       for (const attribute of element.attributes) {
         if (attribute.kind !== "Directive") continue;
         // The task's own names, apart from the component's.
         const track = names.once("track");
         const cleanup = names.once("cleanup");
         const local = names.once("element");
+        const valueName = names.once("value");
         const context = [
           track === "track" ? track : `track: ${track}`,
           cleanup === "cleanup" ? cleanup : `cleanup: ${cleanup}`,
@@ -180,23 +202,33 @@ export class QwikDirectives {
           "client",
         );
         const value = attribute.value.refs.length ? `${track}(() => ${code})` : code;
-        const run = `${cleanup}(${helper.run}(${attribute.name}, ${local}, ${value}));`;
-        // An element Qwik removed stays in its signal, with what its branch narrows gone, so a
-        // value in a branch is read only while the element is in the document: until a slot
-        // puts it there, the task waits, and runs again once it is.
+        const elements = `${track}(${list.name})`;
+        const run = [
+          `const ${valueName} = ${value};`,
+          `for (const ${local} of ${elements}) {`,
+          `  ${cleanup}(${helper.run}(${attribute.name}, ${local}, ${valueName}));`,
+          "}",
+        ];
+        // An element Qwik removed stays in its list, with what its branch narrows gone, so a
+        // value in a branch is read only while one of the elements is in the document: until a
+        // slot puts one there, the task waits, and runs again once it is.
         const body =
           !this.#branched.has(element) || !helper.wait
-            ? [`    if (${local}) ${run}`]
+            ? run
             : [
-                `    if (${local}?.isConnected) ${run}`,
-                `    else if (${local}) ${cleanup}(${helper.wait}(${local}, () => ${signal.name}.trigger()));`,
+                `if (${elements}.some((${local}) => ${local}.isConnected)) {`,
+                ...run.map((line) => `  ${line}`),
+                "} else {",
+                `  for (const ${local} of ${list.name}.value) {`,
+                `    ${cleanup}(${helper.wait}(${local}, () => ${list.name}.trigger()));`,
+                "  }",
+                "}",
               ];
         statements.push(
           [
             `${names.core("useVisibleTask$")}(`,
             `  ({ ${context} }) => {`,
-            `    const ${local} = ${track}(${signal.name});`,
-            ...body,
+            ...body.map((line) => `    ${line}`),
             "  },",
             '  { strategy: "document-ready" },',
             ");",
@@ -208,13 +240,22 @@ export class QwikDirectives {
   }
 
   /** The module's helpers: the hooks' type, the runner the tasks call, and the queue. */
-  helpers(): string[] {
+  helpers(names: OutputNames): string[] {
     const helper = this.#helper;
     if (!helper) return [];
-    const { run, hooks, element, queue, values, watch, watches, wait } = helper;
+    const { run, hooks, element, queue, values, watch, watches, wait, collect } = helper;
+    const signal = names.core("Signal", { type: true });
     return [
       ...directiveRunnerCode({ run, hooks, states: values, watch, watches, queue }),
       ...(wait ? [waitCode(wait, watch)] : []),
+      `/**
+ * Adds an element a directive's \`ref\` receives to the directive's elements, once: on the server
+ * a reference the client resumes as the element, so every element one use renders is followed.
+ */
+function ${collect}<E extends Element>(elements: ${signal}<E[]>, element: E): void {
+  if (elements.untrackedValue.includes(element)) return;
+  elements.value = [...elements.untrackedValue, element];
+}`,
       `/** The element a directive's hooks take. */
 type ${element}<D> = D extends ${hooks}<infer E extends Element, never> ? E : never;`,
       hookQueueCode(queue),

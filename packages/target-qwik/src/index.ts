@@ -27,6 +27,7 @@ import {
   ownDirectives,
   printComponentModule,
   printProgram,
+  refJsxAttribute,
   rewriteExpression,
   scopeRoots,
   sourceNames,
@@ -243,11 +244,11 @@ export const qwik: Target = defineTarget({
     },
     "keyed-identity": { support: "native" },
     // Qwik has no portal (ADR-0098).
-    // A signal ref and a visible task per directive, through an inline helper (ADR-0099).
+    // A list of elements and a visible task per directive, through an inline helper (ADR-0099).
     directive: {
       support: "emulated",
       helper: DIRECTIVE_HELPER,
-      note: "Qwik has no directive, so an element's directive is a signal ref and a document-ready visible task that tracks it and the value, and calls an inline helper, `runDirective`, which runs `mounted` once a `MutationObserver` sees the element in the document, where a slot may put it after Qwik sets the ref, `updated` behind `Object.is`, and `unmounted` once the element leaves or the component unmounts, in Vue's order through an inline queue.",
+      note: "Qwik has no directive, so an element's directive is a `ref` function that adds each element one use renders to a signal of them, and a document-ready visible task that tracks them and the value, and calls an inline helper, `runDirective`, for each, which runs `mounted` once a `MutationObserver` sees the element in the document, where a slot may put it after Qwik calls the ref, `updated` behind `Object.is`, and `unmounted` once the element leaves or the component unmounts, in Vue's order through an inline queue.",
     },
     teleport: {
       support: "emulated",
@@ -334,7 +335,7 @@ export const qwik: Target = defineTarget({
     const plan = planSetup(component, module, names);
     const scope = scopePlan(component, names);
     const listeners = new Listeners(plan);
-    // Each directive's signal ref and visible task (ADR-0099).
+    // Each directive's list of elements and visible task (ADR-0099).
     const directives = new QwikDirectives(component, plan, names);
     for (const { specifier, imported, local } of importedDirectives(component, module)) {
       imports.add(directiveSpecifier(specifier, imported), imported, { local, exact: true });
@@ -365,7 +366,13 @@ export const qwik: Target = defineTarget({
           scope,
         ),
         ...(teleport ? { teleport: teleportJsx(teleport) } : {}),
-        directiveAttribute: (attribute) => directives.attribute(attribute),
+        directiveAttribute: (attribute, _element, context) =>
+          directives.attribute(attribute, context),
+        // A template ref beside a directive is filled by the directive's own `ref` (ADR-0099).
+        refAttribute: (attribute, element, context) =>
+          directives.fillsTemplateRef(attribute)
+            ? []
+            : refJsxAttribute(attribute, element, context),
       },
       rules: plan.rules(),
     });
@@ -457,7 +464,7 @@ export const qwik: Target = defineTarget({
     const helperCode = helpers(plan, listeners);
     if (scope) helperCode.push(scopeAttributesHelper(scope.helper));
     if (teleport) helperCode.push(teleportHelper(teleport));
-    helperCode.push(...directives.helpers());
+    helperCode.push(...directives.helpers(names));
     // The sheet's import comes after the other imports, as on the other targets: an `?inline`
     // import loads nothing, and `useStyles$` attaches the sheet as the component first renders
     // (`sheet-order`). Collected last: the types and the helpers import what they name.

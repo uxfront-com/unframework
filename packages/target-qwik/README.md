@@ -144,7 +144,7 @@ prop a parent's spread adds after the mount; `test/behaviour.browser.test.ts` pi
 `child-root-scope` (emulated: `scopeAttributes`, Scoped styles below) and `sheet-order`
 (unsupported, for information, UF4002: sheets load in render order).
 
-`directive` is emulated (ADR-0099): a signal ref on the element, its template ref's where it has one, and a `document-ready` visible task per directive that tracks the element and the value and calls an inline `runDirective`, which watches the element come into the document and leave it with a `MutationObserver`, since a slot may project it after Qwik sets the ref, and queues the hooks in Vue's order. A `.uf.ts` module's directive is the plain hooks, `vFocusTrap.ts`.
+`directive` is emulated (ADR-0099): a `ref` function that adds each element one use renders to a signal of them (`collectElement`), and fills the element's template ref too, and a `document-ready` visible task per directive that tracks the elements and the value and calls an inline `runDirective` for each, which watches the element come into the document and leave it with a `MutationObserver`, since a slot may project it after Qwik sets the ref, and queues the hooks in Vue's order. A `.uf.ts` module's directive is the plain hooks, `vFocusTrap.ts`.
 
 `teleport` is emulated (ADR-0098): the element renders once a visible task says the component has mounted, after the empty text of `{""}` in a fragment, and a ref, `teleport`, moves it into `to`, makes it stand in for its Qwik container there, and removes it once the element that held it leaves the document.
 
