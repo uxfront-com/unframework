@@ -70,11 +70,12 @@ The diagnostics:
 | UF3055 | `unknown-directive`     | `v-name` where the module declares or imports no `vName`, or `vName` is a constant. A directive whose import failed (UF1202) reports nothing more                                                                                                                                                                         |
 | UF3056 | `invalid-directive-use` | A directive on a component, `<Teleport>` or `<component is>`, without a value, or with a value built in place                                                                                                                                                                                                             |
 
-A setup name or a prop that shadows a directive an element applies is UF3024, once per component,
-since Vue's `<script setup>` and Angular's class resolve a directive by its name. A directive in a
-scoped slot's content is UF1002, as in a list's body (below): the content renders once per call of
-the slot. An import of a name a
-`.uf.ts` module doesn't export is UF1202.
+A setup name, a prop, a model or a slot that shadows a directive an element applies is UF3024,
+once per name, since Vue's `<script setup>` and Angular's class resolve a directive by its name and
+React, Svelte and Qwik take a model or a slot as a prop. A directive in a slot's fill that the
+child may render more than once is UF1002, as in a list's body (below): a scoped slot's fill, or
+one of a slot the child's API marks `repeated`. An import of a name a `.uf.ts` module doesn't
+export is UF1202.
 
 The IR gains a `Directive` attribute, `{ kind: "Directive", name, value, span }`, and a module's
 `directives`, each with its hooks' code, the module's bindings they read and the types they name.
@@ -96,7 +97,9 @@ emits a `.uf.ts` module's directive, as `emitComposable` emits a composable.
   this is Vue's own order, and Svelte and Angular remove the DOM before their teardowns run.
 - **Order, Vue's.** Within one render, a descendant's hook runs before its ancestor's, and
   siblings' `mounted` in document order, whichever outputs the directives and the elements come
-  from. For `unmounted`, only "descendant before ancestor".
+  from. For `unmounted`, only "descendant before ancestor". An element that a render
+  removes unmounts before one it adds mounts, so a branch that replaces another mounts after the
+  other unmounts.
 - **A hook's return value** is ignored, as Vue ignores it.
 - **Not guaranteed:**
   - Whether a directive mounted during an event sees that event at `document`. Vue and Svelte
@@ -118,13 +121,17 @@ emits a `.uf.ts` module's directive, as `emitComposable` emits a composable.
 | Qwik    | emulated, `runDirective`   | A signal ref on the element, its template ref's where it has one, and a `document-ready` visible task per directive that tracks the element and the value and calls the inline `runDirective`. The task's cleanup stops it, at the component's own unmount. The module exports the plain hooks, which the optimizer imports into the task's segment. |
 | Astro   | unsupported, UF4001 (info) | Prints nothing for the attribute and imports nothing for it: a static page never runs a hook.                                                                                                                                                                                                                                                        |
 
-`queueHook` is one inline helper: hooks one turn queues run in a microtask, sorted descendant
-before ancestor and then by `compareDocumentPosition`. A detached subtree keeps its shape, so an
+`queueHook` is one inline helper: hooks one turn queues run in a microtask, those of the
+elements whose first hook of the turn is `unmounted` first, which `compareDocumentPosition`
+can't order against an attached element, then sorted descendant before ancestor and then by
+`compareDocumentPosition`. One element's hooks keep the order they came in, as StrictMode's
+`mounted`, `unmounted` and `mounted` do. A detached subtree keeps its shape, so an
 element removed with its descendants still sorts after them. Solid runs an element's ref before
 its children's, Angular mixes the two orders, Qwik's is its own, and React's helper runs from
 effects and microtasks, so each queues its hooks. Every output declares the helper, since none
 imports another's (P7), but they share one queue, an array on `globalThis` under
-`Symbol.for("unframework.directive-hooks")`: a directive module's hooks and a component's own sort
+`Symbol.for("unframework.directive-hooks@1")`, whose version changes with the entries' shape: a
+directive module's hooks and a component's own sort
 together, which the `directives/order` case checks with a child's root that applies a `.uf.ts`
 module's directive. A hook that throws goes to `reportError`, and the rest of its turn still runs.
 Svelte runs its attachments in Vue's order with no queue.
@@ -160,18 +167,29 @@ Some lowerings differ from the plan's starting points, each for a reason the wor
   while the child takes it out and back, with no lifecycle event either way. Qwik sets a signal
   ref when it creates the element, which may be before a slot projects it, and runs no task when
   a conditional removes it. So both call one inline helper, `runDirective`, with the element and
-  the value, and it runs `mounted` once a `MutationObserver` sees the element in the document,
-  `updated` for a value that changed while it is, and `unmounted` once it leaves. The stop it
-  returns ends the watch when the element's owner goes. `afterRenderEffect` and Qwik's visible
-  task never run on the server, so neither needs a platform check. The `directives/slotted` case
-  checks content a child shows and hides by its own state. On Qwik, an element whose value reads
-  what a condition narrows is run only while it is in the document, since its value can't be read
-  once the condition fails: such an element in projected content mounts only if it is in the
-  document when the task first runs.
+  the value, and it runs `mounted` once the output's one `MutationObserver` sees the element in
+  the document, `updated` for a value that changed while it is, and `unmounted` once it leaves.
+  The stop it returns ends the watch when the element's owner goes. `afterRenderEffect` and
+  Qwik's visible task never run on the server, so neither needs a platform check. The
+  `directives/slotted` case checks content a child shows and hides by its own state. On Qwik, a
+  value that reads what a condition narrows, `user.value!.name`, can't be read once the condition
+  fails, so the task reads it only while the element is in the document. Until then it waits
+  (`waitForDocument`) and runs again once the element enters, through the signal's `trigger()`.
+  The observer doesn't see into a shadow root.
+- **Svelte's getter reads a branch's constant.** An attachment's getter is a closure, where
+  TypeScript keeps no narrowing of a reassigned `$state`, and a `typeof` narrowing takes no `!`.
+  So a directive's value in a branch is a `{@const markValue = user.name}` at the start of its
+  innermost branch, whose type is the narrowed one, and the getter reads it:
+  `{@attach vMark(() => markValue)}`. A constant is reactive, as the value is.
 
 A directive on an element in a list's body is UF1002 for now (Alex's answer to this plan's second
 decision). React gives a directive's state to its component, which renders the list once, so a row
-would need a helper component of its own, and Qwik gives a row no signal of its own.
+would need a helper component of its own, and Qwik gives a row no signal of its own. A fill the
+child may render more than once is the same: a scoped slot's, and one of a slot the child reads in
+a function of its body, as a list's body or a fill is, or in another component's content, which
+that component may render so. The child's API marks such a slot `repeated` (`ApiSlot.repeated`),
+read from its syntax, so a slot a function reads without rendering counts too. `<Teleport>`
+renders its content once.
 
 ### Tooling
 
