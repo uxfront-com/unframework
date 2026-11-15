@@ -234,6 +234,7 @@ describe("UF3056 invalid-directive-use", () => {
     ],
     ["with an object literal", source("<p v-mark={{ a: 1 }}>a</p>"), "UF3056 { a: 1 }"],
     ["with an array literal", source("<p v-mark={[1]}>a</p>"), "UF3056 [1]"],
+    ["with a regular expression", source("<p v-mark={/x/}>a</p>"), "UF3056 /x/"],
     ["with a function written in place", source("<p v-mark={() => 1}>a</p>"), "UF3056 () => 1"],
     [
       "with an object literal in a branch",
@@ -301,9 +302,78 @@ describe("what is not supported yet (UF1002)", () => {
     ).replace("{ defineDirective, ref }", "{ defineDirective, defineSlots, ref, type Element }");
     expect(reported(text)).toContain("UF1002 v-mark");
   });
+
+  it.each([
+    [
+      "a named slot it renders in a list",
+      '{{ item: () => <span v-mark="x">row</span> }}',
+      "item",
+      "<ul>{items.map((each) => <li key={each}>{slots.item?.()}</li>)}</ul>",
+    ],
+    [
+      "the default slot it renders in a list",
+      '<span v-mark="x">row</span>',
+      "default",
+      "<ul>{items.map((each) => <li key={each}>{slots.default?.()}</li>)}</ul>",
+    ],
+    [
+      "a slot it hands to another component",
+      '<span v-mark="x">row</span>',
+      "default",
+      "<Box>{slots.default?.()}</Box>",
+    ],
+  ])("reports a directive in a fill of %s (UF1002)", (_name, fill, slot, body) => {
+    const list = `export function List({ items }: { items: string[] }) {
+  const slots = defineSlots<{ ${slot}?(): Element }>();
+  return ${body};
+}
+function Box() {
+  const slots = defineSlots<{ default?(): Element }>();
+  return <div>{slots.default?.()}</div>;
+}
+`;
+    const text = source(`<List items={["a", "b"]}>${fill}</List>`, "", `${MARK}${list}`).replace(
+      "{ defineDirective, ref }",
+      "{ defineDirective, defineSlots, ref, type Element }",
+    );
+    expect(reported(text)).toContain("UF1002 v-mark");
+  });
+
+  it("accepts a directive in a fill the child renders once, behind its state or in a `<Teleport>`", () => {
+    const child = `export function Disclosure() {
+  const slots = defineSlots<{ default?(): Element; title?(): Element }>();
+  const open = ref(false);
+  return <div>{open.value ? <div>{slots.default?.()}</div> : null}<Teleport to="body"><div>{slots.title?.()}</div></Teleport></div>;
+}
+`;
+    const text = source(
+      '<Disclosure>{{ default: () => <p v-mark="a">a</p>, title: () => <p v-mark="b">b</p> }}</Disclosure>',
+      "",
+      `${MARK}${child}`,
+    ).replace(
+      "{ defineDirective, ref }",
+      "{ defineDirective, defineSlots, ref, Teleport, type Element }",
+    );
+    expect(reported(text)).toEqual([]);
+  });
 });
 
 describe("the codes it shares", () => {
+  it.each([
+    [
+      "model",
+      'const text = defineModel<string>("vMark");\n  ',
+      'UF3024 const text = defineModel<string>("vMark");',
+    ],
+    ["slot", "const slots = defineSlots<{ vMark?(): Element }>();\n  ", "UF3024 vMark?(): Element"],
+  ])("reports a %s that shadows the directive (UF3024), at its declaration", (_name, setup, at) => {
+    const text = source('<p v-mark="a">a</p>', setup).replace(
+      "{ defineDirective, ref }",
+      "{ defineDirective, defineModel, defineSlots, ref, type Element }",
+    );
+    expect(reported(text)).toEqual([at]);
+  });
+
   it("reports a setup name that shadows the directive (UF3024), once", () => {
     const text = source(
       '<section><p v-mark="a">a</p><p v-mark="b">b</p></section>',

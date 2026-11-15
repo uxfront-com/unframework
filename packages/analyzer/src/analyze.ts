@@ -34,6 +34,7 @@ import type {
   NamedImport,
   PassThroughImport,
   SharedModuleImport,
+  Span,
   TypeDeclaration,
   TypeExport,
   TypeImport,
@@ -481,6 +482,7 @@ export function analyzeModule(
     }
     const component = analyzeComponent(candidate, module);
     if (!component) continue;
+    reportDirectiveShadows(component, reporter);
     lowered.push(component);
     for (const entry of candidate.exports) {
       exports.push({ ...createExport(entry.kind, candidate.name, entry.span), name: entry.name });
@@ -573,6 +575,31 @@ function directiveOwner(directive: UfDirective): UfComposable {
     setup: [],
     returns: [],
   };
+}
+
+/**
+ * A model or a slot named like a directive the component applies (ADR-0099), which UF3024 reports
+ * at its declaration, as it does a prop: the outputs that take it as a prop or a snippet (React,
+ * Svelte, Qwik) would read it in the directive's place.
+ */
+function reportDirectiveShadows(component: UfComponent, reporter: Reporter): void {
+  const applied = new Set(appliedDirectives(component));
+  if (!applied.size) return;
+  const report = (name: string, what: "model" | "slot", at: Span) => {
+    const authored = `v-${name.slice(1).replace(/[A-Z]/g, (letter, index: number) => `${index ? "-" : ""}${letter.toLowerCase()}`)}`;
+    reporter.report(
+      "UF3024",
+      at,
+      `\`${name}\` is a ${what}, and shadows the directive \`${authored}\` applies: the outputs that take it as a prop would read it instead.`,
+      { help: `Rename the ${what}: no directive needs to share its name.` },
+    );
+  };
+  for (const item of component.setup) {
+    if (item.kind === "Model" && applied.has(item.name)) report(item.name, "model", item.span);
+  }
+  for (const slot of component.slots?.slots ?? []) {
+    if (applied.has(slot.name)) report(slot.name, "slot", slot.span);
+  }
 }
 
 /** The names of the directives a component's elements apply (ADR-0099). */
@@ -2102,7 +2129,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     passThrough: module.passThrough,
     shared: module.shared,
     directives: module.directives,
-    scopedFills: { depth: 0 },
+    repeatedFills: { depth: 0 },
   };
   setup.lower(render);
   if (!returned || (returned.type !== "JSXElement" && returned.type !== "JSXFragment")) {

@@ -591,10 +591,12 @@ export function lowerDirectiveAttribute(
     }
     return undefined;
   }
-  if (render.enclosing.length || render.scopedFills.depth) {
+  if (render.enclosing.length || render.repeatedFills.depth) {
     reporter.unsupported(
       nameNode,
-      `\`${authored}\` on an element in a list's body${render.enclosing.length ? "" : ", or a scoped slot's fill a child may render once per row,"} is not supported yet: React and Qwik give a directive's state to the component, which renders it once.`,
+      render.enclosing.length
+        ? `\`${authored}\` on an element in a list's body is not supported yet: React and Qwik give a directive's state to the component, which renders it once.`
+        : `\`${authored}\` in a slot's fill that the child may render more than once, as a scoped slot's or one it renders in a list, is not supported yet: React and Qwik give a directive's state to the component, which renders it once.`,
       {
         help: "Apply the directive to an element around the list, or render each row as a component of its own, whose element applies it.",
       },
@@ -723,6 +725,9 @@ function freshValue(node: AST.Node): string | undefined {
       return "an object";
     case "ClassExpression":
       return "a class";
+    case "Literal":
+      // A regular expression literal is a new object each time it runs.
+      return "regex" in node && node.regex ? "a regular expression" : undefined;
     default:
       return undefined;
   }

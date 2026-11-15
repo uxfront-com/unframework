@@ -54,6 +54,7 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
   // A parent reads it to reject explicit type arguments and `<component is>` (UF6006).
   const parameters = node.typeParameters?.params ?? [];
   if (parameters.length) api.typeParameters = parameters.map((parameter) => parameter.name.name);
+  let slotsBinding: string | undefined;
   for (const statement of body) {
     const call = macroCall(statement, context);
     if (!call) continue;
@@ -64,6 +65,12 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
         break;
       case "defineSlots":
         api.slots = type ? slotsOf(type, context) : [];
+        if (
+          statement.type === "VariableDeclaration" &&
+          statement.declarations[0]!.id.type === "Identifier"
+        ) {
+          slotsBinding = statement.declarations[0]!.id.name;
+        }
         break;
       case "defineExpose":
         api.exposes = exposedOf(call.call);
@@ -80,10 +87,64 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
         break;
     }
   }
+  if (slotsBinding !== undefined && api.slots.length) {
+    const repeated = repeatedSlots(node, slotsBinding);
+    api.slots = api.slots.map((slot) =>
+      repeated.has(slot.name) ? { ...slot, repeated: true } : slot,
+    );
+  }
   const root = rootOf(node, context);
   api.root = root.kind;
   if (root.tag !== undefined) api.rootTag = root.tag;
   return api;
+}
+
+/**
+ * The slots a component may render more than once (ADR-0099): those it reads, `slots.item`, in a
+ * function of its body, as a list's body or a fill is, or in another component's content, which
+ * that component may render so. `<Teleport>` renders its content once, where the component does.
+ * Read from the syntax, so a read that renders nothing counts too.
+ */
+function repeatedSlots(node: ComponentFunction, binding: string): Set<string> {
+  const found = new Set<string>();
+  const visit = (value: unknown, repeated: boolean): void => {
+    if (Array.isArray(value)) {
+      for (const each of value) visit(each, repeated);
+      return;
+    }
+    if (typeof value !== "object" || value === null || !("type" in value)) return;
+    const current = value as AST.Node;
+    if (
+      repeated &&
+      current.type === "MemberExpression" &&
+      !current.computed &&
+      current.object.type === "Identifier" &&
+      current.object.name === binding
+    ) {
+      found.add(current.property.name);
+    }
+    const nested =
+      repeated ||
+      current.type === "ArrowFunctionExpression" ||
+      current.type === "FunctionExpression" ||
+      current.type === "FunctionDeclaration";
+    if (current.type === "JSXElement") {
+      const tag = current.openingElement.name;
+      const component =
+        tag.type === "JSXMemberExpression" ||
+        (tag.type === "JSXIdentifier" &&
+          tag.name !== "Teleport" &&
+          (isComponentName(tag.name) || tag.name === "component"));
+      visit(current.openingElement, nested);
+      visit(current.children, nested || component);
+      return;
+    }
+    for (const [key, child] of Object.entries(current)) {
+      if (key !== "type" && key !== "parent") visit(child, nested);
+    }
+  };
+  visit(node.body, false);
+  return found;
 }
 
 /** The authoring macro a top-level statement calls, as a statement or a `const`'s value. */

@@ -576,8 +576,16 @@ function lowerFills(
   const at = { start: content[0]!.start, end: content.at(-1)!.end };
   const forwarded = forwardedDefault(content, render);
   if (forwarded) return [createSlotFill("default", [], at, { forward: "default" })];
+  const repeated = repeatsSlot(api, "default");
+  if (repeated) render.repeatedFills.depth++;
   const children = lowerChildren(node.children, FILL, render);
+  if (repeated) render.repeatedFills.depth--;
   return children.length ? [createSlotFill("default", children, at)] : [];
+}
+
+/** Whether a child may render a slot more than once (ADR-0099). */
+function repeatsSlot(api: ComponentApi, slot: string): boolean {
+  return api.slots.some((each) => each.name === slot && each.repeated === true);
 }
 
 /** Whether a component declares a slot. */
@@ -733,10 +741,12 @@ function lowerSlotObject(
       variables.push(...read.variables);
     }
     for (const variable of variables) render.loopVariables.set(variable.declaration, variable);
-    // A scoped fill is a render function a child may call once per row (ADR-0099).
-    if (param) render.scopedFills.depth++;
+    // A scoped fill is a render function a child may call once per row, and the child may render
+    // another slot more than once too (ADR-0099).
+    const repeated = Boolean(param) || repeatsSlot(api, slot);
+    if (repeated) render.repeatedFills.depth++;
     const children = lowerContent(value.body, FILL, render);
-    if (param) render.scopedFills.depth--;
+    if (repeated) render.repeatedFills.depth--;
     fills.push(createSlotFill(slot, children, at, parameter ? { parameter } : {}));
   }
   if (!valid) return undefined;
