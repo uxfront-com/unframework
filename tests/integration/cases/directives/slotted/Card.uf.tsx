@@ -1,4 +1,4 @@
-import { defineDirective } from "@uxfront/unframework";
+import { defineDirective, ref } from "@uxfront/unframework";
 
 import Disclosure from "./Disclosure.uf.tsx";
 
@@ -15,12 +15,19 @@ const vTrace = defineDirective<string>({
 });
 
 export default function Card() {
+  const note = ref<{ name: string } | null>({ name: "note" });
+
   return (
     <section class="card" aria-label="Card">
       <Disclosure>
         <p data-name="body" v-trace="body">
           Body
         </p>
+        {note.value ? (
+          <p data-name="note" v-trace={note.value.name}>
+            Note
+          </p>
+        ) : null}
       </Disclosure>
     </section>
   );

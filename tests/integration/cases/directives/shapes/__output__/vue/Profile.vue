@@ -25,6 +25,8 @@ const vMark: ObjectDirective<HTMLElement, string> = {
 
 const user = shallowRef<User | null>({ name: "Ada" });
 const note = ref("Hello");
+const label = ref<string | number>("Lovelace");
+const nick = ref<string | undefined>("Al");
 
 const vTextCaret = {
   mounted(element: HTMLTextAreaElement) {
@@ -38,6 +40,8 @@ const vTextCaret = {
 <template>
   <section class="profile" aria-label="Profile">
     <p v-if="user" v-mark="user.name">{{ user.name }}</p>
+    <b v-if="typeof label === 'string'" v-mark="label">{{ label }}</b>
+    <i v-if="nick" v-mark="nick">{{ nick }}</i>
     <textarea
       v-model="note"
       v-text-caret
@@ -46,5 +50,7 @@ const vTextCaret = {
       aria-label="Note"
     ></textarea>
     <button type="button" @click="user = user ? null : { name: 'Grace' }">Toggle</button>
+    <button type="button" @click="label = 1">Count</button>
+    <button type="button" @click="nick = undefined">Forget</button>
   </section>
 </template>

@@ -33,17 +33,15 @@
   {...scopeAttributes(attributes)}
 >
   <button type="button" onclick={() => (open = true)}>Open</button
-  >{#if open}
-    <div
-      role="dialog"
-      aria-label="Preferences"
-      tabindex="-1"
-      class="dialog"
-      {@attach vFocusTrap(() => open)}
-      onkeydown={onKeydown}
-    >
-      <button type="button">Theme</button><button type="button">Language</button
-      ><button type="button" onclick={close}>Close</button>
-    </div>
-  {/if}
+  >{#if open}{@const focusTrapValue = open}<div
+    role="dialog"
+    aria-label="Preferences"
+    tabindex="-1"
+    class="dialog"
+    {@attach vFocusTrap(() => focusTrapValue)}
+    onkeydown={onKeydown}
+  ><button type="button">Theme</button><button type="button">Language</button><button
+    type="button"
+    onclick={close}
+  >Close</button></div>{/if}
 </section>

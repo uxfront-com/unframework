@@ -30,8 +30,14 @@ export default function Profile({ className, style, ...attributes }: ProfileAttr
   const [user, setUser] = useState<User | null>({ name: "Ada" });
   const userRef = useRef(user);
   const [note, setNote] = useState("Hello");
+  const [label, setLabel] = useState<string | number>("Lovelace");
+  const labelRef = useRef(label);
+  const [nick, setNick] = useState<string | undefined>("Al");
+  const nickRef = useRef(nick);
   const markRef = useDirective(vMark, () => user!.name);
-  const markRef_1 = useDirective(vMark, () => note);
+  const markRef_1 = useDirective(vMark, () => label);
+  const markRef_2 = useDirective(vMark, () => nick);
+  const markRef_3 = useDirective(vMark, () => note);
   const selectableRef = useDirective(vSelectable, () => true);
 
   const [noteCaret] = useState(() => (element: HTMLTextAreaElement | null) => {
@@ -40,10 +46,10 @@ export default function Profile({ className, style, ...attributes }: ProfileAttr
       element.value = "";
       element.value = text;
     }
-    markRef_1(element);
+    markRef_3(element);
     selectableRef(element);
     return () => {
-      markRef_1(null);
+      markRef_3(null);
       selectableRef(null);
     };
   });
@@ -56,6 +62,8 @@ export default function Profile({ className, style, ...attributes }: ProfileAttr
       {...scopeAttributes(attributes)}
     >
       {user ? <p ref={markRef}>{user.name}</p> : null}
+      {typeof label === "string" ? <b ref={markRef_1}>{label}</b> : null}
+      {nick ? <i ref={markRef_2}>{nick}</i> : null}
       <textarea
         aria-label="Note"
         value={note}
@@ -70,6 +78,24 @@ export default function Profile({ className, style, ...attributes }: ProfileAttr
         }}
       >
         Toggle
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          labelRef.current = 1;
+          setLabel(labelRef.current);
+        }}
+      >
+        Count
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          nickRef.current = undefined;
+          setNick(nickRef.current);
+        }}
+      >
+        Forget
       </button>
     </section>
   );
@@ -123,7 +149,7 @@ function useDirective<E extends Element, T>(directive: DirectiveHooks<E, T>, get
     const { element, mounted } = current;
     if (mounted && mounted !== element) {
       current.mounted = null;
-      queueHook(mounted, () => directive.unmounted?.(mounted));
+      queueHook(mounted, () => directive.unmounted?.(mounted), true);
     }
     if (!element) return;
     const value = current.getValue();
@@ -156,25 +182,33 @@ function useDirective<E extends Element, T>(directive: DirectiveHooks<E, T>, get
 }
 
 /**
- * Runs a directive's hook once the turn ends, a descendant's before its ancestor's and
- * siblings' in document order, as Vue runs them, with the hooks every other output queued.
+ * Runs a directive's hook once the turn ends, as Vue runs them: the elements that leave first,
+ * then a descendant's before its ancestor's and siblings' in document order, one element's in
+ * the order they came, with the hooks every other output queued.
  */
-function queueHook(element: Element, run: () => void): void {
-  const key: unique symbol = Symbol.for("unframework.directive-hooks");
+function queueHook(element: Element, run: () => void, leaving = false): void {
+  const key: unique symbol = Symbol.for("unframework.directive-hooks@1");
   const scope = globalThis as typeof globalThis & {
-    [key]?: { element: Element; run: () => void }[];
+    [key]?: { element: Element; run: () => void; leaving: boolean }[];
   };
   const queued = scope[key];
   if (queued) {
-    queued.push({ element, run });
+    queued.push({ element, run, leaving });
     return;
   }
-  scope[key] = [{ element, run }];
+  scope[key] = [{ element, run, leaving }];
   queueMicrotask(() => {
     const hooks = scope[key] ?? [];
     scope[key] = undefined;
+    // An element whose first hook of the turn is `unmounted` leaves before any other mounts.
+    const leaves = new Map<Element, boolean>();
+    for (const hook of hooks) {
+      if (!leaves.has(hook.element)) leaves.set(hook.element, hook.leaving);
+    }
     hooks.sort((a, b) => {
       if (a.element === b.element) return 0;
+      const leaving = leaves.get(a.element) === true;
+      if (leaving !== (leaves.get(b.element) === true)) return leaving ? -1 : 1;
       if (a.element.contains(b.element)) return 1;
       if (b.element.contains(a.element)) return -1;
       return a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING

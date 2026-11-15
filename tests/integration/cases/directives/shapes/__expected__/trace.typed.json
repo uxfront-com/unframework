@@ -8,17 +8,32 @@
         "  <p data-element=\"mounted\" data-hooks=\"Ada\">",
         "    \"Ada\"",
         "  </p>",
-        "  <textarea aria-label=\"Note\" data-element=\"mounted\" data-hooks=\"updated Hi\" data-selectable=\"true\" uf:focused=\"\" uf:value=\"Hi\"></textarea>",
+        "  <b data-element=\"mounted\" data-hooks=\"Lovelace\">",
+        "    \"Lovelace\"",
+        "  </b>",
+        "  <i data-element=\"mounted\" data-hooks=\"Al\">",
+        "    \"Al\"",
+        "  </i>",
+        "  <textarea aria-label=\"Note\" data-element=\"mounted\" data-hooks=\"updated Hi\" data-queue=\"queued\" data-selectable=\"true\" data-untrack=\"mounted\" uf:focused=\"\" uf:value=\"Hi\"></textarea>",
         "  <button type=\"button\">",
         "    \"Toggle\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Count\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Forget\"",
         "  </button>",
         "</section>"
       ],
       "aria": [
         "- region \"Profile\":",
         "  - paragraph: Ada",
+        "  - text: LovelaceAl",
         "  - textbox \"Note\": Hi",
-        "  - button \"Toggle\""
+        "  - button \"Toggle\"",
+        "  - button \"Count\"",
+        "  - button \"Forget\""
       ],
       "events": {}
     }

@@ -1,3 +1,6 @@
 - region "Profile":
+  - text: LovelaceAl
   - textbox "Note": Hi
   - button "Toggle"
+  - button "Count"
+  - button "Forget"

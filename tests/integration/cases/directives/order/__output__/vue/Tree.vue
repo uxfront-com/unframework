@@ -24,6 +24,7 @@ const shown = ref(true);
     <div v-if="shown" v-trace="'branch'" class="branch" data-name="branch">
       <span v-trace="'leaf'" data-name="leaf">Leaf</span>
     </div>
+    <p v-else v-trace="'placeholder'" data-name="placeholder">Placeholder</p>
     <p v-trace="'last'" data-name="last">Last</p>
     <button type="button" @click="shown = !shown">Toggle</button>
   </section>

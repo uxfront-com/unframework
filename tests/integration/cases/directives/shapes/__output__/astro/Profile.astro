@@ -19,6 +19,8 @@ function scopeAttributes(props: object): Record<string, ""> {
 
 const user = { name: "Ada" } as User | null;
 const note = "Hello" as string;
+const label = "Lovelace" as string | number;
+const nick = "Al" as string | undefined;
 ---
 
 <section
@@ -30,6 +32,14 @@ const note = "Hello" as string;
   {user ? (
     <p>{user.name}</p>
   ) : null}
+  {typeof label === "string" ? (
+    <b>{label}</b>
+  ) : null}
+  {nick ? (
+    <i>{nick}</i>
+  ) : null}
   <textarea aria-label="Note">{note}</textarea>
   <button type="button">Toggle</button>
+  <button type="button">Count</button>
+  <button type="button">Forget</button>
 </section>

@@ -419,12 +419,14 @@
               {
                 "name": "swatch",
                 "optional": true,
-                "props": "{ item: string }"
+                "props": "{ item: string }",
+                "repeated": true
               },
               {
                 "name": "caption",
                 "optional": true,
-                "props": "{ item: string }"
+                "props": "{ item: string }",
+                "repeated": true
               }
             ],
             "exposes": [],

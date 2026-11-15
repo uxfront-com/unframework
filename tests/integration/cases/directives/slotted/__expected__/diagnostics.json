@@ -5,14 +5,14 @@
     "message": "The astro target does not support directive: A directive's hooks never run on Astro: components render on the server only, and nothing runs in the browser.",
     "file": "directives/slotted/Card.uf.tsx",
     "start": {
-      "line": 21,
+      "line": 23,
       "column": 29,
-      "offset": 712
+      "offset": 781
     },
     "end": {
-      "line": 21,
+      "line": 23,
       "column": 43,
-      "offset": 726
+      "offset": 795
     },
     "target": "astro"
   },

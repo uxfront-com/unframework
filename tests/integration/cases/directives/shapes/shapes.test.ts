@@ -2,8 +2,9 @@
 // must keep as written (ADR-0099). The hooks read the module's `hooks` and `element`, names the
 // wrappers use too; `updated` declares its own `oldValue`; `mounted` returns its element and
 // `unmounted` never reads its own. A conditional narrows one value, which React and Qwik read
-// outside it, and a `<textarea>` with a `v-model` applies two directives, one imported with an
-// element type its module names.
+// outside it, and two more that a handler reassigns: one a `typeof` narrows, one optional. A
+// `<textarea>` with a `v-model` applies two directives, one imported with an element type its
+// module names and a hook that reads constants named like its output's imports.
 import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
@@ -22,6 +23,10 @@ describeTargets("directives/shapes", () => {
       const note = view.getByRole("textbox", { name: "Note" });
       await expect.element(note).toHaveAttribute("data-hooks", "Hello");
       await expect.element(note).toHaveAttribute("data-selectable", "true");
+      await expect.element(note).toHaveAttribute("data-untrack", "mounted");
+      await expect.element(note).toHaveAttribute("data-queue", "queued");
+      await expect.element(view.getByText("Lovelace")).toHaveAttribute("data-hooks", "Lovelace");
+      await expect.element(view.getByText("Al")).toHaveAttribute("data-hooks", "Al");
     },
   );
 
@@ -41,6 +46,11 @@ describeTargets("directives/shapes", () => {
       await view.user.click(view.getByRole("button", { name: "Toggle" }));
       await view.expectParity("shown");
       await expect.element(view.getByText("Grace")).toHaveAttribute("data-hooks", "Grace");
+      await view.user.click(view.getByRole("button", { name: "Count" }));
+      await view.user.click(view.getByRole("button", { name: "Forget" }));
+      await view.expectParity("cleared");
+      await expect.element(view.getByText("Lovelace")).not.toBeInTheDocument();
+      await expect.element(view.getByText("Al")).not.toBeInTheDocument();
     },
   );
 });

@@ -3,7 +3,8 @@
 // its earlier siblings, as Vue's own order is (a post-order of the DOM). `unmounted` runs on an
 // element after its descendants, whether a condition removes them or the component unmounts. A
 // child component's root, which applies a `.uf.ts` module's directive, sorts among its parent's
-// elements in document order.
+// elements in document order. When a condition swaps one branch for another, the removed
+// branch's `unmounted` runs before the added one's `mounted`, as on Vue.
 import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import type { View } from "@unframework.dev/testing";
 import { expect } from "vitest";
@@ -83,11 +84,19 @@ describeTargets("directives/order", () => {
         trace.reset();
         await view.user.click(view.getByRole("button", { name: "Toggle" }));
         await view.expectParity("collapsed");
-        expect(trace.calls(view)).toEqual(["unmounted leaf", "unmounted branch"]);
+        expect(trace.calls(view)).toEqual([
+          "unmounted leaf",
+          "unmounted branch",
+          "mounted placeholder",
+        ]);
         trace.reset();
         await view.user.click(view.getByRole("button", { name: "Toggle" }));
         await view.expectParity("expanded");
-        expect(trace.calls(view)).toEqual(["mounted leaf", "mounted branch"]);
+        expect(trace.calls(view)).toEqual([
+          "unmounted placeholder",
+          "mounted leaf",
+          "mounted branch",
+        ]);
         trace.reset();
         await view.unmount();
         const removal = trace.calls(view);

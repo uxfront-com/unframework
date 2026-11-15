@@ -13,6 +13,9 @@
         "      <p data-name=\"body\">",
         "        \"Body\"",
         "      </p>",
+        "      <p data-name=\"note\">",
+        "        \"Note\"",
+        "      </p>",
         "    </div>",
         "  </div>",
         "</section>"
@@ -20,7 +23,8 @@
       "aria": [
         "- region \"Card\":",
         "  - button \"Details\" [expanded]",
-        "  - paragraph: Body"
+        "  - paragraph: Body",
+        "  - paragraph: Note"
       ],
       "events": {}
     }

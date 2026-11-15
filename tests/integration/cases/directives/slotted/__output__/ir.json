@@ -5,13 +5,47 @@
     {
       "name": "Card",
       "span": {
-        "start": 576,
-        "end": 797
+        "start": 581,
+        "end": 997
       },
       "props": [],
       "types": [],
-      "bindings": [],
-      "setup": [],
+      "bindings": [
+        {
+          "id": "note@622",
+          "name": "note",
+          "kind": "state",
+          "span": {
+            "start": 622,
+            "end": 626
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "note@622",
+          "type": {
+            "code": "{ name: string } | null",
+            "span": {
+              "start": 633,
+              "end": 656
+            }
+          },
+          "initial": {
+            "code": "{ name: \"note\" }",
+            "span": {
+              "start": 658,
+              "end": 674
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 616,
+            "end": 676
+          }
+        }
+      ],
       "render": {
         "kind": "Element",
         "tag": "section",
@@ -21,8 +55,8 @@
             "name": "class",
             "value": "card",
             "span": {
-              "start": 633,
-              "end": 645
+              "start": 702,
+              "end": 714
             }
           },
           {
@@ -30,8 +64,8 @@
             "name": "aria-label",
             "value": "Card",
             "span": {
-              "start": 646,
-              "end": 663
+              "start": 715,
+              "end": 732
             }
           }
         ],
@@ -53,8 +87,8 @@
                         "name": "data-name",
                         "value": "body",
                         "span": {
-                          "start": 695,
-                          "end": 711
+                          "start": 764,
+                          "end": 780
                         }
                       },
                       {
@@ -63,14 +97,14 @@
                         "value": {
                           "code": "\"body\"",
                           "span": {
-                            "start": 720,
-                            "end": 726
+                            "start": 789,
+                            "end": 795
                           },
                           "refs": []
                         },
                         "span": {
-                          "start": 712,
-                          "end": 726
+                          "start": 781,
+                          "end": 795
                         }
                       }
                     ],
@@ -79,32 +113,129 @@
                         "kind": "Text",
                         "value": "Body",
                         "span": {
-                          "start": 727,
-                          "end": 751
+                          "start": 796,
+                          "end": 820
                         }
                       }
                     ],
                     "span": {
-                      "start": 692,
-                      "end": 755
+                      "start": 761,
+                      "end": 824
+                    }
+                  },
+                  {
+                    "kind": "If",
+                    "branches": [
+                      {
+                        "condition": {
+                          "code": "note.value",
+                          "span": {
+                            "start": 834,
+                            "end": 844
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "note@622",
+                              "span": {
+                                "start": 834,
+                                "end": 844
+                              }
+                            }
+                          ]
+                        },
+                        "children": [
+                          {
+                            "kind": "Element",
+                            "tag": "p",
+                            "attributes": [
+                              {
+                                "kind": "Static",
+                                "name": "data-name",
+                                "value": "note",
+                                "span": {
+                                  "start": 862,
+                                  "end": 878
+                                }
+                              },
+                              {
+                                "kind": "Directive",
+                                "name": "vTrace",
+                                "value": {
+                                  "code": "note.value.name",
+                                  "span": {
+                                    "start": 888,
+                                    "end": 903
+                                  },
+                                  "refs": [
+                                    {
+                                      "kind": "Binding",
+                                      "binding": "note@622",
+                                      "span": {
+                                        "start": 888,
+                                        "end": 898
+                                      },
+                                      "narrowed": [
+                                        {
+                                          "span": {
+                                            "start": 888,
+                                            "end": 898
+                                          },
+                                          "scope": "template"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "span": {
+                                  "start": 879,
+                                  "end": 904
+                                }
+                              }
+                            ],
+                            "children": [
+                              {
+                                "kind": "Text",
+                                "value": "Note",
+                                "span": {
+                                  "start": 905,
+                                  "end": 933
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 859,
+                              "end": 937
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 834,
+                          "end": 937
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 834,
+                      "end": 954
                     }
                   }
                 ],
                 "span": {
-                  "start": 692,
-                  "end": 755
+                  "start": 761,
+                  "end": 955
                 }
               }
             ],
             "span": {
-              "start": 671,
-              "end": 775
+              "start": 740,
+              "end": 975
             }
           }
         ],
         "span": {
-          "start": 624,
-          "end": 790
+          "start": 693,
+          "end": 990
         }
       }
     }
@@ -115,8 +246,8 @@
       "name": "default",
       "local": "Card",
       "span": {
-        "start": 576,
-        "end": 797
+        "start": 581,
+        "end": 997
       }
     }
   ],
@@ -154,14 +285,14 @@
           "imported": "default",
           "local": "Disclosure",
           "span": {
-            "start": 64,
-            "end": 74
+            "start": 69,
+            "end": 79
           }
         }
       ],
       "span": {
-        "start": 57,
-        "end": 102
+        "start": 62,
+        "end": 107
       }
     }
   ],
@@ -171,8 +302,8 @@
       "value": {
         "code": "string",
         "span": {
-          "start": 231,
-          "end": 237
+          "start": 236,
+          "end": 242
         }
       },
       "hooks": [
@@ -185,31 +316,31 @@
           "body": {
             "code": "{\n    const call = `mounted ${value}`;\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
             "span": {
-              "start": 262,
-              "end": 394
+              "start": 267,
+              "end": 399
             },
             "refs": [
               {
                 "kind": "Global",
                 "name": "document",
                 "span": {
-                  "start": 305,
-                  "end": 313
+                  "start": 310,
+                  "end": 318
                 }
               },
               {
                 "kind": "Global",
                 "name": "CustomEvent",
                 "span": {
-                  "start": 332,
-                  "end": 343
+                  "start": 337,
+                  "end": 348
                 }
               }
             ]
           },
           "span": {
-            "start": 243,
-            "end": 394
+            "start": 248,
+            "end": 399
           }
         },
         {
@@ -220,39 +351,39 @@
           "body": {
             "code": "{\n    const call = `unmounted ${el.getAttribute(\"data-name\")}`;\n    document.dispatchEvent(new CustomEvent(\"directive-trace\", { detail: { call, el } }));\n  }",
             "span": {
-              "start": 412,
-              "end": 569
+              "start": 417,
+              "end": 574
             },
             "refs": [
               {
                 "kind": "Global",
                 "name": "document",
                 "span": {
-                  "start": 480,
-                  "end": 488
+                  "start": 485,
+                  "end": 493
                 }
               },
               {
                 "kind": "Global",
                 "name": "CustomEvent",
                 "span": {
-                  "start": 507,
-                  "end": 518
+                  "start": 512,
+                  "end": 523
                 }
               }
             ]
           },
           "span": {
-            "start": 398,
-            "end": 569
+            "start": 403,
+            "end": 574
           }
         }
       ],
       "bindings": [],
       "types": [],
       "span": {
-        "start": 200,
-        "end": 574
+        "start": 205,
+        "end": 579
       }
     }
   ]

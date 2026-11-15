@@ -394,7 +394,8 @@
               {
                 "name": "item",
                 "optional": true,
-                "props": "{ item: string; index: number }"
+                "props": "{ item: string; index: number }",
+                "repeated": true
               }
             ],
             "exposes": [],

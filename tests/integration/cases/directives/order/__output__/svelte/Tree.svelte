@@ -54,6 +54,8 @@
     <div class="branch" data-name="branch" {@attach vTrace(() => "branch")}>
       <span data-name="leaf" {@attach vTrace(() => "leaf")}>Leaf</span>
     </div>
+  {:else}
+    <p data-name="placeholder" {@attach vTrace(() => "placeholder")}>Placeholder</p>
   {/if}<p data-name="last" {@attach vTrace(() => "last")}>Last</p
   ><button type="button" onclick={() => (shown = !shown)}>Toggle</button>
 </section>

@@ -10,6 +10,8 @@
 
   let { class: className, style, ...attributes }: Props = $props();
 
+  let note = $state.raw<{ name: string } | null>({ name: "note" });
+
   /** The scope attributes of the styled parents that render this component, for its root. */
   function scopeAttributes(props: object): Record<string, ""> {
     const scope: Record<string, ""> = {};
@@ -37,6 +39,10 @@
 
 <section class={["card", className]} aria-label="Card" {style} {...scopeAttributes(attributes)}>
   <Disclosure>
-    <p data-name="body" {@attach vTrace(() => "body")}>Body</p>
+    <p data-name="body" {@attach vTrace(() => "body")}>Body</p
+    >{#if note}{@const traceValue = note.name}<p
+      data-name="note"
+      {@attach vTrace(() => traceValue)}
+    >Note</p>{/if}
   </Disclosure>
 </section>

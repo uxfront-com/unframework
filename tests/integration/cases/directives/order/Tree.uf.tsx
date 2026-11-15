@@ -31,7 +31,11 @@ export default function Tree() {
             Leaf
           </span>
         </div>
-      ) : null}
+      ) : (
+        <p data-name="placeholder" v-trace="placeholder">
+          Placeholder
+        </p>
+      )}
       <p data-name="last" v-trace="last">
         Last
       </p>

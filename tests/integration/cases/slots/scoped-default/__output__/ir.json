@@ -213,7 +213,8 @@
               {
                 "name": "default",
                 "optional": true,
-                "props": "{ item: string }"
+                "props": "{ item: string }",
+                "repeated": true
               }
             ],
             "exposes": [],

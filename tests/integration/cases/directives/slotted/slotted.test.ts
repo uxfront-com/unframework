@@ -1,7 +1,7 @@
 // directives/slotted: a directive on an element of a child's slot content (ADR-0099). The child
 // shows and hides the content by its own state, so the component that applies the directive
 // doesn't render again: `mounted` still runs once the element is in the DOM, and `unmounted` once
-// it leaves.
+// it leaves. One element's value is narrowed by a conditional around it.
 import { describeTargets, it, mountScenario } from "@unframework.dev/testing";
 import type { View } from "@unframework.dev/testing";
 import { expect } from "vitest";
@@ -11,17 +11,27 @@ import Card from "./Card.uf.tsx";
 interface Trace {
   call: string;
   el: Element;
+  /** Whether the element was in the document when the hook ran. */
+  connected: boolean;
 }
 
 /**
  * Records the hooks' calls the directive reports on the document, in order, keeping those of the
  * elements `view` mounted: in its container when mounted, and wherever they are once removed. A
- * run may mount other views beside the test's (L12 renders the client side too).
+ * run may mount other views beside the test's (L12 renders the client side too). `detached` gives
+ * the `mounted` calls that ran on an element out of the document, any view's.
  */
-function record(): { calls: (view: View) => string[]; stop: () => void } {
+function record(): {
+  calls: (view: View) => string[];
+  detached: () => string[];
+  stop: () => void;
+} {
   const traces: Trace[] = [];
   const own = new Set<Element>();
-  const listener = (event: Event) => void traces.push((event as CustomEvent<Trace>).detail);
+  const listener = (event: Event) => {
+    const { call, el } = (event as CustomEvent<Omit<Trace, "connected">>).detail;
+    traces.push({ call, el, connected: el.isConnected });
+  };
   document.addEventListener("directive-trace", listener);
   return {
     calls: (view) =>
@@ -29,6 +39,10 @@ function record(): { calls: (view: View) => string[]; stop: () => void } {
         if (call.startsWith("mounted") && view.container.contains(el)) own.add(el);
         return own.has(el) ? [call] : [];
       }),
+    detached: () =>
+      traces.flatMap(({ call, connected }) =>
+        call.startsWith("mounted") && !connected ? [call] : [],
+      ),
     stop: () => document.removeEventListener("directive-trace", listener),
   };
 }
@@ -52,10 +66,17 @@ describeTargets("directives/slotted", () => {
         await view.user.click(view.getByRole("button", { name: "Details" }));
         await view.expectParity("open");
         await expect.element(view.getByText("Body")).toBeVisible();
-        expect(trace.calls(view)).toEqual(["mounted body"]);
+        expect(trace.calls(view)).toEqual(["mounted body", "mounted note"]);
         await view.user.click(view.getByRole("button", { name: "Details" }));
         await view.expectParity("closed-again");
-        expect(trace.calls(view)).toEqual(["mounted body", "unmounted body"]);
+        expect(trace.calls(view)).toEqual([
+          "mounted body",
+          "mounted note",
+          "unmounted body",
+          "unmounted note",
+        ]);
+        // `mounted` ran only on an element in the document.
+        expect(trace.detached()).toEqual([]);
       } finally {
         trace.stop();
       }

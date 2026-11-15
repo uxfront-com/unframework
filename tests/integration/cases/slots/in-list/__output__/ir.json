@@ -175,7 +175,8 @@
             "slots": [
               {
                 "name": "marker",
-                "optional": true
+                "optional": true,
+                "repeated": true
               }
             ],
             "exposes": [],

@@ -6,7 +6,7 @@
       "name": "Tree",
       "span": {
         "start": 644,
-        "end": 1274
+        "end": 1372
       },
       "props": [],
       "types": [],
@@ -270,11 +270,64 @@
                   "start": 886,
                   "end": 1065
                 }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "data-name",
+                        "value": "placeholder",
+                        "span": {
+                          "start": 1089,
+                          "end": 1112
+                        }
+                      },
+                      {
+                        "kind": "Directive",
+                        "name": "vTrace",
+                        "value": {
+                          "code": "\"placeholder\"",
+                          "span": {
+                            "start": 1121,
+                            "end": 1134
+                          },
+                          "refs": []
+                        },
+                        "span": {
+                          "start": 1113,
+                          "end": 1134
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Placeholder",
+                        "span": {
+                          "start": 1135,
+                          "end": 1166
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1086,
+                      "end": 1170
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1086,
+                  "end": 1170
+                }
               }
             ],
             "span": {
               "start": 886,
-              "end": 1080
+              "end": 1178
             }
           },
           {
@@ -286,8 +339,8 @@
                 "name": "data-name",
                 "value": "last",
                 "span": {
-                  "start": 1091,
-                  "end": 1107
+                  "start": 1189,
+                  "end": 1205
                 }
               },
               {
@@ -296,14 +349,14 @@
                 "value": {
                   "code": "\"last\"",
                   "span": {
-                    "start": 1116,
-                    "end": 1122
+                    "start": 1214,
+                    "end": 1220
                   },
                   "refs": []
                 },
                 "span": {
-                  "start": 1108,
-                  "end": 1122
+                  "start": 1206,
+                  "end": 1220
                 }
               }
             ],
@@ -312,14 +365,14 @@
                 "kind": "Text",
                 "value": "Last",
                 "span": {
-                  "start": 1123,
-                  "end": 1143
+                  "start": 1221,
+                  "end": 1241
                 }
               }
             ],
             "span": {
-              "start": 1088,
-              "end": 1147
+              "start": 1186,
+              "end": 1245
             }
           },
           {
@@ -331,8 +384,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 1162,
-                  "end": 1175
+                  "start": 1260,
+                  "end": 1273
                 }
               },
               {
@@ -345,8 +398,8 @@
                     "body": {
                       "code": "(shown.value = !shown.value)",
                       "span": {
-                        "start": 1191,
-                        "end": 1219
+                        "start": 1289,
+                        "end": 1317
                       },
                       "refs": [
                         {
@@ -354,16 +407,16 @@
                           "binding": "shown@685",
                           "operator": "=",
                           "span": {
-                            "start": 1191,
-                            "end": 1219
+                            "start": 1289,
+                            "end": 1317
                           },
                           "target": {
-                            "start": 1192,
-                            "end": 1203
+                            "start": 1290,
+                            "end": 1301
                           },
                           "value": {
-                            "start": 1206,
-                            "end": 1218
+                            "start": 1304,
+                            "end": 1316
                           },
                           "arrowBody": true
                         },
@@ -371,26 +424,26 @@
                           "kind": "Binding",
                           "binding": "shown@685",
                           "span": {
-                            "start": 1207,
-                            "end": 1218
+                            "start": 1305,
+                            "end": 1316
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 1185,
-                      "end": 1219
+                      "start": 1283,
+                      "end": 1317
                     }
                   },
                   "span": {
-                    "start": 1185,
-                    "end": 1219
+                    "start": 1283,
+                    "end": 1317
                   }
                 },
                 "span": {
-                  "start": 1176,
-                  "end": 1220
+                  "start": 1274,
+                  "end": 1318
                 }
               }
             ],
@@ -399,20 +452,20 @@
                 "kind": "Text",
                 "value": "Toggle",
                 "span": {
-                  "start": 1221,
-                  "end": 1243
+                  "start": 1319,
+                  "end": 1341
                 }
               }
             ],
             "span": {
-              "start": 1154,
-              "end": 1252
+              "start": 1252,
+              "end": 1350
             }
           }
         ],
         "span": {
           "start": 720,
-          "end": 1267
+          "end": 1365
         }
       }
     }
@@ -424,7 +477,7 @@
       "local": "Tree",
       "span": {
         "start": 644,
-        "end": 1274
+        "end": 1372
       }
     }
   ],

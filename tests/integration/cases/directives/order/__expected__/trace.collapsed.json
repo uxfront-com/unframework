@@ -11,6 +11,9 @@
         "  <em data-name=\"note\">",
         "    \"Note\"",
         "  </em>",
+        "  <p data-name=\"placeholder\">",
+        "    \"Placeholder\"",
+        "  </p>",
         "  <p data-name=\"last\">",
         "    \"Last\"",
         "  </p>",
@@ -23,6 +26,7 @@
         "- region \"Tree\":",
         "  - paragraph: First",
         "  - emphasis: Note",
+        "  - paragraph: Placeholder",
         "  - paragraph: Last",
         "  - button \"Toggle\""
       ],

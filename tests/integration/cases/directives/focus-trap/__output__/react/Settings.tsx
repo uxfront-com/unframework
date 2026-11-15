@@ -105,7 +105,7 @@ function useDirective<E extends Element, T>(directive: DirectiveHooks<E, T>, get
     const { element, mounted } = current;
     if (mounted && mounted !== element) {
       current.mounted = null;
-      queueHook(mounted, () => directive.unmounted?.(mounted));
+      queueHook(mounted, () => directive.unmounted?.(mounted), true);
     }
     if (!element) return;
     const value = current.getValue();
@@ -138,25 +138,33 @@ function useDirective<E extends Element, T>(directive: DirectiveHooks<E, T>, get
 }
 
 /**
- * Runs a directive's hook once the turn ends, a descendant's before its ancestor's and
- * siblings' in document order, as Vue runs them, with the hooks every other output queued.
+ * Runs a directive's hook once the turn ends, as Vue runs them: the elements that leave first,
+ * then a descendant's before its ancestor's and siblings' in document order, one element's in
+ * the order they came, with the hooks every other output queued.
  */
-function queueHook(element: Element, run: () => void): void {
-  const key: unique symbol = Symbol.for("unframework.directive-hooks");
+function queueHook(element: Element, run: () => void, leaving = false): void {
+  const key: unique symbol = Symbol.for("unframework.directive-hooks@1");
   const scope = globalThis as typeof globalThis & {
-    [key]?: { element: Element; run: () => void }[];
+    [key]?: { element: Element; run: () => void; leaving: boolean }[];
   };
   const queued = scope[key];
   if (queued) {
-    queued.push({ element, run });
+    queued.push({ element, run, leaving });
     return;
   }
-  scope[key] = [{ element, run }];
+  scope[key] = [{ element, run, leaving }];
   queueMicrotask(() => {
     const hooks = scope[key] ?? [];
     scope[key] = undefined;
+    // An element whose first hook of the turn is `unmounted` leaves before any other mounts.
+    const leaves = new Map<Element, boolean>();
+    for (const hook of hooks) {
+      if (!leaves.has(hook.element)) leaves.set(hook.element, hook.leaving);
+    }
     hooks.sort((a, b) => {
       if (a.element === b.element) return 0;
+      const leaving = leaves.get(a.element) === true;
+      if (leaving !== (leaves.get(b.element) === true)) return leaving ? -1 : 1;
       if (a.element.contains(b.element)) return 1;
       if (b.element.contains(a.element)) return -1;
       return a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING

@@ -84,16 +84,40 @@ interface DirectiveHooks<E extends Element, T> {
   unmounted?(el: E): unknown;
 }
 
+/** The checks `watchDocument` calls, and its observer while it has any. */
+const documentWatches: { checks: Set<() => void>; observer?: MutationObserver } = {
+  checks: new Set(),
+};
+
+/**
+ * Calls `check` after each change to the document's tree, through one `MutationObserver` for
+ * every watch, and returns the end of the watch.
+ */
+function watchDocument(check: () => void): () => void {
+  const { checks } = documentWatches;
+  if (!documentWatches.observer) {
+    documentWatches.observer = new MutationObserver(() => {
+      for (const each of [...checks]) each();
+    });
+    documentWatches.observer.observe(document, { childList: true, subtree: true });
+  }
+  checks.add(check);
+  return () => {
+    checks.delete(check);
+    if (!checks.size) {
+      documentWatches.observer?.disconnect();
+      documentWatches.observer = undefined;
+    }
+  };
+}
+
 /**
  * Each directive's elements: the value each last received, whether `mounted` ran, how many runs
- * took it up, and the watch on its place in the document.
+ * took it up, and the end of its watch on the document.
  */
 const directiveStates = new WeakMap<
   object,
-  WeakMap<
-    Element,
-    { value: unknown; mounted: boolean; runs: number; observer: MutationObserver; sync: () => void }
-  >
+  WeakMap<Element, { value: unknown; mounted: boolean; runs: number; unwatch: () => void }>
 >();
 
 /**
@@ -113,6 +137,17 @@ function runDirective<E extends Element, T>(
     directiveStates.set(directive, own);
   }
   const elements = own;
+  const sync = () => {
+    const current = elements.get(element);
+    if (!current || current.mounted === element.isConnected) return;
+    current.mounted = element.isConnected;
+    if (current.mounted) {
+      const mounted = current.value as T;
+      queueHook(element, () => directive.mounted?.(element, mounted));
+    } else {
+      queueHook(element, () => directive.unmounted?.(element), true);
+    }
+  };
   let state = elements.get(element);
   if (state) {
     state.runs += 1;
@@ -122,30 +157,18 @@ function runDirective<E extends Element, T>(
       if (state.mounted) queueHook(element, () => directive.updated?.(element, value, previous));
     }
   } else {
-    const sync = () => {
-      const current = elements.get(element);
-      if (!current || current.mounted === element.isConnected) return;
-      current.mounted = element.isConnected;
-      if (current.mounted) {
-        const mounted = current.value as T;
-        queueHook(element, () => directive.mounted?.(element, mounted));
-      } else {
-        queueHook(element, () => directive.unmounted?.(element));
-      }
-    };
-    state = { value, mounted: false, runs: 0, observer: new MutationObserver(sync), sync };
-    state.observer.observe(document, { childList: true, subtree: true });
+    state = { value, mounted: false, runs: 0, unwatch: watchDocument(sync) };
     elements.set(element, state);
   }
-  state.sync();
+  sync();
   const taken = state;
   const runs = taken.runs;
   return () => {
     queueMicrotask(() => {
       if (elements.get(element) !== taken || taken.runs !== runs) return;
-      taken.observer.disconnect();
+      taken.unwatch();
       elements.delete(element);
-      if (taken.mounted) queueHook(element, () => directive.unmounted?.(element));
+      if (taken.mounted) queueHook(element, () => directive.unmounted?.(element), true);
     });
   };
 }
@@ -154,25 +177,33 @@ function runDirective<E extends Element, T>(
 type DirectiveElement<D> = D extends DirectiveHooks<infer E extends Element, never> ? E : never;
 
 /**
- * Runs a directive's hook once the turn ends, a descendant's before its ancestor's and
- * siblings' in document order, as Vue runs them, with the hooks every other output queued.
+ * Runs a directive's hook once the turn ends, as Vue runs them: the elements that leave first,
+ * then a descendant's before its ancestor's and siblings' in document order, one element's in
+ * the order they came, with the hooks every other output queued.
  */
-function queueHook(element: Element, run: () => void): void {
-  const key: unique symbol = Symbol.for("unframework.directive-hooks");
+function queueHook(element: Element, run: () => void, leaving = false): void {
+  const key: unique symbol = Symbol.for("unframework.directive-hooks@1");
   const scope = globalThis as typeof globalThis & {
-    [key]?: { element: Element; run: () => void }[];
+    [key]?: { element: Element; run: () => void; leaving: boolean }[];
   };
   const queued = scope[key];
   if (queued) {
-    queued.push({ element, run });
+    queued.push({ element, run, leaving });
     return;
   }
-  scope[key] = [{ element, run }];
+  scope[key] = [{ element, run, leaving }];
   queueMicrotask(() => {
     const hooks = scope[key] ?? [];
     scope[key] = undefined;
+    // An element whose first hook of the turn is `unmounted` leaves before any other mounts.
+    const leaves = new Map<Element, boolean>();
+    for (const hook of hooks) {
+      if (!leaves.has(hook.element)) leaves.set(hook.element, hook.leaving);
+    }
     hooks.sort((a, b) => {
       if (a.element === b.element) return 0;
+      const leaving = leaves.get(a.element) === true;
+      if (leaving !== (leaves.get(b.element) === true)) return leaving ? -1 : 1;
       if (a.element.contains(b.element)) return 1;
       if (b.element.contains(a.element)) return -1;
       return a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING

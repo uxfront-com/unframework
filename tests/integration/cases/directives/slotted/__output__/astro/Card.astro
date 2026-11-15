@@ -14,6 +14,8 @@ function scopeAttributes(props: object): Record<string, ""> {
   for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
   return scope;
 }
+
+const note = { name: "note" } as { name: string } | null;
 ---
 
 <section
@@ -24,5 +26,8 @@ function scopeAttributes(props: object): Record<string, ""> {
 >
   <Disclosure>
     <p data-name="body">Body</p>
+    {note ? (
+      <p data-name="note">Note</p>
+    ) : null}
   </Disclosure>
 </section>

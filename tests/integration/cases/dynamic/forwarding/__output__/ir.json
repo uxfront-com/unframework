@@ -229,7 +229,8 @@
             "slots": [
               {
                 "name": "title",
-                "optional": true
+                "optional": true,
+                "repeated": true
               }
             ],
             "exposes": [],
