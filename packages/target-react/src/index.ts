@@ -189,7 +189,7 @@ export const react: Target = defineTarget({
     directive: {
       support: "emulated",
       helper: "useDirective",
-      note: "React has no directive, so an element's directive goes through an inline hook, `useDirective`, whose stable ref callback records the element and whose layout effect runs `mounted`, `updated` behind `Object.is`, and `unmounted`. The hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+      note: "React has no directive, so an element's directive goes through an inline hook, `useDirective`, whose stable ref callback records each element one use renders and whose layout effect runs, on each apart, `mounted`, `updated` behind `Object.is`, and `unmounted`. The hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
     },
     teleport: {
       support: "emulated",

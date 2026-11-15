@@ -363,7 +363,7 @@ export class ReactListeners {
     const ref = listeners.ref && this.#plan.bindings.get(listeners.ref.binding)!.name;
     const local = locals(
       [...handlers, listen, ref ?? ""],
-      ["element", "stop", "cleanups", "cleanup", "text"],
+      ["element", "stop", "cleanups", "cleanup", "text", "detaches", "detach"],
     );
     const calls = listeners.native.map(([first], index) => {
       const options = first!.capture
@@ -386,14 +386,22 @@ export class ReactListeners {
         `if (${element}) {\nconst ${text} = ${element}.value;\n${element}.value = "";\n${element}.value = ${text};\n}`,
       );
     }
-    // Each directive's callback records the element, and forgets it once the element's own
-    // callback is cleaned up, as React would call a callback with no cleanup with `null`.
-    for (const directive of listeners.directives) {
-      lines.push(`${directive}(${local.element});`);
+    // Each directive's callback records the element, and forgets that element once the
+    // element's own callback is cleaned up, through the cleanup it returns (ADR-0099).
+    const [onlyDirective, ...otherDirectives] = listeners.directives;
+    if (onlyDirective !== undefined && !otherDirectives.length) {
+      lines.push(`const ${local.detach} = ${onlyDirective}(${local.element});`);
+    } else if (onlyDirective !== undefined) {
+      const calls = listeners.directives.map((directive) => `${directive}(${local.element})`);
+      lines.push(`const ${local.detaches} = [${calls.join(", ")}];`);
     }
     const stops = [
       ref ? `${ref}.current = null;` : undefined,
-      ...listeners.directives.map((directive) => `${directive}(null);`),
+      onlyDirective === undefined
+        ? undefined
+        : otherDirectives.length
+          ? `for (const ${local.detach} of ${local.detaches}) ${local.detach}();`
+          : `${local.detach}();`,
     ];
     if (calls.length === 1) {
       lines.push(`const ${local.stop} = ${calls[0]!};`);

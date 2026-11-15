@@ -38,6 +38,50 @@ export default function Marked() {
   );
 }
 `,
+  // A child that renders its \`row\` slot once per item, and adds and removes items alone.
+  Rows: `import { defineSlots, ref } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
+
+export default function Rows() {
+  const slots = defineSlots<{ row?(): Element }>();
+  const items = ref([1, 2]);
+  return (
+    <div>
+      <ul>{items.value.map((item) => <li key={item}>{slots.row?.()}</li>)}</ul>
+      <button type="button" onClick={() => (items.value = [...items.value, items.value.length + 1])}>Add</button>
+      <button type="button" onClick={() => (items.value = items.value.slice(0, -1))}>Remove</button>
+    </div>
+  );
+}
+`,
+  // One directive use whose element \`Rows\` renders once per row (ADR-0099): each gets its own
+  // hooks, reported with its element.
+  Repeat: `import { defineDirective, ref } from "@uxfront/unframework";
+
+import Rows from "./Rows.uf.tsx";
+
+const vRow = defineDirective<number>({
+  mounted(el, value) {
+    document.dispatchEvent(new CustomEvent("uf-rows", { detail: { call: "mounted " + String(value), el } }));
+  },
+  updated(el, value, oldValue) {
+    document.dispatchEvent(new CustomEvent("uf-rows", { detail: { call: "updated " + String(value) + " " + String(oldValue), el } }));
+  },
+  unmounted(el) {
+    document.dispatchEvent(new CustomEvent("uf-rows", { detail: { call: "unmounted", el } }));
+  },
+});
+
+export default function Repeat() {
+  const level = ref(0);
+  return (
+    <section>
+      <Rows>{{ row: () => <span v-row={level.value}>Row</span> }}</Rows>
+      <button type="button" onClick={() => level.value++}>Raise</button>
+    </section>
+  );
+}
+`,
   // Listeners beside a \`v-model\` (ADR-0054): each runs after the model's write, and reads it.
   ModelReads: `import { defineEmits, ref } from "@uxfront/unframework";
 

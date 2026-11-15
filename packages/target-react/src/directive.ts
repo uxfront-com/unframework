@@ -1,15 +1,16 @@
 // A directive on React (ADR-0099): React has no directive, so a component that applies one calls
-// an inline hook, `useDirective`, once per element at its top level, and passes the ref callback
-// it returns to the element: `const focusTrapRef = useDirective(vFocusTrap, () => open)`. The
-// callback is one stable function, which only records the element and schedules a sync, so an
-// element whose ref callback is written in place, and so attached again at each render, keeps its
-// directive. The sync, after each render's layout effects too, compares what the callback
-// recorded with what it mounted: a new element is `mounted`, a value that changed (`Object.is`)
-// `updated`, and an element gone `unmounted`, as is the one left when the component unmounts.
-// The microtask covers an element a child renders in the slot content, whose callback runs
-// without a render of this component. Each hook goes through the inline `queueHook`, which runs
-// them in Vue's order with every other output's. Refs and effects never run on the server. A
-// `.uf.ts` module's directive is the plain hooks object, which the hook reads.
+// an inline hook, `useDirective`, once per use at its top level, and passes the ref callback it
+// returns to the element: `const focusTrapRef = useDirective(vFocusTrap, () => open)`. One use may
+// render several elements, as a slot a child renders in a list, so the callback, one stable
+// function, records each element it receives, and its cleanup forgets that one: an element whose
+// ref callback is written in place, and so attached again at each render, keeps its directive.
+// The sync, after each render's layout effects too, compares what the callback recorded with what
+// it mounted: a new element is `mounted`, a value that changed (`Object.is`) `updated` on each
+// element, and an element gone `unmounted`, as is each one left when the component unmounts. The
+// microtask covers an element a child renders in the slot content, whose callback runs without a
+// render of this component. Each hook goes through the inline `queueHook`, which runs them in
+// Vue's order with every other output's. Refs and effects never run on the server. A `.uf.ts`
+// module's directive is the plain hooks object, which the hook reads.
 import {
   dependencyImports,
   directiveDependencies,
@@ -65,7 +66,7 @@ export function useDirectiveHelper(
 ): string {
   const react = (name: string) => imports.add("react", name);
   const { hook, hooks, queue } = names;
-  return `/** The hooks of a directive, which \`${hook}\` runs on its element. */
+  return `/** The hooks of a directive, which \`${hook}\` runs on its elements. */
 interface ${hooks}<E extends Element, T> {
   mounted?(el: E, value: T): unknown;
   updated?(el: E, value: T, oldValue: T): unknown;
@@ -73,40 +74,47 @@ interface ${hooks}<E extends Element, T> {
 }
 
 /**
- * Runs a directive's hooks on the element its ref callback receives: \`mounted\` once it is
- * rendered, \`updated\` after a render that changes the value, and \`unmounted\` once it is gone,
- * whichever component renders or removes it. The callback only records the element, so one
- * written in place, attached again at each render, keeps the directive.
+ * Runs a directive's hooks on each element its ref callback receives, apart: \`mounted\` once
+ * the element is rendered, \`updated\` after a render that changes the value, and \`unmounted\`
+ * once that element is gone, whichever component renders or removes it. One use may render
+ * several elements, as a slot a child renders in a list. The callback only records the element,
+ * and its cleanup forgets that one, so a callback written in place keeps the directive.
  */
 function ${hook}<E extends Element, T>(directive: ${hooks}<E, T>, getValue: () => T) {
   const state = ${react("useRef")}<{
-    element: E | null;
     getValue: () => T;
-    mounted: E | null;
-    value?: T;
-  }>({ element: null, getValue, mounted: null });
+    attached: Set<E>;
+    mounted: Map<E, T>;
+  }>({ getValue, attached: new Set(), mounted: new Map() });
   const [sync] = ${react("useState")}(() => () => {
-    const current = state.current;
-    const { element, mounted } = current;
-    if (mounted && mounted !== element) {
-      current.mounted = null;
-      ${queue}(mounted, () => directive.unmounted?.(mounted), true);
+    const { attached, mounted } = state.current;
+    for (const element of [...mounted.keys()]) {
+      if (attached.has(element)) continue;
+      mounted.delete(element);
+      ${queue}(element, () => directive.unmounted?.(element), "unmounted");
     }
-    if (!element) return;
-    const value = current.getValue();
-    if (current.mounted !== element) {
-      current.mounted = element;
-      current.value = value;
-      ${queue}(element, () => directive.mounted?.(element, value));
-    } else if (!Object.is(value, current.value)) {
-      const previous = current.value as T;
-      current.value = value;
-      ${queue}(element, () => directive.updated?.(element, value, previous));
+    if (!attached.size) return;
+    const value = state.current.getValue();
+    for (const element of attached) {
+      if (!mounted.has(element)) {
+        mounted.set(element, value);
+        ${queue}(element, () => directive.mounted?.(element, value), "mounted");
+        continue;
+      }
+      const previous = mounted.get(element) as T;
+      if (Object.is(value, previous)) continue;
+      mounted.set(element, value);
+      ${queue}(element, () => directive.updated?.(element, value, previous), "updated");
     }
   });
   const [ref] = ${react("useState")}(() => (element: E | null) => {
-    state.current.element = element;
+    if (!element) return () => {};
+    state.current.attached.add(element);
     queueMicrotask(sync);
+    return () => {
+      state.current.attached.delete(element);
+      queueMicrotask(sync);
+    };
   });
   ${react("useLayoutEffect")}(() => {
     state.current.getValue = getValue;
@@ -114,7 +122,7 @@ function ${hook}<E extends Element, T>(directive: ${hooks}<E, T>, getValue: () =
   });
   ${react("useLayoutEffect")}(
     () => () => {
-      state.current.element = null;
+      state.current.attached.clear();
       sync();
     },
     [sync],

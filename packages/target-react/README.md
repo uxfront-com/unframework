@@ -129,7 +129,7 @@ unsupported (UF4005, info): a composable is a custom hook, whose effects keep Re
 than the caller's (ADR-0069); `generic-components`, `generic-slot-props` and `composables` are
 native.
 
-`directive` is emulated (ADR-0099): an element's directive goes through an inline hook, `useDirective`, called once per element at the component's top level, in a post-order of the elements, whose ref callback only records the element and whose layout effect runs `mounted`, `updated` when the value changes and `unmounted`, queued through an inline `queueHook` that runs them in Vue's order. Its ref callback joins the element's own where it has one. A `.uf.ts` module's directive is the plain hooks, `vFocusTrap.ts`.
+`directive` is emulated (ADR-0099): an element's directive goes through an inline hook, `useDirective`, called once per use at the component's top level, in a post-order of the elements, whose ref callback records each element it receives, and its cleanup forgets that one, and whose layout effect runs `mounted`, `updated` when the value changes and `unmounted` on each element apart, queued through an inline `queueHook` that runs them in Vue's order. Its ref callback joins the element's own where it has one. A `.uf.ts` module's directive is the plain hooks, `vFocusTrap.ts`.
 
 `teleport` is emulated (ADR-0098): a `<Teleport>` is `createPortal` from react-dom, through an inline helper, `teleport`, once `useSyncExternalStore` says the component has mounted, so neither the server nor the hydrating client renders it. The output imports `react-dom`, React's renderer, and a React package peers on it.
 
